@@ -1,0 +1,2181 @@
+{
+  "athletes": [
+    {
+      "id": 1758277561723,
+      "name": "Matteo Abbrancati",
+      "avatar": "",
+      "role": "Centrocampista",
+      "number": 10,
+      "isCaptain": true
+    },
+    {
+      "name": "Brando Franzoso",
+      "avatar": "",
+      "role": "Centrocampista",
+      "number": 7,
+      "isCaptain": false,
+      "id": 1758281630082
+    },
+    {
+      "name": "Federico Bruno",
+      "avatar": "",
+      "role": "Difensore",
+      "number": 17,
+      "isCaptain": false,
+      "id": 1758281662238
+    },
+    {
+      "name": "Lorenzo Lamarque",
+      "avatar": "",
+      "role": "Terziono",
+      "number": 3,
+      "isCaptain": false,
+      "id": 1758283691246
+    },
+    {
+      "name": "Matteo Virlan",
+      "avatar": "",
+      "role": "Difensore",
+      "number": 4,
+      "isCaptain": false,
+      "id": 1758283732097
+    },
+    {
+      "name": "Davide Bivol",
+      "avatar": "",
+      "role": "Difensore",
+      "number": 5,
+      "isCaptain": false,
+      "id": 1758283778966
+    },
+    {
+      "name": "Lorenzo Calì",
+      "avatar": "",
+      "role": "Atleta",
+      "number": 6,
+      "isCaptain": false,
+      "id": 1758283824556
+    },
+    {
+      "name": "Fabio Menegon",
+      "avatar": "",
+      "role": "Centrocampista",
+      "number": 8,
+      "isCaptain": false,
+      "id": 1758283865610
+    },
+    {
+      "name": "Flavio Grillo",
+      "avatar": "",
+      "role": "Centrocampista",
+      "number": 9,
+      "isCaptain": false,
+      "id": 1758283929453
+    },
+    {
+      "name": "Alessandro Laddomanda",
+      "avatar": "",
+      "role": "Terzino",
+      "number": 11,
+      "isCaptain": false,
+      "id": 1758283983623
+    },
+    {
+      "name": "Alessandro Puddu",
+      "avatar": "",
+      "role": "Difensore",
+      "number": 13,
+      "isCaptain": false,
+      "id": 1758284039954
+    },
+    {
+      "name": "Marco Sonsogno",
+      "avatar": "",
+      "role": "Atleta",
+      "number": 14,
+      "isCaptain": false,
+      "id": 1758284074504
+    },
+    {
+      "name": "Mattia Aiesi",
+      "avatar": "",
+      "role": "Centrocampista",
+      "number": 18,
+      "isCaptain": false,
+      "id": 1758284141110
+    },
+    {
+      "name": "Pietro Rossin",
+      "avatar": "",
+      "role": "Attaccante",
+      "number": 19,
+      "isCaptain": false,
+      "id": 1758284190395
+    },
+    {
+      "name": "Andrea Nunnari",
+      "avatar": "",
+      "role": "Difensore",
+      "number": 20,
+      "isCaptain": false,
+      "id": 1758284227328
+    },
+    {
+      "name": "Leonardo Amadio",
+      "avatar": "",
+      "role": "Attaccante",
+      "number": 21,
+      "isCaptain": false,
+      "id": 1758284257614
+    },
+    {
+      "name": "Samuel Sereno",
+      "avatar": "",
+      "role": "Terziono",
+      "number": 25,
+      "isCaptain": false,
+      "id": 1758284347639
+    },
+    {
+      "name": "Samuel Resta",
+      "avatar": "",
+      "role": "Attaccante",
+      "number": 23,
+      "isCaptain": false,
+      "id": 1758284399462
+    },
+    {
+      "name": "Mattia Merolli",
+      "avatar": "",
+      "role": "Attaccante",
+      "number": 24,
+      "isCaptain": false,
+      "id": 1758284440785
+    },
+    {
+      "name": "Mattia Piantoni",
+      "avatar": "",
+      "role": "Portiere",
+      "number": 1,
+      "isCaptain": false,
+      "id": 1758284883288
+    },
+    {
+      "name": "Angelo Missimi",
+      "avatar": "",
+      "role": "Portiere",
+      "number": 12,
+      "isCaptain": false,
+      "id": 1758284948355
+    },
+    {
+      "name": "Ambra Deambrogio",
+      "avatar": "",
+      "role": "Difensore",
+      "number": 2,
+      "isCaptain": false,
+      "id": 1758285051234
+    },
+    {
+      "name": "Gabriele Giove",
+      "avatar": "",
+      "role": "Difensore",
+      "number": 15,
+      "isCaptain": false,
+      "id": 1758285308936
+    },
+    {
+      "name": "Simone Brè",
+      "avatar": "",
+      "role": "Portiere",
+      "number": 99,
+      "isCaptain": false,
+      "id": 1758285388038
+    },
+    {
+      "name": "Emanuele Nocera",
+      "avatar": "",
+      "role": "Difensore",
+      "number": 22,
+      "isCaptain": false,
+      "id": 1758285489337
+    }
+  ],
+  "evaluations": {
+    "2025-09-17": {
+      "1758277561723": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758281630082": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758281662238": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283691246": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283732097": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283778966": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283824556": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283865610": {
+        "presenza-allenamento": "2",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283929453": {
+        "presenza-allenamento": "2",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283983623": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284039954": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284074504": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284141110": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284190395": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284227328": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284257614": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284320970": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284347639": {
+        "presenza-allenamento": "2",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284440785": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284399462": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284764641": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284883288": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "1",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284948355": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285308936": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285388038": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "2",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      }
+    },
+    "2025-09-15": {
+      "1758277561723": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758281630082": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758281662238": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283691246": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283732097": {
+        "presenza-allenamento": "2",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283778966": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283824556": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283865610": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283929453": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283983623": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284039954": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284074504": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284141110": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284190395": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284227328": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284257614": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284347639": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284399462": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284440785": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284883288": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284948355": {
+        "presenza-allenamento": "2",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285051234": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285308936": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285388038": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285489337": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      }
+    },
+    "2025-09-19": {
+      "1758281630082": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758277561723": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758281662238": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283691246": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283732097": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283824556": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283865610": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283929453": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283983623": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284039954": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284074504": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284227328": {
+        "presenza-allenamento": "1",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284257614": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284347639": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284399462": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284440785": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284883288": {
+        "presenza-allenamento": "1",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285308936": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285489337": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284948355": {
+        "presenza-allenamento": "2",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "3",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283778966": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      }
+    },
+    "2025-09-12": {
+      "1758281630082": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      }
+    },
+    "2025-09-22": {
+      "1758281630082": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758281662238": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283691246": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283732097": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283778966": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283824556": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283865610": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283929453": {
+        "presenza-allenamento": "1",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284039954": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284074504": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284141110": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284190395": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "2",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284227328": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284257614": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284347639": {
+        "presenza-allenamento": "2",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284399462": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284440785": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284883288": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284948355": {
+        "presenza-allenamento": "1",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285051234": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285308936": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285388038": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285489337": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758277561723": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      }
+    },
+    "2025-09-20": {
+      "1758281630082": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      }
+    },
+    "2025-09-21": {
+      "1758281630082": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      }
+    },
+    "2025-09-24": {
+      "1758277561723": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758281630082": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758281662238": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283691246": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283732097": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283778966": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283824556": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283865610": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283929453": {
+        "presenza-allenamento": "1",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283983623": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284074504": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284141110": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284190395": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284227328": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284257614": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284347639": {
+        "presenza-allenamento": "2",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284399462": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284440785": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284883288": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "1",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284948355": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285051234": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285308936": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285388038": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285489337": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284039954": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      }
+    },
+    "2025-09-26": {
+      "1758277561723": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758281630082": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758281662238": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283691246": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283732097": {
+        "presenza-allenamento": "2",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283778966": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283824556": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283865610": {
+        "presenza-allenamento": "2",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283929453": {
+        "presenza-allenamento": "2",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283983623": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284039954": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284074504": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284141110": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284190395": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284227328": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284347639": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284399462": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284440785": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284883288": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285051234": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285308936": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285388038": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285489337": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "2",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      }
+    },
+    "2025-09-29": {
+      "1758277561723": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758281630082": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758281662238": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283691246": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283732097": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283778966": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283824556": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283929453": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284039954": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284074504": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284141110": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284190395": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "2",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284227328": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284257614": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284347639": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284399462": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284883288": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "2",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284948355": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285051234": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285308936": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285388038": {
+        "presenza-allenamento": "0",
+        "serieta-allenamento": "0",
+        "abbigliamento-allenamento": "0",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285489337": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283865610": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283983623": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284440785": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      }
+    },
+    "2025-10-01": {
+      "1758277561723": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758281630082": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758281662238": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283691246": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283732097": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283824556": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283865610": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283778966": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758283929453": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284074504": {
+        "presenza-allenamento": "2",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284141110": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284190395": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284227328": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284347639": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284399462": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284440785": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284883288": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758284948355": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285051234": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285308936": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285388038": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "1",
+        "abbigliamento-allenamento": "2",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      },
+      "1758285489337": {
+        "presenza-allenamento": "3",
+        "serieta-allenamento": "3",
+        "abbigliamento-allenamento": "3",
+        "abbigliamento-partita": "0",
+        "comunicazioni": "0",
+        "doccia": "0"
+      }
+    }
+  },
+  "gpsData": {
+    "1758281662238": {
+      "2025-09-17": {
+        "data_di_registrazione": "2025-09-17",
+        "tipo_sessione": "Allenamento",
+        "distanza_totale": 4045.7,
+        "tempo_totale": 65,
+        "distanza_sprint": 637.9,
+        "velocita_massima": 27.7,
+        "numero_di_sprint": 23,
+        "max_acc": 0.4,
+        "max_dec": -0.3,
+        "passaggi_piede_sinistro": 0,
+        "passaggi_piede_destro": 0,
+        "cross_piede_sinistro": 0,
+        "cross_piede_destro": 0,
+        "potenza_massima_di_tiro": 0,
+        "distanza_per_minuto": "62.24",
+        "distanza_media_sprint": 0
+      }
+    },
+    "1758281630082": {
+      "2025-09-17": {
+        "data_di_registrazione": "2025-09-17",
+        "tipo_sessione": "Individual",
+        "distanza_totale": 6800,
+        "tempo_totale": 90,
+        "velocita_massima": 22.3,
+        "numero_di_sprint": 4,
+        "max_acc": 20,
+        "max_dec": 14,
+        "passaggi_piede_sinistro": 0,
+        "passaggi_piede_destro": 15,
+        "cross_piede_sinistro": 0,
+        "cross_piede_destro": 1,
+        "potenza_massima_di_tiro": 41,
+        "distanza_per_minuto": 75.56
+      },
+      "2025-09-18": {
+        "data_di_registrazione": "2025-09-18",
+        "tipo_sessione": "Individual",
+        "distanza_totale": 3300,
+        "tempo_totale": 79,
+        "velocita_massima": 16.7,
+        "max_acc": 33,
+        "max_dec": 35,
+        "passaggi_piede_sinistro": 15,
+        "passaggi_piede_destro": 72,
+        "cross_piede_destro": 27,
+        "potenza_massima_di_tiro": 60,
+        "distanza_per_minuto": 41.77
+      },
+      "2025-09-19": {
+        "data_di_registrazione": "2025-09-19",
+        "tipo_sessione": "Individual",
+        "distanza_totale": 5000,
+        "tempo_totale": 75,
+        "velocita_massima": 17,
+        "max_acc": 12,
+        "max_dec": 7,
+        "passaggi_piede_sinistro": 4,
+        "passaggi_piede_destro": 33,
+        "cross_piede_destro": 6,
+        "distanza_per_minuto": 66.67
+      },
+      "2025-09-15": {
+        "data_di_registrazione": "2025-09-15",
+        "tipo_sessione": "Individual",
+        "distanza_totale": 3400,
+        "tempo_totale": 90,
+        "velocita_massima": 18.8,
+        "max_acc": 19,
+        "max_dec": 14,
+        "passaggi_piede_sinistro": 0,
+        "passaggi_piede_destro": 30,
+        "cross_piede_sinistro": 0,
+        "cross_piede_destro": 60,
+        "potenza_massima_di_tiro": 51,
+        "distanza_per_minuto": 37.78
+      },
+      "2025-09-21": {
+        "data_di_registrazione": "2025-09-21",
+        "tipo_sessione": "Individual",
+        "distanza_totale": 4430,
+        "tempo_totale": 45,
+        "distanza_sprint": 18,
+        "velocita_massima": 22.6,
+        "numero_di_sprint": 2,
+        "max_acc": 13,
+        "max_dec": 20,
+        "passaggi_piede_destro": 11,
+        "distanza_per_minuto": 98.44,
+        "perc_passaggi_brevi": 91,
+        "perc_lanci": 9
+      },
+      "2025-09-22": {
+        "data_di_registrazione": "2025-09-22",
+        "tipo_sessione": "Individual",
+        "distanza_totale": 7000,
+        "tempo_totale": 90,
+        "velocita_massima": 21.9,
+        "numero_di_sprint": 1,
+        "max_acc": 14,
+        "max_dec": 6,
+        "passaggi_piede_destro": 18,
+        "cross_piede_destro": 8,
+        "potenza_massima_di_tiro": 54,
+        "distanza_per_minuto": 77.78
+      },
+      "2025-09-24": {
+        "data_di_registrazione": "2025-09-24",
+        "tipo_sessione": "Individual",
+        "distanza_totale": 3130,
+        "tempo_totale": 45,
+        "distanza_sprint": 3,
+        "velocita_massima": 19.7,
+        "numero_di_sprint": 1,
+        "max_acc": 15,
+        "max_dec": 18,
+        "passaggi_piede_sinistro": 0,
+        "passaggi_piede_destro": 9,
+        "distanza_per_minuto": 69.56,
+        "perc_passaggi_brevi": 89,
+        "perc_lanci": 11
+      },
+      "2025-09-25": {
+        "data_di_registrazione": "2025-09-25",
+        "tipo_sessione": "Individual",
+        "distanza_totale": 2306,
+        "tempo_totale": 68,
+        "distanza_sprint": 51,
+        "velocita_massima": 16.6,
+        "numero_di_sprint": 6,
+        "max_acc": 32,
+        "max_dec": 12,
+        "distanza_per_minuto": 33.91
+      },
+      "2025-09-27": {
+        "data_di_registrazione": "2025-09-27",
+        "tipo_sessione": "Individual",
+        "distanza_totale": 6940,
+        "tempo_totale": 78,
+        "distanza_sprint": 9,
+        "velocita_massima": 21.3,
+        "numero_di_sprint": 2,
+        "max_acc": 31,
+        "max_dec": 29,
+        "passaggi_piede_sinistro": 0,
+        "passaggi_piede_destro": 19,
+        "potenza_massima_di_tiro": 63,
+        "distanza_per_minuto": 88.97,
+        "tiri_piede_sx": 0,
+        "tiri_piede_dx": 2,
+        "perc_passaggi_brevi": 68,
+        "perc_lanci": 32
+      },
+      "2025-09-30": {
+        "data_di_registrazione": "2025-09-30",
+        "tipo_sessione": "Individual",
+        "distanza_totale": 7100,
+        "tempo_totale": 95,
+        "velocita_massima": 25.5,
+        "numero_di_sprint": 2,
+        "max_acc": 22,
+        "max_dec": 27,
+        "passaggi_piede_sinistro": 1,
+        "passaggi_piede_destro": 17,
+        "cross_piede_sinistro": 0,
+        "cross_piede_destro": 3,
+        "distanza_per_minuto": 74.74
+      },
+      "2025-09-29": {
+        "data_di_registrazione": "2025-09-29",
+        "tipo_sessione": "Allenamento",
+        "distanza_totale": 5929,
+        "tempo_totale": 105,
+        "distanza_sprint": 536,
+        "velocita_massima": 24.3,
+        "numero_di_sprint": 36,
+        "max_acc": 14,
+        "max_dec": 6,
+        "distanza_per_minuto": 56.47
+      },
+      "2025-10-01": {
+        "data_di_registrazione": "2025-10-01",
+        "tipo_sessione": "Individual",
+        "distanza_totale": 6300,
+        "tempo_totale": 90,
+        "velocita_massima": 19.5,
+        "numero_di_sprint": 4,
+        "max_acc": 33,
+        "max_dec": 21,
+        "passaggi_piede_sinistro": 0,
+        "passaggi_piede_destro": 16,
+        "cross_piede_sinistro": 0,
+        "cross_piede_destro": 1,
+        "potenza_massima_di_tiro": 56,
+        "distanza_per_minuto": 70
+      }
+    },
+    "1758283824556": {
+      "2025-09-22": {
+        "data_di_registrazione": "2025-09-22",
+        "tipo_sessione": "Allenamento",
+        "distanza_totale": 5892.9,
+        "tempo_totale": 104,
+        "distanza_sprint": 21.4,
+        "velocita_massima": 22.7,
+        "numero_di_sprint": 1,
+        "max_acc": 0.3,
+        "max_dec": -0.2,
+        "passaggi_piede_sinistro": 0,
+        "passaggi_piede_destro": 0,
+        "cross_piede_sinistro": 0,
+        "cross_piede_destro": 0,
+        "potenza_massima_di_tiro": 0,
+        "distanza_per_minuto": "56.66",
+        "tiri_piede_sx": 0,
+        "tiri_piede_dx": 0,
+        "perc_passaggi_brevi": 0,
+        "perc_lanci": 0
+      }
+    },
+    "1758284141110": {
+      "2025-09-26": {
+        "data_di_registrazione": "2025-09-26",
+        "tipo_sessione": "Allenamento",
+        "distanza_totale": 4517,
+        "tempo_totale": 82,
+        "distanza_sprint": 570,
+        "velocita_massima": 28.1,
+        "numero_di_sprint": 33,
+        "max_acc": 16,
+        "max_dec": 19,
+        "distanza_per_minuto": 55.09
+      }
+    },
+    "1758284190395": {
+      "2025-10-01": {
+        "data_di_registrazione": "2025-10-01",
+        "tipo_sessione": "Allenamento",
+        "distanza_totale": 6202,
+        "tempo_totale": 104,
+        "distanza_sprint": 802,
+        "velocita_massima": 19.1,
+        "numero_di_sprint": 37,
+        "max_acc": 42,
+        "max_dec": 20,
+        "distanza_per_minuto": 59.63
+      }
+    }
+  },
+  "awards": {
+    "2025-09-17": [
+      {
+        "athleteId": "1758281662238",
+        "reason": "impegno",
+        "date": "2025-09-17"
+      }
+    ],
+    "2025-09-22": [
+      {
+        "athleteId": "1758283824556",
+        "reason": "impegno",
+        "date": "2025-09-22"
+      }
+    ],
+    "2025-09-29": [
+      {
+        "athleteId": "1758281630082",
+        "reason": "impegno",
+        "date": "2025-09-29"
+      }
+    ],
+    "2025-09-26": [
+      {
+        "athleteId": "1758284141110",
+        "reason": "impegno",
+        "date": "2025-09-26"
+      }
+    ],
+    "2025-10-01": [
+      {
+        "athleteId": "1758284190395",
+        "reason": "Gol durante al Partita",
+        "date": "2025-10-01"
+      }
+    ]
+  },
+  "trainingSessions": {},
+  "formationData": {
+    "starters": [
+      {
+        "athleteId": "1758284883288",
+        "top": 93.84126984883868,
+        "left": 48.22222222222222
+      },
+      {
+        "athleteId": "1758283778966",
+        "top": 73.68253969010853,
+        "left": 11.555555555555555
+      },
+      {
+        "athleteId": "1758285308936",
+        "top": 73.20634993295822,
+        "left": 35.55555555555556
+      },
+      {
+        "athleteId": "1758281662238",
+        "top": 73.84127056787885,
+        "left": 62.44444444444445
+      },
+      {
+        "athleteId": "1758284347639",
+        "top": 73.68254040914869,
+        "left": 85.55555555555556
+      },
+      {
+        "athleteId": "1758283865610",
+        "top": 57.65079437740266,
+        "left": 30.22222222222222
+      },
+      {
+        "athleteId": "1758281630082",
+        "top": 57.17460390121217,
+        "left": 68.44444444444444
+      },
+      {
+        "athleteId": "1758283691246",
+        "top": 32.57142808702257,
+        "left": 15.555555555555555
+      },
+      {
+        "athleteId": "1758284141110",
+        "top": 31.777777293371777,
+        "left": 79.77777777777779
+      },
+      {
+        "athleteId": "1758277561723",
+        "top": 34.317459833054315,
+        "left": 49.111111111111114
+      },
+      {
+        "athleteId": "1758284440785",
+        "top": 18.213825532240932,
+        "left": 48.51190476190476
+      }
+    ],
+    "bench": [
+      {
+        "athleteId": "1758284948355",
+        "top": 94.158730166299,
+        "left": 52
+      },
+      {
+        "athleteId": "1758284074504",
+        "top": 83.36507937264821,
+        "left": 51.33333333333333
+      },
+      {
+        "athleteId": "1758283732097",
+        "top": 71.14285715042598,
+        "left": 49.333333333333336
+      },
+      {
+        "athleteId": "1758284399462",
+        "top": 58.12698413455297,
+        "left": 48
+      },
+      {
+        "athleteId": "1758283929453",
+        "top": 45.904761420355904,
+        "left": 47.333333333333336
+      },
+      {
+        "athleteId": "1758284227328",
+        "top": 35.904761420355904,
+        "left": 47.333333333333336
+      },
+      {
+        "athleteId": "1758284190395",
+        "top": 25.428568522135414,
+        "left": 46
+      },
+      {
+        "athleteId": "1758283983623",
+        "top": 15.428568522135416,
+        "left": 48
+      },
+      {
+        "athleteId": "1758283824556",
+        "top": 5.587298680865575,
+        "left": 46
+      }
+    ],
+    "tokens": [
+      {
+        "id": "1759238409529",
+        "type": "captain-vc",
+        "top": 81.30158730915615,
+        "left": 12.88888888888889
+      },
+      {
+        "id": "1759238482752",
+        "type": "captain-c",
+        "top": 41.46031697591146,
+        "left": 51.33333333333333
+      }
+    ]
+  }
