@@ -1,7 +1,13 @@
 const express = require('express');
-const { kv } = require('@vercel/kv');
-require('dotenv').config();
+// MODIFICA: Importa createClient invece di kv direttamente
+const { createClient } = require('@vercel/kv');
 const backupData = require('./backup.json'); // Importa i dati direttamente
+
+// MODIFICA: Crea il client KV usando le variabili d'ambiente corrette
+const kv = createClient({
+  url: process.env.UPSTASH_KV_REST_API_URL,
+  token: process.env.UPSTASH_KV_REST_API_TOKEN,
+});
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
