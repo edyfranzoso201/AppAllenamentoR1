@@ -457,21 +457,17 @@
             <div class="modal fade" id="gpsModal" tabindex="-1">...</div>
             <div class="modal fade" id="sessionModal" tabindex="-1">...</div>
         `;
-
         // === Inizializzazione variabili globali ===
         let athletes = [], evaluations = {}, gpsData = {}, awards = {}, trainingSessions = {};
         let formationData = { starters: [], bench: [], tokens: [] };
         let chartInstances = {};
         let currentCalendarDate = new Date();
         const defaultAvatar = "data:image/svg+xml,..."; // (stringa SVG abbreviata)
-        
         const evaluationModal = new bootstrap.Modal(document.getElementById('evaluationModal'));
         const athleteModal = new bootstrap.Modal(document.getElementById('athleteModal'));
         const gpsModal = new bootstrap.Modal(document.getElementById('gpsModal'));
         const sessionModal = new bootstrap.Modal(document.getElementById('sessionModal'));
-        
-        // ... (resto delle variabili e costanti)
-        
+
         // =============================================================
         // === FUNZIONI DI GESTIONE DATI (MODIFICATE PER IL SERVER) ===
         // =============================================================
@@ -495,7 +491,6 @@
                 const response = await fetch(`/api/data?t=${new Date().getTime()}`, { cache: 'no-store' });
                 if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
                 const serverData = await response.json();
-                
                 athletes = serverData.athletes || [];
                 evaluations = serverData.evaluations || {};
                 gpsData = serverData.gpsData || {};
@@ -504,58 +499,125 @@
                 formationData = serverData.formationData || { starters: [], bench: [], tokens: [] };
             } catch (error) {
                 console.error('Impossibile caricare i dati dal server:', error);
+                // Non bloccare l'app — lascia gli array vuoti
+                athletes = [];
+                evaluations = {};
+                gpsData = {};
+                awards = {};
+                trainingSessions = {};
+                formationData = { starters: [], bench: [], tokens: [] };
             }
         };
-        
-        // =============================================================
-        // === TUTTE LE ALTRE FUNZIONI (RENDER, GRAFICI, ECC.) ===
-        // =============================================================
-        const updateAllUI = () => { /* ... (TUTTO IL TUO CODICE PER AGGIORNARE L'INTERFACCIA) ... */ };
-        const renderAthletes = () => { /* ... (TUTTO IL TUO CODICE PER MOSTRARE GLI ATLETI) ... */ };
-        // ... (TUTTE LE ALTRE TUE FUNZIONI)
 
         // =================================================================
         // === FUNZIONE PER COLLEGARE GLI EVENTI AI PULSANTI ===
         // =================================================================
         function bindEventListeners() {
             const addAthleteBtn = document.getElementById('add-athlete-btn');
+            const quickAddAthleteBtn = document.getElementById('quick-add-athlete-btn');
             const athleteForm = document.getElementById('athlete-form');
             const importFileInput = document.getElementById('import-file-input');
+            const exportAllDataBtn = document.getElementById('export-all-data-btn');
 
-            addAthleteBtn.addEventListener('click', () => {
+            const openAthleteModal = () => {
                 athleteForm.reset();
+                document.getElementById('modal-athlete-id').value = '';
                 document.getElementById('athleteModalLabel').textContent = 'Aggiungi Atleta';
                 athleteModal.show();
-            });
+            };
 
-            athleteForm.addEventListener('submit', async (e) => {
+            addAthleteBtn?.addEventListener('click', openAthleteModal);
+            quickAddAthleteBtn?.addEventListener('click', openAthleteModal);
+
+            athleteForm?.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                // ... (la tua logica di salvataggio atleta)
+                const formData = new FormData(athleteForm);
+                const id = document.getElementById('modal-athlete-id').value;
+                const name = formData.get('athlete-name');
+                const avatar = formData.get('athlete-avatar') || defaultAvatar;
+                const role = formData.get('athlete-role');
+                const number = parseInt(formData.get('athlete-number'));
+                const captain = formData.get('athlete-captain') === 'on';
+
+                if (id) {
+                    const index = athletes.findIndex(a => a.id == id);
+                    if (index !== -1) {
+                        athletes[index] = { id: parseInt(id), name, avatar, role, number, captain };
+                    }
+                } else {
+                    const newId = athletes.length > 0 ? Math.max(...athletes.map(a => a.id)) + 1 : 1;
+                    athletes.push({ id: newId, name, avatar, role, number, captain });
+                }
+
                 await saveData();
                 updateAllUI();
                 athleteModal.hide();
             });
-            
-            importFileInput.addEventListener('change', (e) => {
-                // ... (la tua logica di importazione file)
+
+            importFileInput?.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                try {
+                    const text = await file.text();
+                    const importedData = JSON.parse(text);
+
+                    athletes = importedData.athletes || [];
+                    evaluations = importedData.evaluations || {};
+                    gpsData = importedData.gpsData || {};
+                    awards = importedData.awards || {};
+                    trainingSessions = importedData.trainingSessions || {};
+                    formationData = importedData.formationData || { starters: [], bench: [], tokens: [] };
+
+                    await saveData();
+                    updateAllUI();
+                    alert('Dati importati con successo!');
+                } catch (error) {
+                    console.error('Errore durante l\'importazione:', error);
+                    alert('Errore: impossibile importare il file. Assicurati che sia un JSON valido.');
+                }
+                e.target.value = '';
             });
-            
-            // ... (Tutti gli altri tuoi event listener)
+
+            exportAllDataBtn?.addEventListener('click', () => {
+                const allData = { athletes, evaluations, gpsData, awards, trainingSessions, formationData };
+                const dataStr = JSON.stringify(allData, null, 2);
+                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                const exportName = `coach-dashboard-data-${new Date().toISOString().split('T')[0]}.json`;
+                const linkElement = document.createElement('a');
+                linkElement.setAttribute('href', dataUri);
+                linkElement.setAttribute('download', exportName);
+                linkElement.click();
+            });
+
+            // Altri event listener possono essere aggiunti qui
         }
 
         // ===========================================================
         // === INIZIALIZZAZIONE APP ===
         // ===========================================================
         async function initializeApp() {
-            await loadData();
-            updateAllUI();
+            // Collega subito gli eventi (così i pulsanti funzionano anche se l'API fallisce)
             bindEventListeners();
-            
+
+            try {
+                await loadData();
+                updateAllUI();
+            } catch (error) {
+                console.error('Errore nell\'inizializzazione:', error);
+            }
+
             const evaluationDatePicker = document.getElementById('evaluation-date-picker');
             if(evaluationDatePicker) {
                 evaluationDatePicker.value = new Date().toISOString().split('T')[0];
             }
         }
+
+        // Funzione fittizia per non rompere il codice (da sostituire con la tua logica reale)
+        const updateAllUI = () => {
+            document.getElementById('home-total-athletes').textContent = athletes.length;
+            // Qui va il tuo codice reale per aggiornare tutta l'interfaccia
+        };
 
         initializeApp();
     });
