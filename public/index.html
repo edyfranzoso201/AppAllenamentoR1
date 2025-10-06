@@ -14,7 +14,6 @@
             --primary-blue: #0a2463; --secondary-blue: #1e5095; --primary-red: #d90429;
             --text-light: #ffffff; --card-bg: #1a3a7a; --border-color: #3b5a9d; --gold-star: #FFD700;
             --field-green: #008000; --field-line: #FFF; --gk-color: #E8C135;
-            --win-color: var(--primary-red); --draw-color: var(--secondary-blue); --loss-color: #6c757d;
         }
         html {
             scroll-behavior: smooth;
@@ -85,7 +84,7 @@
             position: absolute;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             width: 15%; cursor: grab; user-select: none;
-            font-size: clamp(4.5px, 0.6vw, 8px); /* Dimensione maglie ridotta */
+            font-size: clamp(4.5px, 0.6vw, 8px);
         }
         .jersey-body { position: relative; width: 5em; height: 5em; background-color: var(--secondary-blue); border-radius: 0.8em 0.8em 0.5em 0.5em; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 -4px 8px rgba(0,0,0,0.3); }
         .jersey-body::before, .jersey-body::after { content: ''; position: absolute; width: 2.5em; height: 1em; background-color: inherit; top: 0; }
@@ -113,26 +112,21 @@
             body { padding-top: 0; }
             .no-print { display: none !important; }
             body * { visibility: hidden; }
-            .printing-now, .printing-now * {
-                visibility: visible;
-            }
+            .printing-now, .printing-now * { visibility: visible; }
             .printing-now { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; }
-            .printing-now .col-xl-3, .printing-now .col-lg-4, .printing-now .col-md-6 {
+            
+            /* Correzione Stampa Gestione Squadra */
+            .printing-now #athlete-grid { display: flex !important; flex-wrap: wrap !important; }
+            .printing-now #athlete-grid > [class*="col-"] {
+                flex: 0 0 33.33% !important;
+                max-width: 33.33% !important;
+                padding: 5px !important;
                 page-break-inside: avoid;
             }
-            .printing-now .athlete-card, .printing-now .athlete-card * {
-                 visibility: visible !important;
-            }
-            .printing-now #athlete-grid {
-                display: flex !important;
-                flex-wrap: wrap !important;
-            }
-            .printing-now .card, .printing-now .calendar-day, .printing-now .table { background-color: #fff !important; border: 1px solid #ccc !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
-            .printing-now #performance-table-container table,
-            .printing-now #performance-table-container th,
-            .printing-now #performance-table-container td,
-            .printing-now #cards-summary-table th,
-            .printing-now #cards-summary-table td {
+            .printing-now .athlete-card { box-shadow: none !important; }
+            
+            .printing-now .card, .printing-now .list-group-item, .printing-now .calendar-day, .printing-now .table { background-color: #fff !important; border: 1px solid #ccc !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
+            .printing-now table, .printing-now th, .printing-now td {
                 background-color: #fff !important;
                 color: #000 !important;
                 border-color: #000 !important;
@@ -148,12 +142,8 @@
             }
             .printing-now #field-container .field-line,
             .printing-now #field-container .field-box,
-            .printing-now #field-container .field-circle {
-                border-color: var(--field-line) !important;
-            }
-            .printing-now #field-container .field-spot {
-                background-color: var(--field-line) !important;
-            }
+            .printing-now #field-container .field-circle { border-color: var(--field-line) !important; }
+            .printing-now #field-container .field-spot { background-color: var(--field-line) !important; }
             .printing-now .jersey-body,
             .printing-now .player-name,
             .printing-now .token-opponent,
@@ -163,9 +153,7 @@
                 -webkit-print-color-adjust: exact;
                 color-adjust: exact;
             }
-            .printing-now .player-jersey[data-role*="Portiere"] .jersey-body {
-                background-color: var(--gk-color) !important;
-            }
+            .printing-now .player-jersey[data-role*="Portiere"] .jersey-body { background-color: var(--gk-color) !important; }
         }
     </style>
 </head>
@@ -347,7 +335,7 @@
                 </div>
             </div>
             <div class="row">
-                <div class="col-12">
+                 <div class="col-12">
                     <div class="list-group" id="match-results-container">
                          <p class="text-muted">Nessun risultato inserito.</p>
                     </div>
@@ -906,7 +894,9 @@
                 matchItem.dataset.matchId = match.id;
                 matchItem.addEventListener('click', (e) => {
                     e.preventDefault();
-                    openMatchResultModal(match.id);
+                    if (!e.target.closest('.edit-match-btn')) {
+                        openMatchResultModal(match.id);
+                    }
                 });
 
                 matchItem.innerHTML = `
@@ -954,16 +944,15 @@
             
             let labels, datasets;
             
-            // Logica per visualizzazione avversario singolo
             if (opponentFilter !== 'all') {
-                elements.matchPeriodToggle.style.display = 'none'; // Nascondi selettore periodo
+                elements.matchPeriodToggle.style.display = 'none';
                 filteredMatches = filteredMatches.filter(m => m.opponentName === opponentFilter);
                 
                 labels = filteredMatches.map(m => new Date(m.date).toLocaleDateString('it-IT', {day:'2-digit', month:'short'}));
                 datasets = [
-                    { label: 'Vittorie', data: [], backgroundColor: 'var(--win-color)' },
-                    { label: 'Pareggi', data: [], backgroundColor: 'var(--draw-color)' },
-                    { label: 'Sconfitte', data: [], backgroundColor: 'var(--loss-color)' },
+                    { label: 'Vittorie', data: [], backgroundColor: '#d90429' },
+                    { label: 'Pareggi', data: [], backgroundColor: '#1e5095' },
+                    { label: 'Sconfitte', data: [], backgroundColor: '#6c757d' },
                 ];
 
                 filteredMatches.forEach(match => {
@@ -974,8 +963,8 @@
                     datasets[2].data.push(myScore < oppScore ? 1 : 0);
                 });
 
-            } else { // Logica per aggregazione temporale (tutti gli avversari)
-                elements.matchPeriodToggle.style.display = 'flex'; // Mostra selettore periodo
+            } else {
+                elements.matchPeriodToggle.style.display = 'flex';
                 const getPeriodKey = (date, period) => {
                     const d = new Date(date);
                     const year = d.getFullYear();
@@ -984,7 +973,7 @@
                     if (period === 'semester') return `${year}-S${Math.floor(month / 6) + 1}`;
                     if (period === 'trimester') return `${year}-T${Math.floor(month / 3) + 1}`;
                     if (period === 'bimonthly') return `${year}-B${Math.floor(month / 2) + 1}`;
-                    return `${year}-${String(month + 1).padStart(2, '0')}`; // monthly
+                    return `${year}-${String(month + 1).padStart(2, '0')}`;
                 };
                 
                 const resultsByPeriod = {};
@@ -1002,9 +991,9 @@
 
                 labels = Object.keys(resultsByPeriod).sort();
                 datasets = [
-                    { label: 'Vittorie', data: labels.map(l => resultsByPeriod[l].W), backgroundColor: 'var(--win-color)' },
-                    { label: 'Pareggi', data: labels.map(l => resultsByPeriod[l].D), backgroundColor: 'var(--draw-color)' },
-                    { label: 'Sconfitte', data: labels.map(l => resultsByPeriod[l].L), backgroundColor: 'var(--loss-color)' },
+                    { label: 'Vittorie', data: labels.map(l => resultsByPeriod[l].W), backgroundColor: '#d90429' },
+                    { label: 'Pareggi', data: labels.map(l => resultsByPeriod[l].D), backgroundColor: '#1e5095' },
+                    { label: 'Sconfitte', data: labels.map(l => resultsByPeriod[l].L), backgroundColor: '#6c757d' },
                 ];
             }
 
@@ -1619,6 +1608,12 @@
         };
         
         elements.addMatchBtn.addEventListener('click', () => openMatchResultModal());
+        elements.matchResultsContainer.addEventListener('click', e => {
+            const editBtn = e.target.closest('.edit-match-btn');
+            if (editBtn) {
+                openMatchResultModal(editBtn.dataset.matchId);
+            }
+        });
 
         document.getElementById('add-scorer-btn').addEventListener('click', () => addScorerInput());
         document.getElementById('add-card-btn').addEventListener('click', () => addCardInput());
