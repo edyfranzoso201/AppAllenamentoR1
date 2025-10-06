@@ -91,7 +91,8 @@
         .jersey-body::before { left: -1.8em; transform: rotate(-40deg); border-radius: 0.5em 0.2em 0 0; }
         .jersey-body::after { right: -1.8em; transform: rotate(40deg); border-radius: 0.2em 0.5em 0 0; }
         .jersey-number { font-size: 2.2em; font-weight: bold; color: white; text-shadow: 1px 1px 2px black; }
-        .player-name { margin-top: 0.5em; font-size: 1.1em; font-weight: bold; color: white; background-color: rgba(0,0,0,0.6); padding: 0.1em 0.4em; border-radius: 4px; white-space: nowrap; }
+        /* AUMENTO DEL 10% DELLA DIMENSIONE DEL NOME SOTTO LA MAGLIETTA */
+        .player-name { margin-top: 0.5em; font-size: 1.21em; font-weight: bold; color: white; background-color: rgba(0,0,0,0.6); padding: 0.1em 0.4em; border-radius: 4px; white-space: nowrap; }
         #available-list .list-group-item { cursor: grab; background-color: var(--secondary-blue); }
         .available-slot { border: 1px dashed var(--border-color); border-radius: 8px; min-height: 50px; }
         #formation-tools { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 1rem; }
@@ -102,22 +103,23 @@
         .token-captain { font-weight: bold; color: white; background: black; padding: 0.2em 0.5em; border-radius: 4px; font-size: clamp(8px, 1vw, 12px); }
         .token-ball { font-size: 2rem; }
         .token-opponent { width: 2.5em; height: 2.5em; background-color: var(--primary-red); border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.5); font-size: clamp(8px, 1vw, 12px); }
-        /* STILI RISULTATI PARTITE */
-        .match-result-card { background-color: var(--card-bg); border: 1px solid var(--border-color); }
-        .match-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-        .team-column { text-align: center; flex: 1; }
-        .team-name { font-size: 1.25rem; font-weight: bold; }
-        .score { font-size: 2rem; font-weight: bold; margin: 0 1rem; }
-        .scorers-list, .cards-list { font-size: 0.9rem; }
-        .yellow-card { color: #FFD700; }
-        .red-card { color: var(--primary-red); }
         /* STILI DI STAMPA CORRETTI */
         @media print {
             body { padding-top: 0; }
             .no-print { display: none !important; }
             body * { visibility: hidden; }
-            .printing-now, .printing-now * { visibility: visible; }
+            .printing-now,
+            .printing-now *,
+            .printing-now .card,
+            .printing-now .row,
+            .printing-now [class*="col-"] {
+                visibility: visible;
+            }
             .printing-now { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; }
+            .printing-now #athlete-grid {
+                display: flex;
+                flex-wrap: wrap;
+            }
             .printing-now .card, .printing-now .calendar-day, .printing-now .table { background-color: #fff !important; border: 1px solid #ccc !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
             .printing-now .calendar-session, .printing-now .shirt-number { background-color: #cccccc !important; color: #000 !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
             .printing-now *, .printing-now .main-title, .printing-now .text-muted, .printing-now .card-title, .printing-now p, .printing-now h1, .printing-now h2, .printing-now h3, .printing-now h4, .printing-now h5, .printing-now h6 { color: #000 !important; }
@@ -211,8 +213,6 @@
                             <a href="#report-valutazioni-section" class="btn btn-secondary"><i class="bi bi-card-checklist"></i> Report Valutazioni</a>
                             <a href="#report-presenze-section" class="btn btn-secondary"><i class="bi bi-person-check-fill"></i> Report Presenze</a>
                             <a href="#hall-of-fame-section" class="btn btn-secondary"><i class="bi bi-trophy-fill"></i> Hall of Fame</a>
-                            <a href="#risultati-partite-section" class="btn btn-secondary"><i class="bi bi-trophy"></i> Risultati Partite</a>
-                            <a href="#top-scorers-section" class="btn btn-secondary"><i class="bi bi-award"></i> Classifica Marcatori</a>
                             <a href="#monitoraggio-gps-section" class="btn btn-secondary"><i class="bi bi-graph-up-arrow"></i> Monitoraggio GPS</a>
                             <a href="#analisi-singolo-section" class="btn btn-secondary"><i class="bi bi-person-lines-fill"></i> Analisi Atleta</a>
                         </div>
@@ -357,92 +357,6 @@
               <div id="hall-of-fame-container" class="d-flex flex-wrap gap-3"></div>
         </div>
         <hr class="my-5 no-print">
-        <!-- SEZIONE RISULTATI PARTITE -->
-        <div id="risultati-partite-section" class="row my-4 printable-area">
-            <div class="col-12 d-flex align-items-center gap-2 mb-3">
-                <h2 class="main-title mb-0">Risultati Partite</h2>
-                <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
-                <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
-            </div>
-            <div class="col-12 mb-4">
-                <div class="d-flex justify-content-between no-print mb-3">
-                    <button class="btn btn-primary-custom" id="add-match-result-btn"><i class="bi bi-plus-circle"></i> Aggiungi Risultato</button>
-                    <div>
-                        <label for="match-opponent-filter" class="form-label me-2">Filtro Avversario:</label>
-                        <select id="match-opponent-filter" class="form-select d-inline" style="width: auto;">
-                            <option value="">Tutti gli avversari</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="card match-result-card">
-                    <div class="card-body">
-                        <h5 class="card-title">Elenco Partite</h5>
-                        <div id="match-results-list"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-6 mb-4">
-                <div class="card chart-card">
-                    <div class="card-body">
-                        <h5 class="card-title">Andamento vs Avversario</h5>
-                        <canvas id="opponentTrendChart"></canvas>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-6 mb-4">
-                <div class="card chart-card">
-                    <div class="card-body">
-                        <h5 class="card-title">Andamento Temporale Risultati</h5>
-                        <div class="btn-group mb-2" id="match-time-filter">
-                            <button type="button" class="btn btn-outline-secondary active" data-period="month">Mese</button>
-                            <button type="button" class="btn btn-outline-secondary" data-period="bimonth">Bimestre</button>
-                            <button type="button" class="btn btn-outline-secondary" data-period="trimester">Trimestre</button>
-                            <button type="button" class="btn btn-outline-secondary" data-period="semester">Semestre</button>
-                            <button type="button" class="btn btn-outline-secondary" data-period="year">Anno</button>
-                        </div>
-                        <canvas id="matchTimeTrendChart"></canvas>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 mt-4">
-                <div class="card table-card">
-                    <div class="card-body">
-                        <h5 class="card-title">Cartellini Atleti</h5>
-                        <div class="table-responsive">
-                            <table class="table table-dark">
-                                <thead>
-                                    <tr>
-                                        <th>Atleta</th>
-                                        <th>Data</th>
-                                        <th>Partita</th>
-                                        <th>Cartellino</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="cards-table-body"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <hr class="my-5 no-print">
-        <!-- SEZIONE CLASSIFICA MARCATORI -->
-        <div id="top-scorers-section" class="row my-4 printable-area">
-            <div class="col-12 d-flex align-items-center gap-2 mb-3">
-                <h2 class="main-title mb-0">Classifica Marcatori</h2>
-                <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
-                <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
-            </div>
-            <div class="col-12">
-                <div class="card chart-card">
-                    <div class="card-body">
-                        <h5 class="card-title">Top 10 Atleti per Gol Segnati</h5>
-                        <canvas id="topScorersChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <hr class="my-5 no-print">
         <div id="confronto-squadra-section" class="printable-area">
             <div class="row my-4" id="multi-athlete-chart-container">
                 <div class="col-12 d-flex align-items-center gap-2 mb-3">
@@ -566,69 +480,26 @@
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         const modalsContainer = document.getElementById('modals-container');
-        modalsContainer.innerHTML += `<div class="modal fade" id="matchResultModal" tabindex="-1">
-            <div class="modal-dialog modal-dialog-centered modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="matchResultModalLabel">Risultato Partita</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="match-result-form">
-                            <input type="hidden" id="match-id">
-                            <div class="row mb-3">
-                                <div class="col-md-5">
-                                    <label class="form-label">Squadra di Casa</label>
-                                    <input type="text" class="form-control" id="home-team" placeholder="Es. Juventus" required>
-                                </div>
-                                <div class="col-md-2 text-center align-self-end">
-                                    <label class="form-label">Risultato</label>
-                                    <div class="d-flex justify-content-center">
-                                        <input type="number" class="form-control mx-1" id="home-score" min="0" style="width: 60px;" required>
-                                        <span class="align-self-center">-</span>
-                                        <input type="number" class="form-control mx-1" id="away-score" min="0" style="width: 60px;" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-5">
-                                    <label class="form-label">Squadra Ospite</label>
-                                    <input type="text" class="form-control" id="away-team" placeholder="Es. Milan" required>
-                                </div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label">Data Partita</label>
-                                    <input type="date" class="form-control" id="match-date" required>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Luogo</label>
-                                    <input type="text" class="form-control" id="match-location" placeholder="Es. Stadio Comunale">
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Marcatori (uno per riga, formato: Nome Cognome)</label>
-                                <textarea class="form-control" id="scorers" rows="3"></textarea>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Cartellini (uno per riga, formato: Nome Cognome - G/R)</label>
-                                <textarea class="form-control" id="cards" rows="3" placeholder="Es. Mario Rossi - G"></textarea>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer justify-content-between">
-                        <button type="button" class="btn btn-outline-danger" id="delete-match-btn" style="display:none;">Elimina</button>
-                        <div>
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
-                            <button type="submit" class="btn btn-primary-custom" form="match-result-form">Salva Risultato</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>`;
+        modalsContainer.innerHTML = `<div class="modal fade" id="evaluationModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Valutazione di <span id="modal-athlete-name-eval"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="evaluation-form"><input type="hidden" id="modal-athlete-id-eval"><p>Data: <strong id="modal-evaluation-date"></strong></p><div class="mb-2"><label class="form-label">Presenza Allenamento</label><select id="presenza-allenamento" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Serietà Allenamento</label><select id="serieta-allenamento" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Abbigliamento Allenamento</label><select id="abbigliamento-allenamento" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Abbigliamento Partita</label><select id="abbigliamento-partita" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Serietà Comunicazioni</label><select id="comunicazioni" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Doccia (Opzionale)</label><select id="doccia" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="award-checkbox"><label class="form-check-label" for="award-checkbox">Assegna Premio</label></div></form></div><div class="modal-footer justify-content-between"><button type="button" class="btn btn-outline-danger" id="delete-single-athlete-day-btn">Elimina Dati del Giorno</button><div><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button><button type="submit" class="btn btn-primary-custom" form="evaluation-form">Salva Valutazione</button></div></div></div></div></div>
+            <div class="modal fade" id="athleteModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="athleteModalLabel">Gestisci Atleta</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="athlete-form"><input type="hidden" id="modal-athlete-id"><div class="mb-3"><label class="form-label">Nome Cognome</label><input type="text" class="form-control" id="athlete-name" required></div><div class="mb-3"><label class="form-label">URL Foto Profilo</label><input type="url" class="form-control" id="athlete-avatar" placeholder="https://esempio.com/foto.png"></div><div class="mb-3"><label class="form-label">Ruolo</label><input type="text" class="form-control" id="athlete-role" required></div><div class="mb-3"><label class="form-label">Numero Maglia</label><input type="number" class="form-control" id="athlete-number" required min="1"></div><div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="athlete-captain"><label class="form-check-label" for="athlete-captain">Capitano</label></div></form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button><button type="submit" class="btn btn-primary-custom" form="athlete-form">Salva Atleta</button></div></div></div></div>
+            <div class="modal fade" id="gpsModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="gpsModalLabel">Dati Performance di <span id="modal-athlete-name-gps"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="gps-form"><input type="hidden" id="modal-athlete-id-gps">
+                <div class="row mb-3"><div class="col-md-8"><label for="gps-session-selector" class="form-label">Seleziona Sessione Esistente per Modificare</label><select id="gps-session-selector" class="form-select"><option value="">--- Inserisci Nuova Sessione ---</option></select></div><div class="col-md-4 d-flex align-items-end"><button type="button" id="delete-gps-session-btn" class="btn btn-outline-danger w-100" disabled>Elimina Sessione</button></div></div><hr>
+                <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Data Registrazione</label><input type="date" class="form-control" id="gps-data_di_registrazione" required></div><div class="col-md-4 mb-3"><label class="form-label">Ora Registrazione</label><input type="time" class="form-control" id="gps-ora_registrazione"></div><div class="col-md-4 mb-3"><label class="form-label">Tipo Sessione</label><select class="form-select" id="gps-tipo_sessione"><option value="Allenamento">Allenamento</option><option value="Partita">Partita</option><option value="Individual">Individual</option></select></div></div>
+                <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Distanza Totale (m)</label><input type="number" step="0.1" class="form-control" id="gps-distanza_totale" placeholder="es. 10500"></div><div class="col-md-4 mb-3"><label class="form-label">Tempo Totale (min)</label><input type="number" step="0.1" class="form-control" id="gps-tempo_totale" placeholder="es. 92"></div><div class="col-md-4 mb-3"><label class="form-label">Distanza per Minuto (m/min)</label><input type="number" step="0.1" class="form-control" id="gps-distanza_per_minuto" readonly></div></div>
+                <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Distanza Sprint (m)</label><input type="number" step="0.1" class="form-control" id="gps-distanza_sprint"></div><div class="col-md-4 mb-3"><label class="form-label">Velocità Massima (km/h)</label><input type="number" step="0.1" class="form-control" id="gps-velocita_massima"></div><div class="col-md-4 mb-3"><label class="form-label">Numero di Sprint</label><input type="number" class="form-control" id="gps-numero_di_sprint"></div></div>
+                <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Max Acc (g)o(n°)</label><input type="number" step="0.1" class="form-control" id="gps-max_acc"></div><div class="col-md-4 mb-3"><label class="form-label">Max Dec (g)o(n°)</label><input type="number" step="0.1" class="form-control" id="gps-max_dec"></div><div class="col-md-4 mb-3"><label class="form-label">Passaggi Piede Sinistro</label><input type="number" class="form-control" id="gps-passaggi_piede_sinistro"></div></div>
+                <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Passaggi Piede Destro</label><input type="number" class="form-control" id="gps-passaggi_piede_destro"></div><div class="col-md-4 mb-3"><label class="form-label">Cross Piede Sinistro</label><input type="number" step="0.1" class="form-control" id="gps-cross_piede_sinistro"></div><div class="col-md-4 mb-3"><label class="form-label">Cross Piede Destro</label><input type="number" step="0.1" class="form-control" id="gps-cross_piede_destro"></div></div>
+                <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Potenza Massima di Tiro (km/h)</label><input type="number" step="0.1" class="form-control" id="gps-potenza_massima_di_tiro"></div><div class="col-md-4 mb-3"><label class="form-label">Tiri Piede SX</label><input type="number" class="form-control" id="gps-tiri_piede_sx"></div><div class="col-md-4 mb-3"><label class="form-label">Tiri Piede DX</label><input type="number" class="form-control" id="gps-tiri_piede_dx"></div></div>
+                <div class="row"><div class="col-md-4 mb-3"><label class="form-label">% Passaggi Brevi</label><input type="number" step="0.1" class="form-control" id="gps-perc_passaggi_brevi"></div><div class="col-md-4 mb-3"><label class="form-label">% Lanci</label><input type="number" step="0.1" class="form-control" id="gps-perc_lanci"></div><div class="col-md-4 mb-3"><label class="form-label">Distanza Circuito (m)</label><input type="number" step="1" class="form-control" id="gps-distanza_circuito" placeholder="es. 400"></div></div>
+                <div class="row align-items-end"><div class="col-md-5 mb-3"><label class="form-label">Tempo Circuito</label><div class="input-group"><input type="number" class="form-control" id="gps-tempo_circuito_min" placeholder="Min" min="0"><span class="input-group-text">:</span><input type="number" class="form-control" id="gps-tempo_circuito_sec" placeholder="Sec" min="0" max="59"><span class="input-group-text">.</span><input type="number" class="form-control" id="gps-tempo_circuito_cen" placeholder="Cen" min="0" max="99"></div></div><div class="col-md-4 mb-3"><label class="form-label">Velocità (km/h)</label><input type="text" class="form-control" id="gps-velocita_circuito" readonly></div></div>
+                <div id="match-stats-fields" style="display: none;"><hr><h5 class="mb-3">Statistiche Partita</h5><div class="row"><div class="col-md-3 mb-3"><label class="form-label">Minuti Giocati</label><input type="number" class="form-control" id="gps-minuti_giocati"></div><div class="col-md-3 mb-3"><label class="form-label">Gol</label><input type="number" class="form-control" id="gps-gol"></div><div class="col-md-3 mb-3"><label class="form-label">Assist</label><input type="number" class="form-control" id="gps-assist"></div><div class="col-md-3 mb-3"><label class="form-label">Ammonizioni</label><input type="number" class="form-control" id="gps-ammonizioni"></div></div><div class="row"><div class="col-md-3 mb-3"><label class="form-label">Espulsioni</label><input type="number" class="form-control" id="gps-espulsioni"></div><div class="col-md-3 mb-3"><label class="form-label">Palle Recuperate</label><input type="number" class="form-control" id="gps-palle_recuperate"></div><div class="col-md-3 mb-3"><label class="form-label">Palle Perse</label><input type="number" class="form-control" id="gps-palle_perse"></div></div></div>
+                <div class="row"><div class="col-12 mb-3"><label class="form-label">Note (opzionale)</label><textarea class="form-control" id="gps-note" rows="2" placeholder="Es. Allenamento intenso, recupero infortunio, ecc."></textarea></div></div>
+            </form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button><button type="submit" class="btn btn-primary-custom" form="gps-form">Salva Dati GPS</button></div></div></div></div>
+            <div class="modal fade" id="sessionModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="sessionModalLabel">Pianifica Sessione</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="session-form"><input type="hidden" id="session-id"><div class="mb-3"><label class="form-label">Data</label><input type="date" class="form-control" id="session-date" required></div><div class="mb-3"><label class="form-label">Titolo/Tipo</label><input type="text" class="form-control" id="session-title" required placeholder="Es. Allenamento tecnico"></div><div class="row"><div class="col-md-6 mb-3"><label class="form-label">Ora Inizio</label><input type="time" class="form-control" id="session-time"></div><div class="col-md-6 mb-3"><label class="form-label">Luogo</label><input type="text" class="form-control" id="session-location" placeholder="Es. Campo 1"></div></div><div class="mb-3"><label class="form-label">Obiettivi</label><input type="text" class="form-control" id="session-goals" placeholder="Es. Possesso palla, tiri in porta"></div><div class="mb-3"><label class="form-label">Descrizione Allenamento (un punto per riga)</label><textarea class="form-control" id="session-description" rows="5"></textarea></div></form></div><div class="modal-footer justify-content-between"><button type="button" class="btn btn-outline-danger" id="delete-session-btn" style="display:none;">Elimina</button><div><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button><button type="submit" class="btn btn-primary-custom" form="session-form">Salva Sessione</button></div></div></div></div></div>`;
         const evaluationModal = new bootstrap.Modal(document.getElementById('evaluationModal'));
         const athleteModal = new bootstrap.Modal(document.getElementById('athleteModal'));
         const gpsModal = new bootstrap.Modal(document.getElementById('gpsModal'));
         const sessionModal = new bootstrap.Modal(document.getElementById('sessionModal'));
-        const matchResultModal = new bootstrap.Modal(document.getElementById('matchResultModal'));
         const elements = {
             athleteGrid: document.getElementById('athlete-grid'),
             evaluationDatePicker: document.getElementById('evaluation-date-picker'),
@@ -673,29 +544,15 @@
             fieldContainer: document.getElementById('field-container'),
             fieldBenchArea: document.getElementById('field-bench-area'),
             availableList: document.getElementById('available-list'),
-            // NUOVI ELEMENTI PER RISULTATI PARTITE
-            addMatchResultBtn: document.getElementById('add-match-result-btn'),
-            matchResultForm: document.getElementById('match-result-form'),
-            matchResultsList: document.getElementById('match-results-list'),
-            opponentTrendChart: document.getElementById('opponentTrendChart').getContext('2d'),
-            matchTimeTrendChart: document.getElementById('matchTimeTrendChart').getContext('2d'),
-            matchOpponentFilter: document.getElementById('match-opponent-filter'),
-            matchTimeFilter: document.getElementById('match-time-filter'),
-            cardsTableBody: document.getElementById('cards-table-body'),
-            deleteMatchBtn: document.getElementById('delete-match-btn'),
-            // NUOVO: elemento per la classifica marcatori
-            topScorersChart: document.getElementById('topScorersChart').getContext('2d'),
         };
         const matchStatsFields = ['minuti_giocati', 'gol', 'assist', 'ammonizioni', 'espulsioni', 'palle_recuperate', 'palle_perse'];
         const allGpsFields = ['data_di_registrazione', 'ora_registrazione', 'tipo_sessione', 'distanza_totale', 'tempo_totale', 'distanza_sprint', 'velocita_massima', 'numero_di_sprint', 'max_acc', 'max_dec', 'passaggi_piede_sinistro', 'passaggi_piede_destro', 'cross_piede_sinistro', 'cross_piede_destro', 'potenza_massima_di_tiro', 'distanza_per_minuto', 'tiri_piede_sx', 'tiri_piede_dx', 'perc_passaggi_brevi', 'perc_lanci', 'distanza_circuito', 'tempo_circuito_totale_s', 'velocita_circuito', 'note', ...matchStatsFields];
         const gpsFieldsForDisplay = { 'tipo_sessione':'Tipo', 'data_di_registrazione': 'Data', 'ora_registrazione': 'Ora', 'distanza_totale': 'Dist. Totale (m)', 'tempo_totale': 'Tempo (min)', 'distanza_per_minuto':'Dist/min (m)', 'distanza_sprint': 'Distanza Sprint (m)', 'velocita_massima': 'Vel. Max (km/h)', 'numero_di_sprint': 'Num. Sprint', 'max_acc': 'Max Acc (g)o(n°)', 'max_dec': 'Max Dec (g)o(n°)', 'passaggi_piede_sinistro':'Passaggi SX', 'passaggi_piede_destro':'Passaggi DX', 'cross_piede_sinistro':'Cross SX', 'cross_piede_destro':'Cross DX', 'potenza_massima_di_tiro':'Pot. Tiro (km/h)', 'tiri_piede_sx': 'Tiri Piede SX', 'tiri_piede_dx': 'Tiri Piede DX', 'perc_passaggi_brevi': '% Passaggi Brevi', 'perc_lanci': '% Lanci', 'distanza_circuito': 'Dist. Circuito (m)', 'tempo_circuito_totale_s': 'Tempo Circuito (s)', 'velocita_circuito': 'Vel. Circuito (km/h)', 'minuti_giocati': 'Minuti Giocati', 'gol': 'Gol', 'assist': 'Assist', 'ammonizioni': 'Gialli', 'espulsioni': 'Rossi', 'palle_recuperate': 'Palle Recuperate', 'palle_perse': 'Palle Perse', 'note': 'Note' };
         const radarMetrics = { 'distanza_sprint': 'Distanza Sprint', 'velocita_massima': 'Vel. Max', 'max_acc': 'Max Acc', 'max_dec': 'Max Dec', 'passaggi_piede_sinistro': 'Pass. SX', 'passaggi_piede_destro': 'Pass. DX', 'cross_piede_sinistro': 'Cross SX', 'cross_piede_destro': 'Cross DX', 'potenza_massima_di_tiro': 'Pot. Tiro', 'distanza_per_minuto': 'Dist/min', 'tiri_piede_sx': 'Tiri SX', 'tiri_piede_dx': 'Tiri DX', 'perc_passaggi_brevi': '% Pass. Brevi', 'perc_lanci': '% Lanci', 'velocita_circuito': 'Vel. Circuito' };
         const evaluationCategories = ['presenza-allenamento', 'serieta-allenamento', 'abbigliamento-allenamento', 'abbigliamento-partita', 'comunicazioni', 'doccia'];
-        // CORREZIONE: defaultAvatar valido
         const defaultAvatar = "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3e%3cpath fill='%231e5095' d='M128 128H0V0h128v128z'/%3e%3cpath fill='%23ffffff' d='M64 100c-19.88 0-36-16.12-36-36s16.12-36 36-36 36 16.12 36 36-16.12 36-36 36zm0-64c-15.46 0-28 12.54-28 28s12.54 28 28 28 28-12.54 28-28-12.54-28-28-28z'/%3e%3cpath fill='%23ffffff' d='M64 24a40.01 40.01 0 00-28.28 11.72C35.8 35.8 28 45.45 28 56h8c0-8.27 5.61-15.64 13.53-18.89A31.93 31.93 0 0164 32a32.09 32.09 0 0124.47 11.11C96.39 40.36 102 47.73 102 56h8c0-10.55-7.8-20.2-17.72-24.28A39.99 39.99 0 0064 24z'/%3e%3c/svg%3e";
         let athletes = [], evaluations = {}, gpsData = {}, awards = {}, trainingSessions = {};
         let formationData = { starters: [], bench: [], tokens: [] };
-        let matchResults = {}; // NUOVO: dati risultati partite
         let chartInstances = {};
         let comparisonChartPeriod = 'daily';
         let attendanceChartPeriod = 'daily';
@@ -704,14 +561,9 @@
         let multiAthleteFilterType = 'all';
         let currentCalendarDate = new Date();
         let pollingInterval = null;
-        let currentOpponentFilter = '';
-        let currentTimePeriod = 'month';
-        // --- GESTIONE DATI CON FALLBACK A localStorage ---
+        // --- GESTIONE DATI ---
         const saveData = async () => {
-            const allData = { athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults };
-            // Salva sempre in localStorage
-            localStorage.setItem('coach_dashboard_data', JSON.stringify(allData));
-            // Prova a salvare anche sul server
+            const allData = { athletes, evaluations, gpsData, awards, trainingSessions, formationData };
             try {
                 await fetch('/api/data', {
                     method: 'POST',
@@ -719,43 +571,23 @@
                     body: JSON.stringify(allData)
                 });
             } catch (error) {
-                console.warn('Salvataggio su server non riuscito. Dati salvati localmente.');
+                console.error('Errore nel salvataggio dei dati sul server:', error);
             }
         };
         const loadData = async () => {
-            let allData = null;
             try {
-                // Prima prova a caricare dal server
                 const response = await fetch('/api/data', { cache: 'no-store' });
-                if (response.ok) {
-                    allData = await response.json();
-                }
-            } catch (error) {
-                console.warn('Caricamento dal server non riuscito. Provo da localStorage...');
-            }
-            // Se il server non ha risposto, usa localStorage
-            if (!allData) {
-                const localData = localStorage.getItem('coach_dashboard_data');
-                if (localData) {
-                    try {
-                        allData = JSON.parse(localData);
-                    } catch (e) {
-                        console.error('Errore parsing localStorage:', e);
-                        allData = null;
-                    }
-                }
-            }
-            // Imposta i dati o valori di default
-            if (allData) {
+                if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
+                const allData = await response.json();
                 athletes = allData.athletes || [];
                 evaluations = allData.evaluations || {};
                 gpsData = allData.gpsData || {};
                 awards = allData.awards || {};
                 trainingSessions = allData.trainingSessions || {};
                 formationData = allData.formationData || { starters: [], bench: [], tokens: [] };
-                matchResults = allData.matchResults || {}; // NUOVO
-            } else {
-                athletes = []; evaluations = {}; gpsData = {}; awards = {}; trainingSessions = {}; formationData = { starters: [], bench: [], tokens: [] }; matchResults = {};
+            } catch (error) {
+                console.error('Errore nel caricamento dei dati dal server:', error);
+                athletes = []; evaluations = {}; gpsData = {}; awards = {}; trainingSessions = {}; formationData = { starters: [], bench: [], tokens: [] };
             }
         };
         const getWeekRange = (date) => {
@@ -767,252 +599,6 @@
             return { start: monday.toISOString().split('T')[0], end: sunday.toISOString().split('T')[0] };
         };
         const calculateAthleteScore = (evaluation) => !evaluation ? 0 : Object.keys(evaluation).filter(k => k !== 'doccia').reduce((sum, key) => sum + parseInt(evaluation[key] || 0, 10), 0);
-        // --- NUOVE FUNZIONI PER RISULTATI PARTITE ---
-        const renderMatchResults = () => {
-            elements.matchResultsList.innerHTML = '';
-            const allMatches = [];
-            Object.entries(matchResults).forEach(([date, matches]) => {
-                matches.forEach(match => allMatches.push({ date, ...match }));
-            });
-            allMatches.sort((a, b) => new Date(b.date) - new Date(a.date));
-            if (allMatches.length === 0) {
-                elements.matchResultsList.innerHTML = '<p class="text-muted">Nessun risultato registrato.</p>';
-                return;
-            }
-            // Aggiorna filtro avversari
-            const opponents = new Set();
-            allMatches.forEach(m => {
-                opponents.add(m.homeTeam);
-                opponents.add(m.awayTeam);
-            });
-            elements.matchOpponentFilter.innerHTML = '<option value="">Tutti gli avversari</option>' + 
-                Array.from(opponents).map(o => `<option value="${o}" ${o === currentOpponentFilter ? 'selected' : ''}>${o}</option>`).join('');
-            const filteredMatches = currentOpponentFilter 
-                ? allMatches.filter(m => m.homeTeam === currentOpponentFilter || m.awayTeam === currentOpponentFilter)
-                : allMatches;
-            filteredMatches.forEach(match => {
-                const isHome = match.homeTeam; // assumiamo che la nostra squadra sia sempre in casa
-                const scorersList = match.scorers ? `<div class="scorers-list mt-2"><strong>Marcatori:</strong><br>${match.scorers.split('\n').filter(s => s.trim()).map(s => `<span>${s.trim()}</span>`).join('<br>')}</div>` : '';
-                const cardsList = match.cards ? `<div class="cards-list mt-2"><strong>Cartellini:</strong><br>${match.cards.split('\n').filter(c => c.trim()).map(c => {
-                    const parts = c.trim().split(' - ');
-                    const player = parts[0];
-                    const cardType = parts[1];
-                    const cardClass = cardType === 'G' ? 'yellow-card' : 'red-card';
-                    const cardText = cardType === 'G' ? 'Giallo' : 'Rosso';
-                    return `<span class="${cardClass}">${player} - ${cardText}</span>`;
-                }).join('<br>')}</div>` : '';
-                const matchCard = document.createElement('div');
-                matchCard.className = 'card mb-3';
-                matchCard.innerHTML = `
-                    <div class="card-body">
-                        <div class="match-header">
-                            <div class="team-column">
-                                <div class="team-name">${match.homeTeam}</div>
-                                <div class="score">${match.homeScore}</div>
-                            </div>
-                            <div class="score">-</div>
-                            <div class="team-column">
-                                <div class="team-name">${match.awayTeam}</div>
-                                <div class="score">${match.awayScore}</div>
-                            </div>
-                        </div>
-                        <p class="text-muted mb-2">${new Date(match.date).toLocaleDateString('it-IT')} ${match.location ? `@ ${match.location}` : ''}</p>
-                        ${scorersList}
-                        ${cardsList}
-                        <div class="d-flex justify-content-end mt-2">
-                            <button class="btn btn-sm btn-outline-secondary edit-match-btn" data-date="${match.date}" data-id="${match.id}">Modifica</button>
-                        </div>
-                    </div>
-                `;
-                elements.matchResultsList.appendChild(matchCard);
-            });
-        };
-        const renderCardsTable = () => {
-            elements.cardsTableBody.innerHTML = '';
-            const cards = [];
-            Object.entries(matchResults).forEach(([date, matches]) => {
-                matches.forEach(match => {
-                    if (match.cards) {
-                        match.cards.split('\n').filter(c => c.trim()).forEach(cardEntry => {
-                            const parts = cardEntry.trim().split(' - ');
-                            if (parts.length === 2) {
-                                cards.push({
-                                    athlete: parts[0],
-                                    date: date,
-                                    match: `${match.homeTeam} ${match.homeScore}-${match.awayScore} ${match.awayTeam}`,
-                                    card: parts[1] === 'G' ? 'Giallo' : 'Rosso',
-                                    cardType: parts[1]
-                                });
-                            }
-                        });
-                    }
-                });
-            });
-            cards.sort((a, b) => new Date(b.date) - new Date(a.date));
-            if (cards.length === 0) {
-                elements.cardsTableBody.innerHTML = '<tr><td colspan="4" class="text-muted">Nessun cartellino registrato.</td></tr>';
-                return;
-            }
-            cards.forEach(card => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${card.athlete}</td>
-                    <td>${new Date(card.date).toLocaleDateString('it-IT')}</td>
-                    <td>${card.match}</td>
-                    <td class="${card.cardType === 'G' ? 'yellow-card' : 'red-card'}">${card.card}</td>
-                `;
-                elements.cardsTableBody.appendChild(row);
-            });
-        };
-        const updateOpponentTrendChart = () => {
-            if (chartInstances.opponentTrend) chartInstances.opponentTrend.destroy();
-            if (!currentOpponentFilter) {
-                elements.opponentTrendChart.canvas.parentNode.innerHTML = '<p class="text-muted">Seleziona un avversario per visualizzare l\'andamento.</p>';
-                return;
-            }
-            const matches = [];
-            Object.entries(matchResults).forEach(([date, matchList]) => {
-                matchList.forEach(match => {
-                    if (match.homeTeam === currentOpponentFilter || match.awayTeam === currentOpponentFilter) {
-                        matches.push({ date, ...match });
-                    }
-                });
-            });
-            matches.sort((a, b) => new Date(a.date) - new Date(b.date));
-            const labels = matches.map(m => new Date(m.date).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' }));
-            const homeScores = matches.map(m => m.homeTeam === currentOpponentFilter ? m.homeScore : m.awayScore);
-            const awayScores = matches.map(m => m.homeTeam === currentOpponentFilter ? m.awayScore : m.homeScore);
-            chartInstances.opponentTrend = new Chart(elements.opponentTrendChart, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        { label: 'Gol Fatti', data: homeScores, borderColor: 'rgba(217, 4, 41, 1)', backgroundColor: 'rgba(217, 4, 41, 0.2)', tension: 0.3 },
-                        { label: 'Gol Subiti', data: awayScores, borderColor: 'rgba(255, 215, 0, 1)', backgroundColor: 'transparent', tension: 0.3, borderDash: [5, 5] }
-                    ]
-                },
-                options: {
-                    scales: {
-                        y: { beginAtZero: true, ticks: { color: '#ffffff', stepSize: 1 }, grid: { color: 'rgba(241, 241, 241, 0.2)' } },
-                        x: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.2)' } }
-                    },
-                    plugins: { legend: { labels: { color: '#ffffff' } } }
-                }
-            });
-        };
-        const updateMatchTimeTrendChart = () => {
-            if (chartInstances.matchTimeTrend) chartInstances.matchTimeTrend.destroy();
-            const now = new Date();
-            let startDate = new Date();
-            switch(currentTimePeriod) {
-                case 'month': startDate.setMonth(now.getMonth() - 1); break;
-                case 'bimonth': startDate.setMonth(now.getMonth() - 2); break;
-                case 'trimester': startDate.setMonth(now.getMonth() - 3); break;
-                case 'semester': startDate.setMonth(now.getMonth() - 6); break;
-                case 'year': startDate.setFullYear(now.getFullYear() - 1); break;
-            }
-            const matches = [];
-            Object.entries(matchResults).forEach(([date, matchList]) => {
-                if (new Date(date) >= startDate) {
-                    matchList.forEach(match => matches.push({ date, ...match }));
-                }
-            });
-            matches.sort((a, b) => new Date(a.date) - new Date(b.date));
-            if (matches.length === 0) {
-                elements.matchTimeTrendChart.canvas.parentNode.innerHTML = '<p class="text-muted">Nessun dato nel periodo selezionato.</p>';
-                return;
-            }
-            const labels = matches.map(m => new Date(m.date).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' }));
-            const goalsScored = matches.map(m => m.homeScore);
-            const goalsConceded = matches.map(m => m.awayScore);
-            chartInstances.matchTimeTrend = new Chart(elements.matchTimeTrendChart, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        { label: 'Gol Fatti', data: goalsScored, backgroundColor: 'rgba(217, 4, 41, 0.8)' },
-                        { label: 'Gol Subiti', data: goalsConceded, backgroundColor: 'rgba(255, 215, 0, 0.8)' }
-                    ]
-                },
-                options: {
-                    scales: {
-                        y: { beginAtZero: true, ticks: { color: '#ffffff', stepSize: 1 }, grid: { color: 'rgba(241, 241, 241, 0.2)' } },
-                        x: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.1)' } }
-                    },
-                    plugins: { legend: { labels: { color: '#ffffff' } } }
-                }
-            });
-        };
-        const openMatchResultModal = (matchData = null) => {
-            elements.matchResultForm.reset();
-            if (matchData) {
-                document.getElementById('matchResultModalLabel').textContent = 'Modifica Risultato';
-                document.getElementById('match-id').value = matchData.id;
-                document.getElementById('home-team').value = matchData.homeTeam;
-                document.getElementById('away-team').value = matchData.awayTeam;
-                document.getElementById('home-score').value = matchData.homeScore;
-                document.getElementById('away-score').value = matchData.awayScore;
-                document.getElementById('match-date').value = matchData.date;
-                document.getElementById('match-location').value = matchData.location || '';
-                document.getElementById('scorers').value = matchData.scorers || '';
-                document.getElementById('cards').value = matchData.cards || '';
-                elements.deleteMatchBtn.style.display = 'block';
-            } else {
-                document.getElementById('matchResultModalLabel').textContent = 'Aggiungi Risultato';
-                document.getElementById('match-id').value = '';
-                document.getElementById('match-date').valueAsDate = new Date();
-                elements.deleteMatchBtn.style.display = 'none';
-            }
-            matchResultModal.show();
-        };
-        // --- NUOVA FUNZIONE: AGGIORNAMENTO CLASSIFICA MARCATORI ---
-        const updateTopScorersChart = () => {
-            const scorers = {};
-            athletes.forEach(a => {
-                scorers[a.id] = { name: a.name, goals: 0 };
-            });
-            Object.values(gpsData).forEach(playerData => {
-                Object.values(playerData).forEach(session => {
-                    if (session.gol !== undefined && session.gol > 0) {
-                        const athleteId = Object.keys(gpsData).find(id => gpsData[id] === playerData);
-                        if (scorers[athleteId]) {
-                            scorers[athleteId].goals += parseInt(session.gol, 10);
-                        }
-                    }
-                });
-            });
-            const sortedScorers = Object.values(scorers)
-                .filter(s => s.goals > 0)
-                .sort((a, b) => b.goals - a.goals)
-                .slice(0, 10);
-            if (chartInstances.topScorers) chartInstances.topScorers.destroy();
-            if (sortedScorers.length === 0) {
-                elements.topScorersChart.canvas.parentNode.innerHTML = '<p class="text-muted text-center">Nessun gol registrato.</p>';
-                return;
-            }
-            chartInstances.topScorers = new Chart(elements.topScorersChart, {
-                type: 'bar',
-                data: {
-                    labels: sortedScorers.map(s => s.name),
-                    datasets: [{
-                        label: 'Gol Segnati',
-                        data: sortedScorers.map(s => s.goals),
-                        backgroundColor: 'rgba(217, 4, 41, 0.8)'
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    scales: {
-                        y: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.2)' } },
-                        x: { ticks: { color: '#ffffff', stepSize: 1 }, grid: { color: 'rgba(241, 241, 241, 0.2)' } }
-                    },
-                    plugins: {
-                        legend: { labels: { color: '#ffffff' } },
-                        title: { display: true, text: 'Classifica Marcatori (Top 10)', color: '#ffffff' }
-                    }
-                }
-            });
-        };
         // --- FUNZIONI UI ---
         const updateAllUI = () => {
             updateHomePage();
@@ -1028,11 +614,6 @@
             updateAthleteTrendChart();
             updateAthleteRadarChart();
             updateMultiAthleteChart();
-            renderMatchResults(); // NUOVO
-            updateOpponentTrendChart(); // NUOVO
-            updateMatchTimeTrendChart(); // NUOVO
-            renderCardsTable(); // NUOVO
-            updateTopScorersChart(); // NUOVO
         };
         const createJerseyElement = (athlete) => {
             const jersey = document.createElement('div');
@@ -1219,21 +800,6 @@
                     saveData().then(() => { evaluationModal.hide(); updateAllUI(); alert(`Dati di ${athlete.name} per il giorno ${formattedDate} eliminati.`); });
                 }
             }
-            // NUOVO: gestione eliminazione risultato partita
-            if (e.target.id === 'delete-match-btn') {
-                const matchId = document.getElementById('match-id').value;
-                const matchDate = document.getElementById('match-date').value;
-                if (matchId && matchDate && matchResults[matchDate]) {
-                    if (confirm("Sei sicuro di voler eliminare questo risultato?")) {
-                        matchResults[matchDate] = matchResults[matchDate].filter(m => m.id != matchId);
-                        if (matchResults[matchDate].length === 0) delete matchResults[matchDate];
-                        saveData().then(() => {
-                            matchResultModal.hide();
-                            updateAllUI();
-                        });
-                    }
-                }
-            }
         });
         modalsContainer.addEventListener('change', (e) => {
             if (e.target.id === 'gps-session-selector') {
@@ -1280,60 +846,11 @@
                 }
             }
         });
-        elements.exportAllDataBtn.addEventListener('click', () => { const allData = { athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults }; const dataStr = JSON.stringify(allData, null, 2); const blob = new Blob([dataStr], {type: "application/json"}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `coach_dashboard_backup_${new Date().toISOString().split('T')[0]}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); });
-        elements.importFileInput.addEventListener('change', (e) => { const file = e.target.files[0]; if (!file) { return; } const reader = new FileReader(); reader.onload = (event) => { if (confirm("ATTENZIONE: L'importazione sovrascriverà tutti i dati attuali. Vuoi continuare?")) { try { const importedData = JSON.parse(event.target.result); if (importedData && typeof importedData === 'object' && 'athletes' in importedData) { athletes = importedData.athletes || []; evaluations = importedData.evaluations || {}; gpsData = importedData.gpsData || {}; awards = importedData.awards || {}; trainingSessions = importedData.trainingSessions || {}; formationData = importedData.formationData || { starters: [], bench: [], tokens: [] }; matchResults = importedData.matchResults || {}; // NUOVO saveData().then(() => { updateAllUI(); alert('Dati importati con successo!'); }); } else { alert('Errore: Il file non sembra avere il formato corretto.'); } } catch (error) { alert(`Errore durante la lettura del file JSON: ${error.message}`); } } }; reader.readAsText(file); e.target.value = null; });
+        elements.exportAllDataBtn.addEventListener('click', () => { const allData = { athletes, evaluations, gpsData, awards, trainingSessions, formationData }; const dataStr = JSON.stringify(allData, null, 2); const blob = new Blob([dataStr], {type: "application/json"}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `coach_dashboard_backup_${new Date().toISOString().split('T')[0]}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); });
+        elements.importFileInput.addEventListener('change', (e) => { const file = e.target.files[0]; if (!file) { return; } const reader = new FileReader(); reader.onload = (event) => { if (confirm("ATTENZIONE: L'importazione sovrascriverà tutti i dati attuali. Vuoi continuare?")) { try { const importedData = JSON.parse(event.target.result); if (importedData && typeof importedData === 'object' && 'athletes' in importedData) { athletes = importedData.athletes || []; evaluations = importedData.evaluations || {}; gpsData = importedData.gpsData || {}; awards = importedData.awards || {}; trainingSessions = importedData.trainingSessions || {}; formationData = importedData.formationData || { starters: [], bench: [], tokens: [] }; saveData().then(() => { updateAllUI(); alert('Dati importati con successo!'); }); } else { alert('Errore: Il file non sembra avere il formato corretto.'); } } catch (error) { alert(`Errore durante la lettura del file JSON: ${error.message}`); } } }; reader.readAsText(file); e.target.value = null; });
         elements.performanceFilterToggle.addEventListener('click', (e) => { if (e.target.matches('.btn')) { elements.performanceFilterToggle.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active')); e.target.classList.add('active'); performanceFilterType = e.target.dataset.type; populatePerformanceSelectors(); } });
         elements.multiAthleteTypeSelector.addEventListener('click', (e) => { if (e.target.matches('.btn')) { elements.multiAthleteTypeSelector.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active')); e.target.classList.add('active'); multiAthleteFilterType = e.target.dataset.type; updateMultiAthleteChart(); } });
         document.addEventListener('click', (e) => { const exportExcelBtn = e.target.closest('#export-excel'); const exportPdfBtn = e.target.closest('#export-pdf'); if (exportExcelBtn) { const validSelections = performanceSelections.filter(s => s.athleteId && s.date); if (validSelections.length === 0) return; const data = validSelections.map(selection => { const athlete = athletes.find(a => a.id.toString() === selection.athleteId.toString()); const gpsRecord = gpsData[selection.athleteId]?.[selection.date] || {}; const row = { Atleta: athlete?.name || 'N/A', Data: new Date(selection.date).toLocaleDateString('it-IT'), Ora: gpsRecord.ora_registrazione || 'N/A', Tipo: gpsRecord.tipo_sessione || 'N/A' }; Object.entries(gpsFieldsForDisplay).forEach(([key, label]) => { if (!['Data', 'Ora', 'Tipo'].includes(label)) row[label] = gpsRecord[key] ?? 'N/A'; }); return row; }); const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Performance"); XLSX.writeFile(wb, `performance_${new Date().toISOString().split('T')[0]}.xlsx`); } else if (exportPdfBtn) { const validSelections = performanceSelections.filter(s => s.athleteId && s.date); if (validSelections.length === 0) return; const { jsPDF } = window.jspdf; const doc = new jsPDF({orientation: 'landscape'}); const head = ['Atleta', 'Data', 'Ora', 'Tipo', ...Object.values(gpsFieldsForDisplay).filter(label => !['Data', 'Ora', 'Tipo'].includes(label))]; const body = validSelections.map(selection => { const athlete = athletes.find(a => a.id.toString() === selection.athleteId.toString()); const gpsRecord = gpsData[selection.athleteId]?.[selection.date] || {}; return [ athlete?.name || 'N/A', new Date(selection.date).toLocaleDateString('it-IT'), gpsRecord.ora_registrazione || 'N/A', gpsRecord.tipo_sessione || 'N/A', ...Object.keys(gpsFieldsForDisplay).filter(key => !['data_di_registrazione', 'ora_registrazione', 'tipo_sessione'].includes(key)).map(key => gpsRecord[key] ?? 'N/A') ]; }); doc.autoTable({ head: [head], body, styles: { fontSize: 6 }, headStyles: { fillColor: [10, 36, 99] }, columnStyles: { 0: {cellWidth: 20}, 1: {cellWidth: 18}, 2: {cellWidth: 15}, 3: {cellWidth: 20} } }); doc.save(`performance_${new Date().toISOString().split('T')[0]}.pdf`); } });
-        // --- NUOVI EVENT LISTENERS PER RISULTATI PARTITE ---
-        elements.addMatchResultBtn.addEventListener('click', () => openMatchResultModal());
-        elements.matchResultsList.addEventListener('click', (e) => {
-            if (e.target.classList.contains('edit-match-btn')) {
-                const date = e.target.dataset.date;
-                const id = e.target.dataset.id;
-                const match = matchResults[date]?.find(m => m.id == id);
-                if (match) openMatchResultModal({ ...match, date });
-            }
-        });
-        elements.matchOpponentFilter.addEventListener('change', () => {
-            currentOpponentFilter = elements.matchOpponentFilter.value;
-            renderMatchResults();
-            updateOpponentTrendChart();
-        });
-        elements.matchTimeFilter.addEventListener('click', (e) => {
-            if (e.target.matches('.btn')) {
-                elements.matchTimeFilter.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
-                e.target.classList.add('active');
-                currentTimePeriod = e.target.dataset.period;
-                updateMatchTimeTrendChart();
-            }
-        });
-        elements.matchResultForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const id = document.getElementById('match-id').value || Date.now();
-            const date = document.getElementById('match-date').value;
-            const matchData = {
-                id,
-                homeTeam: document.getElementById('home-team').value.trim(),
-                awayTeam: document.getElementById('away-team').value.trim(),
-                homeScore: parseInt(document.getElementById('home-score').value),
-                awayScore: parseInt(document.getElementById('away-score').value),
-                location: document.getElementById('match-location').value.trim(),
-                scorers: document.getElementById('scorers').value.trim(),
-                cards: document.getElementById('cards').value.trim()
-            };
-            if (!matchResults[date]) matchResults[date] = [];
-            const existingIndex = matchResults[date].findIndex(m => m.id == id);
-            if (existingIndex > -1) {
-                matchResults[date][existingIndex] = matchData;
-            } else {
-                matchResults[date].push(matchData);
-            }
-            saveData().then(() => {
-                matchResultModal.hide();
-                updateAllUI();
-            });
-        });
         // --- DRAG & DROP FORMAZIONE ---
         let draggedElement = null;
         document.addEventListener('dragstart', e => { if (e.target.draggable) { draggedElement = e.target; setTimeout(() => { e.target.style.opacity = '0.5'; }, 0); } });
@@ -1382,9 +899,9 @@
         // --- INIZIALIZZAZIONE APP ---
         function startPolling() {
              pollingInterval = setInterval(async () => {
-                const currentDataSnapshot = JSON.stringify({ athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults });
+                const currentDataSnapshot = JSON.stringify({ athletes, evaluations, gpsData, awards, trainingSessions, formationData });
                 await loadData();
-                const newDataSnapshot = JSON.stringify({ athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults });
+                const newDataSnapshot = JSON.stringify({ athletes, evaluations, gpsData, awards, trainingSessions, formationData });
                 if (currentDataSnapshot !== newDataSnapshot) {
                     console.log("Dati aggiornati dal server. Ricarico l'interfaccia.");
                     updateAllUI();
