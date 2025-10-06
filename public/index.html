@@ -91,7 +91,8 @@
         .jersey-body::before { left: -1.8em; transform: rotate(-40deg); border-radius: 0.5em 0.2em 0 0; }
         .jersey-body::after { right: -1.8em; transform: rotate(40deg); border-radius: 0.2em 0.5em 0 0; }
         .jersey-number { font-size: 2.2em; font-weight: bold; color: white; text-shadow: 1px 1px 2px black; }
-        .player-name { margin-top: 0.5em; font-size: 1.1em; font-weight: bold; color: white; background-color: rgba(0,0,0,0.6); padding: 0.1em 0.4em; border-radius: 4px; white-space: nowrap; }
+        /* AUMENTO DEL 10% DELLA DIMENSIONE DEL NOME SOTTO LA MAGLIETTA */
+        .player-name { margin-top: 0.5em; font-size: 1.21em; font-weight: bold; color: white; background-color: rgba(0,0,0,0.6); padding: 0.1em 0.4em; border-radius: 4px; white-space: nowrap; }
         #available-list .list-group-item { cursor: grab; background-color: var(--secondary-blue); }
         .available-slot { border: 1px dashed var(--border-color); border-radius: 8px; min-height: 50px; }
         #formation-tools { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 1rem; }
@@ -120,13 +121,6 @@
                 flex-wrap: wrap;
             }
             .printing-now .card, .printing-now .calendar-day, .printing-now .table { background-color: #fff !important; border: 1px solid #ccc !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
-            .printing-now #performance-table-container table,
-            .printing-now #performance-table-container th,
-            .printing-now #performance-table-container td {
-                background-color: #fff !important;
-                color: #000 !important;
-                border-color: #000 !important;
-            }
             .printing-now .calendar-session, .printing-now .shirt-number { background-color: #cccccc !important; color: #000 !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
             .printing-now *, .printing-now .main-title, .printing-now .text-muted, .printing-now .card-title, .printing-now p, .printing-now h1, .printing-now h2, .printing-now h3, .printing-now h4, .printing-now h5, .printing-now h6 { color: #000 !important; }
             .printing-now .main-title { border-left-color: #000 !important; }
