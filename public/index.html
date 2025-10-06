@@ -107,9 +107,26 @@
             body { padding-top: 0; }
             .no-print { display: none !important; }
             body * { visibility: hidden; }
-            .printing-now, .printing-now * { visibility: visible; }
+            .printing-now,
+            .printing-now *,
+            .printing-now .card,
+            .printing-now .row,
+            .printing-now [class*="col-"] {
+                visibility: visible;
+            }
             .printing-now { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; }
+            .printing-now #athlete-grid {
+                display: flex;
+                flex-wrap: wrap;
+            }
             .printing-now .card, .printing-now .calendar-day, .printing-now .table { background-color: #fff !important; border: 1px solid #ccc !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
+            .printing-now #performance-table-container table,
+            .printing-now #performance-table-container th,
+            .printing-now #performance-table-container td {
+                background-color: #fff !important;
+                color: #000 !important;
+                border-color: #000 !important;
+            }
             .printing-now .calendar-session, .printing-now .shirt-number { background-color: #cccccc !important; color: #000 !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
             .printing-now *, .printing-now .main-title, .printing-now .text-muted, .printing-now .card-title, .printing-now p, .printing-now h1, .printing-now h2, .printing-now h3, .printing-now h4, .printing-now h5, .printing-now h6 { color: #000 !important; }
             .printing-now .main-title { border-left-color: #000 !important; }
