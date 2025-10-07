@@ -22,27 +22,18 @@
         .bg-dark-blue { background-color: #051438 !important; border-bottom: 2px solid var(--primary-red); }
         .main-title { color: var(--text-light); border-left: 4px solid var(--primary-red); padding-left: 1rem; }
         .athlete-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; transition: all 0.3s ease; position: relative; overflow: hidden; }
-        .athlete-card .card-body { padding: 0.8rem; padding-right: 45px; } 
+        .athlete-card .card-body { padding: 0.8rem; padding-right: 45px; } /* Aumentato padding destro per non sovrapporre il nome */
         .athlete-card-clickable { cursor: pointer; }
         .athlete-card-clickable:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(217, 4, 41, 0.2); border-color: var(--primary-red); }
-        .athlete-avatar { width: 65px; height: 65px; border-radius: 50%; border: 2px solid var(--border-color); object-fit: cover; background-color: var(--secondary-blue); } 
-        .athlete-card .card-title { font-size: 1rem; } 
+        .athlete-avatar { width: 65px; height: 65px; border-radius: 50%; border: 2px solid var(--border-color); object-fit: cover; background-color: var(--secondary-blue); }
+        .athlete-card .card-title { font-size: 1rem; }
         .shirt-number { 
-            font-size: 1.4rem; 
+            font-size: 1.4rem; /* Leggermente più grande */
             width: 38px; height: 38px; 
-            bottom: 45px; /* Posizionato sopra i pulsanti di azione */
-            right: 8px; 
-            background-color: var(--primary-red);
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: absolute;
-            font-weight: bold;
+            top: 8px; right: 8px; /* Spostato leggermente */
         }
         .is-captain { color: var(--gold-star); }
-        .card-actions { position: absolute; bottom: 5px; right: 5px; z-index: 5; display: flex; gap: 5px; } 
+        .card-actions { position: absolute; bottom: 5px; right: 5px; z-index: 5; display: flex; gap: 5px; }
         .card-actions .btn { background: rgba(0,0,0,0.3); border: none; font-size: 0.75rem; padding: 0.2rem 0.4rem; }
         .chart-card, .table-card, .summary-card { background-color: var(--card-bg); border: 1px solid var(--border-color); }
         .modal-content { background-color: var(--primary-blue); border: 1px solid var(--primary-red); }
