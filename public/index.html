@@ -37,11 +37,8 @@
         .form-control, .form-select { background-color: var(--secondary-blue); color: var(--text-light); border-color: var(--border-color); }
         .form-control::placeholder { color: #8a9fc1; }
         .form-control:focus, .form-select:focus { background-color: var(--secondary-blue); color: var(--text-light); border-color: var(--primary-red); box-shadow: 0 0 0 0.25rem rgba(217, 4, 41, 0.25); }
-        
-        /* Stili Hall of Fame compatti */
-        .award-card { background: linear-gradient(45deg, var(--gold-star), #d4af37); color: #000; border: 2px solid #fff; width: 180px; }
-        .award-avatar { width: 50px; height: 50px; }
-        
+        .award-card { background: linear-gradient(45deg, var(--gold-star), #d4af37); color: #000; border: 2px solid #fff; }
+        .award-avatar { width: 60px; height: 60px; }
         .text-muted { color: rgba(255, 255, 255, 0.75) !important; }
         .summary-card .card-body { min-height: 150px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;}
         .summary-card .display-4 { font-weight: 500; }
@@ -54,8 +51,25 @@
         .calendar-session { background-color: var(--primary-red); color: white; padding: 4px; border-radius: 4px; font-size: 0.75rem; margin-top: 5px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         /* STILI MODULO FORMAZIONE */
         #pitch-wrapper { display: flex; align-items: flex-start; gap: 1rem; }
-        #field-container { background-color: var(--field-green); border: 2px solid var(--field-line); position: relative; width: 100%; max-width: 450px; aspect-ratio: 5 / 7; box-sizing: border-box; flex-shrink: 0; }
-        #field-bench-area { background-color: rgba(0,0,0,0.2); border: 2px dashed var(--border-color); border-radius: 8px; width: 150px; height: 630px; position: relative; flex-shrink: 0; }
+        #field-container {
+            background-color: var(--field-green);
+            border: 2px solid var(--field-line);
+            position: relative;
+            width: 100%;
+            max-width: 450px;
+            aspect-ratio: 5 / 7;
+            box-sizing: border-box;
+            flex-shrink: 0;
+        }
+        #field-bench-area {
+            background-color: rgba(0,0,0,0.2);
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            width: 150px;
+            height: 630px;
+            position: relative;
+            flex-shrink: 0;
+        }
         .field-line, .field-box, .field-circle, .field-spot { position: absolute; box-sizing: border-box; border-color: var(--field-line); }
         .halfway-line { border-top: 2px solid var(--field-line); width: 100%; top: 50%; }
         .center-circle { top: 50%; left: 50%; transform: translate(-50%, -50%); width: 25%; aspect-ratio: 1/1; border: 2px solid var(--field-line); border-radius: 50%; }
@@ -66,7 +80,12 @@
         .goal-box-bottom { bottom: 0; left: 50%; transform: translateX(-50%); width: 30%; height: 6%; border: 2px solid var(--field-line); border-bottom: none; }
         .penalty-spot-top { top: 11.5%; left: 50%; transform: translateX(-50%); width: 1.5%; aspect-ratio: 1/1; background-color: var(--field-line); border-radius: 50%; }
         .penalty-spot-bottom { bottom: 11.5%; left: 50%; transform: translateX(-50%); width: 1.5%; aspect-ratio: 1/1; background-color: var(--field-line); border-radius: 50%; }
-        .player-jersey { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 15%; cursor: grab; user-select: none; font-size: clamp(4.5px, 0.6vw, 8px); }
+        .player-jersey {
+            position: absolute;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 15%; cursor: grab; user-select: none;
+            font-size: clamp(4.5px, 0.6vw, 8px);
+        }
         .jersey-body { position: relative; width: 5em; height: 5em; background-color: var(--secondary-blue); border-radius: 0.8em 0.8em 0.5em 0.5em; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 -4px 8px rgba(0,0,0,0.3); }
         .jersey-body::before, .jersey-body::after { content: ''; position: absolute; width: 2.5em; height: 1em; background-color: inherit; top: 0; }
         .jersey-body::before { left: -1.8em; transform: rotate(-40deg); border-radius: 0.5em 0.2em 0 0; }
@@ -88,7 +107,6 @@
         .match-score { font-weight: bold; font-size: 1.1rem; }
         .yellow-card { width: 10px; height: 14px; background-color: #ffc107; display: inline-block; border-radius: 2px; }
         .red-card { width: 10px; height: 14px; background-color: #dc3545; display: inline-block; border-radius: 2px; }
-        .scorers-list { font-size: 0.8rem; color: var(--text-muted); }
         /* STILI DI STAMPA CORRETTI */
         @media print {
             body { padding-top: 0; }
@@ -96,19 +114,45 @@
             body * { visibility: hidden; }
             .printing-now, .printing-now * { visibility: visible; }
             .printing-now { position: absolute; left: 0; top: 0; width: 100%; }
+            
+            /* Correzione Stampa Gestione Squadra */
             .printing-now #athlete-grid { display: flex !important; flex-wrap: wrap !important; }
-            .printing-now #athlete-grid > [class*="col-"] { flex: 0 0 33.33% !important; max-width: 33.33% !important; padding: 5px !important; page-break-inside: avoid; }
+            .printing-now #athlete-grid > [class*="col-"] {
+                flex: 0 0 33.33% !important;
+                max-width: 33.33% !important;
+                padding: 5px !important;
+                page-break-inside: avoid;
+            }
             .printing-now .athlete-card { box-shadow: none !important; }
+            
             .printing-now .card, .printing-now .list-group-item, .printing-now .calendar-day, .printing-now .table { background-color: #fff !important; border: 1px solid #ccc !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
-            .printing-now table, .printing-now th, .printing-now td { background-color: #fff !important; color: #000 !important; border-color: #000 !important; }
+            .printing-now table, .printing-now th, .printing-now td {
+                background-color: #fff !important;
+                color: #000 !important;
+                border-color: #000 !important;
+            }
             .printing-now .calendar-session, .printing-now .shirt-number { background-color: #cccccc !important; color: #000 !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
             .printing-now *, .printing-now .main-title, .printing-now .text-muted, .printing-now .card-title, .printing-now p, .printing-now h1, .printing-now h2, .printing-now h3, .printing-now h4, .printing-now h5, .printing-now h6 { color: #000 !important; }
             .printing-now .main-title { border-left-color: #000 !important; }
             .printing-now canvas { max-width: 100% !important; height: auto !important; }
-            .printing-now #field-container { background-color: var(--field-green) !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
-            .printing-now #field-container .field-line, .printing-now #field-container .field-box, .printing-now #field-container .field-circle { border-color: var(--field-line) !important; }
+            .printing-now #field-container {
+                background-color: var(--field-green) !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            .printing-now #field-container .field-line,
+            .printing-now #field-container .field-box,
+            .printing-now #field-container .field-circle { border-color: var(--field-line) !important; }
             .printing-now #field-container .field-spot { background-color: var(--field-line) !important; }
-            .printing-now .jersey-body, .printing-now .player-name, .printing-now .token-opponent, .printing-now .token-captain, .printing-now .yellow-card, .printing-now .red-card { -webkit-print-color-adjust: exact; color-adjust: exact; }
+            .printing-now .jersey-body,
+            .printing-now .player-name,
+            .printing-now .token-opponent,
+            .printing-now .token-captain,
+            .printing-now .yellow-card,
+            .printing-now .red-card {
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
             .printing-now .player-jersey[data-role*="Portiere"] .jersey-body { background-color: var(--gk-color) !important; }
         }
     </style>
@@ -298,7 +342,7 @@
                 </div>
             </div>
             <div class="row mt-5">
-                <div class="col-lg-7 mb-4">
+                <div class="col-lg-8 mb-4">
                     <div class="card chart-card">
                         <div class="card-body">
                             <h5 class="card-title">Andamento Risultati</h5>
@@ -318,18 +362,12 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-5 mb-4">
-                    <div class="card table-card mb-4">
-                        <div class="card-body">
-                             <h5 class="card-title">Classifica Marcatori</h5>
-                             <div id="top-scorers-container" style="max-height: 200px; overflow-y: auto;"></div>
-                        </div>
-                    </div>
+                <div class="col-lg-4 mb-4">
                     <div class="card table-card">
                         <div class="card-body">
                             <h5 class="card-title">Riepilogo Cartellini</h5>
-                            <div class="table-responsive" style="max-height: 200px;">
-                                <table class="table table-dark table-striped table-hover table-sm" id="cards-summary-table">
+                            <div class="table-responsive" style="max-height: 400px;">
+                                <table class="table table-dark table-striped table-hover" id="cards-summary-table">
                                     <thead><tr><th>Atleta</th><th><span class="yellow-card"></span></th><th><span class="red-card"></span></th><th>Data</th></tr></thead>
                                     <tbody id="cards-summary-tbody"></tbody>
                                 </table>
@@ -378,7 +416,7 @@
                  <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
                  <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
             </div>
-              <div id="hall-of-fame-container" class="d-flex flex-wrap gap-3 justify-content-center"></div>
+              <div id="hall-of-fame-container" class="d-flex flex-wrap gap-3"></div>
         </div>
         <hr class="my-5 no-print">
         <div id="confronto-squadra-section" class="printable-area">
@@ -520,7 +558,7 @@
                 <div class="row"><div class="col-12 mb-3"><label class="form-label">Note (opzionale)</label><textarea class="form-control" id="gps-note" rows="2" placeholder="Es. Allenamento intenso, recupero infortunio, ecc."></textarea></div></div>
             </form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button><button type="submit" class="btn btn-primary-custom" form="gps-form">Salva Dati GPS</button></div></div></div></div>
             <div class="modal fade" id="sessionModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="sessionModalLabel">Pianifica Sessione</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="session-form"><input type="hidden" id="session-id"><div class="mb-3"><label class="form-label">Data</label><input type="date" class="form-control" id="session-date" required></div><div class="mb-3"><label class="form-label">Titolo/Tipo</label><input type="text" class="form-control" id="session-title" required placeholder="Es. Allenamento tecnico"></div><div class="row"><div class="col-md-6 mb-3"><label class="form-label">Ora Inizio</label><input type="time" class="form-control" id="session-time"></div><div class="col-md-6 mb-3"><label class="form-label">Luogo</label><input type="text" class="form-control" id="session-location" placeholder="Es. Campo 1"></div></div><div class="mb-3"><label class="form-label">Obiettivi</label><input type="text" class="form-control" id="session-goals" placeholder="Es. Possesso palla, tiri in porta"></div><div class="mb-3"><label class="form-label">Descrizione Allenamento (un punto per riga)</label><textarea class="form-control" id="session-description" rows="5"></textarea></div></form></div><div class="modal-footer justify-content-between"><button type="button" class="btn btn-outline-danger" id="delete-session-btn" style="display:none;">Elimina</button><div><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button><button type="submit" class="btn btn-primary-custom" form="session-form">Salva Sessione</button></div></div></div></div></div>
-            <div class="modal fade" id="matchResultModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="matchResultModalLabel">Inserisci Risultato Partita</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="match-result-form"><input type="hidden" id="match-id"><div class="row"><div class="col-md-4 mb-3"><label class="form-label">Data Partita</label><input type="date" class="form-control" id="match-date" required></div><div class="col-md-5 mb-3"><label class="form-label">Squadra Avversaria</label><input type="text" class="form-control" id="match-opponent-name" required></div><div class="col-md-3 mb-3"><label class="form-label">Luogo</label><select class="form-select" id="match-location"><option value="home">Casa</option><option value="away">Trasferta</option></select></div></div><div class="row align-items-center text-center"><div class="col-5"><label class="form-label">GO Sport</label><input type="number" class="form-control text-center" id="match-my-team-score" required min="0" placeholder="Gol"></div><div class="col-2">-</div><div class="col-5"><label class="form-label">AVVERSARI</label><input type="number" class="form-control text-center" id="match-opponent-score" required min="0" placeholder="Gol"></div></div><hr><div class="row mt-3"><div class="col-md-6"><h5><i class="bi bi-futbol"></i> Marcatori (GO Sport)</h5><div id="scorers-container" class="d-grid gap-2"></div><button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="add-scorer-btn"><i class="bi bi-plus"></i> Aggiungi Marcatore</button></div><div class="col-md-6"><h5><i class="bi bi-file-earmark-person"></i> Cartellini (GO Sport)</h5><div id="cards-container" class="d-grid gap-2"></div><button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="add-card-btn"><i class="bi bi-plus"></i> Aggiungi Cartellino</button></div></div></form></div><div class="modal-footer justify-content-between"><button type="button" class="btn btn-outline-danger" id="delete-match-btn" style="display:none;">Elimina Partita</button><div><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button><button type="submit" class="btn btn-primary-custom" form="match-result-form">Salva Partita</button></div></div></div></div></div>`;
+            <div class="modal fade" id="matchResultModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="matchResultModalLabel">Inserisci Risultato Partita</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="match-result-form"><input type="hidden" id="match-id"><div class="row"><div class="col-md-4 mb-3"><label class="form-label">Data Partita</label><input type="date" class="form-control" id="match-date" required></div><div class="col-md-5 mb-3"><label class="form-label">Squadra Avversaria</label><input type="text" class="form-control" id="match-opponent-name" required></div><div class="col-md-3 mb-3"><label class="form-label">Luogo</label><select class="form-select" id="match-location"><option value="home">Casa</option><option value="away">Trasferta</option></select></div></div><div class="row align-items-center text-center"><div class="col-5"><label class="form-label">MIA SQUADRA</label><input type="number" class="form-control text-center" id="match-my-team-score" required min="0" placeholder="Gol"></div><div class="col-2">-</div><div class="col-5"><label class="form-label">AVVERSARI</label><input type="number" class="form-control text-center" id="match-opponent-score" required min="0" placeholder="Gol"></div></div><hr><div class="row mt-3"><div class="col-md-6"><h5><i class="bi bi-futbol"></i> Marcatori</h5><div id="scorers-container" class="d-grid gap-2"></div><button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="add-scorer-btn"><i class="bi bi-plus"></i> Aggiungi Marcatore</button></div><div class="col-md-6"><h5><i class="bi bi-file-earmark-person"></i> Cartellini</h5><div id="cards-container" class="d-grid gap-2"></div><button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="add-card-btn"><i class="bi bi-plus"></i> Aggiungi Cartellino</button></div></div></form></div><div class="modal-footer justify-content-between"><button type="button" class="btn btn-outline-danger" id="delete-match-btn" style="display:none;">Elimina Partita</button><div><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button><button type="submit" class="btn btn-primary-custom" form="match-result-form">Salva Partita</button></div></div></div></div></div>`;
 
         const evaluationModal = new bootstrap.Modal(document.getElementById('evaluationModal'));
         const athleteModal = new bootstrap.Modal(document.getElementById('athleteModal'));
@@ -580,7 +618,6 @@
             cardsSummaryTbody: document.getElementById('cards-summary-tbody'),
             matchOpponentFilter: document.getElementById('match-opponent-filter'),
             matchPeriodToggle: document.getElementById('match-period-toggle'),
-            topScorersContainer: document.getElementById('top-scorers-container'),
         };
 
         const matchStatsFields = ['minuti_giocati', 'gol', 'assist', 'ammonizioni', 'espulsioni', 'palle_recuperate', 'palle_perse'];
@@ -651,7 +688,6 @@
             renderFormation();
             renderMatchResults();
             renderCardsSummary();
-            renderTopScorers();
             updateMatchAnalysisChart();
             updateEvaluationCharts();
             updateAttendanceChart();
@@ -837,7 +873,7 @@
             sessionModal.show();
         };
 
-        // --- FUNZIONI RISULTATI PARTITE E CLASSIFICHE ---
+        // --- FUNZIONI PER RISULTATI PARTITE ---
         const renderMatchResults = () => {
             elements.matchResultsContainer.innerHTML = '';
             const sortedMatches = Object.values(matchResults).sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -848,36 +884,28 @@
             }
 
             sortedMatches.forEach(match => {
-                const myTeamName = "GO Sport";
+                const myTeamName = "Mia Squadra";
                 const homeTeamName = match.location === 'home' ? myTeamName : match.opponentName;
                 const awayTeamName = match.location === 'away' ? myTeamName : match.opponentName;
 
-                const myTeamScorers = match.scorers.map(s => {
-                    const athlete = athletes.find(a => String(a.id) === String(s.athleteId));
-                    return athlete ? athlete.name.split(' ').pop() : '';
-                }).filter(name => name).join(', ');
-
-                const matchItem = document.createElement('div');
-                matchItem.className = 'list-group-item list-group-item-action match-result-item';
+                const matchItem = document.createElement('a');
+                matchItem.href = "#";
+                matchItem.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center match-result-item';
                 matchItem.dataset.matchId = match.id;
-                matchItem.style.cursor = 'pointer';
                 matchItem.addEventListener('click', (e) => {
-                     e.preventDefault();
-                     if (!e.target.closest('.edit-match-btn')) {
+                    e.preventDefault();
+                    if (!e.target.closest('.edit-match-btn')) {
                         openMatchResultModal(match.id);
-                     }
+                    }
                 });
 
                 matchItem.innerHTML = `
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div class="flex-grow-1">
-                            <small class="text-muted">${new Date(match.date).toLocaleDateString('it-IT', {day: '2-digit', month: '2-digit', year: 'numeric'})}</small>
-                            <div>${homeTeamName} vs ${awayTeamName}</div>
-                            ${myTeamScorers ? `<div class="scorers-list"><i class="bi bi-futbol"></i> ${myTeamScorers}</div>` : ''}
-                        </div>
-                        <span class="match-score me-3">${match.homeScore} - ${match.awayScore}</span>
-                        <button class="btn btn-sm btn-outline-secondary no-print edit-match-btn" data-match-id="${match.id}"><i class="bi bi-pencil-fill"></i></button>
+                    <div class="flex-grow-1">
+                        <small class="text-muted">${new Date(match.date).toLocaleDateString('it-IT', {day: '2-digit', month: '2-digit', year: 'numeric'})}</small>
+                        <div>${homeTeamName} vs ${awayTeamName}</div>
                     </div>
+                    <span class="match-score me-3">${match.homeScore} - ${match.awayScore}</span>
+                    <button class="btn btn-sm btn-outline-secondary no-print edit-match-btn" data-match-id="${match.id}"><i class="bi bi-pencil-fill"></i></button>
                 `;
                 elements.matchResultsContainer.appendChild(matchItem);
             });
@@ -890,7 +918,7 @@
                 .sort((a, b) => new Date(b.date) - new Date(a.date));
             
             if (allCards.length === 0) {
-                elements.cardsSummaryTbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Nessun cartellino.</td></tr>';
+                elements.cardsSummaryTbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Nessun cartellino registrato.</td></tr>';
                 return;
             }
 
@@ -901,42 +929,11 @@
                         <td>${athlete ? athlete.name : 'N/D'}</td>
                         <td>${card.type === 'yellow' ? '1' : '0'}</td>
                         <td>${card.type === 'red' ? '1' : '0'}</td>
-                        <td>${new Date(card.date).toLocaleDateString('it-IT', {day: '2-digit', month: 'short'})}</td>
+                        <td>${new Date(card.date).toLocaleDateString('it-IT')}</td>
                     </tr>
                 `;
                 elements.cardsSummaryTbody.innerHTML += row;
             });
-        };
-        
-        const renderTopScorers = () => {
-            const goalCounts = {};
-            Object.values(matchResults).forEach(match => {
-                match.scorers.forEach(scorer => {
-                    goalCounts[scorer.athleteId] = (goalCounts[scorer.athleteId] || 0) + 1;
-                });
-            });
-
-            const sortedScorers = Object.entries(goalCounts)
-                .map(([athleteId, goals]) => {
-                    const athlete = athletes.find(a => String(a.id) === athleteId);
-                    return { name: athlete ? athlete.name : 'Sconosciuto', goals };
-                })
-                .sort((a, b) => b.goals - a.goals);
-
-            if (sortedScorers.length === 0) {
-                elements.topScorersContainer.innerHTML = '<p class="text-muted">Nessun marcatore registrato.</p>';
-                return;
-            }
-
-            let ol = '<ol class="list-group list-group-numbered">';
-            sortedScorers.forEach(scorer => {
-                ol += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; border-color: var(--border-color);">
-                    ${scorer.name}
-                    <span class="badge bg-danger rounded-pill">${scorer.goals}</span>
-                </li>`;
-            });
-            ol += '</ol>';
-            elements.topScorersContainer.innerHTML = ol;
         };
 
         const updateMatchAnalysisChart = () => {
@@ -944,6 +941,7 @@
             const period = elements.matchPeriodToggle.querySelector('.active').dataset.period;
             
             let filteredMatches = Object.values(matchResults).sort((a,b) => new Date(a.date) - new Date(b.date));
+            
             let labels, datasets;
             
             if (opponentFilter !== 'all') {
@@ -1021,7 +1019,7 @@
                 elements.matchOpponentFilter.innerHTML += `<option value="${opp}" ${selected}>${opp}</option>`;
             });
         };
-        // --- FINE FUNZIONI ---
+        // --- FINE FUNZIONI RISULTATI PARTITE ---
 
         const updateEvaluationCharts = () => {
             const date = elements.evaluationDatePicker.value;
@@ -1114,10 +1112,11 @@
                 const athlete = athletes.find(a => a.id.toString() === award.athleteId.toString());
                 if (athlete) {
                     const awardCard = document.createElement('div');
-                    awardCard.className = 'card award-card text-center';
+                    awardCard.className = 'card award-card p-3 text-center';
+                    awardCard.style.minWidth = '200px';
                     const dateObj = new Date(award.date);
                     const formattedDate = !isNaN(dateObj) ? dateObj.toLocaleDateString('it-IT') : 'Data non disponibile';
-                    awardCard.innerHTML = `<div class="card-body p-2"><img src="${athlete.avatar || defaultAvatar}" onerror="this.src='${defaultAvatar}'" alt="${athlete.name}" class="award-avatar mx-auto mb-2 rounded-circle"><h6 class="mb-1" style="font-size: 0.9rem;">${athlete.name}</h6><p class="mb-0" style="font-size: 0.8rem; color: #000;">${formattedDate}</p><small>${award.reason}</small><i class="bi bi-award-fill mt-2" style="font-size: 1.5rem;"></i></div>`;
+                    awardCard.innerHTML = `<img src="${athlete.avatar || defaultAvatar}" onerror="this.src='${defaultAvatar}'" alt="${athlete.name}" class="award-avatar mx-auto mb-2 rounded-circle"><h6 class="mb-1">${athlete.name}</h6><p class="mb-0" style="font-size: 0.8rem; color: #000;">${formattedDate}</p><small>${award.reason}</small><i class="bi bi-award-fill mt-2" style="font-size: 1.5rem;"></i>`;
                     elements.hallOfFameContainer.appendChild(awardCard);
                 }
             });
@@ -1547,7 +1546,7 @@
         window.addEventListener('beforeprint', () => { for (const key in chartInstances) { const chart = chartInstances[key]; if (chart.options.scales) { Object.values(chart.options.scales).forEach(scale => { if (scale.ticks) scale.ticks.color = '#000'; if (scale.pointLabels) scale.pointLabels.color = '#000'; if (scale.grid) scale.grid.color = '#ccc'; if (scale.angleLines) scale.angleLines.color = '#ccc'; }); } if (chart.options.plugins && chart.options.plugins.legend) { chart.options.plugins.legend.labels.color = '#000'; } if (chart.options.plugins && chart.options.plugins.title) { chart.options.plugins.title.color = '#000'; } chart.update('none'); } });
         window.addEventListener('afterprint', () => { const printedSection = document.querySelector('.printing-now'); if (printedSection) { printedSection.classList.remove('printing-now'); } for (const key in chartInstances) { const chart = chartInstances[key]; if (chart.options.scales) { Object.values(chart.options.scales).forEach(scale => { if (scale.ticks) scale.ticks.color = '#fff'; if (scale.pointLabels) scale.pointLabels.color = '#fff'; if (scale.grid) scale.grid.color = 'rgba(241, 241, 241, 0.2)'; if (scale.angleLines) scale.angleLines.color = 'rgba(241, 241, 241, 0.2)'; }); } if (chart.options.plugins && chart.options.plugins.legend) { chart.options.plugins.legend.labels.color = '#fff'; } if (chart.options.plugins && chart.options.plugins.title) { chart.options.plugins.title.color = '#fff'; } chart.update('none'); } });
         
-        // --- NUOVI EVENT LISTENER PER RISULTATI PARTITE ---
+        // --- EVENT LISTENER PER RISULTATI PARTITE ---
         const openMatchResultModal = (matchId = null) => {
             elements.matchResultForm.reset();
             document.getElementById('scorers-container').innerHTML = '';
