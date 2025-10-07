@@ -37,11 +37,8 @@
         .form-control, .form-select { background-color: var(--secondary-blue); color: var(--text-light); border-color: var(--border-color); }
         .form-control::placeholder { color: #8a9fc1; }
         .form-control:focus, .form-select:focus { background-color: var(--secondary-blue); color: var(--text-light); border-color: var(--primary-red); box-shadow: 0 0 0 0.25rem rgba(217, 4, 41, 0.25); }
-        
-        /* Stili Hall of Fame compatti */
         .award-card { background: linear-gradient(45deg, var(--gold-star), #d4af37); color: #000; border: 2px solid #fff; width: 180px; }
         .award-avatar { width: 50px; height: 50px; }
-        
         .text-muted { color: rgba(255, 255, 255, 0.75) !important; }
         .summary-card .card-body { min-height: 150px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;}
         .summary-card .display-4 { font-weight: 500; }
@@ -916,10 +913,12 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="flex-grow-1">
                             <small class="text-muted">${new Date(match.date).toLocaleDateString('it-IT', {day: '2-digit', month: '2-digit', year: 'numeric'})}</small>
-                            <div>${homeTeamName} vs ${awayTeamName}</div>
+                            <div>
+                                ${homeTeamName} vs ${awayTeamName}
+                                <strong class="match-score ms-2">${match.homeScore} - ${match.awayScore}</strong>
+                            </div>
                             ${myTeamScorers ? `<div class="scorers-list"><i class="bi bi-futbol"></i> Marcatori: <strong style="color: var(--primary-red);">${myTeamScorers}</strong></div>` : ''}
                         </div>
-                        <span class="match-score me-3">${match.homeScore} - ${match.awayScore}</span>
                         <button class="btn btn-sm btn-outline-secondary no-print edit-match-btn" data-match-id="${match.id}"><i class="bi bi-pencil-fill"></i></button>
                     </div>
                 `;
@@ -1549,13 +1548,13 @@
                 requestAuthentication(
                     () => { performDownload(true); }, // onSuccess
                     () => { // onCancel
-                        if (confirm("Accesso annullato. Desideri scaricare i dati escludendo le sessioni 'Individual' protette?")) {
+                        if (confirm("Accesso annullato o password errata. Desideri scaricare i dati escludendo le sessioni 'Individual' protette?")) {
                             performDownload(false);
                         }
                     }
                 );
             } else {
-                performDownload(true);
+                performDownload(true); // Download all data if authenticated or no individual data exists
             }
         });
 
