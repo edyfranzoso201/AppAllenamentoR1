@@ -72,7 +72,7 @@
         .jersey-body::before { left: -1.8em; transform: rotate(-40deg); border-radius: 0.5em 0.2em 0 0; }
         .jersey-body::after { right: -1.8em; transform: rotate(40deg); border-radius: 0.2em 0.5em 0 0; }
         .jersey-number { font-size: 2.2em; font-weight: bold; color: white; text-shadow: 1px 1px 2px black; }
-        .player-name { margin-top: 0.5em; font-size: 1.1em; font-weight: bold; color: white; background-color: rgba(0,0,0,0.6); padding: 0.1em 0.4em; border-radius: 4px; white-space: nowrap; }
+        .player-name { margin-top: 0.5em; font-size: 1.21em; font-weight: bold; color: white; background-color: rgba(0,0,0,0.6); padding: 0.1em 0.4em; border-radius: 4px; white-space: nowrap; }
         #available-list .list-group-item { cursor: grab; background-color: var(--secondary-blue); }
         .available-slot { border: 1px dashed var(--border-color); border-radius: 8px; min-height: 50px; }
         #formation-tools { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 1rem; }
@@ -89,6 +89,7 @@
         .yellow-card { width: 10px; height: 14px; background-color: #ffc107; display: inline-block; border-radius: 2px; }
         .red-card { width: 10px; height: 14px; background-color: #dc3545; display: inline-block; border-radius: 2px; }
         .scorers-list { font-size: 0.8rem; color: var(--text-muted); }
+        #cards-summary-table { --bs-table-bg: var(--secondary-blue); --bs-table-striped-bg: var(--secondary-blue); --bs-table-hover-bg: var(--border-color); border-color: var(--border-color); }
         /* STILI DI STAMPA CORRETTI */
         @media print {
             body { padding-top: 0; }
@@ -916,7 +917,7 @@
                         <div class="flex-grow-1">
                             <small class="text-muted">${new Date(match.date).toLocaleDateString('it-IT', {day: '2-digit', month: '2-digit', year: 'numeric'})}</small>
                             <div>${homeTeamName} vs ${awayTeamName}</div>
-                            ${myTeamScorers ? `<div class="scorers-list"><i class="bi bi-futbol"></i> ${myTeamScorers}</div>` : ''}
+                            ${myTeamScorers ? `<div class="scorers-list"><i class="bi bi-futbol"></i> Marcatori: <strong style="color: var(--primary-red);">${myTeamScorers}</strong></div>` : ''}
                         </div>
                         <span class="match-score me-3">${match.homeScore} - ${match.awayScore}</span>
                         <button class="btn btn-sm btn-outline-secondary no-print edit-match-btn" data-match-id="${match.id}"><i class="bi bi-pencil-fill"></i></button>
@@ -1515,19 +1516,46 @@
         elements.multiAthleteResetBtn.addEventListener('click', () => { elements.multiAthleteTimeFilter.querySelectorAll('.btn').forEach(b => b.classList.remove('active')); elements.multiAthleteTimeFilter.querySelector('.btn[data-period="month"]').classList.add('active'); elements.multiAthleteDatepicker.value = ''; elements.multiAthleteDatepickerContainer.style.display = 'none'; elements.multiAthleteMetricSelector.selectedIndex = 0; elements.multiAthleteTypeSelector.querySelectorAll('.btn').forEach(b => b.classList.remove('active')); elements.multiAthleteTypeSelector.querySelector('.btn[data-type="all"]').classList.add('active'); multiAthleteFilterType = 'all'; updateMultiAthleteChart(); });
         
         elements.exportAllDataBtn.addEventListener('click', () => {
+            const performDownload = (includeIndividual) => {
+                let dataToExport = { athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults };
+                if (!includeIndividual) {
+                    dataToExport = JSON.parse(JSON.stringify(dataToExport)); // Deep copy
+                    for (const athleteId in dataToExport.gpsData) {
+                        for (const date in dataToExport.gpsData[athleteId]) {
+                            if (dataToExport.gpsData[athleteId][date].tipo_sessione === 'Individual') {
+                                delete dataToExport.gpsData[athleteId][date];
+                            }
+                        }
+                    }
+                }
+                const dataStr = JSON.stringify(dataToExport, null, 2);
+                const blob = new Blob([dataStr], {type: "application/json"});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `coach_dashboard_backup_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                if (!includeIndividual) {
+                    alert("Download completato. I dati delle sessioni 'Individual' sono stati esclusi.");
+                }
+            };
+            const hasIndividualData = () => Object.values(gpsData).some(ath => Object.values(ath).some(sess => sess.tipo_sessione === 'Individual'));
+            
             if (hasIndividualData() && !isAuthenticated()) {
                 requestAuthentication(
-                    () => { // onSuccess (full download)
-                        performDownload(true);
-                    },
-                    () => { // onCancel (ask for partial download)
-                        if (confirm("Accesso annullato o password errata. Desideri scaricare i dati escludendo le sessioni 'Individual' protette?")) {
+                    () => { performDownload(true); }, // onSuccess
+                    () => { // onCancel
+                        if (confirm("Accesso annullato. Desideri scaricare i dati escludendo le sessioni 'Individual' protette?")) {
                             performDownload(false);
                         }
                     }
                 );
             } else {
-                performDownload(true); // Download all data if authenticated or no individual data exists
+                performDownload(true);
             }
         });
 
