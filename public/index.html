@@ -1178,6 +1178,7 @@
             const filteredData = JSON.parse(JSON.stringify(gpsData));
             for (const athleteId in filteredData) {
                 for (const date in filteredData[athleteId]) {
+                    // La nuova struttura ha un array di sessioni per data
                     filteredData[athleteId][date] = filteredData[athleteId][date].filter(session => session.tipo_sessione !== 'Individual');
                     if (filteredData[athleteId][date].length === 0) {
                         delete filteredData[athleteId][date];
@@ -1424,8 +1425,8 @@
             const chartData = [];
             athletes.forEach(athlete => {
                 const athleteGpsData = dataToUse[athlete.id] || {};
-                const relevantSessions = Object.entries(athleteGpsData)
-                    .flatMap(([, sessions]) => sessions)
+                const relevantSessions = Object.values(athleteGpsData)
+                    .flatMap(sessions => sessions)
                     .filter(session => {
                         const sessionDate = new Date(session.data_di_registrazione);
                         return sessionDate >= startDate && sessionDate <= endDate;
@@ -1645,7 +1646,7 @@
         });
 
         elements.performanceSelectorsContainer.addEventListener('click', (e) => { const removeBtn = e.target.closest('.remove-selector'); if (removeBtn) { performanceSelections.splice(parseInt(removeBtn.dataset.index), 1); populatePerformanceSelectors(); updatePerformanceChart(); } });
-        elements.addComparisonBtn.addEventListener('click', () => { performanceSelections.push({ athleteId: null, sessionId: null }); populatePerformanceSelectors(); });
+        elements.addComparisonBtn.addEventListener('click', () => { performanceSelections.push({ athleteId: null, date: null }); populatePerformanceSelectors(); });
         elements.metricSelector.addEventListener('change', updatePerformanceChart);
         elements.trendAthleteSelector.addEventListener('change', updateAthleteTrendChart);
         elements.trendMetricSelector.addEventListener('change', updateAthleteTrendChart);
@@ -1761,10 +1762,11 @@
                         
                         newDeleteBtn.addEventListener('click', () => {
                              if (confirm(`Sei sicuro di voler eliminare questa sessione?`)) {
-                                if(gpsData[athleteId][session.data_di_registrazione]){
-                                    gpsData[athleteId][session.data_di_registrazione] = gpsData[athleteId][session.data_di_registrazione].filter(s => s.id != sessionId);
-                                    if(gpsData[athleteId][session.data_di_registrazione].length === 0){
-                                        delete gpsData[athleteId][session.data_di_registrazione];
+                                const { data_di_registrazione: date, id: sId } = session;
+                                if(gpsData[athleteId][date]){
+                                    gpsData[athleteId][date] = gpsData[athleteId][date].filter(s => s.id != sId);
+                                    if(gpsData[athleteId][date].length === 0){
+                                        delete gpsData[athleteId][date];
                                     }
                                 }
                                 saveData().then(() => {
