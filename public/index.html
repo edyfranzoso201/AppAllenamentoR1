@@ -1589,7 +1589,7 @@
             const date = document.getElementById('gps-data_di_registrazione').value;
             const time = document.getElementById('gps-ora_registrazione').value;
             // GESTIONE ID UNICO E SALVATAGGIO IN ARRAY PER DATA
-            const sessionId = document.getElementById('gps-session-id').value || `${date}-${time}-${Date.now()}`;
+            const sessionId = document.getElementById('gps-session-id').value || Date.now().toString();
 
             if (!date) { alert("Per favore, inserisci una data di registrazione valida."); return; }
             
@@ -1599,7 +1599,7 @@
                  const el = document.getElementById(`gps-${field}`);
                  if(el) { const value = el.value.trim(); if(value !== '') gpsFormData[field] = el.type === 'number' ? parseFloat(value) : value; }
             });
-
+            
             const dist = parseFloat(document.getElementById('gps-distanza_totale').value) || 0;
             const t = parseFloat(document.getElementById('gps-tempo_totale').value) || 0;
             if (dist > 0 && t > 0) gpsFormData.distanza_per_minuto = parseFloat((dist / t).toFixed(2));
@@ -1753,7 +1753,7 @@
                     document.getElementById('gps-data_di_registrazione').value = data ? data.data_di_registrazione : new Date().toISOString().split('T')[0];
                     if(data){
                         allGpsFields.forEach(field => {
-                            if(field === 'id') return;
+                            if (field === 'id') return;
                             const el = form.querySelector(`#gps-${field}`);
                             if (el && data[field] !== undefined) { el.value = data[field]; }
                         });
