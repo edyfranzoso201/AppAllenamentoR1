@@ -22,14 +22,18 @@
         .bg-dark-blue { background-color: #051438 !important; border-bottom: 2px solid var(--primary-red); }
         .main-title { color: var(--text-light); border-left: 4px solid var(--primary-red); padding-left: 1rem; }
         .athlete-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; transition: all 0.3s ease; position: relative; overflow: hidden; }
-        .athlete-card .card-body { padding: 0.8rem; } /* Riduzione padding */
+        .athlete-card .card-body { padding: 0.8rem; padding-right: 45px; } /* Aumentato padding destro per non sovrapporre il nome */
         .athlete-card-clickable { cursor: pointer; }
         .athlete-card-clickable:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(217, 4, 41, 0.2); border-color: var(--primary-red); }
-        .athlete-avatar { width: 65px; height: 65px; border-radius: 50%; border: 2px solid var(--border-color); object-fit: cover; background-color: var(--secondary-blue); } /* Riduzione avatar */
-        .athlete-card .card-title { font-size: 1rem; } /* Riduzione font-size nome */
-        .shirt-number { font-size: 1.2rem; width: 35px; height: 35px; top: 10px; right: 10px; } /* Riduzione numero maglia */
+        .athlete-avatar { width: 65px; height: 65px; border-radius: 50%; border: 2px solid var(--border-color); object-fit: cover; background-color: var(--secondary-blue); }
+        .athlete-card .card-title { font-size: 1rem; }
+        .shirt-number { 
+            font-size: 1.4rem; /* Leggermente più grande */
+            width: 38px; height: 38px; 
+            top: 8px; right: 8px; /* Spostato leggermente */
+        }
         .is-captain { color: var(--gold-star); }
-        .card-actions { position: absolute; bottom: 5px; right: 5px; z-index: 5; display: flex; gap: 5px; } /* Posizione azioni */
+        .card-actions { position: absolute; bottom: 5px; right: 5px; z-index: 5; display: flex; gap: 5px; }
         .card-actions .btn { background: rgba(0,0,0,0.3); border: none; font-size: 0.75rem; padding: 0.2rem 0.4rem; }
         .chart-card, .table-card, .summary-card { background-color: var(--card-bg); border: 1px solid var(--border-color); }
         .modal-content { background-color: var(--primary-blue); border: 1px solid var(--primary-red); }
@@ -946,9 +950,28 @@
                 const homeTeamName = match.location === 'home' ? myTeamName : match.opponentName;
                 const awayTeamName = match.location === 'away' ? myTeamName : match.opponentName;
 
+                const scorersInMatch = {};
+                match.scorers.forEach(s => {
+                    const athlete = athletes.find(a => String(a.id) === String(s.athleteId));
+                    if (athlete) {
+                        if (!scorersInMatch[athlete.name]) {
+                            scorersInMatch[athlete.name] = 0;
+                        }
+                        scorersInMatch[athlete.name]++;
+                    }
+                });
+
+                let scorersString = Object.entries(scorersInMatch)
+                    .map(([name, count]) => count > 1 ? `${name} (${count})` : name)
+                    .join(', ');
+                
+                if (scorersString) {
+                    scorersString = `<strong>Marcatori:</strong> ${scorersString}`;
+                }
+
                 const matchItem = document.createElement('a');
                 matchItem.href = "#";
-                matchItem.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center match-result-item';
+                matchItem.className = 'list-group-item list-group-item-action match-result-item';
                 matchItem.dataset.matchId = match.id;
                 matchItem.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -958,12 +981,15 @@
                 });
 
                 matchItem.innerHTML = `
-                    <div class="flex-grow-1">
-                        <small class="text-muted">${new Date(match.date).toLocaleDateString('it-IT', {day: '2-digit', month: '2-digit', year: 'numeric'})}</small>
-                        <div>${homeTeamName} vs ${awayTeamName}</div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="flex-grow-1">
+                            <small class="text-muted">${new Date(match.date).toLocaleDateString('it-IT', {day: '2-digit', month: '2-digit', year: 'numeric'})}</small>
+                            <div>${homeTeamName} vs ${awayTeamName}</div>
+                        </div>
+                        <span class="match-score me-3">${match.homeScore} - ${match.awayScore}</span>
+                        <button class="btn btn-sm btn-outline-secondary no-print edit-match-btn" data-match-id="${match.id}"><i class="bi bi-pencil-fill"></i></button>
                     </div>
-                    <span class="match-score me-3">${match.homeScore} - ${match.awayScore}</span>
-                    <button class="btn btn-sm btn-outline-secondary no-print edit-match-btn" data-match-id="${match.id}"><i class="bi bi-pencil-fill"></i></button>
+                    ${scorersString ? `<div class="mt-1 text-muted" style="font-size: 0.8rem;">${scorersString}</div>` : ''}
                 `;
                 elements.matchResultsContainer.appendChild(matchItem);
             });
@@ -973,27 +999,29 @@
             elements.cardsSummaryTbody.innerHTML = '';
             const cardsByAthlete = {};
 
+            athletes.forEach(a => cardsByAthlete[a.id] = { yellow: 0, red: 0 });
+
             Object.values(matchResults).forEach(match => {
                 match.cards.forEach(card => {
-                    if (!cardsByAthlete[card.athleteId]) {
-                        cardsByAthlete[card.athleteId] = { yellow: 0, red: 0 };
+                    if (cardsByAthlete[card.athleteId]) {
+                         cardsByAthlete[card.athleteId][card.type]++;
                     }
-                    cardsByAthlete[card.athleteId][card.type]++;
                 });
             });
             
             const sortedAthleteIds = Object.keys(cardsByAthlete).sort((a, b) => {
-                const totalA = cardsByAthlete[a].yellow + cardsByAthlete[a].red;
-                const totalB = cardsByAthlete[b].yellow + cardsByAthlete[b].red;
+                const totalB = cardsByAthlete[b].red * 2 + cardsByAthlete[b].yellow;
+                const totalA = cardsByAthlete[a].red * 2 + cardsByAthlete[a].yellow;
                 return totalB - totalA;
             });
 
-            if (sortedAthleteIds.length === 0) {
+            if (sortedAthleteIds.every(id => cardsByAthlete[id].yellow === 0 && cardsByAthlete[id].red === 0)) {
                 elements.cardsSummaryTbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Nessun cartellino.</td></tr>';
                 return;
             }
 
             sortedAthleteIds.forEach(athleteId => {
+                if(cardsByAthlete[athleteId].yellow === 0 && cardsByAthlete[athleteId].red === 0) return;
                 const athlete = athletes.find(a => String(a.id) === athleteId);
                 const row = `
                     <tr>
@@ -1010,23 +1038,25 @@
             elements.scorersSummaryTbody.innerHTML = '';
             const goalsByAthlete = {};
 
+            athletes.forEach(a => goalsByAthlete[a.id] = 0);
+
             Object.values(matchResults).forEach(match => {
                 match.scorers.forEach(scorer => {
-                    if (!goalsByAthlete[scorer.athleteId]) {
-                        goalsByAthlete[scorer.athleteId] = 0;
+                    if (goalsByAthlete.hasOwnProperty(scorer.athleteId)) {
+                        goalsByAthlete[scorer.athleteId]++;
                     }
-                    goalsByAthlete[scorer.athleteId]++;
                 });
             });
 
             const sortedAthleteIds = Object.keys(goalsByAthlete).sort((a, b) => goalsByAthlete[b] - goalsByAthlete[a]);
 
-            if (sortedAthleteIds.length === 0) {
+            if (sortedAthleteIds.every(id => goalsByAthlete[id] === 0)) {
                 elements.scorersSummaryTbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted">Nessun marcatore.</td></tr>';
                 return;
             }
 
             sortedAthleteIds.forEach(athleteId => {
+                 if (goalsByAthlete[athleteId] === 0) return;
                 const athlete = athletes.find(a => String(a.id) === athleteId);
                 const row = `
                     <tr>
@@ -1051,11 +1081,11 @@
                 elements.matchPeriodToggle.style.display = 'none';
                 filteredMatches = filteredMatches.filter(m => m.opponentName === opponentFilter);
                 
-                labels = filteredMatches.map(m => new Date(m.date).toLocaleDateString('it-IT', {day:'2-digit', month:'short'}));
+                labels = filteredMatches.map(m => `${new Date(m.date).toLocaleDateString('it-IT', {day:'2-digit', month:'short'})} vs ${m.opponentName}`);
                 datasets = [
-                    { label: 'Vittorie', data: [], backgroundColor: 'var(--primary-red)' },
-                    { label: 'Pareggi', data: [], backgroundColor: 'var(--secondary-blue)' },
-                    { label: 'Sconfitte', data: [], backgroundColor: '#6c757d' },
+                    { label: 'Vittorie', data: [], backgroundColor: '#28a745' },
+                    { label: 'Pareggi', data: [], backgroundColor: '#6c757d' },
+                    { label: 'Sconfitte', data: [], backgroundColor: '#d90429' },
                 ];
 
                 filteredMatches.forEach(match => {
@@ -1094,9 +1124,9 @@
 
                 labels = Object.keys(resultsByPeriod).sort();
                 datasets = [
-                    { label: 'Vittorie', data: labels.map(l => resultsByPeriod[l].W), backgroundColor: 'var(--primary-red)' },
-                    { label: 'Pareggi', data: labels.map(l => resultsByPeriod[l].D), backgroundColor: 'var(--secondary-blue)' },
-                    { label: 'Sconfitte', data: labels.map(l => resultsByPeriod[l].L), backgroundColor: '#6c757d' },
+                    { label: 'Vittorie', data: labels.map(l => resultsByPeriod[l].W), backgroundColor: '#28a745' },
+                    { label: 'Pareggi', data: labels.map(l => resultsByPeriod[l].D), backgroundColor: '#6c757d' },
+                    { label: 'Sconfitte', data: labels.map(l => resultsByPeriod[l].L), backgroundColor: '#d90429' },
                 ];
             }
 
@@ -1226,7 +1256,6 @@
         };
 
         const populatePerformanceSelectors = () => {
-            const visibleGpsData = getVisibleGpsData();
             elements.performanceSelectorsContainer.innerHTML = '';
             performanceSelections.forEach((selection, index) => {
                 const selectorRow = document.createElement('div');
@@ -1513,7 +1542,8 @@
                 }
 
                 if(Object.values(gpsData[athlete.id] || {}).some(s => s.tipo_sessione === 'Individual')) {
-                    requestAuthentication(openGpsModal);
+                    if(!isAuthenticated()) requestAuthentication(openGpsModal);
+                    else openGpsModal();
                 } else {
                     openGpsModal();
                 }
