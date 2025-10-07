@@ -1193,7 +1193,6 @@
             const filteredData = JSON.parse(JSON.stringify(gpsData));
             for (const athleteId in filteredData) {
                 for (const date in filteredData[athleteId]) {
-                    // La nuova struttura ha un array di sessioni per data
                     filteredData[athleteId][date] = filteredData[athleteId][date].filter(session => session.tipo_sessione !== 'Individual');
                     if (filteredData[athleteId][date].length === 0) {
                         delete filteredData[athleteId][date];
@@ -1588,21 +1587,22 @@
             e.preventDefault();
             const athleteId = document.getElementById('modal-athlete-id-gps').value;
             const date = document.getElementById('gps-data_di_registrazione').value;
-            const sessionId = document.getElementById('gps-session-id').value || Date.now().toString();
+            const time = document.getElementById('gps-ora_registrazione').value;
+            // GESTIONE ID UNICO E SALVATAGGIO IN ARRAY PER DATA
+            const sessionId = document.getElementById('gps-session-id').value || `${date}-${time}-${Date.now()}`;
 
             if (!date) { alert("Per favore, inserisci una data di registrazione valida."); return; }
             
-            const gpsFormData = {};
+            const gpsFormData = { id: sessionId };
             allGpsFields.forEach(field => {
                  if (field === 'id') return;
                  const el = document.getElementById(`gps-${field}`);
                  if(el) { const value = el.value.trim(); if(value !== '') gpsFormData[field] = el.type === 'number' ? parseFloat(value) : value; }
             });
-            gpsFormData.id = sessionId;
 
             const dist = parseFloat(document.getElementById('gps-distanza_totale').value) || 0;
-            const time = parseFloat(document.getElementById('gps-tempo_totale').value) || 0;
-            if (dist > 0 && time > 0) gpsFormData.distanza_per_minuto = parseFloat((dist / time).toFixed(2));
+            const t = parseFloat(document.getElementById('gps-tempo_totale').value) || 0;
+            if (dist > 0 && t > 0) gpsFormData.distanza_per_minuto = parseFloat((dist / t).toFixed(2));
             const distC = parseFloat(document.getElementById('gps-distanza_circuito').value) || 0;
             const minC = parseInt(document.getElementById('gps-tempo_circuito_min').value) || 0;
             const secC = parseInt(document.getElementById('gps-tempo_circuito_sec').value) || 0;
@@ -1753,6 +1753,7 @@
                     document.getElementById('gps-data_di_registrazione').value = data ? data.data_di_registrazione : new Date().toISOString().split('T')[0];
                     if(data){
                         allGpsFields.forEach(field => {
+                            if(field === 'id') return;
                             const el = form.querySelector(`#gps-${field}`);
                             if (el && data[field] !== undefined) { el.value = data[field]; }
                         });
