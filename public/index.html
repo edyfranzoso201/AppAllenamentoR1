@@ -335,10 +335,16 @@
         </div>
         <hr class="my-5 no-print">
         <div id="report-valutazioni-section" class="row my-4 printable-area">
-            <div class="col-12 d-flex align-items-center gap-2 mb-3">
-                 <h2 class="main-title mb-0">Report Valutazioni Comportamentali</h2>
-                 <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
-                 <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
+             <div class="col-12 d-flex justify-content-between align-items-center gap-2 mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <h2 class="main-title mb-0">Report Valutazioni Comportamentali</h2>
+                    <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
+                    <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
+                </div>
+                <div class="d-flex align-items-center gap-2 no-print">
+                    <label for="evaluation-date-picker-2" class="form-label mb-0 text-nowrap">Data Report:</label>
+                    <input type="date" id="evaluation-date-picker-2" class="form-control" style="max-width: 180px;">
+                </div>
             </div>
             <div class="col-lg-6 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Andamento Medio Squadra (Ultimi 7 Giorni)</h5><canvas id="dailyTeamChart"></canvas></div></div></div>
             <div class="col-lg-6 mb-4"><div class="card chart-card"><div class="card-body" id="comparison-chart-container"><h5 class="card-title mb-0">Confronto Valutazioni Atleti</h5><div class="btn-group btn-group-sm float-end no-print" id="comparison-period-toggle"><button type="button" class="btn btn-outline-secondary active" data-period="daily">Giornaliero</button><button type="button" class="btn btn-outline-secondary" data-period="weekly">Settimanale</button><button type="button" class="btn btn-outline-secondary" data-period="monthly">Mensile</button></div><canvas id="monthlyComparisonChart"></canvas></div></div></div>
@@ -527,6 +533,7 @@
         const elements = {
             athleteGrid: document.getElementById('athlete-grid'),
             evaluationDatePicker: document.getElementById('evaluation-date-picker'),
+            evaluationDatePicker2: document.getElementById('evaluation-date-picker-2'),
             performanceSelectorsContainer: document.getElementById('performance-selectors-container'),
             addComparisonBtn: document.getElementById('add-comparison-btn'),
             evaluationForm: document.getElementById('evaluation-form'),
@@ -1191,6 +1198,9 @@
 
             elements.metricSelector.innerHTML = optionsHtml;
             elements.multiAthleteMetricSelector.innerHTML = optionsHtml;
+            
+            elements.metricSelector.value = 'velocita_massima';
+            elements.multiAthleteMetricSelector.value = 'velocita_massima';
 
             performanceSelections.forEach((selection, index) => {
                 const selectorRow = document.createElement('div');
@@ -1257,9 +1267,12 @@
             elements.radarAthleteSelector2.innerHTML = `<option value="">Nessun confronto</option>${athleteOptions}`;
             
             const keysToExclude = ['tipo_sessione', 'data_di_registrazione', 'ora_registrazione'];
-            elements.trendMetricSelector.innerHTML = Object.entries(gpsFieldsForDisplay)
+            const optionsHtml = Object.entries(gpsFieldsForDisplay)
                 .filter(([key]) => !keysToExclude.includes(key))
                 .map(([key, label]) => `<option value="${key}">${label}</option>`).join('');
+
+            elements.trendMetricSelector.innerHTML = optionsHtml;
+            elements.trendMetricSelector.value = 'velocita_massima';
         };
 
         const updateAthleteTrendChart = () => {
@@ -1390,6 +1403,17 @@
         };
 
         // --- EVENT LISTENERS ---
+        const syncAndUpdateEvaluationDate = (newDate) => {
+            elements.evaluationDatePicker.value = newDate;
+            elements.evaluationDatePicker2.value = newDate;
+            updateEvaluationCharts();
+            updateAttendanceChart();
+            updateHallOfFame();
+        };
+
+        elements.evaluationDatePicker.addEventListener('change', (e) => syncAndUpdateEvaluationDate(e.target.value));
+        elements.evaluationDatePicker2.addEventListener('change', (e) => syncAndUpdateEvaluationDate(e.target.value));
+
         elements.prevMonthBtn.addEventListener('click', () => { currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1); renderCalendar(); });
         elements.nextMonthBtn.addEventListener('click', () => { currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1); renderCalendar(); });
         elements.addSessionBtn.addEventListener('click', () => openSessionModal());
@@ -1399,7 +1423,6 @@
         elements.sessionForm.addEventListener('submit', e => { e.preventDefault(); const date = document.getElementById('session-date').value; const id = document.getElementById('session-id').value || Date.now(); const sessionData = { id, title: document.getElementById('session-title').value, time: document.getElementById('session-time').value, location: document.getElementById('session-location').value, goals: document.getElementById('session-goals').value, description: document.getElementById('session-description').value, }; if (!trainingSessions[date]) { trainingSessions[date] = []; } const existingIndex = trainingSessions[date].findIndex(s => s.id == id); if (existingIndex > -1) { trainingSessions[date][existingIndex] = sessionData; } else { trainingSessions[date].push(sessionData); } saveData(); renderCalendar(); updateHomePage(); sessionModal.hide(); });
         elements.deleteSessionBtn.addEventListener('click', () => { const date = document.getElementById('session-date').value; const id = document.getElementById('session-id').value; if (date && id && confirm("Sei sicuro di voler eliminare questa sessione?")) { if(trainingSessions[date]) { trainingSessions[date] = trainingSessions[date].filter(s => s.id != id); if(trainingSessions[date].length === 0) { delete trainingSessions[date]; } } saveData(); renderCalendar(); updateHomePage(); sessionModal.hide(); } });
         document.getElementById('gps-tipo_sessione').addEventListener('change', (e) => { document.getElementById('match-stats-fields').style.display = (e.target.value === 'Partita') ? 'block' : 'none'; });
-        elements.evaluationDatePicker.addEventListener('change', () => { updateEvaluationCharts(); updateAttendanceChart(); updateHallOfFame(); });
         elements.comparisonPeriodToggle.addEventListener('click', (e) => { if (e.target.dataset.period) { elements.comparisonPeriodToggle.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active')); e.target.classList.add('active'); comparisonChartPeriod = e.target.dataset.period; updateEvaluationCharts(); } });
         elements.attendancePeriodToggle.addEventListener('click', (e) => { if (e.target.dataset.period) { elements.attendancePeriodToggle.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active')); e.target.classList.add('active'); attendanceChartPeriod = e.target.dataset.period; updateAttendanceChart(); } });
         elements.addAthleteBtn.addEventListener('click', () => { document.getElementById('athleteModalLabel').textContent = 'Aggiungi Atleta'; document.getElementById('athlete-form').reset(); document.getElementById('modal-athlete-id').value = ''; athleteModal.show(); });
@@ -1871,10 +1894,12 @@
 
         async function initializeApp() {
             await loadData();
+            const today = new Date();
+            elements.evaluationDatePicker.valueAsDate = today;
+            elements.evaluationDatePicker2.valueAsDate = today;
+            elements.multiAthleteDatepicker.valueAsDate = today;
             updateAllUI();
             startPolling();
-            elements.evaluationDatePicker.valueAsDate = new Date();
-            elements.multiAthleteDatepicker.valueAsDate = new Date();
         }
 
         initializeApp();
