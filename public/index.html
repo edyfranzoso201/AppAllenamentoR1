@@ -39,7 +39,7 @@
         .form-control:focus, .form-select:focus { background-color: var(--secondary-blue); color: var(--text-light); border-color: var(--primary-red); box-shadow: 0 0 0 0.25rem rgba(217, 4, 41, 0.25); }
         
         /* Stili Hall of Fame compatti */
-        .award-card { background: linear-gradient(45deg, var(--gold-star), #d4af37); color: #000; border: 2px solid #fff; width: 180px; padding: 0.75rem; }
+        .award-card { background: linear-gradient(45deg, var(--gold-star), #d4af37); color: #000; border: 2px solid #fff; width: 180px; }
         .award-avatar { width: 50px; height: 50px; }
         
         .text-muted { color: rgba(255, 255, 255, 0.75) !important; }
@@ -95,7 +95,7 @@
             .no-print { display: none !important; }
             body * { visibility: hidden; }
             .printing-now, .printing-now * { visibility: visible; }
-            .printing-now { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; }
+            .printing-now { position: absolute; left: 0; top: 0; width: 100%; }
             .printing-now #athlete-grid { display: flex !important; flex-wrap: wrap !important; }
             .printing-now #athlete-grid > [class*="col-"] { flex: 0 0 33.33% !important; max-width: 33.33% !important; padding: 5px !important; page-break-inside: avoid; }
             .printing-now .athlete-card { box-shadow: none !important; }
@@ -860,6 +860,7 @@
                 const matchItem = document.createElement('div');
                 matchItem.className = 'list-group-item list-group-item-action match-result-item';
                 matchItem.dataset.matchId = match.id;
+                matchItem.style.cursor = 'pointer';
                 matchItem.addEventListener('click', (e) => {
                      e.preventDefault();
                      if (!e.target.closest('.edit-match-btn')) {
@@ -1113,10 +1114,10 @@
                 const athlete = athletes.find(a => a.id.toString() === award.athleteId.toString());
                 if (athlete) {
                     const awardCard = document.createElement('div');
-                    awardCard.className = 'card award-card p-3 text-center';
+                    awardCard.className = 'card award-card text-center';
                     const dateObj = new Date(award.date);
                     const formattedDate = !isNaN(dateObj) ? dateObj.toLocaleDateString('it-IT') : 'Data non disponibile';
-                    awardCard.innerHTML = `<img src="${athlete.avatar || defaultAvatar}" onerror="this.src='${defaultAvatar}'" alt="${athlete.name}" class="award-avatar mx-auto mb-2 rounded-circle"><h6 class="mb-1" style="font-size: 0.9rem;">${athlete.name}</h6><p class="mb-0" style="font-size: 0.8rem; color: #000;">${formattedDate}</p><small>${award.reason}</small><i class="bi bi-award-fill mt-2" style="font-size: 1.5rem;"></i>`;
+                    awardCard.innerHTML = `<div class="card-body p-2"><img src="${athlete.avatar || defaultAvatar}" onerror="this.src='${defaultAvatar}'" alt="${athlete.name}" class="award-avatar mx-auto mb-2 rounded-circle"><h6 class="mb-1" style="font-size: 0.9rem;">${athlete.name}</h6><p class="mb-0" style="font-size: 0.8rem; color: #000;">${formattedDate}</p><small>${award.reason}</small><i class="bi bi-award-fill mt-2" style="font-size: 1.5rem;"></i></div>`;
                     elements.hallOfFameContainer.appendChild(awardCard);
                 }
             });
