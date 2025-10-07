@@ -1193,7 +1193,7 @@
             for (const athleteId in gpsData) {
                 for (const date in gpsData[athleteId]) {
                     const session = gpsData[athleteId][date].find(s => String(s.id) === String(sessionId));
-                    if (session) return session;
+                    if (session) return { ...session, date: date }; // Ritorna anche la data per comodità
                 }
             }
             return null;
@@ -1262,7 +1262,7 @@
                 labels: validSelections.map((selection) => {
                     const session = findSessionById(selection.sessionId);
                     const athlete = athletes.find(a => a.id.toString() === selection.athleteId.toString());
-                    return `${athlete?.name || 'N/A'} (${new Date(session.data_di_registrazione).toLocaleDateString('it-IT')})`;
+                    return `${athlete?.name || 'N/A'} (${new Date(session.date).toLocaleDateString('it-IT')})`;
                 }),
                 datasets: [{
                     label: gpsFieldsForDisplay[selectedMetric] || selectedMetric,
@@ -1296,7 +1296,7 @@
 
                 return `<tr>
                             <td>${athlete?.name || 'N/A'}</td>
-                            <td>${new Date(data.data_di_registrazione).toLocaleDateString('it-IT')}</td>
+                            <td>${new Date(data.date).toLocaleDateString('it-IT')}</td>
                             <td>${data.ora_registrazione || 'N/A'}</td>
                             <td>${data.tipo_sessione || 'N/A'}</td>
                             ${cells}
@@ -1763,10 +1763,10 @@
                         
                         newDeleteBtn.addEventListener('click', () => {
                              if (confirm(`Sei sicuro di voler eliminare questa sessione?`)) {
-                                if(gpsData[athleteId][session.data_di_registrazione]){
-                                    gpsData[athleteId][session.data_di_registrazione] = gpsData[athleteId][session.data_di_registrazione].filter(s => s.id != sessionId);
-                                    if(gpsData[athleteId][session.data_di_registrazione].length === 0){
-                                        delete gpsData[athleteId][session.data_di_registrazione];
+                                if(gpsData[athleteId][session.date]){
+                                    gpsData[athleteId][session.date] = gpsData[athleteId][session.date].filter(s => s.id != sessionId);
+                                    if(gpsData[athleteId][session.date].length === 0){
+                                        delete gpsData[athleteId][session.date];
                                     }
                                 }
                                 saveData().then(() => {
@@ -1802,7 +1802,7 @@
                 const data = validSelections.map(selection => {
                     const athlete = athletes.find(a => a.id.toString() === selection.athleteId.toString());
                     const gpsRecord = findSessionById(selection.sessionId) || {};
-                    const row = { Atleta: athlete?.name || 'N/A', Data: new Date(gpsRecord.data_di_registrazione).toLocaleDateString('it-IT'), Ora: gpsRecord.ora_registrazione || 'N/A', Tipo: gpsRecord.tipo_sessione || 'N/A' };
+                    const row = { Atleta: athlete?.name || 'N/A', Data: new Date(gpsRecord.date).toLocaleDateString('it-IT'), Ora: gpsRecord.ora_registrazione || 'N/A', Tipo: gpsRecord.tipo_sessione || 'N/A' };
                     Object.entries(gpsFieldsForDisplay).forEach(([key, label]) => { if (!['Data', 'Ora', 'Tipo'].includes(label)) row[label] = gpsRecord[key] ?? 'N/A'; });
                     return row;
                 });
@@ -1819,7 +1819,7 @@
                 const body = validSelections.map(selection => { 
                     const athlete = athletes.find(a => a.id.toString() === selection.athleteId.toString()); 
                     const gpsRecord = findSessionById(selection.sessionId) || {}; 
-                    return [ athlete?.name || 'N/A', new Date(gpsRecord.data_di_registrazione).toLocaleDateString('it-IT'), gpsRecord.ora_registrazione || 'N/A', gpsRecord.tipo_sessione || 'N/A', ...Object.keys(gpsFieldsForDisplay).filter(key => !['data_di_registrazione', 'ora_registrazione', 'tipo_sessione'].includes(key)).map(key => gpsRecord[key] ?? 'N/A') ]; 
+                    return [ athlete?.name || 'N/A', new Date(gpsRecord.date).toLocaleDateString('it-IT'), gpsRecord.ora_registrazione || 'N/A', gpsRecord.tipo_sessione || 'N/A', ...Object.keys(gpsFieldsForDisplay).filter(key => !['data_di_registrazione', 'ora_registrazione', 'tipo_sessione'].includes(key)).map(key => gpsRecord[key] ?? 'N/A') ]; 
                 });
                 doc.autoTable({ head: [head], body, styles: { fontSize: 6 }, headStyles: { fillColor: [10, 36, 99] }, columnStyles: { 0: {cellWidth: 20}, 1: {cellWidth: 18}, 2: {cellWidth: 15}, 3: {cellWidth: 20} } });
                 doc.save(`performance_${new Date().toISOString().split('T')[0]}.pdf`);
