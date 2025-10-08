@@ -1602,44 +1602,43 @@
 
             if (!date) { alert("Per favore, inserisci una data di registrazione valida."); return; }
             
-            // Se l'utente ha modificato la data o l'ora di una sessione esistente,
-            // la trattiamo come una nuova sessione eliminando il vecchio ID.
-            if(originalSession && (originalSession.data_di_registrazione !== date || originalSession.ora_registrazione !== time)) {
-                sessionId = ''; // Forza la creazione di un nuovo ID
-            }
+            const gpsFormData = {};
             
-            if (!sessionId) {
-                sessionId = Date.now().toString(); // Crea un nuovo ID solo se necessario
-            }
-
-            const gpsFormData = { id: sessionId };
+            // Popola l'oggetto con i dati del form
             allGpsFields.forEach(field => {
                  const el = document.getElementById(`gps-${field}`);
                  if(el) { const value = el.value.trim(); if(value !== '') gpsFormData[field] = el.type === 'number' ? parseFloat(value) : value; }
             });
-
-            const dist = parseFloat(gpsFormData.distanza_totale) || 0;
-            const t = parseFloat(gpsFormData.tempo_totale) || 0;
-            if (dist > 0 && t > 0) gpsFormData.distanza_per_minuto = parseFloat((dist / t).toFixed(2));
-            const distC = parseFloat(gpsFormData.distanza_circuito) || 0;
-            const minC = parseInt(gpsFormData.tempo_circuito_min) || 0;
-            const secC = parseInt(gpsFormData.tempo_circuito_sec) || 0;
-            const cenC = parseInt(gpsFormData.tempo_circuito_cen) || 0;
-            const totalTimeSecC = minC * 60 + secC + cenC / 100;
-            if (totalTimeSecC > 0) {
-                gpsFormData.tempo_circuito_totale_s = totalTimeSecC;
-                if (distC > 0) gpsFormData.velocita_circuito = parseFloat(((distC / totalTimeSecC) * 3.6).toFixed(2));
+            
+            // Se l'ID sessione è vuoto, significa che è una nuova sessione (o una modifica di data/ora)
+            if (!sessionId) {
+                sessionId = Date.now().toString(); // Crea un nuovo ID
             }
+            gpsFormData.id = sessionId;
 
-            // Rimuovi la vecchia sessione se la data è cambiata
-            if(originalSession && originalSession.data_di_registrazione !== date) {
-                const oldDate = originalSession.data_di_registrazione;
+            // Rimuovi la vecchia sessione dal suo array originale SE la data è cambiata
+            if(originalSession && originalSession.date !== date) {
+                const oldDate = originalSession.date;
                 if(gpsData[athleteId] && gpsData[athleteId][oldDate]) {
                     gpsData[athleteId][oldDate] = gpsData[athleteId][oldDate].filter(s => String(s.id) !== String(originalSession.id));
                     if(gpsData[athleteId][oldDate].length === 0) {
                         delete gpsData[athleteId][oldDate];
                     }
                 }
+            }
+
+            // Logica per calcoli derivati...
+            const dist = parseFloat(gpsFormData.distanza_totale) || 0;
+            const t = parseFloat(gpsFormData.tempo_totale) || 0;
+            if (dist > 0 && t > 0) gpsFormData.distanza_per_minuto = parseFloat((dist / t).toFixed(2));
+            const distC = parseFloat(gpsFormData.distanza_circuito) || 0;
+            const minC = parseInt(document.getElementById('gps-tempo_circuito_min').value) || 0;
+            const secC = parseInt(document.getElementById('gps-tempo_circuito_sec').value) || 0;
+            const cenC = parseInt(document.getElementById('gps-tempo_circuito_cen').value) || 0;
+            const totalTimeSecC = minC * 60 + secC + cenC / 100;
+            if (totalTimeSecC > 0) {
+                gpsFormData.tempo_circuito_totale_s = totalTimeSecC;
+                if (distC > 0) gpsFormData.velocita_circuito = parseFloat(((distC / totalTimeSecC) * 3.6).toFixed(2));
             }
 
             if (!gpsData[athleteId]) gpsData[athleteId] = {};
