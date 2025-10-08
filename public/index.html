@@ -24,7 +24,8 @@
         .athlete-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; transition: all 0.3s ease; position: relative; overflow: hidden; }
         .athlete-card-clickable { cursor: pointer; }
         .athlete-card-clickable:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(217, 4, 41, 0.2); border-color: var(--primary-red); }
-        .athlete-avatar { width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--border-color); object-fit: cover; background-color: var(--secondary-blue); }
+        .athlete-avatar { width: 70px; height: 70px; border-radius: 50%; border: 3px solid var(--border-color); object-fit: cover; background-color: var(--secondary-blue); }
+        .athlete-card .card-title { font-size: 1.1rem; margin-bottom: 0.1rem; }
         .shirt-number { font-size: 1.5rem; font-weight: bold; color: var(--text-light); background-color: var(--primary-red); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: absolute; top: 15px; right: 15px; }
         .is-captain { color: var(--gold-star); }
         .card-actions { position: absolute; bottom: 10px; right: 10px; z-index: 5; display: flex; gap: 5px; }
@@ -95,7 +96,7 @@
             .printing-now, .printing-now * { visibility: visible; }
             .printing-now { position: absolute; left: 0; top: 0; width: 100%; }
             .printing-now #athlete-grid { display: flex !important; flex-wrap: wrap !important; }
-            .printing-now #athlete-grid > [class*="col-"] { flex: 0 0 33.33% !important; max-width: 33.33% !important; padding: 5px !important; page-break-inside: avoid; }
+            .printing-now #athlete-grid > [class*="col-"] { flex: 0 0 25% !important; max-width: 25% !important; padding: 5px !important; page-break-inside: avoid; }
             .printing-now .athlete-card { box-shadow: none !important; }
             .printing-now .card, .printing-now .list-group-item, .printing-now .calendar-day, .printing-now .table { background-color: #fff !important; border: 1px solid #ccc !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
             .printing-now table, .printing-now th, .printing-now td { background-color: #fff !important; color: #000 !important; border-color: #000 !important; }
@@ -743,7 +744,7 @@
                 case 'captain-c': token.innerHTML = '(C)'; token.classList.add('token-captain'); break;
                 case 'captain-vc': token.innerHTML = '(VC)'; token.classList.add('token-captain'); break;
                 case 'ball': token.innerHTML = '⚽'; token.classList.add('token-ball'); break;
-                case 'opponent': token.classList.add('token-opponent'); break;
+                case 'opponent': token.innerHTML = '●'; token.classList.add('token-opponent'); break;
             }
             return token;
         };
@@ -1583,35 +1584,40 @@
         elements.athleteForm.addEventListener('submit', (e) => { e.preventDefault(); const athleteId = document.getElementById('modal-athlete-id').value; const athleteData = { name: document.getElementById('athlete-name').value.trim(), avatar: document.getElementById('athlete-avatar').value.trim(), role: document.getElementById('athlete-role').value.trim(), number: parseInt(document.getElementById('athlete-number').value), isCaptain: document.getElementById('athlete-captain').checked }; if (athleteId) { const index = athletes.findIndex(a => a.id.toString() === athleteId); if (index !== -1) athletes[index] = { ...athletes[index], ...athleteData }; } else { athleteData.id = Date.now(); athletes.push(athleteData); } saveData(); updateAllUI(); athleteModal.hide(); });
         elements.evaluationForm.addEventListener('submit', (e) => { e.preventDefault(); const athleteId = document.getElementById('modal-athlete-id-eval').value; const date = elements.evaluationDatePicker.value; if (!date) { alert('Per favore, seleziona una data valida prima di salvare.'); return; } if (!evaluations[date]) evaluations[date] = {}; evaluations[date][athleteId] = evaluationCategories.reduce((obj, cat) => ({ ...obj, [cat]: document.getElementById(cat).value }), {}); if (document.getElementById('award-checkbox').checked) { const reason = prompt('Motivo del premio:'); if (reason) { if (!awards[date]) awards[date] = []; awards[date] = awards[date].filter(a => a.athleteId.toString() !== athleteId); awards[date].push({ athleteId, reason, date }); } } else { if (awards[date]) awards[date] = awards[date].filter(a => a.athleteId.toString() !== athleteId); } saveData(); updateAllUI(); evaluationModal.hide(); });
         
+        // CORREZIONE: Listener per resettare l'ID sessione se data o ora vengono cambiate
+        document.getElementById('gps-data_di_registrazione').addEventListener('input', () => {
+             document.getElementById('gps-session-id').value = '';
+        });
+        document.getElementById('gps-ora_registrazione').addEventListener('input', () => {
+             document.getElementById('gps-session-id').value = '';
+        });
+
         elements.gpsForm.addEventListener('submit', (e) => { 
             e.preventDefault();
             const athleteId = document.getElementById('modal-athlete-id-gps').value;
             const date = document.getElementById('gps-data_di_registrazione').value;
-            // GESTIONE ID UNICO E SALVATAGGIO IN ARRAY PER DATA
+            const time = document.getElementById('gps-ora_registrazione').value;
             let sessionId = document.getElementById('gps-session-id').value;
             const originalSession = findSessionById(sessionId);
 
             if (!date) { alert("Per favore, inserisci una data di registrazione valida."); return; }
-
-            const gpsFormData = {};
-            // Popola l'oggetto con i dati del form
-            allGpsFields.forEach(field => {
-                 const el = document.getElementById(`gps-${field}`);
-                 if(el) { const value = el.value.trim(); if(value !== '') gpsFormData[field] = el.type === 'number' ? parseFloat(value) : value; }
-            });
-
+            
             // Se l'utente ha modificato la data o l'ora di una sessione esistente,
             // la trattiamo come una nuova sessione eliminando il vecchio ID.
-            if(originalSession && (originalSession.data_di_registrazione !== date || originalSession.ora_registrazione !== gpsFormData.ora_registrazione)) {
+            if(originalSession && (originalSession.data_di_registrazione !== date || originalSession.ora_registrazione !== time)) {
                 sessionId = ''; // Forza la creazione di un nuovo ID
             }
             
             if (!sessionId) {
                 sessionId = Date.now().toString(); // Crea un nuovo ID solo se necessario
             }
-            gpsFormData.id = sessionId;
 
-            // Logica per calcoli derivati
+            const gpsFormData = { id: sessionId };
+            allGpsFields.forEach(field => {
+                 const el = document.getElementById(`gps-${field}`);
+                 if(el) { const value = el.value.trim(); if(value !== '') gpsFormData[field] = el.type === 'number' ? parseFloat(value) : value; }
+            });
+
             const dist = parseFloat(gpsFormData.distanza_totale) || 0;
             const t = parseFloat(gpsFormData.tempo_totale) || 0;
             if (dist > 0 && t > 0) gpsFormData.distanza_per_minuto = parseFloat((dist / t).toFixed(2));
@@ -1649,14 +1655,6 @@
             saveData();
             updateAllUI();
             gpsModal.hide();
-        });
-
-        // Event listener per resettare l'ID sessione se data o ora vengono cambiate
-        document.getElementById('gps-data_di_registrazione').addEventListener('input', () => {
-             document.getElementById('gps-session-id').value = '';
-        });
-        document.getElementById('gps-ora_registrazione').addEventListener('input', () => {
-             document.getElementById('gps-session-id').value = '';
         });
 
         ['gps-distanza_totale', 'gps-tempo_totale'].forEach(id => { document.getElementById(id)?.addEventListener('input', () => { const dist = parseFloat(document.getElementById('gps-distanza_totale').value) || 0; const time = parseFloat(document.getElementById('gps-tempo_totale').value) || 0; document.getElementById('gps-distanza_per_minuto').value = (time > 0) ? (dist / time).toFixed(2) : ''; }); });
