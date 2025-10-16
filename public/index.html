@@ -51,6 +51,7 @@
         .calendar-day-header { font-weight: bold; }
         .calendar-session { background-color: var(--primary-red); color: white; padding: 4px; border-radius: 4px; font-size: 0.75rem; margin-top: 5px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .deadline-status { font-size: 2rem; position: absolute; top: 50%; right: 15px; transform: translateY(-50%); }
+        .text-purple { color: #6f42c1; }
         /* STILI MODULO FORMAZIONE */
         #pitch-wrapper { display: flex; align-items: flex-start; gap: 1rem; }
         #field-container { background-color: var(--field-green); border: 2px solid var(--field-line); position: relative; width: 100%; max-width: 450px; aspect-ratio: 5 / 7; box-sizing: border-box; flex-shrink: 0; }
@@ -652,13 +653,11 @@
         const saveData = async () => {
             const allData = { athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults };
             try {
-                await fetch('/api/data', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(allData)
-                });
+                // In un'app reale, qui ci sarebbe una chiamata API (es. fetch) per salvare i dati su un server.
+                // Per questo esempio, usiamo localStorage.
+                localStorage.setItem('coachDashboardData', JSON.stringify(allData));
             } catch (error) {
-                console.error('Errore nel salvataggio dei dati sul server:', error);
+                console.error('Errore nel salvataggio dei dati:', error);
             }
         };
 
@@ -676,21 +675,22 @@
             }
         };
 
-        const loadData = async () => {
+        const loadData = () => {
             try {
-                const response = await fetch('/api/data', { cache: 'no-store' });
-                if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
-                const allData = await response.json();
-                athletes = allData.athletes || [];
-                evaluations = allData.evaluations || {};
-                gpsData = allData.gpsData || {};
-                migrateGpsData(); // Funzione di compatibilità per vecchi dati
-                awards = allData.awards || {};
-                trainingSessions = allData.trainingSessions || {};
-                formationData = allData.formationData || { starters: [], bench: [], tokens: [] };
-                matchResults = allData.matchResults || {};
+                const allData = JSON.parse(localStorage.getItem('coachDashboardData'));
+                if (allData) {
+                    athletes = allData.athletes || [];
+                    evaluations = allData.evaluations || {};
+                    gpsData = allData.gpsData || {};
+                    migrateGpsData();
+                    awards = allData.awards || {};
+                    trainingSessions = allData.trainingSessions || {};
+                    formationData = allData.formationData || { starters: [], bench: [], tokens: [] };
+                    matchResults = allData.matchResults || {};
+                }
             } catch (error) {
-                console.error('Errore nel caricamento dei dati dal server:', error);
+                console.error('Errore nel caricamento dei dati:', error);
+                // Inizializza con valori vuoti in caso di errore
                 athletes = []; evaluations = {}; gpsData = {}; awards = {}; trainingSessions = {}; formationData = { starters: [], bench: [], tokens: [] }; matchResults = {};
             }
         };
@@ -757,9 +757,33 @@
             const field = elements.fieldContainer;
             const bench = elements.fieldBenchArea;
             document.querySelectorAll('.player-jersey, .token').forEach(el => el.remove());
-            elements.availableList.innerHTML = '';
-            const placedAthleteIds = new Set([...formationData.starters.map(p => String(p.athleteId)), ...formationData.bench.map(p => String(p.athleteId))]);
+            const availableList = document.getElementById('available-list');
+            availableList.innerHTML = '';
 
+            const placedAthleteIds = new Set([
+                ...formationData.starters.map(p => String(p.athleteId)),
+                ...formationData.bench.map(p => String(p.athleteId))
+            ]);
+
+            athletes.forEach(athlete => {
+                const medicalStatus = getMedicalStatus(athlete.scadenzaVisita, athlete.dataPrenotazioneVisita);
+                if (medicalStatus.isRed) {
+                    // Rimuovi l'atleta dalla formazione se la visita è scaduta
+                    formationData.starters = formationData.starters.filter(p => p.athleteId != athlete.id);
+                    formationData.bench = formationData.bench.filter(p => p.athleteId != athlete.id);
+                    return; // Non aggiungere alla lista dei disponibili
+                }
+                if (!placedAthleteIds.has(String(athlete.id))) {
+                    const availablePlayer = document.createElement('div');
+                    availablePlayer.className = 'list-group-item d-flex justify-content-between align-items-center available-player p-2';
+                    availablePlayer.draggable = true;
+                    availablePlayer.dataset.athleteId = athlete.id;
+                    availablePlayer.innerHTML = `<span><strong>${athlete.number}.</strong> ${athlete.name}</span><span class="badge bg-secondary">${athlete.role.substring(0,3)}</span>`;
+                    availableList.appendChild(availablePlayer);
+                }
+            });
+            saveData(); // Salva le modifiche alla formazione
+            
             formationData.starters.forEach(playerData => {
                 const athlete = athletes.find(a => String(a.id) === String(playerData.athleteId));
                 if (athlete) {
@@ -778,16 +802,7 @@
                     bench.appendChild(jersey);
                 }
             });
-            athletes.forEach(athlete => {
-                if (!placedAthleteIds.has(String(athlete.id))) {
-                    const availablePlayer = document.createElement('div');
-                    availablePlayer.className = 'list-group-item d-flex justify-content-between align-items-center available-player p-2';
-                    availablePlayer.draggable = true;
-                    availablePlayer.dataset.athleteId = athlete.id;
-                    availablePlayer.innerHTML = `<span><strong>${athlete.number}.</strong> ${athlete.name}</span><span class="badge bg-secondary">${athlete.role.substring(0,3)}</span>`;
-                    elements.availableList.appendChild(availablePlayer);
-                }
-            });
+            
             formationData.tokens.forEach(tokenData => {
                 const tokenEl = createTokenElement(tokenData.type, tokenData.id);
                 tokenEl.style.left = `calc(${tokenData.left}% - 1.25em)`;
@@ -836,31 +851,8 @@
 
         const renderAthletes = () => {
             elements.athleteGrid.innerHTML = '';
-            const today = new Date();
-            today.setHours(0,0,0,0);
-            const oneMonth = new Date(today);
-            oneMonth.setMonth(today.getMonth() + 1);
-
             athletes.forEach(athlete => {
-                let statusIcon = '';
-                if (athlete.scadenzaVisita) {
-                    const deadline = new Date(athlete.scadenzaVisita);
-                    let statusColorClass = '';
-                    let titleText = '';
-
-                    if (deadline < today) {
-                        statusColorClass = 'text-danger'; // Rosso
-                        titleText = `Scaduta il ${deadline.toLocaleDateString('it-IT')}`;
-                    } else if (deadline <= oneMonth) {
-                        statusColorClass = 'text-warning'; // Giallo
-                        titleText = `Scade il ${deadline.toLocaleDateString('it-IT')}`;
-                    } else {
-                        statusColorClass = 'text-success'; // Verde
-                        titleText = `Scade il ${deadline.toLocaleDateString('it-IT')}`;
-                    }
-                    statusIcon = `<i class="bi bi-circle-fill deadline-status ${statusColorClass}" title="${titleText}"></i>`;
-                }
-
+                const { html: statusIcon } = getMedicalStatus(athlete.scadenzaVisita, athlete.dataPrenotazioneVisita);
                 const card = document.createElement('div');
                 card.className = 'col-xl-3 col-lg-4 col-md-6 mb-4';
                 card.innerHTML = `<div class="card athlete-card"><div class="card-body athlete-card-clickable" data-athlete-id="${athlete.id}">${statusIcon}<img src="${athlete.avatar || defaultAvatar}" onerror="this.src='${defaultAvatar}'" alt="${athlete.name}" class="athlete-avatar me-3"><div><h5 class="card-title">${athlete.name} ${athlete.isCaptain ? '<i class="bi bi-star-fill is-captain"></i>' : ''}</h5><p class="card-text text-muted">${athlete.role}</p></div><div class="shirt-number">${athlete.number}</div></div><div class="card-actions no-print"><button class="btn btn-sm btn-outline-light gps-btn" title="Dati Performance" data-athlete-id="${athlete.id}"><i class="bi bi-person-fill-gear"></i></button><button class="btn btn-sm btn-outline-light edit-btn" title="Modifica Atleta" data-athlete-id="${athlete.id}"><i class="bi bi-pencil-fill"></i></button><button class="btn btn-sm btn-outline-light delete-btn" title="Elimina Atleta" data-athlete-id="${athlete.id}"><i class="bi bi-trash-fill"></i></button></div></div>`;
@@ -977,11 +969,11 @@
         const renderCardsSummary = () => {
             elements.cardsSummaryTbody.innerHTML = '';
             const allCards = Object.values(matchResults)
-                .flatMap(match => (match.cards || []).map((card, index) => ({ ...card, date: match.date, matchId: match.id, cardIndexInMatch: index })))
+                .flatMap(match => match.cards.map(card => ({ ...card, date: match.date })))
                 .sort((a, b) => new Date(b.date) - new Date(a.date));
             
             if (allCards.length === 0) {
-                elements.cardsSummaryTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nessun cartellino.</td></tr>';
+                elements.cardsSummaryTbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Nessun cartellino.</td></tr>';
                 return;
             }
 
@@ -993,14 +985,6 @@
                         <td>${card.type === 'yellow' ? '1' : '0'}</td>
                         <td>${card.type === 'red' ? '1' : '0'}</td>
                         <td>${new Date(card.date).toLocaleDateString('it-IT', {day: '2-digit', month: 'short'})}</td>
-                        <td class="no-print">
-                            <button class="btn btn-sm btn-outline-danger py-0 px-1 delete-card-btn"
-                                    data-match-id="${card.matchId}"
-                                    data-card-index="${card.cardIndexInMatch}"
-                                    title="Elimina questo cartellino">
-                                <i class="bi bi-x-lg"></i>
-                            </button>
-                        </td>
                     </tr>
                 `;
                 elements.cardsSummaryTbody.innerHTML += row;
@@ -1224,30 +1208,44 @@
 
         const checkDeadlinesAndAlert = () => {
             const today = new Date();
-            today.setHours(0,0,0,0);
-            const oneMonth = new Date(today);
-            oneMonth.setMonth(today.getMonth() + 1);
+            today.setHours(0, 0, 0, 0);
+            const threeMonths = new Date(today);
+            threeMonths.setMonth(today.getMonth() + 3);
 
-            const expiring = [];
-
+            let expiringPlayers = [];
             athletes.forEach(athlete => {
                 if (athlete.scadenzaVisita) {
-                    const deadline = new Date(athlete.scadenzaVisita);
-                    if (deadline < oneMonth) {
-                        expiring.push(athlete.name);
+                    const scadenzaDate = new Date(athlete.scadenzaVisita);
+                    scadenzaDate.setHours(0, 0, 0, 0);
+
+                    const dataPrenotazione = athlete.dataPrenotazioneVisita ? new Date(athlete.dataPrenotazioneVisita) : null;
+                    if (dataPrenotazione) dataPrenotazione.setHours(0, 0, 0, 0);
+
+                    const isExpiringSoon = (scadenzaDate <= threeMonths);
+                    const isBookedInTime = (dataPrenotazione && dataPrenotazione <= scadenzaDate);
+                    
+                    if (isExpiringSoon && !isBookedInTime) {
+                        expiringPlayers.push({
+                            name: `${athlete.name} ${athlete.cognome}`,
+                            scadenza: scadenzaDate < today ? 'SCADUTA' : `scade il ${scadenzaDate.toLocaleDateString('it-IT')}`
+                        });
                     }
                 }
             });
-
-            if (expiring.length > 0) {
-                const alertHtml = `
-                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                        <strong>Attenzione!</strong> Le seguenti visite mediche sono in scadenza o scadute: ${expiring.join(', ')}
+            
+            const alertsContainer = elements.alertsContainer;
+            alertsContainer.innerHTML = '';
+            if (expiringPlayers.length > 0) {
+                let alertMessage = `
+                    <div class="alert alert-warning alert-dismissible fade show mb-0" role="alert">
+                        <strong>Attenzione!</strong> Visite mediche in scadenza (o scadute):
+                        <ul>
+                            ${expiringPlayers.map(p => `<li><strong>${p.name}</strong>: ${p.scadenza}</li>`).join('')}
+                        </ul>
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>`;
-                elements.alertsContainer.innerHTML = alertHtml;
-            } else {
-                elements.alertsContainer.innerHTML = '';
+                    </div>
+                `;
+                alertsContainer.innerHTML = alertMessage;
             }
         };
 
@@ -1291,6 +1289,7 @@
                 document.getElementById('athlete-role').value = athlete.role;
                 document.getElementById('athlete-number').value = athlete.number;
                 document.getElementById('scadenza-visita').value = athlete.scadenzaVisita || '';
+                document.getElementById('data-prenotazione-visita').value = athlete.dataPrenotazioneVisita || '';
                 document.getElementById('athlete-captain').checked = athlete.isCaptain;
                 athleteModal.show();
             } else if (e.target.closest('.delete-btn')) {
@@ -1349,7 +1348,7 @@
             }
         });
 
-        elements.athleteForm.addEventListener('submit', (e) => { e.preventDefault(); const athleteId = document.getElementById('modal-athlete-id').value; const athleteData = { name: document.getElementById('athlete-name').value.trim(), avatar: document.getElementById('athlete-avatar').value.trim(), role: document.getElementById('athlete-role').value.trim(), number: parseInt(document.getElementById('athlete-number').value), isCaptain: document.getElementById('athlete-captain').checked, scadenzaVisita: document.getElementById('scadenza-visita').value }; if (athleteId) { const index = athletes.findIndex(a => a.id.toString() === athleteId); if (index !== -1) athletes[index] = { ...athletes[index], ...athleteData }; } else { athleteData.id = Date.now(); athletes.push(athleteData); } saveData(); updateAllUI(); athleteModal.hide(); });
+        elements.athleteForm.addEventListener('submit', (e) => { e.preventDefault(); const athleteId = document.getElementById('modal-athlete-id').value; const athleteData = { name: document.getElementById('athlete-name').value.trim(), avatar: document.getElementById('athlete-avatar').value.trim(), role: document.getElementById('athlete-role').value.trim(), number: parseInt(document.getElementById('athlete-number').value), isCaptain: document.getElementById('athlete-captain').checked, scadenzaVisita: document.getElementById('scadenza-visita').value, dataPrenotazioneVisita: document.getElementById('data-prenotazione-visita').value }; if (athleteId) { const index = athletes.findIndex(a => a.id.toString() === athleteId); if (index !== -1) athletes[index] = { ...athletes[index], ...athleteData }; } else { athleteData.id = Date.now(); athletes.push(athleteData); } saveData(); updateAllUI(); athleteModal.hide(); });
         elements.evaluationForm.addEventListener('submit', (e) => { e.preventDefault(); const athleteId = document.getElementById('modal-athlete-id-eval').value; const date = elements.evaluationDatePicker.value; if (!date) { alert('Per favore, seleziona una data valida prima di salvare.'); return; } if (!evaluations[date]) evaluations[date] = {}; evaluations[date][athleteId] = evaluationCategories.reduce((obj, cat) => ({ ...obj, [cat]: document.getElementById(cat).value }), {}); if (document.getElementById('award-checkbox').checked) { const reason = prompt('Motivo del premio:'); if (reason) { if (!awards[date]) awards[date] = []; awards[date] = awards[date].filter(a => a.athleteId.toString() !== athleteId); awards[date].push({ athleteId, reason, date }); } } else { if (awards[date]) awards[date] = awards[date].filter(a => a.athleteId.toString() !== athleteId); } saveData(); updateAllUI(); evaluationModal.hide(); });
         
         // CORREZIONE: Listener per resettare l'ID sessione se data o ora vengono cambiate
@@ -1853,13 +1852,13 @@
         }
 
         async function initializeApp() {
-            await loadData();
+            loadData();
             const today = new Date();
             elements.evaluationDatePicker.valueAsDate = today;
             elements.evaluationDatePicker2.valueAsDate = today;
             elements.multiAthleteDatepicker.valueAsDate = today;
             updateAllUI();
-            startPolling();
+            // In un'app reale con backend, startPolling() verrebbe chiamato qui
         }
 
         initializeApp();
