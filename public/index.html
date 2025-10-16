@@ -50,6 +50,7 @@
         .calendar-day.today { border-color: var(--primary-red); }
         .calendar-day-header { font-weight: bold; }
         .calendar-session { background-color: var(--primary-red); color: white; padding: 4px; border-radius: 4px; font-size: 0.75rem; margin-top: 5px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .deadline-status { font-size: 1rem; position: absolute; top: 15px; left: 15px; }
         /* STILI MODULO FORMAZIONE */
         #pitch-wrapper { display: flex; align-items: flex-start; gap: 1rem; }
         #field-container { background-color: var(--field-green); border: 2px solid var(--field-line); position: relative; width: 100%; max-width: 450px; aspect-ratio: 5 / 7; box-sizing: border-box; flex-shrink: 0; }
@@ -117,6 +118,7 @@
         <div class="container-fluid"><a class="navbar-brand fw-bold" href="#"><i class="bi bi-person-workspace"></i> Coach Dashboard</a></div>
     </nav>
     <main class="container-fluid mt-5 pt-3">
+        <div id="alerts-container"></div>
         <div id="home-section" class="printable-area">
             <div class="row my-4">
                 <div class="col-12 d-flex align-items-center gap-2">
@@ -322,15 +324,10 @@
                     </div>
                     <div class="card table-card">
                         <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h5 class="card-title mb-0">Riepilogo Cartellini</h5>
-                                <button class="btn btn-sm btn-outline-danger no-print" id="clear-all-cards-btn" title="Azzera tutti i cartellini">
-                                    <i class="bi bi-trash-fill"></i>
-                                </button>
-                            </div>
+                            <h5 class="card-title">Riepilogo Cartellini</h5>
                             <div class="table-responsive" style="max-height: 200px;">
                                 <table class="table table-dark table-striped table-hover table-sm" id="cards-summary-table">
-                                    <thead><tr><th>Atleta</th><th><span class="yellow-card"></span></th><th><span class="red-card"></span></th><th>Data</th><th class="no-print"></th></tr></thead>
+                                    <thead><tr><th>Atleta</th><th><span class="yellow-card"></span></th><th><span class="red-card"></span></th><th>Data</th></tr></thead>
                                     <tbody id="cards-summary-tbody"></tbody>
                                 </table>
                             </div>
@@ -495,7 +492,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-8 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Andamento Performance nel Tempo (vs. Media Squadra)</h5><canvas id="athleteTrendChart"></canvas></div></div></div>
+            <div class="col-lg-8 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Andamento Performance nel Tempo</h5><canvas id="athleteTrendChart"></canvas></div></div></div>
             <div class="col-lg-4 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Profilo Atleta (vs. Top di Squadra)</h5><canvas id="athleteRadarChart"></canvas></div></div></div>
         </div>
     </main>
@@ -511,7 +508,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         const modalsContainer = document.getElementById('modals-container');
         modalsContainer.innerHTML = `<div class="modal fade" id="evaluationModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Valutazione di <span id="modal-athlete-name-eval"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="evaluation-form"><input type="hidden" id="modal-athlete-id-eval"><p>Data: <strong id="modal-evaluation-date"></strong></p><div class="mb-2"><label class="form-label">Presenza Allenamento</label><select id="presenza-allenamento" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Serietà Allenamento</label><select id="serieta-allenamento" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Abbigliamento Allenamento</label><select id="abbigliamento-allenamento" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Abbigliamento Partita</label><select id="abbigliamento-partita" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Serietà Comunicazioni</label><select id="comunicazioni" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Doccia (Opzionale)</label><select id="doccia" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="award-checkbox"><label class="form-check-label" for="award-checkbox">Assegna Premio</label></div></form></div><div class="modal-footer justify-content-between"><button type="button" class="btn btn-outline-danger" id="delete-single-athlete-day-btn">Elimina Dati del Giorno</button><div><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button><button type="submit" class="btn btn-primary-custom" form="evaluation-form">Salva Valutazione</button></div></div></div></div></div>
-            <div class="modal fade" id="athleteModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="athleteModalLabel">Gestisci Atleta</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="athlete-form"><input type="hidden" id="modal-athlete-id"><div class="mb-3"><label class="form-label">Nome Cognome</label><input type="text" class="form-control" id="athlete-name" required></div><div class="mb-3"><label class="form-label">URL Foto Profilo</label><input type="url" class="form-control" id="athlete-avatar" placeholder="https://esempio.com/foto.png"></div><div class="mb-3"><label class="form-label">Ruolo</label><input type="text" class="form-control" id="athlete-role" required></div><div class="mb-3"><label class="form-label">Numero Maglia</label><input type="number" class="form-control" id="athlete-number" required min="1"></div><div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="athlete-captain"><label class="form-check-label" for="athlete-captain">Capitano</label></div></form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button><button type="submit" class="btn btn-primary-custom" form="athlete-form">Salva Atleta</button></div></div></div></div>
+            <div class="modal fade" id="athleteModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="athleteModalLabel">Gestisci Atleta</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="athlete-form"><input type="hidden" id="modal-athlete-id"><div class="mb-3"><label class="form-label">Nome Cognome</label><input type="text" class="form-control" id="athlete-name" required></div><div class="mb-3"><label class="form-label">URL Foto Profilo</label><input type="url" class="form-control" id="athlete-avatar" placeholder="https://esempio.com/foto.png"></div><div class="mb-3"><label class="form-label">Ruolo</label><input type="text" class="form-control" id="athlete-role" required></div><div class="row"><div class="col-md-6 mb-3"><label class="form-label">Numero Maglia</label><input type="number" class="form-control" id="athlete-number" required min="1"></div><div class="col-md-6 mb-3"><label for="scadenza-visita" class="form-label">Scadenza Visita Medica</label><input type="date" class="form-control" id="scadenza-visita"></div></div><div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="athlete-captain"><label class="form-check-label" for="athlete-captain">Capitano</label></div></form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button><button type="submit" class="btn btn-primary-custom" form="athlete-form">Salva Atleta</button></div></div></div></div>
             <div class="modal fade" id="gpsModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="gpsModalLabel">Dati Performance di <span id="modal-athlete-name-gps"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="gps-form"><input type="hidden" id="modal-athlete-id-gps"><input type="hidden" id="gps-session-id">
                 <div class="row mb-3"><div class="col-md-8"><label for="gps-session-selector" class="form-label">Seleziona Sessione Esistente per Modificare</label><select id="gps-session-selector" class="form-select"><option value="">--- Inserisci Nuova Sessione ---</option></select></div><div class="col-md-4 d-flex align-items-end"><button type="button" id="delete-gps-session-btn" class="btn btn-outline-danger w-100" disabled>Elimina Sessione</button></div></div><hr>
                 <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Data Registrazione</label><input type="date" class="form-control" id="gps-data_di_registrazione" required></div><div class="col-md-4 mb-3"><label class="form-label">Ora Registrazione</label><input type="time" class="form-control" id="gps-ora_registrazione"></div><div class="col-md-4 mb-3"><label class="form-label">Tipo Sessione</label><select class="form-select" id="gps-tipo_sessione"><option value="Allenamento">Allenamento</option><option value="Partita">Partita</option><option value="Individual">Individual</option></select></div></div>
@@ -591,6 +588,7 @@
             topScorersContainer: document.getElementById('top-scorers-container'),
             passwordForm: document.getElementById('password-form'),
             passwordError: document.getElementById('password-error'),
+            alertsContainer: document.getElementById('alerts-container'),
         };
 
         // --- GESTIONE PASSWORD ---
@@ -627,7 +625,7 @@
         });
         document.getElementById('passwordModal').addEventListener('hidden.bs.modal', () => {
              if (!isAuthenticated() && authCancelCallback) {
-                 authCancelCallback();
+                authCancelCallback();
              }
         });
         // --- FINE GESTIONE PASSWORD ---
@@ -709,6 +707,7 @@
         
         // --- FUNZIONI UI ---
         const updateAllUI = () => {
+            checkDeadlinesAndAlert();
             updateHomePage();
             renderAthletes();
             renderCalendar();
@@ -837,10 +836,27 @@
 
         const renderAthletes = () => {
             elements.athleteGrid.innerHTML = '';
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const threeMonths = new Date(today);
+            threeMonths.setMonth(today.getMonth() + 3);
+
             athletes.forEach(athlete => {
+                let statusIcon = '';
+                if (athlete.scadenzaVisita) {
+                    const deadline = new Date(athlete.scadenzaVisita);
+                    if (deadline < today) {
+                        statusIcon = `<i class="bi bi-circle-fill text-danger deadline-status" title="Scaduta il ${deadline.toLocaleDateString('it-IT')}"></i>`;
+                    } else if (deadline <= threeMonths) {
+                        statusIcon = `<i class="bi bi-circle-fill text-warning deadline-status" title="Scade il ${deadline.toLocaleDateString('it-IT')}"></i>`;
+                    } else {
+                        statusIcon = `<i class="bi bi-circle-fill text-success deadline-status" title="Scade il ${deadline.toLocaleDateString('it-IT')}"></i>`;
+                    }
+                }
+
                 const card = document.createElement('div');
                 card.className = 'col-xl-3 col-lg-4 col-md-6 mb-4';
-                card.innerHTML = `<div class="card athlete-card"><div class="card-body athlete-card-clickable" data-athlete-id="${athlete.id}"><img src="${athlete.avatar || defaultAvatar}" onerror="this.src='${defaultAvatar}'" alt="${athlete.name}" class="athlete-avatar me-3"><div><h5 class="card-title mb-0">${athlete.name} ${athlete.isCaptain ? '<i class="bi bi-star-fill is-captain"></i>' : ''}</h5><p class="card-text text-muted">${athlete.role}</p></div><div class="shirt-number">${athlete.number}</div></div><div class="card-actions no-print"><button class="btn btn-sm btn-outline-light gps-btn" title="Dati Performance" data-athlete-id="${athlete.id}"><i class="bi bi-person-fill-gear"></i></button><button class="btn btn-sm btn-outline-light edit-btn" title="Modifica Atleta" data-athlete-id="${athlete.id}"><i class="bi bi-pencil-fill"></i></button><button class="btn btn-sm btn-outline-light delete-btn" title="Elimina Atleta" data-athlete-id="${athlete.id}"><i class="bi bi-trash-fill"></i></button></div></div>`;
+                card.innerHTML = `<div class="card athlete-card"><div class="card-body athlete-card-clickable" data-athlete-id="${athlete.id}">${statusIcon}<img src="${athlete.avatar || defaultAvatar}" onerror="this.src='${defaultAvatar}'" alt="${athlete.name}" class="athlete-avatar me-3"><div><h5 class="card-title">${athlete.name} ${athlete.isCaptain ? '<i class="bi bi-star-fill is-captain"></i>' : ''}</h5><p class="card-text text-muted">${athlete.role}</p></div><div class="shirt-number">${athlete.number}</div></div><div class="card-actions no-print"><button class="btn btn-sm btn-outline-light gps-btn" title="Dati Performance" data-athlete-id="${athlete.id}"><i class="bi bi-person-fill-gear"></i></button><button class="btn btn-sm btn-outline-light edit-btn" title="Modifica Atleta" data-athlete-id="${athlete.id}"><i class="bi bi-pencil-fill"></i></button><button class="btn btn-sm btn-outline-light delete-btn" title="Elimina Atleta" data-athlete-id="${athlete.id}"><i class="bi bi-trash-fill"></i></button></div></div>`;
                 elements.athleteGrid.appendChild(card);
             });
         };
@@ -945,7 +961,7 @@
                 colDiv.querySelector('.match-result-item').addEventListener('click', (e) => {
                      e.preventDefault();
                      if (!e.target.closest('.edit-match-btn')) {
-                         openMatchResultModal(match.id);
+                        openMatchResultModal(match.id);
                      }
                 });
             });
@@ -954,11 +970,11 @@
         const renderCardsSummary = () => {
             elements.cardsSummaryTbody.innerHTML = '';
             const allCards = Object.values(matchResults)
-                .flatMap(match => (match.cards || []).map((card, index) => ({ ...card, date: match.date, matchId: match.id, cardIndexInMatch: index })))
+                .flatMap(match => match.cards.map(card => ({ ...card, date: match.date })))
                 .sort((a, b) => new Date(b.date) - new Date(a.date));
             
             if (allCards.length === 0) {
-                elements.cardsSummaryTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nessun cartellino.</td></tr>';
+                elements.cardsSummaryTbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Nessun cartellino.</td></tr>';
                 return;
             }
 
@@ -970,14 +986,6 @@
                         <td>${card.type === 'yellow' ? '1' : '0'}</td>
                         <td>${card.type === 'red' ? '1' : '0'}</td>
                         <td>${new Date(card.date).toLocaleDateString('it-IT', {day: '2-digit', month: 'short'})}</td>
-                        <td class="no-print">
-                            <button class="btn btn-sm btn-outline-danger py-0 px-1 delete-card-btn"
-                                    data-match-id="${card.matchId}"
-                                    data-card-index="${card.cardIndexInMatch}"
-                                    title="Elimina questo cartellino">
-                                <i class="bi bi-x-lg"></i>
-                            </button>
-                        </td>
                     </tr>
                 `;
                 elements.cardsSummaryTbody.innerHTML += row;
@@ -1232,9 +1240,9 @@
             const dataToUse = gpsData; 
             const keysToExclude = ['tipo_sessione', 'data_di_registrazione', 'ora_registrazione'];
             const optionsHtml = Object.entries(gpsFieldsForDisplay)
-                                                .filter(([key]) => !keysToExclude.includes(key))
-                                                .map(([key, label]) => `<option value="${key}">${label}</option>`)
-                                                .join('');
+                                      .filter(([key]) => !keysToExclude.includes(key))
+                                      .map(([key, label]) => `<option value="${key}">${label}</option>`)
+                                      .join('');
 
             elements.metricSelector.innerHTML = optionsHtml;
             elements.multiAthleteMetricSelector.innerHTML = optionsHtml;
@@ -1376,9 +1384,58 @@
             const labels = sessionPoints.map(p => p.date.toLocaleString('it-IT', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'}));
             const athleteValues = sessionPoints.map(p => p.value);
             
-            // Per la media, il calcolo è più complesso. Per ora, semplifichiamo e non mostriamo la media squadra per non appesantire.
+             // Calcolo media e massimo di squadra per ogni punto
+            const teamAvgValues = [];
+            const teamMaxValues = [];
+
+            sessionPoints.forEach(point => {
+                const pointDate = point.date.toISOString().split('T')[0];
+                let dailyValues = [];
+                Object.keys(dataToUse).forEach(athId => {
+                    if (dataToUse[athId][pointDate]) {
+                        dataToUse[athId][pointDate].forEach(sess => {
+                            if (sess[metric] !== undefined && sess[metric] !== null) {
+                                dailyValues.push(sess[metric]);
+                            }
+                        });
+                    }
+                });
+
+                if (dailyValues.length > 0) {
+                    const sum = dailyValues.reduce((a, b) => a + b, 0);
+                    teamAvgValues.push(sum / dailyValues.length);
+                    teamMaxValues.push(Math.max(...dailyValues));
+                } else {
+                    teamAvgValues.push(null);
+                    teamMaxValues.push(null);
+                }
+            });
+
             const datasets = [
-                { label: gpsFieldsForDisplay[metric] || metric, data: athleteValues, borderColor: 'rgba(217, 4, 41, 1)', backgroundColor: 'rgba(217, 4, 41, 0.2)', tension: 0.3, fill: true }
+                { 
+                    label: gpsFieldsForDisplay[metric] || metric, 
+                    data: athleteValues, 
+                    borderColor: 'rgba(217, 4, 41, 1)', 
+                    backgroundColor: 'rgba(217, 4, 41, 0.2)', 
+                    tension: 0.3, 
+                    fill: true 
+                },
+                {
+                    label: 'Media Squadra',
+                    data: teamAvgValues,
+                    borderColor: 'rgba(54, 162, 235, 1)', // Blu
+                    borderDash: [5, 5],
+                    fill: false,
+                    tension: 0.3
+                },
+                {
+                    label: 'Max Squadra',
+                    data: teamMaxValues,
+                    borderColor: 'rgba(255, 206, 86, 1)', // Giallo
+                    borderDash: [5, 5],
+                    fill: false,
+                    tension: 0.3
+                }
             ];
 
             chartInstances.athleteTrend = new Chart(document.getElementById('athleteTrendChart').getContext('2d'), { type: 'line', data: { labels, datasets }, options: { scales: { y: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.2)' } }, x: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.2)' } } }, plugins: { legend: { labels: { color: '#ffffff' } }, title: { display: true, text: `Andamento: ${athlete?.name || 'N/A'}`, color: '#ffffff' } } } });
@@ -1497,6 +1554,58 @@
             });
         };
 
+        const checkDeadlinesAndAlert = () => {
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const threeMonths = new Date(today);
+            threeMonths.setMonth(today.getMonth() + 3);
+            const sixMonths = new Date(today);
+            sixMonths.setMonth(today.getMonth() + 6);
+
+            const expired = [];
+            const warning = [];
+            const notice = [];
+
+            athletes.forEach(athlete => {
+                if (athlete.scadenzaVisita) {
+                    const deadline = new Date(athlete.scadenzaVisita);
+                    if (deadline < today) {
+                        expired.push(athlete.name);
+                    } else if (deadline <= threeMonths) {
+                        warning.push(`${athlete.name} (${deadline.toLocaleDateString('it-IT')})`);
+                    } else if (deadline <= sixMonths) {
+                        notice.push(`${athlete.name} (${deadline.toLocaleDateString('it-IT')})`);
+                    }
+                }
+            });
+
+            elements.alertsContainer.innerHTML = '';
+            let alertHTML = '';
+
+            if (expired.length > 0) {
+                alertHTML += `<div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <strong>SCADENZE SUPERATE!</strong> Le visite mediche di: ${expired.join(', ')} sono scadute.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>`;
+            }
+            if (warning.length > 0) {
+                alertHTML += `<div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <strong>SCADENZE IN AVVICINAMENTO (meno di 3 mesi):</strong> ${warning.join(', ')}.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>`;
+            }
+            if (notice.length > 0) {
+                alertHTML += `<div class="alert alert-info alert-dismissible fade show" role="alert">
+                    <strong>Avviso scadenze (meno di 6 mesi):</strong> ${notice.join(', ')}.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>`;
+            }
+
+            if(alertHTML) {
+                elements.alertsContainer.innerHTML = alertHTML;
+            }
+        };
+
         // --- EVENT LISTENERS ---
         const syncAndUpdateEvaluationDate = (newDate) => {
             elements.evaluationDatePicker.value = newDate;
@@ -1536,6 +1645,7 @@
                 document.getElementById('athlete-avatar').value = athlete.avatar || '';
                 document.getElementById('athlete-role').value = athlete.role;
                 document.getElementById('athlete-number').value = athlete.number;
+                document.getElementById('scadenza-visita').value = athlete.scadenzaVisita || '';
                 document.getElementById('athlete-captain').checked = athlete.isCaptain;
                 athleteModal.show();
             } else if (e.target.closest('.delete-btn')) {
@@ -1594,17 +1704,9 @@
             }
         });
 
-        elements.athleteForm.addEventListener('submit', (e) => { e.preventDefault(); const athleteId = document.getElementById('modal-athlete-id').value; const athleteData = { name: document.getElementById('athlete-name').value.trim(), avatar: document.getElementById('athlete-avatar').value.trim(), role: document.getElementById('athlete-role').value.trim(), number: parseInt(document.getElementById('athlete-number').value), isCaptain: document.getElementById('athlete-captain').checked }; if (athleteId) { const index = athletes.findIndex(a => a.id.toString() === athleteId); if (index !== -1) athletes[index] = { ...athletes[index], ...athleteData }; } else { athleteData.id = Date.now(); athletes.push(athleteData); } saveData(); updateAllUI(); athleteModal.hide(); });
+        elements.athleteForm.addEventListener('submit', (e) => { e.preventDefault(); const athleteId = document.getElementById('modal-athlete-id').value; const athleteData = { name: document.getElementById('athlete-name').value.trim(), avatar: document.getElementById('athlete-avatar').value.trim(), role: document.getElementById('athlete-role').value.trim(), number: parseInt(document.getElementById('athlete-number').value), isCaptain: document.getElementById('athlete-captain').checked, scadenzaVisita: document.getElementById('scadenza-visita').value }; if (athleteId) { const index = athletes.findIndex(a => a.id.toString() === athleteId); if (index !== -1) athletes[index] = { ...athletes[index], ...athleteData }; } else { athleteData.id = Date.now(); athletes.push(athleteData); } saveData(); updateAllUI(); athleteModal.hide(); });
         elements.evaluationForm.addEventListener('submit', (e) => { e.preventDefault(); const athleteId = document.getElementById('modal-athlete-id-eval').value; const date = elements.evaluationDatePicker.value; if (!date) { alert('Per favore, seleziona una data valida prima di salvare.'); return; } if (!evaluations[date]) evaluations[date] = {}; evaluations[date][athleteId] = evaluationCategories.reduce((obj, cat) => ({ ...obj, [cat]: document.getElementById(cat).value }), {}); if (document.getElementById('award-checkbox').checked) { const reason = prompt('Motivo del premio:'); if (reason) { if (!awards[date]) awards[date] = []; awards[date] = awards[date].filter(a => a.athleteId.toString() !== athleteId); awards[date].push({ athleteId, reason, date }); } } else { if (awards[date]) awards[date] = awards[date].filter(a => a.athleteId.toString() !== athleteId); } saveData(); updateAllUI(); evaluationModal.hide(); });
         
-        // CORREZIONE: Listener per resettare l'ID sessione se data o ora vengono cambiate
-        document.getElementById('gps-data_di_registrazione').addEventListener('input', () => {
-             document.getElementById('gps-session-id').value = '';
-        });
-        document.getElementById('gps-ora_registrazione').addEventListener('input', () => {
-             document.getElementById('gps-session-id').value = '';
-        });
-
         elements.gpsForm.addEventListener('submit', (e) => { 
             e.preventDefault();
             const athleteId = document.getElementById('modal-athlete-id-gps').value;
@@ -1617,19 +1719,16 @@
             
             const gpsFormData = {};
             
-            // Popola l'oggetto con i dati del form
             allGpsFields.forEach(field => {
                  const el = document.getElementById(`gps-${field}`);
                  if(el) { const value = el.value.trim(); if(value !== '') gpsFormData[field] = el.type === 'number' ? parseFloat(value) : value; }
             });
             
-            // Se l'ID sessione è vuoto, significa che è una nuova sessione (o una modifica di data/ora)
             if (!sessionId) {
-                sessionId = Date.now().toString(); // Crea un nuovo ID
+                sessionId = Date.now().toString(); 
             }
             gpsFormData.id = sessionId;
 
-            // Rimuovi la vecchia sessione dal suo array originale SE la data è cambiata
             if(originalSession && originalSession.date !== date) {
                 const oldDate = originalSession.date;
                 if(gpsData[athleteId] && gpsData[athleteId][oldDate]) {
@@ -1640,7 +1739,6 @@
                 }
             }
 
-            // Logica per calcoli derivati...
             const dist = parseFloat(gpsFormData.distanza_totale) || 0;
             const t = parseFloat(gpsFormData.tempo_totale) || 0;
             if (dist > 0 && t > 0) gpsFormData.distanza_per_minuto = parseFloat((dist / t).toFixed(2));
@@ -1659,14 +1757,22 @@
 
             const sessionIndex = gpsData[athleteId][date].findIndex(s => String(s.id) === String(sessionId));
             if (sessionIndex > -1) {
-                gpsData[athleteId][date][sessionIndex] = gpsFormData; // Aggiorna
+                gpsData[athleteId][date][sessionIndex] = gpsFormData;
             } else {
-                gpsData[athleteId][date].push(gpsFormData); // Aggiunge come nuova
+                gpsData[athleteId][date].push(gpsFormData);
             }
 
             saveData();
             updateAllUI();
             gpsModal.hide();
+        });
+
+        // Event listener per resettare l'ID sessione se data o ora vengono cambiate
+        document.getElementById('gps-data_di_registrazione').addEventListener('input', () => {
+             document.getElementById('gps-session-id').value = '';
+        });
+        document.getElementById('gps-ora_registrazione').addEventListener('input', () => {
+             document.getElementById('gps-session-id').value = '';
         });
 
         ['gps-distanza_totale', 'gps-tempo_totale'].forEach(id => { document.getElementById(id)?.addEventListener('input', () => { const dist = parseFloat(document.getElementById('gps-distanza_totale').value) || 0; const time = parseFloat(document.getElementById('gps-tempo_totale').value) || 0; document.getElementById('gps-distanza_per_minuto').value = (time > 0) ? (dist / time).toFixed(2) : ''; }); });
@@ -1682,8 +1788,8 @@
                     performanceSelections[index].athleteId = row.querySelector('.athlete-selector').value;
                     performanceSelections[index].sessionId = row.querySelector('.date-selector').value;
                      if(e.target.matches('.athlete-selector')) {
-                         populatePerformanceSelectors();
-                     }
+                        populatePerformanceSelectors();
+                    }
                     updatePerformanceChart();
                 };
 
@@ -1820,17 +1926,17 @@
                         
                         newDeleteBtn.addEventListener('click', () => {
                              if (confirm(`Sei sicuro di voler eliminare questa sessione?`)) {
-                                 if(gpsData[athleteId][session.date]){
-                                     gpsData[athleteId][session.date] = gpsData[athleteId][session.date].filter(s => String(s.id) !== String(sessionId));
-                                     if(gpsData[athleteId][session.date].length === 0){
-                                         delete gpsData[athleteId][session.date];
-                                     }
-                                 }
-                                 saveData().then(() => {
-                                     gpsModal.hide();
-                                     updateAllUI();
-                                 });
-                             }
+                                if(gpsData[athleteId][session.date]){
+                                    gpsData[athleteId][session.date] = gpsData[athleteId][session.date].filter(s => String(s.id) !== String(sessionId));
+                                    if(gpsData[athleteId][session.date].length === 0){
+                                        delete gpsData[athleteId][session.date];
+                                    }
+                                }
+                                saveData().then(() => {
+                                    gpsModal.hide();
+                                    updateAllUI();
+                                });
+                            }
                         });
                     };
 
@@ -2052,35 +2158,6 @@
                 updateAllUI();
                 matchResultModal.hide();
             }
-        });
-        
-        document.getElementById('match-results-section').addEventListener('click', e => {
-             const clearCardsBtn = e.target.closest('#clear-all-cards-btn');
-             const deleteCardBtn = e.target.closest('.delete-card-btn');
-
-             if (clearCardsBtn) {
-                 if (confirm("Sei sicuro di voler azzerare TUTTI i cartellini da ogni partita registrata? L'azione è irreversibile.")) {
-                     Object.values(matchResults).forEach(match => {
-                         match.cards = [];
-                     });
-                     saveData();
-                     updateAllUI();
-                     alert("Riepilogo cartellini azzerato con successo.");
-                 }
-             } else if (deleteCardBtn) {
-                const matchId = deleteCardBtn.dataset.matchId;
-                const cardIndex = parseInt(deleteCardBtn.dataset.cardIndex, 10);
-
-                if (confirm("Sei sicuro di voler eliminare questo specifico cartellino?")) {
-                    if (matchResults[matchId] && matchResults[matchId].cards && matchResults[matchId].cards[cardIndex] !== undefined) {
-                        matchResults[matchId].cards.splice(cardIndex, 1);
-                        saveData();
-                        updateAllUI();
-                    } else {
-                        alert("Errore: impossibile trovare il cartellino da eliminare.");
-                    }
-                }
-             }
         });
 
         elements.matchOpponentFilter.addEventListener('change', updateMatchAnalysisChart);
