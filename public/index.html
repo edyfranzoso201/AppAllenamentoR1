@@ -977,11 +977,11 @@
         const renderCardsSummary = () => {
             elements.cardsSummaryTbody.innerHTML = '';
             const allCards = Object.values(matchResults)
-                .flatMap(match => match.cards.map(card => ({ ...card, date: match.date })))
+                .flatMap(match => (match.cards || []).map((card, index) => ({ ...card, date: match.date, matchId: match.id, cardIndexInMatch: index })))
                 .sort((a, b) => new Date(b.date) - new Date(a.date));
             
             if (allCards.length === 0) {
-                elements.cardsSummaryTbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Nessun cartellino.</td></tr>';
+                elements.cardsSummaryTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nessun cartellino.</td></tr>';
                 return;
             }
 
@@ -993,6 +993,14 @@
                         <td>${card.type === 'yellow' ? '1' : '0'}</td>
                         <td>${card.type === 'red' ? '1' : '0'}</td>
                         <td>${new Date(card.date).toLocaleDateString('it-IT', {day: '2-digit', month: 'short'})}</td>
+                        <td class="no-print">
+                            <button class="btn btn-sm btn-outline-danger py-0 px-1 delete-card-btn"
+                                    data-match-id="${card.matchId}"
+                                    data-card-index="${card.cardIndexInMatch}"
+                                    title="Elimina questo cartellino">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </td>
                     </tr>
                 `;
                 elements.cardsSummaryTbody.innerHTML += row;
@@ -1411,9 +1419,6 @@
             gpsModal.hide();
         });
 
-        ['gps-distanza_totale', 'gps-tempo_totale'].forEach(id => { document.getElementById(id)?.addEventListener('input', () => { const dist = parseFloat(document.getElementById('gps-distanza_totale').value) || 0; const time = parseFloat(document.getElementById('gps-tempo_totale').value) || 0; document.getElementById('gps-distanza_per_minuto').value = (time > 0) ? (dist / time).toFixed(2) : ''; }); });
-        ['gps-distanza_circuito', 'gps-tempo_circuito_min', 'gps-tempo_circuito_sec', 'gps-tempo_circuito_cen'].forEach(id => { document.getElementById(id)?.addEventListener('input', () => { const dist = parseFloat(document.getElementById('gps-distanza_circuito').value) || 0; const min = parseInt(document.getElementById('gps-tempo_circuito_min').value) || 0; const sec = parseInt(document.getElementById('gps-tempo_circuito_sec').value) || 0; const cen = parseInt(document.getElementById('gps-tempo_circuito_cen').value) || 0; const totalTimeSec = min * 60 + sec + cen / 100; document.getElementById('gps-velocita_circuito').value = (dist > 0 && totalTimeSec > 0) ? ((dist / totalTimeSec) * 3.6).toFixed(2) : ''; }); });
-        
         elements.performanceSelectorsContainer.addEventListener('change', (e) => {
             if (e.target.matches('.athlete-selector, .date-selector')) {
                 const index = parseInt(e.target.dataset.index);
@@ -1794,6 +1799,35 @@
                 updateAllUI();
                 matchResultModal.hide();
             }
+        });
+        
+        document.getElementById('match-results-section').addEventListener('click', e => {
+             const clearCardsBtn = e.target.closest('#clear-all-cards-btn');
+             const deleteCardBtn = e.target.closest('.delete-card-btn');
+
+             if (clearCardsBtn) {
+                 if (confirm("Sei sicuro di voler azzerare TUTTI i cartellini da ogni partita registrata? L'azione è irreversibile.")) {
+                     Object.values(matchResults).forEach(match => {
+                         match.cards = [];
+                     });
+                     saveData();
+                     updateAllUI();
+                     alert("Riepilogo cartellini azzerato con successo.");
+                 }
+             } else if (deleteCardBtn) {
+                const matchId = deleteCardBtn.dataset.matchId;
+                const cardIndex = parseInt(deleteCardBtn.dataset.cardIndex, 10);
+
+                if (confirm("Sei sicuro di voler eliminare questo specifico cartellino?")) {
+                    if (matchResults[matchId] && matchResults[matchId].cards && matchResults[matchId].cards[cardIndex] !== undefined) {
+                        matchResults[matchId].cards.splice(cardIndex, 1);
+                        saveData();
+                        updateAllUI();
+                    } else {
+                        alert("Errore: impossibile trovare il cartellino da eliminare.");
+                    }
+                }
+             }
         });
 
         elements.matchOpponentFilter.addEventListener('change', updateMatchAnalysisChart);
