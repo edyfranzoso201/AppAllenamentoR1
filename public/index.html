@@ -26,7 +26,7 @@
         .athlete-card-clickable:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(217, 4, 41, 0.2); border-color: var(--primary-red); }
         .athlete-avatar { width: 70px; height: 70px; border-radius: 50%; border: 3px solid var(--border-color); object-fit: cover; background-color: var(--secondary-blue); }
         .athlete-card .card-title { font-size: 1.1rem; margin-bottom: 0.1rem; }
-        .shirt-number { font-size: 1.5rem; font-weight: bold; color: var(--text-light); background-color: var(--primary-red); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: absolute; top: 15px; right: 15px; }
+        .shirt-number { font-size: 1.5rem; font-weight: bold; color: var(--text-light); background-color: var(--primary-red); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: absolute; top: 15px; left: 15px; }
         .is-captain { color: var(--gold-star); }
         .card-actions { position: absolute; bottom: 10px; right: 10px; z-index: 5; display: flex; gap: 5px; }
         .card-actions .btn { background: rgba(0,0,0,0.3); border: none; }
@@ -58,6 +58,11 @@
             transform: translateY(-50%);
         }
         .text-purple { color: var(--custom-purple) !important; }
+        .available-player.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: #343a40 !important;
+        }
         /* STILI MODULO FORMAZIONE */
         #pitch-wrapper { display: flex; align-items: flex-start; gap: 1rem; }
         #field-container { background-color: var(--field-green); border: 2px solid var(--field-line); position: relative; width: 100%; max-width: 450px; aspect-ratio: 5 / 7; box-sizing: border-box; flex-shrink: 0; }
@@ -787,11 +792,23 @@
             });
             athletes.forEach(athlete => {
                 if (!placedAthleteIds.has(String(athlete.id))) {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const isExpired = athlete.scadenzaVisita && new Date(athlete.scadenzaVisita) < today;
+
                     const availablePlayer = document.createElement('div');
                     availablePlayer.className = 'list-group-item d-flex justify-content-between align-items-center available-player p-2';
-                    availablePlayer.draggable = true;
                     availablePlayer.dataset.athleteId = athlete.id;
-                    availablePlayer.innerHTML = `<span><strong>${athlete.number}.</strong> ${athlete.name}</span><span class="badge bg-secondary">${athlete.role.substring(0,3)}</span>`;
+
+                    if (isExpired) {
+                        availablePlayer.draggable = false;
+                        availablePlayer.classList.add('disabled');
+                        availablePlayer.title = 'Visita medica scaduta. Atleta non schierabile.';
+                        availablePlayer.innerHTML = `<span><strong>${athlete.number}.</strong> ${athlete.name}</span><span class="badge bg-danger"><i class="bi bi-lock-fill"></i></span>`;
+                    } else {
+                        availablePlayer.draggable = true;
+                        availablePlayer.innerHTML = `<span><strong>${athlete.number}.</strong> ${athlete.name}</span><span class="badge bg-secondary">${athlete.role.substring(0,3)}</span>`;
+                    }
                     elements.availableList.appendChild(availablePlayer);
                 }
             });
@@ -867,7 +884,7 @@
 
                 const card = document.createElement('div');
                 card.className = 'col-xl-3 col-lg-4 col-md-6 mb-4';
-                card.innerHTML = `<div class="card athlete-card"><div class="card-body athlete-card-clickable" data-athlete-id="${athlete.id}"><img src="${athlete.avatar || defaultAvatar}" onerror="this.src='${defaultAvatar}'" alt="${athlete.name}" class="athlete-avatar me-3"><div><h5 class="card-title">${athlete.name} ${athlete.isCaptain ? '<i class="bi bi-star-fill is-captain"></i>' : ''}</h5><p class="card-text text-muted">${athlete.role}</p></div>${statusIcon}<div class="shirt-number">${athlete.number}</div></div><div class="card-actions no-print"><button class="btn btn-sm btn-outline-light gps-btn" title="Dati Performance" data-athlete-id="${athlete.id}"><i class="bi bi-person-fill-gear"></i></button><button class="btn btn-sm btn-outline-light edit-btn" title="Modifica Atleta" data-athlete-id="${athlete.id}"><i class="bi bi-pencil-fill"></i></button><button class="btn btn-sm btn-outline-light delete-btn" title="Elimina Atleta" data-athlete-id="${athlete.id}"><i class="bi bi-trash-fill"></i></button></div></div>`;
+                card.innerHTML = `<div class="card athlete-card"><div class="card-body athlete-card-clickable" data-athlete-id="${athlete.id}"><img src="${athlete.avatar || defaultAvatar}" onerror="this.src='${defaultAvatar}'" alt="${athlete.name}" class="athlete-avatar me-3"><div><h5 class="card-title">${athlete.name} ${athlete.isCaptain ? '<i class="bi bi-star-fill is-captain"></i>' : ''}</h5><p class="card-text text-muted">${athlete.role}</p></div><div class="shirt-number">${athlete.number}</div>${statusIcon}</div><div class="card-actions no-print"><button class="btn btn-sm btn-outline-light gps-btn" title="Dati Performance" data-athlete-id="${athlete.id}"><i class="bi bi-person-fill-gear"></i></button><button class="btn btn-sm btn-outline-light edit-btn" title="Modifica Atleta" data-athlete-id="${athlete.id}"><i class="bi bi-pencil-fill"></i></button><button class="btn btn-sm btn-outline-light delete-btn" title="Elimina Atleta" data-athlete-id="${athlete.id}"><i class="bi bi-trash-fill"></i></button></div></div>`;
                 elements.athleteGrid.appendChild(card);
             });
         };
@@ -1570,50 +1587,25 @@
             today.setHours(0,0,0,0);
             const threeMonths = new Date();
             threeMonths.setMonth(today.getMonth() + 3);
-            const sixMonths = new Date();
-            sixMonths.setMonth(today.getMonth() + 6);
 
-            const expired = [];
             const warning = [];
-            const notice = [];
 
             athletes.forEach(athlete => {
                 if (athlete.scadenzaVisita) {
                     const deadline = new Date(athlete.scadenzaVisita);
-                    if (deadline < today) {
-                        expired.push(athlete.name);
-                    } else if (deadline <= threeMonths) {
+                    if (deadline >= today && deadline <= threeMonths) {
                         warning.push(`${athlete.name} (${deadline.toLocaleDateString('it-IT')})`);
-                    } else if (deadline <= sixMonths) {
-                        notice.push(`${athlete.name} (${deadline.toLocaleDateString('it-IT')})`);
                     }
                 }
             });
 
             elements.alertsContainer.innerHTML = '';
-            let alertHTML = '';
-
-            if (expired.length > 0) {
-                alertHTML += `<div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <strong>SCADENZE SUPERATE!</strong> Le visite mediche di: ${expired.join(', ')} sono scadute.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>`;
-            }
+            
             if (warning.length > 0) {
-                alertHTML += `<div class="alert alert-warning alert-dismissible fade show" role="alert">
+                elements.alertsContainer.innerHTML = `<div class="alert alert-warning alert-dismissible fade show" role="alert">
                     <strong>SCADENZE IN AVVICINAMENTO (meno di 3 mesi):</strong> ${warning.join(', ')}.
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>`;
-            }
-            if (notice.length > 0) {
-                alertHTML += `<div class="alert alert-info alert-dismissible fade show" role="alert">
-                    <strong>Avviso scadenze (meno di 6 mesi):</strong> ${notice.join(', ')}.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>`;
-            }
-
-            if(alertHTML) {
-                elements.alertsContainer.innerHTML = alertHTML;
             }
         };
 
