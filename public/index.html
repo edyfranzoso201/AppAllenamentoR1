@@ -131,6 +131,7 @@
             .printing-now table, .printing-now th, .printing-now td { background-color: #fff !important; color: #000 !important; border-color: #000 !important; }
             .printing-now .calendar-session, .printing-now .shirt-number { background-color: #cccccc !important; color: #000 !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
             .printing-now *, .printing-now .main-title, .printing-now .text-muted, .printing-now .card-title, .printing-now p, .printing-now h1, .printing-now h2, .printing-now h3, .printing-now h4, .printing-now h5, .printing-now h6 { color: #000 !important; }
+            .printing-now .player-name, .printing-now .jersey-number, .printing-now .token-captain { color: #fff !important; }
             .printing-now .main-title { border-left-color: #000 !important; }
             .printing-now canvas { max-width: 100% !important; height: auto !important; }
             .printing-now #field-container { background-color: var(--field-green) !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
@@ -1052,21 +1053,21 @@
         const renderCardsSummary = () => {
             elements.cardsSummaryTbody.innerHTML = '';
             const allCards = Object.values(matchResults)
-                .flatMap((match) =>
+                .flatMap((match, matchIndex) =>
                     match.cards.map((card, cardIndex) => ({
                         ...card,
                         date: match.date,
-                        uniqueId: `${match.id}-${cardIndex}` // Crea un ID univoco per la riga
+                        uniqueId: `${match.id}-${cardIndex}` // Crea un ID univoco
                     }))
                 )
                 .sort((a, b) => new Date(b.date) - new Date(a.date));
-            
+
             let renderedRows = 0;
             allCards.forEach(card => {
                 if (visuallyDeletedCards.includes(card.uniqueId)) {
                     return; // Salta questo cartellino se è stato rimosso visivamente
                 }
-                
+
                 const athlete = athletes.find(a => String(a.id) === String(card.athleteId));
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -2105,7 +2106,7 @@
         // --- DRAG & DROP FORMAZIONE (CUSTOM) ---
         let draggedEl = null;
         let dragGhost = null;
-        let startX, startY, offsetX, offsetY;
+        let offsetX, offsetY;
 
         function onDragStart(e) {
             const target = e.target.closest('.player-jersey, .available-player, .tool-item, .token');
