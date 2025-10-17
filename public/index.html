@@ -68,6 +68,11 @@
             background-color: #343a40 !important;
         }
         /* STILI MODULO FORMAZIONE */
+        .dragging {
+            opacity: 0.5;
+            z-index: 1056; /* Sopra i modal */
+            pointer-events: none; /* Per permettere di rilevare il drop-zone sottostante */
+        }
         #pitch-wrapper { display: flex; align-items: flex-start; gap: 1rem; }
         #field-container { background-color: var(--field-green); border: 2px solid var(--field-line); position: relative; width: 100%; max-width: 450px; aspect-ratio: 5 / 7; box-sizing: border-box; flex-shrink: 0; }
         #field-bench-area { background-color: rgba(0,0,0,0.2); border: 2px dashed var(--border-color); border-radius: 8px; width: 150px; height: 630px; position: relative; flex-shrink: 0; }
@@ -84,7 +89,7 @@
         .player-jersey {
             position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
             width: 15%; cursor: grab; user-select: none; font-size: clamp(4.5px, 0.6vw, 8px);
-            transform: translate(-50%, -50%); /* Modifica: Centra l'elemento sul cursore */
+            transform: translate(-50%, -50%);
         }
         .jersey-body { position: relative; width: 5em; height: 5em; background-color: var(--secondary-blue); border-radius: 0.8em 0.8em 0.5em 0.5em; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 -4px 8px rgba(0,0,0,0.3); }
         .jersey-body::before, .jersey-body::after { content: ''; position: absolute; width: 2.5em; height: 1em; background-color: inherit; top: 0; }
@@ -92,15 +97,15 @@
         .jersey-body::after { right: -1.8em; transform: rotate(40deg); border-radius: 0.2em 0.5em 0 0; }
         .jersey-number { font-size: 2.2em; font-weight: bold; color: white; text-shadow: 1px 1px 2px black; }
         .player-name { margin-top: 0.5em; font-size: 1.33em; font-weight: bold; color: white; background-color: rgba(0,0,0,0.6); padding: 0.1em 0.4em; border-radius: 4px; white-space: nowrap; }
-        #available-list .list-group-item { cursor: grab; background-color: var(--secondary-blue); }
+        #available-list .list-group-item, .tool-item { cursor: grab; background-color: var(--secondary-blue); }
         .available-slot { border: 1px dashed var(--border-color); border-radius: 8px; min-height: 50px; }
         #formation-tools { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 1rem; }
-        .tool-item { cursor: grab; user-select: none; background-color: var(--secondary-blue); border: 1px solid var(--border-color); border-radius: 8px; padding: 5px 10px; text-align: center; }
+        .tool-item { border: 1px solid var(--border-color); border-radius: 8px; padding: 5px 10px; text-align: center; }
         .tool-item.opponent-tool { background-color: var(--primary-red); font-size: 1.5rem; line-height: 1; padding: 5px 12px; }
         .tool-item.ball-tool { font-size: 1.5rem; line-height: 1; padding: 5px 10px; }
         .token {
             position: absolute; cursor: grab; user-select: none; z-index: 10; text-align: center;
-            transform: translate(-50%, -50%); /* Modifica: Centra l'elemento sul cursore */
+            transform: translate(-50%, -50%);
         }
         .token-captain { font-weight: bold; color: white; background: black; padding: 0.2em 0.5em; border-radius: 4px; font-size: clamp(8px, 1vw, 12px); }
         .token-ball { font-size: 2rem; }
@@ -241,10 +246,10 @@
                          <div class="card-header fw-bold">Strumenti</div>
                          <div class="card-body">
                              <div id="formation-tools">
-                                 <div class="tool-item" draggable="true" data-item-type="captain-c">(C)</div>
-                                 <div class="tool-item" draggable="true" data-item-type="captain-vc">(VC)</div>
-                                 <div class="tool-item ball-tool" draggable="true" data-item-type="ball">⚽</div>
-                                 <div class="tool-item opponent-tool" draggable="true" data-item-type="opponent" title="Trascina per duplicare">●</div>
+                                 <div class="tool-item" data-item-type="captain-c">(C)</div>
+                                 <div class="tool-item" data-item-type="captain-vc">(VC)</div>
+                                 <div class="tool-item ball-tool" data-item-type="ball">⚽</div>
+                                 <div class="tool-item opponent-tool" data-item-type="opponent" title="Trascina per duplicare">●</div>
                              </div>
                          </div>
                          <div class="card-header fw-bold mt-3">Atleti Disponibili</div>
@@ -773,7 +778,6 @@
         const createJerseyElement = (athlete) => {
             const jersey = document.createElement('div');
             jersey.className = 'player-jersey';
-            jersey.draggable = true;
             jersey.dataset.athleteId = athlete.id;
             jersey.dataset.role = athlete.role;
             const jerseyColor = athlete.role.toLowerCase().includes('portiere') ? 'var(--gk-color)' : 'var(--secondary-blue)';
@@ -784,9 +788,8 @@
         const createTokenElement = (type, id) => {
             const token = document.createElement('div');
             token.className = 'token';
-            token.draggable = true;
             token.dataset.itemType = type;
-            token.dataset.tokenId = id;
+            if (id) token.dataset.tokenId = id;
             switch(type) {
                 case 'captain-c': token.innerHTML = '(C)'; token.classList.add('token-captain'); break;
                 case 'captain-vc': token.innerHTML = '(VC)'; token.classList.add('token-captain'); break;
@@ -854,12 +857,10 @@
                     availablePlayer.dataset.athleteId = athlete.id;
 
                     if (isExpired) {
-                        availablePlayer.draggable = false;
                         availablePlayer.classList.add('disabled');
                         availablePlayer.title = 'Visita medica scaduta. Atleta non schierabile.';
                         availablePlayer.innerHTML = `<span><strong>${athlete.number}.</strong> ${athlete.name}</span><span class="badge bg-danger"><i class="bi bi-lock-fill"></i></span>`;
                     } else {
-                        availablePlayer.draggable = true;
                         availablePlayer.innerHTML = `<span><strong>${athlete.number}.</strong> ${athlete.name}</span><span class="badge bg-secondary">${athlete.role.substring(0,3)}</span>`;
                     }
                     elements.availableList.appendChild(availablePlayer);
@@ -2101,51 +2102,113 @@
             }
         });
 
-        // --- DRAG & DROP FORMAZIONE ---
-        let draggedElement = null;
-        document.addEventListener('dragstart', e => { if (e.target.draggable) { draggedElement = e.target; setTimeout(() => { e.target.style.opacity = '0.5'; }, 0); } });
-        document.addEventListener('dragend', e => { if (draggedElement) { draggedElement.style.opacity = '1'; draggedElement = null; } });
-        ['dragenter', 'dragover', 'dragleave'].forEach(eventName => { document.addEventListener(eventName, e => e.preventDefault()); });
-        document.addEventListener('drop', e => {
-            e.preventDefault();
-            if (!draggedElement) return;
-            const dropZone = e.target.closest('.drop-zone');
-            if (!dropZone) return;
-            
-            const athleteId = draggedElement.dataset.athleteId;
-            const itemType = draggedElement.dataset.itemType;
-            const tokenId = draggedElement.dataset.tokenId;
+        // --- DRAG & DROP FORMAZIONE (CUSTOM) ---
+        let draggedEl = null;
+        let dragGhost = null;
+        let startX, startY, offsetX, offsetY;
 
-            if (athleteId) {
-                formationData.starters = formationData.starters.filter(p => p.athleteId != athleteId);
-                formationData.bench = formationData.bench.filter(p => p.athleteId != athleteId);
-            } else if (tokenId) {
-                formationData.tokens = formationData.tokens.filter(t => t.id != tokenId);
+        function onDragStart(e) {
+            const target = e.target.closest('.player-jersey, .available-player, .tool-item, .token');
+            if (!target || target.classList.contains('disabled')) return;
+
+            e.preventDefault();
+            draggedEl = target;
+
+            if (draggedEl.classList.contains('available-player')) {
+                const athleteId = draggedEl.dataset.athleteId;
+                const athlete = athletes.find(a => String(a.id) === athleteId);
+                if (!athlete) return;
+                dragGhost = createJerseyElement(athlete);
+            } else if (draggedEl.classList.contains('tool-item')) {
+                dragGhost = createTokenElement(draggedEl.dataset.itemType);
+            } else {
+                dragGhost = draggedEl.cloneNode(true);
             }
             
-            const rect = dropZone.getBoundingClientRect();
-            const top = ((e.clientY - rect.top) / rect.height) * 100;
-            const left = ((e.clientX - rect.left) / rect.width) * 100;
+            dragGhost.classList.add('dragging');
+            document.body.appendChild(dragGhost);
+
+            const rect = draggedEl.getBoundingClientRect();
+            offsetX = e.clientX - rect.left;
+            offsetY = e.clientY - rect.top;
+
+            dragGhost.style.left = `${e.clientX - offsetX}px`;
+            dragGhost.style.top = `${e.clientY - offsetY}px`;
             
-            if (athleteId) {
-                if (dropZone.id === 'field-container') {
-                    formationData.starters.push({ athleteId, top, left });
-                } else if (dropZone.id === 'field-bench-area') {
-                    formationData.bench.push({ athleteId, top, left });
+            document.addEventListener('mousemove', onDragMove);
+            document.addEventListener('mouseup', onDragEnd);
+        }
+
+        function onDragMove(e) {
+            if (!dragGhost) return;
+            dragGhost.style.left = `${e.clientX - offsetX}px`;
+            dragGhost.style.top = `${e.clientY - offsetY}px`;
+        }
+
+        function onDragEnd(e) {
+            if (!draggedEl || !dragGhost) {
+                cleanUpDrag();
+                return;
+            }
+
+            dragGhost.style.display = 'none';
+            const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
+            dragGhost.style.display = '';
+
+            const dropZone = dropTarget ? dropTarget.closest('.drop-zone') : null;
+
+            if (dropZone) {
+                const athleteId = draggedEl.dataset.athleteId;
+                const itemType = draggedEl.dataset.itemType;
+                const tokenId = draggedEl.dataset.tokenId;
+
+                if (athleteId) {
+                    formationData.starters = formationData.starters.filter(p => p.athleteId != athleteId);
+                    formationData.bench = formationData.bench.filter(p => p.athleteId != athleteId);
+                } else if (tokenId) {
+                    formationData.tokens = formationData.tokens.filter(t => t.id != tokenId);
                 }
-            } else if (itemType && dropZone.id === 'field-container') {
-                const newId = tokenId || Date.now();
-                if (itemType === 'opponent') {
-                     if(tokenId) formationData.tokens.push({ id: tokenId, type: itemType, top, left });
-                     else formationData.tokens.push({ id: newId, type: itemType, top, left });
-                } else {
-                    formationData.tokens = formationData.tokens.filter(t => t.type !== itemType);
-                    formationData.tokens.push({ id: newId, type: itemType, top, left });
+                
+                const rect = dropZone.getBoundingClientRect();
+                const left = ((e.clientX - rect.left) / rect.width) * 100;
+                const top = ((e.clientY - rect.top) / rect.height) * 100;
+                
+                if (athleteId) {
+                    if (dropZone.id === 'field-container') {
+                        formationData.starters.push({ athleteId, top, left });
+                    } else if (dropZone.id === 'field-bench-area') {
+                        formationData.bench.push({ athleteId, top, left });
+                    }
+                } else if (itemType) {
+                    if (dropZone.id === 'field-container' || dropZone.id === 'field-bench-area') {
+                         const newId = tokenId || Date.now();
+                         if (itemType === 'opponent' && draggedEl.classList.contains('tool-item')) {
+                             formationData.tokens.push({ id: newId, type: itemType, top, left });
+                         } else {
+                            formationData.tokens = formationData.tokens.filter(t => t.type !== itemType);
+                            formationData.tokens.push({ id: newId, type: itemType, top, left });
+                         }
+                    }
                 }
             }
+
+            cleanUpDrag();
             saveData();
             renderFormation();
-        });
+        }
+
+        function cleanUpDrag() {
+            if (dragGhost) {
+                dragGhost.remove();
+            }
+            draggedEl = null;
+            dragGhost = null;
+            document.removeEventListener('mousemove', onDragMove);
+            document.removeEventListener('mouseup', onDragEnd);
+        }
+
+        document.getElementById('formazione-section').addEventListener('mousedown', onDragStart);
+
 
         // --- GESTIONE STAMPA ---
         document.body.addEventListener('click', (e) => { const printBtn = e.target.closest('.print-section-btn'); if (printBtn) { const sectionToPrint = printBtn.closest('.printable-area'); if (sectionToPrint) { sectionToPrint.classList.add('printing-now'); window.print(); } } });
