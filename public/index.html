@@ -1053,7 +1053,7 @@
         const renderCardsSummary = () => {
             elements.cardsSummaryTbody.innerHTML = '';
             const allCards = Object.values(matchResults)
-                .flatMap((match, matchIndex) =>
+                .flatMap((match) =>
                     match.cards.map((card, cardIndex) => ({
                         ...card,
                         date: match.date,
