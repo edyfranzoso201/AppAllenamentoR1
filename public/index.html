@@ -543,7 +543,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         const modalsContainer = document.getElementById('modals-container');
         modalsContainer.innerHTML = `<div class="modal fade" id="evaluationModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Valutazione di <span id="modal-athlete-name-eval"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="evaluation-form"><input type="hidden" id="modal-athlete-id-eval"><p>Data: <strong id="modal-evaluation-date"></strong></p><div class="mb-2"><label class="form-label">Presenza Allenamento</label><select id="presenza-allenamento" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Serietà Allenamento</label><select id="serieta-allenamento" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Abbigliamento Allenamento</label><select id="abbigliamento-allenamento" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Abbigliamento Partita</label><select id="abbigliamento-partita" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Serietà Comunicazioni</label><select id="comunicazioni" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Doccia (Opzionale)</label><select id="doccia" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="award-checkbox"><label class="form-check-label" for="award-checkbox">Assegna Premio</label></div></form></div><div class="modal-footer justify-content-between"><button type="button" class="btn btn-outline-danger" id="delete-single-athlete-day-btn">Elimina Dati del Giorno</button><div><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button><button type="submit" class="btn btn-primary-custom" form="evaluation-form">Salva Valutazione</button></div></div></div></div></div>
-            <div class="modal fade" id="athleteModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="athleteModalLabel">Gestisci Atleta</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="athlete-form"><input type="hidden" id="modal-athlete-id"><div class="mb-3"><label class="form-label">Nome Cognome</label><input type="text" class="form-control" id="athlete-name" required></div><div class="mb-3"><label class="form-label">URL Foto Profilo</label><input type="url" class="form-control" id="athlete-avatar" placeholder="https://esempio.com/foto.png"></div><div class="mb-3"><label class="form-label">Ruolo</label><input type="text" class="form-control" id="athlete-role" required></div><div class="row"><div class="col-md-6 mb-3"><label class="form-label">Numero Maglia</label><input type="number" class="form-control" id="athlete-number" required min="1"></div><div class="col-md-6 mb-3"><label class="form-label">Scadenza Visita Medica</label><input type="date" class="form-control" id="scadenza-visita"></div></div><div class="row"><div class="col-md-6 mb-3"><label class="form-label">Data Prenotazione Visita</label><input type="date" class="form-control" id="prenotazione-visita"></div></div><div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="athlete-captain"><label class="form-check-label" for="athlete-captain">Capitano</label></div></form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button><button type="submit" class="btn btn-primary-custom" form="athlete-form">Salva Atleta</button></div></div></div></div>
+            <div class="modal fade" id="athleteModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="athleteModalLabel">Gestisci Atleta</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="athlete-form"><input type="hidden" id="modal-athlete-id"><div class="mb-3"><label class="form-label">Nome Cognome</label><input type="text" class="form-control" id="athlete-name" required></div><div class="mb-3"><label for="athlete-avatar-input" class="form-label">Foto Profilo</label><input type="file" class="form-control" id="athlete-avatar-input" accept="image/*"><input type="hidden" id="athlete-avatar-base64"><img id="avatar-preview" src="" alt="Anteprima" class="mt-2" style="max-width: 70px; max-height: 70px; display: none; border-radius: 50%;"></div><div class="mb-3"><label class="form-label">Ruolo</label><input type="text" class="form-control" id="athlete-role" required></div><div class="row"><div class="col-md-6 mb-3"><label class="form-label">Numero Maglia</label><input type="number" class="form-control" id="athlete-number" required min="1"></div><div class="col-md-6 mb-3"><label class="form-label">Scadenza Visita Medica</label><input type="date" class="form-control" id="scadenza-visita"></div></div><div class="row"><div class="col-md-6 mb-3"><label class="form-label">Data Prenotazione Visita</label><input type="date" class="form-control" id="prenotazione-visita"></div></div><div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="athlete-captain"><label class="form-check-label" for="athlete-captain">Capitano</label></div></form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button><button type="submit" class="btn btn-primary-custom" form="athlete-form">Salva Atleta</button></div></div></div></div>
             <div class="modal fade" id="gpsModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="gpsModalLabel">Dati Performance di <span id="modal-athlete-name-gps"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="gps-form"><input type="hidden" id="modal-athlete-id-gps"><input type="hidden" id="gps-session-id">
                 <div class="row mb-3"><div class="col-md-8"><label for="gps-session-selector" class="form-label">Seleziona Sessione Esistente per Modificare</label><select id="gps-session-selector" class="form-select"><option value="">--- Inserisci Nuova Sessione ---</option></select></div><div class="col-md-4 d-flex align-items-end"><button type="button" id="delete-gps-session-btn" class="btn btn-outline-danger w-100" disabled>Elimina Sessione</button></div></div><hr>
                 <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Data Registrazione</label><input type="date" class="form-control" id="gps-data_di_registrazione" required></div><div class="col-md-4 mb-3"><label class="form-label">Ora Registrazione</label><input type="time" class="form-control" id="gps-ora_registrazione"></div><div class="col-md-4 mb-3"><label class="form-label">Tipo Sessione</label><select class="form-select" id="gps-tipo_sessione"><option value="Allenamento">Allenamento</option><option value="Partita">Partita</option><option value="Individual">Individual</option></select></div></div>
@@ -1057,17 +1057,17 @@
                     match.cards.map((card, cardIndex) => ({
                         ...card,
                         date: match.date,
-                        uniqueId: `${match.id}-${cardIndex}` // Crea un ID univoco
+                        uniqueId: `${match.id}-${cardIndex}` // Crea un ID univoco per la riga
                     }))
                 )
                 .sort((a, b) => new Date(b.date) - new Date(a.date));
-
+            
             let renderedRows = 0;
             allCards.forEach(card => {
                 if (visuallyDeletedCards.includes(card.uniqueId)) {
                     return; // Salta questo cartellino se è stato rimosso visivamente
                 }
-
+                
                 const athlete = athletes.find(a => String(a.id) === String(card.athleteId));
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -1742,7 +1742,7 @@
         document.getElementById('gps-tipo_sessione').addEventListener('change', (e) => { document.getElementById('match-stats-fields').style.display = (e.target.value === 'Partita') ? 'block' : 'none'; });
         elements.comparisonPeriodToggle.addEventListener('click', (e) => { if (e.target.dataset.period) { elements.comparisonPeriodToggle.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active')); e.target.classList.add('active'); comparisonChartPeriod = e.target.dataset.period; updateEvaluationCharts(); } });
         elements.attendancePeriodToggle.addEventListener('click', (e) => { if (e.target.dataset.period) { elements.attendancePeriodToggle.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active')); e.target.classList.add('active'); attendanceChartPeriod = e.target.dataset.period; updateAttendanceChart(); } });
-        elements.addAthleteBtn.addEventListener('click', () => { document.getElementById('athleteModalLabel').textContent = 'Aggiungi Atleta'; document.getElementById('athlete-form').reset(); document.getElementById('modal-athlete-id').value = ''; athleteModal.show(); });
+        elements.addAthleteBtn.addEventListener('click', () => { document.getElementById('athleteModalLabel').textContent = 'Aggiungi Atleta'; document.getElementById('athlete-form').reset(); document.getElementById('modal-athlete-id').value = ''; document.getElementById('avatar-preview').style.display = 'none'; document.getElementById('avatar-preview').src = ''; document.getElementById('athlete-avatar-input').value = ''; document.getElementById('athlete-avatar-base64').value = ''; athleteModal.show(); });
         
         elements.athleteGrid.addEventListener('click', (e) => {
             const card = e.target.closest('[data-athlete-id]');
@@ -1755,12 +1755,22 @@
                 document.getElementById('athleteModalLabel').textContent = 'Modifica Atleta';
                 document.getElementById('modal-athlete-id').value = athlete.id;
                 document.getElementById('athlete-name').value = athlete.name;
-                document.getElementById('athlete-avatar').value = athlete.avatar || '';
                 document.getElementById('athlete-role').value = athlete.role;
                 document.getElementById('athlete-number').value = athlete.number;
                 document.getElementById('scadenza-visita').value = athlete.scadenzaVisita || '';
                 document.getElementById('prenotazione-visita').value = athlete.dataPrenotazioneVisita || '';
                 document.getElementById('athlete-captain').checked = athlete.isCaptain;
+
+                const preview = document.getElementById('avatar-preview');
+                document.getElementById('athlete-avatar-input').value = '';
+                document.getElementById('athlete-avatar-base64').value = '';
+
+                if (athlete.avatar) {
+                    preview.src = athlete.avatar;
+                    preview.style.display = 'block';
+                } else {
+                    preview.style.display = 'none';
+                }
                 athleteModal.show();
             } else if (e.target.closest('.delete-btn')) {
                 if (confirm(`Sei sicuro di voler eliminare ${athlete.name}? Tutti i suoi dati storici verranno rimossi.`)) {
@@ -1817,8 +1827,51 @@
                 }
             }
         });
+        
+        modalsContainer.addEventListener('change', (e) => {
+            if (e.target.id === 'athlete-avatar-input') {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        document.getElementById('athlete-avatar-base64').value = event.target.result;
+                        const preview = document.getElementById('avatar-preview');
+                        preview.src = event.target.result;
+                        preview.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        });
 
-        elements.athleteForm.addEventListener('submit', (e) => { e.preventDefault(); const athleteId = document.getElementById('modal-athlete-id').value; const athleteData = { name: document.getElementById('athlete-name').value.trim(), avatar: document.getElementById('athlete-avatar').value.trim(), role: document.getElementById('athlete-role').value.trim(), number: parseInt(document.getElementById('athlete-number').value), isCaptain: document.getElementById('athlete-captain').checked, scadenzaVisita: document.getElementById('scadenza-visita').value, dataPrenotazioneVisita: document.getElementById('prenotazione-visita').value }; if (athleteId) { const index = athletes.findIndex(a => a.id.toString() === athleteId); if (index !== -1) athletes[index] = { ...athletes[index], ...athleteData }; } else { athleteData.id = Date.now(); athletes.push(athleteData); } saveData(); updateAllUI(); athleteModal.hide(); });
+        elements.athleteForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const athleteId = document.getElementById('modal-athlete-id').value;
+            const avatarBase64 = document.getElementById('athlete-avatar-base64').value;
+            const existingAthlete = athleteId ? athletes.find(a => a.id.toString() === athleteId) : null;
+            
+            const athleteData = {
+                name: document.getElementById('athlete-name').value.trim(),
+                role: document.getElementById('athlete-role').value.trim(),
+                number: parseInt(document.getElementById('athlete-number').value),
+                isCaptain: document.getElementById('athlete-captain').checked,
+                scadenzaVisita: document.getElementById('scadenza-visita').value,
+                dataPrenotazioneVisita: document.getElementById('prenotazione-visita').value,
+                avatar: avatarBase64 || (existingAthlete ? existingAthlete.avatar : '')
+            };
+
+            if (athleteId) {
+                const index = athletes.findIndex(a => a.id.toString() === athleteId);
+                if (index !== -1) athletes[index] = { ...athletes[index], ...athleteData };
+            } else {
+                athleteData.id = Date.now();
+                athletes.push(athleteData);
+            }
+            saveData();
+            updateAllUI();
+            athleteModal.hide();
+        });
+
         elements.evaluationForm.addEventListener('submit', (e) => { e.preventDefault(); const athleteId = document.getElementById('modal-athlete-id-eval').value; const date = elements.evaluationDatePicker.value; if (!date) { alert('Per favore, seleziona una data valida prima di salvare.'); return; } if (!evaluations[date]) evaluations[date] = {}; evaluations[date][athleteId] = evaluationCategories.reduce((obj, cat) => ({ ...obj, [cat]: document.getElementById(cat).value }), {}); if (document.getElementById('award-checkbox').checked) { const reason = prompt('Motivo del premio:'); if (reason) { if (!awards[date]) awards[date] = []; awards[date] = awards[date].filter(a => a.athleteId.toString() !== athleteId); awards[date].push({ athleteId, reason, date }); } } else { if (awards[date]) awards[date] = awards[date].filter(a => a.athleteId.toString() !== athleteId); } saveData(); updateAllUI(); evaluationModal.hide(); });
         
         elements.gpsForm.addEventListener('submit', (e) => { 
