@@ -2163,18 +2163,18 @@
 
         function onDragStart(e) {
             const target = e.target.closest('.player-jersey, .available-player, .tool-item, .token');
-            if (!target || target.classList.contains('disabled')) return;
+            if (!target || target.classList.contains('disabled') || e.button !== 0) return; // Solo tasto sinistro
 
             e.preventDefault();
             draggedEl = target;
 
+            // Crea un clone per il trascinamento
+            dragGhost = draggedEl.cloneNode(true);
             if (draggedEl.classList.contains('available-player')) {
                 const athleteId = draggedEl.dataset.athleteId;
                 const athlete = athletes.find(a => String(a.id) === athleteId);
                 if (!athlete) return;
                 dragGhost = createJerseyElement(athlete);
-            } else if (draggedEl.classList.contains('tool-item')) {
-                dragGhost = createTokenElement(draggedEl.dataset.itemType);
             } else {
                 dragGhost = draggedEl.cloneNode(true);
             }
@@ -2190,7 +2190,7 @@
             dragGhost.style.top = `${e.clientY - offsetY}px`;
             
             document.addEventListener('mousemove', onDragMove);
-            document.addEventListener('mouseup', onDragEnd);
+            document.addEventListener('mouseup', onDragEnd, { once: true });
         }
 
         function onDragMove(e) {
@@ -2207,7 +2207,7 @@
 
             dragGhost.style.display = 'none';
             const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
-            dragGhost.style.display = '';
+            dragGhost.style.display = ''; 
 
             const dropZone = dropTarget ? dropTarget.closest('.drop-zone') : null;
 
@@ -2228,27 +2228,26 @@
                 const top = ((e.clientY - rect.top) / rect.height) * 100;
                 
                 if (athleteId) {
-                    if (dropZone.id === 'field-container') {
-                        formationData.starters.push({ athleteId, top, left });
-                    } else if (dropZone.id === 'field-bench-area') {
-                        formationData.bench.push({ athleteId, top, left });
+                    if (dropZone.id === 'field-container' || dropZone.id === 'field-bench-area') {
+                         const targetArray = dropZone.id === 'field-container' ? formationData.starters : formationData.bench;
+                         targetArray.push({ athleteId, top, left });
                     }
                 } else if (itemType) {
                     if (dropZone.id === 'field-container' || dropZone.id === 'field-bench-area') {
-                         const newId = tokenId || Date.now();
-                         if (itemType === 'opponent' && draggedEl.classList.contains('tool-item')) {
+                        const newId = tokenId || Date.now().toString();
+                        if (itemType === 'opponent' && (draggedEl.classList.contains('tool-item') || !tokenId)) {
                              formationData.tokens.push({ id: newId, type: itemType, top, left });
-                         } else {
+                        } else {
                             formationData.tokens = formationData.tokens.filter(t => t.type !== itemType);
                             formationData.tokens.push({ id: newId, type: itemType, top, left });
-                         }
+                        }
                     }
                 }
+                saveData();
+                renderFormation();
             }
 
             cleanUpDrag();
-            saveData();
-            renderFormation();
         }
 
         function cleanUpDrag() {
@@ -2258,7 +2257,6 @@
             draggedEl = null;
             dragGhost = null;
             document.removeEventListener('mousemove', onDragMove);
-            document.removeEventListener('mouseup', onDragEnd);
         }
 
         document.getElementById('formazione-section').addEventListener('mousedown', onDragStart);
