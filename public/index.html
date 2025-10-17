@@ -81,7 +81,11 @@
         .goal-box-bottom { bottom: 0; left: 50%; transform: translateX(-50%); width: 30%; height: 6%; border: 2px solid var(--field-line); border-bottom: none; }
         .penalty-spot-top { top: 11.5%; left: 50%; transform: translateX(-50%); width: 1.5%; aspect-ratio: 1/1; background-color: var(--field-line); border-radius: 50%; }
         .penalty-spot-bottom { bottom: 11.5%; left: 50%; transform: translateX(-50%); width: 1.5%; aspect-ratio: 1/1; background-color: var(--field-line); border-radius: 50%; }
-        .player-jersey { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 15%; cursor: grab; user-select: none; font-size: clamp(4.5px, 0.6vw, 8px); }
+        .player-jersey {
+            position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 15%; cursor: grab; user-select: none; font-size: clamp(4.5px, 0.6vw, 8px);
+            transform: translate(-50%, -50%); /* Modifica: Centra l'elemento sul cursore */
+        }
         .jersey-body { position: relative; width: 5em; height: 5em; background-color: var(--secondary-blue); border-radius: 0.8em 0.8em 0.5em 0.5em; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 -4px 8px rgba(0,0,0,0.3); }
         .jersey-body::before, .jersey-body::after { content: ''; position: absolute; width: 2.5em; height: 1em; background-color: inherit; top: 0; }
         .jersey-body::before { left: -1.8em; transform: rotate(-40deg); border-radius: 0.5em 0.2em 0 0; }
@@ -94,7 +98,10 @@
         .tool-item { cursor: grab; user-select: none; background-color: var(--secondary-blue); border: 1px solid var(--border-color); border-radius: 8px; padding: 5px 10px; text-align: center; }
         .tool-item.opponent-tool { background-color: var(--primary-red); font-size: 1.5rem; line-height: 1; padding: 5px 12px; }
         .tool-item.ball-tool { font-size: 1.5rem; line-height: 1; padding: 5px 10px; }
-        .token { position: absolute; cursor: grab; user-select: none; z-index: 10; text-align: center; }
+        .token {
+            position: absolute; cursor: grab; user-select: none; z-index: 10; text-align: center;
+            transform: translate(-50%, -50%); /* Modifica: Centra l'elemento sul cursore */
+        }
         .token-captain { font-weight: bold; color: white; background: black; padding: 0.2em 0.5em; border-radius: 4px; font-size: clamp(8px, 1vw, 12px); }
         .token-ball { font-size: 2rem; }
         .token-opponent { width: 2.5em; height: 2.5em; background-color: var(--primary-red); border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.5); font-size: clamp(8px, 1vw, 12px); }
@@ -821,8 +828,8 @@
                 if (athlete) {
                     const jersey = createJerseyElement(athlete);
                     addExpiredIconIfNeeded(athlete, jersey);
-                    jersey.style.left = `calc(${playerData.left}% - 3em)`;
-                    jersey.style.top = `calc(${playerData.top}% - 3em)`;
+                    jersey.style.left = `${playerData.left}%`;
+                    jersey.style.top = `${playerData.top}%`;
                     field.appendChild(jersey);
                 }
             });
@@ -831,8 +838,8 @@
                 if (athlete) {
                     const jersey = createJerseyElement(athlete);
                     addExpiredIconIfNeeded(athlete, jersey);
-                    jersey.style.left = `calc(${playerData.left}% - 3em)`;
-                    jersey.style.top = `calc(${playerData.top}% - 3em)`;
+                    jersey.style.left = `${playerData.left}%`;
+                    jersey.style.top = `${playerData.top}%`;
                     bench.appendChild(jersey);
                 }
             });
@@ -860,8 +867,8 @@
             });
             formationData.tokens.forEach(tokenData => {
                 const tokenEl = createTokenElement(tokenData.type, tokenData.id);
-                tokenEl.style.left = `calc(${tokenData.left}% - 1.25em)`;
-                tokenEl.style.top = `calc(${tokenData.top}% - 1.25em)`;
+                tokenEl.style.left = `${tokenData.left}%`;
+                tokenEl.style.top = `${tokenData.top}%`;
                 field.appendChild(tokenEl);
             });
         };
@@ -1048,17 +1055,17 @@
                     match.cards.map((card, cardIndex) => ({
                         ...card,
                         date: match.date,
-                        uniqueId: `${match.id}-${cardIndex}` // Crea un ID univoco
+                        uniqueId: `${match.id}-${cardIndex}` // Crea un ID univoco per la riga
                     }))
                 )
                 .sort((a, b) => new Date(b.date) - new Date(a.date));
-
+            
             let renderedRows = 0;
             allCards.forEach(card => {
                 if (visuallyDeletedCards.includes(card.uniqueId)) {
                     return; // Salta questo cartellino se è stato rimosso visivamente
                 }
-
+                
                 const athlete = athletes.find(a => String(a.id) === String(card.athleteId));
                 const row = document.createElement('tr');
                 row.innerHTML = `
