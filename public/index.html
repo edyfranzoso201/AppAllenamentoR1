@@ -670,6 +670,7 @@
         let multiAthleteFilterType = 'all';
         let currentCalendarDate = new Date();
         let pollingInterval = null;
+        let visuallyDeletedCards = [];
         
         // --- GESTIONE DATI ---
         const saveData = async () => {
@@ -1043,15 +1044,21 @@
         const renderCardsSummary = () => {
             elements.cardsSummaryTbody.innerHTML = '';
             const allCards = Object.values(matchResults)
-                .flatMap(match => match.cards.map(card => ({ ...card, date: match.date })))
+                .flatMap((match) =>
+                    match.cards.map((card, cardIndex) => ({
+                        ...card,
+                        date: match.date,
+                        uniqueId: `${match.id}-${cardIndex}` // Crea un ID univoco
+                    }))
+                )
                 .sort((a, b) => new Date(b.date) - new Date(a.date));
-            
-            if (allCards.length === 0) {
-                elements.cardsSummaryTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nessun cartellino.</td></tr>';
-                return;
-            }
 
+            let renderedRows = 0;
             allCards.forEach(card => {
+                if (visuallyDeletedCards.includes(card.uniqueId)) {
+                    return; // Salta questo cartellino se è stato rimosso visivamente
+                }
+
                 const athlete = athletes.find(a => String(a.id) === String(card.athleteId));
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -1060,11 +1067,16 @@
                     <td>${card.type === 'red' ? '1' : '0'}</td>
                     <td>${new Date(card.date).toLocaleDateString('it-IT', {day: '2-digit', month: 'short'})}</td>
                     <td class="no-print">
-                        <button class="btn btn-sm btn-outline-danger py-0 px-1 remove-card-summary-row-btn"><i class="bi bi-x-lg"></i></button>
+                        <button class="btn btn-sm btn-outline-danger py-0 px-1 remove-card-summary-row-btn" data-card-id="${card.uniqueId}"><i class="bi bi-x-lg"></i></button>
                     </td>
                 `;
                 elements.cardsSummaryTbody.appendChild(row);
+                renderedRows++;
             });
+
+            if (renderedRows === 0) {
+                elements.cardsSummaryTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nessun cartellino da mostrare.</td></tr>';
+            }
         };
         
         const renderTopScorers = () => {
@@ -1693,9 +1705,13 @@
         elements.cardsSummaryTbody.addEventListener('click', e => {
             const removeBtn = e.target.closest('.remove-card-summary-row-btn');
             if (removeBtn) {
+                const cardId = removeBtn.dataset.cardId;
+                if (cardId && !visuallyDeletedCards.includes(cardId)) {
+                    visuallyDeletedCards.push(cardId);
+                }
                 removeBtn.closest('tr').remove();
                 if (elements.cardsSummaryTbody.children.length === 0) {
-                     elements.cardsSummaryTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nessun cartellino.</td></tr>';
+                     elements.cardsSummaryTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nessun cartellino da mostrare.</td></tr>';
                 }
             }
         });
