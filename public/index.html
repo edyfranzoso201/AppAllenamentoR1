@@ -2163,28 +2163,111 @@
             }
         });
 
-        // --- DRAG & DROP FORMAZIONE (CUSTOM) ---
-        let draggedEl = null;
-        let dragGhost = null;
-        let offsetX, offsetY;
+        // --- DRAG & DROP FORMAZIONE (CUSTOM) - VERSIONE FLUIDA ---
+let draggedEl = null;
+let dragGhost = null;
+let offsetX, offsetY;
 
-        function onDragStart(e) {
-            const target = e.target.closest('.player-jersey, .available-player, .tool-item, .token');
-            if (!target || target.classList.contains('disabled') || e.button !== 0) return; // Solo tasto sinistro
+function onDragStart(e) {
+    const target = e.target.closest('.player-jersey, .available-player, .tool-item, .token');
+    if (!target || target.classList.contains('disabled') || e.button !== 0) return;
+    e.preventDefault();
 
-            e.preventDefault();
-            draggedEl = target;
+    draggedEl = target;
 
-            // Crea un clone per il trascinamento
-            dragGhost = draggedEl.cloneNode(true);
-            if (draggedEl.classList.contains('available-player')) {
-                const athleteId = draggedEl.dataset.athleteId;
-                const athlete = athletes.find(a => String(a.id) === athleteId);
-                if (!athlete) return;
-                dragGhost = createJerseyElement(athlete);
+    // Crea il ghost element
+    if (draggedEl.classList.contains('available-player')) {
+        const athleteId = draggedEl.dataset.athleteId;
+        const athlete = athletes.find(a => String(a.id) === athleteId);
+        if (!athlete) return;
+        dragGhost = createJerseyElement(athlete);
+    } else if (draggedEl.classList.contains('tool-item')) {
+        dragGhost = createTokenElement(draggedEl.dataset.itemType);
+    } else {
+        dragGhost = draggedEl.cloneNode(true);
+    }
+
+    dragGhost.classList.add('dragging');
+    document.body.appendChild(dragGhost);
+
+    const rect = draggedEl.getBoundingClientRect();
+    offsetX = e.clientX - rect.left;
+    offsetY = e.clientY - rect.top;
+
+    // Posiziona inizialmente il ghost
+    dragGhost.style.left = `${e.clientX - offsetX}px`;
+    dragGhost.style.top = `${e.clientY - offsetY}px`;
+    dragGhost.style.position = 'fixed';
+    dragGhost.style.pointerEvents = 'none';
+    dragGhost.style.zIndex = '1056';
+
+    document.addEventListener('mousemove', onDragMove);
+    document.addEventListener('mouseup', onDragEnd, { once: true });
+}
+
+function onDragMove(e) {
+    if (!dragGhost) return;
+    dragGhost.style.left = `${e.clientX - offsetX}px`;
+    dragGhost.style.top = `${e.clientY - offsetY}px`;
+}
+
+function onDragEnd(e) {
+    if (!draggedEl || !dragGhost) {
+        cleanUpDrag();
+        return;
+    }
+
+    const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
+    const dropZone = dropTarget ? dropTarget.closest('.drop-zone') : null;
+
+    if (dropZone && (dropZone.id === 'field-container' || dropZone.id === 'field-bench-area')) {
+        const athleteId = draggedEl.dataset.athleteId;
+        const itemType = draggedEl.dataset.itemType;
+        const tokenId = draggedEl.dataset.tokenId;
+
+        // Rimuovi precedenti istanze
+        if (athleteId) {
+            formationData.starters = formationData.starters.filter(p => String(p.athleteId) !== String(athleteId));
+            formationData.bench = formationData.bench.filter(p => String(p.athleteId) !== String(athleteId));
+        } else if (tokenId) {
+            formationData.tokens = formationData.tokens.filter(t => String(t.id) !== String(tokenId));
+        }
+
+        // Calcola percentuali **al momento del drop**, usando boundingClientRect aggiornato
+        const zoneRect = dropZone.getBoundingClientRect();
+        const relativeX = e.clientX - zoneRect.left;
+        const relativeY = e.clientY - zoneRect.top;
+        const leftPercent = Math.max(0, Math.min(100, (relativeX / zoneRect.width) * 100));
+        const topPercent = Math.max(0, Math.min(100, (relativeY / zoneRect.height) * 100));
+
+        if (athleteId) {
+            const targetArray = dropZone.id === 'field-container' ? formationData.starters : formationData.bench;
+            targetArray.push({ athleteId: String(athleteId), top: topPercent, left: leftPercent });
+        } else if (itemType) {
+            const newId = tokenId || Date.now().toString();
+            if (itemType === 'opponent' && (draggedEl.classList.contains('tool-item') || !tokenId)) {
+                formationData.tokens.push({ id: newId, type: itemType, top: topPercent, left: leftPercent });
             } else {
-                dragGhost = draggedEl.cloneNode(true);
+                formationData.tokens = formationData.tokens.filter(t => t.type !== itemType);
+                formationData.tokens.push({ id: newId, type: itemType, top: topPercent, left: leftPercent });
             }
+        }
+
+        saveData();
+        renderFormation();
+    	}
+
+    	cleanUpDrag();
+	}
+
+	function cleanUpDrag() {
+   	 if (dragGhost) {
+        dragGhost.remove();
+    	}
+    	draggedEl = null;
+    	dragGhost = null;
+    	document.removeEventListener('mousemove', onDragMove);
+	}
             
             dragGhost.classList.add('dragging');
             document.body.appendChild(dragGhost);
