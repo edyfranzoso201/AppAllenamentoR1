@@ -58,7 +58,7 @@
             font-size: 1.2rem;
             position: absolute;
             top: 50%;
-            right: 70px;
+            right: 70px; /* Spostato per non sovrapporsi al numero */
             transform: translateY(-50%);
         }
         .text-purple { color: var(--custom-purple) !important; }
@@ -343,13 +343,10 @@
                     </div>
                     <div class="card table-card">
                         <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h5 class="card-title mb-0">Riepilogo Cartellini</h5>
-                                <button class="btn btn-sm btn-outline-danger no-print" id="reset-cards-summary-btn" title="Azzera Riepilogo Temporaneamente"><i class="bi bi-x-circle"></i></button>
-                            </div>
+                            <h5 class="card-title">Riepilogo Cartellini</h5>
                             <div class="table-responsive mt-2" style="max-height: 200px;">
                                 <table class="table table-dark table-striped table-hover table-sm" id="cards-summary-table">
-                                    <thead><tr><th>Atleta</th><th><span class="yellow-card"></span></th><th><span class="red-card"></span></th><th>Data</th></tr></thead>
+                                    <thead><tr><th>Atleta</th><th><span class="yellow-card"></span></th><th><span class="red-card"></span></th><th>Data</th><th class="no-print"></th></tr></thead>
                                     <tbody id="cards-summary-tbody"></tbody>
                                 </table>
                             </div>
@@ -412,6 +409,7 @@
                      <h2 class="main-title mb-0">Confronto Performance Squadra</h2>
                      <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
                      <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
+                     <button class="btn btn-sm btn-outline-warning ms-1 no-print unlock-btn" title="Sblocca Dati Individuali" style="display: none;"><i class="bi bi-key-fill"></i></button>
                 </div>
                 <div class="col-12 mb-4">
                     <div class="card chart-card">
@@ -463,6 +461,7 @@
                  <h2 class="main-title mb-0">Monitoraggio Performance (GPS)</h2>
                  <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
                  <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
+                 <button class="btn btn-sm btn-outline-warning ms-1 no-print unlock-btn" title="Sblocca Dati Individuali" style="display: none;"><i class="bi bi-key-fill"></i></button>
             </div>
             <div class="card chart-card p-3 mb-4 no-print">
                 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -497,6 +496,7 @@
                  <h2 class="main-title mb-0">Analisi Atleta Singolo</h2>
                  <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
                  <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
+                 <button class="btn btn-sm btn-outline-warning ms-1 no-print unlock-btn" title="Sblocca Dati Individuali" style="display: none;"><i class="bi bi-key-fill"></i></button>
             </div>
             <div class="card chart-card p-3 mb-4 no-print">
                 <div class="row">
@@ -611,8 +611,7 @@
             passwordForm: document.getElementById('password-form'),
             passwordError: document.getElementById('password-error'),
             alertsContainer: document.getElementById('alerts-container'),
-            logoutBtn: document.getElementById('logout-btn'),
-            resetCardsSummaryBtn: document.getElementById('reset-cards-summary-btn'),
+            logoutBtn: document.getElementById('logout-btn')
         };
 
         // --- GESTIONE PASSWORD ---
@@ -734,8 +733,15 @@
             elements.logoutBtn.style.display = isAuthenticated() ? 'block' : 'none';
         };
 
+        const updateUnlockButtonsVisibility = () => {
+            const unlockBtns = document.querySelectorAll('.unlock-btn');
+            const displayStyle = isAuthenticated() ? 'none' : 'inline-block';
+            unlockBtns.forEach(btn => btn.style.display = displayStyle);
+        };
+
         const updateAllUI = () => {
             updateLogoutButtonVisibility();
+            updateUnlockButtonsVisibility();
             checkDeadlinesAndAlert();
             updateHomePage();
             renderAthletes();
@@ -1041,21 +1047,23 @@
                 .sort((a, b) => new Date(b.date) - new Date(a.date));
             
             if (allCards.length === 0) {
-                elements.cardsSummaryTbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Nessun cartellino.</td></tr>';
+                elements.cardsSummaryTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nessun cartellino.</td></tr>';
                 return;
             }
 
             allCards.forEach(card => {
                 const athlete = athletes.find(a => String(a.id) === String(card.athleteId));
-                const row = `
-                    <tr>
-                        <td>${athlete ? athlete.name : 'N/D'}</td>
-                        <td>${card.type === 'yellow' ? '1' : '0'}</td>
-                        <td>${card.type === 'red' ? '1' : '0'}</td>
-                        <td>${new Date(card.date).toLocaleDateString('it-IT', {day: '2-digit', month: 'short'})}</td>
-                    </tr>
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${athlete ? athlete.name : 'N/D'}</td>
+                    <td>${card.type === 'yellow' ? '1' : '0'}</td>
+                    <td>${card.type === 'red' ? '1' : '0'}</td>
+                    <td>${new Date(card.date).toLocaleDateString('it-IT', {day: '2-digit', month: 'short'})}</td>
+                    <td class="no-print">
+                        <button class="btn btn-sm btn-outline-danger py-0 px-1 remove-card-summary-row-btn"><i class="bi bi-x-lg"></i></button>
+                    </td>
                 `;
-                elements.cardsSummaryTbody.innerHTML += row;
+                elements.cardsSummaryTbody.appendChild(row);
             });
         };
         
@@ -1681,8 +1689,21 @@
         elements.evaluationDatePicker2.addEventListener('change', (e) => syncAndUpdateEvaluationDate(e.target.value));
 
         elements.logoutBtn.addEventListener('click', logout);
-        elements.resetCardsSummaryBtn.addEventListener('click', () => {
-            elements.cardsSummaryTbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Riepilogo azzerato. Ricarica la pagina per ripristinare.</td></tr>';
+        
+        elements.cardsSummaryTbody.addEventListener('click', e => {
+            const removeBtn = e.target.closest('.remove-card-summary-row-btn');
+            if (removeBtn) {
+                removeBtn.closest('tr').remove();
+                if (elements.cardsSummaryTbody.children.length === 0) {
+                     elements.cardsSummaryTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nessun cartellino.</td></tr>';
+                }
+            }
+        });
+
+        document.querySelector('main').addEventListener('click', e => {
+            if (e.target.closest('.unlock-btn')) {
+                requestAuthentication(updateAllUI);
+            }
         });
 
         elements.prevMonthBtn.addEventListener('click', () => { currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1); renderCalendar(); });
