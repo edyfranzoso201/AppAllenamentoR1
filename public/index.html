@@ -1712,18 +1712,25 @@
         elements.logoutBtn.addEventListener('click', logout);
         
         elements.cardsSummaryTbody.addEventListener('click', e => {
-            const removeBtn = e.target.closest('.remove-card-summary-row-btn');
-            if (removeBtn) {
-                const cardId = removeBtn.dataset.cardId;
-                if (cardId && !visuallyDeletedCards.includes(cardId)) {
-                    visuallyDeletedCards.push(cardId);
-                }
-                removeBtn.closest('tr').remove();
-                if (elements.cardsSummaryTbody.children.length === 0) {
-                     elements.cardsSummaryTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nessun cartellino da mostrare.</td></tr>';
-                }
-            }
-        });
+    		const removeBtn = e.target.closest('.remove-card-summary-row-btn');
+    		if (removeBtn) {
+        	const cardId = removeBtn.dataset.cardId;
+        	const [matchId, cardIndexStr] = cardId.split('-');
+        	const cardIndex = parseInt(cardIndexStr, 10);
+
+        	// Rimuovi fisicamente il cartellino dai dati
+        	if (matchResults[matchId] && matchResults[matchId].cards[cardIndex]) {
+            	matchResults[matchId].cards.splice(cardIndex, 1);
+            	saveData(); // Salva subito i dati aggiornati
+        }
+
+        // Rimuovi visivamente la riga
+        removeBtn.closest('tr').remove();
+        if (elements.cardsSummaryTbody.children.length === 0 || elements.cardsSummaryTbody.querySelector('tr').querySelector('td[colspan]')) {
+            elements.cardsSummaryTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nessun cartellino da mostrare.</td></tr>';
+        }
+    }
+});
 
         document.querySelector('main').addEventListener('click', e => {
             if (e.target.closest('.unlock-btn')) {
