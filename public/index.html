@@ -6,157 +6,189 @@
     <title>Coach Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <style>
         :root {
-            --primary-blue: #0a2463; --secondary-blue: #1e5095; --primary-red: #d90429;
-            --text-light: #ffffff; --card-bg: #1a3a7a; --border-color: #3b5a9d; --gold-star: #FFD700;
-            --field-green: #008000; --field-line: #FFF; --gk-color: #E8C135; --custom-purple: #6f42c1;
+            --primary-blue: #0a2463;
+            --secondary-blue: #1e5095;
+            --primary-red: #d90429;
+            --text-light: #ffffff;
+            --card-bg: #1a3a7a;
+            --border-color: #3b5a9d;
+            --gold-star: #FFD700;
         }
-        html {
-            scroll-behavior: smooth;
+        
+        body {
+            background-color: var(--primary-blue);
+            color: var(--text-light);
+            padding-top: 56px;
         }
-        body { background-color: var(--primary-blue); color: var(--text-light); padding-top: 56px; }
-        .bg-dark-blue { background-color: #051438 !important; border-bottom: 2px solid var(--primary-red); }
-        .main-title { color: var(--text-light); border-left: 4px solid var(--primary-red); padding-left: 1rem; }
-        .athlete-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; transition: all 0.3s ease; position: relative; overflow: hidden; }
-        .athlete-card-clickable { cursor: pointer; }
-        .athlete-card-clickable:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(217, 4, 41, 0.2); border-color: var(--primary-red); }
-        .athlete-avatar { width: 70px; height: 70px; border-radius: 50%; border: 3px solid var(--border-color); object-fit: cover; background-color: var(--secondary-blue); }
-        .athlete-card .card-title { font-size: 1.1rem; margin-bottom: 0.1rem; }
+        
+        .bg-dark-blue {
+            background-color: #051438 !important;
+            border-bottom: 2px solid var(--primary-red);
+        }
+        
+        .main-title {
+            color: var(--text-light);
+            border-left: 4px solid var(--primary-red);
+            padding-left: 1rem;
+        }
+        
+        .athlete-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .athlete-card-clickable {
+            cursor: pointer;
+        }
+        
+        .athlete-card-clickable:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(217, 4, 41, 0.2);
+            border-color: var(--primary-red);
+        }
+        
+        .athlete-avatar {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 3px solid var(--border-color);
+            object-fit: cover;
+            background-color: var(--secondary-blue);
+        }
+        
+        .athlete-card .card-title {
+            font-size: 1.1rem;
+            margin-bottom: 0.1rem;
+        }
+        
         .shirt-number {
-            font-size: 1.5rem; font-weight: bold; color: var(--text-light); background-color: var(--primary-red);
-            width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            position: absolute; top: 50%; right: 15px; transform: translateY(-50%);
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-light);
+            background-color: var(--primary-red);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            top: 50%;
+            right: 15px;
+            transform: translateY(-50%);
         }
-        .is-captain { color: var(--gold-star); }
-        .card-actions { position: absolute; bottom: 10px; right: 10px; z-index: 5; display: flex; gap: 5px; }
-        .card-actions .btn { background: rgba(0,0,0,0.3); border: none; }
-        .chart-card, .table-card, .summary-card { background-color: var(--card-bg); border: 1px solid var(--border-color); }
-        .modal-content { background-color: var(--primary-blue); border: 1px solid var(--primary-red); }
-        .modal-header, .modal-footer { border-bottom: 1px solid var(--border-color); border-top: 1px solid var(--border-color); }
-        .btn-primary-custom { background-color: var(--primary-red); border-color: var(--primary-red); color: white; }
-        .btn-primary-custom:hover { background-color: #b80323; border-color: #b80323; }
-        .form-control, .form-select { background-color: var(--secondary-blue); color: var(--text-light); border-color: var(--border-color); }
-        .form-control::placeholder { color: #8a9fc1; }
-        .form-control:focus, .form-select:focus { background-color: var(--secondary-blue); color: var(--text-light); border-color: var(--primary-red); box-shadow: 0 0 0 0.25rem rgba(217, 4, 41, 0.25); }
-        .award-card { background: linear-gradient(45deg, var(--gold-star), #d4af37); color: #000; border: 2px solid #fff; width: 180px; }
-        .award-avatar { width: 50px; height: 50px; }
-        .text-muted { color: rgba(255, 255, 255, 0.75) !important; }
-        .summary-card .card-body { min-height: 150px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;}
-        .summary-card .display-4 { font-weight: 500; }
-        .calendar-card { background-color: var(--card-bg); border: 1px solid var(--border-color); }
-        .calendar-header { display: flex; justify-content: space-between; align-items: center; }
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-        .calendar-day { background-color: var(--secondary-blue); border: 1px solid var(--border-color); min-height: 120px; padding: 8px; font-size: 0.9rem; }
-        .calendar-day.today { border-color: var(--primary-red); }
-        .calendar-day-header { font-weight: bold; }
-        .calendar-session { background-color: var(--primary-red); color: white; padding: 4px; border-radius: 4px; font-size: 0.75rem; margin-top: 5px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .deadline-status {
-            font-size: 1.2rem; position: absolute; top: 50%; right: 70px; transform: translateY(-50%);
+        
+        .is-captain {
+            color: var(--gold-star);
         }
-        .text-purple { color: var(--custom-purple) !important; }
-        .available-player.disabled {
-            opacity: 0.5; cursor: not-allowed; background-color: #343a40 !important;
+        
+        .card-actions {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            z-index: 5;
+            display: flex;
+            gap: 5px;
         }
-        /* STILI MODULO FORMAZIONE */
-        .dragging { opacity: 0.5; z-index: 1056; pointer-events: none; }
-        #pitch-wrapper { display: flex; align-items: flex-start; gap: 1rem; }
-        #field-container { background-color: var(--field-green); border: 2px solid var(--field-line); position: relative; width: 100%; max-width: 450px; aspect-ratio: 5 / 7; box-sizing: border-box; flex-shrink: 0; }
-        #field-bench-area { background-color: rgba(0,0,0,0.2); border: 2px dashed var(--border-color); border-radius: 8px; width: 150px; height: 630px; position: relative; flex-shrink: 0; }
-        .field-line, .field-box, .field-circle, .field-spot { position: absolute; box-sizing: border-box; border-color: var(--field-line); }
-        .halfway-line { border-top: 2px solid var(--field-line); width: 100%; top: 50%; }
-        .center-circle { top: 50%; left: 50%; transform: translate(-50%, -50%); width: 25%; aspect-ratio: 1/1; border: 2px solid var(--field-line); border-radius: 50%; }
-        .center-spot { top: 50%; left: 50%; transform: translate(-50%, -50%); width: 2%; aspect-ratio: 1/1; background-color: var(--field-line); border-radius: 50%; }
-        .penalty-box-top { top: 0; left: 50%; transform: translateX(-50%); width: 60%; height: 16.5%; border: 2px solid var(--field-line); border-top: none; }
-        .penalty-box-bottom { bottom: 0; left: 50%; transform: translateX(-50%); width: 60%; height: 16.5%; border: 2px solid var(--field-line); border-bottom: none; }
-        .goal-box-top { top: 0; left: 50%; transform: translateX(-50%); width: 30%; height: 6%; border: 2px solid var(--field-line); border-top: none; }
-        .goal-box-bottom { bottom: 0; left: 50%; transform: translateX(-50%); width: 30%; height: 6%; border: 2px solid var(--field-line); border-bottom: none; }
-        .penalty-spot-top { top: 11.5%; left: 50%; transform: translateX(-50%); width: 1.5%; aspect-ratio: 1/1; background-color: var(--field-line); border-radius: 50%; }
-        .penalty-spot-bottom { bottom: 11.5%; left: 50%; transform: translateX(-50%); width: 1.5%; aspect-ratio: 1/1; background-color: var(--field-line); border-radius: 50%; }
-        .player-jersey {
-            position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            width: 15%; cursor: grab; user-select: none; font-size: clamp(4.5px, 0.6vw, 8px);
-            transform: translate(-50%, -50%);
+        
+        .card-actions .btn {
+            background: rgba(0,0,0,0.3);
+            border: none;
         }
-        .jersey-body { position: relative; width: 5em; height: 5em; background-color: var(--secondary-blue); border-radius: 0.8em 0.8em 0.5em 0.5em; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 -4px 8px rgba(0,0,0,0.3); }
-        .jersey-body::before, .jersey-body::after { content: ''; position: absolute; width: 2.5em; height: 1em; background-color: inherit; top: 0; }
-        .jersey-body::before { left: -1.8em; transform: rotate(-40deg); border-radius: 0.5em 0.2em 0 0; }
-        .jersey-body::after { right: -1.8em; transform: rotate(40deg); border-radius: 0.2em 0.5em 0 0; }
-        .jersey-number { font-size: 2.2em; font-weight: bold; color: white; text-shadow: 1px 1px 2px black; }
-        .player-name { margin-top: 0.5em; font-size: 1.33em; font-weight: bold; color: white; background-color: rgba(0,0,0,0.6); padding: 0.1em 0.4em; border-radius: 4px; white-space: nowrap; }
-        #available-list .list-group-item, .tool-item { cursor: grab; background-color: var(--secondary-blue); }
-        .available-slot { border: 1px dashed var(--border-color); border-radius: 8px; min-height: 50px; }
-        #formation-tools { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 1rem; }
-        .tool-item { border: 1px solid var(--border-color); border-radius: 8px; padding: 5px 10px; text-align: center; }
-        .tool-item.opponent-tool { background-color: var(--primary-red); font-size: 1.5rem; line-height: 1; padding: 5px 12px; }
-        .tool-item.ball-tool { font-size: 1.5rem; line-height: 1; padding: 5px 10px; }
-        .token {
-            position: absolute; cursor: grab; user-select: none; z-index: 10; text-align: center;
-            transform: translate(-50%, -50%);
+        
+        .summary-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
         }
-        .token-captain { font-weight: bold; color: white; background: black; padding: 0.2em 0.5em; border-radius: 4px; font-size: clamp(8px, 1vw, 12px); }
-        .token-ball { font-size: 2rem; }
-        .token-opponent { width: 2.5em; height: 2.5em; background-color: var(--primary-red); border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.5); font-size: clamp(8px, 1vw, 12px); }
-        /* STILI RISULTATI PARTITA */
-        .match-result-item { background-color: var(--card-bg); border: 1px solid var(--border-color); }
-        .match-score { font-weight: bold; font-size: 1.1rem; }
-        .yellow-card { width: 10px; height: 14px; background-color: #ffc107; display: inline-block; border-radius: 2px; }
-        .red-card { width: 10px; height: 14px; background-color: #dc3545; display: inline-block; border-radius: 2px; }
-        .scorers-list { font-size: 0.8rem; color: var(--text-muted); }
-        #cards-summary-table { --bs-table-bg: var(--secondary-blue); --bs-table-striped-bg: var(--secondary-blue); --bs-table-hover-bg: var(--border-color); border-color: var(--border-color); }
-        /* STILI STATISTICHE STAGIONALI */
-        .season-stats-card { background-color: var(--card-bg); border: 1px solid var(--border-color); }
-        .season-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 1rem; text-align: center;}
-        .stat-item h6 { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.2rem;}
-        .stat-item p { font-size: 1.4rem; font-weight: 500; margin-bottom: 0;}
-        .stat-item .diff-pos { color: #28a745; }
-        .stat-item .diff-neg { color: var(--primary-red); }
-        /* STILI DI STAMPA CORRETTI */
-        @media print {
-            body { padding-top: 0; }
-            .no-print { display: none !important; }
-            body * { visibility: hidden; }
-            .printing-now, .printing-now * { visibility: visible; }
-            .printing-now { position: absolute; left: 0; top: 0; width: 100%; }
-            .printing-now #athlete-grid { display: flex !important; flex-wrap: wrap !important; }
-            .printing-now #athlete-grid > [class*="col-"] { flex: 0 0 25% !important; max-width: 25% !important; padding: 5px !important; page-break-inside: avoid; }
-            .printing-now .athlete-card { box-shadow: none !important; }
-            .printing-now .card, .printing-now .list-group-item, .printing-now .calendar-day, .printing-now .table { background-color: #fff !important; border: 1px solid #ccc !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
-            .printing-now table, .printing-now th, .printing-now td { background-color: #fff !important; color: #000 !important; border-color: #000 !important; }
-            .printing-now .calendar-session, .printing-now .shirt-number { background-color: #cccccc !important; color: #000 !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
-            .printing-now *, .printing-now .main-title, .printing-now .text-muted, .printing-now .card-title, .printing-now p, .printing-now h1, .printing-now h2, .printing-now h3, .printing-now h4, .printing-now h5, .printing-now h6 { color: #000 !important; }
-            .printing-now .player-name, .printing-now .jersey-number, .printing-now .token-captain { color: #fff !important; }
-            .printing-now .main-title { border-left-color: #000 !important; }
-            .printing-now canvas { max-width: 100% !important; height: auto !important; }
-            .printing-now #field-container { background-color: var(--field-green) !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
-            .printing-now #field-container .field-line, .printing-now #field-container .field-box, .printing-now #field-container .field-circle { border-color: var(--field-line) !important; }
-            .printing-now #field-container .field-spot { background-color: var(--field-line) !important; }
-            .printing-now .jersey-body, .printing-now .player-name, .printing-now .token-opponent, .printing-now .token-captain, .printing-now .yellow-card, .printing-now .red-card { -webkit-print-color-adjust: exact; color-adjust: exact; }
-            .printing-now .player-jersey[data-role*="Portiere"] .jersey-body { background-color: var(--gk-color) !important; }
+        
+        .modal-content {
+            background-color: var(--primary-blue);
+            border: 1px solid var(--primary-red);
+        }
+        
+        .modal-header, .modal-footer {
+            border-bottom: 1px solid var(--border-color);
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .btn-primary-custom {
+            background-color: var(--primary-red);
+            border-color: var(--primary-red);
+            color: white;
+        }
+        
+        .btn-primary-custom:hover {
+            background-color: #b80323;
+            border-color: #b80323;
+        }
+        
+        .form-control, .form-select {
+            background-color: var(--secondary-blue);
+            color: var(--text-light);
+            border-color: var(--border-color);
+        }
+        
+        .form-control::placeholder {
+            color: #8a9fc1;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            background-color: var(--secondary-blue);
+            color: var(--text-light);
+            border-color: var(--primary-red);
+            box-shadow: 0 0 0 0.25rem rgba(217, 4, 41, 0.25);
+        }
+        
+        .text-muted {
+            color: rgba(255, 255, 255, 0.75) !important;
+        }
+        
+        .summary-card .card-body {
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .summary-card .display-4 {
+            font-weight: 500;
+        }
+        
+        .diff-pos {
+            color: #28a745;
+        }
+        
+        .diff-neg {
+            color: var(--primary-red);
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark-blue fixed-top no-print">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark-blue fixed-top">
         <div class="container-fluid">
             <a class="navbar-brand fw-bold" href="#"><i class="bi bi-person-workspace"></i> Coach Dashboard</a>
-            <button class="btn btn-outline-secondary ms-auto" id="logout-btn" title="Blocca Dashboard (Logout)" style="display: none;"><i class="bi bi-unlock-fill"></i></button>
         </div>
     </nav>
-    <main class="container-fluid mt-5 pt-3">
 
+    <main class="container-fluid mt-5 pt-3">
         <div id="alerts-container"></div>
 
-        <div id="home-section" class="printable-area">
+        <!-- HOME SECTION -->
+        <div id="home-section">
             <div class="row my-4">
-                <div class="col-12 d-flex align-items-center gap-2">
+                <div class="col-12">
                     <h2 class="main-title mb-0">Home Riepilogo</h2>
-                    <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
                 </div>
             </div>
+            
             <div class="row">
                 <div class="col-lg-3 col-md-6 mb-4">
                     <div class="card summary-card h-100">
@@ -166,406 +198,79 @@
                         </div>
                     </div>
                 </div>
+                
                 <div class="col-lg-3 col-md-6 mb-4">
                     <div class="card summary-card h-100">
-                        <div class="card-body" id="home-next-session">
-                            <h5 class="card-title text-muted">PROSSIMA SESSIONE</h5>
-                            <p class="text-muted">Nessuna sessione pianificata</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <div class="card summary-card h-100">
-                        <div class="card-body" id="home-top-performer">
-                            <h5 class="card-title text-muted">TOP PERFORMER MENSILE</h5>
-                            <p class="text-muted">Nessuna valutazione</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <div class="card summary-card h-100">
-                        <div class="card-body" id="home-quick-actions">
+                        <div class="card-body">
                             <h5 class="card-title text-muted">AZIONI RAPIDE</h5>
-                            <div class="d-grid gap-2 w-100 no-print">
-                                <button class="btn btn-primary-custom" id="quick-add-athlete-btn"><i class="bi bi-person-plus-fill"></i> Aggiungi Atleta</button>
-                                <button class="btn btn-secondary" id="quick-plan-session-btn"><i class="bi bi-calendar-plus"></i> Pianifica Sessione</button>
+                            <div class="d-grid gap-2 w-100">
+                                <button class="btn btn-primary-custom" id="quick-add-athlete-btn">
+                                    <i class="bi bi-person-plus-fill"></i> Aggiungi Atleta
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card season-stats-card">
+                
+                <div class="col-lg-6 mb-4">
+                    <div class="card summary-card">
                         <div class="card-body">
                             <h5 class="card-title text-muted mb-3 text-center">📈 Statistiche Stagionali 📉</h5>
-                            <div class="season-stats-grid" id="season-stats-container">
-                                <div class="stat-item"><h6>Partite Giocate</h6><p id="stat-pg">0</p></div>
-                                <div class="stat-item"><h6>V-P-S</h6><p id="stat-vps">0-0-0</p></div>
-                                <div class="stat-item"><h6>Gol Fatti</h6><p id="stat-gf">0</p></div>
-                                <div class="stat-item"><h6>Gol Subiti</h6><p id="stat-gs">0</p></div>
-                                <div class="stat-item"><h6>Diff. Reti</h6><p id="stat-dr">0</p></div>
+                            <div class="row text-center">
+                                <div class="col">
+                                    <h6 class="text-muted">Partite</h6>
+                                    <p class="h4" id="stat-pg">0</p>
+                                </div>
+                                <div class="col">
+                                    <h6 class="text-muted">V-P-S</h6>
+                                    <p class="h4" id="stat-vps">0-0-0</p>
+                                </div>
+                                <div class="col">
+                                    <h6 class="text-muted">Gol Fatti</h6>
+                                    <p class="h4" id="stat-gf">0</p>
+                                </div>
+                                <div class="col">
+                                    <h6 class="text-muted">Gol Subiti</h6>
+                                    <p class="h4" id="stat-gs">0</p>
+                                </div>
+                                <div class="col">
+                                    <h6 class="text-muted">Diff. Reti</h6>
+                                    <p class="h4" id="stat-dr">0</p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div> <div class="row my-4 no-print">
-            <div class="col-12">
-                <div class="card summary-card">
-                    <div class="card-body">
-                        <h5 class="card-title text-muted mb-3">NAVIGAZIONE RAPIDA</h5>
-                        <div class="d-flex flex-wrap justify-content-center gap-2">
-                            <a href="#formazione-section" class="btn btn-secondary"><i class="bi bi-grid-3x3-gap-fill"></i> Modulo Formazione</a>
-                            <a href="#calendario-section" class="btn btn-secondary"><i class="bi bi-calendar3"></i> Calendario</a>
-                            <a href="#squadra-section" class="btn btn-secondary"><i class="bi bi-people-fill"></i> Gestione Squadra</a>
-                            <a href="#match-results-section" class="btn btn-secondary"><i class="bi bi-trophy-fill"></i> Risultati Partite</a>
-                            <a href="#report-valutazioni-section" class="btn btn-secondary"><i class="bi bi-card-checklist"></i> Report Valutazioni</a>
-                            <a href="#report-presenze-section" class="btn btn-secondary"><i class="bi bi-person-check-fill"></i> Report Presenze</a>
-                            <a href="#hall-of-fame-section" class="btn btn-secondary"><i class="bi bi-award-fill"></i> Hall of Fame</a>
-                            <a href="#monitoraggio-gps-section" class="btn btn-secondary"><i class="bi bi-graph-up-arrow"></i> Monitoraggio GPS</a>
-                            <a href="#analisi-singolo-section" class="btn btn-secondary"><i class="bi bi-person-lines-fill"></i> Analisi Atleta</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
 
-        <hr class="my-5 no-print">
+        <hr class="my-5">
 
-        <div id="formazione-section" class="printable-area">
-            <div class="row my-4 align-items-center">
-                <div class="col-12 d-flex align-items-center gap-2">
-                     <h2 class="main-title mb-0">Modulo Formazione</h2>
-                     <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
-                     <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
+        <!-- SQUADRA SECTION -->
+        <div id="squadra-section">
+            <div class="row align-items-center my-4">
+                <div class="col-md-4">
+                    <h2 class="main-title mb-0">Gestione Squadra</h2>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-lg-9 mb-4">
-                    <div id="pitch-wrapper">
-                        <div id="field-container" class="drop-zone">
-                            <div class="field-line halfway-line"></div>
-                            <div class="field-circle center-circle"></div>
-                            <div class="field-spot center-spot"></div>
-                            <div class="field-box penalty-box-top"></div>
-                            <div class="field-box goal-box-top"></div>
-                            <div class="field-spot penalty-spot-top"></div>
-                            <div class="field-box penalty-box-bottom"></div>
-                            <div class="field-box goal-box-bottom"></div>
-                            <div class="field-spot penalty-spot-bottom"></div>
-                        </div>
-                        <div id="field-bench-area" class="drop-zone"></div>
-                    </div>
-                </div>
-                <div class="col-lg-3">
-                    <div class="card" style="background-color: var(--card-bg);">
-                         <div class="card-header fw-bold">Strumenti</div>
-                         <div class="card-body">
-                             <div id="formation-tools">
-                                <div class="tool-item" data-item-type="captain-c">(C)</div>
-                                 <div class="tool-item" data-item-type="captain-vc">(VC)</div>
-                                 <div class="tool-item ball-tool" data-item-type="ball">⚽</div>
-                                <div class="tool-item opponent-tool" data-item-type="opponent" title="Trascina per duplicare">●</div>
-                             </div>
-                         </div>
-                         <div class="card-header fw-bold mt-3">Atleti Disponibili</div>
-                         <div class="card-body available-slot p-2 drop-zone" id="available-list" style="max-height: 400px; overflow-y: auto;"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <hr class="my-5 no-print">
-
-        <div id="calendario-section" class="printable-area">
-             <div class="row my-4 align-items-center">
-                   <div class="col-md-8 d-flex align-items-center gap-2">
-                       <h2 class="main-title mb-0">Calendario Attività Sportiva</h2>
-                       <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
-                       <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
-                  </div>
-                   <div class="col-md-4 d-flex justify-content-md-end no-print">
-                      <button class="btn btn-primary-custom" id="add-session-btn"><i class="bi bi-calendar-plus"></i> Pianifica Sessione</button>
-                  </div>
-              </div>
-              <div class="row">
-                  <div class="col-12 mt-3">
-                      <div class="card calendar-card">
-                          <div class="card-body">
-                              <div class="calendar-header mb-3">
-                                  <button id="prev-month-btn" class="btn btn-outline-secondary no-print"><i class="bi bi-chevron-left"></i></button>
-                                  <h4 id="current-month-year"></h4>
-                                  <button id="next-month-btn" class="btn btn-outline-secondary no-print"><i class="bi bi-chevron-right"></i></button>
-                              </div>
-                              <div class="calendar-grid-header calendar-grid mb-1" style="font-weight: bold; text-align: center;">
-                                  <div>Lunedì</div><div>Martedì</div><div>Mercoledì</div><div>Giovedì</div><div>Venerdì</div><div>Sabato</div><div>Domenica</div>
-                              </div>
-                              <div class="calendar-grid" id="calendar-grid"></div>
-                          </div>
-                      </div>
-                  </div>
-              </div>
-        </div>
-
-        <hr class="my-5 no-print">
-
-        <div id="squadra-section" class="printable-area">
-             <div class="row align-items-center my-4">
-                 <div class="col-md-4 d-flex align-items-center gap-2">
-                     <h2 class="main-title mb-0">Gestione Squadra</h2>
-                     <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
-                    <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
-                </div>
-                <div class="col-md-8 d-flex justify-content-md-end align-items-center flex-wrap gap-2 no-print">
-                    <button class="btn btn-secondary" id="export-all-data-btn"><i class="bi bi-download"></i> Esporta Dati</button>
-                    <label for="import-file-input" class="btn btn-secondary mb-0"><i class="bi bi-upload"></i> Importa Dati</label>
+                <div class="col-md-8 d-flex justify-content-md-end align-items-center flex-wrap gap-2">
+                    <button class="btn btn-secondary" id="export-all-data-btn">
+                        <i class="bi bi-download"></i> Esporta Dati
+                    </button>
+                    <label for="import-file-input" class="btn btn-secondary mb-0">
+                        <i class="bi bi-upload"></i> Importa Dati
+                    </label>
                     <input type="file" id="import-file-input" accept=".json" style="display: none;">
-                    <button class="btn btn-primary-custom" id="add-athlete-btn"><i class="bi bi-person-plus-fill"></i> Aggiungi Atleta</button>
-                    <div class="d-flex align-items-center gap-2">
-                        <label for="evaluation-date-picker" class="form-label mb-0 text-nowrap">Data Valutazioni:</label>
-                        <input type="date" id="evaluation-date-picker" class="form-control" style="max-width: 180px;">
-                        <button class="btn btn-outline-danger" id="delete-day-data-btn" title="Elimina tutti i dati del giorno selezionato"><i class="bi bi-calendar-x-fill"></i></button>
-                    </div>
+                    <button class="btn btn-primary-custom" id="add-athlete-btn">
+                        <i class="bi bi-person-plus-fill"></i> Aggiungi Atleta
+                    </button>
                 </div>
             </div>
+            
             <div class="row" id="athlete-grid"></div>
-        </div>
-
-        <hr class="my-5 no-print">
-
-        <div id="match-results-section" class="printable-area">
-            <div class="row my-4 align-items-center">
-                <div class="col-md-8 d-flex align-items-center gap-2">
-                    <h2 class="main-title mb-0">Risultati Partite</h2>
-                    <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
-                    <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
-                </div>
-                <div class="col-md-4 d-flex justify-content-md-end no-print">
-                    <button class="btn btn-primary-custom" id="add-match-btn"><i class="bi bi-plus-circle-fill"></i> Aggiungi Partita</button>
-                </div>
-            </div>
-            <div class="row" id="match-results-container">
-                 <p class="text-muted">Nessun risultato inserito.</p>
-            </div>
-            <div class="row mt-5">
-                <div class="col-lg-7 mb-4">
-                    <div class="card chart-card">
-                         <div class="card-body">
-                            <h5 class="card-title">Andamento Risultati</h5>
-                            <div class="d-flex gap-2 mb-3 no-print">
-                                <select id="match-opponent-filter" class="form-select form-select-sm" style="width: 200px;">
-                                    <option value="all">Tutti gli avversari</option>
-                                </select>
-                                <div class="btn-group btn-group-sm" id="match-period-toggle">
-                                    <button type="button" class="btn btn-outline-secondary active" data-period="monthly">Mensile</button>
-                                    <button type="button" class="btn btn-outline-secondary" data-period="bimonthly">Bimestrale</button>
-                                    <button type="button" class="btn btn-outline-secondary" data-period="trimester">Trimestre</button>
-                                    <button type="button" class="btn btn-outline-secondary" data-period="semester">Semestre</button>
-                                    <button type="button" class="btn btn-outline-secondary" data-period="annual">Annuale</button>
-                                </div>
-                            </div>
-                            <canvas id="matchResultsChart"></canvas>
-                         </div>
-                    </div>
-                </div>
-                <div class="col-lg-5 mb-4">
-                    <div class="card table-card mb-4">
-                         <div class="card-body">
-                             <h5 class="card-title">Classifica Marcatori</h5>
-                             <div id="top-scorers-container" style="max-height: 200px; overflow-y: auto;"></div>
-                        </div>
-                    </div>
-                    <div class="card table-card">
-                        <div class="card-body">
-                            <h5 class="card-title">Riepilogo Cartellini</h5>
-                            <div class="table-responsive mt-2" style="max-height: 200px;">
-                                <table class="table table-dark table-striped table-hover table-sm" id="cards-summary-table">
-                                     <thead><tr><th>Atleta</th><th><span class="yellow-card"></span></th><th><span class="red-card"></span></th><th>Data</th><th class="no-print"></th></tr></thead>
-                                    <tbody id="cards-summary-tbody"></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <hr class="my-5 no-print">
-
-        <div id="report-valutazioni-section" class="row my-4 printable-area">
-             <div class="col-12 d-flex justify-content-between align-items-center gap-2 mb-3">
-                <div class="d-flex align-items-center gap-2">
-                    <h2 class="main-title mb-0">Report Valutazioni Comportamentali</h2>
-                    <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
-                    <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
-                </div>
-                <div class="d-flex align-items-center gap-2 no-print">
-                    <label for="evaluation-date-picker-2" class="form-label mb-0 text-nowrap">Data Report:</label>
-                    <input type="date" id="evaluation-date-picker-2" class="form-control" style="max-width: 180px;">
-                </div>
-            </div>
-            <div class="col-lg-6 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Andamento Medio Squadra (Ultimi 7 Giorni)</h5><canvas id="dailyTeamChart"></canvas></div></div></div>
-            <div class="col-lg-6 mb-4"><div class="card chart-card"><div class="card-body" id="comparison-chart-container"><h5 class="card-title mb-0">Confronto Valutazioni Atleti</h5><div class="btn-group btn-group-sm float-end no-print" id="comparison-period-toggle"><button type="button" class="btn btn-outline-secondary active" data-period="daily">Giornaliero</button><button type="button" class="btn btn-outline-secondary" data-period="weekly">Settimanale</button><button type="button" class="btn btn-outline-secondary" data-period="monthly">Mensile</button></div><canvas id="monthlyComparisonChart"></canvas></div></div></div>
-        </div>
-
-        <div id="report-presenze-section" class="row my-4 printable-area">
-             <div class="col-12 d-flex align-items-center gap-2 mb-3">
-                 <h2 class="main-title mb-0">Report Presenze Allenamenti</h2>
-                <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
-                 <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
-            </div>
-             <div class="col-12 mb-4">
-                 <div class="card chart-card">
-                    <div class="card-body">
-                         <div class="d-flex justify-content-between align-items-center">
-                             <h5 class="card-title mb-0">Conteggio Presenze Atleti</h5>
-                                <div class="btn-group btn-group-sm no-print" id="attendance-period-toggle">
-                                 <button type="button" class="btn btn-outline-secondary active" data-period="daily">Giornaliero</button>
-                                 <button type="button" class="btn btn-outline-secondary" data-period="weekly">Settimanale</button>
-                                <button type="button" class="btn btn-outline-secondary" data-period="monthly">Mensile</button>
-                             </div>
-                         </div>
-                         <canvas id="attendanceChart"></canvas>
-                     </div>
-                 </div>
-             </div>
-        </div>
-
-        <hr class="my-5 no-print">
-
-        <div id="hall-of-fame-section" class="row my-4 printable-area">
-            <div class="col-12 d-flex align-items-center gap-2 mb-3">
-                <h2 class="main-title mb-0">Hall of Fame - Atleti Premiati della Stagione</h2>
-                <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
-                <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
-            </div>
-             <div id="hall-of-fame-container" class="d-flex flex-wrap gap-3 justify-content-center"></div>
-        </div>
-
-        <hr class="my-5 no-print">
-
-         <div id="confronto-squadra-section" class="printable-area">
-            <div class="row my-4" id="multi-athlete-chart-container">
-                <div class="col-12 d-flex align-items-center gap-2 mb-3">
-                     <h2 class="main-title mb-0">Confronto Performance Squadra</h2>
-                    <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
-                     <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
-                     <button class="btn btn-sm btn-outline-warning ms-1 no-print unlock-btn" title="Sblocca Dati Individuali" style="display: none;"><i class="bi bi-key-fill"></i></button>
-                </div>
-                <div class="col-12 mb-4">
-                    <div class="card chart-card">
-                        <div class="card-body">
-                            <div class="row g-3 align-items-center mb-3 no-print">
-                                <div class="col-md-4">
-                                    <label for="multi-athlete-metric-selector" class="form-label">Parametro</label>
-                                    <select id="multi-athlete-metric-selector" class="form-select"></select>
-                                </div>
-                                <div class="col-md-8">
-                                    <label class="form-label">Tipo Sessione</label>
-                                    <div class="btn-group w-100" id="multi-athlete-type-selector">
-                                        <button type="button" class="btn btn-outline-secondary active" data-type="all">Tutti</button>
-                                        <button type="button" class="btn btn-outline-secondary" data-type="Allenamento">Allenamento</button>
-                                        <button type="button" class="btn btn-outline-secondary" data-type="Partita">Partita</button>
-                                        <button type="button" class="btn btn-outline-secondary" data-type="Individual">Individual</button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row g-3 align-items-end no-print">
-                                <div class="col-md-8">
-                                    <label class="form-label">Filtro Temporale (mostra valore massimo nel periodo)</label>
-                                    <div class="btn-group w-100" role="group">
-                                        <button type="button" class="btn btn-outline-secondary" data-period="day">Giorno</button>
-                                        <button type="button" class="btn btn-outline-secondary active" data-period="month">Mese</button>
-                                        <button type="button" class="btn btn-outline-secondary" data-period="bimonth">Bimestre</button>
-                                        <button type="button" class="btn btn-outline-secondary" data-period="trimester">Trimestre</button>
-                                        <button type="button" class="btn btn-outline-secondary" data-period="semester">Semestre</button>
-                                    </div>
-                                </div>
-                                <div class="col-md-3" id="multi-athlete-datepicker-container" style="display: none;">
-                                    <label for="multi-athlete-datepicker" class="form-label">Seleziona Data</label>
-                                    <input type="date" id="multi-athlete-datepicker" class="form-control">
-                                </div>
-                                <div class="col-md-1">
-                                    <label class="form-label">&nbsp;</label>
-                                    <button class="btn btn-secondary w-100" id="multi-athlete-reset-btn" title="Reset Filtri"><i class="bi bi-arrow-clockwise"></i></button>
-                                </div>
-                            </div>
-                            <canvas id="multiAthleteChart" class="mt-4"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <hr class="my-5 no-print">
-
-        <div id="monitoraggio-gps-section" class="row my-4 printable-area">
-             <div class="col-12 d-flex align-items-center gap-2 mb-3">
-                 <h2 class="main-title mb-0">Monitoraggio Performance (GPS)</h2>
-                 <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
-                <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
-                 <button class="btn btn-sm btn-outline-warning ms-1 no-print unlock-btn" title="Sblocca Dati Individuali" style="display: none;"><i class="bi bi-key-fill"></i></button>
-            </div>
-            <div class="card chart-card p-3 mb-4 no-print">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <label class="form-label mb-0">Filtra sessioni per tipo:</label>
-                    <div class="btn-group btn-group-sm" id="performance-filter-toggle">
-                        <button type="button" class="btn btn-outline-secondary active" data-type="all">Tutti</button>
-                        <button type="button" class="btn btn-outline-secondary" data-type="Allenamento">Allenamento</button>
-                        <button type="button" class="btn btn-outline-secondary" data-type="Partita">Partita</button>
-                        <button type="button" class="btn btn-outline-secondary" data-type="Individual">Individual</button>
-                    </div>
-                </div>
-                <div class="row align-items-end">
-                    <div class="col-md-8">
-                        <label class="form-label">Seleziona le sessioni da confrontare:</label>
-                        <div id="performance-selectors-container" class="d-grid gap-2"></div>
-                    </div>
-                    <div class="col-md-4 d-flex align-items-end gap-2 mt-2 mt-md-0">
-                        <div>
-                            <label for="performance-metric-selector" class="form-label">Metrica:</label>
-                            <select id="performance-metric-selector" class="form-select"></select>
-                        </div>
-                        <button class="btn btn-primary-custom flex-grow-1" id="add-comparison-btn"><i class="bi bi-plus-lg"></i> Aggiungi</button>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-7 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Grafico Confronto Performance</h5><canvas id="performanceChart"></canvas></div></div></div>
-            <div class="col-lg-5 mb-4"><div class="card table-card"><div class="card-body"><h5 class="card-title">Tabella Dati a Confronto</h5><div class="table-responsive" id="performance-table-container"></div><div id="export-buttons-container" class="mt-3 d-flex gap-2 no-print"></div></div></div></div>
-        </div>
-
-        <hr class="my-5 no-print">
-
-        <div id="analisi-singolo-section" class="row my-4 printable-area">
-             <div class="col-12 d-flex align-items-center gap-2 mb-3">
-                 <h2 class="main-title mb-0">Analisi Atleta Singolo</h2>
-                 <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
-                 <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
-                <button class="btn btn-sm btn-outline-warning ms-1 no-print unlock-btn" title="Sblocca Dati Individuali" style="display: none;"><i class="bi bi-key-fill"></i></button>
-            </div>
-            <div class="card chart-card p-3 mb-4 no-print">
-                <div class="row">
-                    <div class="col-md-6">
-                        <label for="trend-athlete-selector" class="form-label">Atleta per Andamento nel Tempo:</label>
-                        <select id="trend-athlete-selector" class="form-select"></select>
-                        <label for="trend-metric-selector" class="form-label mt-2">Metrica per Andamento:</label>
-                        <select id="trend-metric-selector" class="form-select"></select>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="radar-athlete-selector-1" class="form-label">Atleta 1 (Radar):</label>
-                        <select id="radar-athlete-selector-1" class="form-select"></select>
-                        <label for="radar-athlete-selector-2" class="form-label mt-2">Atleta 2 (Confronto Radar):</label>
-                        <select id="radar-athlete-selector-2" class="form-select"></select>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-8 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Andamento Performance nel Tempo</h5><canvas id="athleteTrendChart"></canvas></div></div></div>
-            <div class="col-lg-4 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Profilo Atleta (vs. Top di Squadra)</h5><canvas id="athleteRadarChart"></canvas></div></div></div>
         </div>
     </main>
 
-    <footer class="bg-dark-blue py-3 mt-5 no-print">
+    <footer class="bg-dark-blue py-3 mt-5">
         <div class="container text-center">
             <p class="text-muted mb-0">By Edy Franzoso</p>
         </div>
@@ -574,104 +279,15 @@
     <div id="modals-container"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <script>
-    <!-- Script esterni (mantieni questi) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <!-- INIZIO SCRIPT PERSONALIZZATO - Sostituisci da qui -->
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-        console.log("DOM caricato, avvio script...");
+        console.log("🚀 DOM caricato, avvio script...");
         
         const modalsContainer = document.getElementById('modals-container');
         
-        // --- INSERIMENTO TEMPLATE HTML MODALI ---
+        // --- TEMPLATE MODALI ---
         modalsContainer.innerHTML = `
-            <div class="modal fade" id="evaluationModal" tabindex="-1">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Valutazione di <span id="modal-athlete-name-eval"></span></h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-                            <form id="evaluation-form">
-                                <input type="hidden" id="modal-athlete-id-eval">
-                                <p>Data: <strong id="modal-evaluation-date"></strong></p>
-                                <div class="mb-2">
-                                    <label class="form-label">Presenza Allenamento</label>
-                                    <select id="presenza-allenamento" class="form-select">
-                                        <option value="0">0-NV</option>
-                                        <option value="1">1-B</option>
-                                        <option value="2">2-M</option>
-                                        <option value="3">3-A</option>
-                                    </select>
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Serietà Allenamento</label>
-                                    <select id="serieta-allenamento" class="form-select">
-                                        <option value="0">0-NV</option>
-                                        <option value="1">1-B</option>
-                                        <option value="2">2-M</option>
-                                        <option value="3">3-A</option>
-                                    </select>
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Abbigliamento Allenamento</label>
-                                    <select id="abbigliamento-allenamento" class="form-select">
-                                        <option value="0">0-NV</option>
-                                        <option value="1">1-B</option>
-                                        <option value="2">2-M</option>
-                                        <option value="3">3-A</option>
-                                    </select>
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Abbigliamento Partita</label>
-                                    <select id="abbigliamento-partita" class="form-select">
-                                        <option value="0">0-NV</option>
-                                        <option value="1">1-B</option>
-                                        <option value="2">2-M</option>
-                                        <option value="3">3-A</option>
-                                    </select>
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Serietà Comunicazioni</label>
-                                    <select id="comunicazioni" class="form-select">
-                                        <option value="0">0-NV</option>
-                                        <option value="1">1-B</option>
-                                        <option value="2">2-M</option>
-                                        <option value="3">3-A</option>
-                                    </select>
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Doccia (Opzionale)</label>
-                                    <select id="doccia" class="form-select">
-                                        <option value="0">0-NV</option>
-                                        <option value="1">1-B</option>
-                                        <option value="2">2-M</option>
-                                        <option value="3">3-A</option>
-                                    </select>
-                                </div>
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" id="award-checkbox">
-                                    <label class="form-check-label" for="award-checkbox">Assegna Premio</label>
-                                </div>
-                            </form>
-                        </div>
-                        <div class="modal-footer justify-content-between">
-                            <button type="button" class="btn btn-outline-danger" id="delete-single-athlete-day-btn">Elimina Dati del Giorno</button>
-                            <div>
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
-                                <button type="submit" class="btn btn-primary-custom" form="evaluation-form">Salva Valutazione</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
             <div class="modal fade" id="athleteModal" tabindex="-1">
                 <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content">
@@ -694,27 +310,23 @@
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Ruolo</label>
-                                    <input type="text" class="form-control" id="athlete-role" required>
+                                    <input type="text" class="form-control" id="athlete-role" required placeholder="Es. Attaccante">
                                 </div>
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Numero Maglia</label>
-                                        <input type="number" class="form-control" id="athlete-number" required min="1">
+                                        <input type="number" class="form-control" id="athlete-number" required min="1" max="99">
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Scadenza Visita Medica</label>
                                         <input type="date" class="form-control" id="scadenza-visita">
                                     </div>
                                 </div>
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Data Prenotazione Visita</label>
-                                        <input type="date" class="form-control" id="prenotazione-visita">
-                                    </div>
-                                </div>
                                 <div class="form-check mb-3">
                                     <input class="form-check-input" type="checkbox" id="athlete-captain">
-                                    <label class="form-check-label" for="athlete-captain">Capitano</label>
+                                    <label class="form-check-label" for="athlete-captain">
+                                        <i class="bi bi-star-fill text-warning"></i> Capitano
+                                    </label>
                                 </div>
                             </form>
                         </div>
@@ -727,17 +339,15 @@
             </div>
         `;
 
-        // --- INIZIALIZZAZIONE ISTANZE MODALI BOOTSTRAP ---
-        const evaluationModal = new bootstrap.Modal(document.getElementById('evaluationModal'));
+        // --- INIZIALIZZAZIONE MODALI ---
         const athleteModal = new bootstrap.Modal(document.getElementById('athleteModal'));
 
-        // --- OGGETTO elements CON RIFERIMENTI DOM ---
+        // --- RIFERIMENTI DOM ---
         const elements = {
             athleteGrid: document.getElementById('athlete-grid'),
-            evaluationDatePicker: document.getElementById('evaluation-date-picker'),
-            evaluationForm: document.getElementById('evaluation-form'),
             athleteForm: document.getElementById('athlete-form'),
             addAthleteBtn: document.getElementById('add-athlete-btn'),
+            quickAddAthleteBtn: document.getElementById('quick-add-athlete-btn'),
             exportAllDataBtn: document.getElementById('export-all-data-btn'),
             importFileInput: document.getElementById('import-file-input'),
             homeTotalAthletes: document.getElementById('home-total-athletes'),
@@ -749,11 +359,10 @@
             statDr: document.getElementById('stat-dr')
         };
 
-        // --- DEFINIZIONI VARIABILI E COSTANTI ---
+        // --- VARIABILI GLOBALI ---
         const defaultAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%231e5095'/%3E%3Ctext x='50' y='60' font-size='40' fill='white' text-anchor='middle'%3E?%3C/text%3E%3C/svg%3E";
         
         let athletes = [];
-        let evaluations = {};
         let matchResults = {};
 
         // --- GESTIONE DATI ---
@@ -761,14 +370,13 @@
             try {
                 const data = {
                     athletes,
-                    evaluations,
                     matchResults,
                     timestamp: new Date().toISOString()
                 };
                 localStorage.setItem('coachDashboardData', JSON.stringify(data));
-                console.log("✅ Dati salvati con successo");
+                console.log("✅ Dati salvati:", athletes.length, "atleti");
             } catch (error) {
-                console.error("❌ Errore nel salvataggio dati:", error);
+                console.error("❌ Errore salvataggio:", error);
                 showAlert('Errore nel salvataggio dei dati', 'danger');
             }
         };
@@ -779,19 +387,18 @@
                 if (savedData) {
                     const data = JSON.parse(savedData);
                     athletes = data.athletes || [];
-                    evaluations = data.evaluations || {};
                     matchResults = data.matchResults || {};
                     console.log("✅ Dati caricati:", athletes.length, "atleti");
                 } else {
-                    console.log("ℹ️ Nessun dato salvato trovato");
+                    console.log("ℹ️ Nessun dato salvato");
                 }
             } catch (error) {
-                console.error("❌ Errore nel caricamento dati:", error);
+                console.error("❌ Errore caricamento:", error);
                 showAlert('Errore nel caricamento dei dati', 'danger');
             }
         };
 
-        // --- FUNZIONI UTILITY ---
+        // --- UTILITY ---
         const showAlert = (message, type = 'info') => {
             const alertDiv = document.createElement('div');
             alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
@@ -800,36 +407,25 @@
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             `;
             elements.alertsContainer.appendChild(alertDiv);
-            
-            setTimeout(() => {
-                alertDiv.remove();
-            }, 5000);
+            setTimeout(() => alertDiv.remove(), 5000);
         };
 
-        // --- FUNZIONE: updateTeamSeasonStats ---
+        // --- STATISTICHE STAGIONALI ---
         const updateTeamSeasonStats = () => {
-            let pg = 0;
-            let v = 0;
-            let p = 0;
-            let s = 0;
-            let gf = 0;
-            let gs = 0;
+            let pg = 0, v = 0, p = 0, s = 0, gf = 0, gs = 0;
 
             Object.values(matchResults).forEach(match => {
                 pg++;
                 const myScore = match.location === 'home' ? match.homeScore : match.awayScore;
                 const oppScore = match.location === 'home' ? match.awayScore : match.homeScore;
-
                 gf += myScore;
                 gs += oppScore;
-
                 if (myScore > oppScore) v++;
                 else if (myScore < oppScore) s++;
                 else p++;
             });
 
             const dr = gf - gs;
-
             elements.statPg.textContent = pg;
             elements.statVps.textContent = `${v}-${p}-${s}`;
             elements.statGf.textContent = gf;
@@ -838,7 +434,7 @@
             elements.statDr.className = dr > 0 ? 'diff-pos' : (dr < 0 ? 'diff-neg' : '');
         };
 
-        // --- FUNZIONI UI ---
+        // --- UI ---
         const updateHomePage = () => {
             elements.homeTotalAthletes.textContent = athletes.length;
         };
@@ -847,7 +443,15 @@
             elements.athleteGrid.innerHTML = '';
             
             if (athletes.length === 0) {
-                elements.athleteGrid.innerHTML = '<div class="col-12"><p class="text-muted">Nessun atleta registrato. Clicca su "Aggiungi Atleta" per iniziare.</p></div>';
+                elements.athleteGrid.innerHTML = `
+                    <div class="col-12">
+                        <div class="card summary-card p-4 text-center">
+                            <i class="bi bi-people-fill display-1 text-muted mb-3"></i>
+                            <h5 class="text-muted">Nessun atleta registrato</h5>
+                            <p class="text-muted">Clicca su "Aggiungi Atleta" per iniziare</p>
+                        </div>
+                    </div>
+                `;
                 return;
             }
 
@@ -863,7 +467,10 @@
                     <div class="d-flex align-items-center">
                         <img src="${athlete.avatar || defaultAvatar}" alt="${athlete.name}" class="athlete-avatar me-3">
                         <div class="flex-grow-1">
-                            <h5 class="card-title">${athlete.name} ${athlete.isCaptain ? '<i class="bi bi-star-fill is-captain"></i>' : ''}</h5>
+                            <h5 class="card-title">
+                                ${athlete.name} 
+                                ${athlete.isCaptain ? '<i class="bi bi-star-fill is-captain"></i>' : ''}
+                            </h5>
                             <p class="text-muted mb-1">${athlete.role}</p>
                         </div>
                         <div class="shirt-number">${athlete.number}</div>
@@ -891,23 +498,25 @@
 
         // --- EVENT LISTENERS ---
         
-        // Aggiungi Atleta
-        elements.addAthleteBtn.addEventListener('click', () => {
-            console.log("🔵 Click su Aggiungi Atleta");
+        // Apri modale aggiungi atleta
+        const openAddAthleteModal = () => {
+            console.log("🔵 Apertura modale aggiungi atleta");
             document.getElementById('athleteModalLabel').textContent = 'Aggiungi Atleta';
             document.getElementById('modal-athlete-id').value = '';
             document.getElementById('athlete-name').value = '';
             document.getElementById('athlete-role').value = '';
             document.getElementById('athlete-number').value = '';
             document.getElementById('scadenza-visita').value = '';
-            document.getElementById('prenotazione-visita').value = '';
             document.getElementById('athlete-captain').checked = false;
             document.getElementById('athlete-avatar-base64').value = '';
             document.getElementById('avatar-preview').style.display = 'none';
             athleteModal.show();
-        });
+        };
 
-        // Salva Atleta
+        elements.addAthleteBtn.addEventListener('click', openAddAthleteModal);
+        elements.quickAddAthleteBtn.addEventListener('click', openAddAthleteModal);
+
+        // Salva atleta
         elements.athleteForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             console.log("💾 Salvataggio atleta...");
@@ -917,7 +526,6 @@
             const role = document.getElementById('athlete-role').value.trim();
             const number = parseInt(document.getElementById('athlete-number').value);
             const scadenzaVisita = document.getElementById('scadenza-visita').value;
-            const prenotazioneVisita = document.getElementById('prenotazione-visita').value;
             const isCaptain = document.getElementById('athlete-captain').checked;
             const avatar = document.getElementById('athlete-avatar-base64').value || null;
 
@@ -927,33 +535,29 @@
             }
 
             if (athleteId) {
-                // Modifica atleta esistente
                 const athlete = athletes.find(a => a.id === athleteId);
                 if (athlete) {
                     athlete.name = name;
                     athlete.role = role;
                     athlete.number = number;
                     athlete.scadenzaVisita = scadenzaVisita;
-                    athlete.prenotazioneVisita = prenotazioneVisita;
                     athlete.isCaptain = isCaptain;
                     if (avatar) athlete.avatar = avatar;
-                    showAlert('Atleta modificato con successo', 'success');
+                    showAlert('✅ Atleta modificato con successo', 'success');
                 }
             } else {
-                // Aggiungi nuovo atleta
                 const newAthlete = {
                     id: Date.now().toString(),
                     name,
                     role,
                     number,
                     scadenzaVisita,
-                    prenotazioneVisita,
                     isCaptain,
                     avatar: avatar || defaultAvatar
                 };
                 athletes.push(newAthlete);
-                console.log("✅ Nuovo atleta aggiunto:", newAthlete);
-                showAlert('Atleta aggiunto con successo', 'success');
+                console.log("✅ Nuovo atleta:", newAthlete);
+                showAlert('✅ Atleta aggiunto con successo', 'success');
             }
 
             await saveData();
@@ -994,7 +598,6 @@
                     document.getElementById('athlete-role').value = athlete.role;
                     document.getElementById('athlete-number').value = athlete.number;
                     document.getElementById('scadenza-visita').value = athlete.scadenzaVisita || '';
-                    document.getElementById('prenotazione-visita').value = athlete.prenotazioneVisita || '';
                     document.getElementById('athlete-captain').checked = athlete.isCaptain || false;
                     document.getElementById('athlete-avatar-base64').value = athlete.avatar || '';
                     
@@ -1011,13 +614,13 @@
             if (deleteBtn) {
                 e.stopPropagation();
                 const athleteId = deleteBtn.dataset.athleteId;
+                const athlete = athletes.find(a => a.id === athleteId);
                 
-                if (confirm('Sei sicuro di voler eliminare questo atleta? Tutti i suoi dati verranno persi.')) {
+                if (confirm(`Sei sicuro di voler eliminare ${athlete.name}? Tutti i suoi dati verranno persi.`)) {
                     athletes = athletes.filter(a => a.id !== athleteId);
-                    delete evaluations[athleteId];
                     saveData();
                     updateAllUI();
-                    showAlert('Atleta eliminato', 'info');
+                    showAlert('🗑️ Atleta eliminato', 'info');
                 }
             }
         });
@@ -1027,7 +630,6 @@
             console.log("📤 Esportazione dati...");
             const data = {
                 athletes,
-                evaluations,
                 matchResults,
                 exportDate: new Date().toISOString()
             };
@@ -1037,13 +639,13 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `coach-dashboard-backup-${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `coach-dashboard-${new Date().toISOString().split('T')[0]}.json`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            showAlert('Dati esportati con successo', 'success');
+            showAlert('📥 Dati esportati con successo', 'success');
         });
 
         // Importa dati
@@ -1056,42 +658,32 @@
                 const text = await file.text();
                 const data = JSON.parse(text);
                 
-                if (confirm('Importare questi dati? I dati attuali verranno sovrascritti.')) {
+                if (confirm(`Importare ${data.athletes?.length || 0} atleti? I dati attuali verranno sovrascritti.`)) {
                     athletes = data.athletes || [];
-                    evaluations = data.evaluations || {};
                     matchResults = data.matchResults || {};
                     
                     await saveData();
                     updateAllUI();
-                    showAlert('Dati importati con successo', 'success');
+                    showAlert('✅ Dati importati con successo', 'success');
                 }
             } catch (error) {
                 console.error('❌ Errore importazione:', error);
-                showAlert('Errore nell\'importazione dei dati', 'danger');
+                showAlert('❌ File non valido o corrotto', 'danger');
             }
             
             e.target.value = '';
         });
 
-        // --- INIZIALIZZAZIONE APP ---
+        // --- INIZIALIZZAZIONE ---
         async function initializeApp() {
-            console.log("🚀 Inizializzazione App...");
+            console.log("🚀 Inizializzazione Coach Dashboard...");
             await loadData();
-            
-            // Imposta data corrente
-            const today = new Date().toISOString().split('T')[0];
-            if (elements.evaluationDatePicker) {
-                elements.evaluationDatePicker.value = today;
-            }
-            
             updateAllUI();
-            console.log("✅ App inizializzata con successo");
+            console.log("✅ Dashboard pronta! Atleti caricati:", athletes.length);
         }
 
         initializeApp();
     });
     </script>
-    <!-- FINE SCRIPT PERSONALIZZATO - Sostituisci fino a qui -->
-
 </body>
 </html>
