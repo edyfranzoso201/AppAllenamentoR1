@@ -2163,111 +2163,190 @@
             }
         });
 
-        // --- DRAG & DROP FORMAZIONE (CUSTOM) ---
-        let draggedEl = null;
-        let dragGhost = null;
-        let offsetX, offsetY;
+       <!-- INIZIO - Sostituisci questa sezione nel <script> -->
+<script>
+/* Drag & Drop migliorato: usa Pointer Events + requestAnimationFrame
+   - Riduce jitter usando aggiornamenti via RAF invece di aggiornamenti diretti inline dal mousemove.
+   - Usa position: fixed per il dragGhost (stabile rispetto allo scroll).
+   - Calcola offset relativo al bounding rect del container al drop per precisione.
+   - Supporta drag da available-list (crea jersey clone) e spostamento elementi già piazzati.
+   - Non modifica saveData() o altre parti server.
+*/
 
-        function onDragStart(e) {
-            const target = e.target.closest('.player-jersey, .available-player, .tool-item, .token');
-            if (!target || target.classList.contains('disabled') || e.button !== 0) return; // Solo tasto sinistro
+let draggedEl = null;
+let dragGhost = null;
+let pointerId = null;
+let lastClientX = 0;
+let lastClientY = 0;
+let rafScheduled = false;
+let offsetX = 0;
+let offsetY = 0;
 
-            e.preventDefault();
-            draggedEl = target;
+function createDragGhostFrom(target) {
+    // se è una available-player, crea una jersey tramite createJerseyElement(athlete)
+    if (target.classList.contains('available-player')) {
+        const athleteId = target.dataset.athleteId;
+        const athlete = athletes.find(a => String(a.id) === String(athleteId));
+        return athlete ? createJerseyElement(athlete) : target.cloneNode(true);
+    }
+    return target.cloneNode(true);
+}
 
-            // Crea un clone per il trascinamento
-            dragGhost = draggedEl.cloneNode(true);
-            if (draggedEl.classList.contains('available-player')) {
-                const athleteId = draggedEl.dataset.athleteId;
-                const athlete = athletes.find(a => String(a.id) === athleteId);
-                if (!athlete) return;
-                dragGhost = createJerseyElement(athlete);
-            } else {
-                dragGhost = draggedEl.cloneNode(true);
-            }
-            
-            dragGhost.classList.add('dragging');
-            document.body.appendChild(dragGhost);
+function startPointerDrag(ev) {
+    // solo pulsante sinistro / touch primary
+    if (ev.button !== undefined && ev.button !== 0) return;
+    const target = ev.target.closest('.player-jersey, .available-player, .tool-item, .token');
+    if (!target || target.classList.contains('disabled')) return;
 
-            const rect = draggedEl.getBoundingClientRect();
-            offsetX = e.clientX - rect.left;
-            offsetY = e.clientY - rect.top;
+    ev.preventDefault();
 
-            dragGhost.style.left = `${e.clientX - offsetX}px`;
-            dragGhost.style.top = `${e.clientY - offsetY}px`;
-            
-            document.addEventListener('mousemove', onDragMove);
-            document.addEventListener('mouseup', onDragEnd, { once: true });
+    draggedEl = target;
+    pointerId = ev.pointerId ?? null;
+
+    // crea ghost
+    dragGhost = createDragGhostFrom(draggedEl);
+    dragGhost.classList.add('dragging');
+    // usa fixed per essere indipendente da scroll
+    dragGhost.style.position = 'fixed';
+    dragGhost.style.pointerEvents = 'none';
+    dragGhost.style.margin = '0';
+    dragGhost.style.zIndex = 9999;
+    document.body.appendChild(dragGhost);
+
+    const rect = draggedEl.getBoundingClientRect();
+    offsetX = (ev.clientX - rect.left);
+    offsetY = (ev.clientY - rect.top);
+
+    // inizializza posizione ghost (centra correttamente)
+    updateGhostPosition(ev.clientX, ev.clientY);
+
+    // pointer capture (se supportato) per il target originale
+    try { if (draggedEl.setPointerCapture) draggedEl.setPointerCapture(ev.pointerId); } catch(e){}
+
+    lastClientX = ev.clientX;
+    lastClientY = ev.clientY;
+
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp, { once: true });
+}
+
+function updateGhostPosition(clientX, clientY) {
+    // usa translate3d per attivare accelerazione GPU
+    const left = clientX - offsetX;
+    const top = clientY - offsetY;
+    dragGhost.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+}
+
+function onPointerMove(ev) {
+    if (!dragGhost) return;
+    // memorizza ultimi valori e schedule RAF per aggiornamento fluido
+    lastClientX = ev.clientX;
+    lastClientY = ev.clientY;
+    if (!rafScheduled) {
+        rafScheduled = true;
+        requestAnimationFrame(() => {
+            updateGhostPosition(lastClientX, lastClientY);
+            rafScheduled = false;
+        });
+    }
+}
+
+function onPointerUp(ev) {
+    // rimuovi listener pointermove
+    document.removeEventListener('pointermove', onPointerMove);
+
+    if (!draggedEl || !dragGhost) {
+        cleanUpDrag();
+        return;
+    }
+
+    // nascondi ghost temporaneamente per elementFromPoint affidabile
+    dragGhost.style.display = 'none';
+    const dropTarget = document.elementFromPoint(ev.clientX, ev.clientY);
+    dragGhost.style.display = '';
+
+    const dropZone = dropTarget ? dropTarget.closest('.drop-zone') : null;
+
+    if (dropZone) {
+        const athleteId = draggedEl.dataset.athleteId;
+        const itemType = draggedEl.dataset.itemType;
+        const tokenId = draggedEl.dataset.tokenId;
+
+        // Rimuovi eventuali precedenti occorrenze con stesso athleteId o tokenId
+        if (athleteId) {
+            formationData.starters = formationData.starters.filter(p => String(p.athleteId) !== String(athleteId));
+            formationData.bench = formationData.bench.filter(p => String(p.athleteId) !== String(athleteId));
+        } else if (tokenId) {
+            formationData.tokens = formationData.tokens.filter(t => String(t.id) !== String(tokenId));
         }
 
-        function onDragMove(e) {
-            if (!dragGhost) return;
-            dragGhost.style.left = `${e.clientX - offsetX}px`;
-            dragGhost.style.top = `${e.clientY - offsetY}px`;
-        }
+        // calcola posizionamento relativo alla drop zone in percentuale (uso bounding rect al release)
+        const rect = dropZone.getBoundingClientRect();
+        // clamp per sicurezza all'interno del campo
+        const relX = Math.max(0, Math.min(rect.width, ev.clientX - rect.left));
+        const relY = Math.max(0, Math.min(rect.height, ev.clientY - rect.top));
+        const leftPct = (relX / rect.width) * 100;
+        const topPct = (relY / rect.height) * 100;
 
-        function onDragEnd(e) {
-            if (!draggedEl || !dragGhost) {
-                cleanUpDrag();
-                return;
+        if (athleteId) {
+            // aggiungi in starters o bench a seconda del dropZone
+            if (dropZone.id === 'field-container' || dropZone.id === 'field-bench-area') {
+                const targetArray = dropZone.id === 'field-container' ? formationData.starters : formationData.bench;
+                targetArray.push({ athleteId, left: leftPct, top: topPct });
             }
-
-            dragGhost.style.display = 'none';
-            const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
-            dragGhost.style.display = ''; 
-
-            const dropZone = dropTarget ? dropTarget.closest('.drop-zone') : null;
-
-            if (dropZone) {
-                const athleteId = draggedEl.dataset.athleteId;
-                const itemType = draggedEl.dataset.itemType;
-                const tokenId = draggedEl.dataset.tokenId;
-
-                if (athleteId) {
-                    formationData.starters = formationData.starters.filter(p => p.athleteId != athleteId);
-                    formationData.bench = formationData.bench.filter(p => p.athleteId != athleteId);
-                } else if (tokenId) {
-                    formationData.tokens = formationData.tokens.filter(t => t.id != tokenId);
+        } else if (itemType) {
+            if (dropZone.id === 'field-container' || dropZone.id === 'field-bench-area') {
+                const newId = tokenId || Date.now().toString();
+                if (itemType === 'opponent' && (draggedEl.classList.contains('tool-item') || !tokenId)) {
+                    formationData.tokens.push({ id: newId, type: itemType, left: leftPct, top: topPct });
+                } else {
+                    // se token unico, mantieni uno per tipo (es: ball, captain)
+                    formationData.tokens = formationData.tokens.filter(t => t.type !== itemType);
+                    formationData.tokens.push({ id: newId, type: itemType, left: leftPct, top: topPct });
                 }
-                
-                const rect = dropZone.getBoundingClientRect();
-                const left = ((e.clientX - rect.left) / rect.width) * 100;
-                const top = ((e.clientY - rect.top) / rect.height) * 100;
-                
-                if (athleteId) {
-                    if (dropZone.id === 'field-container' || dropZone.id === 'field-bench-area') {
-                         const targetArray = dropZone.id === 'field-container' ? formationData.starters : formationData.bench;
-                         targetArray.push({ athleteId, top, left });
-                    }
-                } else if (itemType) {
-                    if (dropZone.id === 'field-container' || dropZone.id === 'field-bench-area') {
-                        const newId = tokenId || Date.now().toString();
-                        if (itemType === 'opponent' && (draggedEl.classList.contains('tool-item') || !tokenId)) {
-                             formationData.tokens.push({ id: newId, type: itemType, top, left });
-                        } else {
-                            formationData.tokens = formationData.tokens.filter(t => t.type !== itemType);
-                            formationData.tokens.push({ id: newId, type: itemType, top, left });
-                        }
-                    }
-                }
-                saveData();
-                renderFormation();
             }
-
-            cleanUpDrag();
         }
 
-        function cleanUpDrag() {
-            if (dragGhost) {
-                dragGhost.remove();
-            }
-            draggedEl = null;
-            dragGhost = null;
-            document.removeEventListener('mousemove', onDragMove);
-        }
+        // salva e renderizza
+        saveData();
+        renderFormation();
+    } else {
+        // se drop fuori drop-zone: se stava già su campo e voleva essere spostato ma non è drop, ripristina render (nessuna modifica)
+        // non fare nulla
+    }
 
-        document.getElementById('formazione-section').addEventListener('mousedown', onDragStart);
+    cleanUpDrag();
+}
 
+function cleanUpDrag() {
+    if (dragGhost) {
+        try { dragGhost.remove(); } catch (e) {}
+    }
+    // rimuovi pointer capture se impostato
+    try { if (draggedEl && draggedEl.releasePointerCapture) draggedEl.releasePointerCapture(pointerId); } catch(e){}
+    draggedEl = null;
+    dragGhost = null;
+    pointerId = null;
+    rafScheduled = false;
+    document.removeEventListener('pointermove', onPointerMove);
+}
+
+// Attacca listener: usa pointerdown sull'intera sezione formazione per catturare anche i clone creati dinamicamente
+const formazioneSection = document.getElementById('formazione-section');
+if (formazioneSection) {
+    formazioneSection.addEventListener('pointerdown', startPointerDrag);
+    // fallback per browser vecchi che non supportano pointer events (usa mousedown)
+    formazioneSection.addEventListener('mousedown', (e) => {
+        if (!window.PointerEvent) startPointerDrag(e);
+    });
+}
+
+// Inoltre assicurati che renderFormation() imposti correttamente gli elementi creati per poter essere trascinati:
+// i .player-jersey / .token / .tool-item / .available-player rimangono con cursor: grab; e il codice sopra li gestisce dinamicamente.
+// N.B. Non toccare le funzioni saveData(), renderFormation(), createJerseyElement() etc. già presenti.
+
+</script>
+<!-- FINE - Sostituzione sezione drag & drop -->
 
         // --- GESTIONE STAMPA ---
         document.body.addEventListener('click', (e) => { const printBtn = e.target.closest('.print-section-btn'); if (printBtn) { const sectionToPrint = printBtn.closest('.printable-area'); if (sectionToPrint) { sectionToPrint.classList.add('printing-now'); window.print(); } } });
