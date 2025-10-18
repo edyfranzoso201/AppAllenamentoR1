@@ -2206,7 +2206,7 @@
             dragGhost.style.top = `${e.clientY - offsetY}px`;
         }
 
-        function onDragEnd(e) {
+       function onDragEnd(e) {
             if (!draggedEl || !dragGhost) {
                 cleanUpDrag();
                 return;
@@ -2217,7 +2217,6 @@
             dragGhost.style.display = ''; 
 
             const dropZone = dropTarget ? dropTarget.closest('.drop-zone') : null;
-
             if (dropZone) {
                 const athleteId = draggedEl.dataset.athleteId;
                 const itemType = draggedEl.dataset.itemType;
@@ -2230,10 +2229,7 @@
                     formationData.tokens = formationData.tokens.filter(t => t.id != tokenId);
                 }
                 
-                }   
-                
                 const rect = dropZone.getBoundingClientRect();
-
                 // Calcola la posizione del CENTRO del ghost basandosi sulla posizione del mouse (e.clientX/Y)
                 // e l'offset iniziale del mouse all'interno dell'elemento (offsetX/Y),
                 // più metà della dimensione del ghost, per trovare il suo punto centrale.
@@ -2247,12 +2243,14 @@
                 
                 if (athleteId) {
                     if (dropZone.id === 'field-container' || dropZone.id === 'field-bench-area') {
-                         const targetArray = dropZone.id === 'field-container' ? formationData.starters : formationData.bench;
+                         const targetArray = dropZone.id === 'field-container' ?
+                         formationData.starters : formationData.bench;
                          targetArray.push({ athleteId, top, left });
                     }
                 } else if (itemType) {
                     if (dropZone.id === 'field-container' || dropZone.id === 'field-bench-area') {
-                        const newId = tokenId || Date.now().toString();
+                        const newId = tokenId ||
+                        Date.now().toString();
                         if (itemType === 'opponent' && (draggedEl.classList.contains('tool-item') || !tokenId)) {
                              formationData.tokens.push({ id: newId, type: itemType, top, left });
                         } else {
@@ -2267,7 +2265,6 @@
 
             cleanUpDrag();
         }
-
         function cleanUpDrag() {
             if (dragGhost) {
                 dragGhost.remove();
