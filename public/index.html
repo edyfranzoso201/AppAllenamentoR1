@@ -2230,16 +2230,8 @@
                 }
                 
                 const rect = dropZone.getBoundingClientRect();
-                // Calcola la posizione del CENTRO del ghost basandosi sulla posizione del mouse (e.clientX/Y)
-                // e l'offset iniziale del mouse all'interno dell'elemento (offsetX/Y),
-                // più metà della dimensione del ghost, per trovare il suo punto centrale.
-                const ghostCenterX = (e.clientX - offsetX) + (dragGhost.offsetWidth / 2);
-                const ghostCenterY = (e.clientY - offsetY) + (dragGhost.offsetHeight / 2);
-
-                // Converte le coordinate assolute del centro (pixel) in coordinate percentuali
-                // relative al contenitore (dropZone).
-                const left = ((ghostCenterX - rect.left) / rect.width) * 100;
-                const top = ((ghostCenterY - rect.top) / rect.height) * 100;
+                const left = ((e.clientX - rect.left) / rect.width) * 100;
+                const top = ((e.clientY - rect.top) / rect.height) * 100;
                 
                 if (athleteId) {
                     if (dropZone.id === 'field-container' || dropZone.id === 'field-bench-area') {
