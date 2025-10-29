@@ -835,8 +835,67 @@
             });
         };
         const renderCalendar = () => {
-            elements.calendarGrid.innerHTML = ''; const year = currentCalendarDate.getFullYear(); const month = currentCalendarDate.getMonth(); elements.currentMonthYearEl.textContent = `${currentCalendarDate.toLocaleString('it-IT', { month: 'long' })} ${year}`; const firstDayOfMonth = new Date(year, month, 1); const lastDayOfMonth = new Date(year, month + 1, 0); const daysInMonth = lastDayOfMonth.getDate(); const startDayOfWeek = (firstDayOfMonth.getDay() + 6) % 7; for (let i = 0; i < startDayOfWeek; i++) { elements.calendarGrid.innerHTML += `<div class="calendar-day other-month"></div>`; } for (let day = 1; day <= daysInMonth; day++) { const date = new Date(year, month, day); const dateString = toLocalDateISO(date); const dayCell = document.createElement('div'); dayCell.className = 'calendar-day'; if (dateString === toLocalDateISO(new Date())) { dayCell.classList.add('today'); } dayCell.innerHTML = `<div class="calendar-day-header">${day}</div>`; if (trainingSessions[dateString]) { trainingSessions[dateString].forEach(session => { const sessionEl = document.createElement('div'); sessionEl.className = 'calendar-session'; sessionEl.textContent = session.title; sessionEl.dataset.sessionId = session.id; sessionEl.dataset.date = dateString; dayCell.appendChild(sessionEl); }); } if (matchResults) { Object.values(matchResults).forEach(match => { const matchDateNormalized = toLocalDateISO(match.date); if (matchDateNormalized === dateString) { const myTeamName = "GO Sport"; const opponentName = match.opponentName; const location = match.location === 'home' ? 'Casa' : 'Trasferta'; const time = match.time || ''; const venue = match.venue || ''; let label = `${location === 'Casa' ? '⚽' : '✈️'} ${opponentName}`; if (time || venue) { label += ` (${time || ''}${venue ? (time ? ' - ' : '') + venue : ''})`; } const matchEl = document.createElement('div'); matchEl.className = 'calendar-session'; matchEl.textContent = label; matchEl.dataset.matchId = match.id; dayCell.appendChild(matchEl); } }); } elements.calendarGrid.appendChild(dayCell); }
-        };
+    elements.calendarGrid.innerHTML = '';
+    const year = currentCalendarDate.getFullYear();
+    const month = currentCalendarDate.getMonth();
+    elements.currentMonthYearEl.textContent = `${currentCalendarDate.toLocaleString('it-IT', { month: 'long' })} ${year}`;
+    const firstDayOfMonth = new Date(year, month, 1);
+    const lastDayOfMonth = new Date(year, month + 1, 0);
+    const daysInMonth = lastDayOfMonth.getDate();
+    const startDayOfWeek = (firstDayOfMonth.getDay() + 6) % 7;
+
+    for (let i = 0; i < startDayOfWeek; i++) {
+        elements.calendarGrid.innerHTML += `<div class="calendar-day other-month"></div>`;
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day);
+        const dateString = date.toISOString().split('T')[0];
+        const dayCell = document.createElement('div');
+        dayCell.className = 'calendar-day';
+        if (dateString === new Date().toISOString().split('T')[0]) {
+            dayCell.classList.add('today');
+        }
+        dayCell.innerHTML = `<div class="calendar-day-header">${day}</div>`;
+
+        // Allenamenti e sessioni
+        if (trainingSessions[dateString]) {
+            trainingSessions[dateString].forEach(session => {
+                const sessionEl = document.createElement('div');
+                sessionEl.className = 'calendar-session';
+                sessionEl.textContent = session.title;
+                sessionEl.style.backgroundColor = '#FFD700'; // Giallo per allenamenti
+                sessionEl.dataset.sessionId = session.id;
+                sessionEl.dataset.date = dateString;
+                dayCell.appendChild(sessionEl);
+            });
+        }
+
+        // Partite
+        if (matchResults) {
+            Object.values(matchResults).forEach(match => {
+                if (match.date === dateString) {
+                    const location = match.location === 'home' ? 'Casa' : 'Trasferta';
+                    const time = match.time || '';
+                    const venue = match.venue || '';
+                    let label = `${location === 'Casa' ? '⚽' : '✈️'} ${match.opponentName}`;
+                    if (time || venue) {
+                        label += ` (${time || ''}${venue ? (time ? ' - ' : '') + venue : ''})`;
+                    }
+                    const matchEl = document.createElement('div');
+                    matchEl.className = 'calendar-session';
+                    matchEl.textContent = label;
+                    matchEl.style.backgroundColor = match.location === 'home' ? '#d90429' : '#1e5095'; // Rosso per casa, azzurro per trasferta
+                    matchEl.dataset.matchId = match.id;
+                    matchEl.dataset.date = dateString;
+                    dayCell.appendChild(matchEl);
+                }
+            });
+        }
+
+        elements.calendarGrid.appendChild(dayCell);
+    }
+};
         const openSessionModal = (sessionData = null) => {
             elements.sessionForm.reset(); if(sessionData) { document.getElementById('sessionModalLabel').textContent = "Modifica Sessione"; document.getElementById('session-id').value = sessionData.id; document.getElementById('session-date').value = sessionData.date; document.getElementById('session-title').value = sessionData.title; document.getElementById('session-time').value = sessionData.time; document.getElementById('session-location').value = sessionData.location; document.getElementById('session-goals').value = sessionData.goals; document.getElementById('session-description').value = sessionData.description; elements.deleteSessionBtn.style.display = 'block'; } else { document.getElementById('sessionModalLabel').textContent = "Pianifica Sessione"; document.getElementById('session-id').value = ''; document.getElementById('session-date').valueAsDate = new Date(); elements.deleteSessionBtn.style.display = 'none'; } sessionModal.show();
         };
