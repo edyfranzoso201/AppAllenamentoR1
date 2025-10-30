@@ -391,7 +391,7 @@
                 </div>
             </div>
             <div class="col-lg-6 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Andamento Medio Squadra (Ultimi 7 Giorni)</h5><canvas id="dailyTeamChart"></canvas></div></div></div>
-            <div class="col-lg-6 mb-4"><div class="card chart-card"><div class="card-body" id="comparison-chart-container"><h5 class="card-title mb-0">Confronto Valutazioni Atleti</h5><div class="btn-group btn-group-sm float-end no-print" id="comparison-period-toggle"><button type="button" class="btn btn-outline-secondary active" data-period="daily">Giornaliero</button><button type="button" class="btn btn-outline-secondary" data-period="weekly">Settimanale</button><button type="button" class="btn btn-outline-secondary" data-period="monthly">Mensile</button></div><canvas id="monthlyComparisonChart"></canvas></div></div></div>
+            <div class="col-lg-6 mb-4"><div class="card chart-card"><div class="card-body" id="comparison-chart-container"><h5 class="card-title mb-0">Confronto Valutazioni Atleti</h5><div class="btn-group btn-group-sm float-end no-print" id="comparison-period-toggle"><button type="button" class="btn btn-outline-secondary active" data-period="daily">Giornaliero</button><button type="button" class="btn btn-outline-secondary" data-period="weekly">Settimanale</button><button type="button" class="btn btn-outline-secondary" data-period="monthly">Mensile</button><button type="button" class="btn btn-outline-secondary" data-period="semester">Semestrale</button><button type="button" class="btn btn-outline-secondary" data-period="annual">Annuale</button></div><canvas id="monthlyComparisonChart"></canvas></div></div></div>
         </div>
         <div id="report-presenze-section" class="row my-4 printable-area">
               <div class="col-12 d-flex align-items-center gap-2 mb-3">
@@ -408,6 +408,8 @@
                                  <button type="button" class="btn btn-outline-secondary active" data-period="daily">Giornaliero</button>
                                  <button type="button" class="btn btn-outline-secondary" data-period="weekly">Settimanale</button>
                                 <button type="button" class="btn btn-outline-secondary" data-period="monthly">Mensile</button>
+                                <button type="button" class="btn btn-outline-secondary" data-period="semester">Semestrale</button>
+                                <button type="button" class="btn btn-outline-secondary" data-period="annual">Annuale</button>
                              </div>
                          </div>
                          <canvas id="attendanceChart"></canvas>
@@ -867,11 +869,9 @@
             const lastDayOfMonth = new Date(year, month + 1, 0);
             const daysInMonth = lastDayOfMonth.getDate();
             const startDayOfWeek = (firstDayOfMonth.getDay() + 6) % 7;
-
             for (let i = 0; i < startDayOfWeek; i++) {
                 elements.calendarGrid.innerHTML += `<div class="calendar-day other-month"></div>`;
             }
-
             for (let day = 1; day <= daysInMonth; day++) {
                 const date = new Date(year, month, day);
                 const dateString = toLocalDateISO(date);
@@ -881,7 +881,6 @@
                     dayCell.classList.add('today');
                 }
                 dayCell.innerHTML = `<div class="calendar-day-header">${day}</div>`;
-
                 // Allenamenti
                 if (trainingSessions[dateString]) {
                     trainingSessions[dateString].forEach(session => {
@@ -893,7 +892,6 @@
                         dayCell.appendChild(sessionEl);
                     });
                 }
-
                 // Partite
                 if (matchResults) {
                     Object.values(matchResults).forEach(match => {
@@ -908,10 +906,8 @@
                             if (time || venue) {
                                 label += ` (${time || ''}${venue ? (time ? ' - ' : '') + venue : ''})`;
                             }
-
                             const matchEl = document.createElement('div');
                             matchEl.dataset.matchId = match.id;
-
                             // ✅ Determina se la partita è futura o già giocata
                             const today = toLocalDateISO(new Date());
                             const isFuture = dateString > today;
@@ -919,7 +915,6 @@
                             const oppScore = location === 'home' ? match.awayScore : match.homeScore;
                             const hasScore = (myScore !== null && myScore !== undefined && myScore !== '') ||
                                             (oppScore !== null && oppScore !== undefined && oppScore !== '');
-
                             if (isFuture && !hasScore) {
                                 // Partita futura non giocata → verde scuro
                                 matchEl.className = 'calendar-session session-partita-futura';
@@ -927,17 +922,14 @@
                                 // Partita giocata (o risultato inserito) → casa/trasferta
                                 matchEl.className = location === 'home' ? 'calendar-session session-partita-casa' : 'calendar-session session-partita-trasferta';
                             }
-
                             matchEl.textContent = label;
                             dayCell.appendChild(matchEl);
                         }
                     });
                 }
-
                 elements.calendarGrid.appendChild(dayCell);
             }
         };
-
         const openSessionModal = (sessionData = null) => {
             elements.sessionForm.reset(); if(sessionData) { document.getElementById('sessionModalLabel').textContent = "Modifica Sessione"; document.getElementById('session-id').value = sessionData.id; document.getElementById('session-date').value = sessionData.date; document.getElementById('session-title').value = sessionData.title; document.getElementById('session-time').value = sessionData.time; document.getElementById('session-location').value = sessionData.location; document.getElementById('session-goals').value = sessionData.goals; document.getElementById('session-description').value = sessionData.description; elements.deleteSessionBtn.style.display = 'block'; } else { document.getElementById('sessionModalLabel').textContent = "Pianifica Sessione"; document.getElementById('session-id').value = ''; document.getElementById('session-date').valueAsDate = new Date(); elements.deleteSessionBtn.style.display = 'none'; } sessionModal.show();
         };
@@ -957,7 +949,6 @@
                     const athlete = athletes.find(a => String(a.id) === String(s.athleteId));
                     return athlete ? athlete.name.split(' ').pop() : '';
                 }).filter(name => name).join(', ');
-
                 // ✅ Determina classe per colore
                 const today = toLocalDateISO(new Date());
                 const matchDate = toLocalDateISO(match.date);
@@ -966,12 +957,10 @@
                 const oppScore = match.location === 'home' ? match.awayScore : match.homeScore;
                 const hasScore = (myScore !== null && myScore !== undefined && myScore !== '') ||
                                 (oppScore !== null && oppScore !== undefined && oppScore !== '');
-
                 let cardClass = 'match-future';
                 if (!isFuture || hasScore) {
                     cardClass = match.location === 'home' ? 'match-home' : 'match-away';
                 }
-
                 const colDiv = document.createElement('div');
                 colDiv.className = 'col-lg-4 col-md-6 mb-3';
                 const cardContent = `
@@ -1153,6 +1142,25 @@
                         if(scores[id]) scores[id].score += calculateAthleteScore(ev);
                     });
                 });
+            } else if (comparisonChartPeriod === 'semester') {
+                const year = date.substring(0, 4);
+                const month = parseInt(date.substring(5, 7), 10);
+                const semesterStartMonth = month <= 6 ? '01' : '07';
+                const semesterEndMonth = month <= 6 ? '06' : '12';
+                const startDate = `${year}-${semesterStartMonth}-01`;
+                const endDate = `${year}-${semesterEndMonth}-31`;
+                Object.keys(evaluations).filter(d => d >= startDate && d <= endDate).forEach(d => {
+                    Object.entries(evaluations[d]).forEach(([id, ev]) => {
+                        if(scores[id]) scores[id].score += calculateAthleteScore(ev);
+                    });
+                });
+            } else if (comparisonChartPeriod === 'annual') {
+                const year = date.substring(0, 4);
+                Object.keys(evaluations).filter(d => d.startsWith(year)).forEach(d => {
+                    Object.entries(evaluations[d]).forEach(([id, ev]) => {
+                        if(scores[id]) scores[id].score += calculateAthleteScore(ev);
+                    });
+                });
             } else {
                 const week = getWeekRange(date);
                 Object.keys(evaluations).filter(d => d >= week.start && d <= week.end).forEach(d => {
@@ -1204,6 +1212,29 @@
             } else if (attendanceChartPeriod === 'monthly') {
                 const month = date.substring(0, 7);
                 Object.keys(evaluations).filter(d => d.startsWith(month)).forEach(d => {
+                    Object.entries(evaluations[d]).forEach(([id, ev]) => {
+                        if (attendanceData[id] && ev['presenza-allenamento'] && parseInt(ev['presenza-allenamento'], 10) > 0) {
+                            attendanceData[id].count++;
+                        }
+                    });
+                });
+            } else if (attendanceChartPeriod === 'semester') {
+                const year = date.substring(0, 4);
+                const month = parseInt(date.substring(5, 7), 10);
+                const semesterStartMonth = month <= 6 ? '01' : '07';
+                const semesterEndMonth = month <= 6 ? '06' : '12';
+                const startDate = `${year}-${semesterStartMonth}-01`;
+                const endDate = `${year}-${semesterEndMonth}-31`;
+                Object.keys(evaluations).filter(d => d >= startDate && d <= endDate).forEach(d => {
+                    Object.entries(evaluations[d]).forEach(([id, ev]) => {
+                        if (attendanceData[id] && ev['presenza-allenamento'] && parseInt(ev['presenza-allenamento'], 10) > 0) {
+                            attendanceData[id].count++;
+                        }
+                    });
+                });
+            } else if (attendanceChartPeriod === 'annual') {
+                const year = date.substring(0, 4);
+                Object.keys(evaluations).filter(d => d.startsWith(year)).forEach(d => {
                     Object.entries(evaluations[d]).forEach(([id, ev]) => {
                         if (attendanceData[id] && ev['presenza-allenamento'] && parseInt(ev['presenza-allenamento'], 10) > 0) {
                             attendanceData[id].count++;
@@ -2489,7 +2520,6 @@
             const opponentScoreInput = document.getElementById('match-opponent-score').value;
             const myTeamScore = myTeamScoreInput === '' ? null : parseInt(myTeamScoreInput);
             const opponentScore = opponentScoreInput === '' ? null : parseInt(opponentScoreInput);
-
             const matchData = {
                 id: id,
                 date: document.getElementById('match-date').value,
@@ -2502,14 +2532,12 @@
                 scorers: [],
                 cards: []
             };
-
             document.querySelectorAll('#scorers-container .d-flex').forEach(row => {
                 matchData.scorers.push({
                     athleteId: row.querySelector('.scorer-athlete').value,
                     minute: row.querySelector('.scorer-minute').value
                 });
             });
-
             document.querySelectorAll('#cards-container .d-flex').forEach(row => {
                 matchData.cards.push({
                     athleteId: row.querySelector('.card-athlete').value,
@@ -2517,7 +2545,6 @@
                     minute: row.querySelector('.card-minute').value
                 });
             });
-
             matchResults[id] = matchData;
             saveData();
             updateAllUI();
