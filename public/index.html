@@ -456,12 +456,14 @@
                             <div class="row g-3 align-items-end no-print">
                                 <div class="col-md-8">
                                     <label class="form-label">Filtro Temporale (mostra valore massimo nel periodo)</label>
+                                    <!-- ✅ MODIFICA: aggiunto "Annuale" -->
                                     <div class="btn-group w-100" role="group">
                                         <button type="button" class="btn btn-outline-secondary" data-period="day">Giorno</button>
                                         <button type="button" class="btn btn-outline-secondary active" data-period="month">Mese</button>
                                         <button type="button" class="btn btn-outline-secondary" data-period="bimonth">Bimestre</button>
                                         <button type="button" class="btn btn-outline-secondary" data-period="trimester">Trimestre</button>
                                         <button type="button" class="btn btn-outline-secondary" data-period="semester">Semestre</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-period="annual">Annuale</button>
                                     </div>
                                 </div>
                                 <div class="col-md-3" id="multi-athlete-datepicker-container" style="display: none;">
@@ -1558,7 +1560,7 @@
                 endDate = new Date(elements.multiAthleteDatepicker.value);
                 endDate.setHours(23, 59, 59, 999);
             } else {
-                const monthsToSubtract = { month: 1, bimonth: 2, trimester: 3, semester: 6 };
+                const monthsToSubtract = { month: 1, bimonth: 2, trimester: 3, semester: 6, annual: 12 };
                 startDate = new Date();
                 startDate.setMonth(startDate.getMonth() - monthsToSubtract[period]);
             }
