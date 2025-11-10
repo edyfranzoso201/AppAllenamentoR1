@@ -89,6 +89,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 .yellow-card { width: 10px; height: 14px; background-color: #ffc107; display: inline-block; border-radius: 2px; }
 .red-card { width: 10px; height: 14px; background-color: #dc3545; display: inline-block; border-radius: 2px; }
 .scorers-list { font-size: 0.8rem; color: var(--text-muted); }
+.assists-list { font-size: 0.8rem; color: var(--text-muted); }
 /* ✅ Stile per partite future nel box Risultati Partite */
 .match-future { border-left: 4px solid #006400 !important; }
 .match-home { border-left: 4px solid var(--primary-blue) !important; }
