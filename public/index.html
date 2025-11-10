@@ -241,6 +241,12 @@
                              <div id="top-scorers-container" style="max-height: 200px; overflow-y: auto;"></div>
                         </div>
                     </div>
+                    <div class="card table-card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Classifica Assist</h5>
+                            <div id="top-assists-container" style="max-height: 200px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
                     <div class="card table-card">
                         <div class="card-body">
                             <h5 class="card-title">Riepilogo Cartellini</h5>
@@ -379,8 +385,8 @@
                 </div>
                 <div class="row align-items-end">
                     <div class="col-md-8">
-                        <label class="form-label">Seleziona le sessioni da confrontare:</label>
-                        <div id="performance-selectors-container" class="d-grid gap-2"></div>
+                        <label for="performance-metric-selector" class="form-label">Metrica:</label>
+                        <select id="performance-metric-selector" class="form-select"></select>
                     </div>
                     <div class="col-md-4 d-flex align-items-end gap-2 mt-2 mt-md-0">
                         <div>
