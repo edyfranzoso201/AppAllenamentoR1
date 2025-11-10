@@ -14,7 +14,6 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 .athlete-card .card-title { font-size: 1.1rem; margin-bottom: 0.1rem; }
 .shirt-number { font-size: 1.5rem; font-weight: bold; color: var(--text-light); background-color: var(--primary-red); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: absolute; top: 50%; right: 15px; transform: translateY(-50%); }
 .is-captain { color: var(--gold-star); }
-.is-vice-captain { color: #cccccc; } /* ✅ Colore per il Vice Capitano */
 .card-actions { position: absolute; bottom: 10px; right: 10px; z-index: 5; display: flex; gap: 5px; }
 .card-actions .btn { background: rgba(0,0,0,0.3); border: none; }
 .chart-card, .table-card, .summary-card { background-color: var(--card-bg); border: 1px solid var(--border-color); }
@@ -36,7 +35,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 .calendar-day { background-color: var(--secondary-blue); border: 1px solid var(--border-color); min-height: 120px; padding: 8px; font-size: 0.9rem; }
 .calendar-day.today { border-color: var(--primary-red); }
 .calendar-day-header { font-weight: bold; }
-/* ✅ Nuove classi per sessioni */
+/* Nuove classi per sessioni */
 .calendar-session {
     padding: 4px;
     border-radius: 4px;
@@ -90,8 +89,8 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 .yellow-card { width: 10px; height: 14px; background-color: #ffc107; display: inline-block; border-radius: 2px; }
 .red-card { width: 10px; height: 14px; background-color: #dc3545; display: inline-block; border-radius: 2px; }
 .scorers-list { font-size: 0.8rem; color: var(--text-muted); }
-.assists-list { font-size: 0.8rem; color: var(--text-muted); } /* ✅ Stile per la lista assist */
-/* ✅ Stile per partite future nel box Risultati Partite */
+.assists-list { font-size: 0.8rem; color: var(--text-muted); }
+/* Stile per partite future nel box Risultati Partite */
 .match-future { border-left: 4px solid #006400 !important; }
 .match-home { border-left: 4px solid var(--primary-blue) !important; }
 .match-away { border-left: 4px solid var(--primary-red) !important; }
@@ -121,6 +120,6 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     .printing-now #field-container { background-color: var(--field-green) !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
     .printing-now #field-container .field-line, .printing-now #field-container .field-box, .printing-now #field-container .field-circle { border-color: var(--field-line) !important; }
     .printing-now #field-container .field-spot { background-color: var(--field-line) !important; }
-    .printing-now .jersey-body, .printing-now .player-name, .printing-now .token-opponent, .printing-now .token-captain, .printing-now .yellow-card, .printing-now .red-card { -webkit-print-color-adjust: exact; color-adjust: exact; }
+    .printing-now .jersey-body, .printing-now .player-name, .printing-now .token-captain { -webkit-print-color-adjust: exact; color-adjust: exact; }
     .printing-now .player-jersey[data-role*="Portiere"] .jersey-body { background-color: var(--gk-color) !important; }
 }
