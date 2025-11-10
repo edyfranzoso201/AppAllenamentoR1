@@ -414,6 +414,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const athlete = athletes.find(a => String(a.id) === String(s.athleteId));
                 return athlete ? athlete.name.split(' ').pop() : '';
             }).filter(name => name).join(', ');
+            const myTeamAssists = match.assists.map(a => {
+                const athlete = athletes.find(a => String(a.id) === String(a.athleteId));
+                return athlete ? athlete.name.split(' ').pop() : '';
+            }).filter(name => name).join(', ');
             // ✅ Determina classe per colore
             const today = toLocalDateISO(new Date());
             const matchDate = toLocalDateISO(match.date);
@@ -437,6 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <div> ${homeTeamName} vs ${awayTeamName} <strong class="match-score ms-2">${match.homeScore ?? ''} - ${match.awayScore ?? ''}</strong></div>
                         ${myTeamScorers ? `<div class="scorers-list"><i class="bi bi-futbol"></i> Marcatori: <strong style="color: var(--primary-red);">${myTeamScorers}</strong></div>` : ''}
+                        ${myTeamAssists ? `<div class="assists-list"><i class="bi bi-lightning-fill"></i> Assistenti: <strong style="color: var(--primary-red);">${myTeamAssists}</strong></div>` : ''}
                     </div>
                 </div>`;
             colDiv.innerHTML = cardContent;
@@ -520,8 +525,8 @@ document.addEventListener('DOMContentLoaded', () => {
             labels = filteredMatches.map(m => new Date(m.date).toLocaleDateString('it-IT', {day:'2-digit', month:'short'}));
             datasets = [
                 { label: 'Vittorie', data: [], backgroundColor: '#d90429' },
-                { label: 'Pareggi', data: [], backgroundColor: '#1e5095' },
-                { label: 'Sconfitte', data: [], backgroundColor: '#6c757d' },
+                { label: 'Pareggi',  [], backgroundColor: '#1e5095' },
+                { label: 'Sconfitte',  [], backgroundColor: '#6c757d' },
             ];
             filteredMatches.forEach(match => {
                 const myScore = match.location === 'home' ? match.homeScore : match.awayScore;
@@ -554,16 +559,16 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             labels = Object.keys(resultsByPeriod).sort();
             datasets = [
-                { label: 'Vittorie', data: labels.map(l => resultsByPeriod[l].W), backgroundColor: '#d90429' },
-                { label: 'Pareggi', data: labels.map(l => resultsByPeriod[l].D), backgroundColor: '#1e5095' },
-                { label: 'Sconfitte', data: labels.map(l => resultsByPeriod[l].L), backgroundColor: '#6c757d' },
+                { label: 'Vittorie',  labels.map(l => resultsByPeriod[l].W), backgroundColor: '#d90429' },
+                { label: 'Pareggi',  labels.map(l => resultsByPeriod[l].D), backgroundColor: '#1e5095' },
+                { label: 'Sconfitte',  labels.map(l => resultsByPeriod[l].L), backgroundColor: '#6c757d' },
             ];
         }
         const data = { labels, datasets };
         if (chartInstances.matchResults) chartInstances.matchResults.destroy();
         chartInstances.matchResults = new Chart(document.getElementById('matchResultsChart').getContext('2d'), {
             type: 'bar',
-            data: data,
+             data,
             options: {
                 scales: {
                     x: { stacked: true, ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.2)' } },
@@ -665,7 +670,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(chartInstances.monthlyComparison) chartInstances.monthlyComparison.destroy();
         chartInstances.monthlyComparison = new Chart(document.getElementById('monthlyComparisonChart').getContext('2d'), {
             type: 'bar',
-            data: {
+             {
                 labels: scoresToShow.map(a=>a.name),
                 datasets: [{
                     label: 'Punteggio Totale',
@@ -742,11 +747,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if(chartInstances.attendance) chartInstances.attendance.destroy();
         chartInstances.attendance = new Chart(document.getElementById('attendanceChart').getContext('2d'), {
             type: 'bar',
-            data: {
+             {
                 labels: sortedAttendance.map(a => a.name),
                 datasets: [{
                     label: 'Presenze',
-                    data: sortedAttendance.map(a => a.count),
+                     sortedAttendance.map(a => a.count),
                     backgroundColor: 'rgba(217, 4, 41, 0.8)'
                 }]
             },
@@ -865,7 +870,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (chartInstances.performance) chartInstances.performance.destroy();
         chartInstances.performance = new Chart(document.getElementById('performanceChart').getContext('2d'), {
             type: 'bar',
-            data: chartData,
+             chartData,
             options: {
                 scales: {
                     y: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.2)' } },
@@ -945,9 +950,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         const datasets = [
-            { label: gpsFieldsForDisplay[metric] || metric, data: athleteValues, borderColor: 'rgba(217, 4, 41, 1)', backgroundColor: 'rgba(217, 4, 41, 0.2)', tension: 0.3, fill: true },
+            { label: gpsFieldsForDisplay[metric] || metric,  athleteValues, borderColor: 'rgba(217, 4, 41, 1)', backgroundColor: 'rgba(217, 4, 41, 0.2)', tension: 0.3, fill: true },
             { label: 'Media Squadra', data: teamAvgValues, borderColor: 'rgba(54, 162, 235, 1)', borderDash: [5, 5], fill: false, tension: 0.3 },
-            { label: 'Max Squadra', data: teamMaxValues, borderColor: 'rgba(255, 206, 86, 1)', borderDash: [5, 5], fill: false, tension: 0.3 }
+            { label: 'Max Squadra',  teamMaxValues, borderColor: 'rgba(255, 206, 86, 1)', borderDash: [5, 5], fill: false, tension: 0.3 }
         ];
         chartInstances.athleteTrend = new Chart(document.getElementById('athleteTrendChart').getContext('2d'), {
             type: 'line',
@@ -1017,7 +1022,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         chartInstances.athleteRadar = new Chart(document.getElementById('athleteRadarChart').getContext('2d'), {
             type: 'radar',
-            data: { labels: Object.values(radarMetrics), datasets: datasets },
+             { labels: Object.values(radarMetrics), datasets: datasets },
             options: {
                 scales: {
                     r: {
@@ -1074,7 +1079,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(chartInstances.multiAthlete) chartInstances.multiAthlete.destroy();
         chartInstances.multiAthlete = new Chart(document.getElementById('multiAthleteChart').getContext('2d'), {
             type: 'bar',
-            data: {
+             {
                 labels: chartData.map(d => d.name),
                 datasets: [{
                     label: gpsFieldsForDisplay[metric],
@@ -2080,7 +2085,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await loadData();
             const newDataSnapshot = JSON.stringify({ athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults });
             if (currentDataSnapshot !== newDataSnapshot) {
-                console.log("Dati aggiornati dal server. Ricarico l'interfaccia.");
+                console.log("Dati aggiornati dal server. Ricarco l'interfaccia.");
                 updateAllUI();
             }
         }, 5000);
