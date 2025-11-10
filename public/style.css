@@ -89,6 +89,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 .yellow-card { width: 10px; height: 14px; background-color: #ffc107; display: inline-block; border-radius: 2px; }
 .red-card { width: 10px; height: 14px; background-color: #dc3545; display: inline-block; border-radius: 2px; }
 .scorers-list { font-size: 0.8rem; color: var(--text-muted); }
+.assists-list { font-size: 0.8rem; color: var(--text-muted); }
 /* ✅ Stile per partite future nel box Risultati Partite */
 .match-future { border-left: 4px solid #006400 !important; }
 .match-home { border-left: 4px solid var(--primary-blue) !important; }
@@ -119,6 +120,6 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     .printing-now #field-container { background-color: var(--field-green) !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
     .printing-now #field-container .field-line, .printing-now #field-container .field-box, .printing-now #field-container .field-circle { border-color: var(--field-line) !important; }
     .printing-now #field-container .field-spot { background-color: var(--field-line) !important; }
-    .printing-now .jersey-body, .printing-now .player-name, .printing-now .token-opponent, .printing-now .token-captain, .printing-now .yellow-card, .printing-now .red-card { -webkit-print-color-adjust: exact; color-adjust: exact; }
+    .printing-now .jersey-body, .printing-now .player-name, .printing-now .token-opponent, .printing-now .token-captain, .yellow-card, .red-card { -webkit-print-color-adjust: exact; color-adjust: exact; }
     .printing-now .player-jersey[data-role*="Portiere"] .jersey-body { background-color: var(--gk-color) !important; }
 }
