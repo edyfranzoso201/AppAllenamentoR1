@@ -100,8 +100,6 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 .stat-item p { font-size: 1.4rem; font-weight: 500; margin-bottom: 0;}
 .stat-item .diff-pos { color: #28a745; }
 .stat-item .diff-neg { color: var(--primary-red); }
-/* ✅ Nuovo stile per la lista degli assist */
-.assists-list { font-size: 0.8rem; color: var(--text-muted); }
 @media print {
     body { padding-top: 0; }
     .no-print { display: none !important; }
