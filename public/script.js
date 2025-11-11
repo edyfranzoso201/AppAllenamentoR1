@@ -9,8 +9,14 @@ function toLocalDateISO(dateInput) {
     return localDate.toISOString().split('T')[0];
 }
 document.addEventListener('DOMContentLoaded', () => {
-    // ✅ REMOSSA la riga che inseriva HTML dinamicamente in modalsContainer
-    // modalsContainer.innerHTML = `...`; // Questa riga è stata rimossa
+    const modalsContainer = document.getElementById('modals-container');
+    // ✅ MODIFICA: nel modale "matchResultModal", i campi del risultato NON hanno più "required"
+    modalsContainer.innerHTML = `<div class="modal fade" id="evaluationModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Valutazione di <span id="modal-athlete-name-eval"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="evaluation-form"><input type="hidden" id="modal-athlete-id-eval"><p>Data: <strong id="modal-evaluation-date"></strong></p><div class="mb-2"><label class="form-label">Presenza Allenamento</label><select id="presenza-allenamento" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Serietà Allenamento</label><select id="serieta-allenamento" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Abbigliamento Allenamento</label><select id="abbigliamento-allenamento" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Abbigliamento Partita</label><select id="abbigliamento-partita" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Serietà Comunicazioni</label><select id="comunicazioni" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Doccia (Opzionale)</label><select id="doccia" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="award-checkbox"><label class="form-check-label" for="award-checkbox">Assegna Premio</label></div></form></div><div class="modal-footer justify-content-between"><button type="button" class="btn btn-outline-danger" id="delete-single-athlete-day-btn">Elimina Dati del Giorno</button><div><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button><button type="submit" class="btn btn-primary-custom" form="evaluation-form">Salva Valutazione</button></div></div></div></div></div> <div class="modal fade" id="athleteModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="athleteModalLabel">Gestisci Atleta</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="athlete-form"><input type="hidden" id="modal-athlete-id"><div class="mb-3"><label class="form-label">Nome Cognome</label><input type="text" class="form-control" id="athlete-name" required></div><div class="mb-3"><label for="athlete-avatar-input" class="form-label">Foto Profilo</label><input type="file" class="form-control" id="athlete-avatar-input" accept="image/*"><input type="hidden" id="athlete-avatar-base64"><img id="avatar-preview" src="" alt="Anteprima" class="mt-2" style="max-width: 70px; max-height: 70px; display: none; border-radius: 50%;"></div><div class="mb-3"><label class="form-label">Ruolo</label><input type="text" class="form-control" id="athlete-role" required></div><div class="row"><div class="col-md-6 mb-3"><label class="form-label">Numero Maglia</label><input type="number" class="form-control" id="athlete-number" required min="1"></div><div class="col-md-6 mb-3"><label class="form-label">Scadenza Visita Medica</label><input type="date" class="form-control" id="scadenza-visita"></div></div><div class="row"><div class="col-md-6 mb-3"><label class="form-label">Data Prenotazione Visita</label><input type="date" class="form-control" id="prenotazione-visita"></div></div><div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="athlete-captain"><label class="form-label" for="athlete-captain">Capitano</label></div><div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="athlete-vice-captain"><label class="form-label" for="athlete-vice-captain">Vice Capitano</label></div></form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button><button type="submit" class="btn btn-primary-custom" form="athlete-form">Salva Atleta</button></div></div></div></div> <div class="modal fade" id="gpsModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="gpsModalLabel">Dati Performance di <span id="modal-athlete-name-gps"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="gps-form"><input type="hidden" id="modal-athlete-id-gps"><input type="hidden" id="gps-session-id"> <div class="row mb-3"><div class="col-md-8"><label for="gps-session-selector" class="form-label">Seleziona Sessione Esistente per Modificare</label><select id="gps-session-selector" class="form-select"><option value="">--- Inserisci Nuova Sessione ---</option></select></div><div class="col-md-4 d-flex align-items-end"><button type="button" id="delete-gps-session-btn" class="btn btn-outline-danger w-100" disabled>Elimina Sessione</button></div></div><hr> <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Data Registrazione</label><input type="date" class="form-control" id="gps-data_di_registrazione" required></div><div class="col-md-4 mb-3"><label class="form-label">Ora Registrazione</label><input type="time" class="form-control" id="gps-ora_registrazione"></div><div class="col-md-4 mb-3"><label class="form-label">Tipo Sessione</label><select class="form-select" id="gps-tipo_sessione"><option value="Allenamento">Allenamento</option><option value="Partita">Partita</option><option value="Individual">Individual</option></select></div></div> <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Distanza Totale (m)</label><input type="number" step="0.1" class="form-control" id="gps-distanza_totale" placeholder="es. 10500"></div><div class="col-md-4 mb-3"><label class="form-label">Tempo Totale (min)</label><input type="number" step="0.1" class="form-control" id="gps-tempo_totale" placeholder="es. 92"></div><div class="col-md-4 mb-3"><label class="form-label">Distanza per Minuto (m/min)</label><input type="number" step="0.1" class="form-control" id="gps-distanza_per_minuto" readonly></div></div> <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Distanza Sprint (m)</label><input type="number" step="0.1" class="form-control" id="gps-distanza_sprint"></div><div class="col-md-4 mb-3"><label class="form-label">Velocità Massima (km/h)</label><input type="number" step="0.1" class="form-control" id="gps-velocita_massima"></div><div class="col-md-4 mb-3"><label class="form-label">Numero di Sprint</label><input type="number" class="form-control" id="gps-numero_di_sprint"></div></div> <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Max Acc (g)o(n°)</label><input type="number" step="0.1" class="form-control" id="gps-max_acc"></div><div class="col-md-4 mb-3"><label class="form-label">Max Dec (g)o(n°)</label><input type="number" step="0.1" class="form-control" id="gps-max_dec"></div><div class="col-md-4 mb-3"><label class="form-label">Passaggi Piede Sinistro</label><input type="number" class="form-control" id="gps-passaggi_piede_sinistro"></div></div> <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Passaggi Piede Destro</label><input type="number" class="form-control" id="gps-passaggi_piede_destro"></div><div class="col-md-4 mb-3"><label class="form-label">Cross Piede Sinistro</label><input type="number" step="0.1" class="form-control" id="gps-cross_piede_sinistro"></div><div class="col-md-4 mb-3"><label class="form-label">Cross Piede Destro</label><input type="number" step="0.1" class="form-control" id="gps-cross_piede_destro"></div></div> <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Potenza Massima di Tiro (km/h)</label><input type="number" step="0.1" class="form-control" id="gps-potenza_massima_di_tiro"></div><div class="col-md-4 mb-3"><label class="form-label">Tiri Piede SX</label><input type="number" class="form-control" id="gps-tiri_piede_sx"></div><div class="col-md-4 mb-3"><label class="form-label">Tiri Piede DX</label><input type="number" class="form-control" id="gps-tiri_piede_dx"></div></div> <div class="row"><div class="col-md-4 mb-3"><label class="form-label">% Passaggi Brevi</label><input type="number" step="0.1" class="form-control" id="gps-perc_passaggi_brevi"></div><div class="col-md-4 mb-3"><label class="form-label">% Lanci</label><input type="number" step="0.1" class="form-control" id="gps-perc_lanci"></div><div class="col-md-4 mb-3"><label class="form-label">Distanza Circuito (m)</label><input type="number" step="1" class="form-control" id="gps-distanza_circuito" placeholder="es. 400"></div></div> <div class="row align-items-end"><div class="col-md-5 mb-3"><label class="form-label">Tempo Circuito</label><div class="input-group"><input type="number" class="form-control" id="gps-tempo_circuito_min" placeholder="Min" min="0"><span class="input-group-text">:</span><input type="number" class="form-control" id="gps-tempo_circuito_sec" placeholder="Sec" min="0" max="59"><span class="input-group-text">.</span><input type="number" class="form-control" id="gps-tempo_circuito_cen" placeholder="Cen" min="0" max="99"></div></div><div class="col-md-4 mb-3"><label class="form-label">Velocità (km/h)</label><input type="text" class="form-control" id="gps-velocita_circuito" readonly></div></div> <div id="match-stats-fields" style="display: none;"><hr><h5 class="mb-3">Statistiche Partita</h5><div class="row"><div class="col-md-3 mb-3"><label class="form-label">Minuti Giocati</label><input type="number" class="form-control" id="gps-minuti_giocati"></div><div class="col-md-3 mb-3"><label class="form-label">Gol</label><input type="number" class="form-control" id="gps-gol"></div><div class="col-md-3 mb-3"><label class="form-label">Assist</label><input type="number" class="form-control" id="gps-assist"></div><div class="col-md-3 mb-3"><label class="form-label">Ammonizioni</label><input type="number" class="form-control" id="gps-ammonizioni"></div></div><div class="row"><div class="col-md-3 mb-3"><label class="form-label">Espulsioni</label><input type="number" class="form-control" id="gps-espulsioni"></div><div class="col-md-3 mb-3"><label class="form-label">Palle Recuperate</label><input type="number" class="form-control" id="gps-palle_recuperate"></div><div class="col-md-3 mb-3"><label class="form-label">Palle Perse</label><input type="number" class="form-control" id="gps-palle_perse"></div></div></div> <div class="row"><div class="col-12 mb-3"><label class="form-label">Note (opzionale)</label><textarea class="form-control" id="gps-note" rows="2" placeholder="Es. Allenamento intenso, recupero infortunio, ecc."></textarea></div></div> </form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button><button type="submit" class="btn btn-primary-custom" form="gps-form">Salva Dati GPS</button></div></div></div></div> <div class="modal fade" id="sessionModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="sessionModalLabel">Pianifica Sessione</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="session-form"><input type="hidden" id="session-id"><div class="mb-3"><label class="form-label">Data</label><input type="date" class="form-control" id="session-date" required></div><div class="mb-3"><label class="form-label">Titolo/Tipo</label><input type="text" class="form-control" id="session-title" required placeholder="Es. Allenamento tecnico"></div><div class="row"><div class="col-md-6 mb-3"><label class="form-label">Ora Inizio</label><input type="time" class="form-control" id="session-time"></div><div class="col-md-6 mb-3"><label class="form-label">Luogo</label><input type="text" class="form-control" id="session-location" placeholder="Es. Campo 1"></div></div><div class="mb-3"><label class="form-label">Obiettivi</label><input type="text" class="form-control" id="session-goals" placeholder="Es. Possesso palla, tiri in porta"></div><div class="mb-3"><label class="form-label">Descrizione Allenamento (un punto per riga)</label><textarea class="form-control" id="session-description" rows="5"></textarea></div></form></div><div class="modal-footer justify-content-between"><button type="button" class="btn btn-outline-danger" id="delete-session-btn" style="display:none;">Elimina</button><div><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button><button type="submit" class="btn btn-primary-custom" form="session-form">Salva Sessione</button></div></div></div></div></div> <div class="modal fade" id="matchResultModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="matchResultModalLabel">Inserisci Risultato Partita</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="match-result-form"><input type="hidden" id="match-id"><div class="row"><div class="col-md-4 mb-3"><label class="form-label">Data Partita</label><input type="date" class="form-control" id="match-date" required></div><div class="col-md-4 mb-3"><label class="form-label">Ora Partita</label><input type="time" class="form-control" id="match-time"></div><div class="col-md-4 mb-3"><label class="form-label">Luogo Fisico</label><input type="text" class="form-control" id="match-venue" placeholder="Es. Stadio Comunale"></div></div><div class="row"><div class="col-md-5 mb-3"><label class="form-label">Squadra Avversaria</label><input type="text" class="form-control" id="match-opponent-name" required></div><div class="col-md-3 mb-3"><label class="form-label">Luogo</label><select class="form-select" id="match-location"><option value="home">Casa</option><option value="away">Trasferta</option></select></div></div><div class="row align-items-center text-center">
+                <!-- ✅ RIMOSSO 'required' dai campi punteggio -->
+                <div class="col-5"><label class="form-label">GO Sport</label><input type="number" class="form-control text-center" id="match-my-team-score" min="0" placeholder="Gol"></div>
+                <div class="col-2">-</div>
+                <div class="col-5"><label class="form-label">AVVERSARI</label><input type="number" class="form-control text-center" id="match-opponent-score" min="0" placeholder="Gol"></div>
+                </div><hr><div class="row mt-3"><div class="col-md-6"><h5><i class="bi bi-futbol"></i> Marcatori (GO Sport)</h5><div id="scorers-container" class="d-grid gap-2"></div><button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="add-scorer-btn"><i class="bi bi-plus"></i> Aggiungi Marcatore</button></div><div class="col-md-6"><h5><i class="bi bi-file-earmark-person"></i> Cartellini (GO Sport)</h5><div id="cards-container" class="d-grid gap-2"></div><button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="add-card-btn"><i class="bi bi-plus"></i> Aggiungi Cartellino</button></div></div></form></div><div class="modal-footer justify-content-between"><button type="button" class="btn btn-outline-danger" id="delete-match-btn" style="display:none;">Elimina Partita</button><div><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button><button type="submit" class="btn btn-primary-custom" form="match-result-form">Salva Partita</button></div></div></div></div></div> <div class="modal fade" id="passwordModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Accesso Richiesto</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p>Per visualizzare questi dati è richiesta una password.</p><form id="password-form"><div class="mb-3"><label for="password-input" class="form-label">Password</label><input type="password" class="form-control" id="password-input" required><div id="password-error" class="text-danger mt-2" style="display: none;">Password non corretta.</div></div><button type="submit" class="btn btn-primary-custom w-100">Accedi</button></form></div></div></div></div>`;
     const evaluationModal = new bootstrap.Modal(document.getElementById('evaluationModal'));
     const athleteModal = new bootstrap.Modal(document.getElementById('athleteModal'));
     const gpsModal = new bootstrap.Modal(document.getElementById('gpsModal'));
@@ -70,8 +76,6 @@ document.addEventListener('DOMContentLoaded', () => {
         matchOpponentFilter: document.getElementById('match-opponent-filter'),
         matchPeriodToggle: document.getElementById('match-period-toggle'),
         topScorersContainer: document.getElementById('top-scorers-container'),
-        // ✅ Aggiunto elemento per la classifica assist
-        topAssistsContainer: document.getElementById('top-assists-container'),
         passwordForm: document.getElementById('password-form'),
         passwordError: document.getElementById('password-error'),
         alertsContainer: document.getElementById('alerts-container'),
@@ -120,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const gpsFieldsForDisplay = { 'tipo_sessione':'Tipo', 'data_di_registrazione': 'Data', 'ora_registrazione': 'Ora', 'distanza_totale': 'Dist. Totale (m)', 'tempo_totale': 'Tempo (min)', 'distanza_per_minuto':'Dist/min (m)', 'distanza_sprint': 'Distanza Sprint (m)', 'velocita_massima': 'Vel. Max (km/h)', 'numero_di_sprint': 'Num. Sprint', 'max_acc': 'Max Acc (g)o(n°)', 'max_dec': 'Max Dec (g)o(n°)', 'passaggi_piede_sinistro':'Passaggi SX', 'passaggi_piede_destro':'Passaggi DX', 'cross_piede_sinistro':'Cross SX', 'cross_piede_destro':'Cross DX', 'potenza_massima_di_tiro':'Pot. Tiro (km/h)', 'tiri_piede_sx': 'Tiri Piede SX', 'tiri_piede_dx': 'Tiri Piede DX', 'perc_passaggi_brevi': '% Passaggi Brevi', 'perc_lanci': '% Lanci', 'distanza_circuito': 'Dist. Circuito (m)', 'tempo_circuito_totale_s': 'Tempo Circuito (s)', 'velocita_circuito': 'Vel. Circuito (km/h)', 'minuti_giocati': 'Minuti Giocati', 'gol': 'Gol', 'assist': 'Assist', 'ammonizioni': 'Gialli', 'espulsioni': 'Rossi', 'palle_recuperate': 'Palle Recuperate', 'palle_perse': 'Palle Perse', 'note': 'Note' };
     const radarMetrics = { 'distanza_sprint': 'Distanza Sprint', 'velocita_massima': 'Vel. Max', 'max_acc': 'Max Acc', 'max_dec': 'Max Dec', 'passaggi_piede_sinistro': 'Pass. SX', 'passaggi_piede_destro': 'Pass. DX', 'cross_piede_sinistro': 'Cross SX', 'cross_piede_destro': 'Cross DX', 'potenza_massima_di_tiro': 'Pot. Tiro', 'distanza_per_minuto': 'Dist/min', 'tiri_piede_sx': 'Tiri SX', 'tiri_piede_dx': 'Tiri DX', 'perc_passaggi_brevi': '% Pass. Brevi', 'perc_lanci': '% Lanci', 'velocita_circuito': 'Vel. Circuito' };
     const evaluationCategories = ['presenza-allenamento', 'serieta-allenamento', 'abbigliamento-allenamento', 'abbigliamento-partita', 'comunicazioni', 'doccia'];
-    const defaultAvatar = "image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3e%3cpath fill='%231e5095' d='M128 128H0V0h128v128z'/%3e%3cpath fill='%23ffffff' d='M64 100c-19.88 0-36-16.12-36-36s16.12-36 36-36 36 16.12 36 36-16.12 36-36 36zm0-64c-15.46 0-28 12.54-28 28s12.54 28 28 28 28-12.54 28-28-12.54-28-28-28z'/%3e%3cpath fill='%23ffffff' d='M64 24a40.01 40.01 0 00-28.28 11.72C35.8 35.8 28 45.45 28 56h8c0-8.27 5.61-15.64 13.53-18.89A31.93 31.93 0 0164 32a32.09 32.09 0 0124.47 11.11C96.39 40.36 102 47.73 102 56h8c0-10.55-7.8-20.2-17.72-24.28A39.99 39.99 0 0064 24z'/%3e%3c/svg%3e";
+    const defaultAvatar = "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3e%3cpath fill='%231e5095' d='M128 128H0V0h128v128z'/%3e%3cpath fill='%23ffffff' d='M64 100c-19.88 0-36-16.12-36-36s16.12-36 36-36 36 16.12 36 36-16.12 36-36 36zm0-64c-15.46 0-28 12.54-28 28s12.54 28 28 28 28-12.54 28-28-12.54-28-28-28z'/%3e%3cpath fill='%23ffffff' d='M64 24a40.01 40.01 0 00-28.28 11.72C35.8 35.8 28 45.45 28 56h8c0-8.27 5.61-15.64 13.53-18.89A31.93 31.93 0 0164 32a32.09 32.09 0 0124.47 11.11C96.39 40.36 102 47.73 102 56h8c0-10.55-7.8-20.2-17.72-24.28A39.99 39.99 0 0064 24z'/%3e%3c/svg%3e";
     // ✅ MODIFICA: Aggiunto `isViceCaptain` ai dati atleta
     let athletes = [], evaluations = {}, gpsData = {}, awards = {}, trainingSessions = {}, matchResults = {};
     let formationData = { starters: [], bench: [], tokens: [] };
@@ -163,18 +167,14 @@ document.addEventListener('DOMContentLoaded', () => {
             trainingSessions = allData.trainingSessions || {};
             formationData = allData.formationData || { starters: [], bench: [], tokens: [] };
             matchResults = allData.matchResults || {};
+
             // ✅ MODIFICA: Assicurarsi che tutti gli atleti abbiano la proprietà `isViceCaptain`
             athletes.forEach(athlete => {
                 if (athlete.isViceCaptain === undefined) {
                     athlete.isViceCaptain = false;
                 }
             });
-            // ✅ MODIFICA: Assicurarsi che tutte le partite abbiano l'array `assists`
-            Object.values(matchResults).forEach(match => {
-                if (!match.assists) {
-                    match.assists = [];
-                }
-            });
+
         } catch (error) {
             console.error('Errore nel caricamento dei dati dal server:', error);
             athletes = []; evaluations = {}; gpsData = {}; awards = {}; trainingSessions = {}; formationData = { starters: [], bench: [], tokens: [] }; matchResults = {};
@@ -227,8 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderMatchResults();
         renderCardsSummary();
         renderTopScorers();
-        // ✅ Aggiunto aggiornamento classifica assist
-        renderTopAssists();
         updateMatchAnalysisChart();
         updateEvaluationCharts();
         updateAttendanceChart();
@@ -330,6 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     statusIcon = `<i class="bi bi-circle-fill text-success deadline-status" title="Scade il ${deadline.toLocaleDateString('it-IT')}"></i>`;
                 }
             }
+
             const card = document.createElement('div');
             card.className = 'col-xl-3 col-lg-4 col-md-6 mb-4';
             // ✅ Aggiunta icona Vice Capitano
@@ -501,31 +500,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ol += '</ol>';
         elements.topScorersContainer.innerHTML = ol;
     };
-    // ✅ Nuova funzione per renderizzare la classifica assist
-    const renderTopAssists = () => {
-        const assistCounts = {};
-        Object.values(matchResults).forEach(match => {
-            // Assicurati che `match.assists` esista come array
-            const matchAssists = Array.isArray(match.assists) ? match.assists : [];
-            matchAssists.forEach(assist => {
-                assistCounts[assist.athleteId] = (assistCounts[assist.athleteId] || 0) + 1;
-            });
-        });
-        const sortedAssists = Object.entries(assistCounts).map(([athleteId, assists]) => {
-            const athlete = athletes.find(a => String(a.id) === athleteId);
-            return { name: athlete ? athlete.name : 'Sconosciuto', assists };
-        }).sort((a, b) => b.assists - a.assists);
-        if (sortedAssists.length === 0) {
-            elements.topAssistsContainer.innerHTML = '<p class="text-muted">Nessun assist registrato.</p>';
-            return;
-        }
-        let ol = '<ol class="list-group list-group-numbered">';
-        sortedAssists.forEach(assist => {
-            ol += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; border-color: var(--border-color);">${assist.name}<span class="badge bg-success rounded-pill">${assist.assists}</span></li>`; // Usato bg-success per differenziare
-        });
-        ol += '</ol>';
-        elements.topAssistsContainer.innerHTML = ol;
-    };
     const updateMatchAnalysisChart = () => {
         const opponentFilter = elements.matchOpponentFilter.value;
         const period = elements.matchPeriodToggle.querySelector('.active').dataset.period;
@@ -537,8 +511,8 @@ document.addEventListener('DOMContentLoaded', () => {
             labels = filteredMatches.map(m => new Date(m.date).toLocaleDateString('it-IT', {day:'2-digit', month:'short'}));
             datasets = [
                 { label: 'Vittorie', data: [], backgroundColor: '#d90429' },
-                { label: 'Pareggi',  [], backgroundColor: '#1e5095' },
-                { label: 'Sconfitte',  [], backgroundColor: '#6c757d' },
+                { label: 'Pareggi', data: [], backgroundColor: '#1e5095' },
+                { label: 'Sconfitte', data: [], backgroundColor: '#6c757d' },
             ];
             filteredMatches.forEach(match => {
                 const myScore = match.location === 'home' ? match.homeScore : match.awayScore;
@@ -572,15 +546,15 @@ document.addEventListener('DOMContentLoaded', () => {
             labels = Object.keys(resultsByPeriod).sort();
             datasets = [
                 { label: 'Vittorie', data: labels.map(l => resultsByPeriod[l].W), backgroundColor: '#d90429' },
-                { label: 'Pareggi',  labels.map(l => resultsByPeriod[l].D), backgroundColor: '#1e5095' },
-                { label: 'Sconfitte',  labels.map(l => resultsByPeriod[l].L), backgroundColor: '#6c757d' },
+                { label: 'Pareggi', data: labels.map(l => resultsByPeriod[l].D), backgroundColor: '#1e5095' },
+                { label: 'Sconfitte', data: labels.map(l => resultsByPeriod[l].L), backgroundColor: '#6c757d' },
             ];
         }
         const data = { labels, datasets };
         if (chartInstances.matchResults) chartInstances.matchResults.destroy();
         chartInstances.matchResults = new Chart(document.getElementById('matchResultsChart').getContext('2d'), {
             type: 'bar',
-             data,
+            data: data,
             options: {
                 scales: {
                     x: { stacked: true, ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.2)' } },
@@ -613,7 +587,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(chartInstances.dailyTeam) chartInstances.dailyTeam.destroy();
         chartInstances.dailyTeam = new Chart(document.getElementById('dailyTeamChart').getContext('2d'), {
             type: 'line',
-             {
+            data: {
                 labels: last7Days.map(d => new Date(d).toLocaleDateString('it-IT', {day:'2-digit', month:'short'})),
                 datasets: [{
                     label: 'Punteggio Medio',
@@ -682,7 +656,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(chartInstances.monthlyComparison) chartInstances.monthlyComparison.destroy();
         chartInstances.monthlyComparison = new Chart(document.getElementById('monthlyComparisonChart').getContext('2d'), {
             type: 'bar',
-             {
+            data: {
                 labels: scoresToShow.map(a=>a.name),
                 datasets: [{
                     label: 'Punteggio Totale',
@@ -759,11 +733,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if(chartInstances.attendance) chartInstances.attendance.destroy();
         chartInstances.attendance = new Chart(document.getElementById('attendanceChart').getContext('2d'), {
             type: 'bar',
-             {
+            data: {
                 labels: sortedAttendance.map(a => a.name),
                 datasets: [{
                     label: 'Presenze',
-                     sortedAttendance.map(a => a.count),
+                    data: sortedAttendance.map(a => a.count),
                     backgroundColor: 'rgba(217, 4, 41, 0.8)'
                 }]
             },
@@ -882,7 +856,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (chartInstances.performance) chartInstances.performance.destroy();
         chartInstances.performance = new Chart(document.getElementById('performanceChart').getContext('2d'), {
             type: 'bar',
-             chartData,
+            data: chartData,
             options: {
                 scales: {
                     y: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.2)' } },
@@ -962,13 +936,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         const datasets = [
-            { label: gpsFieldsForDisplay[metric] || metric,  athleteValues, borderColor: 'rgba(217, 4, 41, 1)', backgroundColor: 'rgba(217, 4, 41, 0.2)', tension: 0.3, fill: true },
-            { label: 'Media Squadra',  teamAvgValues, borderColor: 'rgba(54, 162, 235, 1)', borderDash: [5, 5], fill: false, tension: 0.3 },
+            { label: gpsFieldsForDisplay[metric] || metric, data: athleteValues, borderColor: 'rgba(217, 4, 41, 1)', backgroundColor: 'rgba(217, 4, 41, 0.2)', tension: 0.3, fill: true },
+            { label: 'Media Squadra', data: teamAvgValues, borderColor: 'rgba(54, 162, 235, 1)', borderDash: [5, 5], fill: false, tension: 0.3 },
             { label: 'Max Squadra', data: teamMaxValues, borderColor: 'rgba(255, 206, 86, 1)', borderDash: [5, 5], fill: false, tension: 0.3 }
         ];
         chartInstances.athleteTrend = new Chart(document.getElementById('athleteTrendChart').getContext('2d'), {
             type: 'line',
-             { labels, datasets },
+            data: { labels, datasets },
             options: {
                 scales: {
                     y: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.2)' } },
@@ -1023,7 +997,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const color = radarColors[index % radarColors.length];
             return {
                 label: athlete?.name || 'N/A',
-                 normalizedData,
+                data: normalizedData,
                 borderColor: color,
                 backgroundColor: color.replace('1)', '0.2)'),
                 pointBackgroundColor: color,
@@ -1034,7 +1008,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         chartInstances.athleteRadar = new Chart(document.getElementById('athleteRadarChart').getContext('2d'), {
             type: 'radar',
-             { labels: Object.values(radarMetrics), datasets: datasets },
+            data: { labels: Object.values(radarMetrics), datasets: datasets },
             options: {
                 scales: {
                     r: {
@@ -1317,8 +1291,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 Object.keys(matchResults).forEach(matchId => {
                     matchResults[matchId].scorers = matchResults[matchId].scorers.filter(s => String(s.athleteId) !== athleteId);
                     matchResults[matchId].cards = matchResults[matchId].cards.filter(c => String(c.athleteId) !== athleteId);
-                    // ✅ Aggiunto filtro anche per assist
-                    matchResults[matchId].assists = matchResults[matchId].assists.filter(a => String(a.athleteId) !== athleteId);
                 });
                 saveData();
                 updateAllUI();
@@ -1363,6 +1335,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 document.getElementById('award-checkbox').checked = !!(awards[date]?.find(a => a.athleteId.toString() === athleteId));
                 evaluationModal.show();
+            }
+        }
+    });
+    modalsContainer.addEventListener('change', (e) => {
+        if (e.target.id === 'athlete-avatar-input') {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    document.getElementById('athlete-avatar-base64').value = event.target.result;
+                    const preview = document.getElementById('avatar-preview');
+                    preview.src = event.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
             }
         }
     });
@@ -1636,94 +1623,98 @@ document.addEventListener('DOMContentLoaded', () => {
             alert(`Tutti i dati del giorno ${formattedDate} sono stati eliminati.`);
         }
     });
-    document.getElementById('delete-single-athlete-day-btn').addEventListener('click', () => {
-        const athleteId = document.getElementById('modal-athlete-id-eval').value;
-        const date = elements.evaluationDatePicker.value;
-        const athlete = athletes.find(a => a.id.toString() === athleteId);
-        if (!athleteId || !date || !athlete) {
-            alert("Errore: Impossibile trovare i dati necessari per l'eliminazione.");
-            return;
-        }
-        const formattedDate = new Date(date).toLocaleDateString('it-IT');
-        if (confirm(`Sei sicuro di voler eliminare tutti i dati di ${athlete.name} per il giorno ${formattedDate}?`)) {
-            if (evaluations[date] && evaluations[date][athleteId]) {
-                delete evaluations[date][athleteId];
+    modalsContainer.addEventListener('click', (e) => {
+        if (e.target.id === 'delete-single-athlete-day-btn') {
+            const athleteId = document.getElementById('modal-athlete-id-eval').value;
+            const date = elements.evaluationDatePicker.value;
+            const athlete = athletes.find(a => a.id.toString() === athleteId);
+            if (!athleteId || !date || !athlete) {
+                alert("Errore: Impossibile trovare i dati necessari per l'eliminazione.");
+                return;
             }
-            if (gpsData[athleteId] && gpsData[athleteId][date]) {
-                delete gpsData[athleteId][date];
-            }
-            if (awards[date]) {
-                awards[date] = awards[date].filter(a => a.athleteId.toString() !== athleteId.toString());
-                if (awards[date].length === 0) {
-                    delete awards[date];
+            const formattedDate = new Date(date).toLocaleDateString('it-IT');
+            if (confirm(`Sei sicuro di voler eliminare tutti i dati di ${athlete.name} per il giorno ${formattedDate}?`)) {
+                if (evaluations[date] && evaluations[date][athleteId]) {
+                    delete evaluations[date][athleteId];
                 }
+                if (gpsData[athleteId] && gpsData[athleteId][date]) {
+                    delete gpsData[athleteId][date];
+                }
+                if (awards[date]) {
+                    awards[date] = awards[date].filter(a => a.athleteId.toString() !== athleteId.toString());
+                    if (awards[date].length === 0) {
+                        delete awards[date];
+                    }
+                }
+                saveData().then(() => {
+                    evaluationModal.hide();
+                    updateAllUI();
+                    alert(`Dati di ${athlete.name} per il giorno ${formattedDate} eliminati.`);
+                });
             }
-            saveData().then(() => {
-                evaluationModal.hide();
-                updateAllUI();
-                alert(`Dati di ${athlete.name} per il giorno ${formattedDate} eliminati.`);
-            });
         }
     });
-    document.getElementById('gps-session-selector').addEventListener('change', (e) => {
-        const athleteId = document.getElementById('modal-athlete-id-gps').value;
-        const sessionId = e.target.value;
-        const form = document.getElementById('gps-form');
-        const populateGpsForm = (data) => {
-            form.reset();
-            document.getElementById('gps-session-id').value = data ? data.id : '';
-            document.getElementById('match-stats-fields').style.display = 'none';
-            document.getElementById('gps-data_di_registrazione').value = data ? data.data_di_registrazione : new Date().toISOString().split('T')[0];
-            if(data){
-                allGpsFields.forEach(field => {
-                    if (field === 'id') return;
-                    const el = form.querySelector(`#gps-${field}`);
-                    if (el && data[field] !== undefined) {
-                        el.value = data[field];
-                    }
-                });
-                if (data.tipo_sessione === 'Partita') {
-                    document.getElementById('match-stats-fields').style.display = 'block';
-                }
-                const totalSec = data.tempo_circuito_totale_s || 0;
-                form.querySelector('#gps-tempo_circuito_min').value = totalSec > 0 ? Math.floor(totalSec / 60) : '';
-                form.querySelector('#gps-tempo_circuito_sec').value = totalSec > 0 ? Math.floor(totalSec % 60) : '';
-                form.querySelector('#gps-tempo_circuito_cen').value = totalSec > 0 ? Math.round((totalSec - Math.floor(totalSec)) * 100) : '';
-            } else {
-                form.querySelector('#gps-data_di_registrazione').valueAsDate = new Date();
-            }
-        };
-        const session = findSessionById(sessionId);
-        if (session) {
-            const processAndPopulate = () => {
-                let deleteBtn = document.getElementById('delete-gps-session-btn');
-                deleteBtn.disabled = false;
-                const newDeleteBtn = deleteBtn.cloneNode(true);
-                deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
-                populateGpsForm(session);
-                newDeleteBtn.addEventListener('click', () => {
-                    if (confirm(`Sei sicuro di voler eliminare questa sessione?`)) {
-                        if(gpsData[athleteId][session.date]){
-                            gpsData[athleteId][session.date] = gpsData[athleteId][session.date].filter(s => String(s.id) !== String(sessionId));
-                            if(gpsData[athleteId][session.date].length === 0){
-                                delete gpsData[athleteId][session.date];
-                            }
+    modalsContainer.addEventListener('change', (e) => {
+        if (e.target.id === 'gps-session-selector') {
+            const athleteId = document.getElementById('modal-athlete-id-gps').value;
+            const sessionId = e.target.value;
+            const form = document.getElementById('gps-form');
+            const populateGpsForm = (data) => {
+                form.reset();
+                document.getElementById('gps-session-id').value = data ? data.id : '';
+                document.getElementById('match-stats-fields').style.display = 'none';
+                document.getElementById('gps-data_di_registrazione').value = data ? data.data_di_registrazione : new Date().toISOString().split('T')[0];
+                if(data){
+                    allGpsFields.forEach(field => {
+                        if (field === 'id') return;
+                        const el = form.querySelector(`#gps-${field}`);
+                        if (el && data[field] !== undefined) {
+                            el.value = data[field];
                         }
-                        saveData().then(() => {
-                            gpsModal.hide();
-                            updateAllUI();
-                        });
+                    });
+                    if (data.tipo_sessione === 'Partita') {
+                        document.getElementById('match-stats-fields').style.display = 'block';
                     }
-                });
+                    const totalSec = data.tempo_circuito_totale_s || 0;
+                    form.querySelector('#gps-tempo_circuito_min').value = totalSec > 0 ? Math.floor(totalSec / 60) : '';
+                    form.querySelector('#gps-tempo_circuito_sec').value = totalSec > 0 ? Math.floor(totalSec % 60) : '';
+                    form.querySelector('#gps-tempo_circuito_cen').value = totalSec > 0 ? Math.round((totalSec - Math.floor(totalSec)) * 100) : '';
+                } else {
+                    form.querySelector('#gps-data_di_registrazione').valueAsDate = new Date();
+                }
             };
-            if (session.tipo_sessione === 'Individual' && !isAuthenticated()) {
-                requestAuthentication(processAndPopulate, () => e.target.value = '');
+            const session = findSessionById(sessionId);
+            if (session) {
+                const processAndPopulate = () => {
+                    let deleteBtn = document.getElementById('delete-gps-session-btn');
+                    deleteBtn.disabled = false;
+                    const newDeleteBtn = deleteBtn.cloneNode(true);
+                    deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
+                    populateGpsForm(session);
+                    newDeleteBtn.addEventListener('click', () => {
+                        if (confirm(`Sei sicuro di voler eliminare questa sessione?`)) {
+                            if(gpsData[athleteId][session.date]){
+                                gpsData[athleteId][session.date] = gpsData[athleteId][session.date].filter(s => String(s.id) !== String(sessionId));
+                                if(gpsData[athleteId][session.date].length === 0){
+                                    delete gpsData[athleteId][session.date];
+                                }
+                            }
+                            saveData().then(() => {
+                                gpsModal.hide();
+                                updateAllUI();
+                            });
+                        }
+                    });
+                };
+                if (session.tipo_sessione === 'Individual' && !isAuthenticated()) {
+                    requestAuthentication(processAndPopulate, () => e.target.value = '');
+                } else {
+                    processAndPopulate();
+                }
             } else {
-                processAndPopulate();
+                populateGpsForm(null);
+                document.getElementById('delete-gps-session-btn').disabled = true;
             }
-        } else {
-            populateGpsForm(null);
-            document.getElementById('delete-gps-session-btn').disabled = true;
         }
     });
     elements.importFileInput.addEventListener('change', (e) => {
@@ -1742,18 +1733,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         trainingSessions = importedData.trainingSessions || {};
                         formationData = importedData.formationData || { starters: [], bench: [], tokens: [] };
                         matchResults = importedData.matchResults || {};
+
                         // ✅ MODIFICA: Assicurarsi che tutti gli atleti importati abbiano la proprietà `isViceCaptain`
                         athletes.forEach(athlete => {
                             if (athlete.isViceCaptain === undefined) {
                                 athlete.isViceCaptain = false;
                             }
                         });
-                        // ✅ MODIFICA: Assicurarsi che tutte le partite importate abbiano l'array `assists`
-                        Object.values(matchResults).forEach(match => {
-                            if (!match.assists) {
-                                match.assists = [];
-                            }
-                        });
+
                         migrateGpsData();
                         saveData().then(() => {
                             updateAllUI();
@@ -1978,7 +1965,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const openMatchResultModal = (matchId = null) => {
         elements.matchResultForm.reset();
         document.getElementById('scorers-container').innerHTML = '';
-        document.getElementById('assists-container').innerHTML = ''; // ✅ Pulito container assist
         document.getElementById('cards-container').innerHTML = '';
         if (matchId && matchResults[matchId]) {
             const match = matchResults[matchId];
@@ -1993,8 +1979,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('match-opponent-score').value = match.location === 'home' ? match.awayScore : match.homeScore;
             elements.deleteMatchBtn.style.display = 'block';
             match.scorers.forEach(addScorerInput);
-            // ✅ Aggiunto loop per assist
-            match.assists.forEach(addAssistInput);
             match.cards.forEach(addCardInput);
         } else {
             document.getElementById('matchResultModalLabel').textContent = "Inserisci Risultato Partita";
@@ -2013,27 +1997,17 @@ document.addEventListener('DOMContentLoaded', () => {
         div.innerHTML = `<select class="form-select form-select-sm scorer-athlete" required><option value="">Seleziona atleta...</option>${athletes.map(a => `<option value="${a.id}" ${scorer.athleteId == a.id ? 'selected' : ''}>${a.name}</option>`).join('')}</select><input type="number" class="form-control form-control-sm scorer-minute" placeholder="Min" min="1" style="width: 80px;" value="${scorer.minute || ''}" required><button type="button" class="btn btn-sm btn-outline-danger remove-row-btn"><i class="bi bi-trash"></i></button>`;
         container.appendChild(div);
     };
-    // ✅ Nuova funzione per aggiungere assist
-    const addAssistInput = (assist = {}) => {
-        const container = document.getElementById('assists-container');
-        const div = document.createElement('div');
-        div.className = 'd-flex gap-2 align-items-center';
-        div.innerHTML = `<select class="form-select form-select-sm assist-athlete" required><option value="">Seleziona atleta...</option>${athletes.map(a => `<option value="${a.id}" ${assist.athleteId == a.id ? 'selected' : ''}>${a.name}</option>`).join('')}</select><input type="number" class="form-control form-control-sm assist-minute" placeholder="Min" min="1" style="width: 80px;" value="${assist.minute || ''}" required><button type="button" class="btn btn-sm btn-outline-danger remove-row-btn"><i class="bi bi-trash"></i></button>`;
-        container.appendChild(div);
-    };
     const addCardInput = (card = {}) => {
         const container = document.getElementById('cards-container');
         const div = document.createElement('div');
         div.className = 'd-flex gap-2 align-items-center';
-        div.innerHTML = `<select class="form-select form-select-sm card-athlete" required><option value="">Seleziona atleta...</option>${athletes.map(a => `<option value="${a.id}" ${card.athleteId == a.id ? 'selected' : ''}>${a.name}</option>`).join('')}</select><select class="form-select form-select-sm card-type" style="width: 120px;" required><option value="yellow" ${card.type === 'yellow' ? 'selected' : ''}>Giallo</option><select class="form-select form-select-sm card-type" style="width: 120px;" required><option value="red" ${card.type === 'red' ? 'selected' : ''}>Rosso</option></select><input type="number" class="form-control form-control-sm card-minute" placeholder="Min" min="1" style="width: 80px;" value="${card.minute || ''}" required><button type="button" class="btn btn-sm btn-outline-danger remove-row-btn"><i class="bi bi-trash"></i></button>`;
+        div.innerHTML = `<select class="form-select form-select-sm card-athlete" required><option value="">Seleziona atleta...</option>${athletes.map(a => `<option value="${a.id}" ${card.athleteId == a.id ? 'selected' : ''}>${a.name}</option>`).join('')}</select><select class="form-select form-select-sm card-type" style="width: 120px;" required><option value="yellow" ${card.type === 'yellow' ? 'selected' : ''}>Giallo</option><option value="red" ${card.type === 'red' ? 'selected' : ''}>Rosso</option></select><input type="number" class="form-control form-control-sm card-minute" placeholder="Min" min="1" style="width: 80px;" value="${card.minute || ''}" required><button type="button" class="btn btn-sm btn-outline-danger remove-row-btn"><i class="bi bi-trash"></i></button>`;
         container.appendChild(div);
     };
     elements.addMatchBtn.addEventListener('click', () => openMatchResultModal());
     document.getElementById('add-scorer-btn').addEventListener('click', () => addScorerInput());
-    // ✅ Aggiunto evento click per bottone assist
-    document.getElementById('add-assist-btn').addEventListener('click', () => addAssistInput());
     document.getElementById('add-card-btn').addEventListener('click', () => addCardInput());
-    document.getElementById('modals-container').addEventListener('click', e => {
+    modalsContainer.addEventListener('click', e => {
         if (e.target.closest('.remove-row-btn')) {
             e.target.closest('.d-flex').remove();
         }
@@ -2057,21 +2031,12 @@ document.addEventListener('DOMContentLoaded', () => {
             homeScore: location === 'home' ? myTeamScore : opponentScore,
             awayScore: location === 'away' ? myTeamScore : opponentScore,
             scorers: [],
-            // ✅ Aggiunto array assist
-            assists: [],
             cards: []
         };
         document.querySelectorAll('#scorers-container .d-flex').forEach(row => {
             matchData.scorers.push({
                 athleteId: row.querySelector('.scorer-athlete').value,
                 minute: row.querySelector('.scorer-minute').value
-            });
-        });
-        // ✅ Aggiunto loop per assist
-        document.querySelectorAll('#assists-container .d-flex').forEach(row => {
-            matchData.assists.push({
-                athleteId: row.querySelector('.assist-athlete').value,
-                minute: row.querySelector('.assist-minute').value
             });
         });
         document.querySelectorAll('#cards-container .d-flex').forEach(row => {
@@ -2109,7 +2074,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await loadData();
             const newDataSnapshot = JSON.stringify({ athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults });
             if (currentDataSnapshot !== newDataSnapshot) {
-                console.log("Dati aggiornati dal server. Ricarco l'interfaccia.");
+                console.log("Dati aggiornati dal server. Ricarico l'interfaccia.");
                 updateAllUI();
             }
         }, 5000);
