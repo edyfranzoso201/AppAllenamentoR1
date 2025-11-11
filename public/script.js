@@ -70,6 +70,8 @@ document.addEventListener('DOMContentLoaded', () => {
         matchOpponentFilter: document.getElementById('match-opponent-filter'),
         matchPeriodToggle: document.getElementById('match-period-toggle'),
         topScorersContainer: document.getElementById('top-scorers-container'),
+        // ✅ Aggiunto elemento per la classifica assist
+        topAssistsContainer: document.getElementById('top-assists-container'),
         passwordForm: document.getElementById('password-form'),
         passwordError: document.getElementById('password-error'),
         alertsContainer: document.getElementById('alerts-container'),
@@ -118,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const gpsFieldsForDisplay = { 'tipo_sessione':'Tipo', 'data_di_registrazione': 'Data', 'ora_registrazione': 'Ora', 'distanza_totale': 'Dist. Totale (m)', 'tempo_totale': 'Tempo (min)', 'distanza_per_minuto':'Dist/min (m)', 'distanza_sprint': 'Distanza Sprint (m)', 'velocita_massima': 'Vel. Max (km/h)', 'numero_di_sprint': 'Num. Sprint', 'max_acc': 'Max Acc (g)o(n°)', 'max_dec': 'Max Dec (g)o(n°)', 'passaggi_piede_sinistro':'Passaggi SX', 'passaggi_piede_destro':'Passaggi DX', 'cross_piede_sinistro':'Cross SX', 'cross_piede_destro':'Cross DX', 'potenza_massima_di_tiro':'Pot. Tiro (km/h)', 'tiri_piede_sx': 'Tiri Piede SX', 'tiri_piede_dx': 'Tiri Piede DX', 'perc_passaggi_brevi': '% Passaggi Brevi', 'perc_lanci': '% Lanci', 'distanza_circuito': 'Dist. Circuito (m)', 'tempo_circuito_totale_s': 'Tempo Circuito (s)', 'velocita_circuito': 'Vel. Circuito (km/h)', 'minuti_giocati': 'Minuti Giocati', 'gol': 'Gol', 'assist': 'Assist', 'ammonizioni': 'Gialli', 'espulsioni': 'Rossi', 'palle_recuperate': 'Palle Recuperate', 'palle_perse': 'Palle Perse', 'note': 'Note' };
     const radarMetrics = { 'distanza_sprint': 'Distanza Sprint', 'velocita_massima': 'Vel. Max', 'max_acc': 'Max Acc', 'max_dec': 'Max Dec', 'passaggi_piede_sinistro': 'Pass. SX', 'passaggi_piede_destro': 'Pass. DX', 'cross_piede_sinistro': 'Cross SX', 'cross_piede_destro': 'Cross DX', 'potenza_massima_di_tiro': 'Pot. Tiro', 'distanza_per_minuto': 'Dist/min', 'tiri_piede_sx': 'Tiri SX', 'tiri_piede_dx': 'Tiri DX', 'perc_passaggi_brevi': '% Pass. Brevi', 'perc_lanci': '% Lanci', 'velocita_circuito': 'Vel. Circuito' };
     const evaluationCategories = ['presenza-allenamento', 'serieta-allenamento', 'abbigliamento-allenamento', 'abbigliamento-partita', 'comunicazioni', 'doccia'];
-    const defaultAvatar = "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3e%3cpath fill='%231e5095' d='M128 128H0V0h128v128z'/%3e%3cpath fill='%23ffffff' d='M64 100c-19.88 0-36-16.12-36-36s16.12-36 36-36 36 16.12 36 36-16.12 36-36 36zm0-64c-15.46 0-28 12.54-28 28s12.54 28 28 28 28-12.54 28-28-12.54-28-28-28z'/%3e%3cpath fill='%23ffffff' d='M64 24a40.01 40.01 0 00-28.28 11.72C35.8 35.8 28 45.45 28 56h8c0-8.27 5.61-15.64 13.53-18.89A31.93 31.93 0 0164 32a32.09 32.09 0 0124.47 11.11C96.39 40.36 102 47.73 102 56h8c0-10.55-7.8-20.2-17.72-24.28A39.99 39.99 0 0064 24z'/%3e%3c/svg%3e";
+    const defaultAvatar = "image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3e%3cpath fill='%231e5095' d='M128 128H0V0h128v128z'/%3e%3cpath fill='%23ffffff' d='M64 100c-19.88 0-36-16.12-36-36s16.12-36 36-36 36 16.12 36 36-16.12 36-36 36zm0-64c-15.46 0-28 12.54-28 28s12.54 28 28 28 28-12.54 28-28-12.54-28-28-28z'/%3e%3cpath fill='%23ffffff' d='M64 24a40.01 40.01 0 00-28.28 11.72C35.8 35.8 28 45.45 28 56h8c0-8.27 5.61-15.64 13.53-18.89A31.93 31.93 0 0164 32a32.09 32.09 0 0124.47 11.11C96.39 40.36 102 47.73 102 56h8c0-10.55-7.8-20.2-17.72-24.28A39.99 39.99 0 0064 24z'/%3e%3c/svg%3e";
     // ✅ MODIFICA: Aggiunto `isViceCaptain` ai dati atleta
     let athletes = [], evaluations = {}, gpsData = {}, awards = {}, trainingSessions = {}, matchResults = {};
     let formationData = { starters: [], bench: [], tokens: [] };
@@ -219,6 +221,8 @@ document.addEventListener('DOMContentLoaded', () => {
         renderMatchResults();
         renderCardsSummary();
         renderTopScorers();
+        // ✅ Aggiunto aggiornamento classifica assist
+        renderTopAssists();
         updateMatchAnalysisChart();
         updateEvaluationCharts();
         updateAttendanceChart();
@@ -491,6 +495,29 @@ document.addEventListener('DOMContentLoaded', () => {
         ol += '</ol>';
         elements.topScorersContainer.innerHTML = ol;
     };
+    // ✅ Nuova funzione per renderizzare la classifica assist
+    const renderTopAssists = () => {
+        const assistCounts = {};
+        Object.values(matchResults).forEach(match => {
+            match.assists.forEach(assist => {
+                assistCounts[assist.athleteId] = (assistCounts[assist.athleteId] || 0) + 1;
+            });
+        });
+        const sortedAssists = Object.entries(assistCounts).map(([athleteId, assists]) => {
+            const athlete = athletes.find(a => String(a.id) === athleteId);
+            return { name: athlete ? athlete.name : 'Sconosciuto', assists };
+        }).sort((a, b) => b.assists - a.assists);
+        if (sortedAssists.length === 0) {
+            elements.topAssistsContainer.innerHTML = '<p class="text-muted">Nessun assist registrato.</p>';
+            return;
+        }
+        let ol = '<ol class="list-group list-group-numbered">';
+        sortedAssists.forEach(assist => {
+            ol += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; border-color: var(--border-color);">${assist.name}<span class="badge bg-success rounded-pill">${assist.assists}</span></li>`; // Usato bg-success per differenziare
+        });
+        ol += '</ol>';
+        elements.topAssistsContainer.innerHTML = ol;
+    };
     const updateMatchAnalysisChart = () => {
         const opponentFilter = elements.matchOpponentFilter.value;
         const period = elements.matchPeriodToggle.querySelector('.active').dataset.period;
@@ -502,8 +529,8 @@ document.addEventListener('DOMContentLoaded', () => {
             labels = filteredMatches.map(m => new Date(m.date).toLocaleDateString('it-IT', {day:'2-digit', month:'short'}));
             datasets = [
                 { label: 'Vittorie', data: [], backgroundColor: '#d90429' },
-                { label: 'Pareggi', data: [], backgroundColor: '#1e5095' },
-                { label: 'Sconfitte', data: [], backgroundColor: '#6c757d' },
+                { label: 'Pareggi',  [], backgroundColor: '#1e5095' },
+                { label: 'Sconfitte',  [], backgroundColor: '#6c757d' },
             ];
             filteredMatches.forEach(match => {
                 const myScore = match.location === 'home' ? match.homeScore : match.awayScore;
@@ -537,15 +564,15 @@ document.addEventListener('DOMContentLoaded', () => {
             labels = Object.keys(resultsByPeriod).sort();
             datasets = [
                 { label: 'Vittorie', data: labels.map(l => resultsByPeriod[l].W), backgroundColor: '#d90429' },
-                { label: 'Pareggi', data: labels.map(l => resultsByPeriod[l].D), backgroundColor: '#1e5095' },
-                { label: 'Sconfitte', data: labels.map(l => resultsByPeriod[l].L), backgroundColor: '#6c757d' },
+                { label: 'Pareggi',  labels.map(l => resultsByPeriod[l].D), backgroundColor: '#1e5095' },
+                { label: 'Sconfitte',  labels.map(l => resultsByPeriod[l].L), backgroundColor: '#6c757d' },
             ];
         }
         const data = { labels, datasets };
         if (chartInstances.matchResults) chartInstances.matchResults.destroy();
         chartInstances.matchResults = new Chart(document.getElementById('matchResultsChart').getContext('2d'), {
             type: 'bar',
-            data: data,
+             data,
             options: {
                 scales: {
                     x: { stacked: true, ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.2)' } },
@@ -647,7 +674,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(chartInstances.monthlyComparison) chartInstances.monthlyComparison.destroy();
         chartInstances.monthlyComparison = new Chart(document.getElementById('monthlyComparisonChart').getContext('2d'), {
             type: 'bar',
-            data: {
+             {
                 labels: scoresToShow.map(a=>a.name),
                 datasets: [{
                     label: 'Punteggio Totale',
@@ -724,11 +751,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if(chartInstances.attendance) chartInstances.attendance.destroy();
         chartInstances.attendance = new Chart(document.getElementById('attendanceChart').getContext('2d'), {
             type: 'bar',
-            data: {
+             {
                 labels: sortedAttendance.map(a => a.name),
                 datasets: [{
                     label: 'Presenze',
-                    data: sortedAttendance.map(a => a.count),
+                     sortedAttendance.map(a => a.count),
                     backgroundColor: 'rgba(217, 4, 41, 0.8)'
                 }]
             },
@@ -847,7 +874,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (chartInstances.performance) chartInstances.performance.destroy();
         chartInstances.performance = new Chart(document.getElementById('performanceChart').getContext('2d'), {
             type: 'bar',
-            data: chartData,
+             chartData,
             options: {
                 scales: {
                     y: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.2)' } },
@@ -927,8 +954,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         const datasets = [
-            { label: gpsFieldsForDisplay[metric] || metric, data: athleteValues, borderColor: 'rgba(217, 4, 41, 1)', backgroundColor: 'rgba(217, 4, 41, 0.2)', tension: 0.3, fill: true },
-            { label: 'Media Squadra', data: teamAvgValues, borderColor: 'rgba(54, 162, 235, 1)', borderDash: [5, 5], fill: false, tension: 0.3 },
+            { label: gpsFieldsForDisplay[metric] || metric,  athleteValues, borderColor: 'rgba(217, 4, 41, 1)', backgroundColor: 'rgba(217, 4, 41, 0.2)', tension: 0.3, fill: true },
+            { label: 'Media Squadra',  teamAvgValues, borderColor: 'rgba(54, 162, 235, 1)', borderDash: [5, 5], fill: false, tension: 0.3 },
             { label: 'Max Squadra', data: teamMaxValues, borderColor: 'rgba(255, 206, 86, 1)', borderDash: [5, 5], fill: false, tension: 0.3 }
         ];
         chartInstances.athleteTrend = new Chart(document.getElementById('athleteTrendChart').getContext('2d'), {
@@ -988,7 +1015,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const color = radarColors[index % radarColors.length];
             return {
                 label: athlete?.name || 'N/A',
-                data: normalizedData,
+                 normalizedData,
                 borderColor: color,
                 backgroundColor: color.replace('1)', '0.2)'),
                 pointBackgroundColor: color,
@@ -999,7 +1026,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         chartInstances.athleteRadar = new Chart(document.getElementById('athleteRadarChart').getContext('2d'), {
             type: 'radar',
-            data: { labels: Object.values(radarMetrics), datasets: datasets },
+             { labels: Object.values(radarMetrics), datasets: datasets },
             options: {
                 scales: {
                     r: {
@@ -1282,6 +1309,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 Object.keys(matchResults).forEach(matchId => {
                     matchResults[matchId].scorers = matchResults[matchId].scorers.filter(s => String(s.athleteId) !== athleteId);
                     matchResults[matchId].cards = matchResults[matchId].cards.filter(c => String(c.athleteId) !== athleteId);
+                    // ✅ Aggiunto filtro anche per assist
+                    matchResults[matchId].assists = matchResults[matchId].assists.filter(a => String(a.athleteId) !== athleteId);
                 });
                 saveData();
                 updateAllUI();
@@ -1935,6 +1964,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const openMatchResultModal = (matchId = null) => {
         elements.matchResultForm.reset();
         document.getElementById('scorers-container').innerHTML = '';
+        document.getElementById('assists-container').innerHTML = ''; // ✅ Pulito container assist
         document.getElementById('cards-container').innerHTML = '';
         if (matchId && matchResults[matchId]) {
             const match = matchResults[matchId];
@@ -1949,6 +1979,8 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('match-opponent-score').value = match.location === 'home' ? match.awayScore : match.homeScore;
             elements.deleteMatchBtn.style.display = 'block';
             match.scorers.forEach(addScorerInput);
+            // ✅ Aggiunto loop per assist
+            match.assists.forEach(addAssistInput);
             match.cards.forEach(addCardInput);
         } else {
             document.getElementById('matchResultModalLabel').textContent = "Inserisci Risultato Partita";
@@ -1967,15 +1999,25 @@ document.addEventListener('DOMContentLoaded', () => {
         div.innerHTML = `<select class="form-select form-select-sm scorer-athlete" required><option value="">Seleziona atleta...</option>${athletes.map(a => `<option value="${a.id}" ${scorer.athleteId == a.id ? 'selected' : ''}>${a.name}</option>`).join('')}</select><input type="number" class="form-control form-control-sm scorer-minute" placeholder="Min" min="1" style="width: 80px;" value="${scorer.minute || ''}" required><button type="button" class="btn btn-sm btn-outline-danger remove-row-btn"><i class="bi bi-trash"></i></button>`;
         container.appendChild(div);
     };
+    // ✅ Nuova funzione per aggiungere assist
+    const addAssistInput = (assist = {}) => {
+        const container = document.getElementById('assists-container');
+        const div = document.createElement('div');
+        div.className = 'd-flex gap-2 align-items-center';
+        div.innerHTML = `<select class="form-select form-select-sm assist-athlete" required><option value="">Seleziona atleta...</option>${athletes.map(a => `<option value="${a.id}" ${assist.athleteId == a.id ? 'selected' : ''}>${a.name}</option>`).join('')}</select><input type="number" class="form-control form-control-sm assist-minute" placeholder="Min" min="1" style="width: 80px;" value="${assist.minute || ''}" required><button type="button" class="btn btn-sm btn-outline-danger remove-row-btn"><i class="bi bi-trash"></i></button>`;
+        container.appendChild(div);
+    };
     const addCardInput = (card = {}) => {
         const container = document.getElementById('cards-container');
         const div = document.createElement('div');
         div.className = 'd-flex gap-2 align-items-center';
-        div.innerHTML = `<select class="form-select form-select-sm card-athlete" required><option value="">Seleziona atleta...</option>${athletes.map(a => `<option value="${a.id}" ${card.athleteId == a.id ? 'selected' : ''}>${a.name}</option>`).join('')}</select><select class="form-select form-select-sm card-type" style="width: 120px;" required><option value="yellow" ${card.type === 'yellow' ? 'selected' : ''}>Giallo</option><option value="red" ${card.type === 'red' ? 'selected' : ''}>Rosso</option></select><input type="number" class="form-control form-control-sm card-minute" placeholder="Min" min="1" style="width: 80px;" value="${card.minute || ''}" required><button type="button" class="btn btn-sm btn-outline-danger remove-row-btn"><i class="bi bi-trash"></i></button>`;
+        div.innerHTML = `<select class="form-select form-select-sm card-athlete" required><option value="">Seleziona atleta...</option>${athletes.map(a => `<option value="${a.id}" ${card.athleteId == a.id ? 'selected' : ''}>${a.name}</option>`).join('')}</select><select class="form-select form-select-sm card-type" style="width: 120px;" required><option value="yellow" ${card.type === 'yellow' ? 'selected' : ''}>Giallo</option><select class="form-select form-select-sm card-type" style="width: 120px;" required><option value="red" ${card.type === 'red' ? 'selected' : ''}>Rosso</option></select><input type="number" class="form-control form-control-sm card-minute" placeholder="Min" min="1" style="width: 80px;" value="${card.minute || ''}" required><button type="button" class="btn btn-sm btn-outline-danger remove-row-btn"><i class="bi bi-trash"></i></button>`;
         container.appendChild(div);
     };
     elements.addMatchBtn.addEventListener('click', () => openMatchResultModal());
     document.getElementById('add-scorer-btn').addEventListener('click', () => addScorerInput());
+    // ✅ Aggiunto evento click per bottone assist
+    document.getElementById('add-assist-btn').addEventListener('click', () => addAssistInput());
     document.getElementById('add-card-btn').addEventListener('click', () => addCardInput());
     document.getElementById('modals-container').addEventListener('click', e => {
         if (e.target.closest('.remove-row-btn')) {
@@ -2001,12 +2043,21 @@ document.addEventListener('DOMContentLoaded', () => {
             homeScore: location === 'home' ? myTeamScore : opponentScore,
             awayScore: location === 'away' ? myTeamScore : opponentScore,
             scorers: [],
+            // ✅ Aggiunto array assist
+            assists: [],
             cards: []
         };
         document.querySelectorAll('#scorers-container .d-flex').forEach(row => {
             matchData.scorers.push({
                 athleteId: row.querySelector('.scorer-athlete').value,
                 minute: row.querySelector('.scorer-minute').value
+            });
+        });
+        // ✅ Aggiunto loop per assist
+        document.querySelectorAll('#assists-container .d-flex').forEach(row => {
+            matchData.assists.push({
+                athleteId: row.querySelector('.assist-athlete').value,
+                minute: row.querySelector('.assist-minute').value
             });
         });
         document.querySelectorAll('#cards-container .d-flex').forEach(row => {
