@@ -178,7 +178,6 @@ Tiro', 'distanza_per_minuto': 'Dist/min', 'tiri_piede_sx': 'Tiri SX', 'tiri_pied
             }
         }
     };
-    // ✅ CORREZIONE CRITICA: Aggiunta logica di migrazione dopo il caricamento dei dati
     const loadData = async () => {
         try {
             const response = await fetch('/api/data', { cache: 'no-store' });
@@ -425,7 +424,7 @@ border-radius: 50%; font-size: 1.5em;';
                     const sessionEl = document.createElement('div');
                     sessionEl.className = 'calendar-session session-allenamento';
                     sessionEl.textContent 
- = session.title;
+= session.title;
                     sessionEl.dataset.sessionId = session.id;
                     sessionEl.dataset.date = dateString;
                     dayCell.appendChild(sessionEl);
@@ -498,7 +497,7 @@ border-radius: 50%; font-size: 1.5em;';
                 return athlete ? athlete.name.split(' ').pop() : '';
             }).filter(name => name).join(', ');
 
-            // ✅ MODIFICA: Estrai gli assistman
+            // ✅ AGGIUNTA: Estrai gli assistman
             const myTeamAssisters = (match.assists || []).map(a => {
                 const athlete = athletes.find(ath => String(ath.id) === String(a.athleteId));
                 return athlete ? athlete.name.split(' ').pop() : '';
@@ -532,8 +531,7 @@ border-radius: 50%; font-size: 1.5em;';
  ${awayTeamName} <strong class="match-score ms-2">${match.homeScore ?? ''} - ${match.awayScore ?? ''}</strong></div>
                         ${myTeamScorers ?
  `<div class="scorers-list"><i class="bi bi-futbol"></i> Marcatori: <strong style="color: var(--primary-red);">${myTeamScorers}</strong></div>` : ''}
-                        ${myTeamAssisters ? // ✅ AGGIUNTA
-                            `<div class="assists-list"><i class="bi bi-person-fill-up"></i> Assist: <strong style="color: var(--primary-red);">${myTeamAssisters}</strong></div>` : ''}
+                        ${myTeamAssisters ? `<div class="assists-list"><i class="bi bi-person-fill-up"></i> Assist: <strong style="color: var(--primary-red);">${myTeamAssisters}</strong></div>` : ''}
                     </div>
                 </div>`;
             colDiv.innerHTML = cardContent;
@@ -611,6 +609,8 @@ class="bi bi-x-lg"></i></button></td>`;
         });
         ol += '</ol>';
         elements.topScorersContainer.innerHTML = ol;
+        // Chiama il rendering degli assistman
+        renderTopAssisters(); 
     };
     const updateMatchAnalysisChart = () => {
         const opponentFilter = elements.matchOpponentFilter.value;
@@ -1726,7 +1726,7 @@ class="bi bi-x-lg"></i></button></td>`;
     elements.radarAthleteSelector2.addEventListener('change', updateAthleteRadarChart);
     elements.multiAthleteTimeFilter.addEventListener('click', e => {
         if(e.target.tagName === 'BUTTON'){
-            elements.multiAthleteTimeFilter.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            elements.multiAthleteTimeFilter.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
             e.target.classList.add('active');
             elements.multiAthleteDatepickerContainer.style.display = (e.target.dataset.period === 'day') ? 'block' : 'none';
             if(e.target.dataset.period === 'day'){
@@ -2267,7 +2267,7 @@ class="bi bi-x-lg"></i></button></td>`;
             e.target.closest('.d-flex').remove();
         }
     });
-    // ✅ MODIFICA: Salvataggio partita senza obbligo di punteggio, includendo gli assist
+    // ✅ MODIFICA: Salvataggio partita includendo gli assist
     elements.matchResultForm.addEventListener('submit', e => {
         e.preventDefault();
         const id = document.getElementById('match-id').value || Date.now();
