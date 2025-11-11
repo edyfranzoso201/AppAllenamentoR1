@@ -1938,6 +1938,38 @@ class="bi bi-x-lg"></i></button></td>`;
                         matchResults = importedData.matchResults ||
  {};
 
+                        // ✅ MODIFICA CRITICA: Assicurarsi che tutti gli atleti importati abbiano la proprietà `isViceCaptain`
+                        athletes.forEach(athlete => {
+                            if (athlete.isViceCaptain === undefined) {
+                             
+             athlete.isViceCaptain = false;
+                            }
+                        });
+                        
+                        // ✅ MODIFICA CRITICA: Assicurarsi che tutti i match importati abbiano la proprietà `assists` (se mancante)
+                        Object.values(matchResults).forEach(match => {
+                            if (!match.assists) {
+                                match.assists = [];
+                            }
+                        });
+
+                        migrateGpsData(); // Funzione che gestisce i dati GPS vecchi (presumo sia già corretta)
+                        saveData().then(() => {
+                            updateAllUI();
+                            alert('Dati importati con successo!');
+                        });
+                    } else {
+                        alert('Errore: Il file non sembra avere il formato corretto.');
+                    }
+                } catch (error) {
+                    alert(`Errore durante la lettura del file JSON: ${error.message}`);
+                }
+            }
+        };
+        reader.readAsText(file);
+        e.target.value = null;
+    });
+
                         // ✅ MODIFICA: Assicurarsi che tutti gli atleti importati abbiano la proprietà `isViceCaptain` E che i match abbiano `assists`
                         athletes.forEach(athlete => {
                             if (athlete.isViceCaptain === undefined) {
