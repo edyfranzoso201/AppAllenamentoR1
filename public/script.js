@@ -606,7 +606,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (chartInstances.matchResults) chartInstances.matchResults.destroy();
         chartInstances.matchResults = new Chart(document.getElementById('matchResultsChart').getContext('2d'), {
             type: 'bar',
-            data: data,
+             data,
             options: {
                 scales: {
                     x: { stacked: true, ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.2)' } },
@@ -639,7 +639,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(chartInstances.dailyTeam) chartInstances.dailyTeam.destroy();
         chartInstances.dailyTeam = new Chart(document.getElementById('dailyTeamChart').getContext('2d'), {
             type: 'line',
-            data: {
+             {
                 labels: last7Days.map(d => new Date(d).toLocaleDateString('it-IT', {day:'2-digit', month:'short'})),
                 datasets: [{
                     label: 'Punteggio Medio',
@@ -708,7 +708,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(chartInstances.monthlyComparison) chartInstances.monthlyComparison.destroy();
         chartInstances.monthlyComparison = new Chart(document.getElementById('monthlyComparisonChart').getContext('2d'), {
             type: 'bar',
-            data: {
+             {
                 labels: scoresToShow.map(a=>a.name),
                 datasets: [{
                     label: 'Punteggio Totale',
@@ -785,11 +785,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if(chartInstances.attendance) chartInstances.attendance.destroy();
         chartInstances.attendance = new Chart(document.getElementById('attendanceChart').getContext('2d'), {
             type: 'bar',
-            data: {
+             {
                 labels: sortedAttendance.map(a => a.name),
                 datasets: [{
                     label: 'Presenze',
-                    data: sortedAttendance.map(a => a.count),
+                     sortedAttendance.map(a => a.count),
                     backgroundColor: 'rgba(217, 4, 41, 0.8)'
                 }]
             },
@@ -898,7 +898,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }),
             datasets: [{
                 label: gpsFieldsForDisplay[selectedMetric] || selectedMetric,
-                data: validSelections.map(selection => {
+                 validSelections.map(selection => {
                     const session = findSessionById(selection.sessionId);
                     return session ? (session[selectedMetric] || 0) : 0;
                 }),
@@ -908,7 +908,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (chartInstances.performance) chartInstances.performance.destroy();
         chartInstances.performance = new Chart(document.getElementById('performanceChart').getContext('2d'), {
             type: 'bar',
-            data: chartData,
+             chartData,
             options: {
                 scales: {
                     y: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.2)' } },
@@ -1117,7 +1117,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(chartInstances.multiAthlete) chartInstances.multiAthlete.destroy();
         chartInstances.multiAthlete = new Chart(document.getElementById('multiAthleteChart').getContext('2d'), {
             type: 'bar',
-            data: {
+             {
                 labels: chartData.map(d => d.name),
                 datasets: [{
                     label: gpsFieldsForDisplay[metric],
@@ -2149,7 +2149,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await loadData();
             const newDataSnapshot = JSON.stringify({ athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults });
             if (currentDataSnapshot !== newDataSnapshot) {
-                console.log("Dati aggiornati dal server. Ricarico l'interfaccia.");
+                console.log("Dati aggiornati dal server. Ricarco l'interfaccia.");
                 updateAllUI();
             }
         }, 5000);
