@@ -178,6 +178,7 @@ Tiro', 'distanza_per_minuto': 'Dist/min', 'tiri_piede_sx': 'Tiri SX', 'tiri_pied
             }
         }
     };
+    // ✅ CORREZIONE CRITICA: Aggiunta logica di migrazione dopo il caricamento dei dati
     const loadData = async () => {
         try {
             const response = await fetch('/api/data', { cache: 'no-store' });
@@ -186,25 +187,35 @@ Tiro', 'distanza_per_minuto': 'Dist/min', 'tiri_piede_sx': 'Tiri SX', 'tiri_pied
             athletes = allData.athletes || [];
             evaluations = allData.evaluations || {};
             gpsData = allData.gpsData || {};
+            
+            // 1. Migra la struttura GPS (da oggetto a array)
             migrateGpsData();
+            
             awards = allData.awards || {};
             trainingSessions = allData.trainingSessions ||
  {};
             formationData = allData.formationData || { starters: [], bench: [], tokens: [] };
             matchResults = allData.matchResults || {};
-            // ✅ MODIFICA: Assicurarsi che tutti gli atleti abbiano la proprietà `isViceCaptain` E che i match abbiano `assists`
+            
+            // 2. Inizializza i campi mancanti nei dati storici:
+            
+            // A. Inizializza isViceCaptain
             athletes.forEach(athlete => {
                 if (athlete.isViceCaptain === undefined) {
                     athlete.isViceCaptain = false;
                 }
             });
+            
+            // B. Inizializza assists in matchResults
             Object.values(matchResults).forEach(match => {
                  if (!match.assists) {
                     match.assists = [];
                 }
             });
+            
         } catch (error) {
             console.error('Errore nel caricamento dei dati dal server:', error);
+            // In caso di errore nel caricamento, inizializza con dati vuoti
             athletes = []; evaluations = {}; gpsData = {}; awards = {}; trainingSessions = {};
             formationData = { starters: [], bench: [], tokens: [] }; matchResults = {};
         }
@@ -1938,7 +1949,7 @@ class="bi bi-x-lg"></i></button></td>`;
                         matchResults = importedData.matchResults ||
  {};
 
-                        // ✅ MODIFICA CRITICA: Assicurarsi che tutti gli atleti importati abbiano la proprietà `isViceCaptain`
+                        // ✅ MODIFICA: Assicurarsi che tutti gli atleti importati abbiano la proprietà `isViceCaptain`
                         athletes.forEach(athlete => {
                             if (athlete.isViceCaptain === undefined) {
                              
@@ -1946,7 +1957,7 @@ class="bi bi-x-lg"></i></button></td>`;
                             }
                         });
                         
-                        // ✅ MODIFICA CRITICA: Assicurarsi che tutti i match importati abbiano la proprietà `assists` (se mancante)
+                        // ✅ MODIFICA: Assicurarsi che tutti i match importati abbiano la proprietà `assists` (se mancante)
                         Object.values(matchResults).forEach(match => {
                             if (!match.assists) {
                                 match.assists = [];
@@ -1954,36 +1965,6 @@ class="bi bi-x-lg"></i></button></td>`;
                         });
 
                         migrateGpsData(); // Funzione che gestisce i dati GPS vecchi (presumo sia già corretta)
-                        saveData().then(() => {
-                            updateAllUI();
-                            alert('Dati importati con successo!');
-                        });
-                    } else {
-                        alert('Errore: Il file non sembra avere il formato corretto.');
-                    }
-                } catch (error) {
-                    alert(`Errore durante la lettura del file JSON: ${error.message}`);
-                }
-            }
-        };
-        reader.readAsText(file);
-        e.target.value = null;
-    });
-
-                        // ✅ MODIFICA: Assicurarsi che tutti gli atleti importati abbiano la proprietà `isViceCaptain` E che i match abbiano `assists`
-                        athletes.forEach(athlete => {
-                            if (athlete.isViceCaptain === undefined) {
-                             
-             athlete.isViceCaptain = false;
-                            }
-                        });
-                        Object.values(matchResults).forEach(match => {
-                            if (!match.assists) {
-                                match.assists = [];
-                            }
-                        });
-
-                        migrateGpsData();
                         saveData().then(() => {
                             updateAllUI();
                             alert('Dati importati con successo!');
