@@ -169,6 +169,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     athlete.isViceCaptain = false;
                 }
             });
+            // ✅ MODIFICA: Assicurarsi che tutte le partite abbiano l'array `assists`
+            Object.values(matchResults).forEach(match => {
+                if (!match.assists) {
+                    match.assists = [];
+                }
+            });
         } catch (error) {
             console.error('Errore nel caricamento dei dati dal server:', error);
             athletes = []; evaluations = {}; gpsData = {}; awards = {}; trainingSessions = {}; formationData = { starters: [], bench: [], tokens: [] }; matchResults = {};
@@ -499,7 +505,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderTopAssists = () => {
         const assistCounts = {};
         Object.values(matchResults).forEach(match => {
-            match.assists.forEach(assist => {
+            // Assicurati che `match.assists` esista come array
+            const matchAssists = Array.isArray(match.assists) ? match.assists : [];
+            matchAssists.forEach(assist => {
                 assistCounts[assist.athleteId] = (assistCounts[assist.athleteId] || 0) + 1;
             });
         });
@@ -605,7 +613,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(chartInstances.dailyTeam) chartInstances.dailyTeam.destroy();
         chartInstances.dailyTeam = new Chart(document.getElementById('dailyTeamChart').getContext('2d'), {
             type: 'line',
-            data: {
+             {
                 labels: last7Days.map(d => new Date(d).toLocaleDateString('it-IT', {day:'2-digit', month:'short'})),
                 datasets: [{
                     label: 'Punteggio Medio',
@@ -960,7 +968,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ];
         chartInstances.athleteTrend = new Chart(document.getElementById('athleteTrendChart').getContext('2d'), {
             type: 'line',
-            data: { labels, datasets },
+             { labels, datasets },
             options: {
                 scales: {
                     y: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.2)' } },
@@ -1740,6 +1748,12 @@ document.addEventListener('DOMContentLoaded', () => {
                                 athlete.isViceCaptain = false;
                             }
                         });
+                        // ✅ MODIFICA: Assicurarsi che tutte le partite importate abbiano l'array `assists`
+                        Object.values(matchResults).forEach(match => {
+                            if (!match.assists) {
+                                match.assists = [];
+                            }
+                        });
                         migrateGpsData();
                         saveData().then(() => {
                             updateAllUI();
@@ -2095,7 +2109,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await loadData();
             const newDataSnapshot = JSON.stringify({ athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults });
             if (currentDataSnapshot !== newDataSnapshot) {
-                console.log("Dati aggiornati dal server. Ricarico l'interfaccia.");
+                console.log("Dati aggiornati dal server. Ricarco l'interfaccia.");
                 updateAllUI();
             }
         }, 5000);
