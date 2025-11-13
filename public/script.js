@@ -271,7 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.availableList.innerHTML = '';
         const placedAthleteIds = new Set([...formationData.starters.map(p => String(p.athleteId)), ...formationData.bench.map(p => String(p.athleteId))]);
         const addExpiredIconIfNeeded = (athlete, jerseyElement) => {
-            const today = new Date(); today.setHours(0,0,0,0);
+            const today = new Date(); today.setHours(0, 0, 0, 0);
             const isExpired = athlete.scadenzaVisita && new Date(athlete.scadenzaVisita) < today;
             if (isExpired) {
                 const lockIcon = document.createElement('span'); lockIcon.innerHTML = '<i class="bi bi-lock-fill"></i>';
@@ -289,7 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         athletes.forEach(athlete => {
             if (!placedAthleteIds.has(String(athlete.id))) {
-                const today = new Date(); today.setHours(0,0,0,0); const isExpired = athlete.scadenzaVisita && new Date(athlete.scadenzaVisita) < today;
+                const today = new Date(); today.setHours(0, 0, 0, 0); const isExpired = athlete.scadenzaVisita && new Date(athlete.scadenzaVisita) < today;
                 const availablePlayer = document.createElement('div'); availablePlayer.className = 'list-group-item d-flex justify-content-between align-items-center available-player p-2'; availablePlayer.dataset.athleteId = athlete.id;
                 if (isExpired) { availablePlayer.classList.add('disabled'); availablePlayer.title = 'Visita medica scaduta. Atleta non schierabile.'; availablePlayer.innerHTML = `<span><strong>${athlete.number}.</strong> ${athlete.name}</span><span class="badge bg-danger"><i class="bi bi-lock-fill"></i></span>`; }
                 else { availablePlayer.innerHTML = `<span><strong>${athlete.number}.</strong> ${athlete.name}</span><span class="badge bg-secondary">${athlete.role.substring(0,3)}</span>`; }
@@ -571,16 +571,16 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             labels = Object.keys(resultsByPeriod).sort();
             datasets = [
-                { label: 'Vittorie',  labels.map(l => resultsByPeriod[l].W), backgroundColor: '#d90429' },
-                { label: 'Pareggi',  labels.map(l => resultsByPeriod[l].D), backgroundColor: '#1e5095' },
-                { label: 'Sconfitte',  labels.map(l => resultsByPeriod[l].L), backgroundColor: '#6c757d' },
+                { label: 'Vittorie', data: labels.map(l => resultsByPeriod[l].W), backgroundColor: '#d90429' },
+                { label: 'Pareggi', data: labels.map(l => resultsByPeriod[l].D), backgroundColor: '#1e5095' },
+                { label: 'Sconfitte', data: labels.map(l => resultsByPeriod[l].L), backgroundColor: '#6c757d' },
             ];
         }
         const data = { labels, datasets };
         if (chartInstances.matchResults) chartInstances.matchResults.destroy();
         chartInstances.matchResults = new Chart(document.getElementById('matchResultsChart').getContext('2d'), {
             type: 'bar',
-             data,
+            data: data,
             options: {
                 scales: {
                     x: { stacked: true, ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.2)' } },
@@ -682,7 +682,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(chartInstances.monthlyComparison) chartInstances.monthlyComparison.destroy();
         chartInstances.monthlyComparison = new Chart(document.getElementById('monthlyComparisonChart').getContext('2d'), {
             type: 'bar',
-             {
+            data: {
                 labels: scoresToShow.map(a=>a.name),
                 datasets: [{
                     label: 'Punteggio Totale',
@@ -759,11 +759,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if(chartInstances.attendance) chartInstances.attendance.destroy();
         chartInstances.attendance = new Chart(document.getElementById('attendanceChart').getContext('2d'), {
             type: 'bar',
-             {
+            data: {
                 labels: sortedAttendance.map(a => a.name),
                 datasets: [{
                     label: 'Presenze',
-                     sortedAttendance.map(a => a.count),
+                    data: sortedAttendance.map(a => a.count),
                     backgroundColor: 'rgba(217, 4, 41, 0.8)'
                 }]
             },
@@ -882,7 +882,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (chartInstances.performance) chartInstances.performance.destroy();
         chartInstances.performance = new Chart(document.getElementById('performanceChart').getContext('2d'), {
             type: 'bar',
-             chartData,
+            data: chartData,
             options: {
                 scales: {
                     y: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.2)' } },
@@ -962,7 +962,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         const datasets = [
-            { label: gpsFieldsForDisplay[metric] || metric,  athleteValues, borderColor: 'rgba(217, 4, 41, 1)', backgroundColor: 'rgba(217, 4, 41, 0.2)', tension: 0.3, fill: true },
+            { label: gpsFieldsForDisplay[metric] || metric, data: athleteValues, borderColor: 'rgba(217, 4, 41, 1)', backgroundColor: 'rgba(217, 4, 41, 0.2)', tension: 0.3, fill: true },
             { label: 'Media Squadra', data: teamAvgValues, borderColor: 'rgba(54, 162, 235, 1)', borderDash: [5, 5], fill: false, tension: 0.3 },
             { label: 'Max Squadra', data: teamMaxValues, borderColor: 'rgba(255, 206, 86, 1)', borderDash: [5, 5], fill: false, tension: 0.3 }
         ];
@@ -1023,7 +1023,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const color = radarColors[index % radarColors.length];
             return {
                 label: athlete?.name || 'N/A',
-                 normalizedData,
+                data: normalizedData,
                 borderColor: color,
                 backgroundColor: color.replace('1)', '0.2)'),
                 pointBackgroundColor: color,
@@ -1095,7 +1095,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 labels: chartData.map(d => d.name),
                 datasets: [{
                     label: gpsFieldsForDisplay[metric],
-                     chartData.map(d => d.value.toFixed(2)),
+                    data: chartData.map(d => d.value.toFixed(2)),
                     backgroundColor: 'rgba(217, 4, 41, 0.8)'
                 }]
             },
@@ -1579,6 +1579,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.multiAthleteTimeFilter.querySelector('.btn[data-period="month"]').classList.add('active');
         elements.multiAthleteDatepicker.value = '';
         elements.multiAthleteDatepickerContainer.style.display = 'none';
+        elements.multiAthleteDatepicker.closest('.col-md-3').classList.add('d-none');
         elements.multiAthleteMetricSelector.selectedIndex = 0;
         elements.multiAthleteTypeSelector.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
         elements.multiAthleteTypeSelector.querySelector('.btn[data-type="all"]').classList.add('active');
@@ -1613,7 +1614,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert("Download completato. I dati delle sessioni 'Individual' sono stati esclusi.");
             }
         };
-        const hasIndividualData = () => Object.values(gpsData).some(ath => Object.values(ath).some(sessions => sessions.some(sess => sess.tipo_sessione === 'Individual'));
+        const hasIndividualData = () => Object.values(gpsData).some(ath => Object.values(ath).some(sessions => sessions.some(sess => sess.tipo_sessione === 'Individual')));
         if (hasIndividualData() && !isAuthenticated()) {
             requestAuthentication( () => {
                 performDownload(true);
@@ -2062,4 +2063,74 @@ document.addEventListener('DOMContentLoaded', () => {
             date: document.getElementById('match-date').value,
             time: document.getElementById('match-time').value,
             venue: document.getElementById('match-venue').value,
-            opponentName
+            opponentName: document.getElementById('match-opponent-name').value.trim(),
+            location: location,
+            homeScore: location === 'home' ? myTeamScore : opponentScore,
+            awayScore: location === 'away' ? myTeamScore : opponentScore,
+            scorers: [],
+            assists: [], // Aggiunto
+            cards: []
+        };
+        document.querySelectorAll('#scorers-container .d-flex').forEach(row => {
+            matchData.scorers.push({
+                athleteId: row.querySelector('.scorer-athlete').value,
+                minute: row.querySelector('.scorer-minute').value
+            });
+        });
+        document.querySelectorAll('#assists-container .d-flex').forEach(row => { // Aggiunto
+            matchData.assists.push({
+                athleteId: row.querySelector('.assist-athlete').value,
+                minute: row.querySelector('.assist-minute').value
+            });
+        });
+        document.querySelectorAll('#cards-container .d-flex').forEach(row => {
+            matchData.cards.push({
+                athleteId: row.querySelector('.card-athlete').value,
+                type: row.querySelector('.card-type').value,
+                minute: row.querySelector('.card-minute').value
+            });
+        });
+        matchResults[id] = matchData;
+        saveData();
+        updateAllUI();
+        matchResultModal.hide();
+    });
+    elements.deleteMatchBtn.addEventListener('click', () => {
+        const id = document.getElementById('match-id').value;
+        if (id && confirm('Sei sicuro di voler eliminare questa partita?')) {
+            delete matchResults[id];
+            saveData();
+            updateAllUI();
+            matchResultModal.hide();
+        }
+    });
+    elements.matchOpponentFilter.addEventListener('change', updateMatchAnalysisChart);
+    elements.matchPeriodToggle.addEventListener('click', e => {
+        if (e.target.tagName === 'BUTTON') {
+            elements.matchPeriodToggle.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            updateMatchAnalysisChart();
+        }
+    });
+    function startPolling() {
+        pollingInterval = setInterval(async () => {
+            const currentDataSnapshot = JSON.stringify({ athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults });
+            await loadData();
+            const newDataSnapshot = JSON.stringify({ athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults });
+            if (currentDataSnapshot !== newDataSnapshot) {
+                console.log("Dati aggiornati dal server. Ricarico l'interfaccia.");
+                updateAllUI();
+            }
+        }, 5000);
+    }
+    async function initializeApp() {
+        await loadData();
+        const today = new Date();
+        elements.evaluationDatePicker.valueAsDate = today;
+        elements.evaluationDatePicker2.valueAsDate = today;
+        elements.multiAthleteDatepicker.valueAsDate = today;
+        updateAllUI();
+        startPolling();
+    }
+    initializeApp();
+});
