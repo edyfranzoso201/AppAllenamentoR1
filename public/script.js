@@ -2162,45 +2162,6 @@ const updateAllUI = () => {
             e.target.closest('.d-flex').remove();
         }
     });
-    // ✅ MODIFICA: Salvataggio partita senza obbligo di punteggio
-    elements.matchResultForm.addEventListener('submit', e => {
-        e.preventDefault();
-        const id = document.getElementById('match-id').value || Date.now();
-        const location = document.getElementById('match-location').value;
-        const myTeamScoreInput = document.getElementById('match-my-team-score').value;
-        const opponentScoreInput = document.getElementById('match-opponent-score').value;
-        const myTeamScore = myTeamScoreInput === '' ? null : parseInt(myTeamScoreInput);
-        const opponentScore = opponentScoreInput === '' ? null : parseInt(opponentScoreInput);
-        const matchData = {
-            id: id,
-            date: document.getElementById('match-date').value,
-            time: document.getElementById('match-time').value,
-            venue: document.getElementById('match-venue').value,
-            opponentName: document.getElementById('match-opponent-name').value.trim(),
-            location: location,
-            homeScore: location === 'home' ? myTeamScore : opponentScore,
-            awayScore: location === 'away' ? myTeamScore : opponentScore,
-            scorers: [],
-            cards: []
-        };
-        document.querySelectorAll('#scorers-container .d-flex').forEach(row => {
-            matchData.scorers.push({
-                athleteId: row.querySelector('.scorer-athlete').value,
-                minute: row.querySelector('.scorer-minute').value
-            });
-        });
-        document.querySelectorAll('#cards-container .d-flex').forEach(row => {
-            matchData.cards.push({
-                athleteId: row.querySelector('.card-athlete').value,
-                type: row.querySelector('.card-type').value,
-                minute: row.querySelector('.card-minute').value
-            });
-        });
-        matchResults[id] = matchData;
-        saveData();
-        updateAllUI();
-        matchResultModal.hide();
-    });
     elements.deleteMatchBtn.addEventListener('click', () => {
         const id = document.getElementById('match-id').value;
         if (id && confirm('Sei sicuro di voler eliminare questa partita?')) {
