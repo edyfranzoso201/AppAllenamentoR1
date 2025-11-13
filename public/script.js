@@ -1962,183 +1962,33 @@ document.addEventListener('DOMContentLoaded', () => {
             chart.update('none');
         }
     });
-    // --- SEZIONI AGGIUNTE/MODIFICATE ---
-
-// Aggiungi assist nelle variabili di default match
-// Quando crei una partita (nella function openMatchResultModal, e in tutto il codice con "scorers"), aggiungi una logica identica anche per "assists"
-// ... omissis ...
-
-// SOSTITUISCI nella funzione openMatchResultModal:
-const openMatchResultModal = (matchId = null) => {
-    elements.matchResultForm.reset();
-    document.getElementById('scorers-container').innerHTML = '';
-    // AGGIUNGI ASSISTS
-    if (!document.getElementById('assists-container')) {
-        const assistsContainerDiv = document.createElement('div');
-        assistsContainerDiv.innerHTML = `
-          <h5><i class="bi bi-person-plus"></i> Assist (GO Sport)</h5>
-          <div id="assists-container" class="d-grid gap-2"></div>
-          <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="add-assist-btn"><i class="bi bi-plus"></i> Aggiungi Assist</button>
-        `;
-        // Inserisci accanto ai marcatori
-        document.getElementById('scorers-container').parentNode.parentNode.insertBefore(
-            assistsContainerDiv, 
-            document.getElementById('scorers-container').parentNode.nextSibling
-        );
-    } else {
-      document.getElementById('assists-container').innerHTML = '';
-    }
-    document.getElementById('cards-container').innerHTML = '';
-    if (matchId && matchResults[matchId]) {
-        const match = matchResults[matchId];
-        document.getElementById('matchResultModalLabel').textContent = "Modifica Risultato Partita";
-        document.getElementById('match-id').value = match.id;
-        document.getElementById('match-date').value = match.date;
-        document.getElementById('match-time').value = match.time || '';
-        document.getElementById('match-venue').value = match.venue || '';
-        document.getElementById('match-opponent-name').value = match.opponentName;
-        document.getElementById('match-location').value = match.location;
-        document.getElementById('match-my-team-score').value = match.location === 'home' ? match.homeScore : match.awayScore;
-        document.getElementById('match-opponent-score').value = match.location === 'home' ? match.awayScore : match.homeScore;
-        elements.deleteMatchBtn.style.display = 'block';
-        match.scorers.forEach(addScorerInput);
-        // AGGIUNGI TUTTI GLI ASSIST
-        (match.assists || []).forEach(addAssistInput);
-        match.cards.forEach(addCardInput);
-    } else {
-        document.getElementById('matchResultModalLabel').textContent = "Inserisci Risultato Partita";
-        document.getElementById('match-id').value = '';
-        document.getElementById('match-date').valueAsDate = new Date();
-        document.getElementById('match-time').value = '';
-        document.getElementById('match-venue').value = '';
-        elements.deleteMatchBtn.style.display = 'none';
-    }
-    matchResultModal.show();
-};
-
-// Aggiungi "assist" come scorers/cards
-const addAssistInput = (assist = {}) => {
-    const container = document.getElementById('assists-container');
-    const div = document.createElement('div');
-    div.className = 'd-flex gap-2 align-items-center';
-    div.innerHTML = `
-      <select class="form-select form-select-sm assist-athlete" required>
-        <option value="">Seleziona atleta...</option>
-        ${athletes.map(a => `<option value="${a.id}" ${assist.athleteId == a.id ? 'selected' : ''}>${a.name}</option>`).join('')}
-      </select>
-      <input type="number" class="form-control form-control-sm assist-minute" placeholder="Min" min="1" style="width: 80px;" value="${assist.minute || ''}" required>
-      <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn"><i class="bi bi-trash"></i></button>
-    `;
-    container.appendChild(div);
-};
-
-// Eventi pulsanti Aggiungi Assist
-if (document.getElementById('add-assist-btn')) {
-    document.getElementById('add-assist-btn').addEventListener('click', () => addAssistInput());
-}
-modalsContainer.addEventListener('click', e => {
-    if (e.target.closest('#add-assist-btn')) addAssistInput();
-    // ...
-});
-// Salvataggio assist
-elements.matchResultForm.addEventListener('submit', e => {
-    e.preventDefault();
-    const id = document.getElementById('match-id').value || Date.now();
-    const location = document.getElementById('match-location').value;
-    const myTeamScoreInput = document.getElementById('match-my-team-score').value;
-    const opponentScoreInput = document.getElementById('match-opponent-score').value;
-    const myTeamScore = myTeamScoreInput === '' ? null : parseInt(myTeamScoreInput);
-    const opponentScore = opponentScoreInput === '' ? null : parseInt(opponentScoreInput);
-    const matchData = {
-        id: id,
-        date: document.getElementById('match-date').value,
-        time: document.getElementById('match-time').value,
-        venue: document.getElementById('match-venue').value,
-        opponentName: document.getElementById('match-opponent-name').value.trim(),
-        location: location,
-        homeScore: location === 'home' ? myTeamScore : opponentScore,
-        awayScore: location === 'away' ? myTeamScore : opponentScore,
-        scorers: [],
-        assists: [], // MODIFICA PRINCIPALE: aggiunti assist
-        cards: []
-    };
-    document.querySelectorAll('#scorers-container .d-flex').forEach(row => {
-        matchData.scorers.push({
-            athleteId: row.querySelector('.scorer-athlete').value,
-            minute: row.querySelector('.scorer-minute').value
-        });
-    });
-    // Salva assist
-    document.querySelectorAll('#assists-container .d-flex').forEach(row => {
-        matchData.assists.push({
-            athleteId: row.querySelector('.assist-athlete').value,
-            minute: row.querySelector('.assist-minute').value
-        });
-    });
-    document.querySelectorAll('#cards-container .d-flex').forEach(row => {
-        matchData.cards.push({
-            athleteId: row.querySelector('.card-athlete').value,
-            type: row.querySelector('.card-type').value,
-            minute: row.querySelector('.card-minute').value
-        });
-    });
-    matchResults[id] = matchData;
-    saveData();
-    updateAllUI();
-    matchResultModal.hide();
-});
-
-// RENDER PANNELLO ASSIST
-const renderTopAssists = () => {
-    const assistCounts = {};
-    Object.values(matchResults).forEach(match => {
-        (match.assists || []).forEach(assist => {
-            assistCounts[assist.athleteId] = (assistCounts[assist.athleteId] || 0) + 1;
-        });
-    });
-    const sortedAssists = Object.entries(assistCounts).map(([athleteId, assists]) => {
-        const athlete = athletes.find(a => String(a.id) === athleteId);
-        return { name: athlete ? athlete.name : 'Sconosciuto', assists };
-    }).sort((a, b) => b.assists - a.assists);
-    const container = elements.topAssistContainer || document.getElementById('top-assist-container');
-    if (!container) return;
-    if (sortedAssists.length === 0) {
-        container.innerHTML = '<p class="text-muted">Nessun assist registrato.</p>';
-        return;
-    }
-    let ol = '<ol class="list-group list-group-numbered">';
-    sortedAssists.forEach(assist => {
-        ol += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; border-color: var(--border-color);">${assist.name}<span class="badge bg-primary rounded-pill">${assist.assists}</span></li>`;
-    });
-    ol += '</ol>';
-    container.innerHTML = ol;
-};
-// CHIAMA renderTopAssists insieme a renderTopScorers in updateAllUI
-const updateAllUI = () => {
-    updateLogoutButtonVisibility();
-    updateUnlockButtonsVisibility();
-    checkDeadlinesAndAlert();
-    updateHomePage();
-    updateTeamSeasonStats();
-    renderAthletes();
-    renderCalendar();
-    renderFormation();
-    renderMatchResults();
-    renderCardsSummary();
-    renderTopScorers();
-    renderTopAssists(); // AGGIUNTA QUI
-    updateMatchAnalysisChart();
-    updateEvaluationCharts();
-    updateAttendanceChart();
-    updateHallOfFame();
-    populatePerformanceSelectors();
-    populateAnalysisSelectors();
-    updatePerformanceChart();
-    updateAthleteTrendChart();
-    updateAthleteRadarChart();
-    updateMultiAthleteChart();
-};
-// ... resto codice invariato ...
+    const openMatchResultModal = (matchId = null) => {
+        elements.matchResultForm.reset();
+        document.getElementById('scorers-container').innerHTML = '';
+        document.getElementById('cards-container').innerHTML = '';
+        if (matchId && matchResults[matchId]) {
+            const match = matchResults[matchId];
+            document.getElementById('matchResultModalLabel').textContent = "Modifica Risultato Partita";
+            document.getElementById('match-id').value = match.id;
+            document.getElementById('match-date').value = match.date;
+            document.getElementById('match-time').value = match.time || '';
+            document.getElementById('match-venue').value = match.venue || '';
+            document.getElementById('match-opponent-name').value = match.opponentName;
+            document.getElementById('match-location').value = match.location;
+            document.getElementById('match-my-team-score').value = match.location === 'home' ? match.homeScore : match.awayScore;
+            document.getElementById('match-opponent-score').value = match.location === 'home' ? match.awayScore : match.homeScore;
+            elements.deleteMatchBtn.style.display = 'block';
+            match.scorers.forEach(addScorerInput);
+            match.cards.forEach(addCardInput);
+        } else {
+            document.getElementById('matchResultModalLabel').textContent = "Inserisci Risultato Partita";
+            document.getElementById('match-id').value = '';
+            document.getElementById('match-date').valueAsDate = new Date();
+            document.getElementById('match-time').value = '';
+            document.getElementById('match-venue').value = '';
+            elements.deleteMatchBtn.style.display = 'none';
+        }
+        matchResultModal.show();
     };
     const addScorerInput = (scorer = {}) => {
         const container = document.getElementById('scorers-container');
@@ -2161,6 +2011,45 @@ const updateAllUI = () => {
         if (e.target.closest('.remove-row-btn')) {
             e.target.closest('.d-flex').remove();
         }
+    });
+    // ✅ MODIFICA: Salvataggio partita senza obbligo di punteggio
+    elements.matchResultForm.addEventListener('submit', e => {
+        e.preventDefault();
+        const id = document.getElementById('match-id').value || Date.now();
+        const location = document.getElementById('match-location').value;
+        const myTeamScoreInput = document.getElementById('match-my-team-score').value;
+        const opponentScoreInput = document.getElementById('match-opponent-score').value;
+        const myTeamScore = myTeamScoreInput === '' ? null : parseInt(myTeamScoreInput);
+        const opponentScore = opponentScoreInput === '' ? null : parseInt(opponentScoreInput);
+        const matchData = {
+            id: id,
+            date: document.getElementById('match-date').value,
+            time: document.getElementById('match-time').value,
+            venue: document.getElementById('match-venue').value,
+            opponentName: document.getElementById('match-opponent-name').value.trim(),
+            location: location,
+            homeScore: location === 'home' ? myTeamScore : opponentScore,
+            awayScore: location === 'away' ? myTeamScore : opponentScore,
+            scorers: [],
+            cards: []
+        };
+        document.querySelectorAll('#scorers-container .d-flex').forEach(row => {
+            matchData.scorers.push({
+                athleteId: row.querySelector('.scorer-athlete').value,
+                minute: row.querySelector('.scorer-minute').value
+            });
+        });
+        document.querySelectorAll('#cards-container .d-flex').forEach(row => {
+            matchData.cards.push({
+                athleteId: row.querySelector('.card-athlete').value,
+                type: row.querySelector('.card-type').value,
+                minute: row.querySelector('.card-minute').value
+            });
+        });
+        matchResults[id] = matchData;
+        saveData();
+        updateAllUI();
+        matchResultModal.hide();
     });
     elements.deleteMatchBtn.addEventListener('click', () => {
         const id = document.getElementById('match-id').value;
