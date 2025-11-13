@@ -213,55 +213,54 @@
             <div class="row" id="match-results-container">
                  <p class="text-muted">Nessun risultato inserito.</p>
             </div>
-            <div class="row mt-5">
-                <div class="col-lg-7 mb-4">
-                    <div class="card chart-card">
-                         <div class="card-body">
-                            <h5 class="card-title">Andamento Risultati</h5>
-                            <div class="d-flex gap-2 mb-3 no-print">
-                                <select id="match-opponent-filter" class="form-select form-select-sm" style="width: 200px;">
-                                    <option value="all">Tutti gli avversari</option>
-                                </select>
-                                <div class="btn-group btn-group-sm" id="match-period-toggle">
-                                    <button type="button" class="btn btn-outline-secondary active" data-period="monthly">Mensile</button>
-                                    <button type="button" class="btn btn-outline-secondary" data-period="bimonthly">Bimestrale</button>
-                                    <button type="button" class="btn btn-outline-secondary" data-period="trimester">Trimestre</button>
-                                    <button type="button" class="btn btn-outline-secondary" data-period="semester">Semestre</button>
-                                    <button type="button" class="btn btn-outline-secondary" data-period="annual">Annuale</button>
-                                </div>
-                            </div>
-                            <canvas id="matchResultsChart"></canvas>
-                         </div>
+<div class="row mt-5">
+    <div class="col-lg-7 mb-4">
+        <div class="card chart-card">
+            <div class="card-body">
+                <h5 class="card-title">Andamento Risultati</h5>
+                <div class="d-flex gap-2 mb-3 no-print">
+                    <select id="match-opponent-filter" class="form-select form-select-sm" style="width: 200px;">
+                        <option value="all">Tutti gli avversari</option>
+                    </select>
+                    <div class="btn-group btn-group-sm" id="match-period-toggle">
+                        <button type="button" class="btn btn-outline-secondary active" data-period="monthly">Mensile</button>
+                        <button type="button" class="btn btn-outline-secondary" data-period="bimonthly">Bimestrale</button>
+                        <button type="button" class="btn btn-outline-secondary" data-period="trimester">Trimestre</button>
+                        <button type="button" class="btn btn-outline-secondary" data-period="semester">Semestre</button>
+                        <button type="button" class="btn btn-outline-secondary" data-period="annual">Annuale</button>
                     </div>
                 </div>
-                <div class="col-lg-5 mb-4">
-                    <div class="card table-card mb-4">
-                         <div class="card-body">
-                             <h5 class="card-title">Classifica Marcatori</h5>
-                             <div id="top-scorers-container" style="max-height: 200px; overflow-y: auto;"></div>
-                        </div>
-                    </div>
-                    <!-- Aggiunto: Card per Classifica Assistenti -->
-                    <div class="card table-card mb-4">
-                         <div class="card-body">
-                             <h5 class="card-title">Classifica Assist</h5>
-                             <div id="top-assists-container" style="max-height: 200px; overflow-y: auto;"></div>
-                        </div>
-                    </div>
-                    <div class="card table-card">
-                        <div class="card-body">
-                            <h5 class="card-title">Riepilogo Cartellini</h5>
-                            <div class="table-responsive mt-2" style="max-height: 200px;">
-                                <table class="table table-dark table-striped table-hover table-sm" id="cards-summary-table">
-                                     <thead><tr><th>Atleta</th><th><span class="yellow-card"></span></th><th><span class="red-card"></span></th><th>Data</th><th class="no-print"></th></tr></thead>
-                                    <tbody id="cards-summary-tbody"></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
+                <canvas id="matchResultsChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5 mb-4">
+        <div class="card table-card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Classifica Marcatori</h5>
+                <div id="top-scorers-container" style="max-height: 200px; overflow-y: auto;"></div>
+            </div>
+        </div>
+        <!-- NOVITA': Classifica Assist SEPARATA -->
+        <div class="card table-card">
+            <div class="card-body">
+                <h5 class="card-title">Classifica Assist</h5>
+                <div id="top-assist-container" style="max-height: 200px; overflow-y: auto;"></div>
+            </div>
+        </div>
+        <div class="card table-card">
+            <div class="card-body">
+                <h5 class="card-title">Riepilogo Cartellini</h5>
+                <div class="table-responsive mt-2" style="max-height: 200px;">
+                    <table class="table table-dark table-striped table-hover table-sm" id="cards-summary-table">
+                        <thead><tr><th>Atleta</th><th><span class="yellow-card"></span></th><th><span class="red-card"></span></th><th>Data</th><th class="no-print"></th></tr></thead>
+                        <tbody id="cards-summary-tbody"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
+    </div>
+</div>
         <hr class="my-5 no-print">
         <div id="report-valutazioni-section" class="row my-4 printable-area">
               <div class="col-12 d-flex justify-content-between align-items-center gap-2 mb-3">
