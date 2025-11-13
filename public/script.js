@@ -16,11 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="col-5"><label class="form-label">GO Sport</label><input type="number" class="form-control text-center" id="match-my-team-score" min="0" placeholder="Gol"></div>
                 <div class="col-2">-</div>
                 <div class="col-5"><label class="form-label">AVVERSARI</label><input type="number" class="form-control text-center" id="match-opponent-score" min="0" placeholder="Gol"></div>
-                </div><hr><div class="row mt-3">
-                <div class="col-md-4"><h5><i class="bi bi-futbol"></i> Marcatori (GO Sport)</h5><div id="scorers-container" class="d-grid gap-2"></div><button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="add-scorer-btn"><i class="bi bi-plus"></i> Aggiungi Marcatore</button></div>
-                <div class="col-md-4"><h5><i class="bi bi-lightning-charge"></i> Assistenti (GO Sport)</h5><div id="assists-container" class="d-grid gap-2"></div><button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="add-assist-btn"><i class="bi bi-plus"></i> Aggiungi Assistente</button></div>
-                <div class="col-md-4"><h5><i class="bi bi-file-earmark-person"></i> Cartellini (GO Sport)</h5><div id="cards-container" class="d-grid gap-2"></div><button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="add-card-btn"><i class="bi bi-plus"></i> Aggiungi Cartellino</button></div>
-                </div></form></div><div class="modal-footer justify-content-between"><button type="button" class="btn btn-outline-danger" id="delete-match-btn" style="display:none;">Elimina Partita</button><div><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button><button type="submit" class="btn btn-primary-custom" form="match-result-form">Salva Partita</button></div></div></div></div></div> <div class="modal fade" id="passwordModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Accesso Richiesto</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p>Per visualizzare questi dati è richiesta una password.</p><form id="password-form"><div class="mb-3"><label for="password-input" class="form-label">Password</label><input type="password" class="form-control" id="password-input" required><div id="password-error" class="text-danger mt-2" style="display: none;">Password non corretta.</div></div><button type="submit" class="btn btn-primary-custom w-100">Accedi</button></form></div></div></div></div>`;
+                </div><hr><div class="row mt-3"><div class="col-md-6"><h5><i class="bi bi-futbol"></i> Marcatori (GO Sport)</h5><div id="scorers-container" class="d-grid gap-2"></div><button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="add-scorer-btn"><i class="bi bi-plus"></i> Aggiungi Marcatore</button></div><div class="col-md-6"><h5><i class="bi bi-file-earmark-person"></i> Cartellini (GO Sport)</h5><div id="cards-container" class="d-grid gap-2"></div><button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="add-card-btn"><i class="bi bi-plus"></i> Aggiungi Cartellino</button></div></div></form></div><div class="modal-footer justify-content-between"><button type="button" class="btn btn-outline-danger" id="delete-match-btn" style="display:none;">Elimina Partita</button><div><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button><button type="submit" class="btn btn-primary-custom" form="match-result-form">Salva Partita</button></div></div></div></div></div> <div class="modal fade" id="passwordModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Accesso Richiesto</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p>Per visualizzare questi dati è richiesta una password.</p><form id="password-form"><div class="mb-3"><label for="password-input" class="form-label">Password</label><input type="password" class="form-control" id="password-input" required><div id="password-error" class="text-danger mt-2" style="display: none;">Password non corretta.</div></div><button type="submit" class="btn btn-primary-custom w-100">Accedi</button></form></div></div></div></div>`;
     const evaluationModal = new bootstrap.Modal(document.getElementById('evaluationModal'));
     const athleteModal = new bootstrap.Modal(document.getElementById('athleteModal'));
     const gpsModal = new bootstrap.Modal(document.getElementById('gpsModal'));
@@ -80,7 +76,6 @@ document.addEventListener('DOMContentLoaded', () => {
         matchOpponentFilter: document.getElementById('match-opponent-filter'),
         matchPeriodToggle: document.getElementById('match-period-toggle'),
         topScorersContainer: document.getElementById('top-scorers-container'),
-        topAssistsContainer: document.getElementById('top-assists-container'), // Aggiunto
         passwordForm: document.getElementById('password-form'),
         passwordError: document.getElementById('password-error'),
         alertsContainer: document.getElementById('alerts-container'),
@@ -172,12 +167,14 @@ document.addEventListener('DOMContentLoaded', () => {
             trainingSessions = allData.trainingSessions || {};
             formationData = allData.formationData || { starters: [], bench: [], tokens: [] };
             matchResults = allData.matchResults || {};
+
             // ✅ MODIFICA: Assicurarsi che tutti gli atleti abbiano la proprietà `isViceCaptain`
             athletes.forEach(athlete => {
                 if (athlete.isViceCaptain === undefined) {
                     athlete.isViceCaptain = false;
                 }
             });
+
         } catch (error) {
             console.error('Errore nel caricamento dei dati dal server:', error);
             athletes = []; evaluations = {}; gpsData = {}; awards = {}; trainingSessions = {}; formationData = { starters: [], bench: [], tokens: [] }; matchResults = {};
@@ -230,7 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderMatchResults();
         renderCardsSummary();
         renderTopScorers();
-        renderTopAssists(); // Aggiunto
         updateMatchAnalysisChart();
         updateEvaluationCharts();
         updateAttendanceChart();
@@ -332,6 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     statusIcon = `<i class="bi bi-circle-fill text-success deadline-status" title="Scade il ${deadline.toLocaleDateString('it-IT')}"></i>`;
                 }
             }
+
             const card = document.createElement('div');
             card.className = 'col-xl-3 col-lg-4 col-md-6 mb-4';
             // ✅ Aggiunta icona Vice Capitano
@@ -502,29 +499,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         ol += '</ol>';
         elements.topScorersContainer.innerHTML = ol;
-    };
-    // Aggiunto: renderTopAssists
-    const renderTopAssists = () => {
-        const assistCounts = {};
-        Object.values(matchResults).forEach(match => {
-            match.assists.forEach(assist => {
-                assistCounts[assist.athleteId] = (assistCounts[assist.athleteId] || 0) + 1;
-            });
-        });
-        const sortedAssists = Object.entries(assistCounts).map(([athleteId, assists]) => {
-            const athlete = athletes.find(a => String(a.id) === athleteId);
-            return { name: athlete ? athlete.name : 'Sconosciuto', assists };
-        }).sort((a, b) => b.assists - a.assists);
-        if (sortedAssists.length === 0) {
-            elements.topAssistsContainer.innerHTML = '<p class="text-muted">Nessun assistente registrato.</p>';
-            return;
-        }
-        let ol = '<ol class="list-group list-group-numbered">';
-        sortedAssists.forEach(assist => {
-            ol += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; border-color: var(--border-color);">${assist.name}<span class="badge bg-success rounded-pill">${assist.assists}</span></li>`;
-        });
-        ol += '</ol>';
-        elements.topAssistsContainer.innerHTML = ol;
     };
     const updateMatchAnalysisChart = () => {
         const opponentFilter = elements.matchOpponentFilter.value;
@@ -1317,7 +1291,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 Object.keys(matchResults).forEach(matchId => {
                     matchResults[matchId].scorers = matchResults[matchId].scorers.filter(s => String(s.athleteId) !== athleteId);
                     matchResults[matchId].cards = matchResults[matchId].cards.filter(c => String(c.athleteId) !== athleteId);
-                    matchResults[matchId].assists = matchResults[matchId].assists.filter(a => String(a.athleteId) !== athleteId); // Aggiunto
                 });
                 saveData();
                 updateAllUI();
@@ -1760,12 +1733,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         trainingSessions = importedData.trainingSessions || {};
                         formationData = importedData.formationData || { starters: [], bench: [], tokens: [] };
                         matchResults = importedData.matchResults || {};
+
                         // ✅ MODIFICA: Assicurarsi che tutti gli atleti importati abbiano la proprietà `isViceCaptain`
                         athletes.forEach(athlete => {
                             if (athlete.isViceCaptain === undefined) {
                                 athlete.isViceCaptain = false;
                             }
                         });
+
                         migrateGpsData();
                         saveData().then(() => {
                             updateAllUI();
@@ -1990,7 +1965,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const openMatchResultModal = (matchId = null) => {
         elements.matchResultForm.reset();
         document.getElementById('scorers-container').innerHTML = '';
-        document.getElementById('assists-container').innerHTML = ''; // Aggiunto
         document.getElementById('cards-container').innerHTML = '';
         if (matchId && matchResults[matchId]) {
             const match = matchResults[matchId];
@@ -2005,7 +1979,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('match-opponent-score').value = match.location === 'home' ? match.awayScore : match.homeScore;
             elements.deleteMatchBtn.style.display = 'block';
             match.scorers.forEach(addScorerInput);
-            match.assists.forEach(addAssistInput); // Aggiunto
             match.cards.forEach(addCardInput);
         } else {
             document.getElementById('matchResultModalLabel').textContent = "Inserisci Risultato Partita";
@@ -2024,14 +1997,6 @@ document.addEventListener('DOMContentLoaded', () => {
         div.innerHTML = `<select class="form-select form-select-sm scorer-athlete" required><option value="">Seleziona atleta...</option>${athletes.map(a => `<option value="${a.id}" ${scorer.athleteId == a.id ? 'selected' : ''}>${a.name}</option>`).join('')}</select><input type="number" class="form-control form-control-sm scorer-minute" placeholder="Min" min="1" style="width: 80px;" value="${scorer.minute || ''}" required><button type="button" class="btn btn-sm btn-outline-danger remove-row-btn"><i class="bi bi-trash"></i></button>`;
         container.appendChild(div);
     };
-    // Aggiunto: addAssistInput
-    const addAssistInput = (assist = {}) => {
-        const container = document.getElementById('assists-container');
-        const div = document.createElement('div');
-        div.className = 'd-flex gap-2 align-items-center';
-        div.innerHTML = `<select class="form-select form-select-sm assist-athlete" required><option value="">Seleziona atleta...</option>${athletes.map(a => `<option value="${a.id}" ${assist.athleteId == a.id ? 'selected' : ''}>${a.name}</option>`).join('')}</select><input type="number" class="form-control form-control-sm assist-minute" placeholder="Min" min="1" style="width: 80px;" value="${assist.minute || ''}" required><button type="button" class="btn btn-sm btn-outline-danger remove-row-btn"><i class="bi bi-trash"></i></button>`;
-        container.appendChild(div);
-    };
     const addCardInput = (card = {}) => {
         const container = document.getElementById('cards-container');
         const div = document.createElement('div');
@@ -2041,7 +2006,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     elements.addMatchBtn.addEventListener('click', () => openMatchResultModal());
     document.getElementById('add-scorer-btn').addEventListener('click', () => addScorerInput());
-    document.getElementById('add-assist-btn').addEventListener('click', () => addAssistInput()); // Aggiunto
     document.getElementById('add-card-btn').addEventListener('click', () => addCardInput());
     modalsContainer.addEventListener('click', e => {
         if (e.target.closest('.remove-row-btn')) {
@@ -2067,19 +2031,12 @@ document.addEventListener('DOMContentLoaded', () => {
             homeScore: location === 'home' ? myTeamScore : opponentScore,
             awayScore: location === 'away' ? myTeamScore : opponentScore,
             scorers: [],
-            assists: [], // Aggiunto
             cards: []
         };
         document.querySelectorAll('#scorers-container .d-flex').forEach(row => {
             matchData.scorers.push({
                 athleteId: row.querySelector('.scorer-athlete').value,
                 minute: row.querySelector('.scorer-minute').value
-            });
-        });
-        document.querySelectorAll('#assists-container .d-flex').forEach(row => { // Aggiunto
-            matchData.assists.push({
-                athleteId: row.querySelector('.assist-athlete').value,
-                minute: row.querySelector('.assist-minute').value
             });
         });
         document.querySelectorAll('#cards-container .d-flex').forEach(row => {
@@ -2117,7 +2074,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await loadData();
             const newDataSnapshot = JSON.stringify({ athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults });
             if (currentDataSnapshot !== newDataSnapshot) {
-                console.log("Dati aggiornati dal server. Ricarco l'interfaccia.");
+                console.log("Dati aggiornati dal server. Ricarico l'interfaccia.");
                 updateAllUI();
             }
         }, 5000);
