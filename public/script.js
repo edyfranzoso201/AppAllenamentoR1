@@ -576,7 +576,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 { label: 'Sconfitte', data: labels.map(l => resultsByPeriod[l].L), backgroundColor: '#6c757d' },
             ];
         }
-        const data = { labels, datasets };
+        	data: {
+    		labels: labels,
+    		datasets: datasets
+		},
         if (chartInstances.matchResults) chartInstances.matchResults.destroy();
         chartInstances.matchResults = new Chart(document.getElementById('matchResultsChart').getContext('2d'), {
             type: 'bar',
