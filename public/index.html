@@ -4,42 +4,64 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Coach Dashboard</title>
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="style.css">
+    <!-- Librerie JS (caricate in fondo per performance) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <!-- Foglio di stile personalizzato -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark-blue fixed-top no-print">
         <div class="container-fluid">
             <a class="navbar-brand fw-bold" href="#"><i class="bi bi-person-workspace"></i> Coach Dashboard</a>
-            <button class="btn btn-outline-secondary ms-auto" id="logout-btn" title="Logout" style="display: none;"><i class="bi bi-unlock-fill"></i></button>
+            <button class="btn btn-outline-secondary ms-auto" id="logout-btn" title="Blocca Dashboard (Logout)" style="display: none;"><i class="bi bi-unlock-fill"></i></button>
         </div>
     </nav>
-
     <main class="container-fluid mt-5 pt-3">
         <div id="alerts-container"></div>
-        
         <div id="home-section" class="printable-area">
             <div class="row my-4">
                 <div class="col-12 d-flex align-items-center gap-2">
                     <h2 class="main-title mb-0">Home Riepilogo</h2>
-                    <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn"><i class="bi bi-printer-fill"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
                 </div>
             </div>
             <div class="row">
-                <div class="col-lg-3 col-md-6 mb-4"><div class="card h-100"><div class="card-body text-center"><h5 class="card-title text-muted">ATLETI</h5><p class="display-4" id="home-total-athletes">0</p></div></div></div>
-                <div class="col-lg-3 col-md-6 mb-4"><div class="card h-100"><div class="card-body" id="home-next-session"><h5 class="card-title text-muted">PROSSIMA</h5><p class="text-muted">Nessuna pianificata</p></div></div></div>
-                <div class="col-lg-3 col-md-6 mb-4"><div class="card h-100"><div class="card-body" id="home-top-performer"><h5 class="card-title text-muted">TOP PERFORMER</h5><p class="text-muted">Nessun dato</p></div></div></div>
                 <div class="col-lg-3 col-md-6 mb-4">
-                    <div class="card h-100">
+                    <div class="card summary-card h-100">
                         <div class="card-body">
-                            <h5 class="card-title text-muted">AZIONI</h5>
-                            <div class="d-grid gap-2 no-print">
-                                <button class="btn btn-primary-custom" id="quick-add-athlete-btn">Nuovo Atleta</button>
-                                <button class="btn btn-secondary" id="quick-plan-session-btn">Nuova Sessione</button>
+                            <h5 class="card-title text-muted">ATLETI IN ROSA</h5>
+                            <p class="display-4" id="home-total-athletes">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card summary-card h-100">
+                        <div class="card-body" id="home-next-session">
+                            <h5 class="card-title text-muted">PROSSIMA SESSIONE</h5>
+                            <p class="text-muted">Nessuna sessione pianificata</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card summary-card h-100">
+                        <div class="card-body" id="home-top-performer">
+                            <h5 class="card-title text-muted">TOP PERFORMER MENSILE</h5>
+                            <p class="text-muted">Nessuna valutazione</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card summary-card h-100">
+                        <div class="card-body" id="home-quick-actions">
+                            <h5 class="card-title text-muted">AZIONI RAPIDE</h5>
+                            <div class="d-grid gap-2 w-100 no-print">
+                                <button class="btn btn-primary-custom" id="quick-add-athlete-btn"><i class="bi bi-person-plus-fill"></i> Aggiungi Atleta</button>
+                                <button class="btn btn-secondary" id="quick-plan-session-btn"><i class="bi bi-calendar-plus"></i> Pianifica Sessione</button>
                             </div>
                         </div>
                     </div>
@@ -47,265 +69,369 @@
             </div>
             <div class="row mb-4">
                 <div class="col-12">
-                    <div class="card"><div class="card-body text-center">
-                        <h5 class="text-muted mb-3">Statistiche Stagionali</h5>
-                        <div class="d-flex justify-content-around flex-wrap" id="season-stats-container">
-                            <div><h6>Partite</h6><p id="stat-pg" class="h4">0</p></div>
-                            <div><h6>V-P-S</h6><p id="stat-vps" class="h4">0-0-0</p></div>
-                            <div><h6>Gol Fatti</h6><p id="stat-gf" class="h4">0</p></div>
-                            <div><h6>Gol Subiti</h6><p id="stat-gs" class="h4">0</p></div>
-                            <div><h6>Diff. Reti</h6><p id="stat-dr" class="h4">0</p></div>
+                    <div class="card season-stats-card">
+                        <div class="card-body">
+                            <h5 class="card-title text-muted mb-3 text-center">📈 Statistiche Stagionali 📉</h5>
+                            <div class="season-stats-grid" id="season-stats-container">
+                                <div class="stat-item"><h6>Partite Giocate</h6><p id="stat-pg">0</p></div>
+                                <div class="stat-item"><h6>V-P-S</h6><p id="stat-vps">0-0-0</p></div>
+                                <div class="stat-item"><h6>Gol Fatti</h6><p id="stat-gf">0</p></div>
+                                <div class="stat-item"><h6>Gol Subiti</h6><p id="stat-gs">0</p></div>
+                                <div class="stat-item"><h6>Diff. Reti</h6><p id="stat-dr">0</p></div>
+                            </div>
                         </div>
-                    </div></div>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <div class="row my-4 no-print">
+        </div> <div class="row my-4 no-print">
             <div class="col-12">
-                <div class="card">
-                    <div class="card-body text-center d-flex flex-wrap justify-content-center gap-2">
-                         <a href="#formazione-section" class="btn btn-secondary">Formazione</a>
-                         <a href="#calendario-section" class="btn btn-secondary">Calendario</a>
-                         <a href="#squadra-section" class="btn btn-secondary">Rosa</a>
-                         <a href="#match-results-section" class="btn btn-secondary">Partite</a>
-                         <a href="#monitoraggio-gps-section" class="btn btn-secondary">GPS</a>
+                <div class="card summary-card">
+                    <div class="card-body">
+                        <h5 class="card-title text-muted mb-3">NAVIGAZIONE RAPIDA</h5>
+                        <div class="d-flex flex-wrap justify-content-center gap-2">
+                            <a href="#formazione-section" class="btn btn-secondary"><i class="bi bi-grid-3x3-gap-fill"></i> Modulo Formazione</a>
+                            <a href="#calendario-section" class="btn btn-secondary"><i class="bi bi-calendar3"></i> Calendario</a>
+                            <a href="#squadra-section" class="btn btn-secondary"><i class="bi bi-people-fill"></i> Gestione Squadra</a>
+                            <a href="#match-results-section" class="btn btn-secondary"><i class="bi bi-trophy-fill"></i> Risultati Partite</a>
+                            <a href="#report-valutazioni-section" class="btn btn-secondary"><i class="bi bi-card-checklist"></i> Report Valutazioni</a>
+                            <a href="#report-presenze-section" class="btn btn-secondary"><i class="bi bi-person-check-fill"></i> Report Presenze</a>
+                            <a href="#hall-of-fame-section" class="btn btn-secondary"><i class="bi bi-award-fill"></i> Hall of Fame</a>
+                            <a href="#monitoraggio-gps-section" class="btn btn-secondary"><i class="bi bi-graph-up-arrow"></i> Monitoraggio GPS</a>
+                            <a href="#analisi-singolo-section" class="btn btn-secondary"><i class="bi bi-person-lines-fill"></i> Analisi Atleta</a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-
         <hr class="my-5 no-print">
-
         <div id="formazione-section" class="printable-area">
-            <h2 class="main-title">Modulo Formazione</h2>
-            <div class="row mt-3">
+             <div class="row my-4 align-items-center">
+                <div class="col-12 d-flex align-items-center gap-2">
+                     <h2 class="main-title mb-0">Modulo Formazione</h2>
+                     <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
+                     <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
+                </div>
+            </div>
+            <div class="row">
                 <div class="col-lg-9 mb-4">
                     <div id="pitch-wrapper">
                         <div id="field-container" class="drop-zone">
-                            <div class="field-line halfway-line"></div><div class="field-circle center-circle"></div>
-                            <div class="field-box penalty-box-top"></div><div class="field-box goal-box-top"></div>
-                            <div class="field-box penalty-box-bottom"></div><div class="field-box goal-box-bottom"></div>
+                            <div class="field-line halfway-line"></div>
+                            <div class="field-circle center-circle"></div>
+                            <div class="field-spot center-spot"></div>
+                            <div class="field-box penalty-box-top"></div>
+                            <div class="field-box goal-box-top"></div>
+                            <div class="field-spot penalty-spot-top"></div>
+                            <div class="field-box penalty-box-bottom"></div>
+                            <div class="field-box goal-box-bottom"></div>
+                            <div class="field-spot penalty-spot-bottom"></div>
                         </div>
                         <div id="field-bench-area" class="drop-zone"></div>
                     </div>
                 </div>
                 <div class="col-lg-3">
-                    <div class="card">
-                        <div class="card-header">Strumenti</div>
-                        <div class="card-body">
-                            <div id="formation-tools" class="d-flex gap-2 flex-wrap">
+                    <div class="card" style="background-color: var(--card-bg);">
+                         <div class="card-header fw-bold">Strumenti</div>
+                         <div class="card-body">
+                             <div id="formation-tools">
                                 <div class="tool-item" data-item-type="captain-c">(C)</div>
-                                <div class="tool-item" data-item-type="captain-vc">(VC)</div>
-                                <div class="tool-item ball-tool" data-item-type="ball">⚽</div>
-                                <div class="tool-item opponent-tool" data-item-type="opponent">●</div>
-                            </div>
-                        </div>
-                        <div class="card-header mt-3">Disponibili</div>
-                        <div class="card-body p-2 drop-zone" id="available-list" style="max-height: 400px; overflow-y: auto;"></div>
+                                 <div class="tool-item" data-item-type="captain-vc">(VC)</div>
+                                 <div class="tool-item ball-tool" data-item-type="ball">⚽</div>
+                                <div class="tool-item opponent-tool" data-item-type="opponent" title="Trascina per duplicare">●</div>
+                             </div>
+                         </div>
+                         <div class="card-header fw-bold mt-3">Atleti Disponibili</div>
+                         <div class="card-body available-slot p-2 drop-zone" id="available-list" style="max-height: 400px; overflow-y: auto;"></div>
                     </div>
                 </div>
             </div>
         </div>
-
         <hr class="my-5 no-print">
-
         <div id="calendario-section" class="printable-area">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2 class="main-title mb-0">Calendario</h2>
-                <button class="btn btn-primary-custom no-print" id="add-session-btn">Pianifica</button>
-            </div>
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <button id="prev-month-btn" class="btn btn-outline-secondary no-print"><i class="bi bi-chevron-left"></i></button>
-                        <h4 id="current-month-year"></h4>
-                        <button id="next-month-btn" class="btn btn-outline-secondary no-print"><i class="bi bi-chevron-right"></i></button>
-                    </div>
-                    <div class="calendar-grid text-center fw-bold mb-2">
-                        <div>Lun</div><div>Mar</div><div>Mer</div><div>Gio</div><div>Ven</div><div>Sab</div><div>Dom</div>
-                    </div>
-                    <div class="calendar-grid" id="calendar-grid"></div>
-                </div>
-            </div>
+              <div class="row my-4 align-items-center">
+                   <div class="col-md-8 d-flex align-items-center gap-2">
+                       <h2 class="main-title mb-0">Calendario Attività Sportiva</h2>
+                       <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
+                       <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
+                  </div>
+                   <div class="col-md-4 d-flex justify-content-md-end no-print">
+                      <button class="btn btn-primary-custom" id="add-session-btn"><i class="bi bi-calendar-plus"></i> Pianifica Sessione</button>
+                  </div>
+              </div>
+              <div class="row">
+                  <div class="col-12 mt-3">
+                      <div class="card calendar-card">
+                          <div class="card-body">
+                              <div class="calendar-header mb-3">
+                                  <button id="prev-month-btn" class="btn btn-outline-secondary no-print"><i class="bi bi-chevron-left"></i></button>
+                                  <h4 id="current-month-year"></h4>
+                                  <button id="next-month-btn" class="btn btn-outline-secondary no-print"><i class="bi bi-chevron-right"></i></button>
+                              </div>
+                              <div class="calendar-grid-header calendar-grid mb-1" style="font-weight: bold; text-align: center;">
+                                  <div>Lunedì</div><div>Martedì</div><div>Mercoledì</div><div>Giovedì</div><div>Venerdì</div><div>Sabato</div><div>Domenica</div>
+                              </div>
+                              <div class="calendar-grid" id="calendar-grid"></div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
         </div>
-
         <hr class="my-5 no-print">
-
         <div id="squadra-section" class="printable-area">
-            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                <h2 class="main-title mb-0">Gestione Squadra</h2>
-                <div class="d-flex gap-2 no-print">
-                     <button class="btn btn-primary-custom" id="add-athlete-btn">Aggiungi Atleta</button>
-                     <input type="file" id="import-file-input" class="d-none" accept=".json">
-                     <label for="import-file-input" class="btn btn-secondary">Importa</label>
-                     <button class="btn btn-secondary" id="export-all-data-btn">Esporta</button>
+             <div class="row align-items-center my-4">
+                 <div class="col-md-4 d-flex align-items-center gap-2">
+                     <h2 class="main-title mb-0">Gestione Squadra</h2>
+                     <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
+                    <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
+                </div>
+                <div class="col-md-8 d-flex justify-content-md-end align-items-center flex-wrap gap-2 no-print">
+                    <button class="btn btn-secondary" id="export-all-data-btn"><i class="bi bi-download"></i> Esporta Dati</button>
+                    <label for="import-file-input" class="btn btn-secondary mb-0"><i class="bi bi-upload"></i> Importa Dati</label>
+                    <input type="file" id="import-file-input" accept=".json" style="display: none;">
+                    <button class="btn btn-primary-custom" id="add-athlete-btn"><i class="bi bi-person-plus-fill"></i> Aggiungi Atleta</button>
+                    <div class="d-flex align-items-center gap-2">
+                        <label for="evaluation-date-picker" class="form-label mb-0 text-nowrap">Data Valutazioni:</label>
+                        <input type="date" id="evaluation-date-picker" class="form-control" style="max-width: 180px;">
+                        <button class="btn btn-outline-danger" id="delete-day-data-btn" title="Elimina tutti i dati del giorno selezionato"><i class="bi bi-calendar-x-fill"></i></button>
+                    </div>
                 </div>
             </div>
             <div class="row" id="athlete-grid"></div>
         </div>
-
         <hr class="my-5 no-print">
-        
         <div id="match-results-section" class="printable-area">
-            <div class="d-flex justify-content-between mb-3">
-                <h2 class="main-title">Risultati Partite</h2>
-                <button class="btn btn-primary-custom no-print" id="add-match-btn">Aggiungi Partita</button>
-            </div>
-            <div class="row" id="match-results-container"></div>
-            <div class="row mt-4">
-                <div class="col-md-7">
-                    <div class="card"><div class="card-body"><canvas id="matchResultsChart"></canvas></div></div>
+             <div class="row my-4 align-items-center">
+                <div class="col-md-8 d-flex align-items-center gap-2">
+                    <h2 class="main-title mb-0">Risultati Partite</h2>
+                    <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
+                    <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
                 </div>
-                <div class="col-md-5">
-                    <div class="card mb-3"><div class="card-body"><h5 class="card-title">Marcatori</h5><div id="top-scorers-container"></div></div></div>
+                <div class="col-md-4 d-flex justify-content-md-end no-print">
+                    <button class="btn btn-primary-custom" id="add-match-btn"><i class="bi bi-plus-circle-fill"></i> Aggiungi Partita</button>
                 </div>
             </div>
-        </div>
-
-        <div id="monitoraggio-gps-section" class="printable-area mt-5">
-            <h2 class="main-title">Monitoraggio GPS</h2>
-            <div class="card p-3 mb-3 no-print">
-                <div class="row g-2">
-                    <div class="col-md-8" id="performance-selectors-container"></div>
-                    <div class="col-md-4 d-flex align-items-end gap-2">
-                        <select id="performance-metric-selector" class="form-select"></select>
-                        <button class="btn btn-primary-custom" id="add-comparison-btn">Confronta</button>
+            <div class="row" id="match-results-container">
+                 <p class="text-muted">Nessun risultato inserito.</p>
+            </div>
+            <div class="row mt-5">
+                <div class="col-lg-7 mb-4">
+                    <div class="card chart-card">
+                         <div class="card-body">
+                            <h5 class="card-title">Andamento Risultati</h5>
+                            <div class="d-flex gap-2 mb-3 no-print">
+                                <select id="match-opponent-filter" class="form-select form-select-sm" style="width: 200px;">
+                                    <option value="all">Tutti gli avversari</option>
+                                </select>
+                                <div class="btn-group btn-group-sm" id="match-period-toggle">
+                                    <button type="button" class="btn btn-outline-secondary active" data-period="monthly">Mensile</button>
+                                    <button type="button" class="btn btn-outline-secondary" data-period="bimonthly">Bimestrale</button>
+                                    <button type="button" class="btn btn-outline-secondary" data-period="trimester">Trimestre</button>
+                                    <button type="button" class="btn btn-outline-secondary" data-period="semester">Semestre</button>
+                                    <button type="button" class="btn btn-outline-secondary" data-period="annual">Annuale</button>
+                                </div>
+                            </div>
+                            <canvas id="matchResultsChart"></canvas>
+                         </div>
+                    </div>
+                </div>
+                <div class="col-lg-5 mb-4">
+                    <div class="card table-card mb-4">
+                         <div class="card-body">
+                             <h5 class="card-title">Classifica Marcatori</h5>
+                             <div id="top-scorers-container" style="max-height: 200px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+                    <div class="card table-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Riepilogo Cartellini</h5>
+                            <div class="table-responsive mt-2" style="max-height: 200px;">
+                                <table class="table table-dark table-striped table-hover table-sm" id="cards-summary-table">
+                                     <thead><tr><th>Atleta</th><th><span class="yellow-card"></span></th><th><span class="red-card"></span></th><th>Data</th><th class="no-print"></th></tr></thead>
+                                    <tbody id="cards-summary-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="card"><div class="card-body"><canvas id="performanceChart"></canvas></div></div>
-            <div class="mt-4" id="performance-table-container"></div>
         </div>
-
-    </main>
-
-    <div class="modal fade" id="passwordModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header"><h5 class="modal-title">Accesso Richiesto</h5></div>
-                <div class="modal-body">
-                    <form id="password-form">
-                        <input type="password" class="form-control mb-2" id="password-input" placeholder="Password" required>
-                        <div id="password-error" class="text-danger small mb-2" style="display:none;">Errata</div>
-                        <button type="submit" class="btn btn-primary-custom w-100">Accedi</button>
-                    </form>
+        <hr class="my-5 no-print">
+        <div id="report-valutazioni-section" class="row my-4 printable-area">
+              <div class="col-12 d-flex justify-content-between align-items-center gap-2 mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <h2 class="main-title mb-0">Report Valutazioni Comportamentali</h2>
+                    <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
+                    <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
+                </div>
+                <div class="d-flex align-items-center gap-2 no-print">
+                    <label for="evaluation-date-picker-2" class="form-label mb-0 text-nowrap">Data Report:</label>
+                    <input type="date" id="evaluation-date-picker-2" class="form-control" style="max-width: 180px;">
                 </div>
             </div>
+            <div class="col-lg-6 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Andamento Medio Squadra (Ultimi 7 Giorni)</h5><canvas id="dailyTeamChart"></canvas></div></div></div>
+            <div class="col-lg-6 mb-4"><div class="card chart-card"><div class="card-body" id="comparison-chart-container"><h5 class="card-title mb-0">Confronto Valutazioni Atleti</h5><div class="btn-group btn-group-sm float-end no-print" id="comparison-period-toggle"><button type="button" class="btn btn-outline-secondary active" data-period="daily">Giornaliero</button><button type="button" class="btn btn-outline-secondary" data-period="weekly">Settimanale</button><button type="button" class="btn btn-outline-secondary" data-period="monthly">Mensile</button><button type="button" class="btn btn-outline-secondary" data-period="semester">Semestrale</button><button type="button" class="btn btn-outline-secondary" data-period="annual">Annuale</button></div><canvas id="monthlyComparisonChart"></canvas></div></div></div>
         </div>
-    </div>
-
-    <div class="modal fade" id="athleteModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header"><h5 class="modal-title" id="athleteModalLabel">Gestisci Atleta</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                <div class="modal-body">
-                    <form id="athlete-form">
-                        <input type="hidden" id="modal-athlete-id">
-                        <div class="mb-3"><label>Nome Cognome</label><input type="text" class="form-control" id="athlete-name" required></div>
-                        <div class="mb-3"><label>Ruolo</label><input type="text" class="form-control" id="athlete-role" required></div>
-                        <div class="mb-3"><label>Numero</label><input type="number" class="form-control" id="athlete-number" required></div>
-                        <div class="mb-3"><label>Foto</label><input type="file" class="form-control" id="athlete-avatar-input"><input type="hidden" id="athlete-avatar-base64"></div>
-                        <div class="mb-3"><label>Scadenza Visita</label><input type="date" class="form-control" id="scadenza-visita"></div>
-                        <div class="form-check"><input type="checkbox" class="form-check-input" id="athlete-captain"><label class="form-check-label" for="athlete-captain">Capitano</label></div>
-                        <div class="form-check"><input type="checkbox" class="form-check-input" id="athlete-vice-captain"><label class="form-check-label" for="athlete-vice-captain">Vice Capitano</label></div>
-                    </form>
-                </div>
-                <div class="modal-footer"><button type="submit" form="athlete-form" class="btn btn-primary-custom">Salva</button></div>
+        <div id="report-presenze-section" class="row my-4 printable-area">
+              <div class="col-12 d-flex align-items-center gap-2 mb-3">
+                 <h2 class="main-title mb-0">Report Presenze Allenamenti</h2>
+                <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
+                 <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
             </div>
+             <div class="col-12 mb-4">
+                 <div class="card chart-card">
+                    <div class="card-body">
+                         <div class="d-flex justify-content-between align-items-center">
+                             <h5 class="card-title mb-0">Conteggio Presenze Atleti</h5>
+                                <div class="btn-group btn-group-sm no-print" id="attendance-period-toggle">
+                                 <button type="button" class="btn btn-outline-secondary active" data-period="daily">Giornaliero</button>
+                                 <button type="button" class="btn btn-outline-secondary" data-period="weekly">Settimanale</button>
+                                <button type="button" class="btn btn-outline-secondary" data-period="monthly">Mensile</button>
+                                <button type="button" class="btn btn-outline-secondary" data-period="semester">Semestrale</button>
+                                <button type="button" class="btn btn-outline-secondary" data-period="annual">Annuale</button>
+                             </div>
+                         </div>
+                         <canvas id="attendanceChart"></canvas>
+                     </div>
+                 </div>
+             </div>
         </div>
-    </div>
-
-    <div class="modal fade" id="sessionModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header"><h5 class="modal-title" id="sessionModalLabel">Sessione</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                <div class="modal-body">
-                    <form id="session-form">
-                        <input type="hidden" id="session-id">
-                        <div class="mb-2"><label>Data</label><input type="date" class="form-control" id="session-date" required></div>
-                        <div class="mb-2"><label>Titolo</label><input type="text" class="form-control" id="session-title" required></div>
-                        <div class="mb-2"><label>Ora</label><input type="time" class="form-control" id="session-time"></div>
-                        <div class="mb-2"><label>Luogo</label><input type="text" class="form-control" id="session-location"></div>
-                        <div class="mb-2"><label>Descrizione</label><textarea class="form-control" id="session-description"></textarea></div>
-                    </form>
-                </div>
-                <div class="modal-footer justify-content-between">
-                    <button type="button" class="btn btn-outline-danger" id="delete-session-btn" style="display:none">Elimina</button>
-                    <button type="submit" form="session-form" class="btn btn-primary-custom">Salva</button>
-                </div>
+        <hr class="my-5 no-print">
+        <div id="hall-of-fame-section" class="row my-4 printable-area">
+             <div class="col-12 d-flex align-items-center gap-2 mb-3">
+                <h2 class="main-title mb-0">Hall of Fame - Atleti Premiati della Stagione</h2>
+                <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
+                <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
             </div>
+             <div id="hall-of-fame-container" class="d-flex flex-wrap gap-3 justify-content-center"></div>
         </div>
-    </div>
-
-    <div class="modal fade" id="matchResultModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header"><h5 class="modal-title">Risultato Partita</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                <div class="modal-body">
-                    <form id="match-result-form">
-                        <input type="hidden" id="match-id">
-                        <div class="row mb-3">
-                            <div class="col-md-4"><label>Data</label><input type="date" class="form-control" id="match-date" required></div>
-                            <div class="col-md-4"><label>Avversario</label><input type="text" class="form-control" id="match-opponent-name" required></div>
-                            <div class="col-md-4"><label>Casa/Trasferta</label><select class="form-select" id="match-location"><option value="home">Casa</option><option value="away">Trasferta</option></select></div>
-                        </div>
-                        <div class="row mb-3 text-center align-items-center">
-                            <div class="col-5"><label>GO Sport</label><input type="number" class="form-control" id="match-my-team-score"></div>
-                            <div class="col-2">-</div>
-                            <div class="col-5"><label>Avversario</label><input type="number" class="form-control" id="match-opponent-score"></div>
-                        </div>
-                        <hr>
-                        <h6>Marcatori (GO Sport)</h6>
-                        <div id="scorers-container" class="d-grid gap-2 mb-2"></div>
-                        <button type="button" class="btn btn-sm btn-secondary" id="add-scorer-btn">+ Marcatore</button>
-                    </form>
+        <hr class="my-5 no-print">
+         <div id="confronto-squadra-section" class="printable-area">
+             <div class="row my-4" id="multi-athlete-chart-container">
+                <div class="col-12 d-flex align-items-center gap-2 mb-3">
+                     <h2 class="main-title mb-0">Confronto Performance Squadra</h2>
+                    <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
+                     <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
+                     <button class="btn btn-sm btn-outline-warning ms-1 no-print unlock-btn" title="Sblocca Dati Individuali" style="display: none;"><i class="bi bi-key-fill"></i></button>
                 </div>
-                <div class="modal-footer justify-content-between">
-                    <button type="button" class="btn btn-outline-danger" id="delete-match-btn" style="display:none">Elimina</button>
-                    <button type="submit" form="match-result-form" class="btn btn-primary-custom">Salva</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal fade" id="gpsModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header"><h5 class="modal-title">Dati GPS: <span id="modal-athlete-name-gps"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                <div class="modal-body">
-                    <form id="gps-form">
-                        <input type="hidden" id="modal-athlete-id-gps">
-                        <input type="hidden" id="gps-session-id">
-                        <select id="gps-session-selector" class="form-select mb-3"></select>
-                        <div class="row g-2">
-                             <div class="col-md-4"><label>Data</label><input type="date" id="gps-data_di_registrazione" class="form-control" required></div>
-                             <div class="col-md-4"><label>Tipo</label><select id="gps-tipo_sessione" class="form-select"><option value="Allenamento">Allenamento</option><option value="Partita">Partita</option><option value="Individual">Individual</option></select></div>
-                             <div class="col-md-4"><label>Dist. Tot (m)</label><input type="number" step="0.1" id="gps-distanza_totale" class="form-control"></div>
-                             <div class="col-md-4"><label>Tempo (min)</label><input type="number" step="0.1" id="gps-tempo_totale" class="form-control"></div>
-                             <div class="col-md-4"><label>Vel Max (km/h)</label><input type="number" step="0.1" id="gps-velocita_massima" class="form-control"></div>
-                             <div class="col-md-4"><label>Sprint (m)</label><input type="number" step="0.1" id="gps-distanza_sprint" class="form-control"></div>
-                        </div>
-                        <div id="match-stats-fields" style="display:none;" class="mt-3 border-top pt-2">
-                            <h6>Statistiche Partita</h6>
-                            <div class="row g-2">
-                                <div class="col-3"><label>Minuti</label><input type="number" id="gps-minuti_giocati" class="form-control"></div>
-                                <div class="col-3"><label>Gol</label><input type="number" id="gps-gol" class="form-control"></div>
-                                <div class="col-3"><label>Assist</label><input type="number" id="gps-assist" class="form-control"></div>
+                <div class="col-12 mb-4">
+                    <div class="card chart-card">
+                        <div class="card-body">
+                            <div class="row g-3 align-items-center mb-3 no-print">
+                                <div class="col-md-4">
+                                    <label for="multi-athlete-metric-selector" class="form-label">Parametro</label>
+                                    <select id="multi-athlete-metric-selector" class="form-select"></select>
+                                </div>
+                                <div class="col-md-8">
+                                    <label class="form-label">Tipo Sessione</label>
+                                    <div class="btn-group w-100" id="multi-athlete-type-selector">
+                                        <button type="button" class="btn btn-outline-secondary active" data-type="all">Tutti</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-type="Allenamento">Allenamento</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-type="Partita">Partita</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-type="Individual">Individual</button>
+                                    </div>
+                                </div>
                             </div>
+                            <div class="row g-3 align-items-end no-print">
+                                <div class="col-md-8">
+                                    <label class="form-label">Filtro Temporale (mostra valore massimo nel periodo)</label>
+                                    <!-- ✅ MODIFICA: aggiunto "Annuale" -->
+                                    <div class="btn-group w-100" role="group">
+                                        <button type="button" class="btn btn-outline-secondary" data-period="day">Giorno</button>
+                                        <button type="button" class="btn btn-outline-secondary active" data-period="month">Mese</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-period="bimonth">Bimestre</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-period="trimester">Trimestre</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-period="semester">Semestre</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-period="annual">Annuale</button>
+                                    </div>
+                                </div>
+                                <div class="col-md-3" id="multi-athlete-datepicker-container" style="display: none;">
+                                    <label for="multi-athlete-datepicker" class="form-label">Seleziona Data</label>
+                                    <input type="date" id="multi-athlete-datepicker" class="form-control">
+                                </div>
+                                <div class="col-md-1">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button class="btn btn-secondary w-100" id="multi-athlete-reset-btn" title="Reset Filtri"><i class="bi bi-arrow-clockwise"></i></button>
+                                </div>
+                            </div>
+                            <canvas id="multiAthleteChart" class="mt-4"></canvas>
                         </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-danger" id="delete-gps-session-btn" disabled>Elimina Sessione</button>
-                    <button type="submit" form="gps-form" class="btn btn-primary-custom">Salva</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-
+        <hr class="my-5 no-print">
+        <div id="monitoraggio-gps-section" class="row my-4 printable-area">
+             <div class="col-12 d-flex align-items-center gap-2 mb-3">
+                 <h2 class="main-title mb-0">Monitoraggio Performance (GPS)</h2>
+                 <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
+                <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
+                 <button class="btn btn-sm btn-outline-warning ms-1 no-print unlock-btn" title="Sblocca Dati Individuali" style="display: none;"><i class="bi bi-key-fill"></i></button>
+            </div>
+            <div class="card chart-card p-3 mb-4 no-print">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <label class="form-label mb-0">Filtra sessioni per tipo:</label>
+                    <div class="btn-group btn-group-sm" id="performance-filter-toggle">
+                        <button type="button" class="btn btn-outline-secondary active" data-type="all">Tutti</button>
+                        <button type="button" class="btn btn-outline-secondary" data-type="Allenamento">Allenamento</button>
+                        <button type="button" class="btn btn-outline-secondary" data-type="Partita">Partita</button>
+                        <button type="button" class="btn btn-outline-secondary" data-type="Individual">Individual</button>
+                    </div>
+                </div>
+                <div class="row align-items-end">
+                    <div class="col-md-8">
+                        <label class="form-label">Seleziona le sessioni da confrontare:</label>
+                        <div id="performance-selectors-container" class="d-grid gap-2"></div>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end gap-2 mt-2 mt-md-0">
+                        <div>
+                            <label for="performance-metric-selector" class="form-label">Metrica:</label>
+                            <select id="performance-metric-selector" class="form-select"></select>
+                        </div>
+                        <button class="btn btn-primary-custom flex-grow-1" id="add-comparison-btn"><i class="bi bi-plus-lg"></i> Aggiungi</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-7 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Grafico Confronto Performance</h5><canvas id="performanceChart"></canvas></div></div></div>
+            <div class="col-lg-5 mb-4"><div class="card table-card"><div class="card-body"><h5 class="card-title">Tabella Dati a Confronto</h5><div class="table-responsive" id="performance-table-container"></div><div id="export-buttons-container" class="mt-3 d-flex gap-2 no-print"></div></div></div></div>
+        </div>
+        <hr class="my-5 no-print">
+        <div id="analisi-singolo-section" class="row my-4 printable-area">
+             <div class="col-12 d-flex align-items-center gap-2 mb-3">
+                 <h2 class="main-title mb-0">Analisi Atleta Singolo</h2>
+                 <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
+                 <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
+                <button class="btn btn-sm btn-outline-warning ms-1 no-print unlock-btn" title="Sblocca Dati Individuali" style="display: none;"><i class="bi bi-key-fill"></i></button>
+            </div>
+            <div class="card chart-card p-3 mb-4 no-print">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="trend-athlete-selector" class="form-label">Atleta per Andamento nel Tempo:</label>
+                        <select id="trend-athlete-selector" class="form-select"></select>
+                        <label for="trend-metric-selector" class="form-label mt-2">Metrica per Andamento:</label>
+                        <select id="trend-metric-selector" class="form-select"></select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="radar-athlete-selector-1" class="form-label">Atleta 1 (Radar):</label>
+                        <select id="radar-athlete-selector-1" class="form-select"></select>
+                        <label for="radar-athlete-selector-2" class="form-label mt-2">Atleta 2 (Confronto Radar):</label>
+                        <select id="radar-athlete-selector-2" class="form-select"></select>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-8 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Andamento Performance nel Tempo</h5><canvas id="athleteTrendChart"></canvas></div></div></div>
+            <div class="col-lg-4 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Profilo Atleta (vs. Top di Squadra)</h5><canvas id="athleteRadarChart"></canvas></div></div></div>
+        </div>
+    </main>
+    <footer class="bg-dark-blue py-3 mt-5 no-print">
+        <div class="container text-center">
+            <p class="text-muted mb-0">By Edy Franzoso</p>
+        </div>
+    </footer>
+    <div id="modals-container"></div>
+    <!-- Librerie JS di Bootstrap e Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Script personalizzato -->
     <script src="script.js"></script>
 </body>
 </html>
