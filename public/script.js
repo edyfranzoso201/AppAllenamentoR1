@@ -2224,7 +2224,7 @@ document.addEventListener('DOMContentLoaded', () =>
         // Nuove variabili
         let currentSeason = null; // Stagione selezionata dall'utente
         const SEASON_CREDENTIALS = {
-    '2012': '2012', // Sostituisci con password reali
+    '2012': 2012, // Sostituisci con password reali
     '2013-Juniores': '2013j',
     '2013-Prima': 'prima'
     // Aggiungi altre combinazioni stagione:password
