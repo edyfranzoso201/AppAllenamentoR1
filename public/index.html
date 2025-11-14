@@ -21,7 +21,33 @@
             <button class="btn btn-outline-secondary ms-auto" id="logout-btn" title="Blocca Dashboard (Logout)" style="display: none;"><i class="bi bi-unlock-fill"></i></button>
         </div>
     </nav>
-    <main class="container-fluid mt-5 pt-3">
+
+    <!-- Pannello di Login -->
+<!-- Pannello di Login Iniziale -->
+<div id="login-panel" class="login-panel">
+    <div class="login-container">
+        <h3 class="text-center mb-4">Accesso Stagione Sportiva</h3>
+        <form id="login-form">
+            <div class="mb-3">
+                <label for="season-selector" class="form-label">Seleziona Stagione</label>
+                <select class="form-select" id="season-selector" required>
+                    <option value="">-- Seleziona Stagione --</option>
+                    <option value="2012">2012</option>
+                    <option value="2013-Juniores">2013: Juniores</option>
+                    <option value="2013-Prima">2013: Prima</option>
+                    <!-- Aggiungi altre stagioni come necessario -->
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="coach-password" class="form-label">Password</label>
+                <input type="password" class="form-control" id="coach-password" required>
+            </div>
+            <button type="submit" class="btn btn-primary-custom w-100">Accedi</button>
+        </form>
+    </div>
+</div>
+
+    <main class="container-fluid mt-5 pt-3" id="app-main" style="display: none;">
         <div id="alerts-container"></div>
         <div id="home-section" class="printable-area">
             <div class="row my-4">
