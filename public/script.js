@@ -7,7 +7,9 @@ function toLocalDateISO(dateInput) {
     const offset = d.getTimezoneOffset();
     const localDate = new Date(d.getTime() - (offset * 60 * 1000));
     return localDate.toISOString().split('T')[0];
-document.addEventListener('DOMContentLoaded', () => 
+}
+
+document.addEventListener('DOMContentLoaded', () => {
     const modalsContainer = document.getElementById('modals-container');
     // ✅ MODIFICA: nel modale "matchResultModal", i campi del risultato NON hanno più "required"
     modalsContainer.innerHTML = `<div class="modal fade" id="evaluationModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Valutazione di <span id="modal-athlete-name-eval"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="evaluation-form"><input type="hidden" id="modal-athlete-id-eval"><p>Data: <strong id="modal-evaluation-date"></strong></p><div class="mb-2"><label class="form-label">Presenza Allenamento</label><select id="presenza-allenamento" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Serietà Allenamento</label><select id="serieta-allenamento" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Abbigliamento Allenamento</label><select id="abbigliamento-allenamento" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Abbigliamento Partita</label><select id="abbigliamento-partita" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Serietà Comunicazioni</label><select id="comunicazioni" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Doccia (Opzionale)</label><select id="doccia" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="award-checkbox"><label class="form-check-label" for="award-checkbox">Assegna Premio</label></div></form></div><div class="modal-footer justify-content-between"><button type="button" class="btn btn-outline-danger" id="delete-single-athlete-day-btn">Elimina Dati del Giorno</button><div><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button><button type="submit" class="btn btn-primary-custom" form="evaluation-form">Salva Valutazione</button></div></div></div></div></div> <div class="modal fade" id="athleteModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="athleteModalLabel">Gestisci Atleta</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="athlete-form"><input type="hidden" id="modal-athlete-id"><div class="mb-3"><label class="form-label">Nome Cognome</label><input type="text" class="form-control" id="athlete-name" required></div><div class="mb-3"><label for="athlete-avatar-input" class="form-label">Foto Profilo</label><input type="file" class="form-control" id="athlete-avatar-input" accept="image/*"><input type="hidden" id="athlete-avatar-base64"><img id="avatar-preview" src="" alt="Anteprima" class="mt-2" style="max-width: 70px; max-height: 70px; display: none; border-radius: 50%;"></div><div class="mb-3"><label class="form-label">Ruolo</label><input type="text" class="form-control" id="athlete-role" required></div><div class="row"><div class="col-md-6 mb-3"><label class="form-label">Numero Maglia</label><input type="number" class="form-control" id="athlete-number" required min="1"></div><div class="col-md-6 mb-3"><label class="form-label">Scadenza Visita Medica</label><input type="date" class="form-control" id="scadenza-visita"></div></div><div class="row"><div class="col-md-6 mb-3"><label class="form-label">Data Prenotazione Visita</label><input type="date" class="form-control" id="prenotazione-visita"></div></div><div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="athlete-captain"><label class="form-label" for="athlete-captain">Capitano</label></div><div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="athlete-vice-captain"><label class="form-label" for="athlete-vice-captain">Vice Capitano</label></div></form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button><button type="submit" class="btn btn-primary-custom" form="athlete-form">Salva Atleta</button></div></div></div></div> <div class="modal fade" id="gpsModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="gpsModalLabel">Dati Performance di <span id="modal-athlete-name-gps"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="gps-form"><input type="hidden" id="modal-athlete-id-gps"><input type="hidden" id="gps-session-id"> <div class="row mb-3"><div class="col-md-8"><label for="gps-session-selector" class="form-label">Seleziona Sessione Esistente per Modificare</label><select id="gps-session-selector" class="form-select"><option value="">--- Inserisci Nuova Sessione ---</option></select></div><div class="col-md-4 d-flex align-items-end"><button type="button" id="delete-gps-session-btn" class="btn btn-outline-danger w-100" disabled>Elimina Sessione</button></div></div><hr> <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Data Registrazione</label><input type="date" class="form-control" id="gps-data_di_registrazione" required></div><div class="col-md-4 mb-3"><label class="form-label">Ora Registrazione</label><input type="time" class="form-control" id="gps-ora_registrazione"></div><div class="col-md-4 mb-3"><label class="form-label">Tipo Sessione</label><select class="form-select" id="gps-tipo_sessione"><option value="Allenamento">Allenamento</option><option value="Partita">Partita</option><option value="Individual">Individual</option></select></div></div> <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Distanza Totale (m)</label><input type="number" step="0.1" class="form-control" id="gps-distanza_totale" placeholder="es. 10500"></div><div class="col-md-4 mb-3"><label class="form-label">Tempo Totale (min)</label><input type="number" step="0.1" class="form-control" id="gps-tempo_totale" placeholder="es. 92"></div><div class="col-md-4 mb-3"><label class="form-label">Distanza per Minuto (m/min)</label><input type="number" step="0.1" class="form-control" id="gps-distanza_per_minuto" readonly></div></div> <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Distanza Sprint (m)</label><input type="number" step="0.1" class="form-control" id="gps-distanza_sprint"></div><div class="col-md-4 mb-3"><label class="form-label">Velocità Massima (km/h)</label><input type="number" step="0.1" class="form-control" id="gps-velocita_massima"></div><div class="col-md-4 mb-3"><label class="form-label">Numero di Sprint</label><input type="number" class="form-control" id="gps-numero_di_sprint"></div></div> <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Max Acc (g)o(n°)</label><input type="number" step="0.1" class="form-control" id="gps-max_acc"></div><div class="col-md-4 mb-3"><label class="form-label">Max Dec (g)o(n°)</label><input type="number" step="0.1" class="form-control" id="gps-max_dec"></div><div class="col-md-4 mb-3"><label class="form-label">Passaggi Piede Sinistro</label><input type="number" class="form-control" id="gps-passaggi_piede_sinistro"></div></div> <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Passaggi Piede Destro</label><input type="number" class="form-control" id="gps-passaggi_piede_destro"></div><div class="col-md-4 mb-3"><label class="form-label">Cross Piede Sinistro</label><input type="number" step="0.1" class="form-control" id="gps-cross_piede_sinistro"></div><div class="col-md-4 mb-3"><label class="form-label">Cross Piede Destro</label><input type="number" step="0.1" class="form-control" id="gps-cross_piede_destro"></div></div> <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Potenza Massima di Tiro (km/h)</label><input type="number" step="0.1" class="form-control" id="gps-potenza_massima_di_tiro"></div><div class="col-md-4 mb-3"><label class="form-label">Tiri Piede SX</label><input type="number" class="form-control" id="gps-tiri_piede_sx"></div><div class="col-md-4 mb-3"><label class="form-label">Tiri Piede DX</label><input type="number" class="form-control" id="gps-tiri_piede_dx"></div></div> <div class="row"><div class="col-md-4 mb-3"><label class="form-label">% Passaggi Brevi</label><input type="number" step="0.1" class="form-control" id="gps-perc_passaggi_brevi"></div><div class="col-md-4 mb-3"><label class="form-label">% Lanci</label><input type="number" step="0.1" class="form-control" id="gps-perc_lanci"></div><div class="col-md-4 mb-3"><label class="form-label">Distanza Circuito (m)</label><input type="number" step="1" class="form-control" id="gps-distanza_circuito" placeholder="es. 400"></div></div> <div class="row align-items-end"><div class="col-md-5 mb-3"><label class="form-label">Tempo Circuito</label><div class="input-group"><input type="number" class="form-control" id="gps-tempo_circuito_min" placeholder="Min" min="0"><span class="input-group-text">:</span><input type="number" class="form-control" id="gps-tempo_circuito_sec" placeholder="Sec" min="0" max="59"><span class="input-group-text">.</span><input type="number" class="form-control" id="gps-tempo_circuito_cen" placeholder="Cen" min="0" max="99"></div></div><div class="col-md-4 mb-3"><label class="form-label">Velocità (km/h)</label><input type="text" class="form-control" id="gps-velocita_circuito" readonly></div></div> <div id="match-stats-fields" style="display: none;"><hr><h5 class="mb-3">Statistiche Partita</h5><div class="row"><div class="col-md-3 mb-3"><label class="form-label">Minuti Giocati</label><input type="number" class="form-control" id="gps-minuti_giocati"></div><div class="col-md-3 mb-3"><label class="form-label">Gol</label><input type="number" class="form-control" id="gps-gol"></div><div class="col-md-3 mb-3"><label class="form-label">Assist</label><input type="number" class="form-control" id="gps-assist"></div><div class="col-md-3 mb-3"><label class="form-label">Ammonizioni</label><input type="number" class="form-control" id="gps-ammonizioni"></div></div><div class="row"><div class="col-md-3 mb-3"><label class="form-label">Espulsioni</label><input type="number" class="form-control" id="gps-espulsioni"></div><div class="col-md-3 mb-3"><label class="form-label">Palle Recuperate</label><input type="number" class="form-control" id="gps-palle_recuperate"></div><div class="col-md-3 mb-3"><label class="form-label">Palle Perse</label><input type="number" class="form-control" id="gps-palle_perse"></div></div></div> <div class="row"><div class="col-12 mb-3"><label class="form-label">Note (opzionale)</label><textarea class="form-control" id="gps-note" rows="2" placeholder="Es. Allenamento intenso, recupero infortunio, ecc."></textarea></div></div> </form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button><button type="submit" class="btn btn-primary-custom" form="gps-form">Salva Dati GPS</button></div></div></div></div> <div class="modal fade" id="sessionModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="sessionModalLabel">Pianifica Sessione</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="session-form"><input type="hidden" id="session-id"><div class="mb-3"><label class="form-label">Data</label><input type="date" class="form-control" id="session-date" required></div><div class="mb-3"><label class="form-label">Titolo/Tipo</label><input type="text" class="form-control" id="session-title" required placeholder="Es. Allenamento tecnico"></div><div class="row"><div class="col-md-6 mb-3"><label class="form-label">Ora Inizio</label><input type="time" class="form-control" id="session-time"></div><div class="col-md-6 mb-3"><label class="form-label">Luogo</label><input type="text" class="form-control" id="session-location" placeholder="Es. Campo 1"></div></div><div class="mb-3"><label class="form-label">Obiettivi</label><input type="text" class="form-control" id="session-goals" placeholder="Es. Possesso palla, tiri in porta"></div><div class="mb-3"><label class="form-label">Descrizione Allenamento (un punto per riga)</label><textarea class="form-control" id="session-description" rows="5"></textarea></div></form></div><div class="modal-footer justify-content-between"><button type="button" class="btn btn-outline-danger" id="delete-session-btn" style="display:none;">Elimina</button><div><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button><button type="submit" class="btn btn-primary-custom" form="session-form">Salva Sessione</button></div></div></div></div></div> <div class="modal fade" id="matchResultModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="matchResultModalLabel">Inserisci Risultato Partita</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="match-result-form"><input type="hidden" id="match-id"><div class="row"><div class="col-md-4 mb-3"><label class="form-label">Data Partita</label><input type="date" class="form-control" id="match-date" required></div><div class="col-md-4 mb-3"><label class="form-label">Ora Partita</label><input type="time" class="form-control" id="match-time"></div><div class="col-md-4 mb-3"><label class="form-label">Luogo Fisico</label><input type="text" class="form-control" id="match-venue" placeholder="Es. Stadio Comunale"></div></div><div class="row"><div class="col-md-5 mb-3"><label class="form-label">Squadra Avversaria</label><input type="text" class="form-control" id="match-opponent-name" required></div><div class="col-md-3 mb-3"><label class="form-label">Luogo</label><select class="form-select" id="match-location"><option value="home">Casa</option><option value="away">Trasferta</option></select></div></div><div class="row align-items-center text-center">
@@ -41,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () =>
         trendMetricSelector: document.getElementById('trend-metric-selector'),
         hallOfFameContainer: document.getElementById('hall-of-fame-container'),
         radarAthleteSelector1: document.getElementById('radar-athlete-selector-1'),
-        radarAthleteSelector2: document.getElementById('radar-athlete-selector-2'),
+        radarAthleteSelector2: document.getElementById('radr-athlete-selector-2'),
         multiAthleteMetricSelector: document.getElementById('multi-athlete-metric-selector'),
         multiAthleteTimeFilter: document.querySelector('#multi-athlete-chart-container .btn-group[role="group"]'),
         multiAthleteDatepicker: document.getElementById('multi-athlete-datepicker'),
@@ -87,46 +89,6 @@ document.addEventListener('DOMContentLoaded', () =>
         statGf: document.getElementById('stat-gf'),
         statGs: document.getElementById('stat-gs'),
         statDr: document.getElementById('stat-dr')
-        loginForm: document.getElementById('login-form'),
-        loginPanel: document.getElementById('login-panel'),
-        appMain: document.getElementById('app-main'),
-        seasonSelector: document.getElementById('season-selector'),
-        coachPassword: document.getElementById('coach-password'),
-    };
-    // Funzione per mostrare il pannello di login
-    const showLogin = () => {
-    elements.loginPanel.style.display = 'flex'; // Mostra il pannello
-    elements.appMain.style.display = 'none'; // Nasconde l'app principale
-    // Resetta eventuali dati caricati
-    athletes = [];
-    evaluations = {};
-    gpsData = {};
-    awards = {};
-    trainingSessions = {};
-    formationData = { starters: [], bench: [], tokens: [] };
-    matchResults = {};
-    updateAllUI(); // Aggiorna l'UI (anche se vuota)
-    };
-    // Event listener per il form di login
-    elements.loginForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const selectedSeason = elements.seasonSelector.value;
-    const password = elements.coachPassword.value;
-
-    // Verifica credenziali
-    if (SEASON_CREDENTIALS[selectedSeason] && SEASON_CREDENTIALS[selectedSeason] === password) {
-        currentSeason = selectedSeason; // Imposta la stagione corrente
-        loadDataForSeason(currentSeason); // Carica i dati per la stagione
-        showApp(); // Mostra l'app
-    } else {
-        alert("Credenziali non valide per la stagione selezionata.");
-    }
-    });
-   // Funzione per nascondere il pannello di login e mostrare l'app
-    const showApp = () => {
-    elements.loginPanel.style.display = 'none';
-    elements.appMain.style.display = 'block';
-    updateAllUI(); // Aggiorna l'UI con i dati caricati
     };
     const ACCESS_PASSWORD = "2025Edy201";
     let authSuccessCallback = null;
@@ -1215,7 +1177,7 @@ document.addEventListener('DOMContentLoaded', () =>
         if (period === 'day') {
             if (!elements.multiAthleteDatepicker.value) return;
             startDate = new Date(elements.multiAthleteDatepicker.value);
-            endDate = new Date(elements.multiAthleteDatepicker.value);
+            endDate = new Date(elements.multiAthleeDatepicker.value);
             endDate.setHours(23, 59, 59, 999);
         } else {
             const monthsToSubtract = { month: 1, bimonth: 2, trimester: 3, semester: 6, annual: 12 };
@@ -1314,11 +1276,7 @@ document.addEventListener('DOMContentLoaded', () =>
 
     elements.evaluationDatePicker.addEventListener('change', (e) => syncAndUpdateEvaluationDate(e.target.value));
     elements.evaluationDatePicker2.addEventListener('change', (e) => syncAndUpdateEvaluationDate(e.target.value));
-    const logout = () => {
-    currentSeason = null; // Resetta la stagione
-    sessionStorage.removeItem('isAuthenticated'); // Resetta eventuali altri stati di autenticazione
-    showLogin(); // Torna al pannello di login
-};
+    elements.logoutBtn.addEventListener('click', logout);
     elements.cardsSummaryTbody.addEventListener('click', e => {
         const removeBtn = e.target.closest('.remove-card-summary-row-btn');
         if (removeBtn) {
@@ -2221,14 +2179,6 @@ document.addEventListener('DOMContentLoaded', () =>
         if (e.target.closest('.remove-row-btn')) {
             e.target.closest('.d-flex').remove();
         }
-        // Nuove variabili
-        let currentSeason = null; // Stagione selezionata dall'utente
-        const SEASON_CREDENTIALS = {
-    '2012': '2012', // Sostituisci con password reali
-    '2013-Juniores': '2013j',
-    '2013-Prima': 'prima'
-    // Aggiungi altre combinazioni stagione:password
-};
     });
     // ✅ MODIFICA: Salvataggio partita senza obbligo di punteggio
     elements.matchResultForm.addEventListener('submit', e => {
@@ -2306,58 +2256,14 @@ document.addEventListener('DOMContentLoaded', () =>
             }
         }, 5000);
     }
-    // Funzione per caricare i dati specifici di una stagione
-// Questo esempio assume che il backend possa fornire dati per stagione
-// Se tutti i dati sono in un unico file, questa funzione carica tutto e poi filtra.
-const loadDataForSeason = async (season) => {
-    try {
-        // Se il backend supporta il filtro per stagione:
-        // const response = await fetch(`/api/data?season=${season}`, { cache: 'no-store' });
-
-        // Se tutti i dati sono in un unico file, carica tutto e poi filtra:
-        const response = await fetch('/api/data', { cache: 'no-store' });
-
-        if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
-        const allData = await response.json();
-
-        // Supponiamo che il server invii i dati corretti per la stagione
-        // oppure che tu implementi una logica di filtro qui.
-        // Per ora, supponiamo che i dati caricati siano già quelli giusti per la stagione.
-        athletes = allData.athletes || [];
-        evaluations = allData.evaluations || {};
-        gpsData = allData.gpsData || {};
-        migrateGpsData();
-        awards = allData.awards || {};
-        trainingSessions = allData.trainingSessions || {};
-        formationData = allData.formationData || { starters: [], bench: [], tokens: [] };
-        matchResults = allData.matchResults || {};
-
-        // Mantieni le inizializzazioni esistenti
-        athletes.forEach(athlete => {
-            if (athlete.isViceCaptain === undefined) {
-                athlete.isViceCaptain = false;
-            }
-        });
-        for (const matchId in matchResults) {
-            if (!matchResults[matchId].assists) {
-                matchResults[matchId].assists = [];
-            }
-        }
-    } catch (error) {
-        console.error('Errore nel caricamento dei dati per la stagione dal server:', error);
-        athletes = [];
-        evaluations = {};
-        gpsData = {};
-        awards = {};
-        trainingSessions = {};
-        formationData = { starters: [], bench: [], tokens: [] };
-        matchResults = {};
-    }
-};
-    // Modifica la funzione initializeApp per mostrare il login
     async function initializeApp() {
-    showLogin(); // Mostra il pannello di login all'avvio
-    // loadData e updateAllUI non vengono chiamati qui, ma dopo il login
-}
+        await loadData();
+        const today = new Date();
+        elements.evaluationDatePicker.valueAsDate = today;
+        elements.evaluationDatePicker2.valueAsDate = today;
+        elements.multiAthleteDatepicker.valueAsDate = today;
+        updateAllUI();
+        startPolling();
+    }
     initializeApp();
 });
