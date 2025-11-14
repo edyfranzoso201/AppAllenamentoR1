@@ -184,6 +184,7 @@ const loadData = async () => {
                 matchResults[matchId].assists = [];
             }
         }
+
     } catch (error) {
         console.error('Errore nel caricamento dei dati dal server:', error);
         athletes = []; 
@@ -860,17 +861,10 @@ const loadData = async () => {
             const dateSelector = selectorRow.querySelector('.date-selector');
             if (athleteId && dataToUse[athleteId]) {
                 const allSessions = [];
-                // ✅ Correzione: Itera sugli oggetti GPS dell'atleta
-                for (const date in dataToUse[athleteId]) {
-                    if (Array.isArray(dataToUse[athleteId][date])) {
-                        dataToUse[athleteId][date].forEach(session => {
-                            allSessions.push({ date, ...session });
-                        });
-                    }
-                }
-                // ✅ Correzione: Aggiungi il controllo per il filtro tipo sessione
+                Object.entries(dataToUse[athleteId]).forEach(([date, sessions]) => {
+                    sessions.forEach(session => allSessions.push({ date, ...session }));
+                });
                 const filteredSessions = (performanceFilterType === 'all') ? allSessions : allSessions.filter(session => session.tipo_sessione === performanceFilterType);
-                // ✅ Correzione: Ordina le sessioni in ordine decrescente di data e ora
                 filteredSessions.sort((a,b) => new Date(b.date) - new Date(a.date) || (b.ora_registrazione || "").localeCompare(a.ora_registrazione || "")).forEach(session => {
                     const option = document.createElement('option');
                     option.value = session.id;
@@ -1012,7 +1006,7 @@ const loadData = async () => {
             }
         });
     };
-    const updateAthleteRadarChart = () => 
+    const updateAthleteRadarChart = () => {
         const athleteId1 = elements.radarAthleteSelector1.value;
         const athleteId2 = elements.radarAthleteSelector2.value;
         const selectedAthleteIds = [athleteId1, athleteId2].filter(id => id);
@@ -1033,7 +1027,7 @@ const loadData = async () => {
             });
             teamMaxs[metric] = maxValue;
         });
-        const datasets = selectedAthleteIds.map((athleteId, index) => 
+        const datasets = selectedAthleteIds.map((athleteId, index) => {
             const athlete = athletes.find(a => a.id.toString() === athleteId);
             const athleteData = dataToUse[athleteId] || {};
             const athleteAvgs = {};
@@ -1052,7 +1046,7 @@ const loadData = async () => {
             });
             const normalizedData = Object.keys(radarMetrics).map(metric => teamMaxs[metric] > 0 ? (athleteAvgs[metric] / teamMaxs[metric]) * 100 : 0);
             const color = radarColors[index % radarColors.length];
-            return 
+            return {
                 label: athlete?.name || 'N/A',
                 data: normalizedData,
                 borderColor: color,
@@ -1061,6 +1055,8 @@ const loadData = async () => {
                 pointBorderColor: '#fff',
                 pointHoverBackgroundColor: '#fff',
                 pointHoverBorderColor: color
+            };
+        });
         chartInstances.athleteRadar = new Chart(document.getElementById('athleteRadarChart').getContext('2d'), {
             type: 'radar',
             data: { labels: Object.values(radarMetrics), datasets: datasets },
@@ -1078,6 +1074,7 @@ const loadData = async () => {
                 plugins: { legend: { labels: { color: '#ffffff' } } }
             }
         });
+    };
     const updateMultiAthleteChart = () => {
         const metric = elements.multiAthleteMetricSelector.value;
         const periodBtn = document.querySelector('#multi-athlete-chart-container .btn-group[role="group"] .btn.active');
