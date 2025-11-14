@@ -1012,7 +1012,7 @@ const loadData = async () => {
             }
         });
     };
-    const updateAthleteRadarChart = () => {
+    const updateAthleteRadarChart = () => 
         const athleteId1 = elements.radarAthleteSelector1.value;
         const athleteId2 = elements.radarAthleteSelector2.value;
         const selectedAthleteIds = [athleteId1, athleteId2].filter(id => id);
@@ -1033,7 +1033,7 @@ const loadData = async () => {
             });
             teamMaxs[metric] = maxValue;
         });
-        const datasets = selectedAthleteIds.map((athleteId, index) => {
+        const datasets = selectedAthleteIds.map((athleteId, index) => 
             const athlete = athletes.find(a => a.id.toString() === athleteId);
             const athleteData = dataToUse[athleteId] || {};
             const athleteAvgs = {};
@@ -1052,7 +1052,7 @@ const loadData = async () => {
             });
             const normalizedData = Object.keys(radarMetrics).map(metric => teamMaxs[metric] > 0 ? (athleteAvgs[metric] / teamMaxs[metric]) * 100 : 0);
             const color = radarColors[index % radarColors.length];
-            return {
+            return 
                 label: athlete?.name || 'N/A',
                 data: normalizedData,
                 borderColor: color,
@@ -1061,8 +1061,6 @@ const loadData = async () => {
                 pointBorderColor: '#fff',
                 pointHoverBackgroundColor: '#fff',
                 pointHoverBorderColor: color
-            };
-        });
         chartInstances.athleteRadar = new Chart(document.getElementById('athleteRadarChart').getContext('2d'), {
             type: 'radar',
             data: { labels: Object.values(radarMetrics), datasets: datasets },
@@ -1080,7 +1078,6 @@ const loadData = async () => {
                 plugins: { legend: { labels: { color: '#ffffff' } } }
             }
         });
-    };
     const updateMultiAthleteChart = () => {
         const metric = elements.multiAthleteMetricSelector.value;
         const periodBtn = document.querySelector('#multi-athlete-chart-container .btn-group[role="group"] .btn.active');
