@@ -184,7 +184,6 @@ const loadData = async () => {
                 matchResults[matchId].assists = [];
             }
         }
-
     } catch (error) {
         console.error('Errore nel caricamento dei dati dal server:', error);
         athletes = []; 
@@ -861,10 +860,17 @@ const loadData = async () => {
             const dateSelector = selectorRow.querySelector('.date-selector');
             if (athleteId && dataToUse[athleteId]) {
                 const allSessions = [];
-                Object.entries(dataToUse[athleteId]).forEach(([date, sessions]) => {
-                    sessions.forEach(session => allSessions.push({ date, ...session }));
-                });
+                // ✅ Correzione: Itera sugli oggetti GPS dell'atleta
+                for (const date in dataToUse[athleteId]) {
+                    if (Array.isArray(dataToUse[athleteId][date])) {
+                        dataToUse[athleteId][date].forEach(session => {
+                            allSessions.push({ date, ...session });
+                        });
+                    }
+                }
+                // ✅ Correzione: Aggiungi il controllo per il filtro tipo sessione
                 const filteredSessions = (performanceFilterType === 'all') ? allSessions : allSessions.filter(session => session.tipo_sessione === performanceFilterType);
+                // ✅ Correzione: Ordina le sessioni in ordine decrescente di data e ora
                 filteredSessions.sort((a,b) => new Date(b.date) - new Date(a.date) || (b.ora_registrazione || "").localeCompare(a.ora_registrazione || "")).forEach(session => {
                     const option = document.createElement('option');
                     option.value = session.id;
