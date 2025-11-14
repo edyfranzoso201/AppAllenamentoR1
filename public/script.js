@@ -1540,34 +1540,42 @@ const loadData = async () => {
             document.getElementById('gps-velocita_circuito').value = (dist > 0 && totalTimeSec > 0) ? ((dist / totalTimeSec) * 3.6).toFixed(2) : '';
         });
     });
-    elements.performanceSelectorsContainer.addEventListener('change', (e) => {
-        if (e.target.matches('.athlete-selector, .date-selector')) {
-            const index = parseInt(e.target.dataset.index);
-            const row = e.target.closest('.row');
-            const selectedOption = e.target.selectedOptions ? e.target.selectedOptions[0] : null;
-            const updateSelection = () => {
-                performanceSelections[index].athleteId = row.querySelector('.athlete-selector').value;
-                performanceSelections[index].sessionId = row.querySelector('.date-selector').value;
-                if(e.target.matches('.date-selector') && selectedOption && selectedOption.dataset.protected === 'true') {
-                    requestAuthentication( updateSelection, () => {
-                        e.target.value = '';
-                        performanceSelections[index].sessionId = null;
-                        updatePerformanceChart();
-                    });
-                    return;
-                }
-                updateSelection();
-            };
-            if (e.target.matches('.date-selector') && selectedOption && selectedOption.dataset.protected === 'true') {
-                requestAuthentication( updateSelection, () => {
-                    e.target.value = '';
-                    performanceSelections[index].sessionId = null;
-                    updatePerformanceChart();
-                });
-                return;
-            }
-            updateSelection();
+elements.performanceSelectorsContainer.addEventListener('change', (e) => {
+        if (!e.target.matches('.athlete-selector, .date-selector')) return;
+
+        const index = parseInt(e.target.dataset.index);
+        const row = e.target.closest('.row');
+        const isAthleteChange = e.target.matches('.athlete-selector');
+
+        // 1. Aggiorna lo stato in performanceSelections
+        performanceSelections[index].athleteId = row.querySelector('.athlete-selector').value;
+        performanceSelections[index].sessionId = row.querySelector('.date-selector').value;
+
+        if (isAthleteChange) {
+            // Se è cambiato l'atleta, azzera la sessione
+            performanceSelections[index].sessionId = null; 
         }
+        // 2. Gestisci l'autenticazione per sessioni protette (se è stata appena selezionata una sessione)
+        const selectedOption = e.target.selectedOptions ? e.target.selectedOptions[0] : null;
+        if (e.target.matches('.date-selector') && selectedOption && selectedOption.dataset.protected === 'true') {
+            requestAuthentication(
+                () => { // Successo
+                    // Lo stato è già impostato, aggiorna solo l'interfaccia
+                    populatePerformanceSelectors(); 
+                    updatePerformanceChart();
+                },
+                () => { // Annullamento
+                    // Resetta la selezione e aggiorna l'interfaccia
+                    performanceSelections[index].sessionId = null;
+                    populatePerformanceSelectors(); 
+                    updatePerformanceChart();
+                }
+            );
+            return; // L'autenticazione gestirà il resto
+        }
+        // 3. Ridisegna i selettori e aggiorna il grafico
+        populatePerformanceSelectors();
+        updatePerformanceChart();
     });
     elements.performanceSelectorsContainer.addEventListener('click', (e) => {
         const removeBtn = e.target.closest('.remove-selector');
