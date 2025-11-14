@@ -158,39 +158,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     const loadData = async () => {
-    try {
-        const response = await fetch('/api/data', { cache: 'no-store' });
-        if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
-        const allData = await response.json();
-        athletes = allData.athletes || [];
-        evaluations = allData.evaluations || {};
-        gpsData = allData.gpsData || {};
-        migrateGpsData();
-        awards = allData.awards || {};
-        trainingSessions = allData.trainingSessions || {};
-        formationData = allData.formationData || { starters: [], bench: [], tokens: [] };
-        matchResults = allData.matchResults || {};
+        try {
+            const response = await fetch('/api/data', { cache: 'no-store' });
+            if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
+            const allData = await response.json();
+            athletes = allData.athletes || [];
+            evaluations = allData.evaluations || {};
+            gpsData = allData.gpsData || {};
+            migrateGpsData();
+            awards = allData.awards || {};
+            trainingSessions = allData.trainingSessions || {};
+            formationData = allData.formationData || { starters: [], bench: [], tokens: [] };
+            matchResults = allData.matchResults || {};
+            // ✅ MODIFICA: Assicurarsi che tutti gli atleti abbiano la proprietà `isViceCaptain`
+            athletes.forEach(athlete => {
+                if (athlete.isViceCaptain === undefined) {
+                    athlete.isViceCaptain = false;
+                }
+            });
 
-        // ✅ MODIFICA: Assicurarsi che tutti gli atleti abbiano la proprietà `isViceCaptain`
-        athletes.forEach(athlete => {
-            if (athlete.isViceCaptain === undefined) {
-                athlete.isViceCaptain = false;
+            // --- ✅ CORREZIONE: Inizializza la proprietà `assists` per tutte le partite caricate ---
+            for (const matchId in matchResults) {
+                if (!matchResults[matchId].assists) {
+                    matchResults[matchId].assists = [];
+                }
             }
-        });
+            // ---
 
-        // ✅ NUOVA MODIFICA: Inizializza la proprietà `assists` per tutte le partite caricate
-        for (const matchId in matchResults) {
-            if (!matchResults[matchId].assists) {
-                matchResults[matchId].assists = [];
-            }
+
+        } catch (error) {
+            console.error('Errore nel caricamento dei dati dal server:', error);
+            athletes = []; evaluations = {}; gpsData = {}; awards = {}; trainingSessions = {}; formationData = { starters: [], bench: [], tokens: [] }; matchResults = {};
         }
-
-    } catch (error) {
-        console.error('Errore nel caricamento dei dati dal server:', error);
-        athletes = []; evaluations = {}; gpsData = {}; awards = {}; trainingSessions = {}; formationData = { starters: [], bench: [], tokens: [] }; matchResults = {};
-    }
-};
     };
+};
     const getWeekRange = (date) => {
         const d = new Date(date);
         const day = d.getDay();
