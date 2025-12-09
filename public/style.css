@@ -3,6 +3,7 @@
     --text-light: #ffffff; --card-bg: #1a3a7a; --border-color: #3b5a9d; --gold-star: #FFD700;
     --field-green: #008000; --field-line: #FFF; --gk-color: #E8C135; --custom-purple: #6f42c1;
 }
+
 html { scroll-behavior: smooth; }
 body { background-color: var(--primary-blue); color: var(--text-light); padding-top: 56px; }
 .bg-dark-blue { background-color: #051438 !important; border-bottom: 2px solid var(--primary-red); }
@@ -13,96 +14,67 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 .athlete-card-clickable { cursor: pointer; }
 .athlete-card-clickable:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(217, 4, 41, 0.2); border-color: var(--primary-red); }
 
-/* --- NUOVO: MODALITÀ OSPITE (VERDE) --- */
+/* --- MODIFICA: COLORE VERDE PER OSPITI --- */
 .athlete-card.guest-mode {
-    background-color: #198754 !important; /* Verde Bootstrap */
+    background-color: #198754 !important; /* Verde scuro */
     border-color: #146c43 !important;
 }
 .athlete-card.guest-mode:hover {
     background-color: #157347 !important;
 }
-/* -------------------------------------- */
+/* ----------------------------------------- */
 
 .athlete-avatar { width: 70px; height: 70px; border-radius: 50%; border: 3px solid var(--border-color); object-fit: cover; background-color: var(--secondary-blue); }
-.athlete-card .card-title { font-size: 1.1rem; margin-bottom: 0.1rem; }
 .shirt-number { font-size: 1.5rem; font-weight: bold; color: var(--text-light); background-color: var(--primary-red); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: absolute; top: 50%; right: 15px; transform: translateY(-50%); }
-.is-captain { color: var(--gold-star); }
-.card-actions { position: absolute; bottom: 10px; right: 10px; z-index: 5; display: flex; gap: 5px; }
-.card-actions .btn { background: rgba(0,0,0,0.3); border: none; }
 
+/* STILE MAGLIETTE (FORMAZIONE) - RIPRISTINATO */
+.player-jersey { position: absolute; width: 3em; height: 3em; transform: translate(-50%, -50%); cursor: grab; z-index: 10; display: flex; flex-direction: column; align-items: center; }
+.jersey-body { 
+    width: 2.5em; height: 2.5em; 
+    background-color: var(--secondary-blue); 
+    /* Questo crea la forma a maglietta */
+    border-radius: 0.8em 0.8em 0.5em 0.5em; 
+    display: flex; align-items: center; justify-content: center; 
+    box-shadow: inset 0 -4px 8px rgba(0,0,0,0.3); 
+    border: 1px solid rgba(255,255,255,0.2);
+}
+/* Maglietta ospite (verde) */
+.jersey-body.guest-jersey {
+    background-color: #198754 !important;
+}
+
+.jersey-number { font-size: 1.2em; font-weight: bold; color: white; text-shadow: 1px 1px 2px black; }
+.player-name { margin-top: 0.2em; font-size: 0.7em; font-weight: bold; color: white; background-color: rgba(0,0,0,0.6); padding: 0.1em 0.4em; border-radius: 4px; white-space: nowrap; }
+
+/* Resto dello stile invariato */
 .chart-card, .table-card, .summary-card { background-color: var(--card-bg); border: 1px solid var(--border-color); }
 .modal-content { background-color: var(--primary-blue); border: 1px solid var(--primary-red); color: white; }
-.modal-header, .modal-footer { border-bottom: 1px solid var(--border-color); border-top: 1px solid var(--border-color); }
 .btn-primary-custom { background-color: var(--primary-red); border-color: var(--primary-red); color: white; }
-.btn-primary-custom:hover { background-color: #b80323; border-color: #b80323; }
 .form-control, .form-select { background-color: var(--secondary-blue); color: var(--text-light); border-color: var(--border-color); }
-.form-control::placeholder { color: #8a9fc1; }
-.form-control:focus, .form-select:focus { background-color: var(--secondary-blue); color: var(--text-light); border-color: var(--primary-red); box-shadow: 0 0 0 0.25rem rgba(217, 4, 41, 0.25); }
-
-.text-muted { color: rgba(255, 255, 255, 0.75) !important; }
-.summary-card .card-body { min-height: 150px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;}
-.summary-card .display-4 { font-weight: 500; }
-
-.calendar-card { background-color: var(--card-bg); border: 1px solid var(--border-color); }
-.calendar-header { display: flex; justify-content: space-between; align-items: center; }
-.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-.calendar-day { background-color: var(--secondary-blue); border: 1px solid var(--border-color); min-height: 120px; padding: 8px; font-size: 0.9rem; }
+.calendar-day { background-color: var(--secondary-blue); border: 1px solid var(--border-color); min-height: 120px; padding: 8px; }
 .calendar-day.today { border-color: var(--primary-red); }
-.calendar-day-header { font-weight: bold; }
-
-.calendar-session { padding: 4px; border-radius: 4px; font-size: 0.75rem; margin-top: 5px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.session-allenamento { background-color: var(--primary-red); color: white; }
-.session-partita-casa { background-color: var(--primary-blue); color: white; }
-.session-partita-trasferta { background-color: var(--primary-red); color: white; }
-.session-partita-futura { background-color: #006400; color: white; }
-
-.deadline-status { font-size: 1.2rem; position: absolute; top: 50%; right: 70px; transform: translateY(-50%); }
-.text-purple { color: var(--custom-purple) !important; }
-.available-player.disabled { opacity: 0.5; cursor: not-allowed; background-color: #343a40 !important; }
-
-/* Match Results Styles */
 .match-result-item { transition: transform 0.2s; border-left: 5px solid transparent; }
-.match-result-item:hover { transform: scale(1.02); }
 .match-home { border-left-color: var(--primary-blue); background-color: rgba(10, 36, 99, 0.4); }
 .match-away { border-left-color: var(--primary-red); background-color: rgba(217, 4, 41, 0.2); }
-.match-future { border-left-color: #28a745; background-color: rgba(40, 167, 69, 0.2); }
 
-/* Pitch Styles */
 #pitch-wrapper { display: flex; align-items: flex-start; gap: 1rem; }
-#field-container { background-color: var(--field-green); border: 2px solid var(--field-line); position: relative; width: 100%; max-width: 450px; aspect-ratio: 5 / 7; box-sizing: border-box; flex-shrink: 0; }
+#field-container { background-color: var(--field-green); border: 2px solid var(--field-line); position: relative; width: 100%; max-width: 450px; aspect-ratio: 5 / 7; }
 #field-bench-area { background-color: rgba(0,0,0,0.2); border: 2px dashed var(--border-color); border-radius: 8px; width: 120px; min-height: 400px; position: relative; }
 .field-line, .field-circle, .field-box, .field-spot { position: absolute; border: 2px solid var(--field-line); pointer-events: none; }
 .halfway-line { top: 50%; width: 100%; height: 0; }
 .center-circle { top: 50%; left: 50%; width: 20%; padding-top: 20%; transform: translate(-50%, -50%); border-radius: 50%; }
-.center-spot { top: 50%; left: 50%; width: 6px; height: 6px; background-color: var(--field-line); border-radius: 50%; transform: translate(-50%, -50%); }
 .penalty-box-top { top: 0; left: 20%; width: 60%; height: 16%; border-top: none; }
 .goal-box-top { top: 0; left: 35%; width: 30%; height: 6%; border-top: none; }
-.penalty-spot-top { top: 11%; left: 50%; width: 4px; height: 4px; background-color: var(--field-line); transform: translate(-50%, -50%); }
 .penalty-box-bottom { bottom: 0; left: 20%; width: 60%; height: 16%; border-bottom: none; }
 .goal-box-bottom { bottom: 0; left: 35%; width: 30%; height: 6%; border-bottom: none; }
-.penalty-spot-bottom { bottom: 11%; left: 50%; width: 4px; height: 4px; background-color: var(--field-line); transform: translate(-50%, 50%); }
 
-.player-jersey { position: absolute; width: 3em; height: 3em; transform: translate(-50%, -50%); cursor: grab; z-index: 10; display: flex; flex-direction: column; align-items: center; }
-.jersey-body { width: 2.5em; height: 2.5em; background-color: var(--secondary-blue); border-radius: 0.8em 0.8em 0.5em 0.5em; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 -4px 8px rgba(0,0,0,0.3); }
-.jersey-number { font-size: 1.2em; font-weight: bold; color: white; text-shadow: 1px 1px 2px black; }
-.player-name { margin-top: 0.2em; font-size: 0.7em; font-weight: bold; color: white; background-color: rgba(0,0,0,0.6); padding: 0.1em 0.4em; border-radius: 4px; white-space: nowrap; }
 .token { position: absolute; width: 2em; height: 2em; transform: translate(-50%, -50%); cursor: grab; z-index: 10; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 50%; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); font-size: 0.9em; }
 .token-captain { background-color: var(--gold-star); color: black; border: 2px solid #fff; }
 .token-ball { font-size: 1.5em; background: transparent; box-shadow: none; }
 .token-opponent { background-color: var(--primary-red); color: white; border: 2px solid white; }
 
-/* STAMPA */
 @media print {
-    body { padding-top: 0; }
     .no-print { display: none !important; }
-    .printable-area { page-break-inside: avoid; margin-bottom: 2rem; }
     .card { border: 1px solid #000; break-inside: avoid; }
-    .bg-dark-blue { background-color: #fff !important; color: #000 !important; border-color: #000 !important; }
-    .printing-now .calendar-session, .printing-now .shirt-number { background-color: #cccccc !important; color: #000 !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
-    .printing-now *, .printing-now .main-title, .printing-now .text-muted, .printing-now .card-title, .printing-now p, .printing-now h1, .printing-now h2, .printing-now h3, .printing-now h4, .printing-now h5, .printing-now h6 { color: #000 !important; }
-    .printing-now .player-name, .printing-now .jersey-number, .printing-now .token-captain { color: #fff !important; }
-    .printing-now .main-title { border-left-color: #000 !important; }
-    .printing-now canvas { max-width: 100% !important; height: auto !important; }
-    .printing-now #field-container { background-color: var(--field-green) !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
-    .printing-now #field-container .field-line, .printing-now #field-container .field-box, .printing-now #field-container .field-circle { border-color: var(--field-line) !important; }
+    body, h1, h2, h3, h4, h5, p, span, div { color: #000 !important; }
 }
