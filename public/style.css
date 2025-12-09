@@ -13,7 +13,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 .athlete-card-clickable { cursor: pointer; }
 .athlete-card-clickable:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(217, 4, 41, 0.2); border-color: var(--primary-red); }
 
-/* --- MODIFICA: STILE ATLETI OSPITI (VERDE) --- */
+/* --- NUOVO: MODALITÀ OSPITE (VERDE) --- */
 .athlete-card.guest-mode {
     background-color: #198754 !important; /* Verde Bootstrap */
     border-color: #146c43 !important;
@@ -21,7 +21,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 .athlete-card.guest-mode:hover {
     background-color: #157347 !important;
 }
-/* ------------------------------------------ */
+/* -------------------------------------- */
 
 .athlete-avatar { width: 70px; height: 70px; border-radius: 50%; border: 3px solid var(--border-color); object-fit: cover; background-color: var(--secondary-blue); }
 .athlete-card .card-title { font-size: 1.1rem; margin-bottom: 0.1rem; }
@@ -60,12 +60,14 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 .text-purple { color: var(--custom-purple) !important; }
 .available-player.disabled { opacity: 0.5; cursor: not-allowed; background-color: #343a40 !important; }
 
+/* Match Results Styles */
 .match-result-item { transition: transform 0.2s; border-left: 5px solid transparent; }
 .match-result-item:hover { transform: scale(1.02); }
 .match-home { border-left-color: var(--primary-blue); background-color: rgba(10, 36, 99, 0.4); }
 .match-away { border-left-color: var(--primary-red); background-color: rgba(217, 4, 41, 0.2); }
 .match-future { border-left-color: #28a745; background-color: rgba(40, 167, 69, 0.2); }
 
+/* Pitch Styles */
 #pitch-wrapper { display: flex; align-items: flex-start; gap: 1rem; }
 #field-container { background-color: var(--field-green); border: 2px solid var(--field-line); position: relative; width: 100%; max-width: 450px; aspect-ratio: 5 / 7; box-sizing: border-box; flex-shrink: 0; }
 #field-bench-area { background-color: rgba(0,0,0,0.2); border: 2px dashed var(--border-color); border-radius: 8px; width: 120px; min-height: 400px; position: relative; }
@@ -89,11 +91,18 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 .token-ball { font-size: 1.5em; background: transparent; box-shadow: none; }
 .token-opponent { background-color: var(--primary-red); color: white; border: 2px solid white; }
 
+/* STAMPA */
 @media print {
     body { padding-top: 0; }
     .no-print { display: none !important; }
     .printable-area { page-break-inside: avoid; margin-bottom: 2rem; }
     .card { border: 1px solid #000; break-inside: avoid; }
-    .bg-dark-blue { background-color: #fff !important; color: #000 !important; }
-    body, h1, h2, h3, h4, h5, p, span, div { color: #000 !important; }
+    .bg-dark-blue { background-color: #fff !important; color: #000 !important; border-color: #000 !important; }
+    .printing-now .calendar-session, .printing-now .shirt-number { background-color: #cccccc !important; color: #000 !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
+    .printing-now *, .printing-now .main-title, .printing-now .text-muted, .printing-now .card-title, .printing-now p, .printing-now h1, .printing-now h2, .printing-now h3, .printing-now h4, .printing-now h5, .printing-now h6 { color: #000 !important; }
+    .printing-now .player-name, .printing-now .jersey-number, .printing-now .token-captain { color: #fff !important; }
+    .printing-now .main-title { border-left-color: #000 !important; }
+    .printing-now canvas { max-width: 100% !important; height: auto !important; }
+    .printing-now #field-container { background-color: var(--field-green) !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
+    .printing-now #field-container .field-line, .printing-now #field-container .field-box, .printing-now #field-container .field-circle { border-color: var(--field-line) !important; }
 }
