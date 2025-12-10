@@ -2,6 +2,7 @@
     --primary-blue: #0a2463; --secondary-blue: #1e5095; --primary-red: #d90429;
     --text-light: #ffffff; --card-bg: #1a3a7a; --border-color: #3b5a9d; --gold-star: #FFD700;
     --field-green: #008000; --field-line: #FFF; --gk-color: #E8C135; --custom-purple: #6f42c1;
+    --absence-justified-color: #28a745;
 }
 html { scroll-behavior: smooth; }
 body { background-color: var(--primary-blue); color: var(--text-light); padding-top: 56px; }
@@ -103,6 +104,29 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 .guest-athlete .card-title::after {
     content: " 👤";
     color: var(--session-partita-futura);
+}
+
+/* ✅ NUOVO: stile per assenze giustificate */
+.athlete-absence-justified {
+    border-left: 4px solid var(--absence-justified-color) !important;
+}
+
+.absence-justified-badge {
+    background-color: var(--absence-justified-color) !important;
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    margin-left: 5px;
+    border-radius: 10px;
+}
+
+.guest-badge {
+    background-color: var(--session-partita-futura) !important;
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    margin-left: 5px;
+    border-radius: 10px;
 }
 
 #cards-summary-table { --bs-table-bg: var(--secondary-blue); --bs-table-striped-bg: var(--secondary-blue); --bs-table-hover-bg: var(--border-color); border-color: var(--border-color); }
