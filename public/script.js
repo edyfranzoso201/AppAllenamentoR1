@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         </div>
 
-        <!-- Resto dei modali (gpsModal, sessionModal, matchResultModal, passwordModal) rimangono invariati -->
+        <!-- Resto dei modali rimane invariato -->
     `;
 
     // Inizializza le variabili globali
@@ -181,4 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
         athleteForm: document.getElementById('athlete-form'),
         gpsForm: document.getElementById('gps-form'),
         addAthleteBtn: document.getElementById('add-athlete-btn'),
-        comparison
+        comparisonPeriodToggle: document.getElementById('comparison-period-toggle'),
+        attendancePeriodToggle: document.getElementById('attendance-period-toggle'),
+        metricSelector: document.getElementById('performance-metric-selector'),
+        table
