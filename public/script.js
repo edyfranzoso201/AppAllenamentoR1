@@ -711,12 +711,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (athlete.isViceCaptain === undefined) athlete.isViceCaptain = false;
                 if (athlete.isGuest === undefined) athlete.isGuest = false;
             });
-            
-            for (const matchId in matchResults) {
-                if (!matchResults[matchId].assists) {
-                    matchResults[matchId].assists = [];
-                }
-            }
+           for (const matchId in matchResults) {
+   	   const match = matchResults[matchId];
+           // ✅ Converti i punteggi in numeri interi, fallback a null se non validi
+           match.homeScore = match.homeScore === '' || match.homeScore == null ? null : parseInt(match.homeScore, 10);
+          match.awayScore = match.awayScore === '' || match.awayScore == null ? null : parseInt(match.awayScore, 10);
+           // ✅ Assicura che esista l'array assists
+          if (!match.assists) match.assists = [];
+    }
         } catch (error) {
             console.error('Errore nel caricamento dei dati dal server:', error);
             athletes = []; 
