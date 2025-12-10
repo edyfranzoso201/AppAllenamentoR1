@@ -11,6 +11,7 @@ function toLocalDateISO(dateInput) {
 
 document.addEventListener('DOMContentLoaded', () => {
     const modalsContainer = document.getElementById('modals-container');
+    
     // MODALE DI VALUTAZIONE - MODIFICATO per includere "Assenza Giustificata"
     modalsContainer.innerHTML = `
     <div class="modal fade" id="evaluationModal" tabindex="-1">
@@ -95,6 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         </div>
     </div>
+    
     <!-- ALTRI MODALI RESTANO UGUALI -->
     <div class="modal fade" id="athleteModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
@@ -157,6 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         </div>
     </div>
+    
     <!-- ALTRI MODALI (gpsModal, sessionModal, matchResultModal, passwordModal) RESTANO UGUALI -->
     <div class="modal fade" id="gpsModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -350,6 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         </div>
     </div>
+    
     <div class="modal fade" id="sessionModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -398,6 +402,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         </div>
     </div>
+    
     <div class="modal fade" id="matchResultModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
@@ -476,6 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         </div>
     </div>
+    
     <div class="modal fade" id="passwordModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -505,77 +511,76 @@ document.addEventListener('DOMContentLoaded', () => {
     const matchResultModal = new bootstrap.Modal(document.getElementById('matchResultModal'));
     const passwordModal = new bootstrap.Modal(document.getElementById('passwordModal'));
 
-    // ✅ CORREZIONE: Variabile corretta
     const elements = {
-        athleteGrid: document.getElementById('athlete-grid'),
-        evaluationDatePicker: document.getElementById('evaluation-date-picker'),
-        evaluationDatePicker2: document.getElementById('evaluation-date-picker-2'),
+        athleteGrid:document.getElementById('athlete-grid'),
+        evaluationDatePicker:document.getElementById('evaluation-date-picker'),
+        evaluationDatePicker2:document.getElementById('evaluation-date-picker-2'),
         performanceSelectorsContainer: document.getElementById('performance-selectors-container'),
-        addComparisonBtn: document.getElementById('add-comparison-btn'),
-        evaluationForm: document.getElementById('evaluation-form'),
-        athleteForm: document.getElementById('athlete-form'),
-        gpsForm: document.getElementById('gps-form'),
-        addAthleteBtn: document.getElementById('add-athlete-btn'),
-        comparisonPeriodToggle: document.getElementById('comparison-period-toggle'),
-        attendancePeriodToggle: document.getElementById('attendance-period-toggle'),
-        metricSelector: document.getElementById('performance-metric-selector'),
-        tableContainer: document.getElementById('performance-table-container'),
-        exportButtonsContainer: document.getElementById('export-buttons-container'),
-        trendAthleteSelector: document.getElementById('trend-athlete-selector'),
-        trendMetricSelector: document.getElementById('trend-metric-selector'),
-        hallOfFameContainer: document.getElementById('hall-of-fame-container'),
-        radarAthleteSelector1: document.getElementById('radar-athlete-selector-1'),
-        radarAthleteSelector2: document.getElementById('radar-athlete-selector-2'),
-        multiAthleteMetricSelector: document.getElementById('multi-athlete-metric-selector'),
-        multiAthleteTimeFilter: document.querySelector('#multi-athlete-chart-container .btn-group[role="group"]'),
-        multiAthleteDatepicker: document.getElementById('multi-athlete-datepicker'),
-        multiAthleteDatepickerContainer: document.getElementById('multi-athlete-datepicker-container'),
-        multiAthleteResetBtn: document.getElementById('multi-athlete-reset-btn'),
-        deleteDayDataBtn: document.getElementById('delete-day-data-btn'),
-        exportAllDataBtn: document.getElementById('export-all-data-btn'),
-        importFileInput: document.getElementById('import-file-input'),
-        performanceFilterToggle: document.getElementById('performance-filter-toggle'),
-        multiAthleteTypeSelector: document.getElementById('multi-athlete-type-selector'),
-        addSessionBtn: document.getElementById('add-session-btn'),
-        calendarGrid: document.getElementById('calendar-grid'),
-        currentMonthYearEl: document.getElementById('current-month-year'),
-        prevMonthBtn: document.getElementById('prev-month-btn'),
-        nextMonthBtn: document.getElementById('next-month-btn'),
-        sessionForm: document.getElementById('session-form'),
-        deleteSessionBtn: document.getElementById('delete-session-btn'),
-        homeTotalAthletes: document.getElementById('home-total-athletes'),
-        homeNextSession: document.getElementById('home-next-session'),
-        homeTopPerformer: document.getElementById('home-top-performer'),
-        quickAddAthleteBtn: document.getElementById('quick-add-athlete-btn'),
-        quickPlanSessionBtn: document.getElementById('quick-plan-session-btn'),
-        fieldContainer: document.getElementById('field-container'),
-        fieldBenchArea: document.getElementById('field-bench-area'),
-        availableList: document.getElementById('available-list'),
-        addMatchBtn: document.getElementById('add-match-btn'),
-        matchResultForm: document.getElementById('match-result-form'),
+        addComparisonBtn:document.getElementById('add-comparison-btn'),
+        evaluationForm:document.getElementById('evaluation-form'),
+        athleteForm:document.getElementById('athlete-form'),
+        gpsForm:document.getElementById('gps-form'),
+        addAthleteBtn:document.getElementById('add-athlete-btn'),
+        comparisonPeriodToggle:document.getElementById('comparison-period-toggle'),
+        attendancePeriodToggle:document.getElementById('attendance-period-toggle'),
+        metricSelector:document.getElementById('performance-metric-selector'),
+        tableContainer:document.getElementById('performance-table-container'),
+        exportButtonsContainer:document.getElementById('export-buttons-container'),
+        trendAthleteSelector:document.getElementById('trend-athlete-selector'),
+        trendMetricSelector:document.getElementById('trend-metric-selector'),
+        hallOfFameContainer:document.getElementById('hall-of-fame-container'),
+        radarAthleteSelector1:document.getElementById('radar-athlete-selector-1'),
+        radarAthleteSelector2:document.getElementById('radar-athlete-selector-2'),
+        multiAthleteMetricSelector:document.getElementById('multi-athlete-metric-selector'),
+        multiAthleteTimeFilter:document.querySelector('#multi-athlete-chart-container .btn-group[role="group"]'),
+        multiAthleteDatepicker:document.getElementById('multi-athlete-datepicker'),
+        multiAthleteDatepickerContainer:document.getElementById('multi-athlete-datepicker-container'),
+        multiAthleteResetBtn:document.getElementById('multi-athlete-reset-btn'),
+        deleteDayDataBtn:document.getElementById('delete-day-data-btn'),
+        exportAllDataBtn:document.getElementById('export-all-data-btn'),
+        importFileInput:document.getElementById('import-file-input'),
+        performanceFilterToggle:document.getElementById('performance-filter-toggle'),
+        multiAthleteTypeSelector:document.getElementById('multi-athlete-type-selector'),
+        addSessionBtn:document.getElementById('add-session-btn'),
+        calendarGrid:document.getElementById('calendar-grid'),
+        currentMonthYearEl:document.getElementById('current-month-year'),
+        prevMonthBtn:document.getElementById('prev-month-btn'),
+        nextMonthBtn:document.getElementById('next-month-btn'),
+        sessionForm:document.getElementById('session-form'),
+        deleteSessionBtn:document.getElementById('delete-session-btn'),
+        homeTotalAthletes:document.getElementById('home-total-athletes'),
+        homeNextSession:document.getElementById('home-next-session'),
+        homeTopPerformer:document.getElementById('home-top-performer'),
+        quickAddAthleteBtn:document.getElementById('quick-add-athlete-btn'),
+        quickPlanSessionBtn:document.getElementById('quick-plan-session-btn'),
+        fieldContainer:document.getElementById('field-container'),
+        fieldBenchArea:document.getElementById('field-bench-area'),
+        availableList:document.getElementById('available-list'),
+        addMatchBtn:document.getElementById('add-match-btn'),
+        matchResultForm:document.getElementById('match-result-form'),
         deleteMatchBtn: document.getElementById('delete-match-btn'),
-        matchResultsContainer: document.getElementById('match-results-container'),
-        cardsSummaryTbody: document.getElementById('cards-summary-tbody'),
-        matchOpponentFilter: document.getElementById('match-opponent-filter'),
-        matchPeriodToggle: document.getElementById('match-period-toggle'),
-        topScorersContainer: document.getElementById('top-scorers-container'),
-        topAssistsContainer: document.getElementById('top-assists-container'),
-        passwordForm: document.getElementById('password-form'),
-        passwordError: document.getElementById('password-error'),
-        alertsContainer: document.getElementById('alerts-container'),
-        logoutBtn: document.getElementById('logout-btn'),
-        statPg: document.getElementById('stat-pg'),
-        statVps: document.getElementById('stat-vps'),
-        statGf: document.getElementById('stat-gf'),
-        statGs: document.getElementById('stat-gs'),
-        statDr: document.getElementById('stat-dr')
+        matchResultsContainer:document.getElementById('match-results-container'),
+        cardsSummaryTbody:document.getElementById('cards-summary-tbody'),
+        matchOpponentFilter:document.getElementById('match-opponent-filter'),
+        matchPeriodToggle:document.getElementById('match-period-toggle'),
+        topScorersContainer:document.getElementById('top-scorers-container'),
+        topAssistsContainer:document.getElementById('top-assists-container'),
+        passwordForm:document.getElementById('password-form'),
+        passwordError:document.getElementById('password-error'),
+        alertsContainer:document.getElementById('alerts-container'),
+        logoutBtn:document.getElementById('logout-btn'),
+        statPg:document.getElementById('stat-pg'),
+        statVps:document.getElementById('stat-vps'),
+        statGf:document.getElementById('stat-gf'),
+        statGs:document.getElementById('stat-gs'),
+        statDr:document.getElementById('stat-dr')
     };
-
+    
     const ACCESS_PASSWORD = "2025Edy201";
     let authSuccessCallback = null;
     let authCancelCallback = null;
     const isAuthenticated = () => sessionStorage.getItem('isAuthenticated') === 'true';
-
+    
     const requestAuthentication = (onSuccess, onCancel = () => {}) => {
         if (isAuthenticated()) {
             onSuccess();
@@ -587,7 +592,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.passwordForm.reset();
         passwordModal.show();
     };
-
+    
     elements.passwordForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const password = document.getElementById('password-input').value;
@@ -603,120 +608,90 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.passwordError.style.display = 'block';
         }
     });
-
+    
     document.getElementById('passwordModal').addEventListener('hidden.bs.modal', () => {
-        if (!isAuthenticated() && authCancelCallback) {
-            authCancelCallback();
-        }
+         if (!isAuthenticated() && authCancelCallback) {
+             authCancelCallback();
+         }
     });
-
+    
     const matchStatsFields = ['minuti_giocati', 'gol', 'assist', 'ammonizioni', 'espulsioni', 'palle_recuperate', 'palle_perse'];
     const allGpsFields = ['data_di_registrazione', 'ora_registrazione', 'tipo_sessione', 'distanza_totale', 'tempo_totale', 'distanza_sprint', 'velocita_massima', 'numero_di_sprint', 'max_acc', 'max_dec', 'passaggi_piede_sinistro', 'passaggi_piede_destro', 'cross_piede_sinistro', 'cross_piede_destro', 'potenza_massima_di_tiro', 'distanza_per_minuto', 'tiri_piede_sx', 'tiri_piede_dx', 'perc_passaggi_brevi', 'perc_lanci', 'distanza_circuito', 'tempo_circuito_totale_s', 'velocita_circuito', 'note', ...matchStatsFields];
-
-    const gpsFieldsForDisplay = {
-        'tipo_sessione': 'Tipo',
-        'data_di_registrazione': 'Data',
-        'ora_registrazione': 'Ora',
-        'distanza_totale': 'Dist. Totale (m)',
-        'tempo_totale': 'Tempo (min)',
-        'distanza_per_minuto': 'Dist/min (m)',
-        'distanza_sprint': 'Distanza Sprint (m)',
-        'velocita_massima': 'Vel. Max (km/h)',
-        'numero_di_sprint': 'Num. Sprint',
-        'max_acc': 'Max Acc (g)o(n°)',
-        'max_dec': 'Max Dec (g)o(n°)',
-        'passaggi_piede_sinistro': 'Passaggi SX',
-        'passaggi_piede_destro': 'Passaggi DX',
-        'cross_piede_sinistro': 'Cross SX',
-        'cross_piede_destro': 'Cross DX',
-        'potenza_massima_di_tiro': 'Pot. Tiro (km/h)',
-        'tiri_piede_sx': 'Tiri Piede SX',
-        'tiri_piede_dx': 'Tiri Piede DX',
-        'perc_passaggi_brevi': '% Passaggi Brevi',
-        'perc_lanci': '% Lanci',
-        'distanza_circuito': 'Dist. Circuito (m)',
-        'tempo_circuito_totale_s': 'Tempo Circuito (s)',
-        'velocita_circuito': 'Vel. Circuito (km/h)',
-        'minuti_giocati': 'Minuti Giocati',
-        'gol': 'Gol',
-        'assist': 'Assist',
-        'ammonizioni': 'Gialli',
-        'espulsioni': 'Rossi',
-        'palle_recuperate': 'Palle Recuperate',
-        'palle_perse': 'Palle Perse',
-        'note': 'Note'
+    
+    const gpsFieldsForDisplay = { 
+        'tipo_sessione':'Tipo', 'data_di_registrazione': 'Data', 'ora_registrazione': 'Ora', 
+        'distanza_totale': 'Dist. Totale (m)', 'tempo_totale': 'Tempo (min)', 'distanza_per_minuto':'Dist/min (m)', 
+        'distanza_sprint': 'Distanza Sprint (m)', 'velocita_massima': 'Vel. Max (km/h)', 'numero_di_sprint': 'Num. Sprint', 
+        'max_acc': 'Max Acc (g)o(n°)', 'max_dec': 'Max Dec (g)o(n°)', 'passaggi_piede_sinistro':'Passaggi SX', 
+        'passaggi_piede_destro':'Passaggi DX', 'cross_piede_sinistro':'Cross SX', 'cross_piede_destro':'Cross DX', 
+        'potenza_massima_di_tiro':'Pot. Tiro (km/h)', 'tiri_piede_sx': 'Tiri Piede SX', 'tiri_piede_dx': 'Tiri Piede DX', 
+        'perc_passaggi_brevi': '% Passaggi Brevi', 'perc_lanci': '% Lanci', 'distanza_circuito': 'Dist. Circuito (m)', 
+        'tempo_circuito_totale_s': 'Tempo Circuito (s)', 'velocita_circuito': 'Vel. Circuito (km/h)', 
+        'minuti_giocati': 'Minuti Giocati', 'gol': 'Gol', 'assist': 'Assist', 'ammonizioni': 'Gialli', 
+        'espulsioni': 'Rossi', 'palle_recuperate': 'Palle Recuperate', 'palle_perse': 'Palle Perse', 'note': 'Note' 
     };
-
-    const radarMetrics = {
-        'distanza_sprint': 'Distanza Sprint',
-        'velocita_massima': 'Vel. Max',
-        'max_acc': 'Max Acc',
-        'max_dec': 'Max Dec',
-        'passaggi_piede_sinistro': 'Pass. SX',
-        'passaggi_piede_destro': 'Pass. DX',
-        'cross_piede_sinistro': 'Cross SX',
-        'cross_piede_destro': 'Cross DX',
-        'potenza_massima_di_tiro': 'Pot. Tiro',
-        'distanza_per_minuto': 'Dist/min',
-        'tiri_piede_sx': 'Tiri SX',
-        'tiri_piede_dx': 'Tiri DX',
-        'perc_passaggi_brevi': '% Pass. Brevi',
-        'perc_lanci': '% Lanci',
-        'velocita_circuito': 'Vel. Circuito'
+    
+    const radarMetrics = { 
+        'distanza_sprint': 'Distanza Sprint', 'velocita_massima': 'Vel. Max', 'max_acc': 'Max Acc', 
+        'max_dec': 'Max Dec', 'passaggi_piede_sinistro': 'Pass. SX', 'passaggi_piede_destro': 'Pass. DX', 
+        'cross_piede_sinistro': 'Cross SX', 'cross_piede_destro': 'Cross DX', 'potenza_massima_di_tiro': 'Pot. Tiro', 
+        'distanza_per_minuto': 'Dist/min', 'tiri_piede_sx': 'Tiri SX', 'tiri_piede_dx': 'Tiri DX', 
+        'perc_passaggi_brevi': '% Pass. Brevi', 'perc_lanci': '% Lanci', 'velocita_circuito': 'Vel. Circuito' 
     };
-
+    
     const evaluationCategories = ['presenza-allenamento', 'serieta-allenamento', 'abbigliamento-allenamento', 'abbigliamento-partita', 'comunicazioni', 'doccia'];
-
     const defaultAvatar = "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3e%3cpath fill='%231e5095' d='M128 128H0V0h128v128z'/%3e%3cpath fill='%23ffffff' d='M64 100c-19.88 0-36-16.12-36-36s16.12-36 36-36 36 16.12 36 36-16.12 36-36 36zm0-64c-15.46 0-28 12.54-28 28s12.54 28 28 28 28-12.54 28-28-12.54-28-28-28z'/%3e%3cpath fill='%23ffffff' d='M64 24a40.01 40.01 0 00-28.28 11.72C35.8 35.8 28 45.45 28 56h8c0-8.27 5.61-15.64 13.53-18.89A31.93 31.93 0 0164 32a32.09 32.09 0 0124.47 11.11C96.39 40.36 102 47.73 102 56h8c0-10.55-7.8-20.2-17.72-24.28A39.99 39.99 0 0064 24z'/%3e%3c/svg%3e";
-
+    
     let athletes = [], evaluations = {}, gpsData = {}, awards = {}, trainingSessions = {}, matchResults = {};
     let formationData = { starters: [], bench: [], tokens: [] };
     let chartInstances = {};
     let comparisonChartPeriod = 'daily';
     let attendanceChartPeriod = 'daily';
-    let performanceSelections = [{ athleteId: null, sessionId: null }, { athleteId: null, sessionId: null }];
+    let performanceSelections = [ { athleteId: null, sessionId: null }, { athleteId: null, sessionId: null } ];
     let performanceFilterType = 'all';
     let multiAthleteFilterType = 'all';
     let currentCalendarDate = new Date();
     let pollingInterval = null;
     let visuallyDeletedCards = [];
-
+    
     // ✅ MODIFICATA: Funzione per calcolare il punteggio escludendo atleti ospiti e assenze giustificate
     const calculateAthleteScore = (evaluation, athlete) => {
         if (!evaluation) return 0;
         // Se l'atleta è ospite, non calcolare il punteggio
         if (athlete && athlete.isGuest) return 0;
+        
         // Se l'atleta ha un'assenza giustificata (valore 4), non calcolare il punteggio per quella giornata
         const presenzaValue = parseInt(evaluation['presenza-allenamento'] || '0', 10);
         if (presenzaValue === 4) return 0;
+        
         return Object.keys(evaluation)
             .filter(k => k !== 'doccia' && k !== 'presenza-allenamento') // Escludi presenza se già considerata
             .reduce((sum, key) => sum + parseInt(evaluation[key] || 0, 10), 0);
     };
-
+    
     const saveData = async () => {
         const allData = { athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults };
         try {
             await fetch('/api/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(allData) });
-        } catch (error) {
-            console.error('Errore nel salvataggio dei dati sul server:', error);
+        } catch (error) { 
+            console.error('Errore nel salvataggio dei dati sul server:', error); 
         }
     };
-
+    
     const migrateGpsData = () => {
         for (const athleteId in gpsData) {
             for (const date in gpsData[athleteId]) {
                 if (gpsData[athleteId][date] && !Array.isArray(gpsData[athleteId][date])) {
                     const oldSessionObject = gpsData[athleteId][date];
-                    if (!oldSessionObject.id) {
-                        oldSessionObject.id = new Date(`${date}T${oldSessionObject.ora_registrazione || '00:00:00'}`).getTime().toString();
+                    if (!oldSessionObject.id) { 
+                        oldSessionObject.id = new Date(`${date}T${oldSessionObject.ora_registrazione || '00:00:00'}`).getTime().toString(); 
                     }
                     gpsData[athleteId][date] = [oldSessionObject];
                 }
             }
         }
     };
-
+    
     const loadData = async () => {
         try {
             const response = await fetch('/api/data', { cache: 'no-store' });
@@ -730,33 +705,33 @@ document.addEventListener('DOMContentLoaded', () => {
             trainingSessions = allData.trainingSessions || {};
             formationData = allData.formationData || { starters: [], bench: [], tokens: [] };
             matchResults = allData.matchResults || {};
-
+            
             // Compatibilità con dati vecchi
             athletes.forEach(athlete => {
                 if (athlete.isViceCaptain === undefined) athlete.isViceCaptain = false;
                 if (athlete.isGuest === undefined) athlete.isGuest = false;
             });
-
-            // ✅ Normalizza i punteggi delle partite
-            for (const matchId in matchResults) {
+            
+           for (const matchId in matchResults) {
                 const match = matchResults[matchId];
+                // ✅ Converti i punteggi in numeri interi, fallback a null se non validi
                 match.homeScore = match.homeScore === '' || match.homeScore == null ? null : parseInt(match.homeScore, 10);
                 match.awayScore = match.awayScore === '' || match.awayScore == null ? null : parseInt(match.awayScore, 10);
+                // ✅ Assicura che esista l'array assists
                 if (!match.assists) match.assists = [];
             }
-
         } catch (error) {
             console.error('Errore nel caricamento dei dati dal server:', error);
-            athletes = [];
-            evaluations = {};
-            gpsData = {};
-            awards = {};
-            trainingSessions = {};
-            formationData = { starters: [], bench: [], tokens: [] };
+            athletes = []; 
+            evaluations = {}; 
+            gpsData = {}; 
+            awards = {}; 
+            trainingSessions = {}; 
+            formationData = { starters: [], bench: [], tokens: [] }; 
             matchResults = {};
         }
     };
-
+    
     const getWeekRange = (date) => {
         const d = new Date(date);
         const day = d.getDay();
@@ -765,17 +740,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const sunday = new Date(new Date(monday).setDate(monday.getDate() + 6));
         return { start: monday.toISOString().split('T')[0], end: sunday.toISOString().split('T')[0] };
     };
-
-    const updateLogoutButtonVisibility = () => {
-        elements.logoutBtn.style.display = isAuthenticated() ? 'block' : 'none';
+    
+    const updateLogoutButtonVisibility = () => { 
+        elements.logoutBtn.style.display = isAuthenticated() ? 'block' : 'none'; 
     };
-
+    
     const updateUnlockButtonsVisibility = () => {
         const unlockBtns = document.querySelectorAll('.unlock-btn');
         const displayStyle = isAuthenticated() ? 'none' : 'inline-block';
         unlockBtns.forEach(btn => btn.style.display = displayStyle);
     };
-
+    
     const updateTeamSeasonStats = () => {
         let pg = 0, v = 0, p = 0, s = 0, gf = 0, gs = 0;
         Object.values(matchResults).forEach(match => {
@@ -796,10 +771,10 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.statDr.textContent = dr > 0 ? `+${dr}` : dr;
         elements.statDr.className = dr > 0 ? 'diff-pos' : (dr < 0 ? 'diff-neg' : '');
     };
-
-    // ✅ MODIFICATA: Rimosso il blocco che nascondeva i grafici ai non loggati
+    
+    // ✅ NUOVA FUNZIONE: Aggiorna solo le sezioni protette
     const updateProtectedSections = () => {
-        // if (!isAuthenticated()) return; // RIMOSSO PER MOSTRARE SEMPRE I DATI
+        if (!isAuthenticated()) return;
         
         updateMatchAnalysisChart();
         updateEvaluationCharts();
@@ -812,8 +787,8 @@ document.addEventListener('DOMContentLoaded', () => {
         updateAthleteRadarChart();
         updateMultiAthleteChart();
     };
-
-   // ✅ MODIFICATA: Aggiorna sempre tutto, incluse le sezioni protette
+    
+    // ✅ MODIFICATA: Funzione per aggiornare tutta l'UI
     const updateAllUI = () => {
         updateLogoutButtonVisibility();
         updateUnlockButtonsVisibility();
@@ -828,10 +803,12 @@ document.addEventListener('DOMContentLoaded', () => {
         renderTopScorers();
         renderTopAssists();
         
-        // Chiama sempre l'aggiornamento dei grafici
-        updateProtectedSections();
+        // Aggiorna le sezioni protette solo se autenticato
+        if (isAuthenticated()) {
+            updateProtectedSections();
+        }
     };
-
+    
     const createJerseyElement = (athlete) => {
         const jersey = document.createElement('div');
         jersey.className = 'player-jersey';
@@ -841,111 +818,100 @@ document.addEventListener('DOMContentLoaded', () => {
         jersey.innerHTML = `<div class="jersey-body" style="background-color: ${jerseyColor};"><span class="jersey-number">${athlete.number}</span></div><span class="player-name">${athlete.name}</span>`;
         return jersey;
     };
-
+    
     const createTokenElement = (type, id) => {
         const token = document.createElement('div');
         token.className = 'token';
         token.dataset.itemType = type;
         if (id) token.dataset.tokenId = id;
-        switch (type) {
-            case 'captain-c':
-                token.innerHTML = '(C)';
-                token.classList.add('token-captain');
-                break;
-            case 'captain-vc':
-                token.innerHTML = '(VC)';
-                token.classList.add('token-captain');
-                break;
-            case 'ball':
-                token.innerHTML = '⚽';
-                token.classList.add('token-ball');
-                break;
-            case 'opponent':
-                token.innerHTML = '●';
-                token.classList.add('token-opponent');
-                break;
+        switch(type) {
+            case 'captain-c': token.innerHTML = '(C)'; token.classList.add('token-captain'); break;
+            case 'captain-vc': token.innerHTML = '(VC)'; token.classList.add('token-captain'); break;
+            case 'ball': token.innerHTML = '⚽'; token.classList.add('token-ball'); break;
+            case 'opponent': token.innerHTML = '●'; token.classList.add('token-opponent'); break;
         }
         return token;
     };
-
+    
     const renderFormation = () => {
         const field = elements.fieldContainer;
         const bench = elements.fieldBenchArea;
         document.querySelectorAll('.player-jersey, .token').forEach(el => el.remove());
         elements.availableList.innerHTML = '';
         const placedAthleteIds = new Set([...formationData.starters.map(p => String(p.athleteId)), ...formationData.bench.map(p => String(p.athleteId))]);
+        
         const addExpiredIconIfNeeded = (athlete, jerseyElement) => {
             const today = new Date(); today.setHours(0, 0, 0, 0);
             const isExpired = athlete.scadenzaVisita && new Date(athlete.scadenzaVisita) < today;
             if (isExpired) {
-                const lockIcon = document.createElement('span');
+                const lockIcon = document.createElement('span'); 
                 lockIcon.innerHTML = '<i class="bi bi-lock-fill"></i>';
                 lockIcon.style.cssText = 'position: absolute; top: 0; left: 0; color: white; background-color: var(--primary-red); padding: 0.2em 0.4em; border-radius: 50%; font-size: 1.5em;';
-                lockIcon.title = 'Visita medica scaduta';
+                lockIcon.title = 'Visita medica scaduta'; 
                 jerseyElement.appendChild(lockIcon);
             }
         };
-
+        
         formationData.starters.forEach(playerData => {
             const athlete = athletes.find(a => String(a.id) === String(playerData.athleteId));
-            if (athlete) {
-                const jersey = createJerseyElement(athlete);
-                addExpiredIconIfNeeded(athlete, jersey);
-                jersey.style.left = `${playerData.left}%`;
-                jersey.style.top = `${playerData.top}%`;
-                field.appendChild(jersey);
+            if (athlete) { 
+                const jersey = createJerseyElement(athlete); 
+                addExpiredIconIfNeeded(athlete, jersey); 
+                jersey.style.left = `${playerData.left}%`; 
+                jersey.style.top = `${playerData.top}%`; 
+                field.appendChild(jersey); 
             }
         });
-
+        
         formationData.bench.forEach(playerData => {
             const athlete = athletes.find(a => String(a.id) === String(playerData.athleteId));
-            if (athlete) {
-                const jersey = createJerseyElement(athlete);
-                addExpiredIconIfNeeded(athlete, jersey);
-                jersey.style.left = `${playerData.left}%`;
-                jersey.style.top = `${playerData.top}%`;
-                bench.appendChild(jersey);
+            if (athlete) { 
+                const jersey = createJerseyElement(athlete); 
+                addExpiredIconIfNeeded(athlete, jersey); 
+                jersey.style.left = `${playerData.left}%`; 
+                jersey.style.top = `${playerData.top}%`; 
+                bench.appendChild(jersey); 
             }
         });
-
+        
         athletes.forEach(athlete => {
             if (!placedAthleteIds.has(String(athlete.id))) {
-                const today = new Date(); today.setHours(0, 0, 0, 0);
+                const today = new Date(); today.setHours(0, 0, 0, 0); 
                 const isExpired = athlete.scadenzaVisita && new Date(athlete.scadenzaVisita) < today;
-                const availablePlayer = document.createElement('div');
-                availablePlayer.className = 'list-group-item d-flex justify-content-between align-items-center available-player p-2';
+                const availablePlayer = document.createElement('div'); 
+                availablePlayer.className = 'list-group-item d-flex justify-content-between align-items-center available-player p-2'; 
                 availablePlayer.dataset.athleteId = athlete.id;
-
-                if (isExpired) {
-                    availablePlayer.classList.add('disabled');
-                    availablePlayer.title = 'Visita medica scaduta. Atleta non schierabile.';
-                    availablePlayer.innerHTML = `<span><strong>${athlete.number}.</strong> ${athlete.name}</span><span class="badge bg-danger"><i class="bi bi-lock-fill"></i></span>`;
-                } else {
-                    availablePlayer.innerHTML = `<span><strong>${athlete.number}.</strong> ${athlete.name}</span><span class="badge bg-secondary">${athlete.role.substring(0, 3)}</span>`;
+                
+                if (isExpired) { 
+                    availablePlayer.classList.add('disabled'); 
+                    availablePlayer.title = 'Visita medica scaduta. Atleta non schierabile.'; 
+                    availablePlayer.innerHTML = `<span><strong>${athlete.number}.</strong> ${athlete.name}</span><span class="badge bg-danger"><i class="bi bi-lock-fill"></i></span>`; 
+                } else { 
+                    availablePlayer.innerHTML = `<span><strong>${athlete.number}.</strong> ${athlete.name}</span><span class="badge bg-secondary">${athlete.role.substring(0,3)}</span>`; 
                 }
                 elements.availableList.appendChild(availablePlayer);
             }
         });
-
-        formationData.tokens.forEach(tokenData => {
-            const tokenEl = createTokenElement(tokenData.type, tokenData.id);
-            tokenEl.style.left = `${tokenData.left}%`;
-            tokenEl.style.top = `${tokenData.top}%`;
-            field.appendChild(tokenEl);
+        
+        formationData.tokens.forEach(tokenData => { 
+            const tokenEl = createTokenElement(tokenData.type, tokenData.id); 
+            tokenEl.style.left = `${tokenData.left}%`; 
+            tokenEl.style.top = `${tokenData.top}%`; 
+            field.appendChild(tokenEl); 
         });
     };
-
+    
     const updateHomePage = () => {
         // ✅ Conta solo atleti NON ospiti nel conteggio principale
         const officialAthletes = athletes.filter(a => !a.isGuest);
         elements.homeTotalAthletes.textContent = officialAthletes.length;
-
+        
         const today = toLocalDateISO(new Date());
         const futureSessions = Object.entries(trainingSessions)
             .filter(([date]) => date >= today)
             .sort(([dateA], [dateB]) => new Date(dateA) - new Date(dateB))
-            .flatMap(([date, sessions]) => sessions.map(s => ({ ...s, date })));
-
+            .flatMap(([date, sessions]) => sessions.map(s => ({...s, date})));
+            
         if (futureSessions.length > 0) {
             const nextSession = futureSessions[0];
             const sessionDate = new Date(nextSession.date);
@@ -957,48 +923,48 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             elements.homeNextSession.innerHTML = `<h5 class="card-title text-muted">PROSSIMA SESSIONE</h5><p class="text-muted">Nessuna sessione pianificata</p>`;
         }
-
-        const now = new Date();
-        const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-        const monthlyScores = {};
-
+        
+        const now = new Date(); 
+        const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`; 
+        const monthlyScores = {}; 
+        
         // ✅ Solo atleti non ospiti
         athletes.filter(a => !a.isGuest).forEach(a => monthlyScores[a.id] = { name: a.name, score: 0 });
-
-        Object.entries(evaluations).forEach(([dateStr, dailyEvals]) => {
-            if (dateStr.startsWith(currentMonthStr)) {
-                Object.entries(dailyEvals).forEach(([athleteId, evaluation]) => {
-                    if (monthlyScores[athleteId]) {
+        
+        Object.entries(evaluations).forEach(([dateStr, dailyEvals]) => { 
+            if (dateStr.startsWith(currentMonthStr)) { 
+                Object.entries(dailyEvals).forEach(([athleteId, evaluation]) => { 
+                    if (monthlyScores[athleteId]) { 
                         const athlete = athletes.find(a => String(a.id) === athleteId);
-                        monthlyScores[athleteId].score += calculateAthleteScore(evaluation, athlete);
-                    }
-                });
-            }
-        });
-
-        const sortedAthletes = Object.values(monthlyScores).sort((a, b) => b.score - a.score);
-
-        if (sortedAthletes.length > 0 && sortedAthletes[0].score > 0) {
-            const maxScore = sortedAthletes[0].score;
-            const topPerformers = sortedAthletes.filter(athlete => athlete.score === maxScore);
-            const names = topPerformers.map(p => p.name).join('<br>');
+                        monthlyScores[athleteId].score += calculateAthleteScore(evaluation, athlete); 
+                    } 
+                }); 
+            } 
+        }); 
+        
+        const sortedAthletes = Object.values(monthlyScores).sort((a, b) => b.score - a.score); 
+        if (sortedAthletes.length > 0 && sortedAthletes[0].score > 0) { 
+            const maxScore = sortedAthletes[0].score; 
+            const topPerformers = sortedAthletes.filter(athlete => athlete.score === maxScore); 
+            const names = topPerformers.map(p => p.name).join('<br>'); 
             elements.homeTopPerformer.innerHTML = `
                 <h5 class="card-title text-muted">TOP PERFORMER MENSILE</h5>
                 <h6 class="mb-1">${names}</h6>
                 <p class="mb-0 text-muted">Punteggio: ${maxScore}</p>
-                <i class="bi bi-trophy-fill mt-2" style="font-size: 1.5rem; color: var(--gold-star);"></i>`;
-        } else {
-            elements.homeTopPerformer.innerHTML = `<h5 class="card-title text-muted">TOP PERFORMER MENSILE</h5><p class="text-muted">Nessuna valutazione</p>`;
+                <i class="bi bi-trophy-fill mt-2" style="font-size: 1.5rem; color: var(--gold-star);"></i>`; 
+        } else { 
+            elements.homeTopPerformer.innerHTML = `<h5 class="card-title text-muted">TOP PERFORMER MENSILE</h5><p class="text-muted">Nessuna valutazione</p>`; 
         }
     };
 
     // ✅ MODIFICATA: Funzione di rendering atleti con supporto per assenze giustificate e atleti ospiti
     const renderAthletes = () => {
         elements.athleteGrid.innerHTML = '';
-        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const today = new Date(); today.setHours(0,0,0,0);
         const threeMonths = new Date(today); threeMonths.setMonth(today.getMonth() + 3);
+        
         const currentDate = elements.evaluationDatePicker.value;
-
+        
         athletes.forEach(athlete => {
             let statusIcon = '';
             if (athlete.scadenzaVisita) {
@@ -1014,7 +980,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     statusIcon = `<i class="bi bi-circle-fill text-success deadline-status" title="Scade il ${deadline.toLocaleDateString('it-IT')}"></i>`;
                 }
             }
-
+            
             // Controlla se oggi c'è un'assenza giustificata
             let absenceJustifiedBadge = '';
             let absenceJustifiedClass = '';
@@ -1025,16 +991,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     absenceJustifiedClass = 'athlete-absence-justified';
                 }
             }
-
+            
             // Badge per atleti ospiti
             let guestBadge = '';
             if (athlete.isGuest) {
                 guestBadge = '<span class="badge guest-badge ms-1" title="Atleta Ospite">OSPITE</span>';
             }
-
+            
             const card = document.createElement('div');
             card.className = 'col-xl-3 col-lg-4 col-md-6 mb-4';
-
+            
             // Classe condizionale per atleti ospiti e assenze giustificate
             let cardClass = 'athlete-card';
             if (athlete.isGuest) {
@@ -1043,17 +1009,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if (absenceJustifiedClass) {
                 cardClass += ' ' + absenceJustifiedClass;
             }
-
+            
             const vcIcon = athlete.isViceCaptain ? '<i class="bi bi-star-half text-warning is-vice-captain"></i>' : '';
-
+            
             card.innerHTML = `
                 <div class="card ${cardClass}">
                     <div class="card-body athlete-card-clickable" data-athlete-id="${athlete.id}">
                         <img src="${athlete.avatar || defaultAvatar}" onerror="this.src='${defaultAvatar}'" alt="${athlete.name}" class="athlete-avatar me-3">
                         <div>
                             <h5 class="card-title">
-                                ${athlete.name}
-                                ${athlete.isCaptain ? '<i class="bi bi-star-fill is-captain"></i>' : ''}
+                                ${athlete.name} 
+                                ${athlete.isCaptain ? '<i class="bi bi-star-fill is-captain"></i>' : ''} 
                                 ${vcIcon}
                                 ${guestBadge}
                                 ${absenceJustifiedBadge}
@@ -1069,26 +1035,26 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button class="btn btn-sm btn-outline-light delete-btn" title="Elimina Atleta" data-athlete-id="${athlete.id}"><i class="bi bi-trash-fill"></i></button>
                     </div>
                 </div>`;
-
+                
             elements.athleteGrid.appendChild(card);
         });
     };
-
+    
     const renderCalendar = () => {
         elements.calendarGrid.innerHTML = '';
         const year = currentCalendarDate.getFullYear();
         const month = currentCalendarDate.getMonth();
         elements.currentMonthYearEl.textContent = `${currentCalendarDate.toLocaleString('it-IT', { month: 'long' })} ${year}`;
-
+        
         const firstDayOfMonth = new Date(year, month, 1);
         const lastDayOfMonth = new Date(year, month + 1, 0);
         const daysInMonth = lastDayOfMonth.getDate();
         const startDayOfWeek = (firstDayOfMonth.getDay() + 6) % 7;
-
+        
         for (let i = 0; i < startDayOfWeek; i++) {
             elements.calendarGrid.innerHTML += `<div class="calendar-day other-month"></div>`;
         }
-
+        
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(year, month, day);
             const dateString = toLocalDateISO(date);
@@ -1098,7 +1064,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 dayCell.classList.add('today');
             }
             dayCell.innerHTML = `<div class="calendar-day-header">${day}</div>`;
-
+            
             if (trainingSessions[dateString]) {
                 trainingSessions[dateString].forEach(session => {
                     const sessionEl = document.createElement('div');
@@ -1109,7 +1075,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     dayCell.appendChild(sessionEl);
                 });
             }
-
+            
             if (matchResults) {
                 Object.values(matchResults).forEach(match => {
                     const matchDateNormalized = toLocalDateISO(match.date);
@@ -1131,7 +1097,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         const oppScore = location === 'home' ? match.awayScore : match.homeScore;
                         const hasScore = (myScore !== null && myScore !== undefined && myScore !== '') ||
                                         (oppScore !== null && oppScore !== undefined && oppScore !== '');
-
                         if (isFuture && !hasScore) {
                             matchEl.className = 'calendar-session session-partita-futura';
                         } else {
@@ -1145,28 +1110,28 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.calendarGrid.appendChild(dayCell);
         }
     };
-
+    
     const openSessionModal = (sessionData = null) => {
-        elements.sessionForm.reset();
-        if (sessionData) {
-            document.getElementById('sessionModalLabel').textContent = "Modifica Sessione";
-            document.getElementById('session-id').value = sessionData.id;
-            document.getElementById('session-date').value = sessionData.date;
-            document.getElementById('session-title').value = sessionData.title;
-            document.getElementById('session-time').value = sessionData.time;
-            document.getElementById('session-location').value = sessionData.location;
-            document.getElementById('session-goals').value = sessionData.goals;
-            document.getElementById('session-description').value = sessionData.description;
-            elements.deleteSessionBtn.style.display = 'block';
-        } else {
-            document.getElementById('sessionModalLabel').textContent = "Pianifica Sessione";
-            document.getElementById('session-id').value = '';
-            document.getElementById('session-date').valueAsDate = new Date();
-            elements.deleteSessionBtn.style.display = 'none';
-        }
+        elements.sessionForm.reset(); 
+        if(sessionData) { 
+            document.getElementById('sessionModalLabel').textContent = "Modifica Sessione"; 
+            document.getElementById('session-id').value = sessionData.id; 
+            document.getElementById('session-date').value = sessionData.date; 
+            document.getElementById('session-title').value = sessionData.title; 
+            document.getElementById('session-time').value = sessionData.time; 
+            document.getElementById('session-location').value = sessionData.location; 
+            document.getElementById('session-goals').value = sessionData.goals; 
+            document.getElementById('session-description').value = sessionData.description; 
+            elements.deleteSessionBtn.style.display = 'block'; 
+        } else { 
+            document.getElementById('sessionModalLabel').textContent = "Pianifica Sessione"; 
+            document.getElementById('session-id').value = ''; 
+            document.getElementById('session-date').valueAsDate = new Date(); 
+            elements.deleteSessionBtn.style.display = 'none'; 
+        } 
         sessionModal.show();
     };
-
+    
     const renderMatchResults = () => {
         elements.matchResultsContainer.innerHTML = '';
         const sortedMatches = Object.values(matchResults).sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -1174,7 +1139,7 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.matchResultsContainer.innerHTML = '<p class="text-muted">Nessun risultato inserito.</p>';
             return;
         }
-
+        
         sortedMatches.forEach(match => {
             const myTeamName = "GO Sport";
             const homeTeamName = match.location === 'home' ? myTeamName : match.opponentName;
@@ -1187,7 +1152,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const athlete = athletes.find(a => String(a.id) === String(s.athleteId));
                 return athlete ? athlete.name.split(' ').pop() : '';
             }).filter(name => name).join(', ');
-
             const today = toLocalDateISO(new Date());
             const matchDate = toLocalDateISO(match.date);
             const isFuture = matchDate > today;
@@ -1195,20 +1159,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const oppScore = match.location === 'home' ? match.awayScore : match.homeScore;
             const hasScore = (myScore !== null && myScore !== undefined && myScore !== '') ||
                             (oppScore !== null && oppScore !== undefined && oppScore !== '');
-
             let cardClass = 'match-future';
             if (!isFuture || hasScore) {
                 cardClass = match.location === 'home' ? 'match-home' : 'match-away';
             }
-
             const colDiv = document.createElement('div');
             colDiv.className = 'col-lg-4 col-md-6 mb-3';
-
             const cardContent = `
                 <div class="card h-100 match-result-item ${cardClass}" data-match-id="${match.id}" style="cursor: pointer;">
                     <div class="card-body p-2">
                         <div class="d-flex justify-content-between">
-                            <small class="text-muted">${new Date(match.date).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}</small>
+                            <small class="text-muted">${new Date(match.date).toLocaleDateString('it-IT', {day: '2-digit', month: 'short', year: 'numeric'})}</small>
                             <a href="#" class="no-print edit-match-btn" data-match-id="${match.id}"><i class="bi bi-pencil-fill"></i></a>
                         </div>
                         <div> ${homeTeamName} vs ${awayTeamName} <strong class="match-score ms-2">${match.homeScore ?? ''} - ${match.awayScore ?? ''}</strong></div>
@@ -1216,10 +1177,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${myTeamAssists ? `<div class="assists-list"><i class="bi bi-person-raised-hand"></i> Assists: <strong style="color: var(--primary-red);">${myTeamAssists}</strong></div>` : ''}
                     </div>
                 </div>`;
-
             colDiv.innerHTML = cardContent;
             elements.matchResultsContainer.appendChild(colDiv);
-
             colDiv.querySelector('.match-result-item').addEventListener('click', (e) => {
                 e.preventDefault();
                 if (!e.target.closest('.edit-match-btn')) {
@@ -1228,28 +1187,26 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     };
-
+    
     const renderCardsSummary = () => {
         elements.cardsSummaryTbody.innerHTML = '';
         const allCards = Object.values(matchResults)
             .flatMap((match) => match.cards.map((card, cardIndex) => ({ ...card, date: match.date, uniqueId: `${match.id}-${cardIndex}` })))
             .sort((a, b) => new Date(b.date) - new Date(a.date));
-
         let renderedRows = 0;
         allCards.forEach(card => {
             if (visuallyDeletedCards.includes(card.uniqueId)) { return; }
             const athlete = athletes.find(a => String(a.id) === String(card.athleteId));
             const row = document.createElement('tr');
-            row.innerHTML = `<td>${athlete ? athlete.name : 'N/D'}</td><td>${card.type === 'yellow' ? '1' : '0'}</td><td>${card.type === 'red' ? '1' : '0'}</td><td>${new Date(card.date).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })}</td><td class="no-print"><button class="btn btn-sm btn-outline-danger py-0 px-1 remove-card-summary-row-btn" data-card-id="${card.uniqueId}"><i class="bi bi-x-lg"></i></button></td>`;
+            row.innerHTML = `<td>${athlete ? athlete.name : 'N/D'}</td><td>${card.type === 'yellow' ? '1' : '0'}</td><td>${card.type === 'red' ? '1' : '0'}</td><td>${new Date(card.date).toLocaleDateString('it-IT', {day: '2-digit', month: 'short'})}</td><td class="no-print"><button class="btn btn-sm btn-outline-danger py-0 px-1 remove-card-summary-row-btn" data-card-id="${card.uniqueId}"><i class="bi bi-x-lg"></i></button></td>`;
             elements.cardsSummaryTbody.appendChild(row);
             renderedRows++;
         });
-
         if (renderedRows === 0) {
             elements.cardsSummaryTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nessun cartellino da mostrare.</td></tr>';
         }
     };
-
+    
     const renderTopScorers = () => {
         const goalCounts = {};
         Object.values(matchResults).forEach(match => {
@@ -1257,17 +1214,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 goalCounts[scorer.athleteId] = (goalCounts[scorer.athleteId] || 0) + 1;
             });
         });
-
         const sortedScorers = Object.entries(goalCounts).map(([athleteId, goals]) => {
             const athlete = athletes.find(a => String(a.id) === athleteId);
             return { name: athlete ? athlete.name : 'Sconosciuto', goals };
         }).sort((a, b) => b.goals - a.goals);
-
         if (sortedScorers.length === 0) {
             elements.topScorersContainer.innerHTML = '<p class="text-muted">Nessun marcatore registrato.</p>';
             return;
         }
-
         let ol = '<ol class="list-group list-group-numbered">';
         sortedScorers.forEach(scorer => {
             ol += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; border-color: var(--border-color);">${scorer.name}<span class="badge bg-danger rounded-pill">${scorer.goals}</span></li>`;
@@ -1275,7 +1229,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ol += '</ol>';
         elements.topScorersContainer.innerHTML = ol;
     };
-
+    
     const renderTopAssists = () => {
         const assistCounts = {};
         Object.values(matchResults).forEach(match => {
@@ -1283,17 +1237,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 assistCounts[assist.athleteId] = (assistCounts[assist.athleteId] || 0) + 1;
             });
         });
-
         const sortedAssists = Object.entries(assistCounts).map(([athleteId, assists]) => {
             const athlete = athletes.find(a => String(a.id) === athleteId);
             return { name: athlete ? athlete.name : 'Sconosciuto', assists };
         }).sort((a, b) => b.assists - a.assists);
-
         if (sortedAssists.length === 0) {
             elements.topAssistsContainer.innerHTML = '<p class="text-muted">Nessun assist registrato.</p>';
             return;
         }
-
         let ol = '<ol class="list-group list-group-numbered">';
         sortedAssists.forEach(assist => {
             ol += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; border-color: var(--border-color);">${assist.name}<span class="badge bg-primary rounded-pill">${assist.assists}</span></li>`;
@@ -1301,17 +1252,16 @@ document.addEventListener('DOMContentLoaded', () => {
         ol += '</ol>';
         elements.topAssistsContainer.innerHTML = ol;
     };
-
+    
     const updateMatchAnalysisChart = () => {
         const opponentFilter = elements.matchOpponentFilter.value;
         const period = elements.matchPeriodToggle.querySelector('.active').dataset.period;
-        let filteredMatches = Object.values(matchResults).sort((a, b) => new Date(a.date) - new Date(b.date));
+        let filteredMatches = Object.values(matchResults).sort((a,b) => new Date(a.date) - new Date(b.date));
         let labels, datasets;
-
         if (opponentFilter !== 'all') {
             elements.matchPeriodToggle.style.display = 'none';
             filteredMatches = filteredMatches.filter(m => m.opponentName === opponentFilter);
-            labels = filteredMatches.map(m => new Date(m.date).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' }));
+            labels = filteredMatches.map(m => new Date(m.date).toLocaleDateString('it-IT', {day:'2-digit', month:'short'}));
             datasets = [
                 { label: 'Vittorie', data: [], backgroundColor: '#d90429' },
                 { label: 'Pareggi', data: [], backgroundColor: '#1e5095' },
@@ -1336,7 +1286,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (period === 'bimonthly') return `${year}-B${Math.floor(month / 2) + 1}`;
                 return `${year}-${String(month + 1).padStart(2, '0')}`;
             };
-
             const resultsByPeriod = {};
             filteredMatches.forEach(match => {
                 const key = getPeriodKey(match.date, period);
@@ -1347,7 +1296,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (myScore < oppScore) resultsByPeriod[key].L++;
                 else resultsByPeriod[key].D++;
             });
-
             labels = Object.keys(resultsByPeriod).sort();
             datasets = [
                 { label: 'Vittorie', data: labels.map(l => resultsByPeriod[l].W), backgroundColor: '#d90429' },
@@ -1355,9 +1303,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 { label: 'Sconfitte', data: labels.map(l => resultsByPeriod[l].L), backgroundColor: '#6c757d' },
             ];
         }
-
         const data = { labels, datasets };
-
         if (chartInstances.matchResults) chartInstances.matchResults.destroy();
         chartInstances.matchResults = new Chart(document.getElementById('matchResultsChart').getContext('2d'), {
             type: 'bar',
@@ -1370,7 +1316,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 plugins: { legend: { labels: { color: '#ffffff' } } }
             }
         });
-
         const opponents = [...new Set(Object.values(matchResults).map(m => m.opponentName))];
         elements.matchOpponentFilter.innerHTML = `<option value="all">Tutti gli avversari</option>`;
         opponents.sort().forEach(opp => {
@@ -1378,13 +1323,13 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.matchOpponentFilter.innerHTML += `<option value="${opp}" ${selected}>${opp}</option>`;
         });
     };
-
+    
     // ✅ MODIFICATA: Funzione di aggiornamento grafici valutazioni escludendo atleti ospiti
     const updateEvaluationCharts = () => {
         const date = elements.evaluationDatePicker.value;
         if (!date) return;
-
-        const last7Days = Array.from({ length: 7 }, (_, i) => toLocalDateISO(new Date(Date.now() - i * 864e5))).reverse();
+        
+        const last7Days = Array.from({length: 7}, (_, i) => toLocalDateISO(new Date(Date.now() - i * 864e5))).reverse();
         const teamDailyAvgScores = last7Days.map(d => {
             let total = 0, count = 0;
             if (evaluations[d]) {
@@ -1392,18 +1337,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     const athlete = athletes.find(a => String(a.id) === id);
                     // Salta atleti ospiti
                     if (athlete && athlete.isGuest) return;
+                    
                     total += calculateAthleteScore(ev, athlete);
                     count++;
                 });
             }
             return count > 0 ? (total / count).toFixed(2) : 0;
         });
-
-        if (chartInstances.dailyTeam) chartInstances.dailyTeam.destroy();
+        
+        if(chartInstances.dailyTeam) chartInstances.dailyTeam.destroy();
         chartInstances.dailyTeam = new Chart(document.getElementById('dailyTeamChart').getContext('2d'), {
             type: 'line',
             data: {
-                labels: last7Days.map(d => new Date(d).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' })),
+                labels: last7Days.map(d => new Date(d).toLocaleDateString('it-IT', {day:'2-digit', month:'short'})),
                 datasets: [{
                     label: 'Punteggio Medio',
                     data: teamDailyAvgScores,
@@ -1420,18 +1366,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 plugins: { legend: { labels: { color: '#ffffff' } } }
             }
         });
-
+        
         const scores = {};
         // ✅ Solo atleti non ospiti
         athletes.filter(a => !a.isGuest).forEach(a => scores[String(a.id)] = { name: a.name, score: 0 });
-
+        
         if (comparisonChartPeriod === 'daily') {
-            if (evaluations[date]) {
+            if(evaluations[date]) {
                 Object.entries(evaluations[date]).forEach(([id, ev]) => {
                     const athlete = athletes.find(a => String(a.id) === id);
                     // Salta atleti ospiti
                     if (athlete && athlete.isGuest) return;
-                    if (scores[id]) scores[id].score += calculateAthleteScore(ev, athlete);
+                    
+                    if(scores[id]) scores[id].score += calculateAthleteScore(ev, athlete);
                 });
             }
         } else if (comparisonChartPeriod === 'monthly') {
@@ -1441,7 +1388,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const athlete = athletes.find(a => String(a.id) === id);
                     // Salta atleti ospiti
                     if (athlete && athlete.isGuest) return;
-                    if (scores[id]) scores[id].score += calculateAthleteScore(ev, athlete);
+                    
+                    if(scores[id]) scores[id].score += calculateAthleteScore(ev, athlete);
                 });
             });
         } else if (comparisonChartPeriod === 'semester') {
@@ -1456,7 +1404,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const athlete = athletes.find(a => String(a.id) === id);
                     // Salta atleti ospiti
                     if (athlete && athlete.isGuest) return;
-                    if (scores[id]) scores[id].score += calculateAthleteScore(ev, athlete);
+                    
+                    if(scores[id]) scores[id].score += calculateAthleteScore(ev, athlete);
                 });
             });
         } else if (comparisonChartPeriod === 'annual') {
@@ -1466,7 +1415,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const athlete = athletes.find(a => String(a.id) === id);
                     // Salta atleti ospiti
                     if (athlete && athlete.isGuest) return;
-                    if (scores[id]) scores[id].score += calculateAthleteScore(ev, athlete);
+                    
+                    if(scores[id]) scores[id].score += calculateAthleteScore(ev, athlete);
                 });
             });
         } else {
@@ -1476,26 +1426,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     const athlete = athletes.find(a => String(a.id) === id);
                     // Salta atleti ospiti
                     if (athlete && athlete.isGuest) return;
-                    if (scores[id]) scores[id].score += calculateAthleteScore(ev, athlete);
+                    
+                    if(scores[id]) scores[id].score += calculateAthleteScore(ev, athlete);
                 });
             });
         }
-
+        
         const allSortedScores = Object.values(scores).filter(a => a.score > 0).sort((a, b) => b.score - a.score);
         let scoresToShow = allSortedScores;
         if (allSortedScores.length > 20) {
             const cutoffScore = allSortedScores[19].score;
             scoresToShow = allSortedScores.filter(a => a.score >= cutoffScore);
         }
-
-        if (chartInstances.monthlyComparison) chartInstances.monthlyComparison.destroy();
+        
+        if(chartInstances.monthlyComparison) chartInstances.monthlyComparison.destroy();
         chartInstances.monthlyComparison = new Chart(document.getElementById('monthlyComparisonChart').getContext('2d'), {
             type: 'bar',
             data: {
-                labels: scoresToShow.map(a => a.name),
+                labels: scoresToShow.map(a=>a.name),
                 datasets: [{
                     label: 'Punteggio Totale',
-                    data: scoresToShow.map(a => a.score),
+                    data: scoresToShow.map(a=>a.score),
                     backgroundColor: 'rgba(217, 4, 41, 0.8)'
                 }]
             },
@@ -1514,21 +1465,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateAttendanceChart = () => {
         const date = elements.evaluationDatePicker.value;
         if (!date) return;
-
         const attendanceData = {};
         const justifiedAbsenceData = {};
+        
         // ✅ Solo atleti non ospiti
         athletes.filter(a => !a.isGuest).forEach(a => {
             attendanceData[String(a.id)] = { name: a.name, count: 0 };
             justifiedAbsenceData[String(a.id)] = { name: a.name, count: 0 };
         });
-
+        
         if (attendanceChartPeriod === 'daily') {
             if (evaluations[date]) {
                 Object.entries(evaluations[date]).forEach(([id, ev]) => {
                     const athlete = athletes.find(a => String(a.id) === id);
                     // Salta atleti ospiti
                     if (athlete && athlete.isGuest) return;
+                    
                     if (attendanceData[id] && ev['presenza-allenamento']) {
                         const presenzaValue = parseInt(ev['presenza-allenamento'], 10);
                         if (presenzaValue > 0 && presenzaValue < 4) {
@@ -1546,6 +1498,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const athlete = athletes.find(a => String(a.id) === id);
                     // Salta atleti ospiti
                     if (athlete && athlete.isGuest) return;
+                    
                     if (attendanceData[id] && ev['presenza-allenamento']) {
                         const presenzaValue = parseInt(ev['presenza-allenamento'], 10);
                         if (presenzaValue > 0 && presenzaValue < 4) {
@@ -1568,6 +1521,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const athlete = athletes.find(a => String(a.id) === id);
                     // Salta atleti ospiti
                     if (athlete && athlete.isGuest) return;
+                    
                     if (attendanceData[id] && ev['presenza-allenamento']) {
                         const presenzaValue = parseInt(ev['presenza-allenamento'], 10);
                         if (presenzaValue > 0 && presenzaValue < 4) {
@@ -1585,6 +1539,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const athlete = athletes.find(a => String(a.id) === id);
                     // Salta atleti ospiti
                     if (athlete && athlete.isGuest) return;
+                    
                     if (attendanceData[id] && ev['presenza-allenamento']) {
                         const presenzaValue = parseInt(ev['presenza-allenamento'], 10);
                         if (presenzaValue > 0 && presenzaValue < 4) {
@@ -1602,6 +1557,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const athlete = athletes.find(a => String(a.id) === id);
                     // Salta atleti ospiti
                     if (athlete && athlete.isGuest) return;
+                    
                     if (attendanceData[id] && ev['presenza-allenamento']) {
                         const presenzaValue = parseInt(ev['presenza-allenamento'], 10);
                         if (presenzaValue > 0 && presenzaValue < 4) {
@@ -1613,7 +1569,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             });
         }
-
+        
         const sortedAttendance = Object.values(attendanceData).sort((a, b) => b.count - a.count);
         const names = sortedAttendance.map(a => a.name);
         const attendanceValues = sortedAttendance.map(a => a.count);
@@ -1621,8 +1577,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const athleteId = Object.keys(attendanceData).find(id => attendanceData[id].name === name);
             return justifiedAbsenceData[athleteId] ? justifiedAbsenceData[athleteId].count : 0;
         });
-
-        if (chartInstances.attendance) chartInstances.attendance.destroy();
+        
+        if(chartInstances.attendance) chartInstances.attendance.destroy();
+        
         chartInstances.attendance = new Chart(document.getElementById('attendanceChart').getContext('2d'), {
             type: 'bar',
             data: {
@@ -1657,7 +1614,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     legend: { labels: { color: '#ffffff' } },
                     tooltip: {
                         callbacks: {
-                            label: function (context) {
+                            label: function(context) {
                                 let label = context.dataset.label || '';
                                 if (label) {
                                     label += ': ';
@@ -1671,7 +1628,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     };
-
+    
     const updateHallOfFame = () => {
         elements.hallOfFameContainer.innerHTML = '';
         const allAwards = Object.values(awards).flat();
@@ -1691,7 +1648,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     };
-
+    
     const getFilteredGpsData = () => {
         if (isAuthenticated()) { return gpsData; }
         const filteredData = JSON.parse(JSON.stringify(gpsData));
@@ -1716,75 +1673,63 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return null;
     };
-
-// ✅ MODIFICATA: Usa getFilteredGpsData() per filtrare le sessioni protette
+    
     const populatePerformanceSelectors = () => {
         elements.performanceSelectorsContainer.innerHTML = '';
-        
-        // MODIFICA QUI: Usa i dati filtrati invece di gpsData grezzo
-        const dataToUse = getFilteredGpsData(); 
-        
+        const dataToUse = gpsData;
         const keysToExclude = ['tipo_sessione', 'data_di_registrazione', 'ora_registrazione'];
-        
-        const optionsHtml = Object.entries(gpsFieldsForDisplay)
-            .filter(([key]) => !keysToExclude.includes(key))
-            .map(([key, label]) => `<option value="${key}">${label}</option>`)
-            .join('');
-
+        const optionsHtml = Object.entries(gpsFieldsForDisplay).filter(([key]) => !keysToExclude.includes(key)).map(([key, label]) => `<option value="${key}">${label}</option>`).join('');
         elements.metricSelector.innerHTML = optionsHtml;
         elements.multiAthleteMetricSelector.innerHTML = optionsHtml;
-
+        elements.metricSelector.value = 'velocita_massima';
+        elements.multiAthleteMetricSelector.value = 'velocita_massima';
+        
         performanceSelections.forEach((selection, index) => {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'row g-2 align-items-center mb-2 p-2 border rounded';
-            wrapper.style.backgroundColor = '#f8f9fa';
-
-            // Selector HTML structure
-            wrapper.innerHTML = `
-                <div class="col-md-5">
-                    <label class="form-label small">Sessione</label>
-                    <select class="form-select form-select-sm session-selector" data-index="${index}">
-                        <option value="">Seleziona Sessione</option>
+            const selectorRow = document.createElement('div');
+            selectorRow.className = 'row g-2 align-items-end mb-2';
+            selectorRow.innerHTML = `
+                <div class="col-md-6">
+                    <label class="form-label">Atleta ${index + 1}:</label>
+                    <select class="form-select athlete-selector" data-index="${index}">
+                        <option value="">Seleziona atleta...</option>
+                        ${athletes.map(a => `<option value="${a.id}" ${selection.athleteId == a.id ? 'selected' : ''}>${a.name}</option>`).join('')}
                     </select>
                 </div>
                 <div class="col-md-5">
-                    <label class="form-label small">Atleta</label>
-                    <select class="form-select form-select-sm athlete-selector" data-index="${index}" disabled>
-                        <option value="">Prima seleziona sessione</option>
+                    <label class="form-label">Sessione:</label>
+                    <select class="form-select date-selector" data-index="${index}">
+                        <option value="">Seleziona sessione...</option>
                     </select>
                 </div>
-                <div class="col-md-2 text-end">
-                     ${index > 0 ? `<button class="btn btn-outline-danger btn-sm remove-comparison-btn" data-index="${index}"><i class="bi bi-trash"></i></button>` : ''}
-                </div>
-            `;
+                <div class="col-md-1">
+                    <button class="btn btn-outline-danger btn-sm remove-selector" data-index="${index}" ${performanceSelections.length <= 2 ? 'disabled' : ''}><i class="bi bi-trash"></i></button>
+                </div>`;
+            elements.performanceSelectorsContainer.appendChild(selectorRow);
             
-            elements.performanceSelectorsContainer.appendChild(wrapper);
-
-            const sessionSelector = wrapper.querySelector('.session-selector');
-            
-            // Popola le sessioni usando dataToUse (che esclude Individual se non loggato)
-            Object.values(dataToUse).forEach(session => {
-                const option = document.createElement('option');
-                option.value = session.id;
-                let text = `${session.data_di_registrazione} - ${session.tipo_sessione}`;
-                if (session.ora_registrazione) text += ` (${session.ora_registrazione})`;
-                
-                // Nota: se non loggato, le sessioni Individual non arriveranno qui grazie al filtro
-                if (session.tipo_sessione === 'Individual' && !isAuthenticated()) {
-                    text += ' (Protetta)';
-                }
-                
-                option.textContent = text;
-                sessionSelector.appendChild(option);
-            });
-
-            // Ripristina selezione precedente se esiste
-            if (selection.sessionId) {
-                sessionSelector.value = selection.sessionId;
-                updateAthleteSelectorForSession(index, selection.sessionId);
+            const athleteId = selection.athleteId;
+            const dateSelector = selectorRow.querySelector('.date-selector');
+            if (athleteId && dataToUse[athleteId]) {
+                const allSessions = [];
+                Object.entries(dataToUse[athleteId]).forEach(([date, sessions]) => {
+                    sessions.forEach(session => allSessions.push({ date, ...session }));
+                });
+                const filteredSessions = (performanceFilterType === 'all') ? allSessions : allSessions.filter(session => session.tipo_sessione === performanceFilterType);
+                filteredSessions.sort((a,b) => new Date(b.date) - new Date(a.date) || (b.ora_registrazione || "").localeCompare(a.ora_registrazione || "")).forEach(session => {
+                    const option = document.createElement('option');
+                    option.value = session.id;
+                    let text = `${new Date(session.date).toLocaleDateString('it-IT')} ${session.ora_registrazione || ''} - ${session.tipo_sessione || 'N/A'}`;
+                    if (session.tipo_sessione === 'Individual' && !isAuthenticated()) {
+                        text += ' (Protetta)';
+                        option.dataset.protected = 'true';
+                    }
+                    option.textContent = text;
+                    if (selection.sessionId == session.id) option.selected = true;
+                    dateSelector.appendChild(option);
+                });
             }
         });
     };
+    
     const updatePerformanceChart = () => {
         const selectedMetric = elements.metricSelector.value;
         if (!selectedMetric) return;
@@ -1823,7 +1768,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         updatePerformanceTable();
     };
-
+    
     const updatePerformanceTable = () => {
         const validSelections = performanceSelections.filter(s => s.athleteId && s.sessionId);
         if (validSelections.length === 0) {
@@ -1840,7 +1785,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.tableContainer.innerHTML = `<table class="table table-dark table-striped table-hover"><thead><tr><th>Atleta</th><th>Data</th><th>Ora</th><th>Tipo</th>${Object.values(gpsFieldsForDisplay).filter(label => !['Data', 'Ora', 'Tipo'].includes(label)).map(label => `<th>${label}</th>`).join('')}</tr></thead><tbody>${tableBody}</tbody></table>`;
         elements.exportButtonsContainer.innerHTML = `<button class="btn btn-success btn-sm" id="export-excel"><i class="bi bi-file-excel"></i> Excel</button><button class="btn btn-danger btn-sm" id="export-pdf"><i class="bi bi-file-pdf"></i> PDF</button>`;
     };
-
+    
     const populateAnalysisSelectors = () => {
         const athleteOptions = athletes.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
         elements.trendAthleteSelector.innerHTML = `<option value="">Seleziona atleta...</option>${athleteOptions}`;
@@ -1851,7 +1796,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.trendMetricSelector.innerHTML = optionsHtml;
         elements.trendMetricSelector.value = 'velocita_massima';
     };
-
+    
     const updateAthleteTrendChart = () => {
         const athleteId = elements.trendAthleteSelector.value;
         const metric = elements.trendMetricSelector.value;
@@ -1863,13 +1808,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const sessionPoints = [];
         Object.entries(athleteData).forEach(([date, sessions]) => {
             sessions.forEach(session => {
-                if (session[metric] !== undefined && session[metric] !== null) {
+                if(session[metric] !== undefined && session[metric] !== null){
                     sessionPoints.push({ date: new Date(`${date}T${session.ora_registrazione || '00:00:00'}`), value: session[metric] });
                 }
             });
         });
         sessionPoints.sort((a, b) => a.date - b.date);
-        const labels = sessionPoints.map(p => p.date.toLocaleString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }));
+        const labels = sessionPoints.map(p => p.date.toLocaleString('it-IT', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'}));
         const athleteValues = sessionPoints.map(p => p.value);
         const teamAvgValues = [];
         const teamMaxValues = [];
@@ -1922,7 +1867,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (chartInstances.athleteRadar) chartInstances.athleteRadar.destroy();
         if (selectedAthleteIds.length === 0) return;
         const dataToUse = getFilteredGpsData();
-        const radarColors = ['rgba(217, 4, 41, 1)', 'rgba(255, 215, 0, 1)'];
+        const radarColors = [ 'rgba(217, 4, 41, 1)', 'rgba(255, 215, 0, 1)' ];
         const teamMaxs = {};
         Object.keys(radarMetrics).forEach(metric => {
             let maxValue = 0;
@@ -1944,7 +1889,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 let athleteSum = 0, athleteCount = 0;
                 Object.values(athleteData).forEach(sessions => {
                     sessions.forEach(session => {
-                        if (session[metric] !== undefined) {
+                        if(session[metric] !== undefined){
                             const value = parseFloat(session[metric] || 0);
                             athleteSum += value;
                             athleteCount++;
@@ -1975,7 +1920,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         beginAtZero: true,
                         max: 100,
                         ticks: { stepSize: 20, color: '#ffffff', backdropColor: 'rgba(0,0,0,0.5)' },
-                        pointLabels: { color: '#ffffff', font: { size: 10 } },
+                        pointLabels: { color: '#ffffff', font: {size: 10} },
                         grid: { color: 'rgba(241, 241, 241, 0.2)' },
                         angleLines: { color: 'rgba(241, 241, 241, 0.2)' }
                     }
@@ -1984,72 +1929,76 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     };
-
-   const updateMultiAthleteChart = () => {
-        // Usa i dati filtrati (così funziona anche senza password per i dati pubblici)
-        const dataToUse = getFilteredGpsData();
-        
-        // Recupera gli atleti selezionati
-        const selectedAthleteIds = [
-            elements.multiAthleteSelector1.value,
-            elements.multiAthleteSelector2.value,
-            elements.multiAthleteSelector3.value
-        ].filter(id => id);
-
+    
+    const updateMultiAthleteChart = () => {
         const metric = elements.multiAthleteMetricSelector.value;
-        const selectedDate = elements.multiAthleteDatepicker.valueAsDate;
-
-        if (selectedAthleteIds.length === 0 || !metric || !selectedDate) {
-             if (chartInstances.multiAthlete) chartInstances.multiAthlete.destroy();
-             return;
+        const periodBtn = document.querySelector('#multi-athlete-chart-container .btn-group[role="group"] .btn.active');
+        if (!metric || !periodBtn) return;
+        const period = periodBtn.dataset.period;
+        let startDate, endDate = new Date();
+        if (period === 'day') {
+            if (!elements.multiAthleteDatepicker.value) return;
+            startDate = new Date(elements.multiAthleteDatepicker.value);
+            endDate = new Date(elements.multiAthleteDatepicker.value);
+            endDate.setHours(23, 59, 59, 999);
+        } else {
+            const monthsToSubtract = { month: 1, bimonth: 2, trimester: 3, semester: 6, annual: 12 };
+            startDate = new Date();
+            startDate.setMonth(startDate.getMonth() - monthsToSubtract[period]);
         }
-
-        // Filtra le sessioni per data e tipo (Training/Match)
-        const labels = [];
-        const datasets = selectedAthleteIds.map((athleteId, index) => {
-            const athlete = athletes.find(a => a.id === athleteId);
-            // Cerca la sessione corrispondente alla data selezionata
-            // Nota: dataToUse è un oggetto {id: session}, dobbiamo iterarlo
-            const session = Object.values(dataToUse).find(s => 
-                s.data_di_registrazione === selectedDate.toISOString().split('T')[0]
-            );
-
-            let value = 0;
-            if (session && session.dati_atleti && session.dati_atleti[athleteId]) {
-                value = parseFloat(session.dati_atleti[athleteId][metric] || 0);
+        startDate.setHours(0, 0, 0, 0);
+        const dataToUse = getFilteredGpsData();
+        const chartData = [];
+        athletes.forEach(athlete => {
+            const athleteGpsData = dataToUse[athlete.id] || {};
+            const relevantSessions = Object.entries(athleteGpsData).flatMap(([, sessions]) => sessions)
+                .filter(session => {
+                    const sessionDate = new Date(session.data_di_registrazione);
+                    return sessionDate >= startDate && sessionDate <= endDate;
+                })
+                .filter(session => {
+                    if (multiAthleteFilterType === 'all') return true;
+                    return session.tipo_sessione === multiAthleteFilterType;
+                })
+                .filter(session => session[metric] !== undefined && session[metric] !== null && String(session[metric]).trim() !== '')
+                .map(session => parseFloat(session[metric]));
+            if (relevantSessions.length > 0) {
+                const maxValue = Math.max(...relevantSessions);
+                chartData.push({ name: athlete.name, value: maxValue });
             }
-
-            return {
-                label: athlete ? athlete.nome : 'Atleta',
-                data: [value], // Grafico a barre singolo o serie temporale breve
-                backgroundColor: multiGraphColors[index % multiGraphColors.length],
-                borderColor: multiGraphColors[index % multiGraphColors.length],
-                borderWidth: 1
-            };
         });
-
-        // Configurazione e rendering del grafico (semplificato per bar chart)
-        const ctx = document.getElementById('multiAthleteChart').getContext('2d');
-        if (chartInstances.multiAthlete) chartInstances.multiAthlete.destroy();
-
-        chartInstances.multiAthlete = new Chart(ctx, {
+        chartData.sort((a, b) => b.value - a.value);
+        if(chartInstances.multiAthlete) chartInstances.multiAthlete.destroy();
+        chartInstances.multiAthlete = new Chart(document.getElementById('multiAthleteChart').getContext('2d'), {
             type: 'bar',
             data: {
-                labels: [gpsFieldsForDisplay[metric] || metric],
-                datasets: datasets
+                labels: chartData.map(d => d.name),
+                datasets: [{
+                    label: gpsFieldsForDisplay[metric],
+                    data: chartData.map(d => d.value.toFixed(2)),
+                    backgroundColor: 'rgba(217, 4, 41, 0.8)'
+                }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
                 scales: {
-                    y: { beginAtZero: true }
+                    y: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.2)' } },
+                    x: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.1)' } }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => `${context.dataset.label}: ${context.parsed.y}`
+                        }
+                    }
                 }
             }
         });
     };
+
     const checkDeadlinesAndAlert = () => {
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        today.setHours(0,0,0,0);
         const threeMonths = new Date();
         threeMonths.setMonth(today.getMonth() + 3);
         const expired = [];
@@ -2072,14 +2021,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (warning.length > 0) {
             alertHTML += `<div class="alert alert-warning alert-dismissible fade show" role="alert"><strong>SCADENZE IN AVVICINAMENTO (meno di 3 mesi):</strong> ${warning.join(', ')}.<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>`;
         }
-        if (alertHTML) {
+        if(alertHTML) {
             elements.alertsContainer.innerHTML = alertHTML;
         }
     };
 
-    const logout = () => {
-        sessionStorage.removeItem('isAuthenticated');
-        updateAllUI();
+    const logout = () => { 
+        sessionStorage.removeItem('isAuthenticated'); 
+        updateAllUI(); 
     };
 
     const syncAndUpdateEvaluationDate = (newDate) => {
@@ -2097,18 +2046,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const athleteId = document.getElementById('modal-athlete-id-eval').value;
         const date = elements.evaluationDatePicker.value;
         const athlete = athletes.find(a => a.id.toString() === athleteId);
+        
         // ✅ Se l'atleta è ospite, non salvare le valutazioni
         if (athlete && athlete.isGuest) {
             alert("Atleti ospiti non possono ricevere valutazioni.");
             evaluationModal.hide();
             return;
         }
+        
         if (!date) {
             alert('Per favore, seleziona una data valida prima di salvare.');
             return;
         }
         if (!evaluations[date]) evaluations[date] = {};
         evaluations[date][athleteId] = evaluationCategories.reduce((obj, cat) => ({ ...obj, [cat]: document.getElementById(cat).value }), {});
+        
         if (document.getElementById('award-checkbox').checked) {
             const reason = prompt('Motivo del premio:');
             if (reason) {
@@ -2128,6 +2080,7 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.evaluationDatePicker.addEventListener('change', (e) => syncAndUpdateEvaluationDate(e.target.value));
     elements.evaluationDatePicker2.addEventListener('change', (e) => syncAndUpdateEvaluationDate(e.target.value));
     elements.logoutBtn.addEventListener('click', logout);
+    
     elements.cardsSummaryTbody.addEventListener('click', e => {
         const removeBtn = e.target.closest('.remove-card-summary-row-btn');
         if (removeBtn) {
@@ -2144,6 +2097,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+
     document.querySelector('main').addEventListener('click', e => {
         if (e.target.closest('.unlock-btn')) {
             requestAuthentication(() => {
@@ -2153,17 +2107,21 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     });
+
     elements.prevMonthBtn.addEventListener('click', () => {
         currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
         renderCalendar();
     });
+
     elements.nextMonthBtn.addEventListener('click', () => {
         currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
         renderCalendar();
     });
+
     elements.addSessionBtn.addEventListener('click', () => openSessionModal());
     elements.quickAddAthleteBtn.addEventListener('click', () => elements.addAthleteBtn.click());
     elements.quickPlanSessionBtn.addEventListener('click', () => elements.addSessionBtn.click());
+
     elements.calendarGrid.addEventListener('click', e => {
         if (e.target.classList.contains('calendar-session')) {
             const sessionId = e.target.dataset.sessionId;
@@ -2179,6 +2137,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+
     elements.sessionForm.addEventListener('submit', e => {
         e.preventDefault();
         const date = document.getElementById('session-date').value;
@@ -2205,13 +2164,14 @@ document.addEventListener('DOMContentLoaded', () => {
         updateHomePage();
         sessionModal.hide();
     });
+
     elements.deleteSessionBtn.addEventListener('click', () => {
         const date = document.getElementById('session-date').value;
         const id = document.getElementById('session-id').value;
         if (date && id && confirm("Sei sicuro di voler eliminare questa sessione?")) {
-            if (trainingSessions[date]) {
+            if(trainingSessions[date]) {
                 trainingSessions[date] = trainingSessions[date].filter(s => s.id != id);
-                if (trainingSessions[date].length === 0) {
+                if(trainingSessions[date].length === 0) {
                     delete trainingSessions[date];
                 }
             }
@@ -2221,9 +2181,11 @@ document.addEventListener('DOMContentLoaded', () => {
             sessionModal.hide();
         }
     });
+
     document.getElementById('gps-tipo_sessione').addEventListener('change', (e) => {
         document.getElementById('match-stats-fields').style.display = (e.target.value === 'Partita') ? 'block' : 'none';
     });
+
     elements.comparisonPeriodToggle.addEventListener('click', (e) => {
         if (e.target.dataset.period) {
             elements.comparisonPeriodToggle.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
@@ -2232,6 +2194,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateEvaluationCharts();
         }
     });
+
     elements.attendancePeriodToggle.addEventListener('click', (e) => {
         if (e.target.dataset.period) {
             elements.attendancePeriodToggle.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
@@ -2240,6 +2203,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateAttendanceChart();
         }
     });
+
     elements.addAthleteBtn.addEventListener('click', () => {
         document.getElementById('athleteModalLabel').textContent = 'Aggiungi Atleta';
         document.getElementById('athlete-form').reset();
@@ -2253,12 +2217,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('athlete-guest').checked = false;
         athleteModal.show();
     });
+
     elements.athleteGrid.addEventListener('click', (e) => {
         const card = e.target.closest('[data-athlete-id]');
         if (!card) return;
         const athleteId = card.dataset.athleteId;
         const athlete = athletes.find(a => a.id.toString() === athleteId);
         if (!athlete) return;
+        
         if (e.target.closest('.edit-btn')) {
             document.getElementById('athleteModalLabel').textContent = 'Modifica Atleta';
             document.getElementById('modal-athlete-id').value = athlete.id;
@@ -2314,7 +2280,7 @@ document.addEventListener('DOMContentLoaded', () => {
             Object.entries(athleteGpsData).forEach(([date, sessions]) => {
                 sessions.forEach(session => allSessions.push({ date, ...session }));
             });
-            allSessions.sort((a, b) => new Date(b.date) - new Date(a.date) || (b.ora_registrazione || "").localeCompare(a.ora_registrazione || "")).forEach(session => {
+            allSessions.sort((a,b)=> new Date(b.date) - new Date(a.date) || (b.ora_registrazione || "").localeCompare(a.ora_registrazione || "")).forEach(session => {
                 const option = document.createElement('option');
                 option.value = session.id;
                 let text = `${new Date(session.date).toLocaleDateString('it-IT')} ${session.ora_registrazione || ''} - ${session.tipo_sessione || 'N/A'}`;
@@ -2329,11 +2295,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         else if (e.target.closest('.athlete-card-clickable')) {
             const date = elements.evaluationDatePicker.value;
+            
             // ✅ Se l'atleta è ospite, non aprire il modal di valutazione
             if (athlete.isGuest) {
                 alert("Atleti ospiti non possono ricevere valutazioni.");
                 return;
             }
+            
             if (date) {
                 document.getElementById('modal-athlete-name-eval').textContent = athlete.name;
                 document.getElementById('modal-athlete-id-eval').value = athlete.id;
@@ -2348,10 +2316,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Resto del codice rimane invariato...
-    // (Tutte le altre funzioni e event listeners che non sono state modificate)
-    // Event listeners per drag and drop, stampa, export, import, etc...
-    // ... [tutto il resto del codice originale rimane invariato] ...
+    // Aggiungi event listeners per i grafici GPS
+    elements.metricSelector.addEventListener('change', updatePerformanceChart);
+    elements.trendAthleteSelector.addEventListener('change', updateAthleteTrendChart);
+    elements.trendMetricSelector.addEventListener('change', updateAthleteTrendChart);
+    elements.radarAthleteSelector1.addEventListener('change', updateAthleteRadarChart);
+    elements.radarAthleteSelector2.addEventListener('change', updateAthleteRadarChart);
+    elements.multiAthleteMetricSelector.addEventListener('change', updateMultiAthleteChart);
+    
+    // Aggiungi event listeners per i filtri delle partite
+    elements.matchOpponentFilter.addEventListener('change', updateMatchAnalysisChart);
+    elements.matchPeriodToggle.addEventListener('click', (e) => {
+        if (e.target.dataset.period) {
+            elements.matchPeriodToggle.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
+            e.target.classList.add('active');
+            updateMatchAnalysisChart();
+        }
+    });
+
     function startPolling() {
         pollingInterval = setInterval(async () => {
             const currentDataSnapshot = JSON.stringify({ athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults });
@@ -2363,55 +2345,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }, 5000);
     }
-// ✅ NUOVA FUNZIONE: Riattiva i pulsanti dei periodi (Mese, Semestre, Anno)
-    const setupChartEventListeners = () => {
-        const periodButtons = document.querySelectorAll('.period-btn');
-        
-        periodButtons.forEach(btn => {
-            // Rimuovi vecchi listener clonando il nodo (trick rapido)
-            const newBtn = btn.cloneNode(true);
-            btn.parentNode.replaceChild(newBtn, btn);
-            
-            newBtn.addEventListener('click', (e) => {
-                // Gestione stile bottoni
-                document.querySelectorAll('.period-btn').forEach(b => {
-                    b.classList.remove('active', 'btn-primary');
-                    b.classList.add('btn-outline-primary');
-                });
-                e.target.classList.remove('btn-outline-primary');
-                e.target.classList.add('active', 'btn-primary');
-
-                // Aggiorna il grafico Trend
-                const period = e.target.dataset.period; // Assicurati che nell'HTML ci sia data-period="1M" etc.
-                if(typeof updateAthleteTrendChart === 'function') {
-                    // Passa il periodo alla funzione trend se lo accetta, o aggiorna variabile globale
-                    // Se la tua updateAthleteTrendChart legge una variabile globale, impostala qui.
-                    // Esempio generico:
-                    updateAthleteTrendChart(period); 
-                }
-            });
-        });
-
-        // Riattiva listener per i selettori del confronto squadra
-        const multiSelectors = [
-            elements.multiAthleteSelector1, 
-            elements.multiAthleteSelector2, 
-            elements.multiAthleteSelector3,
-            elements.multiAthleteMetricSelector,
-            elements.multiAthleteDatepicker
-        ];
-        
-        multiSelectors.forEach(el => {
-            if(el) el.addEventListener('change', updateMultiAthleteChart);
-        });
-    };
-	async function initializeApp() {
+    
+    // ✅ MODIFICATA: Funzione initializeApp separata per caricare dati senza autenticazione
+    async function initializeApp() {
         await loadData();
         const today = new Date();
-        if(elements.evaluationDatePicker) elements.evaluationDatePicker.valueAsDate = today;
-        if(elements.evaluationDatePicker2) elements.evaluationDatePicker2.valueAsDate = today;
-        if(elements.multiAthleteDatepicker) elements.multiAthleteDatepicker.valueAsDate = today;
+        elements.evaluationDatePicker.valueAsDate = today;
+        elements.evaluationDatePicker2.valueAsDate = today;
+        elements.multiAthleteDatepicker.valueAsDate = today;
         
+        // Aggiorna solo l'UI di base senza richiedere autenticazione
         updateLogoutButtonVisibility();
         updateUnlockButtonsVisibility();
         checkDeadlinesAndAlert();
@@ -2425,11 +2368,10 @@ document.addEventListener('DOMContentLoaded', () => {
         renderTopScorers();
         renderTopAssists();
         
-        // Attiva i listener per i pulsanti dei grafici
-        setupChartEventListeners(); // <--- AGGIUNTO QUI
-        
-        // Aggiorna i grafici
-        updateProtectedSections();
+        // I grafici e le sezioni protette vengono aggiornati solo se autenticati
+        if (isAuthenticated()) {
+            updateProtectedSections();
+        }
         
         startPolling();
     }
