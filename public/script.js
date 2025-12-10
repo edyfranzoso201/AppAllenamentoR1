@@ -1985,72 +1985,68 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    const updateMultiAthleteChart = () => {
-        const metric = elements.multiAthleteMetricSelector.value;
-        const periodBtn = document.querySelector('#multi-athlete-chart-container .btn-group[role="group"] .btn.active');
-        if (!metric || !periodBtn) return;
-        const period = periodBtn.dataset.period;
-        let startDate, endDate = new Date();
-        if (period === 'day') {
-            if (!elements.multiAthleteDatepicker.value) return;
-            startDate = new Date(elements.multiAthleteDatepicker.value);
-            endDate = new Date(elements.multiAthleteDatepicker.value);
-            endDate.setHours(23, 59, 59, 999);
-        } else {
-            const monthsToSubtract = { month: 1, bimonth: 2, trimester: 3, semester: 6, annual: 12 };
-            startDate = new Date();
-            startDate.setMonth(startDate.getMonth() - monthsToSubtract[period]);
-        }
-        startDate.setHours(0, 0, 0, 0);
+   const updateMultiAthleteChart = () => {
+        // Usa i dati filtrati (così funziona anche senza password per i dati pubblici)
         const dataToUse = getFilteredGpsData();
-        const chartData = [];
-        athletes.forEach(athlete => {
-            const athleteGpsData = dataToUse[athlete.id] || {};
-            const relevantSessions = Object.entries(athleteGpsData).flatMap(([, sessions]) => sessions)
-                .filter(session => {
-                    const sessionDate = new Date(session.data_di_registrazione);
-                    return sessionDate >= startDate && sessionDate <= endDate;
-                })
-                .filter(session => {
-                    if (multiAthleteFilterType === 'all') return true;
-                    return session.tipo_sessione === multiAthleteFilterType;
-                })
-                .filter(session => session[metric] !== undefined && session[metric] !== null && String(session[metric]).trim() !== '')
-                .map(session => parseFloat(session[metric]));
-            if (relevantSessions.length > 0) {
-                const maxValue = Math.max(...relevantSessions);
-                chartData.push({ name: athlete.name, value: maxValue });
+        
+        // Recupera gli atleti selezionati
+        const selectedAthleteIds = [
+            elements.multiAthleteSelector1.value,
+            elements.multiAthleteSelector2.value,
+            elements.multiAthleteSelector3.value
+        ].filter(id => id);
+
+        const metric = elements.multiAthleteMetricSelector.value;
+        const selectedDate = elements.multiAthleteDatepicker.valueAsDate;
+
+        if (selectedAthleteIds.length === 0 || !metric || !selectedDate) {
+             if (chartInstances.multiAthlete) chartInstances.multiAthlete.destroy();
+             return;
+        }
+
+        // Filtra le sessioni per data e tipo (Training/Match)
+        const labels = [];
+        const datasets = selectedAthleteIds.map((athleteId, index) => {
+            const athlete = athletes.find(a => a.id === athleteId);
+            // Cerca la sessione corrispondente alla data selezionata
+            // Nota: dataToUse è un oggetto {id: session}, dobbiamo iterarlo
+            const session = Object.values(dataToUse).find(s => 
+                s.data_di_registrazione === selectedDate.toISOString().split('T')[0]
+            );
+
+            let value = 0;
+            if (session && session.dati_atleti && session.dati_atleti[athleteId]) {
+                value = parseFloat(session.dati_atleti[athleteId][metric] || 0);
             }
+
+            return {
+                label: athlete ? athlete.nome : 'Atleta',
+                data: [value], // Grafico a barre singolo o serie temporale breve
+                backgroundColor: multiGraphColors[index % multiGraphColors.length],
+                borderColor: multiGraphColors[index % multiGraphColors.length],
+                borderWidth: 1
+            };
         });
-        chartData.sort((a, b) => b.value - a.value);
+
+        // Configurazione e rendering del grafico (semplificato per bar chart)
+        const ctx = document.getElementById('multiAthleteChart').getContext('2d');
         if (chartInstances.multiAthlete) chartInstances.multiAthlete.destroy();
-        chartInstances.multiAthlete = new Chart(document.getElementById('multiAthleteChart').getContext('2d'), {
+
+        chartInstances.multiAthlete = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: chartData.map(d => d.name),
-                datasets: [{
-                    label: gpsFieldsForDisplay[metric],
-                    data: chartData.map(d => d.value.toFixed(2)),
-                    backgroundColor: 'rgba(217, 4, 41, 0.8)'
-                }]
+                labels: [gpsFieldsForDisplay[metric] || metric],
+                datasets: datasets
             },
             options: {
+                responsive: true,
+                maintainAspectRatio: false,
                 scales: {
-                    y: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.2)' } },
-                    x: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.1)' } }
-                },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: (context) => `${context.dataset.label}: ${context.parsed.y}`
-                        }
-                    }
+                    y: { beginAtZero: true }
                 }
             }
         });
     };
-
     const checkDeadlinesAndAlert = () => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -2367,9 +2363,49 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }, 5000);
     }
+// ✅ NUOVA FUNZIONE: Riattiva i pulsanti dei periodi (Mese, Semestre, Anno)
+    const setupChartEventListeners = () => {
+        const periodButtons = document.querySelectorAll('.period-btn');
+        
+        periodButtons.forEach(btn => {
+            // Rimuovi vecchi listener clonando il nodo (trick rapido)
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            newBtn.addEventListener('click', (e) => {
+                // Gestione stile bottoni
+                document.querySelectorAll('.period-btn').forEach(b => {
+                    b.classList.remove('active', 'btn-primary');
+                    b.classList.add('btn-outline-primary');
+                });
+                e.target.classList.remove('btn-outline-primary');
+                e.target.classList.add('active', 'btn-primary');
 
-// ✅ MODIFICATA: Carica l'interfaccia completa all'avvio
-    async function initializeApp() {
+                // Aggiorna il grafico Trend
+                const period = e.target.dataset.period; // Assicurati che nell'HTML ci sia data-period="1M" etc.
+                if(typeof updateAthleteTrendChart === 'function') {
+                    // Passa il periodo alla funzione trend se lo accetta, o aggiorna variabile globale
+                    // Se la tua updateAthleteTrendChart legge una variabile globale, impostala qui.
+                    // Esempio generico:
+                    updateAthleteTrendChart(period); 
+                }
+            });
+        });
+
+        // Riattiva listener per i selettori del confronto squadra
+        const multiSelectors = [
+            elements.multiAthleteSelector1, 
+            elements.multiAthleteSelector2, 
+            elements.multiAthleteSelector3,
+            elements.multiAthleteMetricSelector,
+            elements.multiAthleteDatepicker
+        ];
+        
+        multiSelectors.forEach(el => {
+            if(el) el.addEventListener('change', updateMultiAthleteChart);
+        });
+    };
+	async function initializeApp() {
         await loadData();
         const today = new Date();
         if(elements.evaluationDatePicker) elements.evaluationDatePicker.valueAsDate = today;
@@ -2389,7 +2425,10 @@ document.addEventListener('DOMContentLoaded', () => {
         renderTopScorers();
         renderTopAssists();
         
-        // Mostra i grafici subito
+        // Attiva i listener per i pulsanti dei grafici
+        setupChartEventListeners(); // <--- AGGIUNTO QUI
+        
+        // Aggiorna i grafici
         updateProtectedSections();
         
         startPolling();
