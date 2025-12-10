@@ -706,96 +706,123 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
     const updateAttendanceChart = () => {
-        const date = elements.evaluationDatePicker.value;
-        if (!date) return;
+    const date = elements.evaluationDatePicker.value;
+    if (!date) return;
 
-        // ✅ Filtra solo atleti NON ospiti
-        const officialAthletes = athletes.filter(a => !a.isGuest);
-        const presenceData = {};
-        const justifiedData = {};
+    // ✅ Filtra SOLO atleti in rosa (non ospiti)
+    const officialAthletes = athletes.filter(a => !a.isGuest);
 
-        officialAthletes.forEach(a => {
-            presenceData[String(a.id)] = { name: a.name, count: 0 };
-            justifiedData[String(a.id)] = { name: a.name, count: 0 };
-        });
-
-        const processEvaluations = (evalDate) => {
-            if (!evaluations[evalDate]) return;
-            Object.entries(evaluations[evalDate]).forEach(([id, ev]) => {
-                const athlete = athletes.find(a => String(a.id) === id);
-                if (athlete && athlete.isGuest) return; // ✅ salta gli ospiti
-
-                const presenceVal = ev['presenza-allenamento'];
-                if (presenceVal === 'J') {
-                    if (justifiedData[id]) justifiedData[id].count++;
-                } else if (presenceVal && parseInt(presenceVal, 10) > 0) {
-                    if (presenceData[id]) presenceData[id].count++;
-                }
-            });
-        };
-
-        if (attendanceChartPeriod === 'daily') {
-            processEvaluations(date);
-        } else if (attendanceChartPeriod === 'monthly') {
-            const month = date.substring(0, 7);
-            Object.keys(evaluations).filter(d => d.startsWith(month)).forEach(processEvaluations);
-        } else if (attendanceChartPeriod === 'semester') {
-            const year = date.substring(0, 4);
-            const month = parseInt(date.substring(5, 7), 10);
-            const semesterStartMonth = month <= 6 ? '01' : '07';
-            const startDate = `${year}-${semesterStartMonth}-01`;
-            const endDate = `${year}-${month <= 6 ? '06' : '12'}-31`;
-            Object.keys(evaluations).filter(d => d >= startDate && d <= endDate).forEach(processEvaluations);
-        } else if (attendanceChartPeriod === 'annual') {
-            const year = date.substring(0, 4);
-            Object.keys(evaluations).filter(d => d.startsWith(year)).forEach(processEvaluations);
-        } else {
-            const week = getWeekRange(date);
-            Object.keys(evaluations).filter(d => d >= week.start && d <= week.end).forEach(processEvaluations);
+    // ✅ Recupera tutte le date da considerare in base al periodo selezionato
+    let datesToCheck = [];
+    if (attendanceChartPeriod === 'daily') {
+        datesToCheck = [date];
+    } else if (attendanceChartPeriod === 'weekly') {
+        const week = getWeekRange(date);
+        for (let d = new Date(week.start); d <= new Date(week.end); d.setDate(d.getDate() + 1)) {
+            datesToCheck.push(toLocalDateISO(d));
         }
+    } else if (attendanceChartPeriod === 'monthly') {
+        const year = date.substring(0, 4);
+        const month = date.substring(5, 7);
+        const daysInMonth = new Date(year, parseInt(month, 10), 0).getDate();
+        for (let day = 1; day <= daysInMonth; day++) {
+            datesToCheck.push(`${year}-${month}-${String(day).padStart(2, '0')}`);
+        }
+    } else if (attendanceChartPeriod === 'semester') {
+        const year = date.substring(0, 4);
+        const month = parseInt(date.substring(5, 7), 10);
+        const startMonth = month <= 6 ? 1 : 7;
+        const endMonth = month <= 6 ? 6 : 12;
+        for (let m = startMonth; m <= endMonth; m++) {
+            const daysInMonth = new Date(year, m, 0).getDate();
+            for (let d = 1; d <= daysInMonth; d++) {
+                datesToCheck.push(`${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+            }
+        }
+    } else if (attendanceChartPeriod === 'annual') {
+        const year = date.substring(0, 4);
+        for (let m = 1; m <= 12; m++) {
+            const daysInMonth = new Date(year, m, 0).getDate();
+            for (let d = 1; d <= daysInMonth; d++) {
+                datesToCheck.push(`${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+            }
+        }
+    }
 
-        const labels = officialAthletes.map(a => a.name);
-        const presenceCounts = officialAthletes.map(a => (presenceData[String(a.id)]?.count) || 0);
-        const justifiedCounts = officialAthletes.map(a => (justifiedData[String(a.id)]?.count) || 0);
+    // ✅ Inizializza i conteggi
+    const presenceCounts = {};
+    const justifiedCounts = {};
 
-        if (chartInstances.attendance) chartInstances.attendance.destroy();
-        chartInstances.attendance = new Chart(document.getElementById('attendanceChart').getContext('2d'), {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: 'Presenze',
-                         presenceCounts,
-                        backgroundColor: 'rgba(217, 4, 41, 0.8)'
-                    },
-                    {
-                        label: 'Assenze Giustificate',
-                         justifiedCounts,
-                        backgroundColor: 'rgba(0, 128, 0, 0.8)' // ✅ Verde
-                    }
-                ]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: { color: '#ffffff' },
-                        grid: { color: 'rgba(241, 241, 241, 0.2)' }
-                    },
-                    x: {
-                        ticks: { color: '#ffffff' },
-                        grid: { color: 'rgba(241, 241, 241, 0.2)' }
-                    }
-                },
-                plugins: {
-                    legend: { labels: { color: '#ffffff' } }
-                },
-                responsive: true,
-                maintainAspectRatio: false
+    officialAthletes.forEach(a => {
+        presenceCounts[a.id] = 0;
+        justifiedCounts[a.id] = 0;
+    });
+
+    // ✅ Scansiona solo le date selezionate
+    datesToCheck.forEach(d => {
+        const dailyEvals = evaluations[d];
+        if (!dailyEvals) return;
+
+        Object.entries(dailyEvals).forEach(([athleteId, ev]) => {
+            const athlete = athletes.find(a => String(a.id) === athleteId);
+            if (!athlete || athlete.isGuest) return; // ✅ escludi ospiti
+
+            const presenza = ev['presenza-allenamento'];
+            if (presenza === 'J') {
+                justifiedCounts[athleteId]++;
+            } else if (['1', '2', '3'].includes(presenza)) {
+                presenceCounts[athleteId]++;
             }
         });
-    };
+    });
+
+    // ✅ Prepara i dati per il grafico
+    const labels = officialAthletes.map(a => a.name);
+    const presenze = officialAthletes.map(a => presenceCounts[a.id] || 0);
+    const assenzeGiust = officialAthletes.map(a => justifiedCounts[a.id] || 0);
+
+    // ✅ Distruggi il grafico precedente
+    if (chartInstances.attendance) chartInstances.attendance.destroy();
+
+    // ✅ Crea il nuovo grafico
+    chartInstances.attendance = new Chart(document.getElementById('attendanceChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Presenze',
+                    data: presenze,
+                    backgroundColor: 'rgba(217, 4, 41, 0.8)'
+                },
+                {
+                    label: 'Assenze Giustificate',
+                    data: assenzeGiust,
+                    backgroundColor: 'rgba(0, 128, 0, 0.8)'
+                }
+            ]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: datesToCheck.length, // ✅ limite massimo = numero di giorni nel periodo
+                    ticks: { color: '#ffffff', stepSize: 1 },
+                    grid: { color: 'rgba(241, 241, 241, 0.2)' }
+                },
+                x: {
+                    ticks: { color: '#ffffff' },
+                    grid: { color: 'rgba(241, 241, 241, 0.2)' }
+                }
+            },
+            plugins: {
+                legend: { labels: { color: '#ffffff' } }
+            },
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+};
     const updateHallOfFame = () => {
         elements.hallOfFameContainer.innerHTML = '';
         const allAwards = Object.values(awards).flat();
