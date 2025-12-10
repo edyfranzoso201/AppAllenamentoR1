@@ -797,9 +797,10 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.statDr.className = dr > 0 ? 'diff-pos' : (dr < 0 ? 'diff-neg' : '');
     };
 
-    // ✅ NUOVA FUNZIONE: Aggiorna solo le sezioni protette
+    // ✅ MODIFICATA: Rimosso il blocco che nascondeva i grafici ai non loggati
     const updateProtectedSections = () => {
-        if (!isAuthenticated()) return;
+        // if (!isAuthenticated()) return; // RIMOSSO PER MOSTRARE SEMPRE I DATI
+        
         updateMatchAnalysisChart();
         updateEvaluationCharts();
         updateAttendanceChart();
@@ -812,7 +813,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateMultiAthleteChart();
     };
 
-    // ✅ MODIFICATA: Funzione per aggiornare tutta l'UI
+   // ✅ MODIFICATA: Aggiorna sempre tutto, incluse le sezioni protette
     const updateAllUI = () => {
         updateLogoutButtonVisibility();
         updateUnlockButtonsVisibility();
@@ -826,11 +827,9 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCardsSummary();
         renderTopScorers();
         renderTopAssists();
-
-        // Aggiorna le sezioni protette solo se autenticato
-        if (isAuthenticated()) {
-            updateProtectedSections();
-        }
+        
+        // Chiama sempre l'aggiornamento dei grafici
+        updateProtectedSections();
     };
 
     const createJerseyElement = (athlete) => {
@@ -1718,60 +1717,74 @@ document.addEventListener('DOMContentLoaded', () => {
         return null;
     };
 
+// ✅ MODIFICATA: Usa getFilteredGpsData() per filtrare le sessioni protette
     const populatePerformanceSelectors = () => {
         elements.performanceSelectorsContainer.innerHTML = '';
-        const dataToUse = gpsData;
+        
+        // MODIFICA QUI: Usa i dati filtrati invece di gpsData grezzo
+        const dataToUse = getFilteredGpsData(); 
+        
         const keysToExclude = ['tipo_sessione', 'data_di_registrazione', 'ora_registrazione'];
-        const optionsHtml = Object.entries(gpsFieldsForDisplay).filter(([key]) => !keysToExclude.includes(key)).map(([key, label]) => `<option value="${key}">${label}</option>`).join('');
+        
+        const optionsHtml = Object.entries(gpsFieldsForDisplay)
+            .filter(([key]) => !keysToExclude.includes(key))
+            .map(([key, label]) => `<option value="${key}">${label}</option>`)
+            .join('');
+
         elements.metricSelector.innerHTML = optionsHtml;
         elements.multiAthleteMetricSelector.innerHTML = optionsHtml;
-        elements.metricSelector.value = 'velocita_massima';
-        elements.multiAthleteMetricSelector.value = 'velocita_massima';
+
         performanceSelections.forEach((selection, index) => {
-            const selectorRow = document.createElement('div');
-            selectorRow.className = 'row g-2 align-items-end mb-2';
-            selectorRow.innerHTML = `
-                <div class="col-md-6">
-                    <label class="form-label">Atleta ${index + 1}:</label>
-                    <select class="form-select athlete-selector" data-index="${index}">
-                        <option value="">Seleziona atleta...</option>
-                        ${athletes.map(a => `<option value="${a.id}" ${selection.athleteId == a.id ? 'selected' : ''}>${a.name}</option>`).join('')}
+            const wrapper = document.createElement('div');
+            wrapper.className = 'row g-2 align-items-center mb-2 p-2 border rounded';
+            wrapper.style.backgroundColor = '#f8f9fa';
+
+            // Selector HTML structure
+            wrapper.innerHTML = `
+                <div class="col-md-5">
+                    <label class="form-label small">Sessione</label>
+                    <select class="form-select form-select-sm session-selector" data-index="${index}">
+                        <option value="">Seleziona Sessione</option>
                     </select>
                 </div>
                 <div class="col-md-5">
-                    <label class="form-label">Sessione:</label>
-                    <select class="form-select date-selector" data-index="${index}">
-                        <option value="">Seleziona sessione...</option>
+                    <label class="form-label small">Atleta</label>
+                    <select class="form-select form-select-sm athlete-selector" data-index="${index}" disabled>
+                        <option value="">Prima seleziona sessione</option>
                     </select>
                 </div>
-                <div class="col-md-1">
-                    <button class="btn btn-outline-danger btn-sm remove-selector" data-index="${index}" ${performanceSelections.length <= 2 ? 'disabled' : ''}><i class="bi bi-trash"></i></button>
-                </div>`;
-            elements.performanceSelectorsContainer.appendChild(selectorRow);
-            const athleteId = selection.athleteId;
-            const dateSelector = selectorRow.querySelector('.date-selector');
-            if (athleteId && dataToUse[athleteId]) {
-                const allSessions = [];
-                Object.entries(dataToUse[athleteId]).forEach(([date, sessions]) => {
-                    sessions.forEach(session => allSessions.push({ date, ...session }));
-                });
-                const filteredSessions = (performanceFilterType === 'all') ? allSessions : allSessions.filter(session => session.tipo_sessione === performanceFilterType);
-                filteredSessions.sort((a, b) => new Date(b.date) - new Date(a.date) || (b.ora_registrazione || "").localeCompare(a.ora_registrazione || "")).forEach(session => {
-                    const option = document.createElement('option');
-                    option.value = session.id;
-                    let text = `${new Date(session.date).toLocaleDateString('it-IT')} ${session.ora_registrazione || ''} - ${session.tipo_sessione || 'N/A'}`;
-                    if (session.tipo_sessione === 'Individual' && !isAuthenticated()) {
-                        text += ' (Protetta)';
-                        option.dataset.protected = 'true';
-                    }
-                    option.textContent = text;
-                    if (selection.sessionId == session.id) option.selected = true;
-                    dateSelector.appendChild(option);
-                });
+                <div class="col-md-2 text-end">
+                     ${index > 0 ? `<button class="btn btn-outline-danger btn-sm remove-comparison-btn" data-index="${index}"><i class="bi bi-trash"></i></button>` : ''}
+                </div>
+            `;
+            
+            elements.performanceSelectorsContainer.appendChild(wrapper);
+
+            const sessionSelector = wrapper.querySelector('.session-selector');
+            
+            // Popola le sessioni usando dataToUse (che esclude Individual se non loggato)
+            Object.values(dataToUse).forEach(session => {
+                const option = document.createElement('option');
+                option.value = session.id;
+                let text = `${session.data_di_registrazione} - ${session.tipo_sessione}`;
+                if (session.ora_registrazione) text += ` (${session.ora_registrazione})`;
+                
+                // Nota: se non loggato, le sessioni Individual non arriveranno qui grazie al filtro
+                if (session.tipo_sessione === 'Individual' && !isAuthenticated()) {
+                    text += ' (Protetta)';
+                }
+                
+                option.textContent = text;
+                sessionSelector.appendChild(option);
+            });
+
+            // Ripristina selezione precedente se esiste
+            if (selection.sessionId) {
+                sessionSelector.value = selection.sessionId;
+                updateAthleteSelectorForSession(index, selection.sessionId);
             }
         });
     };
-
     const updatePerformanceChart = () => {
         const selectedMetric = elements.metricSelector.value;
         if (!selectedMetric) return;
@@ -2355,14 +2368,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 5000);
     }
 
-    // ✅ MODIFICATA: Funzione initializeApp separata per caricare dati senza autenticazione
+// ✅ MODIFICATA: Carica l'interfaccia completa all'avvio
     async function initializeApp() {
         await loadData();
         const today = new Date();
-        elements.evaluationDatePicker.valueAsDate = today;
-        elements.evaluationDatePicker2.valueAsDate = today;
-        elements.multiAthleteDatepicker.valueAsDate = today;
-        // Aggiorna solo l'UI di base senza richiedere autenticazione
+        if(elements.evaluationDatePicker) elements.evaluationDatePicker.valueAsDate = today;
+        if(elements.evaluationDatePicker2) elements.evaluationDatePicker2.valueAsDate = today;
+        if(elements.multiAthleteDatepicker) elements.multiAthleteDatepicker.valueAsDate = today;
+        
         updateLogoutButtonVisibility();
         updateUnlockButtonsVisibility();
         checkDeadlinesAndAlert();
@@ -2375,10 +2388,10 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCardsSummary();
         renderTopScorers();
         renderTopAssists();
-        // I grafici e le sezioni protette vengono aggiornati solo se autenticati
-        if (isAuthenticated()) {
-            updateProtectedSections();
-        }
+        
+        // Mostra i grafici subito
+        updateProtectedSections();
+        
         startPolling();
     }
 
