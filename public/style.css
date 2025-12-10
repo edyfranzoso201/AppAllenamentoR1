@@ -94,17 +94,6 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 .match-future { border-left: 4px solid #006400 !important; }
 .match-home { border-left: 4px solid var(--primary-blue) !important; }
 .match-away { border-left: 4px solid var(--primary-red) !important; }
-
-/* ✅ NUOVO: stile per atleti ospiti */
-.guest-athlete {
-    border-color: var(--session-partita-futura) !important;
-    box-shadow: 0 0 0 2px var(--session-partita-futura);
-}
-.guest-athlete .card-title::after {
-    content: " 👤";
-    color: var(--session-partita-futura);
-}
-
 #cards-summary-table { --bs-table-bg: var(--secondary-blue); --bs-table-striped-bg: var(--secondary-blue); --bs-table-hover-bg: var(--border-color); border-color: var(--border-color); }
 .season-stats-card { background-color: var(--card-bg); border: 1px solid var(--border-color); }
 .season-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 1rem; text-align: center;}
