@@ -83,7 +83,8 @@ document.addEventListener('DOMContentLoaded', () => {
         weeklyAthlete1Selector: document.getElementById('weekly-athlete-1-selector'),
         weeklyAthlete2Selector: document.getElementById('weekly-athlete-2-selector'),
         weeklyPeriodToggle: document.getElementById('weekly-period-toggle'),
-        weeklyDatePicker: document.getElementById('weekly-date-picker')
+        weeklyDatePicker: document.getElementById('weekly-date-picker'),
+        weeklyStartDatePicker: document.getElementById('weekly-start-date-picker')
     };
     const ACCESS_PASSWORD = "2025Edy201";
     let authSuccessCallback = null;
@@ -899,27 +900,43 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (!athlete1Id) return;
         
-        // Usa la data selezionata o oggi come data finale
-        const endDate = elements.weeklyDatePicker.value ? new Date(elements.weeklyDatePicker.value + 'T23:59:59') : new Date();
-        let startDate = new Date(endDate);
+        let startDate, endDate;
         
-        // Calcola il range di date in base al periodo selezionato
-        if (weeklyAttendancePeriod === 'month') {
-            startDate.setMonth(endDate.getMonth() - 1);
-        } else if (weeklyAttendancePeriod === 'trimester') {
-            startDate.setMonth(endDate.getMonth() - 3);
-        } else if (weeklyAttendancePeriod === 'semester') {
-            startDate.setMonth(endDate.getMonth() - 6);
-        } else { // year
-            startDate.setFullYear(endDate.getFullYear() - 1);
+        // Gestione periodo personalizzato vs predefinito
+        if (weeklyAttendancePeriod === 'custom') {
+            if (!elements.weeklyStartDatePicker.value || !elements.weeklyDatePicker.value) {
+                return; // Attende che l'utente selezioni entrambe le date
+            }
+            startDate = new Date(elements.weeklyStartDatePicker.value + 'T00:00:00');
+            endDate = new Date(elements.weeklyDatePicker.value + 'T23:59:59');
+        } else {
+            // Usa la data finale selezionata o oggi
+            endDate = elements.weeklyDatePicker.value ? new Date(elements.weeklyDatePicker.value + 'T23:59:59') : new Date();
+            startDate = new Date(endDate);
+            
+            // Calcola la data di inizio in base al periodo
+            if (weeklyAttendancePeriod === 'month') {
+                startDate.setMonth(endDate.getMonth() - 1);
+            } else if (weeklyAttendancePeriod === 'trimester') {
+                startDate.setMonth(endDate.getMonth() - 3);
+            } else if (weeklyAttendancePeriod === 'semester') {
+                startDate.setMonth(endDate.getMonth() - 6);
+            } else { // year
+                startDate.setFullYear(endDate.getFullYear() - 1);
+            }
+            
+            // Aggiorna il campo data di inizio
+            elements.weeklyStartDatePicker.value = startDate.toISOString().split('T')[0];
         }
         
-        // Funzione per ottenere l'inizio della settimana (lunedì)
+        // Funzione per ottenere l'inizio della settimana (lunedì) senza modificare l'oggetto originale
         const getWeekStart = (date) => {
-            const d = new Date(date);
+            const d = new Date(date.getTime()); // Crea una copia
             const day = d.getDay();
             const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-            return new Date(d.setDate(diff));
+            d.setDate(diff);
+            d.setHours(0, 0, 0, 0);
+            return d;
         };
         
         // Genera tutte le settimane nel periodo
@@ -928,17 +945,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const endWeek = getWeekStart(endDate);
         
         while (currentWeek <= endWeek) {
-            weeks.push(new Date(currentWeek));
+            weeks.push(new Date(currentWeek.getTime())); // Copia
             currentWeek.setDate(currentWeek.getDate() + 7);
         }
         
         // Funzione per contare le presenze in una settimana per un atleta
         const countWeeklyPresences = (athleteId, weekStart) => {
             let count = 0;
-            const weekEnd = new Date(weekStart);
+            const weekEnd = new Date(weekStart.getTime());
             weekEnd.setDate(weekEnd.getDate() + 6);
+            weekEnd.setHours(23, 59, 59, 999);
             
-            // Normalizza le date per confronto (solo anno-mese-giorno, senza ore)
+            // Normalizza le date per confronto (solo anno-mese-giorno)
             const weekStartStr = weekStart.toISOString().split('T')[0];
             const weekEndStr = weekEnd.toISOString().split('T')[0];
             
@@ -985,11 +1003,19 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         
-        // Crea le etichette delle settimane
+        // Crea le etichette delle settimane con anno
         const labels = weeks.map(week => {
-            const weekEnd = new Date(week);
+            const weekEnd = new Date(week.getTime());
             weekEnd.setDate(weekEnd.getDate() + 6);
-            return `${week.getDate()}/${week.getMonth() + 1} - ${weekEnd.getDate()}/${weekEnd.getMonth() + 1}`;
+            const startYear = week.getFullYear();
+            const endYear = weekEnd.getFullYear();
+            
+            // Se le settimane sono a cavallo dell'anno, mostra l'anno
+            if (startYear !== endYear) {
+                return `${week.getDate()}/${week.getMonth() + 1}/${startYear} - ${weekEnd.getDate()}/${weekEnd.getMonth() + 1}/${endYear}`;
+            } else {
+                return `${week.getDate()}/${week.getMonth() + 1} - ${weekEnd.getDate()}/${weekEnd.getMonth() + 1}`;
+            }
         });
         
         if (chartInstances.weeklyAttendance) chartInstances.weeklyAttendance.destroy();
@@ -1012,7 +1038,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         grid: { color: 'rgba(241, 241, 241, 0.2)' },
                         title: {
                             display: true,
-                            text: 'Presenze Settimanali',
+                            text: 'Presenze Settimanali (max 3)',
                             color: '#ffffff'
                         }
                     },
@@ -1833,6 +1859,13 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.weeklyAthlete1Selector.addEventListener('change', updateWeeklyAttendanceChart);
     elements.weeklyAthlete2Selector.addEventListener('change', updateWeeklyAttendanceChart);
     elements.weeklyDatePicker.addEventListener('change', updateWeeklyAttendanceChart);
+    elements.weeklyStartDatePicker.addEventListener('change', () => {
+        // Quando cambia la data di inizio, imposta il periodo su "Personalizzato"
+        weeklyAttendancePeriod = 'custom';
+        elements.weeklyPeriodToggle.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+        elements.weeklyPeriodToggle.querySelector('[data-period="custom"]').classList.add('active');
+        updateWeeklyAttendanceChart();
+    });
     elements.weeklyPeriodToggle.addEventListener('click', (e) => {
         if (e.target.tagName === 'BUTTON') {
             elements.weeklyPeriodToggle.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
