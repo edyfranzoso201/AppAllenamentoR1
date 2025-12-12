@@ -313,11 +313,11 @@
                 <div class="card chart-card">
                     <div class="card-body">
                         <div class="row g-3 align-items-end mb-3 no-print">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label for="weekly-athlete-1-selector" class="form-label">Atleta 1 (Principale)</label>
                                 <select id="weekly-athlete-1-selector" class="form-select"></select>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label for="weekly-athlete-2-selector" class="form-label">Atleta 2 (Confronto - Opzionale)</label>
                                 <select id="weekly-athlete-2-selector" class="form-select">
                                     <option value="">-- Nessun confronto --</option>
@@ -326,10 +326,15 @@
                             <div class="col-md-4">
                                 <label class="form-label">Periodo di Analisi</label>
                                 <div class="btn-group w-100" role="group" id="weekly-period-toggle">
-                                    <button type="button" class="btn btn-outline-secondary" data-period="month">1 Mese</button>
-                                    <button type="button" class="btn btn-outline-secondary" data-period="semester">6 Mesi</button>
-                                    <button type="button" class="btn btn-outline-secondary active" data-period="year">1 Anno</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" data-period="month">1 Mese</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" data-period="trimester">3 Mesi</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" data-period="semester">6 Mesi</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm active" data-period="year">1 Anno</button>
                                 </div>
+                            </div>
+                            <div class="col-md-2">
+                                <label for="weekly-date-picker" class="form-label">Data Finale</label>
+                                <input type="date" id="weekly-date-picker" class="form-control" title="Seleziona la data finale del periodo">
                             </div>
                         </div>
                         <canvas id="weeklyAttendanceChart"></canvas>
