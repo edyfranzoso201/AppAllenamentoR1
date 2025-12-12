@@ -79,7 +79,10 @@ document.addEventListener('DOMContentLoaded', () => {
         statVps: document.getElementById('stat-vps'),
         statGf: document.getElementById('stat-gf'),
         statGs: document.getElementById('stat-gs'),
-        statDr: document.getElementById('stat-dr')
+        statDr: document.getElementById('stat-dr'),
+        weeklyAthlete1Selector: document.getElementById('weekly-athlete-1-selector'),
+        weeklyAthlete2Selector: document.getElementById('weekly-athlete-2-selector'),
+        weeklyPeriodToggle: document.getElementById('weekly-period-toggle')
     };
     const ACCESS_PASSWORD = "2025Edy201";
     let authSuccessCallback = null;
@@ -125,6 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let chartInstances = {};
     let comparisonChartPeriod = 'annual';
     let attendanceChartPeriod = 'annual';
+    let weeklyAttendancePeriod = 'year';
     let performanceSelections = [ { athleteId: null, sessionId: null }, { athleteId: null, sessionId: null } ];
     let performanceFilterType = 'all';
     let multiAthleteFilterType = 'all';
@@ -254,6 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateAthleteTrendChart();
         updateAthleteRadarChart();
         updateMultiAthleteChart();
+        updateWeeklyAttendanceChart();
     };
     const createJerseyElement = (athlete) => {
         const jersey = document.createElement('div');
@@ -887,6 +892,152 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     };
+    const updateWeeklyAttendanceChart = () => {
+        const athlete1Id = elements.weeklyAthlete1Selector.value;
+        const athlete2Id = elements.weeklyAthlete2Selector.value;
+        
+        if (!athlete1Id) return;
+        
+        // Calcola il range di date in base al periodo selezionato
+        const today = new Date();
+        let startDate = new Date();
+        
+        if (weeklyAttendancePeriod === 'month') {
+            startDate.setMonth(today.getMonth() - 1);
+        } else if (weeklyAttendancePeriod === 'semester') {
+            startDate.setMonth(today.getMonth() - 6);
+        } else { // year
+            startDate.setFullYear(today.getFullYear() - 1);
+        }
+        
+        // Funzione per ottenere l'inizio della settimana (lunedì)
+        const getWeekStart = (date) => {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(d.setDate(diff));
+        };
+        
+        // Genera tutte le settimane nel periodo
+        const weeks = [];
+        let currentWeek = getWeekStart(startDate);
+        const endWeek = getWeekStart(today);
+        
+        while (currentWeek <= endWeek) {
+            weeks.push(new Date(currentWeek));
+            currentWeek.setDate(currentWeek.getDate() + 7);
+        }
+        
+        // Funzione per contare le presenze in una settimana per un atleta
+        const countWeeklyPresences = (athleteId, weekStart) => {
+            let count = 0;
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+            
+            Object.keys(evaluations).forEach(dateStr => {
+                const evalDate = new Date(dateStr);
+                if (evalDate >= weekStart && evalDate <= weekEnd) {
+                    const ev = evaluations[dateStr][athleteId];
+                    if (ev) {
+                        const presenzaValue = parseInt(ev['presenza-allenamento'], 10);
+                        // Conta sia le presenze (>0) che le assenze giustificate (-1)
+                        if (presenzaValue > 0 || presenzaValue === -1) {
+                            count++;
+                        }
+                    }
+                }
+            });
+            
+            return count;
+        };
+        
+        // Calcola i dati per l'atleta 1
+        const athlete1 = athletes.find(a => String(a.id) === athlete1Id);
+        const athlete1Data = weeks.map(week => countWeeklyPresences(athlete1Id, week));
+        
+        // Prepara i dataset
+        const datasets = [{
+            label: athlete1 ? athlete1.name : 'Atleta 1',
+            data: athlete1Data,
+            backgroundColor: 'rgba(217, 4, 41, 0.8)',
+            borderColor: 'rgba(217, 4, 41, 1)',
+            borderWidth: 2
+        }];
+        
+        // Se c'è un secondo atleta, aggiungi i suoi dati
+        if (athlete2Id) {
+            const athlete2 = athletes.find(a => String(a.id) === athlete2Id);
+            const athlete2Data = weeks.map(week => countWeeklyPresences(athlete2Id, week));
+            datasets.push({
+                label: athlete2 ? athlete2.name : 'Atleta 2',
+                data: athlete2Data,
+                backgroundColor: 'rgba(30, 80, 149, 0.8)',
+                borderColor: 'rgba(30, 80, 149, 1)',
+                borderWidth: 2
+            });
+        }
+        
+        // Crea le etichette delle settimane
+        const labels = weeks.map(week => {
+            const weekEnd = new Date(week);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+            return `${week.getDate()}/${week.getMonth() + 1} - ${weekEnd.getDate()}/${weekEnd.getMonth() + 1}`;
+        });
+        
+        if (chartInstances.weeklyAttendance) chartInstances.weeklyAttendance.destroy();
+        chartInstances.weeklyAttendance = new Chart(document.getElementById('weeklyAttendanceChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: datasets
+            },
+            options: {
+                maintainAspectRatio: false,
+                scales: {
+                    y: { 
+                        beginAtZero: true,
+                        max: 3,
+                        ticks: { 
+                            color: '#ffffff',
+                            stepSize: 1
+                        }, 
+                        grid: { color: 'rgba(241, 241, 241, 0.2)' },
+                        title: {
+                            display: true,
+                            text: 'Presenze Settimanali',
+                            color: '#ffffff'
+                        }
+                    },
+                    x: { 
+                        ticks: { 
+                            color: '#ffffff',
+                            maxRotation: 45,
+                            minRotation: 45
+                        }, 
+                        grid: { color: 'rgba(241, 241, 241, 0.2)' } 
+                    }
+                },
+                plugins: { 
+                    legend: { 
+                        labels: { color: '#ffffff' } 
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.parsed.y;
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += value + '/3 presenze';
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    };
     const updateHallOfFame = () => {
         elements.hallOfFameContainer.innerHTML = '';
         const allAwards = Object.values(awards).flat();
@@ -1025,6 +1176,8 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.trendAthleteSelector.innerHTML = `<option value="">Seleziona atleta...</option>${athleteOptions}`;
         elements.radarAthleteSelector1.innerHTML = `<option value="">Seleziona atleta...</option>${athleteOptions}`;
         elements.radarAthleteSelector2.innerHTML = `<option value="">Nessun confronto</option>${athleteOptions}`;
+        elements.weeklyAthlete1Selector.innerHTML = `<option value="">Seleziona atleta...</option>${athleteOptions}`;
+        elements.weeklyAthlete2Selector.innerHTML = `<option value="">-- Nessun confronto --</option>${athleteOptions}`;
         const keysToExclude = ['tipo_sessione', 'data_di_registrazione', 'ora_registrazione'];
         const optionsHtml = Object.entries(gpsFieldsForDisplay).filter(([key]) => !keysToExclude.includes(key)).map(([key, label]) => `<option value="${key}">${label}</option>`).join('');
         elements.trendMetricSelector.innerHTML = optionsHtml;
@@ -1669,6 +1822,16 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.trendMetricSelector.addEventListener('change', updateAthleteTrendChart);
     elements.radarAthleteSelector1.addEventListener('change', updateAthleteRadarChart);
     elements.radarAthleteSelector2.addEventListener('change', updateAthleteRadarChart);
+    elements.weeklyAthlete1Selector.addEventListener('change', updateWeeklyAttendanceChart);
+    elements.weeklyAthlete2Selector.addEventListener('change', updateWeeklyAttendanceChart);
+    elements.weeklyPeriodToggle.addEventListener('click', (e) => {
+        if (e.target.tagName === 'BUTTON') {
+            elements.weeklyPeriodToggle.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            weeklyAttendancePeriod = e.target.dataset.period;
+            updateWeeklyAttendanceChart();
+        }
+    });
     elements.multiAthleteTimeFilter.addEventListener('click', e => {
         if(e.target.tagName === 'BUTTON'){
             elements.multiAthleteTimeFilter.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
