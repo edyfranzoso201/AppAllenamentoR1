@@ -144,3 +144,8 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 #multiAthleteChart {
     max-height: 350px;
 }
+
+/* Altezza grafico presenze settimanali */
+#weeklyAttendanceChart {
+    max-height: 400px;
+}
