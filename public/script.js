@@ -123,8 +123,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let athletes = [], evaluations = {}, gpsData = {}, awards = {}, trainingSessions = {}, matchResults = {};
     let formationData = { starters: [], bench: [], tokens: [] };
     let chartInstances = {};
-    let comparisonChartPeriod = 'daily';
-    let attendanceChartPeriod = 'daily';
+    let comparisonChartPeriod = 'annual';
+    let attendanceChartPeriod = 'annual';
     let performanceSelections = [ { athleteId: null, sessionId: null }, { athleteId: null, sessionId: null } ];
     let performanceFilterType = 'all';
     let multiAthleteFilterType = 'all';
@@ -703,7 +703,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const attendanceData = {};
         const justifiedAbsenceData = {};
         
-        athletes.forEach(a => {
+        // Escludo gli atleti ospiti dal conteggio presenze
+        athletes.filter(a => !a.guest).forEach(a => {
             attendanceData[String(a.id)] = { name: a.name, count: 0 };
             justifiedAbsenceData[String(a.id)] = { name: a.name, count: 0 };
         });
@@ -1636,7 +1637,7 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.multiAthleteDatepicker.addEventListener('change', updateMultiAthleteChart);
     elements.multiAthleteResetBtn.addEventListener('click', () => {
         elements.multiAthleteTimeFilter.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-        elements.multiAthleteTimeFilter.querySelector('.btn[data-period="month"]').classList.add('active');
+        elements.multiAthleteTimeFilter.querySelector('.btn[data-period="annual"]').classList.add('active');
         elements.multiAthleteDatepicker.value = '';
         elements.multiAthleteDatepickerContainer.style.display = 'none';
         elements.multiAthleteMetricSelector.selectedIndex = 0;
