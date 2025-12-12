@@ -134,3 +134,8 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     .printing-now .jersey-body, .printing-now .player-name, .printing-now .token-captain { -webkit-print-color-adjust: exact; color-adjust: exact; }
     .printing-now .player-jersey[data-role*="Portiere"] .jersey-body { background-color: var(--gk-color) !important; }
 }
+
+/* Riduzione altezza grafico presenze per migliore visualizzazione */
+#attendanceChart {
+    max-height: 400px;
+}
