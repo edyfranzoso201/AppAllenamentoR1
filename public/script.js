@@ -709,9 +709,18 @@ document.addEventListener('DOMContentLoaded', () => {
             justifiedAbsenceData[String(a.id)] = { name: a.name, count: 0 };
         });
         
+        // Funzione helper per verificare se un atleta è ospite
+        const isGuestAthlete = (athleteId) => {
+            const athlete = athletes.find(a => String(a.id) === String(athleteId));
+            return athlete && athlete.guest;
+        };
+        
         if (attendanceChartPeriod === 'daily') {
             if (evaluations[date]) {
                 Object.entries(evaluations[date]).forEach(([id, ev]) => {
+                    // Salta gli atleti ospiti
+                    if (isGuestAthlete(id)) return;
+                    
                     const presenzaValue = parseInt(ev['presenza-allenamento'], 10);
                     if (attendanceData[id]) {
                         if (presenzaValue > 0) {
@@ -726,6 +735,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const month = date.substring(0, 7);
             Object.keys(evaluations).filter(d => d.startsWith(month)).forEach(d => {
                 Object.entries(evaluations[d]).forEach(([id, ev]) => {
+                    // Salta gli atleti ospiti
+                    if (isGuestAthlete(id)) return;
+                    
                     const presenzaValue = parseInt(ev['presenza-allenamento'], 10);
                     if (attendanceData[id]) {
                         if (presenzaValue > 0) {
@@ -745,6 +757,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const endDate = `${year}-${semesterEndMonth}-31`;
             Object.keys(evaluations).filter(d => d >= startDate && d <= endDate).forEach(d => {
                 Object.entries(evaluations[d]).forEach(([id, ev]) => {
+                    // Salta gli atleti ospiti
+                    if (isGuestAthlete(id)) return;
+                    
                     const presenzaValue = parseInt(ev['presenza-allenamento'], 10);
                     if (attendanceData[id]) {
                         if (presenzaValue > 0) {
@@ -759,6 +774,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const year = date.substring(0, 4);
             Object.keys(evaluations).filter(d => d.startsWith(year)).forEach(d => {
                 Object.entries(evaluations[d]).forEach(([id, ev]) => {
+                    // Salta gli atleti ospiti
+                    if (isGuestAthlete(id)) return;
+                    
                     const presenzaValue = parseInt(ev['presenza-allenamento'], 10);
                     if (attendanceData[id]) {
                         if (presenzaValue > 0) {
@@ -773,6 +791,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const week = getWeekRange(date);
             Object.keys(evaluations).filter(d => d >= week.start && d <= week.end).forEach(d => {
                 Object.entries(evaluations[d]).forEach(([id, ev]) => {
+                    // Salta gli atleti ospiti
+                    if (isGuestAthlete(id)) return;
+                    
                     const presenzaValue = parseInt(ev['presenza-allenamento'], 10);
                     if (attendanceData[id]) {
                         if (presenzaValue > 0) {
