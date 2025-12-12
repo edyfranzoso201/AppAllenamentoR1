@@ -323,18 +323,27 @@
                                     <option value="">-- Nessun confronto --</option>
                                 </select>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label">Periodo di Analisi</label>
                                 <div class="btn-group w-100" role="group" id="weekly-period-toggle">
                                     <button type="button" class="btn btn-outline-secondary btn-sm" data-period="month">1 Mese</button>
                                     <button type="button" class="btn btn-outline-secondary btn-sm" data-period="trimester">3 Mesi</button>
                                     <button type="button" class="btn btn-outline-secondary btn-sm" data-period="semester">6 Mesi</button>
                                     <button type="button" class="btn btn-outline-secondary btn-sm active" data-period="year">1 Anno</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" data-period="custom">Personalizzato</button>
                                 </div>
                             </div>
-                            <div class="col-md-2">
-                                <label for="weekly-date-picker" class="form-label">Data Finale</label>
-                                <input type="date" id="weekly-date-picker" class="form-control" title="Seleziona la data finale del periodo">
+                            <div class="col-md-3">
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label for="weekly-start-date-picker" class="form-label">Da</label>
+                                        <input type="date" id="weekly-start-date-picker" class="form-control" title="Data di inizio">
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="weekly-date-picker" class="form-label">A</label>
+                                        <input type="date" id="weekly-date-picker" class="form-control" title="Data finale">
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <canvas id="weeklyAttendanceChart"></canvas>
