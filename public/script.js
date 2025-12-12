@@ -82,7 +82,8 @@ document.addEventListener('DOMContentLoaded', () => {
         statDr: document.getElementById('stat-dr'),
         weeklyAthlete1Selector: document.getElementById('weekly-athlete-1-selector'),
         weeklyAthlete2Selector: document.getElementById('weekly-athlete-2-selector'),
-        weeklyPeriodToggle: document.getElementById('weekly-period-toggle')
+        weeklyPeriodToggle: document.getElementById('weekly-period-toggle'),
+        weeklyDatePicker: document.getElementById('weekly-date-picker')
     };
     const ACCESS_PASSWORD = "2025Edy201";
     let authSuccessCallback = null;
@@ -898,16 +899,19 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (!athlete1Id) return;
         
-        // Calcola il range di date in base al periodo selezionato
-        const today = new Date();
-        let startDate = new Date();
+        // Usa la data selezionata o oggi come data finale
+        const endDate = elements.weeklyDatePicker.value ? new Date(elements.weeklyDatePicker.value + 'T23:59:59') : new Date();
+        let startDate = new Date(endDate);
         
+        // Calcola il range di date in base al periodo selezionato
         if (weeklyAttendancePeriod === 'month') {
-            startDate.setMonth(today.getMonth() - 1);
+            startDate.setMonth(endDate.getMonth() - 1);
+        } else if (weeklyAttendancePeriod === 'trimester') {
+            startDate.setMonth(endDate.getMonth() - 3);
         } else if (weeklyAttendancePeriod === 'semester') {
-            startDate.setMonth(today.getMonth() - 6);
+            startDate.setMonth(endDate.getMonth() - 6);
         } else { // year
-            startDate.setFullYear(today.getFullYear() - 1);
+            startDate.setFullYear(endDate.getFullYear() - 1);
         }
         
         // Funzione per ottenere l'inizio della settimana (lunedì)
@@ -921,7 +925,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Genera tutte le settimane nel periodo
         const weeks = [];
         let currentWeek = getWeekStart(startDate);
-        const endWeek = getWeekStart(today);
+        const endWeek = getWeekStart(endDate);
         
         while (currentWeek <= endWeek) {
             weeks.push(new Date(currentWeek));
@@ -1824,6 +1828,7 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.radarAthleteSelector2.addEventListener('change', updateAthleteRadarChart);
     elements.weeklyAthlete1Selector.addEventListener('change', updateWeeklyAttendanceChart);
     elements.weeklyAthlete2Selector.addEventListener('change', updateWeeklyAttendanceChart);
+    elements.weeklyDatePicker.addEventListener('change', updateWeeklyAttendanceChart);
     elements.weeklyPeriodToggle.addEventListener('click', (e) => {
         if (e.target.tagName === 'BUTTON') {
             elements.weeklyPeriodToggle.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
@@ -1832,6 +1837,8 @@ document.addEventListener('DOMContentLoaded', () => {
             updateWeeklyAttendanceChart();
         }
     });
+    // Imposta la data di default a oggi
+    elements.weeklyDatePicker.valueAsDate = new Date();
     elements.multiAthleteTimeFilter.addEventListener('click', e => {
         if(e.target.tagName === 'BUTTON'){
             elements.multiAthleteTimeFilter.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
