@@ -203,16 +203,26 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const updateTeamSeasonStats = () => {
         let pg = 0, v = 0, p = 0, s = 0, gf = 0, gs = 0;
-        Object.values(matchResults).forEach(match => {
-            pg++;
-            const myScore = match.location === 'home' ? match.homeScore : match.awayScore;
-            const oppScore = match.location === 'home' ? match.awayScore : match.homeScore;
-            gf += myScore;
-            gs += oppScore;
-            if (myScore > oppScore) v++;
-            else if (myScore < oppScore) s++;
-            else p++;
-        });
+        
+        // Filtro solo le partite con risultato effettivo (esclude partite future senza risultato)
+        Object.values(matchResults)
+            .filter(match => {
+                const myScore = match.location === 'home' ? match.homeScore : match.awayScore;
+                const oppScore = match.location === 'home' ? match.awayScore : match.homeScore;
+                // La partita è valida se almeno un punteggio è un numero (anche 0)
+                return (typeof myScore === 'number' && !isNaN(myScore)) || (typeof oppScore === 'number' && !isNaN(oppScore));
+            })
+            .forEach(match => {
+                pg++;
+                const myScore = match.location === 'home' ? match.homeScore : match.awayScore;
+                const oppScore = match.location === 'home' ? match.awayScore : match.homeScore;
+                gf += myScore;
+                gs += oppScore;
+                if (myScore > oppScore) v++;
+                else if (myScore < oppScore) s++;
+                else p++;
+            });
+            
         const dr = gf - gs;
         elements.statPg.textContent = pg;
         elements.statVps.textContent = `${v}-${p}-${s}`;
@@ -530,7 +540,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateMatchAnalysisChart = () => {
         const opponentFilter = elements.matchOpponentFilter.value;
         const period = elements.matchPeriodToggle.querySelector('.active').dataset.period;
-        let filteredMatches = Object.values(matchResults).sort((a,b) => new Date(a.date) - new Date(b.date));
+        
+        // Filtro solo le partite con risultato effettivo (esclude partite future senza risultato)
+        let filteredMatches = Object.values(matchResults)
+            .filter(m => {
+                // Considero una partita come "giocata" solo se almeno uno dei punteggi è definito e diverso da null
+                const myScore = m.location === 'home' ? m.homeScore : m.awayScore;
+                const oppScore = m.location === 'home' ? m.awayScore : m.homeScore;
+                // La partita è valida se almeno un punteggio è un numero (anche 0)
+                return (typeof myScore === 'number' && !isNaN(myScore)) || (typeof oppScore === 'number' && !isNaN(oppScore));
+            })
+            .sort((a,b) => new Date(a.date) - new Date(b.date));
+            
         let labels, datasets;
         if (opponentFilter !== 'all') {
             elements.matchPeriodToggle.style.display = 'none';
