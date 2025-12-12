@@ -163,6 +163,11 @@ document.addEventListener('DOMContentLoaded', () => {
             matchResults = allData.matchResults || {};
             athletes.forEach(athlete => {
                 if (athlete.isViceCaptain === undefined) athlete.isViceCaptain = false;
+                // Migrazione dalla vecchia proprietà "guest" alla nuova "isGuest"
+                if (athlete.guest !== undefined && athlete.isGuest === undefined) {
+                    athlete.isGuest = athlete.guest;
+                    delete athlete.guest;
+                }
                 if (athlete.isGuest === undefined) athlete.isGuest = false;
             });
             for (const matchId in matchResults) {
@@ -704,7 +709,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const justifiedAbsenceData = {};
         
         // Escludo gli atleti ospiti dal conteggio presenze
-        athletes.filter(a => !a.guest).forEach(a => {
+        athletes.filter(a => !a.isGuest).forEach(a => {
             attendanceData[String(a.id)] = { name: a.name, count: 0 };
             justifiedAbsenceData[String(a.id)] = { name: a.name, count: 0 };
         });
@@ -712,7 +717,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Funzione helper per verificare se un atleta è ospite
         const isGuestAthlete = (athleteId) => {
             const athlete = athletes.find(a => String(a.id) === String(athleteId));
-            return athlete && athlete.guest;
+            return athlete && athlete.isGuest;
         };
         
         if (attendanceChartPeriod === 'daily') {
