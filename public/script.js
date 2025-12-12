@@ -938,9 +938,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const weekEnd = new Date(weekStart);
             weekEnd.setDate(weekEnd.getDate() + 6);
             
+            // Normalizza le date per confronto (solo anno-mese-giorno, senza ore)
+            const weekStartStr = weekStart.toISOString().split('T')[0];
+            const weekEndStr = weekEnd.toISOString().split('T')[0];
+            
             Object.keys(evaluations).forEach(dateStr => {
-                const evalDate = new Date(dateStr);
-                if (evalDate >= weekStart && evalDate <= weekEnd) {
+                // Confronta direttamente le stringhe YYYY-MM-DD
+                if (dateStr >= weekStartStr && dateStr <= weekEndStr) {
                     const ev = evaluations[dateStr][athleteId];
                     if (ev) {
                         const presenzaValue = parseInt(ev['presenza-allenamento'], 10);
