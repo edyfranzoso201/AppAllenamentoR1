@@ -275,7 +275,7 @@
                 </div>
             </div>
             <div class="col-lg-6 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Andamento Medio Squadra (Ultimi 7 Giorni)</h5><canvas id="dailyTeamChart"></canvas></div></div></div>
-            <div class="col-lg-6 mb-4"><div class="card chart-card"><div class="card-body" id="comparison-chart-container"><h5 class="card-title mb-0">Confronto Valutazioni Atleti</h5><div class="btn-group btn-group-sm float-end no-print" id="comparison-period-toggle"><button type="button" class="btn btn-outline-secondary active" data-period="daily">Giornaliero</button><button type="button" class="btn btn-outline-secondary" data-period="weekly">Settimanale</button><button type="button" class="btn btn-outline-secondary" data-period="monthly">Mensile</button><button type="button" class="btn btn-outline-secondary" data-period="semester">Semestrale</button><button type="button" class="btn btn-outline-secondary" data-period="annual">Annuale</button></div><canvas id="monthlyComparisonChart"></canvas></div></div></div>
+            <div class="col-lg-6 mb-4"><div class="card chart-card"><div class="card-body" id="comparison-chart-container"><h5 class="card-title mb-0">Confronto Valutazioni Atleti</h5><div class="btn-group btn-group-sm float-end no-print" id="comparison-period-toggle"><button type="button" class="btn btn-outline-secondary" data-period="daily">Giornaliero</button><button type="button" class="btn btn-outline-secondary" data-period="weekly">Settimanale</button><button type="button" class="btn btn-outline-secondary" data-period="monthly">Mensile</button><button type="button" class="btn btn-outline-secondary" data-period="semester">Semestrale</button><button type="button" class="btn btn-outline-secondary active" data-period="annual">Annuale</button></div><canvas id="monthlyComparisonChart"></canvas></div></div></div>
         </div>
         <div id="report-presenze-section" class="row my-4 printable-area">
               <div class="col-12 d-flex align-items-center gap-2 mb-3">
@@ -289,11 +289,11 @@
                          <div class="d-flex justify-content-between align-items-center">
                              <h5 class="card-title mb-0">Conteggio Presenze Atleti</h5>
                                 <div class="btn-group btn-group-sm no-print" id="attendance-period-toggle">
-                                 <button type="button" class="btn btn-outline-secondary active" data-period="daily">Giornaliero</button>
+                                 <button type="button" class="btn btn-outline-secondary" data-period="daily">Giornaliero</button>
                                  <button type="button" class="btn btn-outline-secondary" data-period="weekly">Settimanale</button>
                                 <button type="button" class="btn btn-outline-secondary" data-period="monthly">Mensile</button>
                                 <button type="button" class="btn btn-outline-secondary" data-period="semester">Semestrale</button>
-                                <button type="button" class="btn btn-outline-secondary" data-period="annual">Annuale</button>
+                                <button type="button" class="btn btn-outline-secondary active" data-period="annual">Annuale</button>
                              </div>
                          </div>
                          <canvas id="attendanceChart"></canvas>
@@ -343,11 +343,11 @@
                                     <!-- ✅ MODIFICA: aggiunto "Annuale" -->
                                     <div class="btn-group w-100" role="group">
                                         <button type="button" class="btn btn-outline-secondary" data-period="day">Giorno</button>
-                                        <button type="button" class="btn btn-outline-secondary active" data-period="month">Mese</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-period="month">Mese</button>
                                         <button type="button" class="btn btn-outline-secondary" data-period="bimonth">Bimestre</button>
                                         <button type="button" class="btn btn-outline-secondary" data-period="trimester">Trimestre</button>
                                         <button type="button" class="btn btn-outline-secondary" data-period="semester">Semestre</button>
-                                        <button type="button" class="btn btn-outline-secondary" data-period="annual">Annuale</button>
+                                        <button type="button" class="btn btn-outline-secondary active" data-period="annual">Annuale</button>
                                     </div>
                                 </div>
                                 <div class="col-md-3" id="multi-athlete-datepicker-container" style="display: none;">
