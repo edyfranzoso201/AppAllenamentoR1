@@ -95,6 +95,7 @@
                             <a href="#match-results-section" class="btn btn-secondary"><i class="bi bi-trophy-fill"></i> Risultati Partite</a>
                             <a href="#report-valutazioni-section" class="btn btn-secondary"><i class="bi bi-card-checklist"></i> Report Valutazioni</a>
                             <a href="#report-presenze-section" class="btn btn-secondary"><i class="bi bi-person-check-fill"></i> Report Presenze</a>
+                            <a href="#weekly-attendance-analysis-section" class="btn btn-secondary"><i class="bi bi-calendar-week"></i> Presenze Settimanali</a>
                             <a href="#hall-of-fame-section" class="btn btn-secondary"><i class="bi bi-award-fill"></i> Hall of Fame</a>
                             <a href="#monitoraggio-gps-section" class="btn btn-secondary"><i class="bi bi-graph-up-arrow"></i> Monitoraggio GPS</a>
                             <a href="#analisi-singolo-section" class="btn btn-secondary"><i class="bi bi-person-lines-fill"></i> Analisi Atleta</a>
@@ -300,6 +301,41 @@
                      </div>
                  </div>
              </div>
+        </div>
+        <hr class="my-5 no-print">
+        <div id="weekly-attendance-analysis-section" class="row my-4 printable-area">
+            <div class="col-12 d-flex align-items-center gap-2 mb-3">
+                <h2 class="main-title mb-0">Analisi Presenze Settimanali</h2>
+                <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
+                <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
+            </div>
+            <div class="col-12 mb-4">
+                <div class="card chart-card">
+                    <div class="card-body">
+                        <div class="row g-3 align-items-end mb-3 no-print">
+                            <div class="col-md-4">
+                                <label for="weekly-athlete-1-selector" class="form-label">Atleta 1 (Principale)</label>
+                                <select id="weekly-athlete-1-selector" class="form-select"></select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="weekly-athlete-2-selector" class="form-label">Atleta 2 (Confronto - Opzionale)</label>
+                                <select id="weekly-athlete-2-selector" class="form-select">
+                                    <option value="">-- Nessun confronto --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Periodo di Analisi</label>
+                                <div class="btn-group w-100" role="group" id="weekly-period-toggle">
+                                    <button type="button" class="btn btn-outline-secondary" data-period="month">1 Mese</button>
+                                    <button type="button" class="btn btn-outline-secondary" data-period="semester">6 Mesi</button>
+                                    <button type="button" class="btn btn-outline-secondary active" data-period="year">1 Anno</button>
+                                </div>
+                            </div>
+                        </div>
+                        <canvas id="weeklyAttendanceChart"></canvas>
+                    </div>
+                </div>
+            </div>
         </div>
         <hr class="my-5 no-print">
         <div id="hall-of-fame-section" class="row my-4 printable-area">
