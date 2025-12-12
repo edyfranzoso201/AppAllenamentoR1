@@ -866,6 +866,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ]
             },
             options: {
+                maintainAspectRatio: false,
                 scales: {
                     y: { 
                         stacked: true,
