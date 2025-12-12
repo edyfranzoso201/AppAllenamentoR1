@@ -139,3 +139,8 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 #attendanceChart {
     max-height: 400px;
 }
+
+/* Riduzione altezza grafico confronto performance squadra per migliore visualizzazione */
+#multiAthleteChart {
+    max-height: 350px;
+}
