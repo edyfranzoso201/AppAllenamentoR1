@@ -904,7 +904,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Gestione periodo personalizzato vs predefinito
         if (weeklyAttendancePeriod === 'custom') {
-            if (!elements.weeklyStartDatePicker.value || !elements.weeklyDatePicker.value) {
+            if (!elements.weeklyStartDatePicker || !elements.weeklyStartDatePicker.value || !elements.weeklyDatePicker.value) {
                 return; // Attende che l'utente selezioni entrambe le date
             }
             startDate = new Date(elements.weeklyStartDatePicker.value + 'T00:00:00');
@@ -925,8 +925,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 startDate.setFullYear(endDate.getFullYear() - 1);
             }
             
-            // Aggiorna il campo data di inizio
-            elements.weeklyStartDatePicker.value = startDate.toISOString().split('T')[0];
+            // Aggiorna il campo data di inizio se esiste
+            if (elements.weeklyStartDatePicker) {
+                elements.weeklyStartDatePicker.value = startDate.toISOString().split('T')[0];
+            }
         }
         
         // Funzione per ottenere l'inizio della settimana (lunedì) senza modificare l'oggetto originale
@@ -1859,13 +1861,16 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.weeklyAthlete1Selector.addEventListener('change', updateWeeklyAttendanceChart);
     elements.weeklyAthlete2Selector.addEventListener('change', updateWeeklyAttendanceChart);
     elements.weeklyDatePicker.addEventListener('change', updateWeeklyAttendanceChart);
-    elements.weeklyStartDatePicker.addEventListener('change', () => {
-        // Quando cambia la data di inizio, imposta il periodo su "Personalizzato"
-        weeklyAttendancePeriod = 'custom';
-        elements.weeklyPeriodToggle.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-        elements.weeklyPeriodToggle.querySelector('[data-period="custom"]').classList.add('active');
-        updateWeeklyAttendanceChart();
-    });
+    if (elements.weeklyStartDatePicker) {
+        elements.weeklyStartDatePicker.addEventListener('change', () => {
+            // Quando cambia la data di inizio, imposta il periodo su "Personalizzato"
+            weeklyAttendancePeriod = 'custom';
+            elements.weeklyPeriodToggle.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            const customBtn = elements.weeklyPeriodToggle.querySelector('[data-period="custom"]');
+            if (customBtn) customBtn.classList.add('active');
+            updateWeeklyAttendanceChart();
+        });
+    }
     elements.weeklyPeriodToggle.addEventListener('click', (e) => {
         if (e.target.tagName === 'BUTTON') {
             elements.weeklyPeriodToggle.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
