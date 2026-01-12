@@ -1,5 +1,11 @@
-// api/index.js - VERSIONE DEFINITIVA
-const { kv } = require('@vercel/kv');
+// api/index.js - Con variabili UPSTASH_ esplicite
+const { createClient } = require('@vercel/kv');
+
+// Crea client con variabili UPSTASH_ esplicite
+const kv = createClient({
+  url: process.env.UPSTASH_KV_REST_API_URL,
+  token: process.env.UPSTASH_KV_REST_API_TOKEN,
+});
 
 module.exports = async (req, res) => {
   // CORS headers
