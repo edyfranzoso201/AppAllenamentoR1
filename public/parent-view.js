@@ -1,9 +1,8 @@
-// parent-view.js - Vista Genitore Integrata con Token Crittogra// parent-view.js
-
+// parent-view.js - Vista Genitore Integrata con Token Crittografato
 (function () {
   'use strict';
 
-  // ---- FUNZIONI GLOBALI TOKEN (sempre disponibili) ----
+  // --- FUNZIONI GLOBALI TOKEN (sempre disponibili) ---
   window.generateAthleteToken = function (athleteId) {
     const salt = 'GO_SPORT_2025_SECRET_KEY';
     const str = salt + athleteId;
@@ -30,12 +29,12 @@
     }
   };
 
-  // ---- DA QUI IN GIÙ SOLO LOGICA “PARENT MODE” ----
+  // --- SOLO LOGICA “PARENT MODE” DA QUI IN GIÙ ---
   const path = window.location.pathname;
   const isParentMode = path.includes('/presenza/');
-  if (!isParentMode) return;
+  if (!isParentMode) return;  // <--- OK, è **dentro** l’IIFE
 
-  // ... resto del codice vista genitore ...
+  // ... TUTTO il resto del codice parent view ...
 })();
 
     // Controlla se siamo in modalità genitore
