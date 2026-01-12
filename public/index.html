@@ -97,7 +97,6 @@
                             <a href="#report-presenze-section" class="btn btn-secondary"><i class="bi bi-person-check-fill"></i> Report Presenze</a>
                             <a href="#weekly-attendance-analysis-section" class="btn btn-secondary"><i class="bi bi-calendar-week"></i> Presenze Settimanali</a>
                             <a href="#team-calendar-section" class="btn btn-secondary"><i class="bi bi-calendar-check"></i> Calendario Squadra</a>
-                            <a href="#calendar-summary-section" class="btn btn-secondary"><i class="bi bi-table"></i> Riepilogo Calendario</a>
                             <a href="#hall-of-fame-section" class="btn btn-secondary"><i class="bi bi-award-fill"></i> Hall of Fame</a>
                             <a href="#monitoraggio-gps-section" class="btn btn-secondary"><i class="bi bi-graph-up-arrow"></i> Monitoraggio GPS</a>
                             <a href="#analisi-singolo-section" class="btn btn-secondary"><i class="bi bi-person-lines-fill"></i> Analisi Atleta</a>
@@ -106,64 +105,6 @@
                 </div>
             </div>
         </div>
-        <div id="calendar-summary-section" class="printable-area" style="display: none;">
-    <div class="row my-4">
-        <div class="col-12 d-flex align-items-center gap-2">
-            <h2 class="main-title mb-0">
-                <i class="bi bi-table"></i> Riepilogo Calendario Presenze
-            </h2>
-            <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione">
-                <i class="bi bi-printer-fill"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-primary ms-auto no-print" onclick="showSection('home-section')">
-                <i class="bi bi-house-fill"></i> Torna alla Home
-            </button>
-        </div>
-    </div>
-
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="bi bi-calendar3"></i> Tabella Presenze / Assenze</h5>
-                </div>
-                <div class="card-body">
-                    <div id="calendar-summary-table-container">
-                        <div class="text-center py-5">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Caricamento...</span>
-                            </div>
-                            <p class="mt-3">Caricamento tabella...</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Legenda</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <span class="badge bg-success">✓</span> = Presente
-                        </div>
-                        <div class="col-md-4">
-                            <span class="badge bg-danger">✗</span> = Assente
-                        </div>
-                        <div class="col-md-4">
-                            <span class="badge bg-secondary">-</span> = Nessuna risposta
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
         <hr class="my-5 no-print">
         <div id="formazione-section" class="printable-area">
              <div class="row my-4 align-items-center">
@@ -700,6 +641,5 @@
     <script src="script.js"></script>
     <script src="calendario-admin.js"></script>
     <script src="parent-view.js"></script>
-    <script src="calendario-riepilogo.js"></script>
 </body>
 </html>
