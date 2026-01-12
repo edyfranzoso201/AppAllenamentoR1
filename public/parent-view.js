@@ -1,40 +1,42 @@
-// parent-view.js - Vista Genitore Integrata con Token Crittografato
-(function() {
-    'use strict';
+// parent-view.js - Vista Genitore Integrata con Token Crittogra// parent-view.js
 
-    // Funzione per generare hash semplice (usata anche lato admin)
-    window.generateAthleteToken = function(athleteId) {
-        // Usa un salt fisso + ID atleta per generare token univoco
-        const salt = 'GO_SPORT_2025_SECRET_KEY'; // Cambia questo per maggiore sicurezza
-        const str = salt + athleteId;
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            const char = str.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
-        }
-        // Converti in base36 e aggiungi padding
-        const token = Math.abs(hash).toString(36) + athleteId.toString().split('').reverse().join('');
-        return token;
-    };
+(function () {
+  'use strict';
 
-    // Funzione per decodificare token e ottenere athlete ID
-    window.decodeAthleteToken = function(token) {
-        try {
-            // Estrai la parte finale che contiene l'ID invertito
-            const reversed = token.slice(-5); // Prende ultimi caratteri
-            const athleteId = reversed.split('').reverse().join('');
-            
-            // Verifica che il token sia valido rigenerandolo
-            const expectedToken = window.generateAthleteToken(athleteId);
-            if (token === expectedToken) {
-                return athleteId;
-            }
-            return null;
-        } catch (e) {
-            return null;
-        }
-    };
+  // ---- FUNZIONI GLOBALI TOKEN (sempre disponibili) ----
+  window.generateAthleteToken = function (athleteId) {
+    const salt = 'GO_SPORT_2025_SECRET_KEY';
+    const str = salt + athleteId;
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    const token = Math.abs(hash).toString(36) +
+      athleteId.toString().split('').reverse().join('');
+    return token;
+  };
+
+  window.decodeAthleteToken = function (token) {
+    try {
+      const reversed = token.slice(-5);
+      const athleteId = reversed.split('').reverse().join('');
+      const expectedToken = window.generateAthleteToken(athleteId);
+      if (token === expectedToken) return athleteId;
+      return null;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  // ---- DA QUI IN GIÙ SOLO LOGICA “PARENT MODE” ----
+  const path = window.location.pathname;
+  const isParentMode = path.includes('/presenza/');
+  if (!isParentMode) return;
+
+  // ... resto del codice vista genitore ...
+})();
 
     // Controlla se siamo in modalità genitore
     const path = window.location.pathname;
