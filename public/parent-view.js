@@ -1,4 +1,3 @@
-// parent-view.js - Vista Genitore Integrata con Token Crittografato
 (function () {
   'use strict';
 
