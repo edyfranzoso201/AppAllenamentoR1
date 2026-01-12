@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  // --- FUNZIONI GLOBALI TOKEN (sempre disponibili) ---
+  // --- FUNZIONI GLOBALI TOKEN ---
   window.generateAthleteToken = function (athleteId) {
     const salt = 'GO_SPORT_2025_SECRET_KEY';
     const str = salt + athleteId;
@@ -29,13 +29,14 @@
     }
   };
 
-  // --- SOLO LOGICA “PARENT MODE” DA QUI IN GIÙ ---
+  // --- LOGICA SOLO PER GENITORE ---
   const path = window.location.pathname;
   const isParentMode = path.includes('/presenza/');
-  if (!isParentMode) return;  // <--- OK, è **dentro** l’IIFE
+  if (!isParentMode) return;  // <--- questo return è valido perché è DENTRO l’IIFE
 
-  // ... TUTTO il resto del codice parent view ...
-})();
+  // ... tutto il resto del file ...
+
+})();  // <--- ultima riga del file
 
     // Controlla se siamo in modalità genitore
     const path = window.location.pathname;
