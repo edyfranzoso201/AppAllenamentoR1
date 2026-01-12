@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
             calendarResponses: window.calendarResponses || {}
         };
         try {
-            const response = await fetch('/api/data', { 
+            const response = await fetch('/api', { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
                 body: JSON.stringify(allData) 
@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const loadData = async () => {
         try {
-            const response = await fetch('/api/data', { cache: 'no-store' });
+            const response = await fetch('/api', { cache: 'no-store' });
             if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
             const allData = await response.json();
             athletes = allData.athletes || [];
