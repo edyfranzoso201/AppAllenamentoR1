@@ -96,7 +96,6 @@
         const nonGuestAthletes = athletes.filter(a => !a.isGuest);
         calendarElements.calendarTbody.innerHTML = nonGuestAthletes.map((athlete, index) => {
             const baseUrl = window.location.origin;
-            const baseUrl = window.location.origin;
 
         // Per ora usa un link fittizio con l'ID diretto
         const athleteLink = `${baseUrl}/presenza/${athlete.id}`;
