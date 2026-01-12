@@ -134,18 +134,47 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     .printing-now .jersey-body, .printing-now .player-name, .printing-now .token-captain { -webkit-print-color-adjust: exact; color-adjust: exact; }
     .printing-now .player-jersey[data-role*="Portiere"] .jersey-body { background-color: var(--gk-color) !important; }
 }
-
 /* Riduzione altezza grafico presenze per migliore visualizzazione */
 #attendanceChart {
     max-height: 400px;
 }
-
 /* Riduzione altezza grafico confronto performance squadra per migliore visualizzazione */
 #multiAthleteChart {
     max-height: 350px;
 }
-
 /* Altezza grafico presenze settimanali */
 #weeklyAttendanceChart {
     max-height: 400px;
+}
+`css
+/* Stili per Riepilogo Calendario */
+.calendar-summary-table {
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+.calendar-summary-table th {
+    background-color: #2c3e50 !important;
+    color: white !important;
+    font-weight: bold;
+    vertical-align: middle;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+.calendar-summary-table td {
+    vertical-align: middle;
+    font-size: 1.2rem;
+}
+.event-header-col {
+    min-width: 100px;
+}
+.event-details-col {
+    background-color: #34495e !important;
+    font-size: 0.85rem;
+}
+.calendar-summary-table tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+.calendar-summary-table tfoot th {
+    font-weight: bold;
 }
