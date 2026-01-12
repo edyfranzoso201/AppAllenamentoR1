@@ -1,13 +1,9 @@
 {
   "version": 2,
-  "rewrites": [
+  "builds": [
     {
-      "source": "/presenza/:token",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/presenza/:token/",
-      "destination": "/index.html"
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
@@ -16,8 +12,8 @@
       "dest": "/api/index.js"
     },
     {
-      "src": "/api/data",
-      "dest": "/api/index.js"
+      "src": "/presenza/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
