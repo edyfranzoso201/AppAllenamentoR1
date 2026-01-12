@@ -340,46 +340,42 @@
     };
 
     // Mostra link atleti
-    const showAthleteLinks = () => {
-        const athletes = window.athletes || [];
-        const nonGuestAthletes = athletes.filter(a => !a.isGuest);
-        const baseUrl = window.location.origin;
+const showAthleteLinks = () => {
+  const athletes = window.athletes || [];
+  const nonGuestAthletes = athletes.filter(a => !a.isGuest);
+  const baseUrl = window.location.origin;
 
-        const html = nonGuestAthletes.map(athlete => {
-            // Genera token crittografato
-            const athleteToken = window.generateAthleteToken(athlete.id);
-            const link = `${baseUrl}/presenza/${athleteToken}`;
-            
-            return `
-                <div class="card mb-2">
-                    <div class="card-body py-2">
-                        <div class="row align-items-center">
-                            <div class="col-md-4">
-                                <strong>${athlete.name}</strong>
-                            </div>
-                            <div class="col-md-6">
-                                <input type="text" class="form-control form-control-sm" value="${link}" readonly>
-                            </div>
-                            <div class="col-md-2">
-                                <button class="btn btn-sm btn-primary w-100 copy-link-btn" data-link="${link}">
-                                    <i class="bi bi-clipboard"></i> Copia
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
+  // Controllo difensivo: la funzione deve esistere
+  if (typeof window.generateAthleteToken !== 'function') {
+    console.error('generateAthleteToken non definita');
+    if (calendarElements.athleteLinksContent) {
+      calendarElements.athleteLinksContent.innerHTML =
+        '<p class="text-danger">Errore: funzione token non disponibile.</p>';
+    }
+    return;
+  }
 
-        calendarElements.athleteLinksContent.innerHTML = html;
-        
-        // Event listeners per copia
-        document.querySelectorAll('#athlete-links-content .copy-link-btn').forEach(btn => {
-            btn.addEventListener('click', () => copyLinkToClipboard(btn.dataset.link));
-        });
+  const html = nonGuestAthletes.map(athlete => {
+    // Genera token crittografato
+    const athleteToken = window.generateAthleteToken(athlete.id);
+    const link = `${baseUrl}/presenza/${athleteToken}`;
+    return `
+      <li>
+        <strong>${athlete.name}</strong>:
+        <a href="${link}" target="_blank" rel="noopener noreferrer">${link}</a>
+      </li>
+    `;
+  }).join('');
 
-        linksModal.show();
-    };
+  if (calendarElements.athleteLinksContent) {
+    calendarElements.athleteLinksContent.innerHTML = `<ul>${html}</ul>`;
+  }
+
+  // Qui probabilmente apri il modal, se esiste:
+  if (linksModal) {
+    linksModal.show();
+  }
+};
 
     // Copia link
     const copyLinkToClipboard = async (link) => {
