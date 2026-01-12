@@ -126,6 +126,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const evaluationCategories = ['presenza-allenamento', 'serieta-allenamento', 'abbigliamento-allenamento', 'abbigliamento-partita', 'comunicazioni', 'doccia'];
     const defaultAvatar = "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3e%3cpath fill='%231e5095' d='M128 128H0V0h128v128z'/%3e%3cpath fill='%23ffffff' d='M64 100c-19.88 0-36-16.12-36-36s16.12-36 36-36 36 16.12 36 36-16.12 36-36 36zm0-64c-15.46 0-28 12.54-28 28s12.54 28 28 28 28-12.54 28-28-12.54-28-28-28z'/%3e%3cpath fill='%23ffffff' d='M64 24a40.01 40.01 0 00-28.28 11.72C35.8 35.8 28 45.45 28 56h8c0-8.27 5.61-15.64 13.53-18.89A31.93 31.93 0 0164 32a32.09 32.09 0 0124.47 11.11C96.39 40.36 102 47.73 102 56h8c0-10.55-7.8-20.2-17.72-24.28A39.99 39.99 0 0064 24z'/%3e%3c/svg%3e";
     let athletes = [], evaluations = {}, gpsData = {}, awards = {}, trainingSessions = {}, matchResults = {};
+    // Rendi athletes disponibile globalmente per il calendario
+    window.athletes = athletes;
     let formationData = { starters: [], bench: [], tokens: [] };
     let chartInstances = {};
     let comparisonChartPeriod = 'annual';
@@ -138,11 +140,32 @@ document.addEventListener('DOMContentLoaded', () => {
     let pollingInterval = null;
     let visuallyDeletedCards = [];
     const saveData = async () => {
-        const allData = { athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults };
+        const allData = { 
+            athletes, 
+            evaluations, 
+            gpsData, 
+            awards, 
+            trainingSessions, 
+            formationData, 
+            matchResults,
+            calendarEvents: window.calendarEvents || {},
+            calendarResponses: window.calendarResponses || {}
+        };
         try {
-            await fetch('/api/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(allData) });
-        } catch (error) { console.error('Errore nel salvataggio dei dati sul server:', error); }
+            const response = await fetch('/api/data', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify(allData) 
+            });
+            if (!response.ok) throw new Error('Errore salvataggio');
+            return true;
+        } catch (error) { 
+            console.error('Errore nel salvataggio dei dati sul server:', error);
+            return false;
+        }
     };
+    // Rendi saveData disponibile globalmente per calendario-admin.js e parent-view.js
+    window.saveData = saveData;
     const migrateGpsData = () => {
         for (const athleteId in gpsData) {
             for (const date in gpsData[athleteId]) {
@@ -160,6 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
             const allData = await response.json();
             athletes = allData.athletes || [];
+            window.athletes = athletes; // Sincronizza con window
             evaluations = allData.evaluations || {};
             gpsData = allData.gpsData || {};
             migrateGpsData();
@@ -167,6 +191,8 @@ document.addEventListener('DOMContentLoaded', () => {
             trainingSessions = allData.trainingSessions || {};
             formationData = allData.formationData || { starters: [], bench: [], tokens: [] };
             matchResults = allData.matchResults || {};
+            window.calendarEvents = allData.calendarEvents || {};
+            window.calendarResponses = allData.calendarResponses || {};
             athletes.forEach(athlete => {
                 if (athlete.isViceCaptain === undefined) athlete.isViceCaptain = false;
                 // Migrazione dalla vecchia proprietà "guest" alla nuova "isGuest"
@@ -184,12 +210,15 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Errore nel caricamento dei dati dal server:', error);
             athletes = []; 
+            window.athletes = [];
             evaluations = {}; 
             gpsData = {}; 
             awards = {}; 
             trainingSessions = {}; 
             formationData = { starters: [], bench: [], tokens: [] }; 
             matchResults = {};
+            window.calendarEvents = {};
+            window.calendarResponses = {};
         }
     };
     const getWeekRange = (date) => {
@@ -261,6 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateAthleteRadarChart();
         updateMultiAthleteChart();
         updateWeeklyAttendanceChart();
+        if (window.renderCalendarTable) window.renderCalendarTable();
     };
     const createJerseyElement = (athlete) => {
         const jersey = document.createElement('div');
