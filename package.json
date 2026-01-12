@@ -1,12 +1,7 @@
 {
   "name": "app-allenamento-r1",
   "version": "1.0.0",
-  "description": "Coach Dashboard con Calendario Squadra",
-  "main": "api/index.js",
   "dependencies": {
-    "@vercel/kv": "^1.0.1"
-  },
-  "engines": {
-    "node": ">=18.x"
+    "@vercel/kv": "^2.0.0"
   }
 }
