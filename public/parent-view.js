@@ -147,7 +147,7 @@
     // Carica i dati
     const loadParentData = async () => {
         try {
-            const response = await fetch('/api', { cache: 'no-store' });
+            const response = await fetch('/api/data', { cache: 'no-store' });
             if (!response.ok) throw new Error('Errore caricamento');
 
             const data = await response.json();
@@ -470,7 +470,7 @@
     // Carica i dati
     const loadParentData = async () => {
         try {
-            const response = await fetch('/api', { cache: 'no-store' });
+            const response = await fetch('/api/data', { cache: 'no-store' });
             if (!response.ok) throw new Error('Errore caricamento');
 
             const data = await response.json();
