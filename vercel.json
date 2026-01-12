@@ -1,32 +1,6 @@
 {
-  "version": 2,
-  "outputDirectory": "public",
-  "builds": [
-    {
-      "src": "public/**",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "api/**/*.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "/presenza/(.*)",
-      "dest": "/public/index.html"
-    },
-    {
-      "src": "/(.*\\.(js|css|html))",
-      "dest": "/public/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/public/index.html"
-    }
+  "rewrites": [
+    { "source": "/presenza/:token", "destination": "/index.html" },
+    { "source": "/api/:path*", "destination": "/api/:path*" }
   ]
 }
