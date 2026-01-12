@@ -440,12 +440,10 @@
 
         // Svuota e ricrea il contenuto
         cardBody.innerHTML = `
-            <div id="parent-loading" class="text-center py-5">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Caricamento...</span>
-                </div>
-                <p class="mt-3">Caricamento calendario...</p>
+            <div id="parent-calendar">
+                <p>Caricamento calendario...</p>
             </div>
+        `;
             
             <div id="parent-error" class="alert alert-danger" style="display: none;">
                 <h5><i class="bi bi-exclamation-triangle-fill"></i> Accesso non valido</h5>
