@@ -66,6 +66,11 @@
 
     // Nascondi tutto tranne la sezione calendario
     const hideAllExceptCalendar = () => {
+    // Imposta sfondo corretto per la pagina genitore
+    document.body.style.backgroundColor = '#0f172a';
+    document.body.style.color = '#ffffff';
+    document.body.style.minHeight = '100vh';
+    document.body.style.padding = '20px';
         // Nascondi navbar
         const navbar = document.querySelector('nav');
         if (navbar) navbar.style.display = 'none';
