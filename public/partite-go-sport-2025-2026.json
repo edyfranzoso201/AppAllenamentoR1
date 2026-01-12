@@ -1,0 +1,170 @@
+[
+  {
+    "data": "2025-11-02",
+    "ora": "15:00-16:30",
+    "avversario": "ONNISPORT",
+    "casa": false
+  },
+  {
+    "data": "2025-11-08",
+    "ora": "11:00-12:30",
+    "avversario": "SAN SECONDO",
+    "casa": true
+  },
+  {
+    "data": "2025-11-12",
+    "ora": "18:30-20:00",
+    "avversario": "LUSERNA",
+    "casa": true
+  },
+  {
+    "data": "2025-11-15",
+    "ora": "17:30-19:00",
+    "avversario": "F.C. PEROSA",
+    "casa": false
+  },
+  {
+    "data": "2025-11-22",
+    "ora": "11:00-12:30",
+    "avversario": "TETTI FRANCESI",
+    "casa": true
+  },
+  {
+    "data": "2025-12-06",
+    "ora": "11:00-12:30",
+    "avversario": "BSR",
+    "casa": true
+  },
+  {
+    "data": "2025-12-13",
+    "ora": "18:00-19:30",
+    "avversario": "PIOSSASCO",
+    "casa": false
+  },
+  {
+    "data": "2025-12-20",
+    "ora": "11:00-12:30",
+    "avversario": "ATLETICO VOLVERA",
+    "casa": true
+  },
+  {
+    "data": "2026-01-10",
+    "ora": "14:00-15:30",
+    "avversario": "BRICHERASIO BIBIANA",
+    "casa": false
+  },
+  {
+    "data": "2026-01-17",
+    "ora": "11:00-12:30",
+    "avversario": "CHISONE",
+    "casa": true
+  },
+  {
+    "data": "2026-01-25",
+    "ora": "14:00-15:30",
+    "avversario": "ABSOLUTE ORBASSANO",
+    "casa": false
+  },
+  {
+    "data": "2026-01-31",
+    "ora": "14:30-16:00",
+    "avversario": "BEIBORG",
+    "casa": true
+  },
+  {
+    "data": "2026-02-07",
+    "ora": "16:15-17:45",
+    "avversario": "ROLETTO VAL NOCE",
+    "casa": false
+  },
+  {
+    "data": "2026-02-14",
+    "ora": "11:00-12:30",
+    "avversario": "NONE",
+    "casa": true
+  },
+  {
+    "data": "2026-02-21",
+    "ora": "11:00-12:30",
+    "avversario": "ONNISPORT",
+    "casa": true
+  },
+  {
+    "data": "2026-03-01",
+    "ora": "10:30-12:00",
+    "avversario": "SAN SECONDO",
+    "casa": false
+  },
+  {
+    "data": "2026-03-07",
+    "ora": "17:30-19:00",
+    "avversario": "LUSERNA",
+    "casa": false
+  },
+  {
+    "data": "2026-03-14",
+    "ora": "11:00-12:30",
+    "avversario": "F.C. PEROSA",
+    "casa": true
+  },
+  {
+    "data": "2026-03-18",
+    "ora": "18:30-20:00",
+    "avversario": "TETTI FRANCESI",
+    "casa": false
+  },
+  {
+    "data": "2026-03-29",
+    "ora": "16:30-18:00",
+    "avversario": "BSR",
+    "casa": false
+  },
+  {
+    "data": "2026-04-04",
+    "ora": "11:00-12:30",
+    "avversario": "PIOSSASCO",
+    "casa": true
+  },
+  {
+    "data": "2026-04-12",
+    "ora": "10:30-12:00",
+    "avversario": "ATLETICO VOLVERA",
+    "casa": false
+  },
+  {
+    "data": "2026-04-18",
+    "ora": "11:00-12:30",
+    "avversario": "BRICHERASIO BIBIANA",
+    "casa": true
+  },
+  {
+    "data": "2026-04-25",
+    "ora": "15:30-17:00",
+    "avversario": "CHISONE",
+    "casa": false
+  },
+  {
+    "data": "2026-04-29",
+    "ora": "18:30-20:00",
+    "avversario": "ABSOLUTE ORBASSANO",
+    "casa": true
+  },
+  {
+    "data": "2026-05-02",
+    "ora": "15:15-16:45",
+    "avversario": "BEIBORG",
+    "casa": false
+  },
+  {
+    "data": "2026-05-09",
+    "ora": "11:00-12:30",
+    "avversario": "ROLETTO VAL NOCE",
+    "casa": true
+  },
+  {
+    "data": "2026-05-17",
+    "ora": "10:30-12:00",
+    "avversario": "NONE",
+    "casa": false
+  }
+]
