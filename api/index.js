@@ -25,6 +25,16 @@ app.get('/api/data', async (req, res) => {
       await kv.set('database', data);
       console.log("Dati del backup salvati nel database KV.");
     }
+    
+    // ⭐ NUOVO: Assicurati che i campi del calendario esistano
+    if (!data.calendarEvents) {
+      data.calendarEvents = {};
+      console.log("Inizializzato calendarEvents");
+    }
+    if (!data.calendarResponses) {
+      data.calendarResponses = {};
+      console.log("Inizializzato calendarResponses");
+    }
     // --- FINE NUOVA LOGICA ---
 
     res.setHeader('Cache-Control', 'no-store');
@@ -38,7 +48,19 @@ app.get('/api/data', async (req, res) => {
 // API per SALVARE i dati
 app.post('/api/data', async (req, res) => {
   try {
-    await kv.set('database', req.body);
+    // ⭐ NUOVO: Assicurati che i campi del calendario siano salvati
+    const dataToSave = {
+      ...req.body,
+      calendarEvents: req.body.calendarEvents || {},
+      calendarResponses: req.body.calendarResponses || {}
+    };
+    
+    await kv.set('database', dataToSave);
+    console.log("Dati salvati, inclusi:", {
+      eventi: Object.keys(dataToSave.calendarEvents || {}).length,
+      risposte: Object.keys(dataToSave.calendarResponses || {}).length
+    });
+    
     res.status(200).json({ success: true, message: 'Dati salvati correttamente.' });
   } catch (error) {
     console.error('Errore scrittura su Vercel KV:', error);
