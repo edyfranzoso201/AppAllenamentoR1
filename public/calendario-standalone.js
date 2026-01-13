@@ -40,15 +40,15 @@
             return;
         }
 
-        let h = '<div class="table-responsive"><table class="table table-bordered calendar-table"><thead><tr><th style="color:#fff;">#</th><th style="color:#fff;">Atleta</th><th style="color:#fff;">Link</th>';
+        let h = '<div class="table-responsive"><table class="table table-bordered calendar-table"><thead><tr><th style="color:#000;">#</th><th style="color:#000;">Atleta</th><th style="color:#000;">Link</th>';
         dates.forEach(d => {
             const dt = new Date(d);
-            h += `<th class="text-center" style="color:#fff;">${dt.toLocaleDateString('it-IT',{weekday:'short'})}<br>${dt.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})}</th>`;
+            h += `<th class="text-center" style="color:#000;">${dt.toLocaleDateString('it-IT',{weekday:'short'})}<br>${dt.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})}</th>`;
         });
-        h += '</tr><tr><th colspan="3" style="color:#fff;">Evento</th>';
+        h += '</tr><tr><th colspan="3" style="color:#000;">Evento</th>';
         dates.forEach(d => {
             const e = events[d];
-            h += `<th class="text-center" style="color:#fff;"><small>${e.type==='Partita'?'🏆':'⚽'} ${e.type}<br>${e.time}</small></th>`;
+            h += `<th class="text-center" style="color:#000;"><small>${e.type==='Partita'?'🏆':'⚽'} ${e.type}<br>${e.time}</small></th>`;
         });
         h += '</tr></thead><tbody>';
         
@@ -56,13 +56,13 @@
         regularAthletes.forEach((a,i) => {
             const token = window.generateAthleteToken(a.id);
             const link = `${window.location.origin}/presenza/${token}`;
-            h += `<tr><td style="color:#fff;">${i+1}</td><td style="color:#fff;">${a.name}</td>`;
+            h += `<tr><td style="color:#000;">${i+1}</td><td style="color:#000;">${a.name}</td>`;
             h += `<td class="text-center">`;
             h += `<button class="btn btn-sm btn-primary" onclick="navigator.clipboard.writeText('${link}').then(() => alert('✅ Link copiato!')).catch(() => alert('❌ Errore copia'));" title="Copia link">`;
             h += `<i class="bi bi-link-45deg"></i></button>`;
             h += `<a href="${link}" target="_blank" class="btn btn-sm btn-outline-primary ms-1" title="Apri pagina"><i class="bi bi-box-arrow-up-right"></i></a>`;
             h += `</td>`;
-            dates.forEach(() => h += '<td class="text-center" style="color:#fff;">-</td>');
+            dates.forEach(() => h += '<td class="text-center" style="color:#000;">-</td>');
             h += '</tr>';
         });
         
