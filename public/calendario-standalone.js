@@ -53,8 +53,8 @@
         regularAthletes.forEach((a,i) => {
             h += `<tr><td style="color:#000;">${i+1}</td><td style="color:#000;">${a.name}</td>`;
             h += `<td class="text-center">`;
-            h += `<button class="btn btn-sm btn-success" onclick="downloadCalendar(${a.id}, '${a.name.replace(/'/g, "\\'")}')">`;
-            h += `<i class="bi bi-download"></i> Scarica</button>`;
+            h += `<button class="btn btn-sm btn-primary" onclick="window.generatePresenceLink(${a.id}, '${a.name.replace(/'/g, "\\'")}')">`;
+            h += `<i class="bi bi-link-45deg"></i> Link Presenze</button>`;
             h += `</td>`;
             dates.forEach(() => h += '<td class="text-center" style="color:#000;">-</td>');
             h += '</tr>';
@@ -285,6 +285,7 @@
     document.getElementById('import-btn').addEventListener('click', () => document.getElementById('file-input').click());
     document.getElementById('add-btn').addEventListener('click', addEvent);
     document.getElementById('delete-btn').addEventListener('click', deleteOld);
+    document.getElementById('responses-btn').addEventListener('click', window.showResponsesReport);
     document.getElementById('file-input').addEventListener('change', (e) => {
         if(e.target.files[0]) impMatches(e.target.files[0]);
         e.target.value = '';
@@ -292,3 +293,106 @@
 
     load();
 })();
+
+// Modifica rendering per aggiungere colonna Link
+window.generatePresenceLink = function(athleteId, athleteName) {
+    const token = window.generateAthleteToken(athleteId);
+    const link = `${window.location.origin}/presenza/${token}`;
+    
+    // Mostra modal con link
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
+    modal.innerHTML = `
+        <div style="background:white;padding:30px;border-radius:15px;max-width:600px;width:90%;">
+            <h3 style="margin:0 0 20px 0;color:#2563eb;">🔗 Link Conferma Presenze</h3>
+            <p style="margin-bottom:15px;"><strong>Atleta:</strong> ${athleteName}</p>
+            <div style="background:#f1f5f9;padding:15px;border-radius:8px;margin-bottom:20px;word-break:break-all;font-family:monospace;font-size:14px;">
+                ${link}
+            </div>
+            <div style="display:flex;gap:10px;">
+                <button onclick="navigator.clipboard.writeText('${link}').then(() => alert('✅ Link copiato!')).catch(() => alert('❌ Errore'))" 
+                    style="flex:1;background:#10b981;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
+                    📋 Copia Link
+                </button>
+                <button onclick="this.parentElement.parentElement.parentElement.remove()" 
+                    style="flex:1;background:#64748b;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
+                    Chiudi
+                </button>
+            </div>
+            <div style="margin-top:20px;padding:15px;background:#e0f2fe;border-radius:8px;font-size:14px;color:#0c4a6e;">
+                <strong>📱 Invia questo link al genitore via:</strong><br>
+                • WhatsApp<br>
+                • Email<br>
+                • SMS<br><br>
+                Il genitore potrà confermare presenze entro 48h prima di ogni evento.
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.onclick = (e) => {
+        if (e.target === modal) modal.remove();
+    };
+};
+
+// Report risposte
+window.showResponsesReport = async function() {
+    try {
+        const r = await fetch('/api/data', {cache:'no-store'});
+        const data = await r.json();
+        const responses = data.calendarResponses || {};
+        const dates = Object.keys(events).sort();
+        
+        let html = '<div style="padding:20px;max-height:80vh;overflow-y:auto;">';
+        html += '<h3 style="color:#2563eb;margin:0 0 20px 0;">📊 Report Conferme Presenze</h3>';
+        
+        dates.forEach(date => {
+            const event = events[date];
+            const dateResponses = responses[date] || {};
+            const respondedCount = Object.keys(dateResponses).length;
+            const presentCount = Object.values(dateResponses).filter(r => r.presenza === 'Si').length;
+            const absentCount = Object.values(dateResponses).filter(r => r.presenza === 'No').length;
+            
+            html += `<div style="background:#f8f9fa;padding:15px;border-radius:8px;margin-bottom:15px;">`;
+            html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">`;
+            html += `<div><strong>${event.type === 'Partita' ? '🏆' : '⚽'} ${event.type}</strong> - ${new Date(date).toLocaleDateString('it-IT')}</div>`;
+            html += `<div><span style="color:#10b981;">✅ ${presentCount}</span> | <span style="color:#ef4444;">❌ ${absentCount}</span> | <span style="color:#94a3b8;">? ${athletes.filter(a => !a.guest).length - respondedCount}</span></div>`;
+            html += `</div>`;
+            
+            if (respondedCount > 0) {
+                html += '<div style="font-size:13px;color:#64748b;">';
+                Object.entries(dateResponses).forEach(([aid, resp]) => {
+                    const athlete = athletes.find(a => a.id == aid);
+                    const icon = resp.presenza === 'Si' ? '✅' : '❌';
+                    const color = resp.presenza === 'Si' ? '#10b981' : '#ef4444';
+                    html += `<div style="margin:5px 0;"><span style="color:${color};">${icon} ${athlete?.name || 'Atleta ' + aid}</span>`;
+                    if (resp.motivazione) html += ` - <i>"${resp.motivazione}"</i>`;
+                    html += `</div>`;
+                });
+                html += '</div>';
+            }
+            html += `</div>`;
+        });
+        
+        html += '</div>';
+        
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999;';
+        modal.innerHTML = `
+            <div style="background:white;border-radius:15px;max-width:900px;width:90%;max-height:90vh;display:flex;flex-direction:column;">
+                ${html}
+                <div style="padding:20px;border-top:1px solid #e5e7eb;">
+                    <button onclick="this.closest('div[style*=position]').remove()" 
+                        style="background:#64748b;color:white;border:none;padding:12px 24px;border-radius:8px;cursor:pointer;width:100%;font-weight:600;">
+                        Chiudi
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.onclick = (e) => {
+            if (e.target === modal) modal.remove();
+        };
+    } catch (e) {
+        alert('❌ Errore: ' + e.message);
+    }
+};
