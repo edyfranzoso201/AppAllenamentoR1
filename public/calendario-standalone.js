@@ -1,4 +1,4 @@
-// calendario-standalone.js - Versione con link atleti
+// calendario-standalone.js - Versione completa con tutti i pulsanti
 (function() {
     const TRAINING = [{day:1,time:'18:30-20:00'},{day:3,time:'17:30-19:00'},{day:5,time:'18:00-19:15'}];
     const END = new Date('2026-06-30');
@@ -36,19 +36,19 @@
         const dates = Object.keys(events).sort();
         
         if (dates.length === 0) {
-            el.innerHTML = '<div class="alert alert-info">Nessun evento. Usa i pulsanti sopra.</div>';
+            el.innerHTML = '<div class="alert alert-info">Nessun evento. Usa i pulsanti sopra per iniziare.</div>';
             return;
         }
 
-        let h = '<div class="table-responsive"><table class="table table-bordered calendar-table"><thead><tr><th>#</th><th>Atleta</th><th>Link</th>';
+        let h = '<div class="table-responsive"><table class="table table-bordered calendar-table"><thead><tr><th style="color:#fff;">#</th><th style="color:#fff;">Atleta</th><th style="color:#fff;">Link</th>';
         dates.forEach(d => {
             const dt = new Date(d);
-            h += `<th class="text-center">${dt.toLocaleDateString('it-IT',{weekday:'short'})}<br>${dt.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})}</th>`;
+            h += `<th class="text-center" style="color:#fff;">${dt.toLocaleDateString('it-IT',{weekday:'short'})}<br>${dt.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})}</th>`;
         });
-        h += '</tr><tr><th colspan="3">Evento</th>';
+        h += '</tr><tr><th colspan="3" style="color:#fff;">Evento</th>';
         dates.forEach(d => {
             const e = events[d];
-            h += `<th class="text-center"><small>${e.type==='Partita'?'🏆':'⚽'} ${e.type}<br>${e.time}</small></th>`;
+            h += `<th class="text-center" style="color:#fff;"><small>${e.type==='Partita'?'🏆':'⚽'} ${e.type}<br>${e.time}</small></th>`;
         });
         h += '</tr></thead><tbody>';
         
@@ -56,19 +56,18 @@
         regularAthletes.forEach((a,i) => {
             const token = window.generateAthleteToken(a.id);
             const link = `${window.location.origin}/presenza/${token}`;
-            h += `<tr><td>${i+1}</td><td>${a.name}</td>`;
+            h += `<tr><td style="color:#fff;">${i+1}</td><td style="color:#fff;">${a.name}</td>`;
             h += `<td class="text-center">`;
-            h += `<button class="btn btn-sm btn-primary" onclick="navigator.clipboard.writeText('${link}').then(() => alert('Link copiato!')).catch(() => alert('Errore copia'));" title="Copia link">`;
+            h += `<button class="btn btn-sm btn-primary" onclick="navigator.clipboard.writeText('${link}').then(() => alert('✅ Link copiato!')).catch(() => alert('❌ Errore copia'));" title="Copia link">`;
             h += `<i class="bi bi-link-45deg"></i></button>`;
             h += `<a href="${link}" target="_blank" class="btn btn-sm btn-outline-primary ms-1" title="Apri pagina"><i class="bi bi-box-arrow-up-right"></i></a>`;
             h += `</td>`;
-            dates.forEach(() => h += '<td class="text-center">-</td>');
+            dates.forEach(() => h += '<td class="text-center" style="color:#fff;">-</td>');
             h += '</tr>';
         });
         
         h += '</tbody></table></div>';
         
-        // Aggiungi legenda
         h += '<div class="alert alert-info mt-3">';
         h += '<strong><i class="bi bi-info-circle"></i> Come funziona:</strong><br>';
         h += '• <i class="bi bi-link-45deg"></i> = Copia link (da inviare al genitore)<br>';
@@ -191,8 +190,65 @@
         }
     }
 
+    async function addEvent() {
+        const date = prompt('📅 Data evento (YYYY-MM-DD):\nEs: 2026-02-15');
+        if(!date) return;
+        
+        const type = confirm('❓ Clicca OK per PARTITA, Annulla per ALLENAMENTO') ? 'Partita' : 'Allenamento';
+        const time = prompt('🕐 Orario (HH:MM-HH:MM):\nEs: 15:00-16:30');
+        if(!time) return;
+        
+        const notes = prompt('📝 Note (opzionale):');
+        
+        try {
+            const r = await fetch('/api/data',{cache:'no-store'});
+            const ad = await r.json();
+            ad.calendarEvents = ad.calendarEvents || {};
+            ad.calendarEvents[date] = {type,time,notes:notes||'',createdAt:new Date().toISOString()};
+            
+            await fetch('/api/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ad)});
+            
+            events = ad.calendarEvents;
+            render();
+            alert('✅ Evento aggiunto!');
+        } catch(e) {
+            alert('❌ Errore: '+e.message);
+        }
+    }
+
+    async function deleteOld() {
+        if(!confirm('⚠️ Eliminare tutti gli eventi passati?')) return;
+        
+        try {
+            const td = new Date();
+            td.setHours(0,0,0,0);
+            const tdStr = td.toISOString().split('T')[0];
+            
+            const r = await fetch('/api/data',{cache:'no-store'});
+            const ad = await r.json();
+            
+            let deleted = 0;
+            Object.keys(ad.calendarEvents || {}).forEach(d => {
+                if(d < tdStr) {
+                    delete ad.calendarEvents[d];
+                    deleted++;
+                }
+            });
+            
+            await fetch('/api/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ad)});
+            
+            events = ad.calendarEvents || {};
+            render();
+            alert(`✅ ${deleted} eventi eliminati!`);
+        } catch(e) {
+            alert('❌ Errore: '+e.message);
+        }
+    }
+
     document.getElementById('generate-btn').addEventListener('click', genTraining);
     document.getElementById('import-btn').addEventListener('click', () => document.getElementById('file-input').click());
+    document.getElementById('add-btn').addEventListener('click', addEvent);
+    document.getElementById('delete-btn').addEventListener('click', deleteOld);
     document.getElementById('file-input').addEventListener('change', (e) => {
         if(e.target.files[0]) impMatches(e.target.files[0]);
         e.target.value = '';
