@@ -1,9 +1,23 @@
-// calendario-standalone.js - Script standalone per pagina calendario
+// calendario-standalone.js - Versione con link atleti
 (function() {
     const TRAINING = [{day:1,time:'18:30-20:00'},{day:3,time:'17:30-19:00'},{day:5,time:'18:00-19:15'}];
     const END = new Date('2026-06-30');
     let events = {};
     let athletes = [];
+
+    // Funzione per generare token atleta
+    window.generateAthleteToken = function(athleteId) {
+        const salt = 'GO_SPORT_2025_SECRET_KEY';
+        const str = salt + athleteId;
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        const token = Math.abs(hash).toString(36) + athleteId.toString().split('').reverse().join('');
+        return token;
+    };
 
     async function load() {
         try {
@@ -26,25 +40,42 @@
             return;
         }
 
-        let h = '<div class="table-responsive"><table class="table table-bordered calendar-table"><thead><tr><th>#</th><th>Atleta</th>';
+        let h = '<div class="table-responsive"><table class="table table-bordered calendar-table"><thead><tr><th>#</th><th>Atleta</th><th>Link</th>';
         dates.forEach(d => {
             const dt = new Date(d);
             h += `<th class="text-center">${dt.toLocaleDateString('it-IT',{weekday:'short'})}<br>${dt.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})}</th>`;
         });
-        h += '</tr><tr><th colspan="2">Evento</th>';
+        h += '</tr><tr><th colspan="3">Evento</th>';
         dates.forEach(d => {
             const e = events[d];
             h += `<th class="text-center"><small>${e.type==='Partita'?'🏆':'⚽'} ${e.type}<br>${e.time}</small></th>`;
         });
         h += '</tr></thead><tbody>';
         
-        athletes.filter(a => !a.guest).forEach((a,i) => {
+        const regularAthletes = athletes.filter(a => !a.guest);
+        regularAthletes.forEach((a,i) => {
+            const token = window.generateAthleteToken(a.id);
+            const link = `${window.location.origin}/presenza/${token}`;
             h += `<tr><td>${i+1}</td><td>${a.name}</td>`;
+            h += `<td class="text-center">`;
+            h += `<button class="btn btn-sm btn-primary" onclick="navigator.clipboard.writeText('${link}').then(() => alert('Link copiato!')).catch(() => alert('Errore copia'));" title="Copia link">`;
+            h += `<i class="bi bi-link-45deg"></i></button>`;
+            h += `<a href="${link}" target="_blank" class="btn btn-sm btn-outline-primary ms-1" title="Apri pagina"><i class="bi bi-box-arrow-up-right"></i></a>`;
+            h += `</td>`;
             dates.forEach(() => h += '<td class="text-center">-</td>');
             h += '</tr>';
         });
         
         h += '</tbody></table></div>';
+        
+        // Aggiungi legenda
+        h += '<div class="alert alert-info mt-3">';
+        h += '<strong><i class="bi bi-info-circle"></i> Come funziona:</strong><br>';
+        h += '• <i class="bi bi-link-45deg"></i> = Copia link (da inviare al genitore)<br>';
+        h += '• <i class="bi bi-box-arrow-up-right"></i> = Apri pagina di conferma presenze<br>';
+        h += '• Ogni genitore vedrà solo la riga del proprio atleta';
+        h += '</div>';
+        
         el.innerHTML = h;
     }
 
@@ -73,7 +104,7 @@
             }
             
             if(Object.keys(ev).length === 0) {
-                alert('Già creati!');
+                alert('✅ Tutti gli allenamenti sono già stati creati!');
                 btn.innerHTML = oh;
                 btn.disabled = false;
                 return;
@@ -164,6 +195,7 @@
     document.getElementById('import-btn').addEventListener('click', () => document.getElementById('file-input').click());
     document.getElementById('file-input').addEventListener('change', (e) => {
         if(e.target.files[0]) impMatches(e.target.files[0]);
+        e.target.value = '';
     });
 
     load();
