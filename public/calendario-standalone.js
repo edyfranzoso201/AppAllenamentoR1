@@ -58,7 +58,7 @@
             const link = `${window.location.origin}/presenza/${token}`;
             h += `<tr><td style="color:#000;">${i+1}</td><td style="color:#000;">${a.name}</td>`;
             h += `<td class="text-center">`;
-            h += `<button class="btn btn-sm btn-primary" onclick="navigator.clipboard.writeText('${link}').then(() => alert('✅ Link copiato!')).catch(() => alert('❌ Errore copia'));" title="Copia link">`;
+            h += `<button class="btn btn-sm btn-success" onclick="window.exportAthleteCalendar(${a.id},'${a.name}')"><i class="bi bi-download"></i> Scarica</button> <button class="btn btn-sm btn-primary" onclick="navigator.clipboard.writeText('${link}').then(() => alert('✅ Link copiato!')).catch(() => alert('❌ Errore copia'));" title="Copia link">`;
             h += `<i class="bi bi-link-45deg"></i></button>`;
             h += `<a href="${link}" target="_blank" class="btn btn-sm btn-outline-primary ms-1" title="Apri pagina"><i class="bi bi-box-arrow-up-right"></i></a>`;
             h += `</td>`;
@@ -256,3 +256,44 @@
 
     load();
 })();
+
+// Funzione per esportare calendario atleta in formato iCal
+window.exportAthleteCalendar = function(athleteId, athleteName) {
+    const dates = Object.keys(events).sort();
+    const futureEvents = dates.filter(d => new Date(d) >= new Date().setHours(0,0,0,0));
+    
+    let ical = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//GO SPORT//Calendario Squadra//IT\r\nCALSCALE:GREGORIAN\r\n';
+    
+    futureEvents.forEach(date => {
+        const event = events[date];
+        const [startTime, endTime] = event.time.split('-');
+        const startDate = new Date(date + 'T' + startTime.replace(':', '') + '00');
+        const endDate = new Date(date + 'T' + endTime.replace(':', '') + '00');
+        
+        const dtstart = startDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+        const dtend = endDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+        
+        ical += 'BEGIN:VEVENT\r\n';
+        ical += `UID:${date}-${athleteId}@gosport.it\r\n`;
+        ical += `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z\r\n`;
+        ical += `DTSTART:${dtstart}\r\n`;
+        ical += `DTEND:${dtend}\r\n`;
+        ical += `SUMMARY:${event.type} GO SPORT\r\n`;
+        ical += `DESCRIPTION:${event.notes || ''} - Atleta: ${athleteName}\r\n`;
+        ical += `LOCATION:Campo GO SPORT\r\n`;
+        ical += 'END:VEVENT\r\n';
+    });
+    
+    ical += 'END:VCALENDAR\r\n';
+    
+    // Crea file e scarica
+    const blob = new Blob([ical], {type: 'text/calendar'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `calendario-${athleteName.replace(/ /g, '_')}.ics`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    alert(`✅ File calendario scaricato!\n\nOra puoi:\n1. Aprire il file .ics\n2. Importarlo in Google Calendar/iPhone Calendar\n3. Tutti gli eventi appariranno automaticamente!`);
+};
