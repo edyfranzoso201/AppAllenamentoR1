@@ -63,6 +63,9 @@
                             <div class="d-grid gap-2 w-100 no-print">
                                 <button class="btn btn-primary-custom" id="quick-add-athlete-btn"><i class="bi bi-person-plus-fill"></i> Aggiungi Atleta</button>
                                 <button class="btn btn-secondary" id="quick-plan-session-btn"><i class="bi bi-calendar-plus"></i> Pianifica Sessione</button>
+                                <button class="btn btn-success" id="backup-btn" title="Scarica backup completo dati"><i class="bi bi-download"></i> Backup Dati</button>
+                                <button class="btn btn-warning" id="restore-btn" title="Ripristina da backup"><i class="bi bi-upload"></i> Ripristina Backup</button>
+                                <input type="file" id="restore-file" accept=".json" style="display:none">
                             </div>
                         </div>
                     </div>
@@ -576,5 +579,147 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <!-- Script personalizzato -->
     <script src="script.js"></script>
+    
+    <!-- Sistema Backup/Restore -->
+    <script>
+    // Backup Dati
+    document.getElementById('backup-btn').addEventListener('click', async function() {
+        try {
+            const btn = this;
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Caricamento...';
+            
+            const response = await fetch('/api/data', {cache: 'no-store'});
+            const data = await response.json();
+            
+            // Crea file JSON con indentazione
+            const dataStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            
+            // Download
+            const a = document.createElement('a');
+            a.href = url;
+            const timestamp = new Date().toISOString().slice(0,10);
+            const time = new Date().toTimeString().slice(0,5).replace(':','-');
+            a.download = `backup-gosport-${timestamp}-${time}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            btn.innerHTML = '<i class="bi bi-check-circle"></i> Scaricato!';
+            btn.className = 'btn btn-success';
+            
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.className = 'btn btn-success';
+                btn.disabled = false;
+            }, 3000);
+            
+            alert('✅ Backup completato!\\n\\nFile: backup-gosport-' + timestamp + '-' + time + '.json\\n\\nConserva questo file in un posto sicuro.');
+        } catch (e) {
+            alert('❌ Errore nel backup: ' + e.message);
+            this.disabled = false;
+            this.innerHTML = '<i class="bi bi-download"></i> Backup Dati';
+        }
+    });
+
+    // Ripristina Backup
+    document.getElementById('restore-btn').addEventListener('click', function() {
+        const confirmMsg = '⚠️ ATTENZIONE!\\n\\n' +
+            'Il ripristino SOVRASCRIVERÀ tutti i dati attuali:\\n' +
+            '• Atleti\\n' +
+            '• Sessioni\\n' +
+            '• Valutazioni\\n' +
+            '• Presenze\\n' +
+            '• Calendario\\n\\n' +
+            'Assicurati di aver fatto un BACKUP prima di continuare!\\n\\n' +
+            'Vuoi procedere?';
+            
+        if (confirm(confirmMsg)) {
+            document.getElementById('restore-file').click();
+        }
+    });
+
+    document.getElementById('restore-file').addEventListener('change', async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const btn = document.getElementById('restore-btn');
+        const originalHTML = btn.innerHTML;
+        
+        try {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Caricamento...';
+            
+            const reader = new FileReader();
+            reader.onload = async function(event) {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    
+                    // Verifica struttura base
+                    if (!data.athletes || !Array.isArray(data.athletes)) {
+                        throw new Error('File non valido: struttura dati non corretta');
+                    }
+                    
+                    // Conferma finale
+                    const summary = `📊 Dati nel backup:\\n\\n` +
+                        `• Atleti: ${data.athletes.length}\\n` +
+                        `• Sessioni: ${data.sessions ? data.sessions.length : 0}\\n` +
+                        `• Eventi calendario: ${data.calendarEvents ? Object.keys(data.calendarEvents).length : 0}\\n\\n` +
+                        `Confermi il ripristino?`;
+                    
+                    if (!confirm(summary)) {
+                        btn.innerHTML = originalHTML;
+                        btn.disabled = false;
+                        e.target.value = '';
+                        return;
+                    }
+                    
+                    // Salva
+                    const response = await fetch('/api/data', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(data)
+                    });
+                    
+                    if (!response.ok) throw new Error('Errore nel salvataggio dei dati');
+                    
+                    btn.innerHTML = '<i class="bi bi-check-circle"></i> Ripristinato!';
+                    btn.className = 'btn btn-success';
+                    
+                    setTimeout(() => {
+                        alert('✅ Dati ripristinati con successo!\\n\\nLa pagina verrà ricaricata.');
+                        location.reload();
+                    }, 1000);
+                    
+                } catch (err) {
+                    alert('❌ Errore nel ripristino: ' + err.message + '\\n\\nVerifica che il file sia un backup valido.');
+                    btn.innerHTML = originalHTML;
+                    btn.className = 'btn btn-warning';
+                    btn.disabled = false;
+                }
+            };
+            
+            reader.onerror = function() {
+                alert('❌ Errore nella lettura del file');
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            };
+            
+            reader.readAsText(file);
+            
+        } catch (e) {
+            alert('❌ Errore: ' + e.message);
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+        }
+        
+        // Reset input
+        e.target.value = '';
+    });
+    </script>
 </body>
 </html>
