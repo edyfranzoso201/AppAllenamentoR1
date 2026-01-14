@@ -4,7 +4,7 @@
 
     // UTENTI AUTORIZZATI - Aggiungi qui coach, allenatori, dirigenti
     const AUTHORIZED_USERS = {
-        'coach': 'GoSport2025!',
+        'admin': 'admin201',
         'allenatore1': 'Allenatore123',
         'dirigente1': 'Dirigente123'
     };
