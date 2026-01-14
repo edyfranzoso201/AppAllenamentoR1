@@ -4,7 +4,7 @@
 
     // UTENTI AUTORIZZATI - Aggiungi qui coach, allenatori, dirigenti
     const AUTHORIZED_USERS = {
-        'amministratore': 'amministratore201',
+        'admin': 'admin201',
         'allenatore': 'allenatore123',
         'dirigente': 'dirigente123'
     };
