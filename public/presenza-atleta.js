@@ -1,4 +1,4 @@
-// presenza-atleta.js - Sistema conferma presenze con blocco
+// presenza-atleta.js - Sistema conferma presenze genitori
 (function() {
     'use strict';
 
@@ -25,10 +25,18 @@
 
     // Verifica se siamo in modalità presenza
     const path = window.location.pathname;
-    if (!path.includes('/presenza/')) return;
+    if (!path.includes('/presenza/')) {
+        return; // Non è modalità presenza, esci
+    }
 
-    const token = path.split('/presenza/')[1]?.replace(/[/.html]/g, '');
-    if (!token) return;
+    // Estrai token
+    const parts = path.split('/presenza/');
+    const token = parts[1] ? parts[1].replace(/[/.html]/g, '') : null;
+    
+    if (!token) {
+        console.error('Token mancante');
+        return;
+    }
 
     const athleteId = decodeToken(token);
     if (!athleteId) {
@@ -36,46 +44,62 @@
         return;
     }
 
+    console.log('[Presenza] Modalità attiva per atleta ID:', athleteId);
+
     let currentAthlete = null;
     let allEvents = {};
     let allResponses = {};
 
     function showError(msg) {
-        document.body.innerHTML = `
-            <div style="max-width:600px;margin:50px auto;padding:30px;text-align:center;background:white;border-radius:15px;box-shadow:0 4px 16px rgba(0,0,0,0.1);">
-                <h2 style="color:#ef4444;margin-bottom:20px;">⚠️ ${msg}</h2>
-                <p>Contatta il coach per un nuovo link</p>
-            </div>
+        document.body.innerHTML = '';
+        document.body.style.cssText = 'margin:0;padding:50px;font-family:system-ui;background:#f8f9fa;';
+        const div = document.createElement('div');
+        div.style.cssText = 'max-width:600px;margin:0 auto;padding:30px;background:white;border-radius:15px;box-shadow:0 4px 16px rgba(0,0,0,0.1);text-align:center;';
+        div.innerHTML = `
+            <h2 style="color:#ef4444;margin:0 0 20px 0;">⚠️ ${msg}</h2>
+            <p style="color:#64748b;">Contatta il coach per un nuovo link</p>
         `;
+        document.body.appendChild(div);
     }
 
-    async function init() {
-        // Nascondi tutto e crea interfaccia presenza
+    function hideAllAndInit() {
+        // Nascondi completamente tutto
         document.body.innerHTML = '';
-        document.body.style.cssText = 'background:#f8f9fa;margin:0;padding:20px;font-family:system-ui;';
+        document.body.style.cssText = 'margin:0;padding:20px;font-family:system-ui;background:#f8f9fa;';
 
         const container = document.createElement('div');
         container.style.cssText = 'max-width:1200px;margin:0 auto;';
         container.innerHTML = `
             <div style="background:white;padding:30px;border-radius:15px;box-shadow:0 2px 8px rgba(0,0,0,0.1);margin-bottom:20px;">
-                <h1 style="color:#2563eb;margin:0 0 10px 0;">📅 Conferma Presenze GO SPORT</h1>
+                <h1 style="color:#2563eb;margin:0 0 10px 0;font-size:28px;">📅 Conferma Presenze GO SPORT</h1>
                 <p id="athlete-name" style="font-size:18px;color:#64748b;margin:0;">Caricamento...</p>
             </div>
-            <div id="events-container"></div>
+            <div id="events-container">
+                <div style="text-align:center;padding:50px;">
+                    <div style="display:inline-block;width:40px;height:40px;border:4px solid #e5e7eb;border-top-color:#3b82f6;border-radius:50%;animation:spin 1s linear infinite;"></div>
+                    <p style="margin-top:20px;color:#64748b;">Caricamento eventi...</p>
+                </div>
+            </div>
         `;
-        document.body.appendChild(container);
 
-        await loadData();
+        // Aggiungi animazione spin
+        const style = document.createElement('style');
+        style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+        document.head.appendChild(style);
+
+        document.body.appendChild(container);
     }
 
     async function loadData() {
         try {
             const r = await fetch('/api/data', {cache: 'no-store'});
+            if (!r.ok) throw new Error('Errore HTTP');
+            
             const data = await r.json();
-
             currentAthlete = (data.athletes || []).find(a => a.id == athleteId);
+            
             if (!currentAthlete) {
-                showError('Atleta non trovato');
+                showError('Atleta non trovato nel sistema');
                 return;
             }
 
@@ -83,12 +107,13 @@
             allResponses = data.calendarResponses || {};
 
             document.getElementById('athlete-name').innerHTML = `
-                <i class="bi bi-person-circle"></i> <strong>${currentAthlete.name}</strong>
+                <strong style="color:#1e293b;">👤 ${currentAthlete.name}</strong>
             `;
 
             renderEvents();
         } catch (e) {
-            showError('Errore caricamento dati');
+            console.error('Errore caricamento:', e);
+            showError('Errore nel caricamento dei dati');
         }
     }
 
@@ -103,8 +128,9 @@
 
         if (dates.length === 0) {
             container.innerHTML = `
-                <div style="background:white;padding:30px;border-radius:15px;text-align:center;">
-                    <p style="color:#64748b;">Nessun evento futuro</p>
+                <div style="background:white;padding:40px;border-radius:15px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+                    <div style="font-size:48px;margin-bottom:15px;">📭</div>
+                    <p style="color:#64748b;font-size:18px;margin:0;">Nessun evento futuro in calendario</p>
                 </div>
             `;
             return;
@@ -116,30 +142,33 @@
             const eventDate = new Date(date);
             const response = (allResponses[date] || {})[athleteId];
             
-            // Verifica se è bloccato (48h prima)
+            // Calcola ore mancanti
             const hoursUntil = (eventDate - today) / (1000 * 60 * 60);
-            const isLocked = hoursUntil < 48 || response?.locked;
+            const isLocked = hoursUntil < 48 || (response && response.locked);
             const canRespond = !isLocked && !response;
+
+            const dayName = eventDate.toLocaleDateString('it-IT', {weekday: 'long'});
+            const dateStr = eventDate.toLocaleDateString('it-IT', {day: '2-digit', month: 'long', year: 'numeric'});
 
             html += `
                 <div style="background:white;padding:25px;border-radius:15px;box-shadow:0 2px 8px rgba(0,0,0,0.1);margin-bottom:15px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:15px;">
-                        <div style="flex:1;min-width:200px;">
-                            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-                                <span style="font-size:24px;">${event.type === 'Partita' ? '🏆' : '⚽'}</span>
-                                <h3 style="margin:0;color:#1e293b;font-size:20px;">${event.type}</h3>
+                    <div style="display:flex;justify-content:space-between;align-items:start;gap:20px;flex-wrap:wrap;">
+                        <div style="flex:1;min-width:250px;">
+                            <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                                <span style="font-size:28px;">${event.type === 'Partita' ? '🏆' : '⚽'}</span>
+                                <h3 style="margin:0;color:#1e293b;font-size:22px;font-weight:700;">${event.type}</h3>
                             </div>
-                            <p style="margin:5px 0;color:#64748b;">
-                                📅 ${eventDate.toLocaleDateString('it-IT', {weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'})}
+                            <p style="margin:8px 0;color:#64748b;font-size:16px;">
+                                📅 <strong>${dayName}</strong>, ${dateStr}
                             </p>
-                            <p style="margin:5px 0;color:#64748b;">
-                                🕐 ${event.time}
+                            <p style="margin:8px 0;color:#64748b;font-size:16px;">
+                                🕐 <strong>${event.time}</strong>
                             </p>
-                            ${event.notes ? `<p style="margin:5px 0;color:#64748b;font-size:14px;">${event.notes}</p>` : ''}
-                            ${isLocked && !response ? `<p style="margin:10px 0 0 0;color:#ef4444;font-size:13px;">⚠️ Scaduto - Conferma non più possibile</p>` : ''}
+                            ${event.notes ? `<p style="margin:8px 0;color:#64748b;font-size:14px;font-style:italic;">${event.notes}</p>` : ''}
+                            ${isLocked && !response ? `<p style="margin:12px 0 0 0;color:#ef4444;font-size:14px;font-weight:600;">⚠️ Troppo vicino - Conferma non più possibile</p>` : ''}
                         </div>
-                        <div style="text-align:right;">
-                            ${renderResponseButtons(date, response, canRespond, isLocked)}
+                        <div style="min-width:180px;text-align:center;">
+                            ${renderButtons(date, response, canRespond, isLocked)}
                         </div>
                     </div>
                 </div>
@@ -147,12 +176,12 @@
         });
 
         html += `
-            <div style="background:#e0f2fe;padding:20px;border-radius:15px;margin-top:20px;">
-                <h4 style="margin:0 0 10px 0;color:#0369a1;">ℹ️ Come funziona:</h4>
-                <ul style="margin:0;padding-left:20px;color:#0c4a6e;">
-                    <li>Conferma presenza/assenza entro 2 giorni prima dell'evento</li>
-                    <li>Dopo la conferma, la scelta è definitiva</li>
-                    <li>Se presente: ✅ Verde | Se assente: ❌ Rosso</li>
+            <div style="background:#e0f2fe;padding:25px;border-radius:15px;margin-top:20px;">
+                <h4 style="margin:0 0 15px 0;color:#0369a1;font-size:18px;font-weight:700;">ℹ️ Come funziona</h4>
+                <ul style="margin:0;padding-left:20px;color:#0c4a6e;line-height:1.8;">
+                    <li>Conferma presenza o assenza <strong>entro 2 giorni</strong> prima dell'evento</li>
+                    <li>Dopo la conferma, <strong>la scelta è definitiva</strong> e non può essere modificata</li>
+                    <li>Se presente: <span style="color:#10b981;font-weight:700;">✅ Verde</span> | Se assente: <span style="color:#ef4444;font-weight:700;">❌ Rosso</span></li>
                 </ul>
             </div>
         `;
@@ -160,54 +189,63 @@
         container.innerHTML = html;
     }
 
-    function renderResponseButtons(date, response, canRespond, isLocked) {
+    function renderButtons(date, response, canRespond, isLocked) {
         if (response) {
-            // Risposta già data
             const isPresent = response.presenza === 'Si';
             const color = isPresent ? '#10b981' : '#ef4444';
             const icon = isPresent ? '✅' : '❌';
             const text = isPresent ? 'PRESENTE' : 'ASSENTE';
+            const bgColor = isPresent ? '#d1fae5' : '#fee2e2';
             
             return `
-                <div style="text-align:center;">
-                    <div style="font-size:32px;margin-bottom:8px;">${icon}</div>
-                    <div style="font-weight:600;color:${color};font-size:18px;margin-bottom:5px;">${text}</div>
-                    ${response.motivazione ? `<div style="color:#64748b;font-size:14px;margin-top:8px;">"${response.motivazione}"</div>` : ''}
-                    <div style="color:#64748b;font-size:12px;margin-top:8px;">
-                        🔒 Confermato ${new Date(response.timestamp).toLocaleDateString('it-IT')}
+                <div style="padding:20px;background:${bgColor};border-radius:12px;">
+                    <div style="font-size:40px;margin-bottom:10px;">${icon}</div>
+                    <div style="font-weight:700;color:${color};font-size:20px;margin-bottom:8px;">${text}</div>
+                    ${response.motivazione ? `<div style="color:#64748b;font-size:14px;margin-top:12px;padding:10px;background:white;border-radius:8px;">"${response.motivazione}"</div>` : ''}
+                    <div style="color:#64748b;font-size:13px;margin-top:12px;font-weight:600;">
+                        🔒 Confermato il ${new Date(response.timestamp).toLocaleDateString('it-IT')}
                     </div>
                 </div>
             `;
         }
 
         if (isLocked) {
-            return `<div style="color:#94a3b8;font-style:italic;">Scaduto</div>`;
+            return `
+                <div style="padding:20px;background:#f1f5f9;border-radius:12px;">
+                    <div style="font-size:32px;margin-bottom:8px;">⏰</div>
+                    <div style="color:#94a3b8;font-size:16px;font-weight:600;">Scaduto</div>
+                    <div style="color:#94a3b8;font-size:13px;margin-top:8px;">Non è più possibile confermare</div>
+                </div>
+            `;
         }
 
-        // Può ancora rispondere
         return `
-            <button onclick="confirmPresence('${date}', 'Si')" 
-                style="background:#10b981;color:white;border:none;padding:12px 24px;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;margin-bottom:8px;width:150px;display:block;"
-                onmouseover="this.style.background='#059669'" 
-                onmouseout="this.style.background='#10b981'">
+            <button onclick="window.confirmPresenza('${date}', 'Si')" 
+                style="width:100%;background:#10b981;color:white;border:none;padding:14px 20px;border-radius:10px;font-size:17px;font-weight:700;cursor:pointer;margin-bottom:10px;transition:all 0.2s;"
+                onmouseover="this.style.background='#059669';this.style.transform='scale(1.02)'" 
+                onmouseout="this.style.background='#10b981';this.style.transform='scale(1)'">
                 ✅ Sarò presente
             </button>
-            <button onclick="confirmPresence('${date}', 'No')" 
-                style="background:#ef4444;color:white;border:none;padding:12px 24px;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;width:150px;display:block;"
-                onmouseover="this.style.background='#dc2626'" 
-                onmouseout="this.style.background='#ef4444'">
+            <button onclick="window.confirmPresenza('${date}', 'No')" 
+                style="width:100%;background:#ef4444;color:white;border:none;padding:14px 20px;border-radius:10px;font-size:17px;font-weight:700;cursor:pointer;transition:all 0.2s;"
+                onmouseover="this.style.background='#dc2626';this.style.transform='scale(1.02)'" 
+                onmouseout="this.style.background='#ef4444';this.style.transform='scale(1)'">
                 ❌ Sarò assente
             </button>
         `;
     }
 
-    window.confirmPresence = async function(date, presenza) {
+    window.confirmPresenza = async function(date, presenza) {
         let motivazione = '';
         if (presenza === 'No') {
             motivazione = prompt('Motivo assenza (opzionale):') || '';
         }
 
-        if (!confirm(`Confermare: ${presenza === 'Si' ? 'PRESENTE' : 'ASSENTE'}?\n\nAttenzione: Non potrai più modificare questa scelta!`)) {
+        const confirmText = presenza === 'Si' 
+            ? '✅ Confermare PRESENZA?\n\nAttenzione: Non potrai più modificare questa scelta!' 
+            : '❌ Confermare ASSENZA?\n\nAttenzione: Non potrai più modificare questa scelta!';
+
+        if (!confirm(confirmText)) {
             return;
         }
 
@@ -231,14 +269,20 @@
                 body: JSON.stringify(data)
             });
 
-            alert('✅ Presenza confermata!\n\nLa tua scelta è stata salvata.');
-            location.reload();
+            alert('✅ Presenza confermata!\n\nLa tua scelta è stata salvata correttamente.');
+            window.location.reload();
         } catch (e) {
-            alert('❌ Errore nel salvataggio. Riprova.');
+            console.error('Errore salvataggio:', e);
+            alert('❌ Errore nel salvataggio.\n\nRiprova tra qualche istante.');
         }
     };
 
-    // Avvia
+    // Inizializza quando DOM è pronto
+    function init() {
+        hideAllAndInit();
+        loadData();
+    }
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
