@@ -2,9 +2,9 @@
 // 🔒 Blocco accesso dashboard coach
 (function () {
   // Cambialo con un codice solo tuo
-  const PASS_KEY = "coach-pass-v1";
+  const PASS_KEY = "app-pass-v1";
   const PASS_VALUE = "ok";
-  const SECRET_CODE = "GO-SPORT-2025"; // <-- QUI metti il codice che vuoi
+  const SECRET_CODE = "edy201"; // <-- QUI metti il codice che vuoi
 
   // Se non siamo nella pagina principale (es. link genitore /presenza/...)
   // NON facciamo nulla: quella parte è gestita da presenza-atleta.js
