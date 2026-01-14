@@ -1,4 +1,79 @@
 // ✅ Funzione per evitare lo slittamento di data
+// 🔒 Blocco accesso dashboard coach
+(function () {
+  // Cambialo con un codice solo tuo
+  const PASS_KEY = "coach-pass-v1";
+  const PASS_VALUE = "ok";
+  const SECRET_CODE = "GO-SPORT-2025"; // <-- QUI metti il codice che vuoi
+
+  // Se non siamo nella pagina principale (es. link genitore /presenza/...)
+  // NON facciamo nulla: quella parte è gestita da presenza-atleta.js
+  const path = window.location.pathname;
+  if (!path.endsWith("/") && !path.endsWith("/index.html")) {
+    return;
+  }
+
+  function denyAccess() {
+    document.body.innerHTML = `
+      <div style="
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 30px;
+        text-align: center;
+        background: #ffffff;
+        border-radius: 15px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      ">
+        <h2 style="color:#ef4444; margin-bottom: 15px;">Accesso non autorizzato</h2>
+        <p style="color:#4b5563; margin-bottom: 10px;">
+          Questa pagina è riservata al coach.
+        </p>
+        <p style="color:#6b7280; font-size: 14px;">
+          Se sei un genitore usa il link personale ricevuto per confermare le presenze.
+        </p>
+      </div>
+    `;
+  }
+
+  function askPassword() {
+    const pwd = prompt("Inserisci codice coach:");
+    if (!pwd) {
+      denyAccess();
+      return;
+    }
+    if (pwd === SECRET_CODE) {
+      localStorage.setItem(PASS_KEY, PASS_VALUE);
+      // mostro eventuali elementi nascosti
+      const logoutBtn = document.getElementById("logout-btn");
+      if (logoutBtn) {
+        logoutBtn.style.display = "inline-block";
+      }
+    } else {
+      alert("Codice errato");
+      denyAccess();
+    }
+  }
+
+  const saved = localStorage.getItem(PASS_KEY);
+  if (saved !== PASS_VALUE) {
+    // Chiedo il codice PRIMA di caricare tutta la logica della dashboard
+    document.addEventListener("DOMContentLoaded", askPassword);
+  } else {
+    // Se già sbloccata, mostro il bottone logout
+    document.addEventListener("DOMContentLoaded", () => {
+      const logoutBtn = document.getElementById("logout-btn");
+      if (logoutBtn) {
+        logoutBtn.style.display = "inline-block";
+        logoutBtn.addEventListener("click", () => {
+          localStorage.removeItem(PASS_KEY);
+          location.reload();
+        });
+      }
+    });
+  }
+})();
+
 function toLocalDateISO(dateInput) {
     if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
         return dateInput;
