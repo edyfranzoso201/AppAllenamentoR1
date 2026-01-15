@@ -19,6 +19,24 @@
         .table thead { background: #e9ecef !important; }
         .table th, .table td { color: #000000 !important; border-color: #dee2e6 !important; }
         .calendar-table th { position: sticky; top: 0; background: #e9ecef !important; z-index: 10; }
+        
+        /* Stili per i bottoni nelle celle */
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            white-space: nowrap;
+        }
+        
+        /* Miglioramenti per mobile */
+        @media (max-width: 768px) {
+            .calendar-table {
+                font-size: 0.85rem;
+            }
+            .btn-sm {
+                padding: 0.2rem 0.4rem;
+                font-size: 0.7rem;
+            }
+        }
     </style>
 </head>
 <body>
