@@ -128,40 +128,44 @@
             min-width: 150px;
         }
         
-        .calendar-table th:nth-child(3),
-        .calendar-table td:nth-child(3) {
+        /* Colonna Azioni - solo quando presente (coach view) */
+        .calendar-table.with-actions th:nth-child(3),
+        .calendar-table.with-actions td:nth-child(3) {
             position: sticky;
             left: 190px;
             z-index: 3;
             background: #ffffff !important;
             min-width: 120px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
         }
         
         /* Header delle colonne fisse ha z-index maggiore per stare sopra */
         .calendar-table thead tr:nth-child(1) th:nth-child(1),
-        .calendar-table thead tr:nth-child(1) th:nth-child(2),
-        .calendar-table thead tr:nth-child(1) th:nth-child(3) {
+        .calendar-table thead tr:nth-child(1) th:nth-child(2) {
             z-index: 30 !important;
             background: #e9ecef !important;
         }
         
         .calendar-table thead tr:nth-child(2) th:nth-child(1),
-        .calendar-table thead tr:nth-child(2) th:nth-child(2),
-        .calendar-table thead tr:nth-child(2) th:nth-child(3) {
+        .calendar-table thead tr:nth-child(2) th:nth-child(2) {
             z-index: 30 !important;
             background: #e9ecef !important;
         }
         
-        /* Ombra per evidenziare le colonne fisse */
-        .calendar-table th:nth-child(3),
-        .calendar-table td:nth-child(3) {
-            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        /* Solo per coach view - colonna azioni fissa */
+        .calendar-table.with-actions thead tr:nth-child(1) th:nth-child(3),
+        .calendar-table.with-actions thead tr:nth-child(2) th:nth-child(3) {
+            z-index: 30 !important;
+            background: #e9ecef !important;
         }
         
         /* Assicura che le celle del body abbiano background bianco */
         .calendar-table tbody td:nth-child(1),
-        .calendar-table tbody td:nth-child(2),
-        .calendar-table tbody td:nth-child(3) {
+        .calendar-table tbody td:nth-child(2) {
+            background: #ffffff !important;
+        }
+        
+        .calendar-table.with-actions tbody td:nth-child(3) {
             background: #ffffff !important;
         }
         
