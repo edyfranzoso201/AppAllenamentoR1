@@ -156,7 +156,7 @@ async function render() {
 
   let h = '';
   h += `<div class="table-responsive">`;
-  h += `<table class="table table-bordered calendar-table">`;
+  h += `<table class="table table-bordered calendar-table${isParentView ? '' : ' with-actions'}">`;
   h += `<thead>`;
   h += `<tr>`;
   h += `<th style="color:#000">#</th>`;
