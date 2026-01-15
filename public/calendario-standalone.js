@@ -162,9 +162,9 @@ async function render() {
   h += `<th style="color:#000" class="sticky-col sticky-col-1">#</th>`;
   h += `<th style="color:#000" class="sticky-col sticky-col-2">Atleta</th>`;
   
-  // Colonna Azioni solo per il coach
+  // Colonna Azioni solo per il coach - ANCHE QUESTA FISSA
   if (!isParentView) {
-    h += `<th style="color:#000">Azioni</th>`;
+    h += `<th style="color:#000" class="sticky-col sticky-col-3">Azioni</th>`;
   }
   
   dates.forEach(d => {
@@ -202,7 +202,7 @@ async function render() {
     
     // Colonna Azioni solo per il coach
     if (!isParentView) {
-      h += `<td class="text-center">`;
+      h += `<td class="text-center sticky-col sticky-col-3">`;
       h += `<button class="btn btn-sm btn-primary" onclick="window.generatePresenceLink('${a.id}', '${a.name.replace(/'/g, '\\')}')">`;
       h += `<i class="bi bi-link-45deg"></i> Link Presenze`;
       h += `</button>`;
