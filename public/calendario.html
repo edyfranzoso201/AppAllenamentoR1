@@ -124,19 +124,29 @@
             z-index: 3;
             background: #ffffff !important;
             min-width: 150px;
+        }
+        
+        .calendar-table .sticky-col-3 {
+            position: sticky;
+            left: 190px;
+            z-index: 3;
+            background: #ffffff !important;
+            min-width: 120px;
             box-shadow: 2px 0 5px rgba(0,0,0,0.1);
         }
         
         /* Header delle colonne fisse ha z-index maggiore */
         .calendar-table thead .sticky-col-1,
-        .calendar-table thead .sticky-col-2 {
+        .calendar-table thead .sticky-col-2,
+        .calendar-table thead .sticky-col-3 {
             z-index: 30 !important;
             background: #e9ecef !important;
         }
         
         /* Assicura che le celle del body abbiano background bianco */
         .calendar-table tbody .sticky-col-1,
-        .calendar-table tbody .sticky-col-2 {
+        .calendar-table tbody .sticky-col-2,
+        .calendar-table tbody .sticky-col-3 {
             background: #ffffff !important;
         }
         
