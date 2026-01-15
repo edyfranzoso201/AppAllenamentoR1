@@ -252,13 +252,13 @@ async function render() {
   
   // Info box diverso per coach e genitori
   if (isParentView) {
-    h += `<div class="alert alert-info mt-3">`;
+    h += `<div class="alert alert-info mt-2" style="margin-bottom: 10px; padding: 10px;">`;
     h += `<strong><i class="bi bi-info-circle"></i> Istruzioni per i genitori:</strong><br>`;
     h += `Usa i pulsanti sotto ogni data per segnalare se tuo figlio sarà <strong>assente</strong> o <strong>presente</strong>.<br>`;
     h += `Lo stato predefinito è "Presente" - segnala solo se sarà assente.`;
     h += `</div>`;
   } else {
-    h += `<div class="alert alert-info mt-3">`;
+    h += `<div class="alert alert-info mt-2" style="margin-bottom: 10px; padding: 10px;">`;
     h += `<strong><i class="bi bi-info-circle"></i> Come funziona:</strong><br>`;
     h += `Clicca "Link Presenze" per generare il link personale dell'atleta.<br>`;
     h += `Invia il link al genitore: vedrà solo la riga del proprio figlio nel calendario e potrà segnalare le assenze.`;
