@@ -11,42 +11,43 @@
             background: #f8f9fa;
             color: #000000;
             min-height: 100vh;
-            padding: 5px;
+            padding: 2px;
             margin: 0;
         }
         .container-fluid {
-            padding-left: 5px;
-            padding-right: 5px;
+            padding-left: 2px;
+            padding-right: 2px;
             max-width: 100%;
         }
         .main-title { 
             color: #2563eb; 
             font-weight: 700; 
-            margin-bottom: 8px; 
-            margin-top: 5px;
-            font-size: 1.5rem;
+            margin-bottom: 5px; 
+            margin-top: 3px;
+            font-size: 1.4rem;
         }
         .card { 
             background: #ffffff; 
             border: 1px solid #dee2e6; 
-            border-radius: 8px; 
-            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-            margin-bottom: 5px;
+            border-radius: 5px; 
+            box-shadow: none;
+            margin-bottom: 2px;
         }
         .card-body {
-            padding: 5px;
+            padding: 2px;
         }
         .row {
-            margin-left: -5px;
-            margin-right: -5px;
+            margin-left: -2px;
+            margin-right: -2px;
         }
         .row > * {
-            padding-left: 5px;
-            padding-right: 5px;
+            padding-left: 2px;
+            padding-right: 2px;
         }
         .alert {
-            margin-bottom: 5px !important;
-            padding: 8px !important;
+            margin-bottom: 2px !important;
+            padding: 5px !important;
+            font-size: 0.8rem !important;
         }
         .table { color: #000000 !important; background: #ffffff; font-size: 0.8rem; }
         .table thead { background: #e9ecef !important; }
@@ -64,7 +65,7 @@
             overflow-x: auto;
             overflow-y: auto;
             position: relative;
-            max-height: calc(100vh - 150px);
+            max-height: calc(100vh - 120px);
         }
         
         /* Scrollbar sempre visibile */
@@ -190,36 +191,36 @@
 </head>
 <body>
     <div class="container-fluid">
-        <div class="row" style="margin-bottom: 5px;">
+        <div class="row" style="margin-bottom: 3px;">
             <div class="col-12" style="padding-bottom: 0;">
-                <a href="/" class="btn btn-outline-primary btn-sm" style="margin-bottom: 5px; padding: 4px 8px; font-size: 0.85rem;"><i class="bi bi-arrow-left"></i> Dashboard</a>
+                <a href="/" class="btn btn-outline-primary btn-sm" style="margin-bottom: 3px; padding: 3px 6px; font-size: 0.8rem;"><i class="bi bi-arrow-left"></i> Dashboard</a>
                 <h1 class="main-title"><i class="bi bi-calendar-week"></i> Calendario Squadra</h1>
             </div>
         </div>
 
-        <div class="row" style="margin-bottom: 5px;">
-            <div class="col-md-2" style="margin-bottom: 5px;">
-                <button class="btn btn-danger w-100" id="add-btn" style="padding: 6px; font-size: 0.85rem;">
-                    <i class="bi bi-plus-circle"></i> Nuovo Evento
+        <div class="row" style="margin-bottom: 3px;">
+            <div class="col-md-2" style="margin-bottom: 3px;">
+                <button class="btn btn-danger w-100" id="add-btn" style="padding: 5px; font-size: 0.8rem;">
+                    <i class="bi bi-plus-circle"></i> Nuovo
                 </button>
             </div>
-            <div class="col-md-2" style="margin-bottom: 5px;">
-                <button class="btn btn-warning w-100" id="generate-btn" style="padding: 6px; font-size: 0.85rem;">
-                    <i class="bi bi-magic"></i> Genera Allenamenti
+            <div class="col-md-2" style="margin-bottom: 3px;">
+                <button class="btn btn-warning w-100" id="generate-btn" style="padding: 5px; font-size: 0.8rem;">
+                    <i class="bi bi-magic"></i> Genera
                 </button>
             </div>
-            <div class="col-md-2" style="margin-bottom: 5px;">
-                <button class="btn btn-info w-100" id="import-btn" style="padding: 6px; font-size: 0.85rem;">
-                    <i class="bi bi-upload"></i> Importa Partite
+            <div class="col-md-2" style="margin-bottom: 3px;">
+                <button class="btn btn-info w-100" id="import-btn" style="padding: 5px; font-size: 0.8rem;">
+                    <i class="bi bi-upload"></i> Importa
                 </button>
                 <input type="file" id="file-input" accept=".json" style="display:none">
             </div>
-            <div class="col-md-2" style="margin-bottom: 5px;">
-                <button class="btn btn-primary w-100" id="responses-btn" style="padding: 6px; font-size: 0.85rem;">
-                    <i class="bi bi-eye"></i> Vedi Risposte
+            <div class="col-md-2" style="margin-bottom: 3px;">
+                <button class="btn btn-primary w-100" id="responses-btn" style="padding: 5px; font-size: 0.8rem;">
+                    <i class="bi bi-eye"></i> Risposte
                 </button>
             </div>
-            <div class="col-md-2" style="margin-bottom: 5px;">
+            <div class="col-md-2" style="margin-bottom: 3px;">
                 <button class="btn btn-secondary w-100" id="delete-btn">
                     <i class="bi bi-trash"></i> Elimina Vecchi
                 </button>
