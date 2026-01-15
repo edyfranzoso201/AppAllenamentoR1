@@ -15,26 +15,37 @@
         }
         .main-title { color: #2563eb; font-weight: 700; margin-bottom: 30px; }
         .card { background: #ffffff; border: 1px solid #dee2e6; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .table { color: #000000 !important; background: #ffffff; }
+        .table { color: #000000 !important; background: #ffffff; font-size: 0.8rem; }
         .table thead { background: #e9ecef !important; }
-        .table th, .table td { color: #000000 !important; border-color: #dee2e6 !important; }
-        .calendar-table th { position: sticky; top: 0; background: #e9ecef !important; z-index: 10; }
+        .table th, .table td { 
+            color: #000000 !important; 
+            border-color: #dee2e6 !important; 
+            padding: 0.4rem !important;
+            line-height: 1.2;
+        }
+        .calendar-table th { position: sticky; top: 0; background: #e9ecef !important; z-index: 10; font-size: 0.75rem; }
+        .calendar-table td { vertical-align: middle; }
         
         /* Stili per i bottoni nelle celle */
         .btn-sm {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.75rem;
+            padding: 0.2rem 0.4rem;
+            font-size: 0.65rem;
             white-space: nowrap;
+            line-height: 1.2;
+        }
+        
+        .btn-primary, .btn-outline-primary {
+            font-size: 0.85rem;
         }
         
         /* Miglioramenti per mobile */
         @media (max-width: 768px) {
             .calendar-table {
-                font-size: 0.85rem;
+                font-size: 0.7rem;
             }
             .btn-sm {
-                padding: 0.2rem 0.4rem;
-                font-size: 0.7rem;
+                padding: 0.15rem 0.3rem;
+                font-size: 0.6rem;
             }
         }
     </style>
