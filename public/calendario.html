@@ -109,7 +109,7 @@
             z-index: 10;
         }
         
-        /* Colonne fisse laterali per TUTTO il corpo della tabella */
+        /* Colonne fisse laterali - SOLO # e Atleta */
         .calendar-table th:nth-child(1),
         .calendar-table td:nth-child(1) {
             position: sticky;
@@ -126,20 +126,12 @@
             z-index: 3;
             background: #ffffff !important;
             min-width: 150px;
-        }
-        
-        /* Colonna Azioni - solo quando presente (coach view) */
-        .calendar-table.with-actions th:nth-child(3),
-        .calendar-table.with-actions td:nth-child(3) {
-            position: sticky;
-            left: 190px;
-            z-index: 3;
-            background: #ffffff !important;
-            min-width: 120px;
             box-shadow: 2px 0 5px rgba(0,0,0,0.1);
         }
         
-        /* Header delle colonne fisse ha z-index maggiore per stare sopra */
+        /* Azioni NON è più fisso - scorre liberamente */
+        
+        /* Header delle prime 2 colonne fisse ha z-index maggiore */
         .calendar-table thead tr:nth-child(1) th:nth-child(1),
         .calendar-table thead tr:nth-child(1) th:nth-child(2) {
             z-index: 30 !important;
@@ -152,20 +144,9 @@
             background: #e9ecef !important;
         }
         
-        /* Solo per coach view - colonna azioni fissa */
-        .calendar-table.with-actions thead tr:nth-child(1) th:nth-child(3),
-        .calendar-table.with-actions thead tr:nth-child(2) th:nth-child(3) {
-            z-index: 30 !important;
-            background: #e9ecef !important;
-        }
-        
         /* Assicura che le celle del body abbiano background bianco */
         .calendar-table tbody td:nth-child(1),
         .calendar-table tbody td:nth-child(2) {
-            background: #ffffff !important;
-        }
-        
-        .calendar-table.with-actions tbody td:nth-child(3) {
             background: #ffffff !important;
         }
         
