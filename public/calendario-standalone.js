@@ -1,9 +1,9 @@
 // calendario-standalone.js - versione con link per singolo atleta (function)
 
 const TRAINING = [
-  { day: 1, time: '18:30-20:00' },
-  { day: 3, time: '17:30-19:00' },
-  { day: 5, time: '18:00-19:15' }
+  { day: 1, time: '18:30-20:00' },  // Lunedì
+  { day: 3, time: '17:30-19:00' },  // Mercoledì
+  { day: 5, time: '18:00-19:15' }   // Venerdì
 ];
 const END = new Date('2026-06-30');
 
@@ -314,6 +314,12 @@ window.generatePresenceLink = function(athleteId, athleteName) {
 async function genTraining() {
   const btn = document.getElementById('generate-btn');
   const old = btn.innerHTML;
+  
+  // Chiedi conferma prima di generare
+  if (!confirm('Genera allenamenti automatici?\n\n📅 Giorni: Lunedì, Mercoledì, Venerdì\n⏰ Orari configurati:\n  • Lunedì 18:30-20:00\n  • Mercoledì 17:30-19:00\n  • Venerdì 18:00-19:15\n\nGli allenamenti già esistenti non verranno sovrascritti.\n\n💡 Le partite (Sabato/Domenica) vanno aggiunte manualmente o importate.')) {
+    return;
+  }
+  
   try {
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Generazione...';
