@@ -179,7 +179,17 @@ async function render() {
   h += `<th colspan="${isParentView ? 2 : 3}" style="color:#000">Evento</th>`;
   dates.forEach(d => {
     const e = events[d];
-    h += `<th class="text-center" style="color:#000"><small>${e.type === 'Partita' ? '⚽ ' + e.type : '🏃 ' + e.type}<br>${e.time}</small></th>`;
+    const eventIcon = e.type === 'Partita' ? '⚽' : '🏃';
+    
+    // Aggiungi icona cestino solo per il coach
+    const deleteBtn = !isParentView ? 
+      `<button onclick="deleteEvent('${d}')" class="btn btn-sm btn-danger ms-1" style="padding:0.1rem 0.3rem;font-size:0.6rem" title="Elimina evento">
+        <i class="bi bi-trash"></i>
+      </button>` : '';
+    
+    h += `<th class="text-center" style="color:#000">
+      <small>${eventIcon} ${e.type}<br>${e.time}${deleteBtn}</small>
+    </th>`;
   });
   h += `</tr>`;
   h += `</thead>`;
@@ -476,8 +486,43 @@ async function deleteOld() {
   }
 }
 
-// Rendi la funzione markAbsence globale
+async function deleteEvent(date) {
+  const eventInfo = events[date];
+  const dateFormatted = new Date(date).toLocaleDateString('it-IT');
+  
+  if (!confirm(`Vuoi eliminare l'evento del ${dateFormatted}?\n\n${eventInfo.type} - ${eventInfo.time}\n${eventInfo.notes || ''}`)) {
+    return;
+  }
+  
+  try {
+    const r = await fetch('api/data', { cache: 'no-store' });
+    const ad = await r.json();
+    
+    // Elimina l'evento
+    delete ad.calendarEvents[date];
+    
+    // Elimina anche le risposte di presenza per quella data
+    if (ad.attendanceResponses && ad.attendanceResponses[date]) {
+      delete ad.attendanceResponses[date];
+    }
+    
+    await fetch('api/data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(ad)
+    });
+    
+    events = ad.calendarEvents;
+    render();
+    alert(`✓ Evento del ${dateFormatted} eliminato!`);
+  } catch (e) {
+    alert('Errore durante l\'eliminazione: ' + e.message);
+  }
+}
+
+// Rendi le funzioni globali
 window.markAbsence = markAbsence;
+window.deleteEvent = deleteEvent;
 
 document.addEventListener('DOMContentLoaded', () => {
   const genBtn = document.getElementById('generate-btn');
