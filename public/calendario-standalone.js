@@ -176,7 +176,16 @@ async function render() {
   });
   h += `</tr>`;
   h += `<tr>`;
-  h += `<th colspan="${isParentView ? 2 : 3}" style="color:#000">Evento</th>`;
+  h += `<th style="color:#000" class="sticky-col sticky-col-1"></th>`;
+  h += `<th style="color:#000" class="sticky-col sticky-col-2">Nome</th>`;
+  
+  // Colonna Evento per coach, altrimenti niente
+  if (!isParentView) {
+    h += `<th style="color:#000" class="sticky-col sticky-col-3">Evento</th>`;
+  } else {
+    h += `<th style="color:#000">Evento</th>`;
+  }
+  
   dates.forEach(d => {
     const e = events[d];
     const eventIcon = e.type === 'Partita' ? '⚽' : '🏃';
