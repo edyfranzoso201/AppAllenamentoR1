@@ -9,6 +9,8 @@ const END = new Date('2026-06-30');
 
 let events = {};
 let athletes = [];
+let isParentView = false; // Flag per identificare se è la vista genitore
+let currentAthleteId = null; // ID dell'atleta nella vista genitore
 
 // Token usato per i link atleta
 window.generateAthleteToken = function(athleteId) {
@@ -44,7 +46,56 @@ async function load() {
   }
 }
 
-function render() {
+async function markAbsence(athleteId, date, currentStatus) {
+  const newStatus = currentStatus === 'Assente' ? null : 'Assente';
+  const statusText = newStatus === 'Assente' ? 'assente' : 'presente';
+  
+  if (!confirm(`Confermi di voler segnare l'atleta come ${statusText} per il ${new Date(date).toLocaleDateString('it-IT')}?`)) {
+    return;
+  }
+  
+  try {
+    const r = await fetch('api/data', { cache: 'no-store' });
+    const data = await r.json();
+    
+    // Inizializza la struttura se non esiste
+    if (!data.attendanceResponses) {
+      data.attendanceResponses = {};
+    }
+    if (!data.attendanceResponses[date]) {
+      data.attendanceResponses[date] = {};
+    }
+    
+    // Imposta lo stato
+    if (newStatus === 'Assente') {
+      data.attendanceResponses[date][athleteId] = 'Assente';
+    } else {
+      delete data.attendanceResponses[date][athleteId];
+    }
+    
+    // Salva
+    await fetch('api/data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    
+    // Ricarica
+    await load();
+    alert(`✓ Stato aggiornato: ${statusText}`);
+  } catch (e) {
+    alert('Errore nel salvataggio: ' + e.message);
+  }
+}
+
+function getAttendanceStatus(athleteId, date, data) {
+  if (!data.attendanceResponses || !data.attendanceResponses[date]) {
+    return null;
+  }
+  return data.attendanceResponses[date][athleteId] || null;
+}
+
+async function render() {
   const el = document.getElementById('calendar');
   const dates = Object.keys(events).sort();
   
@@ -57,9 +108,12 @@ function render() {
   const tokenParam = urlParams.get('athlete');
   let visibleAthletes = athletes.filter(a => !a.guest);
   
+  // Verifica se è la vista genitore
   if (tokenParam) {
+    isParentView = true;
     const athleteId = window.decodePresenceToken(tokenParam);
     if (athleteId) {
+      currentAthleteId = athleteId;
       visibleAthletes = visibleAthletes.filter(a => String(a.id) === String(athleteId));
       if (visibleAthletes.length === 0) {
         el.innerHTML = `<div class="alert alert-danger mt-3">Link non valido o atleta non trovato. Contatta il coach per un nuovo link.</div>`;
@@ -69,6 +123,24 @@ function render() {
       el.innerHTML = `<div class="alert alert-danger mt-3">Link non valido. Contatta il coach per un nuovo link.</div>`;
       return;
     }
+  } else {
+    isParentView = false;
+    currentAthleteId = null;
+  }
+
+  // Nascondi i pulsanti di gestione se è la vista genitore
+  const controlButtons = document.querySelector('.row.mb-4');
+  if (controlButtons) {
+    controlButtons.style.display = isParentView ? 'none' : '';
+  }
+
+  // Carica i dati delle presenze
+  let attendanceData = {};
+  try {
+    const r = await fetch('api/data', { cache: 'no-store' });
+    attendanceData = await r.json();
+  } catch (e) {
+    console.error('Errore caricamento dati presenze', e);
   }
 
   let h = '';
@@ -78,7 +150,12 @@ function render() {
   h += `<tr>`;
   h += `<th style="color:#000">#</th>`;
   h += `<th style="color:#000">Atleta</th>`;
-  h += `<th style="color:#000">Azioni</th>`;
+  
+  // Colonna Azioni solo per il coach
+  if (!isParentView) {
+    h += `<th style="color:#000">Azioni</th>`;
+  }
+  
   dates.forEach(d => {
     const dt = new Date(d);
     h += `<th class="text-center" style="color:#000">
@@ -88,7 +165,7 @@ function render() {
   });
   h += `</tr>`;
   h += `<tr>`;
-  h += `<th colspan="3" style="color:#000">Evento</th>`;
+  h += `<th colspan="${isParentView ? 2 : 3}" style="color:#000">Evento</th>`;
   dates.forEach(d => {
     const e = events[d];
     h += `<th class="text-center" style="color:#000"><small>${e.type === 'Partita' ? '⚽ ' + e.type : '🏃 ' + e.type}<br>${e.time}</small></th>`;
@@ -101,13 +178,49 @@ function render() {
     h += `<tr>`;
     h += `<td style="color:#000">${i + 1}</td>`;
     h += `<td style="color:#000">${a.name}</td>`;
-    h += `<td class="text-center">`;
-    h += `<button class="btn btn-sm btn-primary" onclick="window.generatePresenceLink('${a.id}', '${a.name.replace(/'/g, '\\')}')">`;
-    h += `<i class="bi bi-link-45deg"></i> Link Presenze`;
-    h += `</button>`;
-    h += `</td>`;
-    dates.forEach(() => {
-      h += `<td class="text-center" style="color:#000">-</td>`;
+    
+    // Colonna Azioni solo per il coach
+    if (!isParentView) {
+      h += `<td class="text-center">`;
+      h += `<button class="btn btn-sm btn-primary" onclick="window.generatePresenceLink('${a.id}', '${a.name.replace(/'/g, '\\')}')">`;
+      h += `<i class="bi bi-link-45deg"></i> Link Presenze`;
+      h += `</button>`;
+      h += `</td>`;
+    }
+    
+    // Celle per ogni data
+    dates.forEach(date => {
+      const status = getAttendanceStatus(a.id, date, attendanceData);
+      
+      if (isParentView) {
+        // Vista genitore: mostra stato e bottone per cambiarlo
+        if (status === 'Assente') {
+          h += `<td class="text-center" style="background-color:#ffcccc; color:#000">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:5px">
+              <span style="color:#dc3545; font-weight:bold">❌ Assente</span>
+              <button class="btn btn-sm btn-success" onclick="markAbsence('${a.id}', '${date}', 'Assente')" style="font-size:0.75rem">
+                Segna Presente
+              </button>
+            </div>
+          </td>`;
+        } else {
+          h += `<td class="text-center" style="color:#000">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:5px">
+              <span style="color:#28a745">✓ Presente</span>
+              <button class="btn btn-sm btn-danger" onclick="markAbsence('${a.id}', '${date}', null)" style="font-size:0.75rem">
+                Segna Assente
+              </button>
+            </div>
+          </td>`;
+        }
+      } else {
+        // Vista coach: solo visualizzazione stato
+        if (status === 'Assente') {
+          h += `<td class="text-center" style="background-color:#ffcccc; color:#dc3545; font-weight:bold">❌ Assente</td>`;
+        } else {
+          h += `<td class="text-center" style="color:#000">-</td>`;
+        }
+      }
     });
     h += `</tr>`;
   });
@@ -115,11 +228,21 @@ function render() {
   h += `</tbody>`;
   h += `</table>`;
   h += `</div>`;
-  h += `<div class="alert alert-info mt-3">`;
-  h += `<strong><i class="bi bi-info-circle"></i> Come funziona:</strong><br>`;
-  h += `Clicca "Link Presenze" per generare il link personale dell'atleta.<br>`;
-  h += `Invia il link al genitore: vedrà solo la riga del proprio figlio nel calendario.`;
-  h += `</div>`;
+  
+  // Info box diverso per coach e genitori
+  if (isParentView) {
+    h += `<div class="alert alert-info mt-3">`;
+    h += `<strong><i class="bi bi-info-circle"></i> Istruzioni per i genitori:</strong><br>`;
+    h += `Usa i pulsanti sotto ogni data per segnalare se tuo figlio sarà <strong>assente</strong> o <strong>presente</strong>.<br>`;
+    h += `Lo stato predefinito è "Presente" - segnala solo se sarà assente.`;
+    h += `</div>`;
+  } else {
+    h += `<div class="alert alert-info mt-3">`;
+    h += `<strong><i class="bi bi-info-circle"></i> Come funziona:</strong><br>`;
+    h += `Clicca "Link Presenze" per generare il link personale dell'atleta.<br>`;
+    h += `Invia il link al genitore: vedrà solo la riga del proprio figlio nel calendario e potrà segnalare le assenze.`;
+    h += `</div>`;
+  }
 
   el.innerHTML = h;
 }
@@ -150,7 +273,7 @@ window.generatePresenceLink = function(athleteId, athleteName) {
       <div style="margin-top:20px;padding:15px;background:#e0f2fe;border-radius:8px;font-size:14px;color:#0c4a6e">
         <strong>📲 Invia questo link al genitore via:</strong><br>
         WhatsApp, Email o SMS.<br><br>
-        💡 Aprendo il link vedrà solo la riga di questo atleta nel calendario.
+        💡 Aprendo il link vedrà solo la riga di questo atleta e potrà segnalare le assenze.
       </div>
     </div>
   `;
@@ -341,6 +464,9 @@ async function deleteOld() {
     alert(e.message);
   }
 }
+
+// Rendi la funzione markAbsence globale
+window.markAbsence = markAbsence;
 
 document.addEventListener('DOMContentLoaded', () => {
   const genBtn = document.getElementById('generate-btn');
