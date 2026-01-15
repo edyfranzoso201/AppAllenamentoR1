@@ -129,9 +129,20 @@ async function render() {
   }
 
   // Nascondi i pulsanti di gestione se è la vista genitore
-  const controlButtons = document.querySelector('.row.mb-4');
-  if (controlButtons) {
-    controlButtons.style.display = isParentView ? 'none' : '';
+  if (isParentView) {
+    // Nascondi tutti i pulsanti di controllo
+    const buttons = ['add-btn', 'generate-btn', 'import-btn', 'responses-btn', 'delete-btn'];
+    buttons.forEach(btnId => {
+      const btn = document.getElementById(btnId);
+      if (btn && btn.closest('.col-md-2')) {
+        btn.closest('.col-md-2').style.display = 'none';
+      }
+    });
+    // Nascondi anche il file input
+    const fileInput = document.getElementById('file-input');
+    if (fileInput) {
+      fileInput.style.display = 'none';
+    }
   }
 
   // Carica i dati delle presenze
