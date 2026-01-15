@@ -26,6 +26,50 @@
         .calendar-table th { position: sticky; top: 0; background: #e9ecef !important; z-index: 10; font-size: 0.75rem; }
         .calendar-table td { vertical-align: middle; }
         
+        /* Colonne fisse durante lo scroll orizzontale */
+        .table-responsive {
+            overflow-x: auto;
+            position: relative;
+        }
+        
+        .calendar-table th:nth-child(1),
+        .calendar-table td:nth-child(1) {
+            position: sticky;
+            left: 0;
+            z-index: 5;
+            background: #ffffff !important;
+        }
+        
+        .calendar-table th:nth-child(2),
+        .calendar-table td:nth-child(2) {
+            position: sticky;
+            left: 40px;
+            z-index: 5;
+            background: #ffffff !important;
+        }
+        
+        .calendar-table th:nth-child(3),
+        .calendar-table td:nth-child(3) {
+            position: sticky;
+            left: 190px;
+            z-index: 5;
+            background: #ffffff !important;
+        }
+        
+        /* Header fisso con z-index maggiore */
+        .calendar-table thead th:nth-child(1),
+        .calendar-table thead th:nth-child(2),
+        .calendar-table thead th:nth-child(3) {
+            z-index: 15 !important;
+            background: #e9ecef !important;
+        }
+        
+        /* Ombra per evidenziare le colonne fisse */
+        .calendar-table th:nth-child(3),
+        .calendar-table td:nth-child(3) {
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        
         /* Stili per i bottoni nelle celle */
         .btn-sm {
             padding: 0.2rem 0.4rem;
