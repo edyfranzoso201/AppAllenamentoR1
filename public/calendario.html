@@ -109,9 +109,8 @@
             z-index: 10;
         }
         
-        /* Colonne fisse laterali - SOLO # e Atleta */
-        .calendar-table th:nth-child(1),
-        .calendar-table td:nth-child(1) {
+        /* Colonne fisse laterali - usando classi specifiche */
+        .calendar-table .sticky-col-1 {
             position: sticky;
             left: 0;
             z-index: 3;
@@ -119,8 +118,7 @@
             min-width: 40px;
         }
         
-        .calendar-table th:nth-child(2),
-        .calendar-table td:nth-child(2) {
+        .calendar-table .sticky-col-2 {
             position: sticky;
             left: 40px;
             z-index: 3;
@@ -129,24 +127,16 @@
             box-shadow: 2px 0 5px rgba(0,0,0,0.1);
         }
         
-        /* Azioni NON è più fisso - scorre liberamente */
-        
-        /* Header delle prime 2 colonne fisse ha z-index maggiore */
-        .calendar-table thead tr:nth-child(1) th:nth-child(1),
-        .calendar-table thead tr:nth-child(1) th:nth-child(2) {
-            z-index: 30 !important;
-            background: #e9ecef !important;
-        }
-        
-        .calendar-table thead tr:nth-child(2) th:nth-child(1),
-        .calendar-table thead tr:nth-child(2) th:nth-child(2) {
+        /* Header delle colonne fisse ha z-index maggiore */
+        .calendar-table thead .sticky-col-1,
+        .calendar-table thead .sticky-col-2 {
             z-index: 30 !important;
             background: #e9ecef !important;
         }
         
         /* Assicura che le celle del body abbiano background bianco */
-        .calendar-table tbody td:nth-child(1),
-        .calendar-table tbody td:nth-child(2) {
+        .calendar-table tbody .sticky-col-1,
+        .calendar-table tbody .sticky-col-2 {
             background: #ffffff !important;
         }
         
