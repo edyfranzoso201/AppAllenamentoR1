@@ -365,7 +365,7 @@
             btn.disabled = false;
           }, 3000);
 
-          alert(Object.keys(ev).length + " partite importate!";
+          aalert(Object.keys(ev).length + " partite importate!");
         } catch (err) {
           alert(err.message);
           btn.innerHTML = old;
