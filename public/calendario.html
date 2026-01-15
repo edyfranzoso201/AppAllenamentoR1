@@ -29,7 +29,53 @@
         /* Colonne fisse durante lo scroll orizzontale */
         .table-responsive {
             overflow-x: auto;
+            overflow-y: auto;
             position: relative;
+            max-height: calc(100vh - 300px);
+        }
+        
+        /* Scrollbar sempre visibile */
+        .table-responsive::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+        
+        .table-responsive::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        
+        .table-responsive::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        /* Firefox */
+        .table-responsive {
+            scrollbar-width: auto;
+            scrollbar-color: #888 #f1f1f1;
+        }
+        
+        /* Fissa le prime DUE righe dell'header */
+        .calendar-table thead tr:nth-child(1) th,
+        .calendar-table thead tr:nth-child(2) th {
+            position: sticky;
+            background: #e9ecef !important;
+            z-index: 20;
+        }
+        
+        /* Prima riga (date) in alto */
+        .calendar-table thead tr:nth-child(1) th {
+            top: 0;
+        }
+        
+        /* Seconda riga (eventi) subito sotto */
+        .calendar-table thead tr:nth-child(2) th {
+            top: 40px;
         }
         
         .calendar-table th:nth-child(1),
@@ -60,7 +106,7 @@
         .calendar-table thead th:nth-child(1),
         .calendar-table thead th:nth-child(2),
         .calendar-table thead th:nth-child(3) {
-            z-index: 15 !important;
+            z-index: 25 !important;
             background: #e9ecef !important;
         }
         
