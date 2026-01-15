@@ -25,7 +25,7 @@
       athleteId.toString().split("").reverse().join("");
   };
 
-  // Decode del token (stessa logica di presenza-atleta.js)
+  // Decode del token (coerente con presenza-atleta.js)
   window.decodePresenceToken = function (token) {
     try {
       const match = token.match(/\d+/);
@@ -91,7 +91,7 @@
     h += '<table class="table table-bordered calendar-table">';
     h += "<thead>";
 
-    // prima riga: date
+    // intestazione date
     h += "<tr>";
     h += '<th style="color:#000">#</th>';
     h += '<th style="color:#000">Atleta</th>';
@@ -105,7 +105,7 @@
     });
     h += "</tr>";
 
-    // seconda riga: info evento per data (Allenamento/Partita)
+    // riga evento per data
     h += "<tr>";
     h += '<th colspan="3" style="color:#000">Evento</th>';
     dates.forEach(d => {
@@ -119,7 +119,7 @@
 
     h += "<tbody>";
 
-    // righe atleti (tutti oppure solo atleta del link)
+    // righe atleti (tutti oppure solo 1 se c'è il token)
     visibleAthletes.forEach((a, i) => {
       h += "<tr>";
       h += `<td style="color:#000">${i + 1}</td>`;
@@ -144,7 +144,7 @@
     h += "</table>";
     h += "</div>";
 
-    // box info sotto
+    // box info
     h += `
       <div class="alert alert-info mt-3">
         <strong><i class="bi bi-info-circle"></i> Come funziona</strong><br>
@@ -245,7 +245,8 @@
     };
   };
 
-  // pulsanti gestione calendario
+  // --- funzioni gestione eventi (come prima) ---
+
   async function genTraining() {
     const btn = document.getElementById("generate-btn");
     const old = btn.innerHTML;
@@ -364,7 +365,7 @@
             btn.disabled = false;
           }, 3000);
 
-          alert(Object.keys(ev).length + " partite importate!");
+          alert(Object.keys(ev).length + " partite importate!";
         } catch (err) {
           alert(err.message);
           btn.innerHTML = old;
