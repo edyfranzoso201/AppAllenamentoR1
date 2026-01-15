@@ -159,8 +159,8 @@ async function render() {
   h += `<table class="table table-bordered calendar-table${isParentView ? '' : ' with-actions'}">`;
   h += `<thead>`;
   h += `<tr>`;
-  h += `<th style="color:#000">#</th>`;
-  h += `<th style="color:#000">Atleta</th>`;
+  h += `<th style="color:#000" class="sticky-col sticky-col-1">#</th>`;
+  h += `<th style="color:#000" class="sticky-col sticky-col-2">Atleta</th>`;
   
   // Colonna Azioni solo per il coach
   if (!isParentView) {
@@ -197,8 +197,8 @@ async function render() {
 
   visibleAthletes.forEach((a, i) => {
     h += `<tr>`;
-    h += `<td style="color:#000">${i + 1}</td>`;
-    h += `<td style="color:#000">${a.name}</td>`;
+    h += `<td style="color:#000" class="sticky-col sticky-col-1">${i + 1}</td>`;
+    h += `<td style="color:#000" class="sticky-col sticky-col-2">${a.name}</td>`;
     
     // Colonna Azioni solo per il coach
     if (!isParentView) {
