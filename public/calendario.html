@@ -11,10 +11,30 @@
             background: #f8f9fa;
             color: #000000;
             min-height: 100vh;
-            padding: 20px;
+            padding: 10px;
+            margin: 0;
         }
-        .main-title { color: #2563eb; font-weight: 700; margin-bottom: 30px; }
-        .card { background: #ffffff; border: 1px solid #dee2e6; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .container-fluid {
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+        .main-title { color: #2563eb; font-weight: 700; margin-bottom: 15px; margin-top: 10px; }
+        .card { 
+            background: #ffffff; 
+            border: 1px solid #dee2e6; 
+            border-radius: 10px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 10px;
+        }
+        .card-body {
+            padding: 10px;
+        }
+        .row.mb-4 {
+            margin-bottom: 10px !important;
+        }
+        .mb-3 {
+            margin-bottom: 8px !important;
+        }
         .table { color: #000000 !important; background: #ffffff; font-size: 0.8rem; }
         .table thead { background: #e9ecef !important; }
         .table th, .table td { 
@@ -31,7 +51,7 @@
             overflow-x: auto;
             overflow-y: auto;
             position: relative;
-            max-height: calc(100vh - 300px);
+            max-height: calc(100vh - 200px);
         }
         
         /* Scrollbar sempre visibile */
@@ -157,36 +177,36 @@
 </head>
 <body>
     <div class="container-fluid">
-        <div class="row mb-4">
+        <div class="row" style="margin-bottom: 10px;">
             <div class="col-12">
-                <a href="/" class="btn btn-outline-primary mb-3"><i class="bi bi-arrow-left"></i> Dashboard</a>
+                <a href="/" class="btn btn-outline-primary btn-sm mb-2"><i class="bi bi-arrow-left"></i> Dashboard</a>
                 <h1 class="main-title"><i class="bi bi-calendar-week"></i> Calendario Squadra</h1>
             </div>
         </div>
 
-        <div class="row mb-4">
-            <div class="col-md-2 mb-3">
+        <div class="row" style="margin-bottom: 10px;">
+            <div class="col-md-2 mb-2">
                 <button class="btn btn-danger w-100" id="add-btn">
                     <i class="bi bi-plus-circle"></i> Nuovo Evento
                 </button>
             </div>
-            <div class="col-md-2 mb-3">
+            <div class="col-md-2 mb-2">
                 <button class="btn btn-warning w-100" id="generate-btn">
                     <i class="bi bi-magic"></i> Genera Allenamenti
                 </button>
             </div>
-            <div class="col-md-2 mb-3">
+            <div class="col-md-2 mb-2">
                 <button class="btn btn-info w-100" id="import-btn">
                     <i class="bi bi-upload"></i> Importa Partite
                 </button>
                 <input type="file" id="file-input" accept=".json" style="display:none">
             </div>
-            <div class="col-md-2 mb-3">
+            <div class="col-md-2 mb-2">
                 <button class="btn btn-primary w-100" id="responses-btn">
                     <i class="bi bi-eye"></i> Vedi Risposte
                 </button>
             </div>
-            <div class="col-md-2 mb-3">
+            <div class="col-md-2 mb-2">
                 <button class="btn btn-secondary w-100" id="delete-btn">
                     <i class="bi bi-trash"></i> Elimina Vecchi
                 </button>
