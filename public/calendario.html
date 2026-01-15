@@ -60,53 +60,61 @@
             scrollbar-color: #888 #f1f1f1;
         }
         
-        /* Fissa le prime DUE righe dell'header */
-        .calendar-table thead tr:nth-child(1) th,
+        /* Fissa le prime DUE righe dell'header - tutte le celle */
+        .calendar-table thead tr:nth-child(1) th {
+            position: sticky;
+            top: 0;
+            background: #e9ecef !important;
+            z-index: 10;
+        }
+        
         .calendar-table thead tr:nth-child(2) th {
             position: sticky;
+            top: 48px;
             background: #e9ecef !important;
-            z-index: 20;
+            z-index: 10;
         }
         
-        /* Prima riga (date) in alto */
-        .calendar-table thead tr:nth-child(1) th {
-            top: 0;
-        }
-        
-        /* Seconda riga (eventi) subito sotto */
-        .calendar-table thead tr:nth-child(2) th {
-            top: 40px;
-        }
-        
+        /* Colonne fisse laterali per TUTTO il corpo della tabella */
         .calendar-table th:nth-child(1),
         .calendar-table td:nth-child(1) {
             position: sticky;
             left: 0;
-            z-index: 5;
+            z-index: 3;
             background: #ffffff !important;
+            min-width: 40px;
         }
         
         .calendar-table th:nth-child(2),
         .calendar-table td:nth-child(2) {
             position: sticky;
             left: 40px;
-            z-index: 5;
+            z-index: 3;
             background: #ffffff !important;
+            min-width: 150px;
         }
         
         .calendar-table th:nth-child(3),
         .calendar-table td:nth-child(3) {
             position: sticky;
             left: 190px;
-            z-index: 5;
+            z-index: 3;
             background: #ffffff !important;
+            min-width: 120px;
         }
         
-        /* Header fisso con z-index maggiore */
-        .calendar-table thead th:nth-child(1),
-        .calendar-table thead th:nth-child(2),
-        .calendar-table thead th:nth-child(3) {
-            z-index: 25 !important;
+        /* Header delle colonne fisse ha z-index maggiore per stare sopra */
+        .calendar-table thead tr:nth-child(1) th:nth-child(1),
+        .calendar-table thead tr:nth-child(1) th:nth-child(2),
+        .calendar-table thead tr:nth-child(1) th:nth-child(3) {
+            z-index: 30 !important;
+            background: #e9ecef !important;
+        }
+        
+        .calendar-table thead tr:nth-child(2) th:nth-child(1),
+        .calendar-table thead tr:nth-child(2) th:nth-child(2),
+        .calendar-table thead tr:nth-child(2) th:nth-child(3) {
+            z-index: 30 !important;
             background: #e9ecef !important;
         }
         
@@ -114,6 +122,13 @@
         .calendar-table th:nth-child(3),
         .calendar-table td:nth-child(3) {
             box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        
+        /* Assicura che le celle del body abbiano background bianco */
+        .calendar-table tbody td:nth-child(1),
+        .calendar-table tbody td:nth-child(2),
+        .calendar-table tbody td:nth-child(3) {
+            background: #ffffff !important;
         }
         
         /* Stili per i bottoni nelle celle */
