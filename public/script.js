@@ -9,7 +9,9 @@
   // Se non siamo nella pagina principale (es. link genitore /presenza/...)
   // NON facciamo nulla: quella parte è gestita da presenza-atleta.js
   const path = window.location.pathname;
-  if (!path.endsWith("/") && !path.endsWith("/index.html")) {
+
+  // Se NON siamo in / o /index.html, esco e NON chiedo password
+  if (path !== "/" && path !== "/index.html") {
     return;
   }
 
