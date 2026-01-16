@@ -271,6 +271,13 @@ async function render() {
     h += `Clicca "Link Presenze" per generare il link dell'atleta. Il genitore vedrà solo la riga del proprio figlio.`;
     h += `</div>`;
   }
+  
+  // Copyright
+  h += `<div style="text-align: center; margin-top: 10px; padding: 8px; font-size: 0.7rem; color: #6c757d; line-height: 1.3;">`;
+  h += `© 2025 Edy Franzoso.<br>`;
+  h += `Codice sorgente e contenuti protetti ai sensi della Legge sul Diritto d'Autore (L. 633/1941).<br>`;
+  h += `Riproduzione, distribuzione o modifica vietati senza autorizzazione scritta.`;
+  h += `</div>`;
 
   el.innerHTML = h;
 }
