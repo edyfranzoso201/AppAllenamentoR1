@@ -422,6 +422,7 @@ export default async function handler(req, res) {
     }
     
     // Parse query string per GET requests
+    // Parse query string per GET requests
     if (req.method === 'GET' && req.url.includes('?')) {
         const queryString = req.url.split('?')[1];
         req.query = {};
