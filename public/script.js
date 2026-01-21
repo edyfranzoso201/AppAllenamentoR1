@@ -1728,6 +1728,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.id === 'athlete-avatar-input') {
             const file = e.target.files[0];
             if (file) {
+                if (!confirm("ATTENZIONE: L'importazione sovrascriverà tutti i dati attuali. Vuoi continuare?")) {
+            e.target.value = null; // Resetta il file selezionato
+            return;
+        }
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     document.getElementById('athlete-avatar-base64').value = event.target.result;
@@ -1739,35 +1743,41 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
-    elements.athleteForm.addEventListener('submit', (e) => {
+        elements.athleteForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const athleteId = document.getElementById('modal-athlete-id').value;
         const avatarBase64 = document.getElementById('athlete-avatar-base64').value;
         const existingAthlete = athleteId ? athletes.find(a => a.id.toString() === athleteId) : null;
         const athleteData = {
+            id: existingAthlete ? existingAthlete.id : generateId(),
             name: document.getElementById('athlete-name').value.trim(),
             role: document.getElementById('athlete-role').value.trim(),
-            number: parseInt(document.getElementById('athlete-number').value),
+            number: parseInt(document.getElementById('athlete-number').value) || 0,
             isCaptain: document.getElementById('athlete-captain').checked,
             isViceCaptain: document.getElementById('athlete-vice-captain').checked,
             isGuest: document.getElementById('athlete-guest').checked,
-            scadenzaVisita: document.getElementById('scadenza-visita').value,
-            dataPrenotazioneVisita: document.getElementById('prenotazione-visita').value,
-            scadenzaTessera: document.getElementById('scadenza-tessera') ? document.getElementById('scadenza-tessera').value : '',
-            avatar: avatarBase64 || (existingAthlete ? existingAthlete.avatar : '')
+            scadenzaVisita: document.getElementById('athlete-scadenza-visita').value || '',
+            scadenzaTesseraGO: document.getElementById('athlete-scadenza-tessera-go').value || ''
         };
-        if (athleteId) {
-            const index = athletes.findIndex(a => a.id.toString() === athleteId);
-            if (index !== -1) athletes[index] = { ...athletes[index], ...athleteData };
+
+        if (avatarBase64) {
+            athleteData.avatar = avatarBase64;
+        }
+
+        if (existingAthlete) {
+            // Aggiorna atleta esistente
+            const index = athletes.findIndex(a => a.id === existingAthlete.id);
+            athletes[index] = athleteData;
         } else {
-            athleteData.id = Date.now();
-            athleteData.isViceCaptain = athleteData.isViceCaptain || false;
-            athleteData.isGuest = athleteData.isGuest || false;
+            // Aggiungi nuovo atleta
             athletes.push(athleteData);
         }
-        saveData();
-        updateAllUI();
-        athleteModal.hide();
+
+        saveData().then(() => {
+            updateAllUI();
+            athleteModal.hide();
+            alert(`${existingAthlete ? 'Atleta aggiornato' : 'Atleta aggiunto'} con successo!`);
+        });
     });
     elements.evaluationForm.addEventListener('submit', (e) => {
         e.preventDefault();
