@@ -31,12 +31,11 @@
 
             console.log(`📥 loadData(${key}) per annata: ${annataId}`);
 
-            // Chiamata API con namespace corretto
-            const response = await fetch(`/api/data/${key}`, {
+            // Chiamata API - USANDO QUERY STRING come nel backend
+            const response = await fetch(`/api/data?key=${encodeURIComponent(key)}&annataId=${encodeURIComponent(annataId)}`, {
                 method: 'GET',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-Annata-ID': annataId
+                    'Content-Type': 'application/json'
                 }
             });
 
@@ -45,13 +44,15 @@
                     console.log(`ℹ️ loadData(${key}): Nessun dato trovato`);
                     return null;
                 }
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                console.error(`❌ loadData(${key}): HTTP ${response.status}`);
+                return null;
             }
 
             const result = await response.json();
             
             if (result.success) {
-                console.log(`✅ loadData(${key}): ${result.data ? (Array.isArray(result.data) ? result.data.length : 'OK') : 0} elementi`);
+                const count = result.data ? (Array.isArray(result.data) ? result.data.length : 'OK') : 0;
+                console.log(`✅ loadData(${key}): ${count} elementi`);
                 return result.data;
             }
 
@@ -78,18 +79,22 @@
 
             console.log(`💾 saveData(${key}) per annata: ${annataId}`);
 
-            // Chiamata API
-            const response = await fetch(`/api/data/${key}`, {
+            // Chiamata API - USANDO BODY come nel backend
+            const response = await fetch(`/api/data`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-Annata-ID': annataId
+                    'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ data: value })
+                body: JSON.stringify({ 
+                    key: key,
+                    data: value,
+                    annataId: annataId
+                })
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                console.error(`❌ saveData(${key}): HTTP ${response.status}`);
+                return false;
             }
 
             const result = await response.json();
@@ -99,6 +104,7 @@
                 return true;
             }
 
+            console.error(`❌ saveData(${key}): API ritornò success=false`);
             return false;
 
         } catch (error) {
@@ -114,6 +120,11 @@
     window.getCurrentAnnata = getCurrentAnnata;
 
     console.log('✅ Data Adapter Multi-Annata: attivo');
-    console.log(`   - Annata corrente: ${getCurrentAnnata() || 'non selezionata'}`);
+    const currentAnnata = getCurrentAnnata();
+    if (currentAnnata) {
+        console.log(`   - Annata corrente: ${currentAnnata}`);
+    } else {
+        console.log('   - Nessuna annata selezionata ancora');
+    }
 
 })();
