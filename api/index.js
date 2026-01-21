@@ -304,99 +304,116 @@ async function handleAssignUserToAnnata(req, res) {
     }
 }
 
-// ==========================================
+/// ==========================================
 // DATA ENDPOINTS (compatibili con sistema esistente)
 // ==========================================
 
 async function handleData(req, res) {
-    // Ottieni annata dalla sessione o da header personalizzato
-    let annataId = req.headers['x-annata-id'];
-    
-    // Se non c'è header, prova a recuperare dalla query (per compatibilità)
-    if (!annataId && req.query && req.query.annataId) {
-        annataId = req.query.annataId;
-    }
-    
-    // Se ancora non c'è, restituisci errore
-    if (!annataId) {
-        return res.status(400).json({ 
-            message: 'ID annata richiesto. Assicurati di aver selezionato un\'annata.' 
-        });
-    }
-    
-    if (req.method === 'GET') {
-        // CARICAMENTO DATI (compatibile con: GET /api/data)
-        try {
-            const athletes = await kv.get(`data:${annataId}:athletes`) || [];
-            const evaluations = await kv.get(`data:${annataId}:evaluations`) || {};
-            const gpsData = await kv.get(`data:${annataId}:gpsData`) || {};
-            const awards = await kv.get(`data:${annataId}:awards`) || {};
-            const trainingSessions = await kv.get(`data:${annataId}:trainingSessions`) || {};
-            const formationData = await kv.get(`data:${annataId}:formationData`) || { starters: [], bench: [], tokens: [] };
-            const matchResults = await kv.get(`data:${annataId}:matchResults`) || {};
-            const calendarEvents = await kv.get(`data:${annataId}:calendarEvents`) || {};
-            const calendarResponses = await kv.get(`data:${annataId}:calendarResponses`) || {};
-            
-            return res.status(200).json({
-                athletes,
-                evaluations,
-                gpsData,
-                awards,
-                trainingSessions,
-                formationData,
-                matchResults,
-                calendarEvents,
-                calendarResponses
-            });
-            
-        } catch (error) {
-            console.error('Get data error:', error);
-            return res.status(500).json({ message: 'Errore del server' });
-        }
-    } 
-    else if (req.method === 'POST') {
-        // SALVATAGGIO DATI (compatibile con: POST /api/data)
-        try {
-            const allData = req.body;
-            
-            // Salva ogni tipo di dato separatamente
-            if (allData.athletes !== undefined) {
-                await kv.set(`data:${annataId}:athletes`, allData.athletes);
-            }
-            if (allData.evaluations !== undefined) {
-                await kv.set(`data:${annataId}:evaluations`, allData.evaluations);
-            }
-            if (allData.gpsData !== undefined) {
-                await kv.set(`data:${annataId}:gpsData`, allData.gpsData);
-            }
-            if (allData.awards !== undefined) {
-                await kv.set(`data:${annataId}:awards`, allData.awards);
-            }
-            if (allData.trainingSessions !== undefined) {
-                await kv.set(`data:${annataId}:trainingSessions`, allData.trainingSessions);
-            }
-            if (allData.formationData !== undefined) {
-                await kv.set(`data:${annataId}:formationData`, allData.formationData);
-            }
-            if (allData.matchResults !== undefined) {
-                await kv.set(`data:${annataId}:matchResults`, allData.matchResults);
-            }
-            if (allData.calendarEvents !== undefined) {
-                await kv.set(`data:${annataId}:calendarEvents`, allData.calendarEvents);
-            }
-            if (allData.calendarResponses !== undefined) {
-                await kv.set(`data:${annataId}:calendarResponses`, allData.calendarResponses);
-            }
-            
-            return res.status(200).json({ success: true });
-            
-        } catch (error) {
-            console.error('Save data error:', error);
-            return res.status(500).json({ message: 'Errore del server' });
-        }
-    }
-}
+  // Ottieni annata dalla sessione o da header personalizzato
+  let annataId = req.headers['x-annata-id'];
+  // Se non c'è header, prova a recuperare dalla query (per compatibilità)
+  if (!annataId && req.query && req.query.annataId) {
+    annataId = req.query.annataId;
+  }
 
+  // ✅ Fallback LEGACY: se nessuna annata, usa le chiavi globali (vecchio sistema)
+  if (!annataId) {
+    console.warn("⚠️ Nessun ID annata fornito. Utilizzo dati legacy globali.");
+    if (req.method === 'GET') {
+      try {
+        const athletes = await kv.get('athletes') || [];
+        const evaluations = await kv.get('evaluations') || {};
+        const gpsData = await kv.get('gpsData') || {};
+        const awards = await kv.get('awards') || {};
+        const trainingSessions = await kv.get('trainingSessions') || {};
+        const formationData = await kv.get('formationData') || { starters: [], bench: [], tokens: [] };
+        const matchResults = await kv.get('matchResults') || {};
+        const calendarEvents = await kv.get('calendarEvents') || {};
+        const calendarResponses = await kv.get('calendarResponses') || {};
+
+        return res.status(200).json({
+          athletes,
+          evaluations,
+          gpsData,
+          awards,
+          trainingSessions,
+          formationData,
+          matchResults,
+          calendarEvents,
+          calendarResponses
+        });
+      } catch (error) {
+        console.error('Get LEGACY data error:', error);
+        return res.status(500).json({ message: 'Errore del server' });
+      }
+    } else if (req.method === 'POST') {
+      try {
+        const allData = req.body;
+        if (allData.athletes !== undefined) await kv.set('athletes', allData.athletes);
+        if (allData.evaluations !== undefined) await kv.set('evaluations', allData.evaluations);
+        if (allData.gpsData !== undefined) await kv.set('gpsData', allData.gpsData);
+        if (allData.awards !== undefined) await kv.set('awards', allData.awards);
+        if (allData.trainingSessions !== undefined) await kv.set('trainingSessions', allData.trainingSessions);
+        if (allData.formationData !== undefined) await kv.set('formationData', allData.formationData);
+        if (allData.matchResults !== undefined) await kv.set('matchResults', allData.matchResults);
+        if (allData.calendarEvents !== undefined) await kv.set('calendarEvents', allData.calendarEvents);
+        if (allData.calendarResponses !== undefined) await kv.set('calendarResponses', allData.calendarResponses);
+        return res.status(200).json({ success: true });
+      } catch (error) {
+        console.error('Save LEGACY data error:', error);
+        return res.status(500).json({ message: 'Errore del server' });
+      }
+    }
+    return; // Fine gestione legacy
+  }
+
+  // ✅ Gestione MULTI-ANNATA (solo se annataId è presente)
+if (req.method === 'GET') {
+  try {
+    const athletes = await kv.get(`data:${annataId}:athletes`) || [];
+    const evaluations = await kv.get(`data:${annataId}:evaluations`) || {};
+    const gpsData = await kv.get(`data:${annataId}:gpsData`) || {};
+    const awards = await kv.get(`data:${annataId}:awards`) || {};
+    const trainingSessions = await kv.get(`data:${annataId}:trainingSessions`) || {};
+    const formationData = await kv.get(`data:${annataId}:formationData`) || { starters: [], bench: [], tokens: [] };
+    const matchResults = await kv.get(`data:${annataId}:matchResults`) || {};
+    const calendarEvents = await kv.get(`data:${annataId}:calendarEvents`) || {};
+    const calendarResponses = await kv.get(`data:${annataId}:calendarResponses`) || {};
+
+    return res.status(200).json({
+      athletes,
+      evaluations,
+      gpsData,
+      awards,
+      trainingSessions,
+      formationData,
+      matchResults,
+      calendarEvents,
+      calendarResponses
+    });
+  } catch (error) {
+    console.error('Get data error:', error);
+    return res.status(500).json({ message: 'Errore del server' });
+  }
+} else if (req.method === 'POST') {
+  try {
+    const allData = req.body;
+    if (allData.athletes !== undefined) await kv.set(`data:${annataId}:athletes`, allData.athletes);
+    if (allData.evaluations !== undefined) await kv.set(`data:${annataId}:evaluations`, allData.evaluations);
+    if (allData.gpsData !== undefined) await kv.set(`data:${annataId}:gpsData`, allData.gpsData);
+    if (allData.awards !== undefined) await kv.set(`data:${annataId}:awards`, allData.awards);
+    if (allData.trainingSessions !== undefined) await kv.set(`data:${annataId}:trainingSessions`, allData.trainingSessions);
+    if (allData.formationData !== undefined) await kv.set(`data:${annataId}:formationData`, allData.formationData);
+    if (allData.matchResults !== undefined) await kv.set(`data:${annataId}:matchResults`, allData.matchResults);
+    if (allData.calendarEvents !== undefined) await kv.set(`data:${annataId}:calendarEvents`, allData.calendarEvents);
+    if (allData.calendarResponses !== undefined) await kv.set(`data:${annataId}:calendarResponses`, allData.calendarResponses);
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Save data error:', error);
+    return res.status(500).json({ message: 'Errore del server' });
+  }
+}
 // ==========================================
 // MAIN ROUTER
 // ==========================================
