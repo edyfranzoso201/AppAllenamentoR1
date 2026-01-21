@@ -1,5 +1,11 @@
 // api/index.js - Main API Router con gestione multi-annata
-import { kv } from '@vercel/kv';
+import { createClient } from '@vercel/kv';
+
+// Configura KV client con variabili Upstash esistenti
+const kv = createClient({
+  url: process.env.UPSTASH_KV_REST_API_URL || process.env.KV_REST_API_URL,
+  token: process.env.UPSTASH_KV_REST_API_TOKEN || process.env.KV_REST_API_TOKEN,
+});
 
 // ==========================================
 // UTILITY FUNCTIONS
