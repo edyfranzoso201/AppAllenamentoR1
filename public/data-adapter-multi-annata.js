@@ -1,86 +1,119 @@
-// data-adapter-multi-annata.js
-// Questo file aggiunge supporto per visualizzare l'annata corrente
+// data-adapter-multi-annata.js - Adapter per gestione dati multi-annata
+(function() {
+    'use strict';
 
-// ==========================================
-// ISTRUZIONI PER L'INTEGRAZIONE
-// ==========================================
-/*
-STEP 1: Aggiungi questo script DOPO auth-multi-annata.js in index.html:
-<script src="auth-multi-annata.js"></script>
-<script src="data-adapter-multi-annata.js"></script>
-<script src="script.js"></script>
+    console.log('🔄 Data Adapter Multi-Annata: caricamento...');
 
-IMPORTANTE: NON serve modificare script.js!
-Il sistema funziona automaticamente grazie all'interceptor di fetch che
-aggiunge l'header X-Annata-Id a tutte le richieste verso /api/data
+    // ==========================================
+    // UTILITY FUNCTIONS
+    // ==========================================
 
-Il tuo codice esistente continua a funzionare esattamente come prima:
-- fetch('/api/data') per GET
-- fetch('/api/data', {method: 'POST', body: ...}) per POST
+    function getCurrentAnnata() {
+        return sessionStorage.getItem('gosport_current_annata');
+    }
 
-L'unica differenza è che ora i dati sono isolati per annata.
-*/
+    function isAuthenticated() {
+        return sessionStorage.getItem('gosport_auth_session') === 'true';
+    }
 
-// ==========================================
-// INDICATOR ANNATA CORRENTE
-// ==========================================
+    // ==========================================
+    // OVERRIDE GLOBALE loadData
+    // ==========================================
 
-function addAnnataIndicator() {
-    const currentAnnata = window.getCurrentAnnata();
-    if (!currentAnnata) return;
-    
-    // Recupera nome annata
-    fetch('/api/annate/list')
-        .then(r => r.json())
-        .then(data => {
-            const annata = data.annate.find(a => a.id === currentAnnata);
-            if (!annata) return;
+    window.loadData = async function(key) {
+        try {
+            const annataId = getCurrentAnnata();
             
-            const indicator = document.createElement('div');
-            indicator.id = 'annata-indicator';
-            indicator.style.cssText = 'position:fixed;bottom:20px;left:20px;background:rgba(59,130,246,0.9);color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.15);';
-            indicator.innerHTML = `📅 ${annata.nome}`;
-            document.body.appendChild(indicator);
-        })
-        .catch(err => console.error('Errore indicatore annata:', err));
-}
-
-// ==========================================
-// GESTIONE CAMBIO ANNATA
-// ==========================================
-
-function setupAnnataChangeButton() {
-    setTimeout(() => {
-        const logoutBtn = document.querySelector('[onclick*="logout"]');
-        if (!logoutBtn) return;
-        
-        const changeAnnataBtn = document.createElement('button');
-        changeAnnataBtn.textContent = '🔄 Cambia Annata';
-        changeAnnataBtn.style.cssText = 'position:fixed;top:60px;right:20px;background:#3b82f6;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;z-index:1000;';
-        changeAnnataBtn.onclick = () => {
-            if (confirm('Vuoi cambiare annata? Le modifiche non salvate andranno perse.')) {
-                sessionStorage.removeItem('gosport_current_annata');
-                window.location.reload();
+            if (!annataId) {
+                console.warn(`⚠️ loadData(${key}): Nessuna annata selezionata`);
+                return null;
             }
-        };
-        document.body.appendChild(changeAnnataBtn);
-    }, 200);
-}
 
-// ==========================================
-// INIZIALIZZAZIONE
-// ==========================================
+            console.log(`📥 loadData(${key}) per annata: ${annataId}`);
 
-// Aggiungi indicatore quando la pagina è caricata
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        addAnnataIndicator();
-        setupAnnataChangeButton();
-    });
-} else {
-    addAnnataIndicator();
-    setupAnnataChangeButton();
-}
+            // Chiamata API con namespace corretto
+            const response = await fetch(`/api/data/${key}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Annata-ID': annataId
+                }
+            });
 
-console.log('✅ Sistema Multi-Annata attivo - Annata corrente:', window.getCurrentAnnata?.() || 'non selezionata');
+            if (!response.ok) {
+                if (response.status === 404) {
+                    console.log(`ℹ️ loadData(${key}): Nessun dato trovato`);
+                    return null;
+                }
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
 
+            const result = await response.json();
+            
+            if (result.success) {
+                console.log(`✅ loadData(${key}): ${result.data ? (Array.isArray(result.data) ? result.data.length : 'OK') : 0} elementi`);
+                return result.data;
+            }
+
+            return null;
+
+        } catch (error) {
+            console.error(`❌ loadData(${key}) errore:`, error);
+            return null;
+        }
+    };
+
+    // ==========================================
+    // OVERRIDE GLOBALE saveData
+    // ==========================================
+
+    window.saveData = async function(key, value) {
+        try {
+            const annataId = getCurrentAnnata();
+            
+            if (!annataId) {
+                console.warn(`⚠️ saveData(${key}): Nessuna annata selezionata`);
+                return false;
+            }
+
+            console.log(`💾 saveData(${key}) per annata: ${annataId}`);
+
+            // Chiamata API
+            const response = await fetch(`/api/data/${key}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Annata-ID': annataId
+                },
+                body: JSON.stringify({ data: value })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+
+            if (result.success) {
+                console.log(`✅ saveData(${key}): Salvato con successo`);
+                return true;
+            }
+
+            return false;
+
+        } catch (error) {
+            console.error(`❌ saveData(${key}) errore:`, error);
+            return false;
+        }
+    };
+
+    // ==========================================
+    // ESPONI FUNZIONI GLOBALI
+    // ==========================================
+
+    window.getCurrentAnnata = getCurrentAnnata;
+
+    console.log('✅ Data Adapter Multi-Annata: attivo');
+    console.log(`   - Annata corrente: ${getCurrentAnnata() || 'non selezionata'}`);
+
+})();
