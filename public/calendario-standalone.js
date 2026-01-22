@@ -317,7 +317,11 @@ async function render(loadedData) {
           h += `<td class="text-center" style="background-color:#ffcccc; color:#000">
             <div style="display:flex; flex-direction:column; align-items:center; gap:5px">
               <span style="color:#dc3545; font-weight:bold">❌ Assente</span>
-              <button class="btn btn-sm btn-success" onclick="markAbsence('${a.id}', '${date}', 'Assente')" style="font-size:0.75rem">
+              <button class="btn btn-sm btn-success mark-presence-btn" 
+                      data-athlete-id="${a.id}" 
+                      data-date="${date}" 
+                      data-current-status="Assente" 
+                      style="font-size:0.75rem">
                 Segna Presente
               </button>
             </div>
@@ -326,7 +330,11 @@ async function render(loadedData) {
           h += `<td class="text-center" style="color:#000">
             <div style="display:flex; flex-direction:column; align-items:center; gap:5px">
               <span style="color:#28a745">✓ Presente</span>
-              <button class="btn btn-sm btn-danger" onclick="markAbsence('${a.id}', '${date}', null)" style="font-size:0.75rem">
+              <button class="btn btn-sm btn-danger mark-absence-btn" 
+                      data-athlete-id="${a.id}" 
+                      data-date="${date}" 
+                      data-current-status="" 
+                      style="font-size:0.75rem">
                 Segna Assente
               </button>
             </div>
@@ -353,13 +361,27 @@ async function render(loadedData) {
   
   el.innerHTML = h;
   
-  // Aggiungi event listener per i pulsanti Link Presenze
+  // Aggiungi event listener per i pulsanti Link Presenze (solo per coach)
   if (!isParentView) {
     document.querySelectorAll('.link-presenze-btn').forEach(btn => {
       btn.addEventListener('click', function() {
         const athleteId = this.getAttribute('data-athlete-id');
         const athleteName = this.getAttribute('data-athlete-name');
         window.generatePresenceLink(athleteId, athleteName);
+      });
+    });
+  }
+  
+  // Aggiungi event listener per i pulsanti Segna Assente/Presente (solo per genitori)
+  if (isParentView) {
+    document.querySelectorAll('.mark-absence-btn, .mark-presence-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const athleteId = this.getAttribute('data-athlete-id');
+        const date = this.getAttribute('data-date');
+        const currentStatus = this.getAttribute('data-current-status') || null;
+        
+        console.log('👆 Click rilevato!', { athleteId, date, currentStatus });
+        markAbsence(athleteId, date, currentStatus);
       });
     });
   }
