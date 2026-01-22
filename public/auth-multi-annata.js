@@ -863,21 +863,28 @@
         };
     }
 
-    // ==========================================
-    // ==========================================
-// MAIN FLOW
-// ==========================================
-if (!isAuthenticated()) {
-    // Nascondi il contenuto e mostra il form di login
-    document.getElementById('loading-screen').style.display = 'flex';
-    document.getElementById('app-content').style.display = 'none';
-    showLoginScreen();
-} else if (!hasSelectedAnnata()) {
-    // Nascondi il contenuto e mostra la selezione annata
-    document.getElementById('loading-screen').style.display = 'flex';
-    document.getElementById('app-content').style.display = 'none';
-    showAnnataSelection();
-} else {
+        /// ==========================================
+        // MAIN FLOW
+        // ==========================================
+        if (!isAuthenticated()) {
+        // Nascondi il contenuto e mostra il form di login
+        const loadingScreen = document.getElementById('loading-screen');
+        const appContent = document.getElementById('app-content');
+    
+        if (loadingScreen) loadingScreen.style.display = 'flex';
+        if (appContent) appContent.style.display = 'none';
+    
+        showLoginScreen();
+        } else if (!hasSelectedAnnata()) {
+        // Nascondi il contenuto e mostra la selezione annata
+        const loadingScreen = document.getElementById('loading-screen');
+        const appContent = document.getElementById('app-content');
+    
+        if (loadingScreen) loadingScreen.style.display = 'flex';
+        if (appContent) appContent.style.display = 'none';
+    
+        showAnnataSelection();
+    } else {
     // Setup interceptor per aggiungere annata alle richieste
     setupFetchInterceptor();
     addLogoutButton();
@@ -888,8 +895,11 @@ if (!isAuthenticated()) {
     window.isAdmin = isAdmin;
 
     // Mostra il contenuto
-    document.getElementById('loading-screen').style.display = 'none';
-    document.getElementById('app-content').style.display = 'block';
+    const loadingScreen = document.getElementById('loading-screen');
+    const appContent = document.getElementById('app-content');
+    
+    if (loadingScreen) loadingScreen.style.display = 'none';
+    if (appContent) appContent.style.display = 'block';
 }
 
 })();
