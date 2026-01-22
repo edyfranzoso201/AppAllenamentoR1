@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
         weeklyDatePicker: document.getElementById('weekly-date-picker'),
         weeklyStartDatePicker: document.getElementById('weekly-start-date-picker')
     };
-    const ACCESS_PASSWORD = "2025Edy201";
+    const ACCESS_PASSWORD = "Edy201";
     let authSuccessCallback = null;
     let authCancelCallback = null;
     const isAuthenticated = () => sessionStorage.getItem('isAuthenticated') === 'true';
