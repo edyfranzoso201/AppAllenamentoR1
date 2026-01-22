@@ -36,13 +36,29 @@ window.decodePresenceToken = function(token) {
 
 async function load() {
   try {
-    const r = await fetch('api/data', { cache: 'no-store' });
-    const d = await r.json();
-    events = d.calendarEvents;
-    athletes = d.athletes;
+    // USA loadData dal data-adapter invece di fetch diretto
+    const data = await window.loadData('full');
+    
+    if (!data) {
+      // Fallback a fetch diretto se loadData non funziona
+      const r = await fetch('/api/data', { cache: 'no-store' });
+      const d = await r.json();
+      events = d.data?.calendarEvents || d.calendarEvents || {};
+      athletes = d.data?.athletes || d.athletes || [];
+    } else {
+      events = data.calendarEvents || {};
+      athletes = data.athletes || [];
+    }
+    
+    console.log('📅 Calendario caricato:', {
+      eventi: Object.keys(events).length,
+      atleti: athletes.length
+    });
+    
     render();
   } catch (e) {
-    document.getElementById('calendar').innerHTML = `<div class="alert alert-danger">Errore caricamento dati</div>`;
+    console.error('Errore caricamento:', e);
+    document.getElementById('calendar').innerHTML = `<div class="alert alert-danger">Errore caricamento dati: ${e.message}</div>`;
   }
 }
 
@@ -55,8 +71,17 @@ async function markAbsence(athleteId, date, currentStatus) {
   }
   
   try {
-    const r = await fetch('api/data', { cache: 'no-store' });
-    const data = await r.json();
+    console.log('💾 Salvataggio stato presenza:', { athleteId, date, newStatus });
+    
+    // Carica i dati correnti usando loadData
+    let data = await window.loadData('full');
+    
+    if (!data) {
+      // Fallback
+      const r = await fetch('/api/data', { cache: 'no-store' });
+      const resp = await r.json();
+      data = resp.data || resp;
+    }
     
     // Inizializza la struttura se non esiste
     if (!data.attendanceResponses) {
@@ -73,18 +98,23 @@ async function markAbsence(athleteId, date, currentStatus) {
       delete data.attendanceResponses[date][athleteId];
     }
     
-    // Salva
-    await fetch('api/data', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
+    console.log('💾 Dati da salvare:', data.attendanceResponses[date]);
+    
+    // Salva usando saveData dal data-adapter
+    const saved = await window.saveData('full', data);
+    
+    if (!saved) {
+      throw new Error('Errore nel salvataggio');
+    }
+    
+    console.log('✅ Stato salvato con successo');
     
     // Ricarica
     await load();
-    alert(`✓ Stato aggiornato: ${statusText}`);
+    alert(`✅ Stato aggiornato: ${statusText}`);
   } catch (e) {
-    alert('Errore nel salvataggio: ' + e.message);
+    console.error('❌ Errore salvataggio:', e);
+    alert('❌ Errore nel salvataggio: ' + e.message);
   }
 }
 
@@ -105,20 +135,37 @@ async function render() {
   }
 
   const urlParams = new URLSearchParams(window.location.search);
-  const tokenParam = urlParams.get('athlete');
+  
+  // SUPPORTA SIA 'athlete' CHE 'athleteId'
+  const tokenParam = urlParams.get('athlete') || urlParams.get('athleteId');
+  
   let visibleAthletes = athletes.filter(a => !a.guest);
   
   // Verifica se è la vista genitore
   if (tokenParam) {
     isParentView = true;
-    const athleteId = window.decodePresenceToken(tokenParam);
+    
+    // Prova prima come token, poi come ID diretto
+    let athleteId = window.decodePresenceToken(tokenParam);
+    
+    // Se il decode fallisce, usa il valore diretto
+    if (!athleteId) {
+      athleteId = tokenParam;
+    }
+    
+    console.log('🔓 Modalità Genitore rilevata:', { token: tokenParam, athleteId });
+    
     if (athleteId) {
       currentAthleteId = athleteId;
       visibleAthletes = visibleAthletes.filter(a => String(a.id) === String(athleteId));
+      
       if (visibleAthletes.length === 0) {
+        console.error('❌ Atleta non trovato:', athleteId);
         el.innerHTML = `<div class="alert alert-danger mt-3">Link non valido o atleta non trovato. Contatta il coach per un nuovo link.</div>`;
         return;
       }
+      
+      console.log('✅ Atleta trovato:', visibleAthletes[0].name);
     } else {
       el.innerHTML = `<div class="alert alert-danger mt-3">Link non valido. Contatta il coach per un nuovo link.</div>`;
       return;
@@ -148,8 +195,14 @@ async function render() {
   // Carica i dati delle presenze
   let attendanceData = {};
   try {
-    const r = await fetch('api/data', { cache: 'no-store' });
-    attendanceData = await r.json();
+    const data = await window.loadData('full');
+    if (data) {
+      attendanceData = data;
+    } else {
+      const r = await fetch('/api/data', { cache: 'no-store' });
+      const resp = await r.json();
+      attendanceData = resp.data || resp;
+    }
   } catch (e) {
     console.error('Errore caricamento dati presenze', e);
   }
@@ -255,60 +308,51 @@ async function render() {
     h += `</tr>`;
   });
 
-  h += `</tbody>`;
-  h += `</table>`;
-  h += `</div>`;
+  h += `</tbody></table></div>`;
   
-  // Info box diverso per coach e genitori
+  // Istruzioni solo per genitore
   if (isParentView) {
-    h += `<div class="alert alert-info" style="margin-top: 3px; margin-bottom: 2px; padding: 5px; font-size: 0.8rem;">`;
-    h += `<strong><i class="bi bi-info-circle"></i> Istruzioni:</strong> `;
-    h += `Usa i pulsanti per segnalare <strong>assenze</strong> o <strong>presenze</strong>. Predefinito: "Presente".`;
-    h += `</div>`;
-  } else {
-    h += `<div class="alert alert-info" style="margin-top: 3px; margin-bottom: 2px; padding: 5px; font-size: 0.8rem;">`;
-    h += `<strong><i class="bi bi-info-circle"></i> Info:</strong> `;
-    h += `Clicca "Link Presenze" per generare il link dell'atleta. Il genitore vedrà solo la riga del proprio figlio.`;
+    h += `<div class="alert alert-info mt-3">`;
+    h += `<strong><i class="bi bi-info-circle"></i> Istruzioni:</strong> Usa i pulsanti per segnalare assenze o presenze. Predefinito: "Presente".`;
     h += `</div>`;
   }
   
-  // Copyright
-  h += `<div style="text-align: center; margin-top: 10px; padding: 8px; font-size: 0.7rem; color: #6c757d; line-height: 1.3;">`;
-  h += `© 2025 Edy Franzoso.<br>`;
-  h += `Codice sorgente e contenuti protetti ai sensi della Legge sul Diritto d'Autore (L. 633/1941).<br>`;
-  h += `Riproduzione, distribuzione o modifica vietati senza autorizzazione scritta.`;
-  h += `</div>`;
-
   el.innerHTML = h;
 }
 
+// Genera link per l'atleta (per il coach)
 window.generatePresenceLink = function(athleteId, athleteName) {
   const token = window.generateAthleteToken(athleteId);
-  const link = `${window.location.origin}/calendario.html?athlete=${encodeURIComponent(token)}`;
   
+  // Usa athleteId come parametro invece di athlete
+  const link = `${window.location.origin}${window.location.pathname}?athleteId=${athleteId}`;
+  
+  // Mostra modal con link
   const modal = document.createElement('div');
-  modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999';
+  modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
   modal.innerHTML = `
-    <div style="background:white;padding:30px;border-radius:15px;max-width:600px;width:90%">
-      <h3 style="margin:0 0 20px 0;color:#2563eb">🔗 Link Conferma Presenze</h3>
-      <p style="margin-bottom:15px"><strong>Atleta:</strong> ${athleteName}</p>
-      <div style="background:#f1f5f9;padding:15px;border-radius:8px;margin-bottom:20px;word-break:break-all;font-family:monospace;font-size:14px">
+    <div style="background:white;padding:30px;border-radius:15px;max-width:600px;width:90%;">
+      <h3 style="margin:0 0 20px 0;color:#2563eb;">🔗 Link Conferma Presenze</h3>
+      <p style="margin-bottom:15px;"><strong>Atleta:</strong> ${athleteName}</p>
+      <div style="background:#f1f5f9;padding:15px;border-radius:8px;margin-bottom:20px;word-break:break-all;font-family:monospace;font-size:14px;">
         ${link}
       </div>
-      <div style="display:flex;gap:10px">
-        <button onclick="navigator.clipboard.writeText('${link}').then(()=>alert('Link copiato!')).catch(()=>alert('Errore nella copia'))" 
-          style="flex:1;background:#10b981;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600">
+      <div style="display:flex;gap:10px;">
+        <button onclick="navigator.clipboard.writeText('${link}').then(() => alert('✅ Link copiato!')).catch(() => alert('❌ Errore'))" 
+          style="flex:1;background:#10b981;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
           📋 Copia Link
         </button>
         <button onclick="this.parentElement.parentElement.parentElement.remove()" 
-          style="flex:1;background:#64748b;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600">
+          style="flex:1;background:#64748b;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
           Chiudi
         </button>
       </div>
-      <div style="margin-top:20px;padding:15px;background:#e0f2fe;border-radius:8px;font-size:14px;color:#0c4a6e">
-        <strong>📲 Invia questo link al genitore via:</strong><br>
-        WhatsApp, Email o SMS.<br><br>
-        💡 Aprendo il link vedrà solo la riga di questo atleta e potrà segnalare le assenze.
+      <div style="margin-top:20px;padding:15px;background:#e0f2fe;border-radius:8px;font-size:14px;color:#0c4a6e;">
+        <strong>📱 Invia questo link al genitore via:</strong><br>
+        • WhatsApp<br>
+        • Email<br>
+        • SMS<br><br>
+        Il genitore potrà segnare assenze in qualsiasi momento.
       </div>
     </div>
   `;
@@ -320,10 +364,10 @@ window.generatePresenceLink = function(athleteId, athleteName) {
 
 async function genTraining() {
   const btn = document.getElementById('generate-btn');
+  if (!btn) return;
   const old = btn.innerHTML;
   
-  // Chiedi conferma prima di generare
-  if (!confirm('Genera allenamenti automatici?\n\n📅 Giorni: Lunedì, Mercoledì, Venerdì\n⏰ Orari configurati:\n  • Lunedì 18:30-20:00\n  • Mercoledì 17:30-19:00\n  • Venerdì 18:00-19:15\n\nGli allenamenti già esistenti non verranno sovrascritti.\n\n💡 Le partite (Sabato/Domenica) vanno aggiunte manualmente o importate.')) {
+  if (!confirm('Creare gli allenamenti settimanali fino a giugno 2026?')) {
     return;
   }
   
@@ -360,15 +404,12 @@ async function genTraining() {
       return;
     }
     
-    const r = await fetch('api/data', { cache: 'no-store' });
-    const ad = await r.json();
-    ad.calendarEvents = Object.assign(ad.calendarEvents, ev);
-    await fetch('api/data', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(ad)
-    });
-    events = ad.calendarEvents;
+    const data = await window.loadData('full') || { calendarEvents: {}, athletes: [] };
+    data.calendarEvents = Object.assign(data.calendarEvents || {}, ev);
+    
+    await window.saveData('full', data);
+    
+    events = data.calendarEvents;
     render();
     
     btn.innerHTML = '<i class="bi bi-check-circle"></i> Fatto!';
@@ -411,15 +452,12 @@ async function impMatches(f) {
           };
         });
         
-        const r = await fetch('api/data', { cache: 'no-store' });
-        const ad = await r.json();
-        ad.calendarEvents = Object.assign(ad.calendarEvents, ev);
-        await fetch('api/data', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(ad)
-        });
-        events = ad.calendarEvents;
+        const data = await window.loadData('full') || { calendarEvents: {}, athletes: [] };
+        data.calendarEvents = Object.assign(data.calendarEvents || {}, ev);
+        
+        await window.saveData('full', data);
+        
+        events = data.calendarEvents;
         render();
         
         btn.innerHTML = '<i class="bi bi-check-circle"></i> Fatto!';
@@ -455,20 +493,17 @@ async function addEvent() {
   const notes = prompt('Note:', '');
   
   try {
-    const r = await fetch('api/data', { cache: 'no-store' });
-    const ad = await r.json();
-    ad.calendarEvents[date] = {
+    const data = await window.loadData('full') || { calendarEvents: {}, athletes: [] };
+    data.calendarEvents[date] = {
       type,
       time,
       notes: notes || '',
       createdAt: new Date().toISOString()
     };
-    await fetch('api/data', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(ad)
-    });
-    events = ad.calendarEvents;
+    
+    await window.saveData('full', data);
+    
+    events = data.calendarEvents;
     render();
     alert('Evento aggiunto!');
   } catch (e) {
@@ -483,22 +518,20 @@ async function deleteOld() {
     td.setHours(0, 0, 0, 0);
     const tdStr = td.toISOString().split('T')[0];
     
-    const r = await fetch('api/data', { cache: 'no-store' });
-    const ad = await r.json();
-    ad.calendarEvents = ad.calendarEvents || {};
+    const data = await window.loadData('full') || { calendarEvents: {}, athletes: [] };
+    data.calendarEvents = data.calendarEvents || {};
+    
     let deleted = 0;
-    Object.keys(ad.calendarEvents).forEach(d => {
+    Object.keys(data.calendarEvents).forEach(d => {
       if (d < tdStr) {
-        delete ad.calendarEvents[d];
+        delete data.calendarEvents[d];
         deleted++;
       }
     });
-    await fetch('api/data', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(ad)
-    });
-    events = ad.calendarEvents;
+    
+    await window.saveData('full', data);
+    
+    events = data.calendarEvents;
     render();
     alert(`${deleted} eventi eliminati!`);
   } catch (e) {
@@ -515,24 +548,19 @@ async function deleteEvent(date) {
   }
   
   try {
-    const r = await fetch('api/data', { cache: 'no-store' });
-    const ad = await r.json();
+    const data = await window.loadData('full') || { calendarEvents: {}, athletes: [] };
     
     // Elimina l'evento
-    delete ad.calendarEvents[date];
+    delete data.calendarEvents[date];
     
     // Elimina anche le risposte di presenza per quella data
-    if (ad.attendanceResponses && ad.attendanceResponses[date]) {
-      delete ad.attendanceResponses[date];
+    if (data.attendanceResponses && data.attendanceResponses[date]) {
+      delete data.attendanceResponses[date];
     }
     
-    await fetch('api/data', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(ad)
-    });
+    await window.saveData('full', data);
     
-    events = ad.calendarEvents;
+    events = data.calendarEvents;
     render();
     alert(`✓ Evento del ${dateFormatted} eliminato!`);
   } catch (e) {
