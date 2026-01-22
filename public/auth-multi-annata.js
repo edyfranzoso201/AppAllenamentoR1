@@ -426,143 +426,31 @@
             sessionStorage.setItem(SESSION_ANNATA, annataId);
             window.location.reload();
         }
-
-            // UI - ADMIN PANEL - VERSIONE SEMPLICE
+            
+        // ==========================================
+        // UI - ADMIN PANEL CON GESTIONE ANNATE
+        // ==========================================
+        
         function showAdminPanel() {
           const username = getCurrentUser();
           const container = document.createElement('div');
-          container.style.cssText = `
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); display: flex; align-items: center;
-            justify-content: center; z-index: 10000;
-          `;
-
+          container.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:10000;overflow-y:auto;';
           const panel = document.createElement('div');
-          panel.style.cssText = `
-            background: rgba(30,41,59,0.95); padding: 40px;
-            border-radius: 15px; max-width: 600px; width: 90%;
-            max-height: 80vh; overflow-y: auto;
-            border: 1px solid rgba(96,165,250,0.2);
-          `;
-
-          panel.innerHTML = `
-            <h2 style="color: #60a5fa; margin-top: 0;">⚙️ Pannello Admin</h2>
-            <p style="color: #94a3b8;">Admin: <strong>${username}</strong></p>
-            
-            <div style="background: rgba(15,23,42,0.6); padding: 20px; border-radius: 12px; margin: 20px 0;">
-              <h3 style="color: #60a5fa;">➕ Aggiungi Utente</h3>
-              <form id="add-user-form" style="display: flex; flex-direction: column; gap: 12px;">
-                <input type="text" id="new-username" placeholder="Username" required style="padding: 10px; border: 1px solid rgba(96,165,250,0.3); border-radius: 6px; background: #0f172a; color: #fff;">
-                <input type="password" id="new-password" placeholder="Password" required style="padding: 10px; border: 1px solid rgba(96,165,250,0.3); border-radius: 6px; background: #0f172a; color: #fff;">
-                <select id="new-role" style="padding: 10px; border: 1px solid rgba(96,165,250,0.3); border-radius: 6px; background: #0f172a; color: #fff;">
-                  <option value="user">Utente</option>
-                  <option value="allenatore">Allenatore</option>
-                  <option value="admin">Admin</option>
-                </select>
-                <button type="submit" style="background: #3b82f6; color: #fff; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Crea Utente</button>
-                <div id="add-user-msg" style="color: #10b981; font-size: 13px; text-align: center; min-height: 18px;"></div>
-              </form>
-            </div>
-
-            <div style="background: rgba(15,23,42,0.6); padding: 20px; border-radius: 12px;">
-              <h3 style="color: #60a5fa;">📋 Utenti Esistenti</h3>
-              <div id="users-list" style="max-height: 300px; overflow-y: auto; color: #94a3b8; font-size: 13px;">
-                <p>Caricamento...</p>
-              </div>
-            </div>
-
-            <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(96,165,250,0.2);">
-              <button id="close-admin" style="background: transparent; color: #ef4444; border: 1px solid #ef4444; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Chiudi</button>
-            </div>
-          `;
-
-          container.appendChild(panel);
-          document.body.appendChild(container);
-
-          // Aggiungi utente
-          document.getElementById('add-user-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const username = document.getElementById('new-username').value.trim();
-            const password = document.getElementById('new-password').value;
-            const role = document.getElementById('new-role').value;
-            const msg = document.getElementById('add-user-msg');
-
-            if (!username || !password) {
-              msg.textContent = '❌ Riempi tutti i campi';
-              msg.style.color = '#ef4444';
-              return;
-            }
-
-            try {
-              const res = await fetch('/api/auth/create-user', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password, role })
-              });
-              const data = await res.json();
-              if (res.ok) {
-                msg.textContent = `✅ ${data.message}`;
-                msg.style.color = '#10b981';
-                document.getElementById('add-user-form').reset();
-                loadUsersList();
-              } else {
-                msg.textContent = `❌ ${data.message}`;
-                msg.style.color = '#ef4444';
-              }
-            } catch (err) {
-              msg.textContent = `❌ Errore: ${err.message}`;
-              msg.style.color = '#ef4444';
-            }
-          });
-
-          // Carica lista utenti
-          async function loadUsersList() {
-            const list = document.getElementById('users-list');
-            try {
-              const res = await fetch('/api/auth/list-users');
-              const data = await res.json();
-              if (data.users?.length > 0) {
-                list.innerHTML = data.users.map(u => `
-                  <div style="padding: 8px; background: rgba(30,41,59,0.5); margin: 6px 0; border-radius: 6px; display: flex; justify-content: space-between;">
-                    <div><strong>${u.username}</strong> (${u.role})</div>
-                    ${u.username !== 'admin' ? `<button onclick="deleteUserConfirm('${u.username}')" style="background: #ef4444; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">Elimina</button>` : ''}
-                  </div>
-                `).join('');
-              } else {
-                list.innerHTML = '<p>Nessun utente trovato</p>';
-              }
-            } catch (err) {
-              list.innerHTML = `<p style="color: #ef4444;">Errore: ${err.message}</p>`;
-            }
-          }
-
-          // Elimina utente
-          window.deleteUserConfirm = async (username) => {
-            if (!confirm(`Eliminare ${username}?`)) return;
-            try {
-              const res = await fetch('/api/auth/delete-user', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username })
-              });
-              if (res.ok) {
-                alert('✅ Utente eliminato');
-                loadUsersList();
-              } else {
-                alert('❌ Errore nell\'eliminazione');
-              }
-            } catch (err) {
-              alert(`❌ Errore: ${err.message}`);
-            }
-          };
-
-          // Chiudi pannello
-          document.getElementById('close-admin').addEventListener('click', () => {
-            container.remove();
-          });
-
-          // Carica lista iniziale
-          loadUsersList();
+          panel.style.cssText = 'background:rgba(30,41,59,0.95);padding:30px;border-radius:15px;max-width:700px;width:90%;max-height:85vh;overflow-y:auto;border:1px solid rgba(96,165,250,0.2);margin:20px;';
+          panel.innerHTML = '<h2 style="color:#60a5fa;margin-top:0">⚙️ Pannello Admin</h2><p style="color:#94a3b8">Admin: <strong>'+username+'</strong></p><div style="display:flex;gap:8px;margin:15px 0;border-bottom:1px solid rgba(96,165,250,0.2);padding-bottom:12px"><button class="tab-btn" data-tab="utenti" style="background:#3b82f6;color:#fff;padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">👥 Utenti</button><button class="tab-btn" data-tab="annate" style="background:transparent;color:#60a5fa;border:1px solid #60a5fa;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">📅 Annate</button><button class="tab-btn" data-tab="abbina" style="background:transparent;color:#60a5fa;border:1px solid #60a5fa;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">🔗 Abbina</button></div><div id="tab-utenti" class="tab-content" style="display:block"><div style="background:rgba(15,23,42,0.6);padding:18px;border-radius:10px;margin:15px 0"><h3 style="color:#60a5fa;font-size:16px;margin:0 0 12px 0">➕ Aggiungi Utente</h3><form id="add-user-form" style="display:flex;flex-direction:column;gap:10px"><input type="text" id="new-username" placeholder="Username" required style="padding:9px;border:1px solid rgba(96,165,250,0.3);border-radius:5px;background:#0f172a;color:#fff;font-size:14px"><input type="password" id="new-password" placeholder="Password" required style="padding:9px;border:1px solid rgba(96,165,250,0.3);border-radius:5px;background:#0f172a;color:#fff;font-size:14px"><select id="new-role" style="padding:9px;border:1px solid rgba(96,165,250,0.3);border-radius:5px;background:#0f172a;color:#fff;font-size:14px"><option value="user">Utente</option><option value="allenatore">Allenatore</option><option value="admin">Admin</option></select><button type="submit" style="background:#3b82f6;color:#fff;padding:9px;border:none;border-radius:5px;cursor:pointer;font-weight:600;font-size:14px">Crea</button><div id="add-user-msg" style="color:#10b981;font-size:12px;text-align:center;min-height:16px"></div></form></div><div style="background:rgba(15,23,42,0.6);padding:18px;border-radius:10px"><h3 style="color:#60a5fa;font-size:16px;margin:0 0 12px 0">📋 Utenti</h3><div id="users-list" style="max-height:250px;overflow-y:auto;color:#94a3b8;font-size:12px"><p>Caricamento...</p></div></div></div><div id="tab-annate" class="tab-content" style="display:none"><div style="background:rgba(15,23,42,0.6);padding:18px;border-radius:10px;margin:15px 0"><h3 style="color:#60a5fa;font-size:16px;margin:0 0 12px 0">➕ Crea Annata</h3><form id="add-annata-form" style="display:flex;flex-direction:column;gap:10px"><input type="text" id="annata-nome" placeholder="Nome (es: 2013)" required style="padding:9px;border:1px solid rgba(96,165,250,0.3);border-radius:5px;background:#0f172a;color:#fff;font-size:14px"><input type="text" id="annata-desc" placeholder="Descrizione" style="padding:9px;border:1px solid rgba(96,165,250,0.3);border-radius:5px;background:#0f172a;color:#fff;font-size:14px"><button type="submit" style="background:#10b981;color:#fff;padding:9px;border:none;border-radius:5px;cursor:pointer;font-weight:600;font-size:14px">Crea</button><div id="add-annata-msg" style="color:#10b981;font-size:12px;text-align:center;min-height:16px"></div></form></div><div style="background:rgba(15,23,42,0.6);padding:18px;border-radius:10px"><h3 style="color:#60a5fa;font-size:16px;margin:0 0 12px 0">📅 Annate</h3><div id="annate-list" style="max-height:250px;overflow-y:auto;color:#94a3b8;font-size:12px"><p>Caricamento...</p></div></div></div><div id="tab-abbina" class="tab-content" style="display:none"><div style="background:rgba(15,23,42,0.6);padding:18px;border-radius:10px"><h3 style="color:#60a5fa;font-size:16px;margin:0 0 12px 0">🔗 Abbina Utente</h3><form id="assign-form" style="display:flex;flex-direction:column;gap:10px"><select id="assign-user" required style="padding:9px;border:1px solid rgba(96,165,250,0.3);border-radius:5px;background:#0f172a;color:#fff;font-size:14px"><option value="">Seleziona Utente...</option></select><select id="assign-annata" required style="padding:9px;border:1px solid rgba(96,165,250,0.3);border-radius:5px;background:#0f172a;color:#fff;font-size:14px"><option value="">Seleziona Annata...</option></select><button type="submit" style="background:#f59e0b;color:#fff;padding:9px;border:none;border-radius:5px;cursor:pointer;font-weight:600;font-size:14px">Abbina</button><div id="assign-msg" style="color:#10b981;font-size:12px;text-align:center;min-height:16px"></div></form><div style="margin-top:15px;padding:18px;background:rgba(15,23,42,0.6);border-radius:10px"><h3 style="color:#60a5fa;font-size:16px;margin:0 0 12px 0">📊 Abbinamenti</h3><div id="assignments-list" style="max-height:250px;overflow-y:auto;color:#94a3b8;font-size:12px"><p>Caricamento...</p></div></div></div></div><div style="text-align:center;margin-top:18px;padding-top:15px;border-top:1px solid rgba(96,165,250,0.2)"><button id="close-admin" style="background:transparent;color:#ef4444;border:1px solid #ef4444;padding:7px 14px;border-radius:6px;cursor:pointer;font-size:12px">🚪 Chiudi</button></div>';
+          container.appendChild(panel);document.body.appendChild(container);
+          document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',e=>{document.querySelectorAll('.tab-content').forEach(t=>t.style.display='none');document.getElementById('tab-'+e.target.dataset.tab).style.display='block';document.querySelectorAll('.tab-btn').forEach(x=>{x.style.background='transparent';x.style.color='#60a5fa';x.style.border='1px solid #60a5fa'});e.target.style.background='#3b82f6';e.target.style.color='#fff';e.target.style.border='none'}));
+          document.getElementById('add-user-form').addEventListener('submit',async e=>{e.preventDefault();const u=document.getElementById('new-username').value.trim(),p=document.getElementById('new-password').value,r=document.getElementById('new-role').value,m=document.getElementById('add-user-msg');if(!u||!p){m.textContent='❌ Riempi tutti i campi';m.style.color='#ef4444';return}try{const res=await fetch('/api/auth/create-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p,role:r})});const d=await res.json();if(res.ok){m.textContent='✅ '+d.message;m.style.color='#10b981';document.getElementById('add-user-form').reset();loadUsersList();loadAssignSelects()}else{m.textContent='❌ '+d.message;m.style.color='#ef4444'}}catch(err){m.textContent='❌ '+err.message;m.style.color='#ef4444'}});
+          document.getElementById('add-annata-form').addEventListener('submit',async e=>{e.preventDefault();const n=document.getElementById('annata-nome').value.trim(),d=document.getElementById('annata-desc').value.trim(),m=document.getElementById('add-annata-msg');if(!n){m.textContent='❌ Inserisci nome';m.style.color='#ef4444';return}try{const res=await fetch('/api/annate/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome:n,descrizione:d})});const data=await res.json();if(res.ok){m.textContent='✅ Annata creata!';m.style.color='#10b981';document.getElementById('add-annata-form').reset();loadAnnateList();loadAssignSelects()}else{m.textContent='❌ '+data.message;m.style.color='#ef4444'}}catch(err){m.textContent='❌ '+err.message;m.style.color='#ef4444'}});
+          document.getElementById('assign-form').addEventListener('submit',async e=>{e.preventDefault();const u=document.getElementById('assign-user').value,a=document.getElementById('assign-annata').value,m=document.getElementById('assign-msg');if(!u||!a){m.textContent='❌ Seleziona entrambi';m.style.color='#ef4444';return}try{const res=await fetch('/api/annate/assign-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,annataId:a})});const d=await res.json();if(res.ok){m.textContent='✅ Abbinamento creato!';m.style.color='#10b981';loadAssignments()}else{m.textContent='❌ '+d.message;m.style.color='#ef4444'}}catch(err){m.textContent='❌ '+err.message;m.style.color='#ef4444'}});
+          async function loadUsersList(){const l=document.getElementById('users-list');try{const res=await fetch('/api/auth/list-users');const d=await res.json();if(d.users?.length>0){l.innerHTML=d.users.map(u=>'<div style="padding:8px;background:rgba(30,41,59,0.5);margin:6px 0;border-radius:6px;display:flex;justify-content:space-between"><div><strong>'+u.username+'</strong> ('+u.role+')</div>'+(u.username!=='admin'?'<button onclick="delUser(\''+u.username+'\')" style="background:#ef4444;color:#fff;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px">Elimina</button>':'')+'</div>').join('')}else{l.innerHTML='<p>Nessun utente</p>'}}catch(err){l.innerHTML='<p style="color:#ef4444">Errore: '+err.message+'</p>'}}
+              async function loadAnnateList(){const l=document.getElementById('annate-list');try{const res=await fetch('/api/annate/list');const d=await res.json();if(d.annate?.length>0){l.innerHTML=d.annate.map(a=>'<div style="padding:8px;background:rgba(30,41,59,0.5);margin:6px 0;border-radius:6px;display:flex;justify-content:space-between"><div><strong>'+a.nome+'</strong><br><small>'+a.descrizione+'</small></div><button onclick="delAnnata(\''+a.id+'\')" style="background:#ef4444;color:#fff;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px">Elimina</button></div>').join('')}else{l.innerHTML='<p>Nessuna annata</p>'}}catch(err){l.innerHTML='<p style="color:#ef4444">Errore: '+err.message+'</p>'}}
+          async function loadAssignSelects(){try{const[u,a]=await Promise.all([fetch('/api/auth/list-users'),fetch('/api/annate/list')]);const users=await u.json(),annate=await a.json();document.getElementById('assign-user').innerHTML='<option value="">Seleziona...</option>'+users.users.map(x=>'<option value="'+x.username+'">'+x.username+' ('+x.role+')</option>').join('');document.getElementById('assign-annata').innerHTML='<option value="">Seleziona...</option>'+annate.annate.map(x=>'<option value="'+x.id+'">'+x.nome+'</option>').join('')}catch(err){console.error('Errore caricamento select',err)}}
+          async function loadAssignments(){const l=document.getElementById('assignments-list');try{const res=await fetch('/api/auth/list-users');const d=await res.json();if(d.users?.length>0){const items=d.users.filter(u=>u.annate&&u.annate.length>0).map(u=>'<div style="padding:8px;background:rgba(30,41,59,0.5);margin:6px 0;border-radius:6px"><strong>'+u.username+'</strong>: '+u.annate.length+' annate</div>').join('');l.innerHTML=items||'<p>Nessun abbinamento</p>'}else{l.innerHTML='<p>Nessun dato</p>'}}catch(err){l.innerHTML='<p style="color:#ef4444">Errore: '+err.message+'</p>'}}
+          window.delUser=async u=>{if(!confirm('Eliminare '+u+'?'))return;try{const res=await fetch('/api/auth/delete-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u})});if(res.ok){alert('✅ Eliminato');loadUsersList();loadAssignSelects()}else{alert('❌ Errore')}}catch(err){alert('❌ '+err.message)}};
+          window.delAnnata=async a=>{if(!confirm('Eliminare annata?'))return;try{const res=await fetch('/api/annate/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({annataId:a})});if(res.ok){alert('✅ Eliminata');loadAnnateList();loadAssignSelects()}else{alert('❌ Errore')}}catch(err){alert('❌ '+err.message)}};
+          document.getElementById('close-admin').addEventListener('click',()=>container.remove());
+          loadUsersList();loadAnnateList();loadAssignSelects();loadAssignments();
         }
 
         // ==========================================
