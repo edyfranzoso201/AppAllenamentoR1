@@ -212,47 +212,46 @@ function createLoginOverlay() {
     usernameInput.focus();
     
     form.addEventListener('submit', async (e) => {
-        e.preventDefault();
+    e.preventDefault();
+    
+    const username = usernameInput.value.trim();
+    const password = passwordInput.value;
+    
+    if (!username || !password) {
+        errorDiv.textContent = '⚠️ Compila tutti i campi';
+        return;
+    }
+    
+    try {
+        errorDiv.textContent = '⏳ Accesso in corso...';
+        const result = await loginUser(username, password);
         
-        const username = usernameInput.value.trim();
-        const password = passwordInput.value;
+        // Login riuscito - salva sessione
+        const expiry = Date.now() + (8 * 60 * 60 * 1000); // 8 ore
+        sessionStorage.setItem(SESSION_KEY, 'true');
+        sessionStorage.setItem(SESSION_KEY + '_expiry', expiry.toString());
+        sessionStorage.setItem(SESSION_USER, username);
+        sessionStorage.setItem(SESSION_USER_ROLE, result.role);
         
-        if (!username || !password) {
-            errorDiv.textContent = '⚠️ Compila tutti i campi';
-            return;
-        }
+        // Nascondi l'overlay
+        overlay.remove();
         
-        try {
-            errorDiv.textContent = '⏳ Accesso in corso...';
-            const result = await loginUser(username, password);
-            
-            // Login riuscito - salva sessione
-            const expiry = Date.now() + (8 * 60 * 60 * 1000); // 8 ore
-            sessionStorage.setItem(SESSION_KEY, 'true');
-            sessionStorage.setItem(SESSION_KEY + '_expiry', expiry.toString());
-            sessionStorage.setItem(SESSION_USER, username);
-            sessionStorage.setItem(SESSION_USER_ROLE, result.role);
-            
-            // Nascondi l'overlay
-            overlay.remove();
-            
-            // Mostra selezione annata
-            showAnnataSelection();
-            
-        } catch (error) {
-            errorDiv.textContent = '❌ ' + error.message;
-            passwordInput.value = '';
-            usernameInput.style.borderColor = '#ef4444';
-            passwordInput.style.borderColor = '#ef4444';
-            
-            setTimeout(() => {
-                errorDiv.textContent = '';
-                usernameInput.style.borderColor = 'rgba(96,165,250,0.3)';
-                passwordInput.style.borderColor = 'rgba(96,165,250,0.3)';
-            }, 3000);
-        }
-    });
-}
+        // Mostra selezione annata
+        showAnnataSelection();
+        
+    } catch (error) {
+        errorDiv.textContent = '❌ ' + error.message;
+        passwordInput.value = '';
+        usernameInput.style.borderColor = '#ef4444';
+        passwordInput.style.borderColor = '#ef4444';
+        
+        setTimeout(() => {
+            errorDiv.textContent = '';
+            usernameInput.style.borderColor = 'rgba(96,165,250,0.3)';
+            passwordInput.style.borderColor = 'rgba(96,165,250,0.3)';
+        }, 3000);
+    }
+});
 
     // ==========================================
     // UI - ANNATA SELECTION SCREEN
@@ -946,5 +945,4 @@ function createAnnataOverlay() {
     if (loadingScreen) loadingScreen.style.display = 'none';
     if (appContent) appContent.style.display = 'block';
 }
-
 })();
