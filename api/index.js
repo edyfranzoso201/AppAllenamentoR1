@@ -6,11 +6,15 @@ const kv = createClient({
   url: process.env.UPSTASH_KV_REST_API_URL || process.env.KV_REST_API_URL,
   token: process.env.UPSTASH_KV_REST_API_TOKEN || process.env.KV_REST_API_TOKEN,
 });
-// ========== CREDENZIALI DI DEFAULT (NUOVE) ==========
+/// ========== CREDENZIALI DI DEFAULT (NUOVE) ==========
 const DEFAULT_USERS = {
     'admin': {
         password: Buffer.from('admin201').toString('base64'),
         role: 'admin'
+    },
+    'coach': {
+        password: Buffer.from('Coach2025!').toString('base64'),
+        role: 'supercoach'
     },
     'allenatore1': {
         password: Buffer.from('Allenatore123').toString('base64'),
@@ -21,6 +25,7 @@ const DEFAULT_USERS = {
         role: 'dirigente'
     }
 };
+
 // ==========================================
 // UTILITY FUNCTIONS
 // ==========================================
