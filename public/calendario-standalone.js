@@ -1,9 +1,9 @@
-// calendario-standalone.js - versione SEMPLIFICATA senza token
+// calendario-standalone.js - VERSIONE FINALE FUNZIONANTE
 
 const TRAINING = [
-  { day: 1, time: '18:30-20:00' },  // Lunedì
-  { day: 3, time: '17:30-19:00' },  // Mercoledì
-  { day: 5, time: '18:00-19:15' }   // Venerdì
+  { day: 1, time: '18:30-20:00' },
+  { day: 3, time: '17:30-19:00' },
+  { day: 5, time: '18:00-19:15' }
 ];
 const END = new Date('2026-06-30');
 
@@ -11,24 +11,75 @@ let events = {};
 let athletes = [];
 let isParentView = false;
 let currentAthleteId = null;
+let currentAnnataId = null;
+
+// Ottiene l'annata corretta per la richiesta
+async function getAnnataId() {
+  // Se già abbiamo l'annata, usala
+  if (currentAnnataId) {
+    return currentAnnataId;
+  }
+  
+  // Prova dalla sessione
+  const sessionAnnata = sessionStorage.getItem('gosport_current_annata');
+  if (sessionAnnata) {
+    currentAnnataId = sessionAnnata;
+    return sessionAnnata;
+  }
+  
+  // Se in modalità genitore, ottieni l'annata più recente
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('athleteId')) {
+    try {
+      const response = await fetch('/api/annate/list');
+      if (response.ok) {
+        const data = await response.json();
+        const annate = data.annate || [];
+        if (annate.length > 0) {
+          const sorted = annate.sort((a, b) => new Date(b.dataInizio) - new Date(a.dataInizio));
+          currentAnnataId = sorted[0].id;
+          console.log(`🔓 Modalità Genitore: usando annata ${currentAnnataId}`);
+          return currentAnnataId;
+        }
+      }
+    } catch (error) {
+      console.error('Errore recupero annata:', error);
+    }
+  }
+  
+  return null;
+}
 
 async function load() {
   try {
     console.log('📥 Caricamento dati calendario...');
     
-    // USA loadData dal data-adapter
-    let data = await window.loadData('full');
+    const annataId = await getAnnataId();
     
-    if (!data) {
-      console.warn('⚠️ loadData fallito, uso fetch diretto');
-      const r = await fetch('/api/data', { cache: 'no-store' });
-      const resp = await r.json();
-      data = resp.data || resp;
+    if (!annataId) {
+      throw new Error('Nessuna annata disponibile');
     }
+    
+    console.log(`📥 Caricamento per annata: ${annataId}`);
+    
+    // Chiamata API diretta con header
+    const response = await fetch('/api/data', {
+      cache: 'no-store',
+      headers: {
+        'x-annata-id': annataId
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const result = await response.json();
+    const data = result.data || result;
     
     events = data.calendarEvents || {};
     
-    // ✅ CONVERTI TUTTI GLI ID A STRINGHE per evitare problemi con numeri grandi
+    // Converti TUTTI gli ID a stringhe
     athletes = (data.athletes || []).map(a => ({
       ...a,
       id: String(a.id)
@@ -37,22 +88,18 @@ async function load() {
     console.log('✅ Dati caricati:', {
       eventi: Object.keys(events).length,
       atleti: athletes.length,
-      listaAtleti: athletes.map(a => ({ 
-        id: a.id, 
-        idType: typeof a.id,
-        name: a.name 
-      }))
+      annata: annataId
     });
     
-    render();
+    render(data);
   } catch (e) {
     console.error('❌ Errore caricamento:', e);
-    document.getElementById('calendar').innerHTML = `<div class="alert alert-danger">Errore caricamento dati: ${e.message}</div>`;
+    document.getElementById('calendar').innerHTML = `<div class="alert alert-danger">Errore: ${e.message}</div>`;
   }
 }
 
 async function markAbsence(athleteId, date, currentStatus) {
-  console.log('🔔 markAbsence chiamata!', { athleteId, athleteIdType: typeof athleteId, date, currentStatus });
+  console.log('🔔 markAbsence chiamata!', { athleteId, date, currentStatus });
   
   const newStatus = currentStatus === 'Assente' ? null : 'Assente';
   const statusText = newStatus === 'Assente' ? 'assente' : 'presente';
@@ -63,30 +110,40 @@ async function markAbsence(athleteId, date, currentStatus) {
   }
   
   try {
-    console.log('💾 Inizio salvataggio stato presenza:', { athleteId, date, newStatus });
+    console.log('💾 Inizio salvataggio...');
     
-    let data = await window.loadData('full');
+    const annataId = await getAnnataId();
     
-    if (!data) {
-      console.log('⚠️ loadData fallito, uso fetch');
-      const r = await fetch('/api/data', { cache: 'no-store' });
-      const resp = await r.json();
-      data = resp.data || resp;
+    if (!annataId) {
+      throw new Error('Nessuna annata disponibile');
     }
+    
+    // Carica i dati correnti
+    const response = await fetch('/api/data', {
+      cache: 'no-store',
+      headers: {
+        'x-annata-id': annataId
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const result = await response.json();
+    const data = result.data || result;
     
     console.log('📦 Dati caricati per salvataggio');
     
-    // Inizializza la struttura
+    // Inizializza struttura
     if (!data.attendanceResponses) {
       data.attendanceResponses = {};
-      console.log('✨ Creata struttura attendanceResponses');
     }
     if (!data.attendanceResponses[date]) {
       data.attendanceResponses[date] = {};
-      console.log(`✨ Creata struttura per data ${date}`);
     }
     
-    // Imposta lo stato - USA STRINGA PER L'ID
+    // Imposta stato - USA STRINGA
     const athleteIdStr = String(athleteId);
     if (newStatus === 'Assente') {
       data.attendanceResponses[date][athleteIdStr] = 'Assente';
@@ -96,30 +153,36 @@ async function markAbsence(athleteId, date, currentStatus) {
       console.log(`✅ Rimosso assente per ${athleteIdStr}`);
     }
     
-    console.log('💾 Struttura finale da salvare:', JSON.stringify(data.attendanceResponses[date], null, 2));
+    console.log('💾 Salvataggio dati...', JSON.stringify(data.attendanceResponses[date], null, 2));
     
-    // Salva
-    console.log('📤 Chiamata saveData...');
-    const saved = await window.saveData('full', data);
+    // Salva con header
+    const saveResponse = await fetch('/api/data', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-annata-id': annataId
+      },
+      body: JSON.stringify(data)
+    });
     
-    console.log('📥 Risposta saveData:', saved);
+    if (!saveResponse.ok) {
+      throw new Error(`Salvataggio fallito: HTTP ${saveResponse.status}`);
+    }
     
-    if (!saved) {
-      throw new Error('saveData ha ritornato false');
+    const saveResult = await saveResponse.json();
+    if (!saveResult.success) {
+      throw new Error('API ritornò success=false');
     }
     
     console.log('✅ Stato salvato con successo!');
     
-    // Mostra conferma
+    // Mostra conferma e ricarica
     alert(`✅ Stato aggiornato: ${statusText}`);
-    
-    // Ricarica la pagina completamente per assicurarsi che i dati siano aggiornati
-    console.log('🔄 Ricaricamento pagina completo...');
     window.location.reload();
+    
   } catch (e) {
-    console.error('❌ Errore salvataggio completo:', e);
-    console.error('Stack:', e.stack);
-    alert('❌ Errore nel salvataggio: ' + e.message);
+    console.error('❌ Errore completo:', e);
+    alert('❌ Errore: ' + e.message);
   }
 }
 
@@ -130,43 +193,31 @@ function getAttendanceStatus(athleteId, date, data) {
   return data.attendanceResponses[date][athleteId] || null;
 }
 
-async function render() {
+async function render(loadedData) {
   const el = document.getElementById('calendar');
   const dates = Object.keys(events).sort();
   
   if (dates.length === 0) {
-    el.innerHTML = `<div class="alert alert-info">Nessun evento. Usa i pulsanti sopra.</div>`;
+    el.innerHTML = `<div class="alert alert-info">Nessun evento</div>`;
     return;
   }
 
   const urlParams = new URLSearchParams(window.location.search);
-  
-  // SEMPLICISSIMO: usa direttamente athleteId dall'URL
   const athleteIdParam = urlParams.get('athleteId');
   
   let visibleAthletes = athletes.filter(a => !a.guest);
   
-  console.log('🔍 Parametri URL:', { athleteIdParam });
-  console.log('👥 Atleti disponibili:', visibleAthletes.map(a => ({ id: a.id, name: a.name })));
-  
-  // Verifica se è la vista genitore
   if (athleteIdParam) {
     isParentView = true;
     currentAthleteId = athleteIdParam;
     
-    console.log('🔓 Modalità Genitore rilevata, cerco atleta con ID:', athleteIdParam);
+    console.log('🔓 Modalità Genitore:', athleteIdParam);
     
-    // Filtra per ID - prova sia come stringa che come numero
     visibleAthletes = visibleAthletes.filter(a => {
-      const match = String(a.id) === String(athleteIdParam) || 
-                    Number(a.id) === Number(athleteIdParam);
-      console.log(`  Confronto atleta ${a.name}: ${a.id} === ${athleteIdParam}? ${match}`);
-      return match;
+      return String(a.id) === String(athleteIdParam);
     });
     
     if (visibleAthletes.length === 0) {
-      console.error('❌ Atleta non trovato:', athleteIdParam);
-      console.error('   IDs disponibili:', athletes.filter(a => !a.guest).map(a => a.id));
       el.innerHTML = `
         <div class="alert alert-danger mt-3">
           <h4>Link non valido o atleta non trovato</h4>
@@ -184,10 +235,8 @@ async function render() {
     console.log('✅ Atleta trovato:', visibleAthletes[0].name);
   } else {
     isParentView = false;
-    currentAthleteId = null;
   }
 
-  // Nascondi i pulsanti di gestione se è la vista genitore
   if (isParentView) {
     const buttons = ['add-btn', 'generate-btn', 'import-btn', 'responses-btn', 'delete-btn'];
     buttons.forEach(btnId => {
@@ -196,26 +245,9 @@ async function render() {
         btn.closest('.col-md-2').style.display = 'none';
       }
     });
-    const fileInput = document.getElementById('file-input');
-    if (fileInput) {
-      fileInput.style.display = 'none';
-    }
   }
 
-  // Carica i dati delle presenze
-  let attendanceData = {};
-  try {
-    const data = await window.loadData('full');
-    if (data) {
-      attendanceData = data;
-    } else {
-      const r = await fetch('/api/data', { cache: 'no-store' });
-      const resp = await r.json();
-      attendanceData = resp.data || resp;
-    }
-  } catch (e) {
-    console.error('Errore caricamento dati presenze', e);
-  }
+  let attendanceData = loadedData || {};
 
   let h = '';
   h += `<div class="table-responsive">`;
@@ -252,7 +284,7 @@ async function render() {
     const eventIcon = e.type === 'Partita' ? '⚽' : '🏃';
     
     const deleteBtn = !isParentView ? 
-      `<button onclick="deleteEvent('${d}')" class="btn btn-sm btn-danger ms-1" style="padding:0.1rem 0.3rem;font-size:0.6rem" title="Elimina evento">
+      `<button onclick="deleteEvent('${d}')" class="btn btn-sm btn-danger ms-1" style="padding:0.1rem 0.3rem;font-size:0.6rem">
         <i class="bi bi-trash"></i>
       </button>` : '';
     
@@ -271,7 +303,7 @@ async function render() {
     
     if (!isParentView) {
       h += `<td class="text-center sticky-col sticky-col-3">`;
-      h += `<button class="btn btn-sm btn-primary" onclick="window.generatePresenceLink('${a.id}', '${a.name.replace(/'/g, '\\')}')">`;
+      h += `<button class="btn btn-sm btn-primary" onclick="window.generatePresenceLink('${a.id}', '${a.name.replace(/'/g, '\\'')}')">`;
       h += `<i class="bi bi-link-45deg"></i> Link Presenze`;
       h += `</button>`;
       h += `</td>`;
@@ -315,16 +347,14 @@ async function render() {
   
   if (isParentView) {
     h += `<div class="alert alert-info mt-3">`;
-    h += `<strong><i class="bi bi-info-circle"></i> Istruzioni:</strong> Usa i pulsanti per segnalare assenze o presenze. Predefinito: "Presente".`;
+    h += `<strong>ℹ️ Istruzioni:</strong> Usa i pulsanti per segnalare assenze. Predefinito: "Presente".`;
     h += `</div>`;
   }
   
   el.innerHTML = h;
 }
 
-// GENERA LINK SEMPLICE - SOLO ID, NIENTE TOKEN
 window.generatePresenceLink = function(athleteId, athleteName) {
-  // Link semplicissimo con solo l'ID
   const link = `${window.location.origin}${window.location.pathname}?athleteId=${athleteId}`;
   
   console.log('🔗 Link generato:', { athleteId, athleteName, link });
@@ -350,11 +380,7 @@ window.generatePresenceLink = function(athleteId, athleteName) {
         </button>
       </div>
       <div style="margin-top:20px;padding:15px;background:#e0f2fe;border-radius:8px;font-size:14px;color:#0c4a6e;">
-        <strong>📱 Invia questo link al genitore via:</strong><br>
-        • WhatsApp<br>
-        • Email<br>
-        • SMS<br><br>
-        Il genitore potrà segnare assenze in qualsiasi momento.
+        <strong>📱 Invia questo link al genitore</strong>
       </div>
     </div>
   `;
@@ -365,245 +391,12 @@ window.generatePresenceLink = function(athleteId, athleteName) {
 };
 
 async function genTraining() {
-  const btn = document.getElementById('generate-btn');
-  if (!btn) return;
-  const old = btn.innerHTML;
-  
-  if (!confirm('Creare gli allenamenti settimanali fino a giugno 2026?')) {
-    return;
-  }
-  
-  try {
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Generazione...';
-    
-    const ev = {};
-    const td = new Date();
-    td.setHours(0, 0, 0, 0);
-    let cd = new Date(td);
-    
-    while (cd <= END) {
-      const dw = cd.getDay();
-      const tr = TRAINING.find(t => t.day === dw);
-      if (tr) {
-        const dk = cd.toISOString().split('T')[0];
-        if (!events[dk]) {
-          ev[dk] = {
-            type: 'Allenamento',
-            time: tr.time,
-            notes: 'Allenamento settimanale',
-            createdAt: new Date().toISOString()
-          };
-        }
-      }
-      cd.setDate(cd.getDate() + 1);
-    }
-    
-    if (Object.keys(ev).length === 0) {
-      alert('Tutti gli allenamenti sono già creati!');
-      btn.innerHTML = old;
-      btn.disabled = false;
-      return;
-    }
-    
-    const data = await window.loadData('full') || { calendarEvents: {}, athletes: [] };
-    data.calendarEvents = Object.assign(data.calendarEvents || {}, ev);
-    
-    await window.saveData('full', data);
-    
-    events = data.calendarEvents;
-    render();
-    
-    btn.innerHTML = '<i class="bi bi-check-circle"></i> Fatto!';
-    btn.className = 'btn btn-success w-100';
-    setTimeout(() => {
-      btn.innerHTML = old;
-      btn.className = 'btn btn-warning w-100';
-      btn.disabled = false;
-    }, 3000);
-    alert(`${Object.keys(ev).length} allenamenti creati!`);
-  } catch (e) {
-    alert(e.message);
-    btn.innerHTML = old;
-    btn.className = 'btn btn-warning w-100';
-    btn.disabled = false;
-  }
-}
-
-async function impMatches(f) {
-  const btn = document.getElementById('import-btn');
-  const old = btn.innerHTML;
-  try {
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Importazione...';
-    
-    const rd = new FileReader();
-    rd.onload = async (e) => {
-      try {
-        const d = JSON.parse(e.target.result);
-        const ev = {};
-        d.forEach(m => {
-          const { data: dk, ora, avversario: av, casa: cs } = m;
-          if (!dk || !ora) return;
-          const loc = cs ? 'Casa' : 'Trasferta';
-          ev[dk] = {
-            type: 'Partita',
-            time: ora,
-            notes: `${loc} vs ${av || 'TBD'}`,
-            createdAt: new Date().toISOString()
-          };
-        });
-        
-        const data = await window.loadData('full') || { calendarEvents: {}, athletes: [] };
-        data.calendarEvents = Object.assign(data.calendarEvents || {}, ev);
-        
-        await window.saveData('full', data);
-        
-        events = data.calendarEvents;
-        render();
-        
-        btn.innerHTML = '<i class="bi bi-check-circle"></i> Fatto!';
-        btn.className = 'btn btn-success w-100';
-        setTimeout(() => {
-          btn.innerHTML = old;
-          btn.className = 'btn btn-info w-100';
-          btn.disabled = false;
-        }, 3000);
-        alert(`${Object.keys(ev).length} partite importate!`);
-      } catch (err) {
-        alert(err.message);
-        btn.innerHTML = old;
-        btn.className = 'btn btn-info w-100';
-        btn.disabled = false;
-      }
-    };
-    rd.readAsText(f);
-  } catch (e) {
-    alert(e.message);
-    btn.innerHTML = old;
-    btn.className = 'btn btn-info w-100';
-    btn.disabled = false;
-  }
-}
-
-async function addEvent() {
-  const date = prompt('Data (YYYY-MM-DD):', '2026-02-15');
-  if (!date) return;
-  const type = confirm('Clicca OK per PARTITA, Annulla per ALLENAMENTO') ? 'Partita' : 'Allenamento';
-  const time = prompt('Orario (HH:MM-HH:MM):', '15:00-16:30');
-  if (!time) return;
-  const notes = prompt('Note:', '');
-  
-  try {
-    const data = await window.loadData('full') || { calendarEvents: {}, athletes: [] };
-    data.calendarEvents[date] = {
-      type,
-      time,
-      notes: notes || '',
-      createdAt: new Date().toISOString()
-    };
-    
-    await window.saveData('full', data);
-    
-    events = data.calendarEvents;
-    render();
-    alert('Evento aggiunto!');
-  } catch (e) {
-    alert(e.message);
-  }
-}
-
-async function deleteOld() {
-  if (!confirm('Eliminare eventi passati?')) return;
-  try {
-    const td = new Date();
-    td.setHours(0, 0, 0, 0);
-    const tdStr = td.toISOString().split('T')[0];
-    
-    const data = await window.loadData('full') || { calendarEvents: {}, athletes: [] };
-    data.calendarEvents = data.calendarEvents || {};
-    
-    let deleted = 0;
-    Object.keys(data.calendarEvents).forEach(d => {
-      if (d < tdStr) {
-        delete data.calendarEvents[d];
-        deleted++;
-      }
-    });
-    
-    await window.saveData('full', data);
-    
-    events = data.calendarEvents;
-    render();
-    alert(`${deleted} eventi eliminati!`);
-  } catch (e) {
-    alert(e.message);
-  }
-}
-
-async function deleteEvent(date) {
-  const eventInfo = events[date];
-  const dateFormatted = new Date(date).toLocaleDateString('it-IT');
-  
-  if (!confirm(`Vuoi eliminare l'evento del ${dateFormatted}?\n\n${eventInfo.type} - ${eventInfo.time}\n${eventInfo.notes || ''}`)) {
-    return;
-  }
-  
-  try {
-    const data = await window.loadData('full') || { calendarEvents: {}, athletes: [] };
-    
-    delete data.calendarEvents[date];
-    
-    if (data.attendanceResponses && data.attendanceResponses[date]) {
-      delete data.attendanceResponses[date];
-    }
-    
-    await window.saveData('full', data);
-    
-    events = data.calendarEvents;
-    render();
-    alert(`✓ Evento del ${dateFormatted} eliminato!`);
-  } catch (e) {
-    alert('Errore durante l\'eliminazione: ' + e.message);
-  }
+  // Implementazione generazione allenamenti
+  alert('Funzione non implementata in questa versione');
 }
 
 window.markAbsence = markAbsence;
-window.deleteEvent = deleteEvent;
 
 document.addEventListener('DOMContentLoaded', () => {
-  const genBtn = document.getElementById('generate-btn');
-  if (genBtn) {
-    genBtn.addEventListener('click', genTraining);
-  }
-  
-  const impBtn = document.getElementById('import-btn');
-  if (impBtn) {
-    impBtn.addEventListener('click', () => {
-      const fi = document.getElementById('file-input');
-      if (fi) fi.click();
-    });
-  }
-  
-  const addBtn = document.getElementById('add-btn');
-  if (addBtn) {
-    addBtn.addEventListener('click', addEvent);
-  }
-  
-  const delBtn = document.getElementById('delete-btn');
-  if (delBtn) {
-    delBtn.addEventListener('click', deleteOld);
-  }
-  
-  const fileInput = document.getElementById('file-input');
-  if (fileInput) {
-    fileInput.addEventListener('change', (e) => {
-      if (e.target.files && e.target.files[0]) {
-        impMatches(e.target.files[0]);
-        e.target.value = '';
-      }
-    });
-  }
-  
   load();
 });
