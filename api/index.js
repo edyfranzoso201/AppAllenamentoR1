@@ -454,55 +454,6 @@ async function handleData(req, res) {
       return res.status(500).json({ message: 'Errore del server' });
     }
   }
-}
-
-  // ✅ Gestione MULTI-ANNATA (solo se annataId è presente)
-  if (req.method === 'GET') {
-    try {
-      const athletes = await kv.get(`data:${annataId}:athletes`) || [];
-      const evaluations = await kv.get(`data:${annataId}:evaluations`) || {};
-      const gpsData = await kv.get(`data:${annataId}:gpsData`) || {};
-      const awards = await kv.get(`data:${annataId}:awards`) || {};
-      const trainingSessions = await kv.get(`data:${annataId}:trainingSessions`) || {};
-      const formationData = await kv.get(`data:${annataId}:formationData`) || { starters: [], bench: [], tokens: [] };
-      const matchResults = await kv.get(`data:${annataId}:matchResults`) || {};
-      const calendarEvents = await kv.get(`data:${annataId}:calendarEvents`) || {};
-      const calendarResponses = await kv.get(`data:${annataId}:calendarResponses`) || {};
-
-      return res.status(200).json({
-        athletes,
-        evaluations,
-        gpsData,
-        awards,
-        trainingSessions,
-        formationData,
-        matchResults,
-        calendarEvents,
-        calendarResponses
-      });
-    } catch (error) {
-      console.error('Get data error:', error);
-      return res.status(500).json({ message: 'Errore del server' });
-    }
-  } else if (req.method === 'POST') {
-    try {
-      const allData = req.body;
-      if (allData.athletes !== undefined) await kv.set(`data:${annataId}:athletes`, allData.athletes);
-      if (allData.evaluations !== undefined) await kv.set(`data:${annataId}:evaluations`, allData.evaluations);
-      if (allData.gpsData !== undefined) await kv.set(`data:${annataId}:gpsData`, allData.gpsData);
-      if (allData.awards !== undefined) await kv.set(`data:${annataId}:awards`, allData.awards);
-      if (allData.trainingSessions !== undefined) await kv.set(`data:${annataId}:trainingSessions`, allData.trainingSessions);
-      if (allData.formationData !== undefined) await kv.set(`data:${annataId}:formationData`, allData.formationData);
-      if (allData.matchResults !== undefined) await kv.set(`data:${annataId}:matchResults`, allData.matchResults);
-      if (allData.calendarEvents !== undefined) await kv.set(`data:${annataId}:calendarEvents`, allData.calendarEvents);
-      if (allData.calendarResponses !== undefined) await kv.set(`data:${annataId}:calendarResponses`, allData.calendarResponses);
-
-      return res.status(200).json({ success: true });
-    } catch (error) {
-      console.error('Save data error:', error);
-      return res.status(500).json({ message: 'Errore del server' });
-    }
-  }
 
 // ==========================================
 // MAIN ROUTER
