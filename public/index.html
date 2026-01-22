@@ -7,32 +7,30 @@
     
     <!-- CRITICAL CSS: Nascondi tutto prima del login -->
 <style>
-    /* Nascondi tutto il contenuto finché non è autenticato */
-    #app-content {
-        display: none;
-    }
+#app-content {
+    display: none;
+}
 
-    /* Loading screen iniziale */
-    #loading-screen {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        z-index: 999999;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        color: white;
-        font-size: 24px;
-        text-align: center;
-    }
+#loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    z-index: 999999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 24px;
+    text-align: center;
+}
 
-    #loading-screen.hidden {
-        display: none;
-    }
-    </style>
+#loading-screen.hidden {
+    display: none;
+}
+</style>
     
     <!-- Auth script DEVE essere caricato per primo -->
     <script src="auth-multi-annata.js"></script>
