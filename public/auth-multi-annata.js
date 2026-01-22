@@ -427,169 +427,143 @@
             window.location.reload();
         }
 
-        // UI - ADMIN PANEL (COMPLETO)
-function showAdminPanel() {
-  const username = getCurrentUser();
-  const container = document.createElement('div');
-  container.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10000;
-  `;
+            // UI - ADMIN PANEL - VERSIONE SEMPLICE
+        function showAdminPanel() {
+          const username = getCurrentUser();
+          const container = document.createElement('div');
+          container.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); display: flex; align-items: center;
+            justify-content: center; z-index: 10000;
+          `;
 
-  const panel = document.createElement('div');
-  panel.style.cssText = `
-    background: rgba(30, 41, 59, 0.95);
-    padding: 40px;
-    border-radius: 15px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    max-width: 600px;
-    width: 90%;
-    max-height: 80vh;
-    overflow-y: auto;
-    border: 1px solid rgba(96, 165, 250, 0.2);
-  `;
+          const panel = document.createElement('div');
+          panel.style.cssText = `
+            background: rgba(30,41,59,0.95); padding: 40px;
+            border-radius: 15px; max-width: 600px; width: 90%;
+            max-height: 80vh; overflow-y: auto;
+            border: 1px solid rgba(96,165,250,0.2);
+          `;
 
-  panel.innerHTML = `
-    <div style="text-align: center; margin-bottom: 30px;">
-      <div style="font-size: 48px; margin-bottom: 10px;">⚙️</div>
-      <h1 style="color: #60a5fa; margin: 0 0 10px 0; font-size: 28px; font-weight: 700;">Gestione Utenti</h1>
-      <p style="color: #94a3b8; margin: 0;">Amministratore: <strong style="color: #60a5fa;">${username}</strong></p>
-    </div>
-
-    <!-- TAB AGGIUNTA UTENTE -->
-    <div style="margin-bottom: 30px; padding: 20px; background: rgba(15, 23, 42, 0.6); border-radius: 12px;">
-      <h3 style="color: #60a5fa; margin: 0 0 15px 0;">Aggiungi Utente</h3>
-      <form id="add-user-form" style="display: flex; flex-direction: column; gap: 15px;">
-        <input type="text" id="new-username" placeholder="Username" style="width: 100%; padding: 12px; border: 1px solid rgba(96, 165, 250, 0.3); border-radius: 8px; background: #0f172a; color: #fff; font-size: 16px; box-sizing: border-box;" required>
-        <input type="password" id="new-password" placeholder="Password" style="width: 100%; padding: 12px; border: 1px solid rgba(96, 165, 250, 0.3); border-radius: 8px; background: #0f172a; color: #fff; font-size: 16px; box-sizing: border-box;" required>
-        <select id="new-role" style="width: 100%; padding: 12px; border: 1px solid rgba(96, 165, 250, 0.3); border-radius: 8px; background: #0f172a; color: #fff; font-size: 16px; box-sizing: border-box;">
-          <option value="user">Utente</option>
-          <option value="allenatore">Allenatore</option>
-          <option value="admin">Admin</option>
-        </select>
-        <button type="submit" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: #fff; padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">✅ Aggiungi</button>
-        <div id="add-user-message" style="color: #10b981; font-size: 14px; text-align: center; min-height: 20px;"></div>
-      </form>
-    </div>
-
-    <!-- LISTA UTENTI -->
-    <div style="margin-bottom: 30px; padding: 20px; background: rgba(15, 23, 42, 0.6); border-radius: 12px;">
-      <h3 style="color: #60a5fa; margin: 0 0 15px 0;">Utenti Registrati</h3>
-      <div id="users-list" style="max-height: 300px; overflow-y: auto;">
-        <p style="color: #94a3b8; text-align: center;">Caricamento...</p>
-      </div>
-    </div>
-
-    <!-- BOTTONE CHIUDI -->
-    <div style="text-align: center;">
-      <button id="close-admin-panel" style="background: transparent; color: #ef4444; border: 1px solid #ef4444; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 13px;">🚪 Chiudi</button>
-    </div>
-  `;
-
-  container.appendChild(panel);
-  document.body.appendChild(container);
-
-  // Event Listeners
-  const form = document.getElementById('add-user-form');
-  const closeBtn = document.getElementById('close-admin-panel');
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const username = document.getElementById('new-username').value.trim();
-    const password = document.getElementById('new-password').value;
-    const role = document.getElementById('new-role').value;
-    const messageDiv = document.getElementById('add-user-message');
-
-    if (!username || !password) {
-      messageDiv.textContent = '❌ Compila tutti i campi';
-      messageDiv.style.color = '#ef4444';
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/auth/create-user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, role })
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        messageDiv.textContent = `✅ ${data.message}`;
-        messageDiv.style.color = '#10b981';
-        form.reset();
-        loadUsersList();
-      } else {
-        messageDiv.textContent = `❌ ${data.message}`;
-        messageDiv.style.color = '#ef4444';
-      }
-    } catch (error) {
-      messageDiv.textContent = `❌ Errore: ${error.message}`;
-      messageDiv.style.color = '#ef4444';
-    }
-  });
-
-  closeBtn.addEventListener('click', () => {
-    container.remove();
-  });
-
-  // Carica lista utenti
-  async function loadUsersList() {
-    const listDiv = document.getElementById('users-list');
-    try {
-      const response = await fetch('/api/auth/list-users');
-      const data = await response.json();
-      
-      if (data.users && data.users.length > 0) {
-        listDiv.innerHTML = data.users.map(user => `
-          <div style="padding: 12px; background: rgba(30, 41, 59, 0.5); margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
-            <div>
-              <p style="color: #60a5fa; margin: 0; font-weight: 600;">${user.username}</p>
-              <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 13px;">Ruolo: ${user.role}</p>
+          panel.innerHTML = `
+            <h2 style="color: #60a5fa; margin-top: 0;">⚙️ Pannello Admin</h2>
+            <p style="color: #94a3b8;">Admin: <strong>${username}</strong></p>
+            
+            <div style="background: rgba(15,23,42,0.6); padding: 20px; border-radius: 12px; margin: 20px 0;">
+              <h3 style="color: #60a5fa;">➕ Aggiungi Utente</h3>
+              <form id="add-user-form" style="display: flex; flex-direction: column; gap: 12px;">
+                <input type="text" id="new-username" placeholder="Username" required style="padding: 10px; border: 1px solid rgba(96,165,250,0.3); border-radius: 6px; background: #0f172a; color: #fff;">
+                <input type="password" id="new-password" placeholder="Password" required style="padding: 10px; border: 1px solid rgba(96,165,250,0.3); border-radius: 6px; background: #0f172a; color: #fff;">
+                <select id="new-role" style="padding: 10px; border: 1px solid rgba(96,165,250,0.3); border-radius: 6px; background: #0f172a; color: #fff;">
+                  <option value="user">Utente</option>
+                  <option value="allenatore">Allenatore</option>
+                  <option value="admin">Admin</option>
+                </select>
+                <button type="submit" style="background: #3b82f6; color: #fff; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Crea Utente</button>
+                <div id="add-user-msg" style="color: #10b981; font-size: 13px; text-align: center; min-height: 18px;"></div>
+              </form>
             </div>
-            ${user.username !== 'admin' ? `
-              <button onclick="deleteUserConfirm('${user.username}')" style="background: #ef4444; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">🗑️ Elimina</button>
-            ` : ''}
-          </div>
-        `).join('');
-      } else {
-        listDiv.innerHTML = '<p style="color: #94a3b8; text-align: center;">Nessun utente trovato</p>';
-      }
-    } catch (error) {
-      listDiv.innerHTML = `<p style="color: #ef4444; text-align: center;">Errore nel caricamento: ${error.message}</p>`;
-    }
-  }
 
-  // Funzione globale per eliminare utente
-  window.deleteUserConfirm = async (username) => {
-    if (!confirm(`Sei sicuro di voler eliminare ${username}?`)) return;
-    try {
-      const response = await fetch('/api/auth/delete-user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username })
-      });
-      if (response.ok) {
-        alert('✅ Utente eliminato');
-        loadUsersList();
-      } else {
-        alert('❌ Errore nell\'eliminazione');
-      }
-    } catch (error) {
-      alert(`❌ Errore: ${error.message}`);
-    }
-  };
+            <div style="background: rgba(15,23,42,0.6); padding: 20px; border-radius: 12px;">
+              <h3 style="color: #60a5fa;">📋 Utenti Esistenti</h3>
+              <div id="users-list" style="max-height: 300px; overflow-y: auto; color: #94a3b8; font-size: 13px;">
+                <p>Caricamento...</p>
+              </div>
+            </div>
 
-  loadUsersList();
-}
+            <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(96,165,250,0.2);">
+              <button id="close-admin" style="background: transparent; color: #ef4444; border: 1px solid #ef4444; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Chiudi</button>
+            </div>
+          `;
+
+          container.appendChild(panel);
+          document.body.appendChild(container);
+
+          // Aggiungi utente
+          document.getElementById('add-user-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('new-username').value.trim();
+            const password = document.getElementById('new-password').value;
+            const role = document.getElementById('new-role').value;
+            const msg = document.getElementById('add-user-msg');
+
+            if (!username || !password) {
+              msg.textContent = '❌ Riempi tutti i campi';
+              msg.style.color = '#ef4444';
+              return;
+            }
+
+            try {
+              const res = await fetch('/api/auth/create-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password, role })
+              });
+              const data = await res.json();
+              if (res.ok) {
+                msg.textContent = `✅ ${data.message}`;
+                msg.style.color = '#10b981';
+                document.getElementById('add-user-form').reset();
+                loadUsersList();
+              } else {
+                msg.textContent = `❌ ${data.message}`;
+                msg.style.color = '#ef4444';
+              }
+            } catch (err) {
+              msg.textContent = `❌ Errore: ${err.message}`;
+              msg.style.color = '#ef4444';
+            }
+          });
+
+          // Carica lista utenti
+          async function loadUsersList() {
+            const list = document.getElementById('users-list');
+            try {
+              const res = await fetch('/api/auth/list-users');
+              const data = await res.json();
+              if (data.users?.length > 0) {
+                list.innerHTML = data.users.map(u => `
+                  <div style="padding: 8px; background: rgba(30,41,59,0.5); margin: 6px 0; border-radius: 6px; display: flex; justify-content: space-between;">
+                    <div><strong>${u.username}</strong> (${u.role})</div>
+                    ${u.username !== 'admin' ? `<button onclick="deleteUserConfirm('${u.username}')" style="background: #ef4444; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">Elimina</button>` : ''}
+                  </div>
+                `).join('');
+              } else {
+                list.innerHTML = '<p>Nessun utente trovato</p>';
+              }
+            } catch (err) {
+              list.innerHTML = `<p style="color: #ef4444;">Errore: ${err.message}</p>`;
+            }
+          }
+
+          // Elimina utente
+          window.deleteUserConfirm = async (username) => {
+            if (!confirm(`Eliminare ${username}?`)) return;
+            try {
+              const res = await fetch('/api/auth/delete-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username })
+              });
+              if (res.ok) {
+                alert('✅ Utente eliminato');
+                loadUsersList();
+              } else {
+                alert('❌ Errore nell\'eliminazione');
+              }
+            } catch (err) {
+              alert(`❌ Errore: ${err.message}`);
+            }
+          };
+
+          // Chiudi pannello
+          document.getElementById('close-admin').addEventListener('click', () => {
+            container.remove();
+          });
+
+          // Carica lista iniziale
+          loadUsersList();
+        }
 
         // ==========================================
         // UI - LOGOUT BUTTON IN APP
