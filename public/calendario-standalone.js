@@ -303,7 +303,7 @@ async function render(loadedData) {
     
     if (!isParentView) {
       h += `<td class="text-center sticky-col sticky-col-3">`;
-      h += `<button class="btn btn-sm btn-primary" onclick="window.generatePresenceLink('${a.id}', '${a.name.replace(/'/g, '\\'')}')">`;
+      h += `<button class="btn btn-sm btn-primary link-presenze-btn" data-athlete-id="${a.id}" data-athlete-name="${a.name.replace(/"/g, '&quot;')}">`;
       h += `<i class="bi bi-link-45deg"></i> Link Presenze`;
       h += `</button>`;
       h += `</td>`;
@@ -352,6 +352,17 @@ async function render(loadedData) {
   }
   
   el.innerHTML = h;
+  
+  // Aggiungi event listener per i pulsanti Link Presenze
+  if (!isParentView) {
+    document.querySelectorAll('.link-presenze-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const athleteId = this.getAttribute('data-athlete-id');
+        const athleteName = this.getAttribute('data-athlete-name');
+        window.generatePresenceLink(athleteId, athleteName);
+      });
+    });
+  }
 }
 
 window.generatePresenceLink = function(athleteId, athleteName) {
