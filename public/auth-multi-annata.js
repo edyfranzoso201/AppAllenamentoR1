@@ -117,8 +117,18 @@
     // ==========================================
     // UI - LOGIN SCREEN
     // ==========================================
-    
     function showLoginScreen() {
+    // Aspetta che il DOM sia pronto
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            createLoginOverlay();
+        });
+    } else {
+        createLoginOverlay();
+    }
+}
+
+function createLoginOverlay() {
     // Crea un overlay di login
     const overlay = document.createElement('div');
     overlay.id = 'login-overlay';
@@ -247,8 +257,18 @@
     // ==========================================
     // UI - ANNATA SELECTION SCREEN
     // ==========================================
-    
     async function showAnnataSelection() {
+    // Aspetta che il DOM sia pronto
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            createAnnataOverlay();
+        });
+    } else {
+        createAnnataOverlay();
+    }
+}
+
+function createAnnataOverlay() {
     // Crea un overlay di selezione annata
     const overlay = document.createElement('div');
     overlay.id = 'annata-overlay';
