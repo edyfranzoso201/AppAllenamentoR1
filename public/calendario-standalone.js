@@ -1,4 +1,4 @@
-// calendario-standalone.js - versione con link per singolo atleta (function)
+// calendario-standalone.js - versione SEMPLIFICATA senza token
 
 const TRAINING = [
   { day: 1, time: '18:30-20:00' },  // Lunedì
@@ -9,55 +9,35 @@ const END = new Date('2026-06-30');
 
 let events = {};
 let athletes = [];
-let isParentView = false; // Flag per identificare se è la vista genitore
-let currentAthleteId = null; // ID dell'atleta nella vista genitore
-
-// Token usato per i link atleta
-window.generateAthleteToken = function(athleteId) {
-  const salt = 'GOSPORT2025SECRETKEY';
-  const str = salt + athleteId;
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) - hash) + str.charCodeAt(i);
-    hash = hash & hash;
-  }
-  return Math.abs(hash).toString(36) + athleteId.toString().split('').reverse().join('');
-};
-
-// Decode del token coerente con presenza-atleta.js
-window.decodePresenceToken = function(token) {
-  try {
-    const match = token.match(/(\d+)$/);
-    return match ? match[0].split('').reverse().join('') : null;
-  } catch (e) {
-    return null;
-  }
-};
+let isParentView = false;
+let currentAthleteId = null;
 
 async function load() {
   try {
-    // USA loadData dal data-adapter invece di fetch diretto
-    const data = await window.loadData('full');
+    console.log('📥 Caricamento dati calendario...');
+    
+    // USA loadData dal data-adapter
+    let data = await window.loadData('full');
     
     if (!data) {
-      // Fallback a fetch diretto se loadData non funziona
+      console.warn('⚠️ loadData fallito, uso fetch diretto');
       const r = await fetch('/api/data', { cache: 'no-store' });
-      const d = await r.json();
-      events = d.data?.calendarEvents || d.calendarEvents || {};
-      athletes = d.data?.athletes || d.athletes || [];
-    } else {
-      events = data.calendarEvents || {};
-      athletes = data.athletes || [];
+      const resp = await r.json();
+      data = resp.data || resp;
     }
     
-    console.log('📅 Calendario caricato:', {
+    events = data.calendarEvents || {};
+    athletes = data.athletes || [];
+    
+    console.log('✅ Dati caricati:', {
       eventi: Object.keys(events).length,
-      atleti: athletes.length
+      atleti: athletes.length,
+      listaAtleti: athletes.map(a => ({ id: a.id, name: a.name }))
     });
     
     render();
   } catch (e) {
-    console.error('Errore caricamento:', e);
+    console.error('❌ Errore caricamento:', e);
     document.getElementById('calendar').innerHTML = `<div class="alert alert-danger">Errore caricamento dati: ${e.message}</div>`;
   }
 }
@@ -73,17 +53,15 @@ async function markAbsence(athleteId, date, currentStatus) {
   try {
     console.log('💾 Salvataggio stato presenza:', { athleteId, date, newStatus });
     
-    // Carica i dati correnti usando loadData
     let data = await window.loadData('full');
     
     if (!data) {
-      // Fallback
       const r = await fetch('/api/data', { cache: 'no-store' });
       const resp = await r.json();
       data = resp.data || resp;
     }
     
-    // Inizializza la struttura se non esiste
+    // Inizializza la struttura
     if (!data.attendanceResponses) {
       data.attendanceResponses = {};
     }
@@ -98,13 +76,13 @@ async function markAbsence(athleteId, date, currentStatus) {
       delete data.attendanceResponses[date][athleteId];
     }
     
-    console.log('💾 Dati da salvare:', data.attendanceResponses[date]);
+    console.log('💾 Dati da salvare:', { date, athleteId, status: newStatus });
     
-    // Salva usando saveData dal data-adapter
+    // Salva
     const saved = await window.saveData('full', data);
     
     if (!saved) {
-      throw new Error('Errore nel salvataggio');
+      throw new Error('Salvataggio fallito');
     }
     
     console.log('✅ Stato salvato con successo');
@@ -136,40 +114,47 @@ async function render() {
 
   const urlParams = new URLSearchParams(window.location.search);
   
-  // SUPPORTA SIA 'athlete' CHE 'athleteId'
-  const tokenParam = urlParams.get('athlete') || urlParams.get('athleteId');
+  // SEMPLICISSIMO: usa direttamente athleteId dall'URL
+  const athleteIdParam = urlParams.get('athleteId');
   
   let visibleAthletes = athletes.filter(a => !a.guest);
   
+  console.log('🔍 Parametri URL:', { athleteIdParam });
+  console.log('👥 Atleti disponibili:', visibleAthletes.map(a => ({ id: a.id, name: a.name })));
+  
   // Verifica se è la vista genitore
-  if (tokenParam) {
+  if (athleteIdParam) {
     isParentView = true;
+    currentAthleteId = athleteIdParam;
     
-    // Prova prima come token, poi come ID diretto
-    let athleteId = window.decodePresenceToken(tokenParam);
+    console.log('🔓 Modalità Genitore rilevata, cerco atleta con ID:', athleteIdParam);
     
-    // Se il decode fallisce, usa il valore diretto
-    if (!athleteId) {
-      athleteId = tokenParam;
-    }
+    // Filtra per ID - prova sia come stringa che come numero
+    visibleAthletes = visibleAthletes.filter(a => {
+      const match = String(a.id) === String(athleteIdParam) || 
+                    Number(a.id) === Number(athleteIdParam);
+      console.log(`  Confronto atleta ${a.name}: ${a.id} === ${athleteIdParam}? ${match}`);
+      return match;
+    });
     
-    console.log('🔓 Modalità Genitore rilevata:', { token: tokenParam, athleteId });
-    
-    if (athleteId) {
-      currentAthleteId = athleteId;
-      visibleAthletes = visibleAthletes.filter(a => String(a.id) === String(athleteId));
-      
-      if (visibleAthletes.length === 0) {
-        console.error('❌ Atleta non trovato:', athleteId);
-        el.innerHTML = `<div class="alert alert-danger mt-3">Link non valido o atleta non trovato. Contatta il coach per un nuovo link.</div>`;
-        return;
-      }
-      
-      console.log('✅ Atleta trovato:', visibleAthletes[0].name);
-    } else {
-      el.innerHTML = `<div class="alert alert-danger mt-3">Link non valido. Contatta il coach per un nuovo link.</div>`;
+    if (visibleAthletes.length === 0) {
+      console.error('❌ Atleta non trovato:', athleteIdParam);
+      console.error('   IDs disponibili:', athletes.filter(a => !a.guest).map(a => a.id));
+      el.innerHTML = `
+        <div class="alert alert-danger mt-3">
+          <h4>Link non valido o atleta non trovato</h4>
+          <p>ID cercato: <code>${athleteIdParam}</code></p>
+          <p>IDs disponibili nel database:</p>
+          <ul>
+            ${athletes.filter(a => !a.guest).map(a => `<li><code>${a.id}</code> - ${a.name}</li>`).join('')}
+          </ul>
+          <p>Contatta il coach per un nuovo link.</p>
+        </div>
+      `;
       return;
     }
+    
+    console.log('✅ Atleta trovato:', visibleAthletes[0].name);
   } else {
     isParentView = false;
     currentAthleteId = null;
@@ -177,7 +162,6 @@ async function render() {
 
   // Nascondi i pulsanti di gestione se è la vista genitore
   if (isParentView) {
-    // Nascondi tutti i pulsanti di controllo
     const buttons = ['add-btn', 'generate-btn', 'import-btn', 'responses-btn', 'delete-btn'];
     buttons.forEach(btnId => {
       const btn = document.getElementById(btnId);
@@ -185,7 +169,6 @@ async function render() {
         btn.closest('.col-md-2').style.display = 'none';
       }
     });
-    // Nascondi anche il file input
     const fileInput = document.getElementById('file-input');
     if (fileInput) {
       fileInput.style.display = 'none';
@@ -209,13 +192,12 @@ async function render() {
 
   let h = '';
   h += `<div class="table-responsive">`;
-  h += `<table class="table table-bordered calendar-table${isParentView ? '' : ' with-actions'}">`;
+  h += `<table class="table table-bordered calendar-table">`;
   h += `<thead>`;
   h += `<tr>`;
   h += `<th style="color:#000" class="sticky-col sticky-col-1">#</th>`;
   h += `<th style="color:#000" class="sticky-col sticky-col-2">Atleta</th>`;
   
-  // Colonna Azioni solo per il coach - ANCHE QUESTA FISSA
   if (!isParentView) {
     h += `<th style="color:#000" class="sticky-col sticky-col-3">Azioni</th>`;
   }
@@ -232,7 +214,6 @@ async function render() {
   h += `<th style="color:#000" class="sticky-col sticky-col-1"></th>`;
   h += `<th style="color:#000" class="sticky-col sticky-col-2">Nome</th>`;
   
-  // Colonna Evento per coach, altrimenti niente
   if (!isParentView) {
     h += `<th style="color:#000" class="sticky-col sticky-col-3">Evento</th>`;
   } else {
@@ -243,7 +224,6 @@ async function render() {
     const e = events[d];
     const eventIcon = e.type === 'Partita' ? '⚽' : '🏃';
     
-    // Aggiungi icona cestino solo per il coach
     const deleteBtn = !isParentView ? 
       `<button onclick="deleteEvent('${d}')" class="btn btn-sm btn-danger ms-1" style="padding:0.1rem 0.3rem;font-size:0.6rem" title="Elimina evento">
         <i class="bi bi-trash"></i>
@@ -262,7 +242,6 @@ async function render() {
     h += `<td style="color:#000" class="sticky-col sticky-col-1">${i + 1}</td>`;
     h += `<td style="color:#000" class="sticky-col sticky-col-2">${a.name}</td>`;
     
-    // Colonna Azioni solo per il coach
     if (!isParentView) {
       h += `<td class="text-center sticky-col sticky-col-3">`;
       h += `<button class="btn btn-sm btn-primary" onclick="window.generatePresenceLink('${a.id}', '${a.name.replace(/'/g, '\\')}')">`;
@@ -271,12 +250,10 @@ async function render() {
       h += `</td>`;
     }
     
-    // Celle per ogni data
     dates.forEach(date => {
       const status = getAttendanceStatus(a.id, date, attendanceData);
       
       if (isParentView) {
-        // Vista genitore: mostra stato e bottone per cambiarlo
         if (status === 'Assente') {
           h += `<td class="text-center" style="background-color:#ffcccc; color:#000">
             <div style="display:flex; flex-direction:column; align-items:center; gap:5px">
@@ -297,7 +274,6 @@ async function render() {
           </td>`;
         }
       } else {
-        // Vista coach: solo visualizzazione stato
         if (status === 'Assente') {
           h += `<td class="text-center" style="background-color:#ffcccc; color:#dc3545; font-weight:bold">❌ Assente</td>`;
         } else {
@@ -310,7 +286,6 @@ async function render() {
 
   h += `</tbody></table></div>`;
   
-  // Istruzioni solo per genitore
   if (isParentView) {
     h += `<div class="alert alert-info mt-3">`;
     h += `<strong><i class="bi bi-info-circle"></i> Istruzioni:</strong> Usa i pulsanti per segnalare assenze o presenze. Predefinito: "Presente".`;
@@ -320,20 +295,20 @@ async function render() {
   el.innerHTML = h;
 }
 
-// Genera link per l'atleta (per il coach)
+// GENERA LINK SEMPLICE - SOLO ID, NIENTE TOKEN
 window.generatePresenceLink = function(athleteId, athleteName) {
-  const token = window.generateAthleteToken(athleteId);
-  
-  // Usa athleteId come parametro invece di athlete
+  // Link semplicissimo con solo l'ID
   const link = `${window.location.origin}${window.location.pathname}?athleteId=${athleteId}`;
   
-  // Mostra modal con link
+  console.log('🔗 Link generato:', { athleteId, athleteName, link });
+  
   const modal = document.createElement('div');
   modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
   modal.innerHTML = `
     <div style="background:white;padding:30px;border-radius:15px;max-width:600px;width:90%;">
       <h3 style="margin:0 0 20px 0;color:#2563eb;">🔗 Link Conferma Presenze</h3>
       <p style="margin-bottom:15px;"><strong>Atleta:</strong> ${athleteName}</p>
+      <p style="margin-bottom:10px;"><strong>ID Atleta:</strong> <code>${athleteId}</code></p>
       <div style="background:#f1f5f9;padding:15px;border-radius:8px;margin-bottom:20px;word-break:break-all;font-family:monospace;font-size:14px;">
         ${link}
       </div>
@@ -550,10 +525,8 @@ async function deleteEvent(date) {
   try {
     const data = await window.loadData('full') || { calendarEvents: {}, athletes: [] };
     
-    // Elimina l'evento
     delete data.calendarEvents[date];
     
-    // Elimina anche le risposte di presenza per quella data
     if (data.attendanceResponses && data.attendanceResponses[date]) {
       delete data.attendanceResponses[date];
     }
@@ -568,7 +541,6 @@ async function deleteEvent(date) {
   }
 }
 
-// Rendi le funzioni globali
 window.markAbsence = markAbsence;
 window.deleteEvent = deleteEvent;
 
