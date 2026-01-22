@@ -27,12 +27,21 @@ async function load() {
     }
     
     events = data.calendarEvents || {};
-    athletes = data.athletes || [];
+    
+    // ✅ CONVERTI TUTTI GLI ID A STRINGHE per evitare problemi con numeri grandi
+    athletes = (data.athletes || []).map(a => ({
+      ...a,
+      id: String(a.id)
+    }));
     
     console.log('✅ Dati caricati:', {
       eventi: Object.keys(events).length,
       atleti: athletes.length,
-      listaAtleti: athletes.map(a => ({ id: a.id, name: a.name }))
+      listaAtleti: athletes.map(a => ({ 
+        id: a.id, 
+        idType: typeof a.id,
+        name: a.name 
+      }))
     });
     
     render();
@@ -43,55 +52,72 @@ async function load() {
 }
 
 async function markAbsence(athleteId, date, currentStatus) {
+  console.log('🔔 markAbsence chiamata!', { athleteId, athleteIdType: typeof athleteId, date, currentStatus });
+  
   const newStatus = currentStatus === 'Assente' ? null : 'Assente';
   const statusText = newStatus === 'Assente' ? 'assente' : 'presente';
   
   if (!confirm(`Confermi di voler segnare l'atleta come ${statusText} per il ${new Date(date).toLocaleDateString('it-IT')}?`)) {
+    console.log('❌ Utente ha annullato');
     return;
   }
   
   try {
-    console.log('💾 Salvataggio stato presenza:', { athleteId, date, newStatus });
+    console.log('💾 Inizio salvataggio stato presenza:', { athleteId, date, newStatus });
     
     let data = await window.loadData('full');
     
     if (!data) {
+      console.log('⚠️ loadData fallito, uso fetch');
       const r = await fetch('/api/data', { cache: 'no-store' });
       const resp = await r.json();
       data = resp.data || resp;
     }
     
+    console.log('📦 Dati caricati per salvataggio');
+    
     // Inizializza la struttura
     if (!data.attendanceResponses) {
       data.attendanceResponses = {};
+      console.log('✨ Creata struttura attendanceResponses');
     }
     if (!data.attendanceResponses[date]) {
       data.attendanceResponses[date] = {};
+      console.log(`✨ Creata struttura per data ${date}`);
     }
     
-    // Imposta lo stato
+    // Imposta lo stato - USA STRINGA PER L'ID
+    const athleteIdStr = String(athleteId);
     if (newStatus === 'Assente') {
-      data.attendanceResponses[date][athleteId] = 'Assente';
+      data.attendanceResponses[date][athleteIdStr] = 'Assente';
+      console.log(`✅ Impostato assente per ${athleteIdStr}`);
     } else {
-      delete data.attendanceResponses[date][athleteId];
+      delete data.attendanceResponses[date][athleteIdStr];
+      console.log(`✅ Rimosso assente per ${athleteIdStr}`);
     }
     
-    console.log('💾 Dati da salvare:', { date, athleteId, status: newStatus });
+    console.log('💾 Struttura finale da salvare:', JSON.stringify(data.attendanceResponses[date], null, 2));
     
     // Salva
+    console.log('📤 Chiamata saveData...');
     const saved = await window.saveData('full', data);
     
+    console.log('📥 Risposta saveData:', saved);
+    
     if (!saved) {
-      throw new Error('Salvataggio fallito');
+      throw new Error('saveData ha ritornato false');
     }
     
-    console.log('✅ Stato salvato con successo');
+    console.log('✅ Stato salvato con successo!');
     
     // Ricarica
+    console.log('🔄 Ricaricamento pagina...');
     await load();
+    
     alert(`✅ Stato aggiornato: ${statusText}`);
   } catch (e) {
-    console.error('❌ Errore salvataggio:', e);
+    console.error('❌ Errore salvataggio completo:', e);
+    console.error('Stack:', e.stack);
     alert('❌ Errore nel salvataggio: ' + e.message);
   }
 }
