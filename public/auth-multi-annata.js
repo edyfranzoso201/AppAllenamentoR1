@@ -864,15 +864,17 @@
     }
 
     // ==========================================
-    // MAIN FLOW
+    // ==========================================
+// MAIN FLOW
+// ==========================================
 if (!isAuthenticated()) {
-    // Nascondi tutto il contenuto e mostra solo il form di login
-    document.getElementById('loading-screen').classList.remove('hidden');
+    // Nascondi il contenuto e mostra il form di login
+    document.getElementById('loading-screen').style.display = 'flex';
     document.getElementById('app-content').style.display = 'none';
     showLoginScreen();
 } else if (!hasSelectedAnnata()) {
     // Nascondi il contenuto e mostra la selezione annata
-    document.getElementById('loading-screen').classList.remove('hidden');
+    document.getElementById('loading-screen').style.display = 'flex';
     document.getElementById('app-content').style.display = 'none';
     showAnnataSelection();
 } else {
@@ -886,7 +888,7 @@ if (!isAuthenticated()) {
     window.isAdmin = isAdmin;
 
     // Mostra il contenuto
-    document.getElementById('loading-screen').classList.add('hidden');
+    document.getElementById('loading-screen').style.display = 'none';
     document.getElementById('app-content').style.display = 'block';
 }
 
