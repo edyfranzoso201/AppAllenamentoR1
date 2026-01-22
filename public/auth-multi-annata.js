@@ -865,33 +865,29 @@
 
     // ==========================================
     // MAIN FLOW
-    // ==========================================
-    const path = window.location.pathname;
-    if (path.includes('/presenza/')) {
-        return; // Modalità pubblica: non serve auth
-    }
-
-    if (!isAuthenticated()) {
-        showLoginScreen(); // ← Questa funzione SOVRASCRIVE TUTTO
-    } else if (!hasSelectedAnnata()) {
-        showAnnataSelection(); // ← Anche questa SOVRASCRIVE TUTTO
-    } else {
-    // ✅ UTENTE AUTENTICATO + ANNATA SELEZIONATA
-    // Rimuovi il blocco di caricamento e mostra il contenuto
-    const loadingScreen = document.getElementById('loading-screen');
-    const appContent = document.getElementById('app-content');
-    if (loadingScreen) loadingScreen.classList.add('hidden');
-    if (appContent) appContent.style.display = 'block';
-
-    // Setup sistema multi-annata
+if (!isAuthenticated()) {
+    // Nascondi tutto il contenuto e mostra solo il form di login
+    document.getElementById('loading-screen').classList.remove('hidden');
+    document.getElementById('app-content').style.display = 'none';
+    showLoginScreen();
+} else if (!hasSelectedAnnata()) {
+    // Nascondi il contenuto e mostra la selezione annata
+    document.getElementById('loading-screen').classList.remove('hidden');
+    document.getElementById('app-content').style.display = 'none';
+    showAnnataSelection();
+} else {
+    // Setup interceptor per aggiungere annata alle richieste
     setupFetchInterceptor();
     addLogoutButton();
-    
     // Esponi funzioni globali
     window.getCurrentAnnata = getCurrentAnnata;
     window.getCurrentUser = getCurrentUser;
     window.getUserRole = getUserRole;
     window.isAdmin = isAdmin;
+
+    // Mostra il contenuto
+    document.getElementById('loading-screen').classList.add('hidden');
+    document.getElementById('app-content').style.display = 'block';
 }
 
 })();
