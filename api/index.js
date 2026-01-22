@@ -63,7 +63,6 @@ async function handleLogin(req, res) {
     return res.status(500).json({ message: 'Errore del server' });
   }
 }
-
 async function handleCreateUser(req, res) {
   try {
     const { username, password, role = 'user' } = req.body;
