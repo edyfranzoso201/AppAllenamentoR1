@@ -879,6 +879,10 @@
     } else if (!hasSelectedAnnata()) {
         showAnnataSelection();
     } else {
+        // ✅ UTENTE AUTENTICATO E ANNATA SELEZIONATA
+        // Mostra il contenuto rimuovendo il blocco CSS
+        document.documentElement.classList.add('authenticated');
+        
         // Setup interceptor per aggiungere annata alle richieste
         setupFetchInterceptor();
         
