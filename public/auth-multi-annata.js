@@ -863,36 +863,28 @@
         };
     }
 
-    // ==========================================
     // MAIN FLOW
-    // ==========================================
-    
-    // Verifica se siamo in modalità presenza (non serve auth)
-    const path = window.location.pathname;
-    if (path.includes('/presenza/')) {
-        return;
-    }
+if (!isAuthenticated()) {
+    showLoginScreen();
+    document.getElementById('loading-screen').classList.add('hidden');
+    document.getElementById('app-content').style.display = 'none'; // Nascondi contenuto
+} else if (!hasSelectedAnnata()) {
+    showAnnataSelection();
+    document.getElementById('loading-screen').classList.add('hidden');
+    document.getElementById('app-content').style.display = 'none'; // Nascondi contenuto
+} else {
+    // Setup interceptor per aggiungere annata alle richieste
+    setupFetchInterceptor();
+    addLogoutButton();
+    // Esponi funzioni globali
+    window.getCurrentAnnata = getCurrentAnnata;
+    window.getCurrentUser = getCurrentUser;
+    window.getUserRole = getUserRole;
+    window.isAdmin = isAdmin;
 
-    // Controlla autenticazione
-    if (!isAuthenticated()) {
-        showLoginScreen();
-    } else if (!hasSelectedAnnata()) {
-        showAnnataSelection();
-    } else {
-        // ✅ UTENTE AUTENTICATO E ANNATA SELEZIONATA
-        // Mostra il contenuto rimuovendo il blocco CSS
-        document.documentElement.classList.add('authenticated');
-        
-        // Setup interceptor per aggiungere annata alle richieste
-        setupFetchInterceptor();
-        
-        addLogoutButton();
-        
-        // Esponi funzioni globali
-        window.getCurrentAnnata = getCurrentAnnata;
-        window.getCurrentUser = getCurrentUser;
-        window.getUserRole = getUserRole;
-        window.isAdmin = isAdmin;
-    }
+    // Mostra il contenuto
+    document.getElementById('loading-screen').classList.add('hidden');
+    document.getElementById('app-content').style.display = 'block';
+}
 
 })();
