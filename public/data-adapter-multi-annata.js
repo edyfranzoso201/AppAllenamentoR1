@@ -23,19 +23,18 @@
     window.loadData = async function(key) {
         try {
             const annataId = getCurrentAnnata();
-            
             if (!annataId) {
                 console.warn(`⚠️ loadData(${key}): Nessuna annata selezionata`);
                 return null;
             }
-
             console.log(`📥 loadData(${key}) per annata: ${annataId}`);
 
-            // Chiamata API - USANDO QUERY STRING come nel backend
-            const response = await fetch(`/api/data?key=${encodeURIComponent(key)}&annataId=${encodeURIComponent(annataId)}`, {
+            // Chiamata API - USANDO HEADER x-annata-id
+            const response = await fetch(`/api/data`, {
                 method: 'GET',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'x-annata-id': annataId
                 }
             });
 
@@ -49,7 +48,6 @@
             }
 
             const result = await response.json();
-            
             if (result.success) {
                 const count = result.data ? (Array.isArray(result.data) ? result.data.length : 'OK') : 0;
                 console.log(`✅ loadData(${key}): ${count} elementi`);
@@ -71,25 +69,20 @@
     window.saveData = async function(key, value) {
         try {
             const annataId = getCurrentAnnata();
-            
             if (!annataId) {
                 console.warn(`⚠️ saveData(${key}): Nessuna annata selezionata`);
                 return false;
             }
-
             console.log(`💾 saveData(${key}) per annata: ${annataId}`);
 
-            // Chiamata API - USANDO BODY come nel backend
+            // Chiamata API - USANDO HEADER x-annata-id
             const response = await fetch(`/api/data`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'x-annata-id': annataId
                 },
-                body: JSON.stringify({ 
-                    key: key,
-                    data: value,
-                    annataId: annataId
-                })
+                body: JSON.stringify({ key: key, data: value })
             });
 
             if (!response.ok) {
@@ -98,7 +91,6 @@
             }
 
             const result = await response.json();
-
             if (result.success) {
                 console.log(`✅ saveData(${key}): Salvato con successo`);
                 return true;
