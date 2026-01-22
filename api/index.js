@@ -6,7 +6,21 @@ const kv = createClient({
   url: process.env.UPSTASH_KV_REST_API_URL || process.env.KV_REST_API_URL,
   token: process.env.UPSTASH_KV_REST_API_TOKEN || process.env.KV_REST_API_TOKEN,
 });
-
+// ========== CREDENZIALI DI DEFAULT (NUOVE) ==========
+const DEFAULT_USERS = {
+    'admin': {
+        password: Buffer.from('admin201').toString('base64'),
+        role: 'admin'
+    },
+    'allenatore1': {
+        password: Buffer.from('Allenatore123').toString('base64'),
+        role: 'allenatore'
+    },
+    'dirigente1': {
+        password: Buffer.from('Dirigente123').toString('base64'),
+        role: 'dirigente'
+    }
+};
 // ==========================================
 // UTILITY FUNCTIONS
 // ==========================================
@@ -31,38 +45,48 @@ async function verifyPassword(password, hash) {
 async function handleLogin(req, res) {
   try {
     const { username, password } = req.body;
-
+    
     if (!username || !password) {
-      return res.status(400).json({ message: 'Username e password richiesti' });
+      return res.status(400).json({ message: "Username e password richiesti" });
     }
 
-    // Recupera utente
-    const user = await kv.hget('users', username);
+    // ✅ NUOVO: Controlla credenziali di default PRIMA
+    const defaultUser = DEFAULT_USERS[username];
+    if (defaultUser) {
+      const hashedPassword = Buffer.from(password).toString('base64');
+      if (hashedPassword === defaultUser.password) {
+        console.log(`✅ Login admin riuscito: ${username}`);
+        return res.status(200).json({
+          success: true,
+          user: { username, role: defaultUser.role },
+          role: defaultUser.role
+        });
+      }
+    }
 
+    // ❌ Se non è admin, cerca in KV (altri utenti)
+    const user = await kv.hget('users', username);
     if (!user) {
-      return res.status(401).json({ message: 'Credenziali non valide' });
+      return res.status(401).json({ message: "Credenziali non valide" });
     }
 
     // Verifica password
     const isValid = await verifyPassword(password, user.password);
-
     if (!isValid) {
-      return res.status(401).json({ message: 'Credenziali non valide' });
+      return res.status(401).json({ message: "Credenziali non valide" });
     }
 
     return res.status(200).json({
       success: true,
-      user: {
-        username: user.username,
-        role: user.role || 'user'
-      },
-      role: user.role || 'user'
+      user: { username: user.username, role: user.role },
+      role: user.role
     });
   } catch (error) {
-    console.error('Login error:', error);
-    return res.status(500).json({ message: 'Errore del server' });
+    console.error('❌ Login error:', error);
+    return res.status(500).json({ message: "Errore del server" });
   }
 }
+
 
 async function handleCreateUser(req, res) {
   try {
@@ -130,8 +154,9 @@ async function handleDeleteUser(req, res) {
       return res.status(400).json({ message: 'Username richiesto' });
     }
 
-    if (username === 'admin') {
-      return res.status(403).json({ message: 'Non puoi eliminare l\'admin' });
+    // ⚠️ PROTEZIONE: Non puoi eliminare gli utenti di default
+    if (DEFAULT_USERS[username]) {
+      return res.status(403).json({ message: `Non puoi eliminare l'utente ${username}` });
     }
 
     await kv.hdel('users', username);
