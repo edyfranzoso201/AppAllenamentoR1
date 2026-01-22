@@ -119,13 +119,25 @@
     // ==========================================
     
     function showLoginScreen() {
-        document.documentElement.innerHTML = '';
-        document.body.style.cssText = 'margin:0;padding:0;font-family:system-ui;background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;';
-        
-        const container = document.createElement('div');
-        container.style.cssText = 'background:rgba(30,41,59,0.95);padding:40px;border-radius:15px;box-shadow:0 8px 32px rgba(0,0,0,0.5);max-width:400px;width:90%;border:1px solid rgba(96,165,250,0.2);';
-        
-        container.innerHTML = `
+    // Crea un overlay di login
+    const overlay = document.createElement('div');
+    overlay.id = 'login-overlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(30,41,59,0.95);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 999999;
+        padding: 20px;
+    `;
+    
+    overlay.innerHTML = `
+        <div style="background:rgba(30,41,59,0.95);padding:40px;border-radius:15px;box-shadow:0 8px 32px rgba(0,0,0,0.5);max-width:400px;width:90%;border:1px solid rgba(96,165,250,0.2);">
             <div style="text-align:center;margin-bottom:30px;">
                 <div style="font-size:48px;margin-bottom:10px;">🏃‍♂️</div>
                 <h1 style="color:#60a5fa;margin:0 0 10px 0;font-size:28px;font-weight:700;">GO SPORT</h1>
@@ -177,72 +189,88 @@
                     Usa il link ricevuto dal coach
                 </p>
             </div>
-        `;
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    const form = document.getElementById('login-form');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const errorDiv = document.getElementById('error');
+    
+    usernameInput.focus();
+    
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
         
-        document.body.appendChild(container);
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value;
         
-        const form = document.getElementById('login-form');
-        const usernameInput = document.getElementById('username');
-        const passwordInput = document.getElementById('password');
-        const errorDiv = document.getElementById('error');
+        if (!username || !password) {
+            errorDiv.textContent = '⚠️ Compila tutti i campi';
+            return;
+        }
         
-        usernameInput.focus();
-        
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
+        try {
+            errorDiv.textContent = '⏳ Accesso in corso...';
+            const result = await loginUser(username, password);
             
-            const username = usernameInput.value.trim();
-            const password = passwordInput.value;
+            // Login riuscito - salva sessione
+            const expiry = Date.now() + (8 * 60 * 60 * 1000); // 8 ore
+            sessionStorage.setItem(SESSION_KEY, 'true');
+            sessionStorage.setItem(SESSION_KEY + '_expiry', expiry.toString());
+            sessionStorage.setItem(SESSION_USER, username);
+            sessionStorage.setItem(SESSION_USER_ROLE, result.role);
             
-            if (!username || !password) {
-                errorDiv.textContent = '⚠️ Compila tutti i campi';
-                return;
-            }
+            // Nascondi l'overlay
+            overlay.remove();
             
-            try {
-                errorDiv.textContent = '⏳ Accesso in corso...';
-                const result = await loginUser(username, password);
-                
-                // Login riuscito - salva sessione
-                const expiry = Date.now() + (8 * 60 * 60 * 1000); // 8 ore
-                sessionStorage.setItem(SESSION_KEY, 'true');
-                sessionStorage.setItem(SESSION_KEY + '_expiry', expiry.toString());
-                sessionStorage.setItem(SESSION_USER, username);
-                sessionStorage.setItem(SESSION_USER_ROLE, result.role);
-                
-                // Mostra selezione annata
-                showAnnataSelection();
-                
-            } catch (error) {
-                errorDiv.textContent = '❌ ' + error.message;
-                passwordInput.value = '';
-                usernameInput.style.borderColor = '#ef4444';
-                passwordInput.style.borderColor = '#ef4444';
-                
-                setTimeout(() => {
-                    errorDiv.textContent = '';
-                    usernameInput.style.borderColor = 'rgba(96,165,250,0.3)';
-                    passwordInput.style.borderColor = 'rgba(96,165,250,0.3)';
-                }, 3000);
-            }
-        });
-    }
+            // Mostra selezione annata
+            showAnnataSelection();
+            
+        } catch (error) {
+            errorDiv.textContent = '❌ ' + error.message;
+            passwordInput.value = '';
+            usernameInput.style.borderColor = '#ef4444';
+            passwordInput.style.borderColor = '#ef4444';
+            
+            setTimeout(() => {
+                errorDiv.textContent = '';
+                usernameInput.style.borderColor = 'rgba(96,165,250,0.3)';
+                passwordInput.style.borderColor = 'rgba(96,165,250,0.3)';
+            }, 3000);
+        }
+    });
+}
 
     // ==========================================
     // UI - ANNATA SELECTION SCREEN
     // ==========================================
     
     async function showAnnataSelection() {
-        document.documentElement.innerHTML = '';
-        document.body.style.cssText = 'margin:0;padding:0;font-family:system-ui;background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;';
-        
-        const container = document.createElement('div');
-        container.style.cssText = 'background:rgba(30,41,59,0.95);padding:40px;border-radius:15px;box-shadow:0 8px 32px rgba(0,0,0,0.5);max-width:500px;width:90%;border:1px solid rgba(96,165,250,0.2);';
-        
-        const username = getCurrentUser();
-        const role = getUserRole();
-        
-        container.innerHTML = `
+    // Crea un overlay di selezione annata
+    const overlay = document.createElement('div');
+    overlay.id = 'annata-overlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(30,41,59,0.95);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 999999;
+        padding: 20px;
+    `;
+    
+    const username = getCurrentUser();
+    const role = getUserRole();
+    
+    overlay.innerHTML = `
+        <div style="background:rgba(30,41,59,0.95);padding:40px;border-radius:15px;box-shadow:0 8px 32px rgba(0,0,0,0.5);max-width:500px;width:90%;border:1px solid rgba(96,165,250,0.2);">
             <div style="text-align:center;margin-bottom:30px;">
                 <div style="font-size:48px;margin-bottom:10px;">📅</div>
                 <h1 style="color:#60a5fa;margin:0 0 10px 0;font-size:28px;font-weight:700;">Seleziona Annata</h1>
@@ -280,88 +308,85 @@
                     🚪 Esci
                 </button>
             </div>
-        `;
-        
-        document.body.appendChild(container);
-        
-        // Carica annate
-        try {
-            let annate;
-            if (role === 'admin') {
-                annate = await getAllAnnate();
-            } else {
-                annate = await getUserAnnate(username);
-            }
-            
-            const annateList = document.getElementById('annate-list');
-            
-            if (annate.length === 0) {
-                annateList.innerHTML = `
-                    <div style="text-align:center;padding:40px;color:#94a3b8;">
-                        <p>❌ Nessuna annata disponibile</p>
-                        ${role !== 'admin' ? '<p style="font-size:13px;margin-top:10px;">Contatta l\'amministratore per ottenere l\'accesso</p>' : ''}
-                    </div>
-                `;
-            } else {
-                annateList.innerHTML = '';
-                
-                annate.forEach(annata => {
-                    const annataBtn = document.createElement('button');
-                    annataBtn.style.cssText = 'background:rgba(59,130,246,0.1);border:1px solid rgba(96,165,250,0.3);color:#e2e8f0;padding:20px;border-radius:12px;cursor:pointer;text-align:left;transition:all 0.2s;';
-                    annataBtn.innerHTML = `
-                        <div style="display:flex;justify-content:space-between;align-items:center;">
-                            <div>
-                                <h3 style="margin:0;color:#60a5fa;font-size:20px;">${annata.nome}</h3>
-                                <p style="margin:5px 0 0 0;color:#94a3b8;font-size:14px;">${annata.descrizione || 'Squadra ' + annata.nome}</p>
-                            </div>
-                            <div style="font-size:32px;">⚽</div>
-                        </div>
-                    `;
-                    
-                    annataBtn.onmouseover = () => {
-                        annataBtn.style.background = 'rgba(59,130,246,0.2)';
-                        annataBtn.style.borderColor = 'rgba(96,165,250,0.5)';
-                        annataBtn.style.transform = 'scale(1.02)';
-                    };
-                    annataBtn.onmouseout = () => {
-                        annataBtn.style.background = 'rgba(59,130,246,0.1)';
-                        annataBtn.style.borderColor = 'rgba(96,165,250,0.3)';
-                        annataBtn.style.transform = 'scale(1)';
-                    };
-                    
-                    annataBtn.onclick = () => {
-                        sessionStorage.setItem(SESSION_ANNATA, annata.id);
-                        window.location.reload();
-                    };
-                    
-                    annateList.appendChild(annataBtn);
-                });
-            }
-            
-        } catch (error) {
-            console.error('Errore caricamento annate:', error);
-            const annateList = document.getElementById('annate-list');
-            annateList.innerHTML = `
-                <div style="text-align:center;padding:40px;color:#ef4444;">
-                    <p>❌ Errore nel caricamento delle annate</p>
-                    <p style="font-size:13px;margin-top:10px;">${error.message}</p>
-                </div>
-            `;
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    // Carica annate
+    try {
+        let annate;
+        if (role === 'admin') {
+            annate = await getAllAnnate();
+        } else {
+            annate = await getUserAnnate(username);
         }
         
-        // Event listeners
-        const logoutBtn = document.getElementById('logout-btn');
-        logoutBtn?.addEventListener('click', () => {
-            logout();
-            window.location.reload();
-        });
+        const annateList = document.getElementById('annate-list');
         
-        const adminPanelBtn = document.getElementById('admin-panel-btn');
-        adminPanelBtn?.addEventListener('click', () => {
+        if (annate.length === 0) {
+            annateList.innerHTML = `
+                <div style="text-align:center;padding:40px;color:#94a3b8;">
+                    <p>❌ Nessuna annata disponibile</p>
+                    ${role !== 'admin' ? '<p style="font-size:13px;margin-top:10px;">Contatta l\'amministratore per ottenere l\'accesso</p>' : ''}
+                </div>
+            `;
+        } else {
+            annateList.innerHTML = '';
+            
+            annate.forEach(annata => {
+                const annataBtn = document.createElement('button');
+                annataBtn.style.cssText = 'background:rgba(59,130,246,0.1);border:1px solid rgba(96,165,250,0.3);color:#e2e8f0;padding:20px;border-radius:12px;cursor:pointer;text-align:left;transition:all 0.2s;';
+                annataBtn.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <div>
+                            <h3 style="margin:0;color:#60a5fa;font-size:20px;">${annata.nome}</h3>
+                            <p style="margin:5px 0 0 0;color:#94a3b8;font-size:14px;">${annata.descrizione || 'Squadra ' + annata.nome}</p>
+                        </div>
+                        <span style="color:#60a5fa;font-size:16px;">→</span>
+                    </div>
+                `;
+                
+                annataBtn.addEventListener('click', () => {
+                    // Salva l'annata selezionata
+                    sessionStorage.setItem('gosport_current_annata', annata.id);
+                    
+                    // Nascondi l'overlay
+                    overlay.remove();
+                    
+                    // Mostra il contenuto
+                    document.getElementById('loading-screen').classList.add('hidden');
+                    document.getElementById('app-content').style.display = 'block';
+                });
+                
+                annateList.appendChild(annataBtn);
+            });
+        }
+    } catch (error) {
+        console.error('Errore nel caricamento delle annate:', error);
+        const annateList = document.getElementById('annate-list');
+        annateList.innerHTML = `
+            <div style="text-align:center;padding:40px;color:#ef4444;">
+                <p>❌ Errore nel caricamento delle annate</p>
+                <p style="font-size:13px;margin-top:10px;">Riprova o contatta l'amministratore</p>
+            </div>
+        `;
+    }
+    
+    // Gestisci logout
+    document.getElementById('logout-btn').addEventListener('click', () => {
+        sessionStorage.clear();
+        window.location.reload();
+    });
+    
+    // Gestisci admin panel
+    if (role === 'admin') {
+        document.getElementById('admin-panel-btn').addEventListener('click', () => {
+            // Mostra il pannello admin
             showAdminPanel();
         });
     }
-
+}
     // ==========================================
     // UI - ADMIN PANEL
     // ==========================================
