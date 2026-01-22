@@ -110,11 +110,12 @@ async function markAbsence(athleteId, date, currentStatus) {
     
     console.log('✅ Stato salvato con successo!');
     
-    // Ricarica
-    console.log('🔄 Ricaricamento pagina...');
-    await load();
-    
+    // Mostra conferma
     alert(`✅ Stato aggiornato: ${statusText}`);
+    
+    // Ricarica la pagina completamente per assicurarsi che i dati siano aggiornati
+    console.log('🔄 Ricaricamento pagina completo...');
+    window.location.reload();
   } catch (e) {
     console.error('❌ Errore salvataggio completo:', e);
     console.error('Stack:', e.stack);
