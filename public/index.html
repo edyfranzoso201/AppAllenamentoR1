@@ -5,25 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Coach Dashboard</title>
     
-    <!-- BLOCCO IMMEDIATO: Script inline che nasconde tutto SUBITO -->
-    <script>
-        // Nasconde IMMEDIATAMENTE il body prima che venga renderizzato
-        document.documentElement.style.cssText = 'overflow: hidden;';
-        document.addEventListener('DOMContentLoaded', function() {
-            document.body.style.display = 'none';
-        });
-    </script>
-    
-    <!-- CRITICAL CSS: Doppia protezione -->
+    <!-- CRITICAL CSS: Nasconde contenuto ma permette login dinamico -->
     <style>
-        /* Nascondi tutto il contenuto finché non è autenticato */
-        body {
+        /* Nascondi il contenuto della dashboard */
+        body > nav,
+        body > main,
+        body > footer,
+        body > .container,
+        body > .container-fluid {
             display: none !important;
             visibility: hidden !important;
         }
         
-        /* Schermo di caricamento che copre tutto */
-        html::before {
+        /* Schermo scuro di default */
+        body::before {
             content: '';
             position: fixed;
             top: 0;
@@ -31,18 +26,21 @@
             width: 100%;
             height: 100%;
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            z-index: 999999999;
-            display: block !important;
+            z-index: -1;
         }
         
-        /* Mostra il contenuto solo quando autenticato */
-        html.authenticated body {
+        /* Quando autenticato, mostra tutto */
+        html.authenticated body > nav,
+        html.authenticated body > main,
+        html.authenticated body > footer,
+        html.authenticated body > .container,
+        html.authenticated body > .container-fluid {
             display: block !important;
             visibility: visible !important;
         }
         
-        /* Nascondi il loading quando autenticato */
-        html.authenticated::before {
+        /* Quando autenticato, rimuovi lo sfondo scuro */
+        html.authenticated body::before {
             display: none !important;
         }
     </style>
