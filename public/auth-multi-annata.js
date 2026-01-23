@@ -10,6 +10,41 @@
     const SESSION_USER = 'gosport_auth_user';
     const SESSION_ANNATA = 'gosport_current_annata';
     const SESSION_USER_ROLE = 'gosport_user_role';
+    
+    // ⬇️⬇️⬇️ AGGIUNGI QUESTE RIGHE QUI ⬇️⬇️⬇️
+    // Imposta l'annata di default se non esiste
+    if (!sessionStorage.getItem('gosport_current_annata')) {
+        sessionStorage.setItem('gosport_current_annata', '2012');
+        console.log('🎯 Annata default impostata: 2012');
+    }
+    // ⬆️⬆️⬆️ FINE AGGIUNTA ⬆️⬆️⬆️
+    
+    // ============================================
+    // VERIFICA MODALITÀ GENITORE (SENZA AUTH)
+    // ============================================
+    
+    function isParentMode() {
+        const path = window.location.pathname;
+        const search = window.location.search;
+        
+        // Verifica se siamo in una pagina che non richiede autenticazione
+        // 1. Path esplicito /presenza/
+        if (path.includes('/presenza/')) {
+            return true;
+        }
+        
+        // 2. Qualsiasi pagina con parametro athleteId (link genitore)
+        if (search.includes('athleteId=')) {
+            return true;
+        }
+        
+        // 3. calendario.html con parametro (modalità genitore)
+        if (path.includes('calendario.html') && search.length > 0) {
+            return true;
+        }
+        
+        return false;
+    }
 
     // ==========================================
     // VERIFICA MODALITÀ GENITORE (SENZA AUTH)
