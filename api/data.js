@@ -13,37 +13,31 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Annata-Id');  // ✅ AGGIUNTO!
   
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method === 'GET') {
+  let data = {};
 
-  try {
-    // Leggi annataId dall'header
-    const annataId = req.headers['x-annata-id'];
-    console.log(`📋 /api/data ${req.method} | annataId: ${annataId || 'LEGACY'}`);
+  if (annataId) {
+    // Carica dati multi-annata
+    data = {
+      athletes: (await kv.get(`data:${annataId}:athletes`)) || [],
+      evaluations: (await kv.get(`data:${annataId}:evaluations`)) || {},
+      gpsData: (await kv.get(`data:${annataId}:gpsData`)) || {},
+      awards: (await kv.get(`data:${annataId}:awards`)) || {},
+      trainingSessions: (await kv.get(`data:${annataId}:trainingSessions`)) || {},
+      formationData: (await kv.get(`data:${annataId}:formationData`)) || { starters: [], bench: [], tokens: [] },
+      matchResults: (await kv.get(`data:${annataId}:matchResults`)) || {},
+      calendarEvents: (await kv.get(`data:${annataId}:calendarEvents`)) || {},
+      calendarResponses: (await kv.get(`data:${annataId}:calendarResponses`)) || {},
+      attendanceResponses: (await kv.get(`data:${annataId}:attendanceResponses`)) || {},
+    };
 
-    if (req.method === 'GET') {
-      let data = {};
-
-      if (annataId) {
-        // 🆕 MULTI-ANNATA: chiavi con namespace
-        console.log(`✅ Caricamento dati per annata: ${annataId}`);
+    // MIGRAZIONE AUTOMATICA da legacy
+    if (data.athletes.length === 0) {
+      const legacy = (await kv.get('athletes')) || [];
+      if (legacy.length > 0) {
+        console.log(`🔄 Migrazione ${legacy.length} atleti legacy → ${annataId}`);
         data = {
-          athletes: (await kv.get(`data:${annataId}:athletes`)) || [],
-          evaluations: (await kv.get(`data:${annataId}:evaluations`)) || {},
-          gpsData: (await kv.get(`data:${annataId}:gpsData`)) || {},
-          awards: (await kv.get(`data:${annataId}:awards`)) || {},
-          trainingSessions: (await kv.get(`data:${annataId}:trainingSessions`)) || {},
-          formationData: (await kv.get(`data:${annataId}:formationData`)) || { starters: [], bench: [], tokens: [] },
-          matchResults: (await kv.get(`data:${annataId}:matchResults`)) || {},
-          calendarEvents: (await kv.get(`data:${annataId}:calendarEvents`)) || {},
-          calendarResponses: (await kv.get(`data:${annataId}:calendarResponses`)) || {},
-          attendanceResponses: (await kv.get(`data:${annataId}:attendanceResponses`)) || {},
-        };
-        console.log(`📦 Dati caricati: ${data.athletes.length} atleti per annata ${annataId}`);
-      } else {
-        // 🔧 LEGACY: chiavi globali (sistema vecchio)
-        console.log(`⚠️ Modalità LEGACY - carico dati globali`);
-        data = {
-          athletes: (await kv.get('athletes')) || [],
+          athletes: legacy,
           evaluations: (await kv.get('evaluations')) || {},
           gpsData: (await kv.get('gpsData')) || {},
           awards: (await kv.get('awards')) || {},
@@ -54,11 +48,39 @@ export default async function handler(req, res) {
           calendarResponses: (await kv.get('calendarResponses')) || {},
           attendanceResponses: (await kv.get('attendanceResponses')) || {},
         };
-        console.log(`📦 Dati LEGACY: ${data.athletes.length} atleti`);
+        await Promise.all([
+          kv.set(`data:${annataId}:athletes`, data.athletes),
+          kv.set(`data:${annataId}:evaluations`, data.evaluations),
+          kv.set(`data:${annataId}:gpsData`, data.gpsData),
+          kv.set(`data:${annataId}:awards`, data.awards),
+          kv.set(`data:${annataId}:trainingSessions`, data.trainingSessions),
+          kv.set(`data:${annataId}:formationData`, data.formationData),
+          kv.set(`data:${annataId}:matchResults`, data.matchResults),
+          kv.set(`data:${annataId}:calendarEvents`, data.calendarEvents),
+          kv.set(`data:${annataId}:calendarResponses`, data.calendarResponses),
+          kv.set(`data:${annataId}:attendanceResponses`, data.attendanceResponses)
+        ]);
+        console.log(`✅ Migrazione completata!`);
       }
-
-      return res.status(200).json(data);
     }
+  } else {
+    // LEGACY: dati globali
+    data = {
+      athletes: (await kv.get('athletes')) || [],
+      evaluations: (await kv.get('evaluations')) || {},
+      gpsData: (await kv.get('gpsData')) || {},
+      awards: (await kv.get('awards')) || {},
+      trainingSessions: (await kv.get('trainingSessions')) || {},
+      formationData: (await kv.get('formationData')) || { starters: [], bench: [], tokens: [] },
+      matchResults: (await kv.get('matchResults')) || {},
+      calendarEvents: (await kv.get('calendarEvents')) || {},
+      calendarResponses: (await kv.get('calendarResponses')) || {},
+      attendanceResponses: (await kv.get('attendanceResponses')) || {},
+    };
+  }
+
+  return res.status(200).json(data);
+}
 
     if (req.method === 'POST') {
       const body = req.body;
