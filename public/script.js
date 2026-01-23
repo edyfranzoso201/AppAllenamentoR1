@@ -112,7 +112,9 @@ const passwordModal = pwdModalEl ? new bootstrap.Modal(pwdModalEl) : null;
         elements.passwordForm.reset();
         passwordModal.show();
     };
-    elements.passwordForm.addEventListener('submit', (e) => {
+    if (elements.passwordForm) {
+    elements.passwordForm.addEventListener('submit', ...);
+}
         e.preventDefault();
         const password = document.getElementById('password-input').value;
         if (password === ACCESS_PASSWORD) {
