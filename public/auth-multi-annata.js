@@ -460,32 +460,49 @@
         function addLogoutButton() {
     setTimeout(() => {
         const username = getCurrentUser();
-        const annata = getCurrentAnnata();
+        const annataId = getCurrentAnnata();
         if (!username) return;
         
-        const logoutBtn = document.getElementById('logout-btn');
-        if (logoutBtn) {
-            // Modifica contenuto bottone
-            logoutBtn.innerHTML = `
-                <span>👤 ${username} | ${annata || 'N/A'}</span>
-                <span style="margin-left: 10px; border-left: 1px solid rgba(255,255,255,0.3); padding-left: 10px; cursor: pointer;" id="change-annata-btn" title="Cambia Annata">🔄</span>
-            `;
-            logoutBtn.style.display = 'inline-block';
-            
-            // Click sul bottone principale = logout
-            logoutBtn.onclick = (e) => {
-                // Se ha cliccato sul cambio annata, non fare logout
-                if (e.target.id === 'change-annata-btn' || e.target.closest('#change-annata-btn')) {
-                    sessionStorage.removeItem(SESSION_ANNATA);
-                    window.location.reload();
-                } else {
-                    if (confirm('Vuoi uscire?')) {
-                        logout();
-                        window.location.reload();
-                    }
+        // Ottieni nome annata
+        fetch('/api/annate/list')
+            .then(res => res.json())
+            .then(data => {
+                const annata = data.annate?.find(a => a.id === annataId);
+                const annataName = annata ? annata.nome : 'N/A';
+                
+                // Aggiungi titolo annata nella navbar
+                const navbar = document.querySelector('.navbar-brand');
+                if (navbar && !document.getElementById('annata-title')) {
+                    const annataTitle = document.createElement('span');
+                    annataTitle.id = 'annata-title';
+                    annataTitle.style.cssText = 'margin-left: 15px; color: #f59e0b; font-size: 14px; font-weight: 600;';
+                    annataTitle.textContent = `📅 ${annataName}`;
+                    navbar.appendChild(annataTitle);
                 }
-            };
-        }
+                
+                // Modifica bottone logout con icona cambio annata
+                const logoutBtn = document.getElementById('logout-btn');
+                if (logoutBtn) {
+                    logoutBtn.innerHTML = `
+                        <span>👤 ${username}</span>
+                        <span style="margin-left: 10px; padding-left: 10px; border-left: 1px solid rgba(255,255,255,0.3); cursor: pointer;" id="change-annata-icon" title="Cambia Annata">🔄</span>
+                    `;
+                    logoutBtn.style.display = 'inline-block';
+                    
+                    logoutBtn.onclick = (e) => {
+                        if (e.target.id === 'change-annata-icon' || e.target.closest('#change-annata-icon')) {
+                            sessionStorage.removeItem(SESSION_ANNATA);
+                            window.location.reload();
+                        } else {
+                            if (confirm('Vuoi uscire completamente?')) {
+                                logout();
+                                window.location.reload();
+                            }
+                        }
+                    };
+                }
+            })
+            .catch(err => console.error('Errore caricamento nome annata:', err));
     }, 100);
 }
 
