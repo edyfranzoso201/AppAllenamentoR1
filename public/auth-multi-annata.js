@@ -458,24 +458,36 @@
         // ==========================================
         
         function addLogoutButton() {
-            setTimeout(() => {
-                const username = getCurrentUser();
-                const annata = getCurrentAnnata();
-                if (!username) return;
-                
-                const logoutBtn = document.getElementById('logout-btn');
-                if (logoutBtn) {
-                    logoutBtn.textContent = `👤 ${username} | ${annata || 'N/A'}`;
-                    logoutBtn.style.display = 'inline-block';
-                    logoutBtn.onclick = () => {
-                        if (confirm('Vuoi uscire?')) {
-                            logout();
-                            window.location.reload();
-                        }
-                    };
+    setTimeout(() => {
+        const username = getCurrentUser();
+        const annata = getCurrentAnnata();
+        if (!username) return;
+        
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            // Modifica contenuto bottone
+            logoutBtn.innerHTML = `
+                <span>👤 ${username} | ${annata || 'N/A'}</span>
+                <span style="margin-left: 10px; border-left: 1px solid rgba(255,255,255,0.3); padding-left: 10px; cursor: pointer;" id="change-annata-btn" title="Cambia Annata">🔄</span>
+            `;
+            logoutBtn.style.display = 'inline-block';
+            
+            // Click sul bottone principale = logout
+            logoutBtn.onclick = (e) => {
+                // Se ha cliccato sul cambio annata, non fare logout
+                if (e.target.id === 'change-annata-btn' || e.target.closest('#change-annata-btn')) {
+                    sessionStorage.removeItem(SESSION_ANNATA);
+                    window.location.reload();
+                } else {
+                    if (confirm('Vuoi uscire?')) {
+                        logout();
+                        window.location.reload();
+                    }
                 }
-            }, 100);
+            };
         }
+    }, 100);
+}
 
         // ==========================================
         // FETCH INTERCEPTOR
