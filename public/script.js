@@ -1557,9 +1557,34 @@ if (pwdModal) {
         currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
         renderCalendar();
     });
+    // Session/Calendar elements - solo se esistono
+if (elements.prevMonthBtn) {
+    elements.prevMonthBtn.addEventListener('click', () => {
+        currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+        renderCalendar();
+    });
+}
+
+if (elements.nextMonthBtn) {
+    elements.nextMonthBtn.addEventListener('click', () => {
+        currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+        renderCalendar();
+    });
+}
+
+if (elements.addSessionBtn) {
     elements.addSessionBtn.addEventListener('click', () => openSessionModal());
+}
+
+if (elements.quickAddAthleteBtn) {
     elements.quickAddAthleteBtn.addEventListener('click', () => elements.addAthleteBtn.click());
+}
+
+if (elements.quickPlanSessionBtn) {
     elements.quickPlanSessionBtn.addEventListener('click', () => elements.addSessionBtn.click());
+}
+
+if (elements.calendarGrid) {
     elements.calendarGrid.addEventListener('click', e => {
         if (e.target.classList.contains('calendar-session')) {
             const sessionId = e.target.dataset.sessionId;
@@ -1575,34 +1600,38 @@ if (pwdModal) {
             }
         }
     });
-    if (elements.sessionForm) {
-  elements.sessionForm.addEventListener('submit', e => {
-    e.preventDefault();
-    const date = document.getElementById('session-date').value;
-    const id = document.getElementById('session-id').value || Date.now();
-    const sessionData = {
-      id,
-      title: document.getElementById('session-title').value,
-      time: document.getElementById('session-time').value,
-      location: document.getElementById('session-location').value,
-      goals: document.getElementById('session-goals').value,
-      description: document.getElementById('session-description').value,
-    };
-    if (!trainingSessions[date]) {
-      trainingSessions[date] = [];
-    }
-    const existingIndex = trainingSessions[date].findIndex(s => s.id == id);
-    if (existingIndex > -1) {
-      trainingSessions[date][existingIndex] = sessionData;
-    } else {
-      trainingSessions[date].push(sessionData);
-    }
-    saveData();
-    renderCalendar();
-    updateHomePage();
-    sessionModal.hide();
-  });
 }
+
+if (elements.sessionForm) {
+    elements.sessionForm.addEventListener('submit', e => {
+        e.preventDefault();
+        const date = document.getElementById('session-date').value;
+        const id = document.getElementById('session-id').value || Date.now();
+        const sessionData = {
+            id,
+            title: document.getElementById('session-title').value,
+            time: document.getElementById('session-time').value,
+            location: document.getElementById('session-location').value,
+            goals: document.getElementById('session-goals').value,
+            description: document.getElementById('session-description').value,
+        };
+        if (!trainingSessions[date]) {
+            trainingSessions[date] = [];
+        }
+        const existingIndex = trainingSessions[date].findIndex(s => s.id == id);
+        if (existingIndex > -1) {
+            trainingSessions[date][existingIndex] = sessionData;
+        } else {
+            trainingSessions[date].push(sessionData);
+        }
+        saveData();
+        renderCalendar();
+        updateHomePage();
+        sessionModal.hide();
+    });
+}
+
+if (elements.deleteSessionBtn) {
     elements.deleteSessionBtn.addEventListener('click', () => {
         const date = document.getElementById('session-date').value;
         const id = document.getElementById('session-id').value;
@@ -1619,9 +1648,16 @@ if (pwdModal) {
             sessionModal.hide();
         }
     });
-    document.getElementById('gps-tipo_sessione').addEventListener('change', (e) => {
+}
+
+const gpsTipoSessione = document.getElementById('gps-tipo_sessione');
+if (gpsTipoSessione) {
+    gpsTipoSessione.addEventListener('change', (e) => {
         document.getElementById('match-stats-fields').style.display = (e.target.value === 'Partita') ? 'block' : 'none';
     });
+}
+
+if (elements.comparisonPeriodToggle) {
     elements.comparisonPeriodToggle.addEventListener('click', (e) => {
         if (e.target.dataset.period) {
             elements.comparisonPeriodToggle.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
@@ -1630,6 +1666,9 @@ if (pwdModal) {
             updateEvaluationCharts();
         }
     });
+}
+
+if (elements.attendancePeriodToggle) {
     elements.attendancePeriodToggle.addEventListener('click', (e) => {
         if (e.target.dataset.period) {
             elements.attendancePeriodToggle.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
@@ -1638,6 +1677,9 @@ if (pwdModal) {
             updateAttendanceChart();
         }
     });
+}
+
+if (elements.addAthleteBtn) {
     elements.addAthleteBtn.addEventListener('click', () => {
         document.getElementById('athleteModalLabel').textContent = 'Aggiungi Atleta';
         document.getElementById('athlete-form').reset();
@@ -1651,6 +1693,9 @@ if (pwdModal) {
         document.getElementById('athlete-guest').checked = false;
         athleteModal.show();
     });
+}
+
+if (elements.athleteGrid) {
     elements.athleteGrid.addEventListener('click', (e) => {
         const card = e.target.closest('[data-athlete-id]');
         if (!card) return;
@@ -1742,14 +1787,17 @@ if (pwdModal) {
             }
         }
     });
+}
+
+if (modalsContainer) {
     modalsContainer.addEventListener('change', (e) => {
         if (e.target.id === 'athlete-avatar-input') {
             const file = e.target.files[0];
             if (file) {
                 if (!confirm("ATTENZIONE: L'importazione sovrascriverà tutti i dati attuali. Vuoi continuare?")) {
-            e.target.value = null; // Resetta il file selezionato
-            return;
-        }
+                    e.target.value = null;
+                    return;
+                }
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     document.getElementById('athlete-avatar-base64').value = event.target.result;
@@ -1761,7 +1809,10 @@ if (pwdModal) {
             }
         }
     });
-        elements.athleteForm.addEventListener('submit', (e) => {
+}
+
+if (elements.athleteForm) {
+    elements.athleteForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const athleteId = document.getElementById('modal-athlete-id').value;
         const avatarBase64 = document.getElementById('athlete-avatar-base64').value;
@@ -1783,11 +1834,9 @@ if (pwdModal) {
         }
 
         if (existingAthlete) {
-            // Aggiorna atleta esistente
             const index = athletes.findIndex(a => a.id === existingAthlete.id);
             athletes[index] = athleteData;
         } else {
-            // Aggiungi nuovo atleta
             athletes.push(athleteData);
         }
 
@@ -1797,6 +1846,9 @@ if (pwdModal) {
             alert(`${existingAthlete ? 'Atleta aggiornato' : 'Atleta aggiunto'} con successo!`);
         });
     });
+}
+
+if (elements.evaluationForm) {
     elements.evaluationForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const athleteId = document.getElementById('modal-athlete-id-eval').value;
@@ -1821,6 +1873,9 @@ if (pwdModal) {
         updateAllUI();
         evaluationModal.hide();
     });
+}
+
+if (elements.gpsForm) {
     elements.gpsForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const athleteId = document.getElementById('modal-athlete-id-gps').value;
