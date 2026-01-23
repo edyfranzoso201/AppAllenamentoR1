@@ -1575,32 +1575,34 @@ if (pwdModal) {
             }
         }
     });
-    elements.sessionForm.addEventListener('submit', e => {
-        e.preventDefault();
-        const date = document.getElementById('session-date').value;
-        const id = document.getElementById('session-id').value || Date.now();
-        const sessionData = {
-            id,
-            title: document.getElementById('session-title').value,
-            time: document.getElementById('session-time').value,
-            location: document.getElementById('session-location').value,
-            goals: document.getElementById('session-goals').value,
-            description: document.getElementById('session-description').value,
-        };
-        if (!trainingSessions[date]) {
-            trainingSessions[date] = [];
-        }
-        const existingIndex = trainingSessions[date].findIndex(s => s.id == id);
-        if (existingIndex > -1) {
-            trainingSessions[date][existingIndex] = sessionData;
-        } else {
-            trainingSessions[date].push(sessionData);
-        }
-        saveData();
-        renderCalendar();
-        updateHomePage();
-        sessionModal.hide();
-    });
+    if (elements.sessionForm) {
+  elements.sessionForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const date = document.getElementById('session-date').value;
+    const id = document.getElementById('session-id').value || Date.now();
+    const sessionData = {
+      id,
+      title: document.getElementById('session-title').value,
+      time: document.getElementById('session-time').value,
+      location: document.getElementById('session-location').value,
+      goals: document.getElementById('session-goals').value,
+      description: document.getElementById('session-description').value,
+    };
+    if (!trainingSessions[date]) {
+      trainingSessions[date] = [];
+    }
+    const existingIndex = trainingSessions[date].findIndex(s => s.id == id);
+    if (existingIndex > -1) {
+      trainingSessions[date][existingIndex] = sessionData;
+    } else {
+      trainingSessions[date].push(sessionData);
+    }
+    saveData();
+    renderCalendar();
+    updateHomePage();
+    sessionModal.hide();
+  });
+}
     elements.deleteSessionBtn.addEventListener('click', () => {
         const date = document.getElementById('session-date').value;
         const id = document.getElementById('session-id').value;
