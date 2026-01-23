@@ -127,11 +127,14 @@ const passwordModal = pwdModalEl ? new bootstrap.Modal(pwdModalEl) : null;
     }
 });
 }
-    document.getElementById('passwordModal').addEventListener('hidden.bs.modal', () => {
-         if (!isAuthenticated() && authCancelCallback) {
-             authCancelCallback();
-         }
+    const pwdModal = document.getElementById('passwordModal');
+if (pwdModal) {
+    pwdModal.addEventListener('hidden.bs.modal', () => {
+        if (!isAuthenticated() && authCancelCallback) {
+            authCancelCallback();
+        }
     });
+}
     const matchStatsFields = ['minuti_giocati', 'gol', 'assist', 'ammonizioni', 'espulsioni', 'palle_recuperate', 'palle_perse'];
     const allGpsFields = ['data_di_registrazione', 'ora_registrazione', 'tipo_sessione', 'distanza_totale', 'tempo_totale', 'distanza_sprint', 'velocita_massima', 'numero_di_sprint', 'max_acc', 'max_dec', 'passaggi_piede_sinistro', 'passaggi_piede_destro', 'cross_piede_sinistro', 'cross_piede_destro', 'potenza_massima_di_tiro', 'distanza_per_minuto', 'tiri_piede_sx', 'tiri_piede_dx', 'perc_passaggi_brevi', 'perc_lanci', 'distanza_circuito', 'tempo_circuito_totale_s', 'velocita_circuito', 'note', ...matchStatsFields];
     const gpsFieldsForDisplay = { 'tipo_sessione':'Tipo', 'data_di_registrazione': 'Data', 'ora_registrazione': 'Ora', 'distanza_totale': 'Dist. Totale (m)', 'tempo_totale': 'Tempo (min)', 'distanza_per_minuto':'Dist/min (m)', 'distanza_sprint': 'Distanza Sprint (m)', 'velocita_massima': 'Vel. Max (km/h)', 'numero_di_sprint': 'Num. Sprint', 'max_acc': 'Max Acc (g)o(n°)', 'max_dec': 'Max Dec (g)o(n°)', 'passaggi_piede_sinistro':'Passaggi SX', 'passaggi_piede_destro':'Passaggi DX', 'cross_piede_sinistro':'Cross SX', 'cross_piede_destro':'Cross DX', 'potenza_massima_di_tiro':'Pot. Tiro (km/h)', 'tiri_piede_sx': 'Tiri Piede SX', 'tiri_piede_dx': 'Tiri Piede DX', 'perc_passaggi_brevi': '% Passaggi Brevi', 'perc_lanci': '% Lanci', 'distanza_circuito': 'Dist. Circuito (m)', 'tempo_circuito_totale_s': 'Tempo Circuito (s)', 'velocita_circuito': 'Vel. Circuito (km/h)', 'minuti_giocati': 'Minuti Giocati', 'gol': 'Gol', 'assist': 'Assist', 'ammonizioni': 'Gialli', 'espulsioni': 'Rossi', 'palle_recuperate': 'Palle Recuperate', 'palle_perse': 'Palle Perse', 'note': 'Note' };
