@@ -584,7 +584,7 @@
             }
             
             document.documentElement.classList.add('authenticated');
-            setupFetchInterceptor();
+            // setupFetchInterceptor();  <--- RIMUOVI DA QUI
             addLogoutButton();
             
             // Esponi funzioni globali
@@ -595,11 +595,12 @@
         }
     }
 
-    // ==========================================
-    // INIZIALIZZAZIONE CON CONTROLLO MODALITÀ
-    // ==========================================
+    // ==========================================\n    // INIZIALIZZAZIONE\n    // ==========================================\n    
     
-    // Aspetta che il DOM sia caricato
+    // ✅ AGGIUNGI QUI: Attiva l'interceptor immediatamente per coprire le chiamate di script.js
+    setupFetchInterceptor();
+
+    // Aspetta che il DOM sia caricato per la UI
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initAuth);
     } else {
