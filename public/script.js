@@ -11,23 +11,22 @@ function toLocalDateISO(dateInput) {
 document.addEventListener('DOMContentLoaded', () => {
     const modalsContainer = document.getElementById('modals-container');
     if (modalsContainer) {
-    modalsContainer.innerHTML = `...lungo HTML...`;
-}
+        modalsContainer.innerHTML = `...lungo HTML...`;
+    }
 
-// ✅ AGGIUNGI CONTROLLI NULL
-const evalModalEl = document.getElementById('evaluationModal');
-const athleteModalEl = document.getElementById('athleteModal');
-const gpsModalEl = document.getElementById('gpsModal');
-const sessionModalEl = document.getElementById('sessionModal');
-const matchModalEl = document.getElementById('matchResultModal');
-const pwdModalEl = document.getElementById('passwordModal');
-const evaluationModal = evalModalEl ? new bootstrap.Modal(evalModalEl) : null;
-const athleteModal = athleteModalEl ? new bootstrap.Modal(athleteModalEl) : null;
-const gpsModal = gpsModalEl ? new bootstrap.Modal(gpsModalEl) : null;
-const sessionModal = sessionModalEl ? new bootstrap.Modal(sessionModalEl) : null;
-const matchResultModal = matchModalEl ? new bootstrap.Modal(matchModalEl) : null;
-const passwordModal = pwdModalEl ? new bootstrap.Modal(pwdModalEl) : null;
-
+    // ✅ AGGIUNGI CONTROLLI NULL
+    const evalModalEl = document.getElementById('evaluationModal');
+    const athleteModalEl = document.getElementById('athleteModal');
+    const gpsModalEl = document.getElementById('gpsModal');
+    const sessionModalEl = document.getElementById('sessionModal');
+    const matchModalEl = document.getElementById('matchResultModal');
+    const pwdModalEl = document.getElementById('passwordModal');
+    const evaluationModal = evalModalEl ? new bootstrap.Modal(evalModalEl) : null;
+    const athleteModal = athleteModalEl ? new bootstrap.Modal(athleteModalEl) : null;
+    const gpsModal = gpsModalEl ? new bootstrap.Modal(gpsModalEl) : null;
+    const sessionModal = sessionModalEl ? new bootstrap.Modal(sessionModalEl) : null;
+    const matchResultModal = matchModalEl ? new bootstrap.Modal(matchModalEl) : null;
+    const passwordModal = pwdModalEl ? new bootstrap.Modal(pwdModalEl) : null;
     const elements = {
         athleteGrid: document.getElementById('athlete-grid'),
         evaluationDatePicker: document.getElementById('evaluation-date-picker'),
@@ -156,7 +155,7 @@ if (pwdModal) {
     let pollingInterval = null;
     let visuallyDeletedCards = [];
     
-    // ===== MODIFICHE ALLE FUNZIONI saveData E loadData =====
+        // ===== MODIFICHE ALLE FUNZIONI saveData E loadData =====
     
     const saveData = async () => {
         const allData = {
@@ -172,9 +171,7 @@ if (pwdModal) {
         };
         
         try {
-            // Ottieni l'annata corrente dalla sessione, oppure usa "2012" come default
             const annataId = sessionStorage.getItem('gosport_current_annata') || '2012';
-            
             console.log(`💾 Salvataggio dati per annata: ${annataId}`);
             
             const response = await fetch('/api/data', {
@@ -193,9 +190,8 @@ if (pwdModal) {
             console.error('Errore nel salvataggio dei dati sul server:', error);
             return false;
         }
-    };
+    };  // ⬅️ QUESTA PARENTESI È IMPORTANTE!
     
-    // Rendi saveData disponibile globalmente per calendario-admin.js e parent-view.js
     window.saveData = saveData;
     
     const migrateGpsData = () => {
@@ -210,13 +206,11 @@ if (pwdModal) {
                 }
             }
         }
-    };
+    };  // ⬅️ QUESTA PARENTESI È IMPORTANTE!
     
     const loadData = async () => {
         try {
-            // Ottieni l'annata corrente dalla sessione, oppure usa "2012" come default
             const annataId = sessionStorage.getItem('gosport_current_annata') || '2012';
-            
             console.log(`📥 Caricamento dati per annata: ${annataId}`);
             
             const response = await fetch('/api/data', {
@@ -230,7 +224,7 @@ if (pwdModal) {
             const allData = await response.json();
             
             athletes = allData.athletes || [];
-            window.athletes = athletes; // Sincronizza con window
+            window.athletes = athletes;
             evaluations = allData.evaluations || {};
             gpsData = allData.gpsData || {};
             migrateGpsData();
@@ -243,7 +237,6 @@ if (pwdModal) {
             
             athletes.forEach(athlete => {
                 if (athlete.isViceCaptain === undefined) athlete.isViceCaptain = false;
-                // Migrazione dalla vecchia proprietà "guest" alla nuova "isGuest"
                 if (athlete.guest !== undefined && athlete.isGuest === undefined) {
                     athlete.isGuest = athlete.guest;
                     delete athlete.guest;
@@ -271,8 +264,10 @@ if (pwdModal) {
             window.calendarEvents = {};
             window.calendarResponses = {};
         }
-    };
-    
+    };  
+
+    // ⬅️ QUESTA PARENTESI È IMPORTANTE!
+
     const getWeekRange = (date) => {
         const d = new Date(date);
         const day = d.getDay();
