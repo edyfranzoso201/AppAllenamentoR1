@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario Squadra - GO SPORT</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body {
+            background: #f8f9fa;
+            color: #000000;
+            min-height: 100vh;
+            padding: 2px;
+            margin: 0;
+        }
+        .container-fluid {
+            padding-left: 2px;
+            padding-right: 2px;
+            max-width: 100%;
+        }
+        .main-title { 
+            color: #2563eb; 
+            font-weight: 700; 
+            margin-bottom: 5px; 
+            margin-top: 3px;
+            font-size: 1.4rem;
+        }
+        .card { 
+            background: #ffffff; 
+            border: 1px solid #dee2e6; 
+            border-radius: 5px; 
+            box-shadow: none;
+            margin-bottom: 2px;
+        }
+        .card-body {
+            padding: 2px;
+        }
+        .row {
+            margin-left: -2px;
+            margin-right: -2px;
+        }
+        .row > * {
+            padding-left: 2px;
+            padding-right: 2px;
+        }
+        .alert {
+            margin-bottom: 2px !important;
+            padding: 5px !important;
+            font-size: 0.8rem !important;
+        }
+        .table { color: #000000 !important; background: #ffffff; font-size: 0.8rem; }
+        .table thead { background: #e9ecef !important; }
+        .table th, .table td { 
+            color: #000000 !important; 
+            border-color: #dee2e6 !important; 
+            padding: 0.4rem !important;
+            line-height: 1.2;
+        }
+        .calendar-table th { position: sticky; top: 0; background: #e9ecef !important; z-index: 10; font-size: 0.75rem; }
+        .calendar-table td { vertical-align: middle; }
+        
+        /* Colonne fisse durante lo scroll orizzontale */
+        .table-responsive {
+            overflow-x: auto;
+            overflow-y: auto;
+            position: relative;
+            max-height: calc(100vh - 120px);
+        }
+        
+        /* Scrollbar sempre visibile */
+        .table-responsive::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+        
+        .table-responsive::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        
+        .table-responsive::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        /* Firefox */
+        .table-responsive {
+            scrollbar-width: auto;
+            scrollbar-color: #888 #f1f1f1;
+        }
+        
+        /* Fissa le prime DUE righe dell'header - tutte le celle */
+        .calendar-table thead tr:nth-child(1) th {
+            position: sticky;
+            top: 0;
+            background: #e9ecef !important;
+            z-index: 10;
+        }
+        
+        .calendar-table thead tr:nth-child(2) th {
+            position: sticky;
+            top: 48px;
+            background: #e9ecef !important;
+            z-index: 10;
+        }
+        
+        /* Colonne fisse laterali - usando classi specifiche */
+        .calendar-table .sticky-col-1 {
+            position: sticky;
+            left: 0;
+            z-index: 3;
+            background: #ffffff !important;
+            min-width: 40px;
+        }
+        
+        .calendar-table .sticky-col-2 {
+            position: sticky;
+            left: 40px;
+            z-index: 3;
+            background: #ffffff !important;
+            min-width: 150px;
+        }
+        
+        .calendar-table .sticky-col-3 {
+            position: sticky;
+            left: 190px;
+            z-index: 3;
+            background: #ffffff !important;
+            min-width: 120px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        
+        /* Header delle colonne fisse ha z-index maggiore */
+        .calendar-table thead .sticky-col-1,
+        .calendar-table thead .sticky-col-2,
+        .calendar-table thead .sticky-col-3 {
+            z-index: 30 !important;
+            background: #e9ecef !important;
+        }
+        
+        /* Assicura che le celle del body abbiano background bianco */
+        .calendar-table tbody .sticky-col-1,
+        .calendar-table tbody .sticky-col-2,
+        .calendar-table tbody .sticky-col-3 {
+            background: #ffffff !important;
+        }
+        
+        /* Stili per i bottoni nelle celle */
+        .btn-sm {
+            padding: 0.2rem 0.4rem;
+            font-size: 0.65rem;
+            white-space: nowrap;
+            line-height: 1.2;
+        }
+        
+        .btn-primary, .btn-outline-primary {
+            font-size: 0.85rem;
+        }
+        
+        /* Miglioramenti per mobile */
+        @media (max-width: 768px) {
+            .calendar-table {
+                font-size: 0.7rem;
+            }
+            .btn-sm {
+                padding: 0.15rem 0.3rem;
+                font-size: 0.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row" style="margin-bottom: 3px;">
+            <div class="col-12" style="padding-bottom: 0;">
+                <a href="/" class="btn btn-outline-primary btn-sm" style="margin-bottom: 3px; padding: 3px 6px; font-size: 0.8rem;"><i class="bi bi-arrow-left"></i> Dashboard</a>
+                <h1 class="main-title"><i class="bi bi-calendar-week"></i> Calendario Squadra</h1>
+            </div>
+        </div>
+
+        <div class="row" style="margin-bottom: 3px;">
+            <div class="col-md-2" style="margin-bottom: 3px;">
+                <button class="btn btn-danger w-100" id="add-btn" style="padding: 5px; font-size: 0.8rem;">
+                    <i class="bi bi-plus-circle"></i> Nuovo
+                </button>
+            </div>
+            <div class="col-md-2" style="margin-bottom: 3px;">
+                <button class="btn btn-warning w-100" id="generate-btn" style="padding: 5px; font-size: 0.8rem;">
+                    <i class="bi bi-magic"></i> Genera
+                </button>
+            </div>
+            <div class="col-md-2" style="margin-bottom: 3px;">
+                <button class="btn btn-info w-100" id="import-btn" style="padding: 5px; font-size: 0.8rem;">
+                    <i class="bi bi-upload"></i> Importa
+                </button>
+                <input type="file" id="file-input" accept=".json" style="display:none">
+            </div>
+            <div class="col-md-2" style="margin-bottom: 3px;">
+                <button class="btn btn-primary w-100" id="responses-btn" style="padding: 5px; font-size: 0.8rem;">
+                    <i class="bi bi-eye"></i> Risposte
+                </button>
+            </div>
+            <div class="col-md-2" style="margin-bottom: 3px;">
+                <button class="btn btn-secondary w-100" id="delete-btn">
+                    <i class="bi bi-trash"></i> Elimina Vecchi
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div id="calendar" class="text-center p-5">
+                    <div class="spinner-border text-primary"></div>
+                    <p class="mt-3">Caricamento...</p>
+                </div>
+            </div>
+        </div>
+        
+    <footer class="text-center" style="margin-top: 10px; padding: 8px; font-size: 0.7rem; color: #6c757d; line-height: 1.3;">
+    © 2025 Edy Franzoso.<br>
+    Codice sorgente e contenuti protetti ai sensi della Legge sul Diritto d'Autore (L. 633/1941).<br>
+    Riproduzione, distribuzione o modifica vietati senza autorizzazione scritta.
+        </footer>
+    </div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="auth-multi-annata.js"></script>
+<script src="data-adapter-multi-annata.js"></script>
+<script src="calendario-standalone.js"></script>
+</body>
+</html>
