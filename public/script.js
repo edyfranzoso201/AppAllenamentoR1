@@ -10,13 +10,23 @@ function toLocalDateISO(dateInput) {
 }
 document.addEventListener('DOMContentLoaded', () => {
     const modalsContainer = document.getElementById('modals-container');
-    modalsContainer.innerHTML = `<div class="modal fade" id="evaluationModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Valutazione di <span id="modal-athlete-name-eval"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="evaluation-form"><input type="hidden" id="modal-athlete-id-eval"><p>Data: <strong id="modal-evaluation-date"></strong></p><div class="mb-2"><label class="form-label">Presenza Allenamento</label><select id="presenza-allenamento" class="form-select"><option value="-1">Assenza Giustificata</option><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Serietà Allenamento</label><select id="serieta-allenamento" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Abbigliamento Allenamento</label><select id="abbigliamento-allenamento" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Abbigliamento Partita</label><select id="abbigliamento-partita" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Serietà Comunicazioni</label><select id="comunicazioni" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="mb-2"><label class="form-label">Doccia (Opzionale)</label><select id="doccia" class="form-select"><option value="0">0-NV</option><option value="1">1-B</option><option value="2">2-M</option><option value="3">3-A</option></select></div><div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="award-checkbox"><label class="form-check-label" for="award-checkbox">Assegna Premio</label></div></form></div><div class="modal-footer justify-content-between"><button type="button" class="btn btn-outline-danger" id="delete-single-athlete-day-btn">Elimina Dati del Giorno</button><div><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button><button type="submit" class="btn btn-primary-custom" form="evaluation-form">Salva Valutazione</button></div></div></div></div></div> <div class="modal fade" id="athleteModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="athleteModalLabel">Gestisci Atleta</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="athlete-form"><input type="hidden" id="modal-athlete-id"><div class="mb-3"><label class="form-label">Nome Cognome</label><input type="text" class="form-control" id="athlete-name" required></div><div class="mb-3"><label for="athlete-avatar-input" class="form-label">Foto Profilo</label><input type="file" class="form-control" id="athlete-avatar-input" accept="image/*"><input type="hidden" id="athlete-avatar-base64"><img id="avatar-preview" src="" alt="Anteprima" class="mt-2" style="max-width: 70px; max-height: 70px; display: none; border-radius: 50%;"></div><div class="mb-3"><label class="form-label">Ruolo</label><input type="text" class="form-control" id="athlete-role" required></div><div class="row"><div class="col-md-6 mb-3"><label class="form-label">Numero Maglia</label><input type="number" class="form-control" id="athlete-number" required min="1"></div><div class="col-md-6 mb-3"><label class="form-label">Scadenza Visita Medica</label><input type="date" class="form-control" id="scadenza-visita"></div></div><div class="row"><div class="col-md-6 mb-3"><label class="form-label">Data Prenotazione Visita</label><input type="date" class="form-control" id="prenotazione-visita"></div><div class="col-md-6 mb-3"><label class="form-label">Scadenza Tessera GO</label><input type="date" class="form-control" id="scadenza-tessera"></div></div><div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="athlete-captain"><label class="form-label" for="athlete-captain">Capitano</label></div><div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="athlete-vice-captain"><label class="form-label" for="athlete-vice-captain">Vice Capitano</label></div><div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="athlete-guest"><label class="form-label" for="athlete-guest">Atleta Ospite (non in rosa)</label></div></form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button><button type="submit" class="btn btn-primary-custom" form="athlete-form">Salva Atleta</button></div></div></div></div> <div class="modal fade" id="gpsModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="gpsModalLabel">Dati Performance di <span id="modal-athlete-name-gps"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="gps-form"><input type="hidden" id="modal-athlete-id-gps"><input type="hidden" id="gps-session-id"> <div class="row mb-3"><div class="col-md-8"><label for="gps-session-selector" class="form-label">Seleziona Sessione Esistente per Modificare</label><select id="gps-session-selector" class="form-select"><option value="">--- Inserisci Nuova Sessione ---</option></select></div><div class="col-md-4 d-flex align-items-end"><button type="button" id="delete-gps-session-btn" class="btn btn-outline-danger w-100" disabled>Elimina Sessione</button></div></div><hr> <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Data Registrazione</label><input type="date" class="form-control" id="gps-data_di_registrazione" required></div><div class="col-md-4 mb-3"><label class="form-label">Ora Registrazione</label><input type="time" class="form-control" id="gps-ora_registrazione"></div><div class="col-md-4 mb-3"><label class="form-label">Tipo Sessione</label><select class="form-select" id="gps-tipo_sessione"><option value="Allenamento">Allenamento</option><option value="Partita">Partita</option><option value="Individual">Individual</option></select></div></div> <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Distanza Totale (m)</label><input type="number" step="0.1" class="form-control" id="gps-distanza_totale" placeholder="es. 10500"></div><div class="col-md-4 mb-3"><label class="form-label">Tempo Totale (min)</label><input type="number" step="0.1" class="form-control" id="gps-tempo_totale" placeholder="es. 92"></div><div class="col-md-4 mb-3"><label class="form-label">Distanza per Minuto (m/min)</label><input type="number" step="0.1" class="form-control" id="gps-distanza_per_minuto" readonly></div></div> <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Distanza Sprint (m)</label><input type="number" step="0.1" class="form-control" id="gps-distanza_sprint"></div><div class="col-md-4 mb-3"><label class="form-label">Velocità Massima (km/h)</label><input type="number" step="0.1" class="form-control" id="gps-velocita_massima"></div><div class="col-md-4 mb-3"><label class="form-label">Numero di Sprint</label><input type="number" class="form-control" id="gps-numero_di_sprint"></div></div> <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Max Acc (g)o(n°)</label><input type="number" step="0.1" class="form-control" id="gps-max_acc"></div><div class="col-md-4 mb-3"><label class="form-label">Max Dec (g)o(n°)</label><input type="number" step="0.1" class="form-control" id="gps-max_dec"></div><div class="col-md-4 mb-3"><label class="form-label">Passaggi Piede Sinistro</label><input type="number" class="form-control" id="gps-passaggi_piede_sinistro"></div></div> <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Passaggi Piede Destro</label><input type="number" class="form-control" id="gps-passaggi_piede_destro"></div><div class="col-md-4 mb-3"><label class="form-label">Cross Piede Sinistro</label><input type="number" step="0.1" class="form-control" id="gps-cross_piede_sinistro"></div><div class="col-md-4 mb-3"><label class="form-label">Cross Piede Destro</label><input type="number" step="0.1" class="form-control" id="gps-cross_piede_destro"></div></div> <div class="row"><div class="col-md-4 mb-3"><label class="form-label">Potenza Massima di Tiro (km/h)</label><input type="number" step="0.1" class="form-control" id="gps-potenza_massima_di_tiro"></div><div class="col-md-4 mb-3"><label class="form-label">Tiri Piede SX</label><input type="number" class="form-control" id="gps-tiri_piede_sx"></div><div class="col-md-4 mb-3"><label class="form-label">Tiri Piede DX</label><input type="number" class="form-control" id="gps-tiri_piede_dx"></div></div> <div class="row"><div class="col-md-4 mb-3"><label class="form-label">% Passaggi Brevi</label><input type="number" step="0.1" class="form-control" id="gps-perc_passaggi_brevi"></div><div class="col-md-4 mb-3"><label class="form-label">% Lanci</label><input type="number" step="0.1" class="form-control" id="gps-perc_lanci"></div><div class="col-md-4 mb-3"><label class="form-label">Distanza Circuito (m)</label><input type="number" step="1" class="form-control" id="gps-distanza_circuito" placeholder="es. 400"></div></div> <div class="row align-items-end"><div class="col-md-5 mb-3"><label class="form-label">Tempo Circuito</label><div class="input-group"><input type="number" class="form-control" id="gps-tempo_circuito_min" placeholder="Min" min="0"><span class="input-group-text">:</span><input type="number" class="form-control" id="gps-tempo_circuito_sec" placeholder="Sec" min="0" max="59"><span class="input-group-text">.</span><input type="number" class="form-control" id="gps-tempo_circuito_cen" placeholder="Cen" min="0" max="99"></div></div><div class="col-md-4 mb-3"><label class="form-label">Velocità (km/h)</label><input type="text" class="form-control" id="gps-velocita_circuito" readonly></div></div> <div id="match-stats-fields" style="display: none;"><hr><h5 class="mb-3">Statistiche Partita</h5><div class="row"><div class="col-md-3 mb-3"><label class="form-label">Minuti Giocati</label><input type="number" class="form-control" id="gps-minuti_giocati"></div><div class="col-md-3 mb-3"><label class="form-label">Gol</label><input type="number" class="form-control" id="gps-gol"></div><div class="col-md-3 mb-3"><label class="form-label">Assist</label><input type="number" class="form-control" id="gps-assist"></div><div class="col-md-3 mb-3"><label class="form-label">Ammonizioni</label><input type="number" class="form-control" id="gps-ammonizioni"></div></div><div class="row"><div class="col-md-3 mb-3"><label class="form-label">Espulsioni</label><input type="number" class="form-control" id="gps-espulsioni"></div><div class="col-md-3 mb-3"><label class="form-label">Palle Recuperate</label><input type="number" class="form-control" id="gps-palle_recuperate"></div><div class="col-md-3 mb-3"><label class="form-label">Palle Perse</label><input type="number" class="form-control" id="gps-palle_perse"></div></div></div> <div class="row"><div class="col-12 mb-3"><label class="form-label">Note (opzionale)</label><textarea class="form-control" id="gps-note" rows="2" placeholder="Es. Allenamento intenso, recupero infortunio, ecc."></textarea></div></div> </form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button><button type="submit" class="btn btn-primary-custom" form="gps-form">Salva Dati GPS</button></div></div></div></div> <div class="modal fade" id="sessionModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="sessionModalLabel">Pianifica Sessione</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="session-form"><input type="hidden" id="session-id"><div class="mb-3"><label class="form-label">Data</label><input type="date" class="form-control" id="session-date" required></div><div class="mb-3"><label class="form-label">Titolo/Tipo</label><input type="text" class="form-control" id="session-title" required placeholder="Es. Allenamento tecnico"></div><div class="row"><div class="col-md-6 mb-3"><label class="form-label">Ora Inizio</label><input type="time" class="form-control" id="session-time"></div><div class="col-md-6 mb-3"><label class="form-label">Luogo</label><input type="text" class="form-control" id="session-location" placeholder="Es. Campo 1"></div></div><div class="mb-3"><label class="form-label">Obiettivi</label><input type="text" class="form-control" id="session-goals" placeholder="Es. Possesso palla, tiri in porta"></div><div class="mb-3"><label class="form-label">Descrizione Allenamento (un punto per riga)</label><textarea class="form-control" id="session-description" rows="5"></textarea></div></form></div><div class="modal-footer justify-content-between"><button type="button" class="btn btn-outline-danger" id="delete-session-btn" style="display:none;">Elimina</button><div><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button><button type="submit" class="btn btn-primary-custom" form="session-form">Salva Sessione</button></div></div></div></div></div> <div class="modal fade" id="matchResultModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="matchResultModalLabel">Inserisci Risultato Partita</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="match-result-form"><input type="hidden" id="match-id"><div class="row"><div class="col-md-4 mb-3"><label class="form-label">Data Partita</label><input type="date" class="form-control" id="match-date" required></div><div class="col-md-4 mb-3"><label class="form-label">Ora Partita</label><input type="time" class="form-control" id="match-time"></div><div class="col-md-4 mb-3"><label class="form-label">Luogo Fisico</label><input type="text" class="form-control" id="match-venue" placeholder="Es. Stadio Comunale"></div></div><div class="row"><div class="col-md-5 mb-3"><label class="form-label">Squadra Avversaria</label><input type="text" class="form-control" id="match-opponent-name" required></div><div class="col-md-3 mb-3"><label class="form-label">Luogo</label><select class="form-select" id="match-location"><option value="home">Casa</option><option value="away">Trasferta</option></select></div></div><div class="row align-items-center text-center"><div class="col-5"><label class="form-label">GO Sport</label><input type="number" class="form-control text-center" id="match-my-team-score" min="0" placeholder="Gol"></div><div class="col-2">-</div><div class="col-5"><label class="form-label">AVVERSARI</label><input type="number" class="form-control text-center" id="match-opponent-score" min="0" placeholder="Gol"></div></div><hr><div class="row mt-3"><div class="col-md-4"><h5><i class="bi bi-futbol"></i> Marcatori (GO Sport)</h5><div id="scorers-container" class="d-grid gap-2"></div><button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="add-scorer-btn"><i class="bi bi-plus"></i> Aggiungi Marcatore</button></div><div class="col-md-4"><h5><i class="bi bi-person-raised-hand"></i> Assists (GO Sport)</h5><div id="assists-container" class="d-grid gap-2"></div><button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="add-assist-btn"><i class="bi bi-plus"></i> Aggiungi Assist</button></div><div class="col-md-4"><h5><i class="bi bi-file-earmark-person"></i> Cartellini (GO Sport)</h5><div id="cards-container" class="d-grid gap-2"></div><button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="add-card-btn"><i class="bi bi-plus"></i> Aggiungi Cartellino</button></div></div></form></div><div class="modal-footer justify-content-between"><button type="button" class="btn btn-outline-danger" id="delete-match-btn" style="display:none;">Elimina Partita</button><div><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button><button type="submit" class="btn btn-primary-custom" form="match-result-form">Salva Partita</button></div></div></div></div></div> <div class="modal fade" id="passwordModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Accesso Richiesto</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p>Per visualizzare questi dati è richiesta una password.</p><form id="password-form"><div class="mb-3"><label for="password-input" class="form-label">Password</label><input type="password" class="form-control" id="password-input" required><div id="password-error" class="text-danger mt-2" style="display: none;">Password non corretta.</div></div><button type="submit" class="btn btn-primary-custom w-100">Accedi</button></form></div></div></div></div>`;
-    const evaluationModal = new bootstrap.Modal(document.getElementById('evaluationModal'));
-    const athleteModal = new bootstrap.Modal(document.getElementById('athleteModal'));
-    const gpsModal = new bootstrap.Modal(document.getElementById('gpsModal'));
-    const sessionModal = new bootstrap.Modal(document.getElementById('sessionModal'));
-    const matchResultModal = new bootstrap.Modal(document.getElementById('matchResultModal'));
-    const passwordModal = new bootstrap.Modal(document.getElementById('passwordModal'));
+    if (modalsContainer) {
+        modalsContainer.innerHTML = `...lungo HTML...`;
+    }
+
+    // ✅ AGGIUNGI CONTROLLI NULL
+    const evalModalEl = document.getElementById('evaluationModal');
+    const athleteModalEl = document.getElementById('athleteModal');
+    const gpsModalEl = document.getElementById('gpsModal');
+    const sessionModalEl = document.getElementById('sessionModal');
+    const matchModalEl = document.getElementById('matchResultModal');
+    const pwdModalEl = document.getElementById('passwordModal');
+    const evaluationModal = evalModalEl ? new bootstrap.Modal(evalModalEl) : null;
+    const athleteModal = athleteModalEl ? new bootstrap.Modal(athleteModalEl) : null;
+    const gpsModal = gpsModalEl ? new bootstrap.Modal(gpsModalEl) : null;
+    const sessionModal = sessionModalEl ? new bootstrap.Modal(sessionModalEl) : null;
+    const matchResultModal = matchModalEl ? new bootstrap.Modal(matchModalEl) : null;
+    const passwordModal = pwdModalEl ? new bootstrap.Modal(pwdModalEl) : null;
     const elements = {
         athleteGrid: document.getElementById('athlete-grid'),
         evaluationDatePicker: document.getElementById('evaluation-date-picker'),
@@ -101,24 +111,29 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.passwordForm.reset();
         passwordModal.show();
     };
+    if (elements.passwordForm) {
     elements.passwordForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const password = document.getElementById('password-input').value;
-        if (password === ACCESS_PASSWORD) {
-            sessionStorage.setItem('isAuthenticated', 'true');
-            elements.passwordError.style.display = 'none';
-            passwordModal.hide();
-            if (authSuccessCallback) authSuccessCallback();
-            updateAllUI();
-        } else {
-            elements.passwordError.style.display = 'block';
+    e.preventDefault();
+    const password = document.getElementById('password-input').value;
+    if (password === ACCESS_PASSWORD) {
+        sessionStorage.setItem('isAuthenticated', 'true');
+        elements.passwordError.style.display = 'none';
+        passwordModal.hide();
+        if (authSuccessCallback) authSuccessCallback();
+        updateAllUI();
+    } else {
+        elements.passwordError.style.display = 'block';
+    }
+});
+}
+    const pwdModal = document.getElementById('passwordModal');
+if (pwdModal) {
+    pwdModal.addEventListener('hidden.bs.modal', () => {
+        if (!isAuthenticated() && authCancelCallback) {
+            authCancelCallback();
         }
     });
-    document.getElementById('passwordModal').addEventListener('hidden.bs.modal', () => {
-         if (!isAuthenticated() && authCancelCallback) {
-             authCancelCallback();
-         }
-    });
+}
     const matchStatsFields = ['minuti_giocati', 'gol', 'assist', 'ammonizioni', 'espulsioni', 'palle_recuperate', 'palle_perse'];
     const allGpsFields = ['data_di_registrazione', 'ora_registrazione', 'tipo_sessione', 'distanza_totale', 'tempo_totale', 'distanza_sprint', 'velocita_massima', 'numero_di_sprint', 'max_acc', 'max_dec', 'passaggi_piede_sinistro', 'passaggi_piede_destro', 'cross_piede_sinistro', 'cross_piede_destro', 'potenza_massima_di_tiro', 'distanza_per_minuto', 'tiri_piede_sx', 'tiri_piede_dx', 'perc_passaggi_brevi', 'perc_lanci', 'distanza_circuito', 'tempo_circuito_totale_s', 'velocita_circuito', 'note', ...matchStatsFields];
     const gpsFieldsForDisplay = { 'tipo_sessione':'Tipo', 'data_di_registrazione': 'Data', 'ora_registrazione': 'Ora', 'distanza_totale': 'Dist. Totale (m)', 'tempo_totale': 'Tempo (min)', 'distanza_per_minuto':'Dist/min (m)', 'distanza_sprint': 'Distanza Sprint (m)', 'velocita_massima': 'Vel. Max (km/h)', 'numero_di_sprint': 'Num. Sprint', 'max_acc': 'Max Acc (g)o(n°)', 'max_dec': 'Max Dec (g)o(n°)', 'passaggi_piede_sinistro':'Passaggi SX', 'passaggi_piede_destro':'Passaggi DX', 'cross_piede_sinistro':'Cross SX', 'cross_piede_destro':'Cross DX', 'potenza_massima_di_tiro':'Pot. Tiro (km/h)', 'tiri_piede_sx': 'Tiri Piede SX', 'tiri_piede_dx': 'Tiri Piede DX', 'perc_passaggi_brevi': '% Passaggi Brevi', 'perc_lanci': '% Lanci', 'distanza_circuito': 'Dist. Circuito (m)', 'tempo_circuito_totale_s': 'Tempo Circuito (s)', 'velocita_circuito': 'Vel. Circuito (km/h)', 'minuti_giocati': 'Minuti Giocati', 'gol': 'Gol', 'assist': 'Assist', 'ammonizioni': 'Gialli', 'espulsioni': 'Rossi', 'palle_recuperate': 'Palle Recuperate', 'palle_perse': 'Palle Perse', 'note': 'Note' };
@@ -139,51 +154,77 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentCalendarDate = new Date();
     let pollingInterval = null;
     let visuallyDeletedCards = [];
+    
+        // ===== MODIFICHE ALLE FUNZIONI saveData E loadData =====
+    
     const saveData = async () => {
-        const allData = { 
-            athletes, 
-            evaluations, 
-            gpsData, 
-            awards, 
-            trainingSessions, 
-            formationData, 
+        const allData = {
+            athletes,
+            evaluations,
+            gpsData,
+            awards,
+            trainingSessions,
+            formationData,
             matchResults,
             calendarEvents: window.calendarEvents || {},
             calendarResponses: window.calendarResponses || {}
         };
+        
         try {
-            const response = await fetch('/api/data', { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify(allData) 
+            const annataId = sessionStorage.getItem('gosport_current_annata') || '2012';
+            console.log(`💾 Salvataggio dati per annata: ${annataId}`);
+            
+            const response = await fetch('/api/data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Annata-Id': annataId
+                },
+                body: JSON.stringify(allData)
             });
+            
             if (!response.ok) throw new Error('Errore salvataggio');
+            console.log('✅ Dati salvati con successo');
             return true;
-        } catch (error) { 
+        } catch (error) {
             console.error('Errore nel salvataggio dei dati sul server:', error);
             return false;
         }
-    };
-    // Rendi saveData disponibile globalmente per calendario-admin.js e parent-view.js
+    };  // ⬅️ QUESTA PARENTESI È IMPORTANTE!
+    
     window.saveData = saveData;
+    
     const migrateGpsData = () => {
         for (const athleteId in gpsData) {
             for (const date in gpsData[athleteId]) {
                 if (gpsData[athleteId][date] && !Array.isArray(gpsData[athleteId][date])) {
                     const oldSessionObject = gpsData[athleteId][date];
-                    if (!oldSessionObject.id) { oldSessionObject.id = new Date(`${date}T${oldSessionObject.ora_registrazione || '00:00:00'}`).getTime().toString(); }
+                    if (!oldSessionObject.id) {
+                        oldSessionObject.id = new Date(`${date}T${oldSessionObject.ora_registrazione || '00:00:00'}`).getTime().toString();
+                    }
                     gpsData[athleteId][date] = [oldSessionObject];
                 }
             }
         }
-    };
+    };  // ⬅️ QUESTA PARENTESI È IMPORTANTE!
+    
     const loadData = async () => {
         try {
-            const response = await fetch('/api/data', { cache: 'no-store' });
+            const annataId = sessionStorage.getItem('gosport_current_annata') || '2012';
+            console.log(`📥 Caricamento dati per annata: ${annataId}`);
+            
+            const response = await fetch('/api/data', {
+                cache: 'no-store',
+                headers: {
+                    'X-Annata-Id': annataId
+                }
+            });
+            
             if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
             const allData = await response.json();
+            
             athletes = allData.athletes || [];
-            window.athletes = athletes; // Sincronizza con window
+            window.athletes = athletes;
             evaluations = allData.evaluations || {};
             gpsData = allData.gpsData || {};
             migrateGpsData();
@@ -193,34 +234,40 @@ document.addEventListener('DOMContentLoaded', () => {
             matchResults = allData.matchResults || {};
             window.calendarEvents = allData.calendarEvents || {};
             window.calendarResponses = allData.calendarResponses || {};
+            
             athletes.forEach(athlete => {
                 if (athlete.isViceCaptain === undefined) athlete.isViceCaptain = false;
-                // Migrazione dalla vecchia proprietà "guest" alla nuova "isGuest"
                 if (athlete.guest !== undefined && athlete.isGuest === undefined) {
                     athlete.isGuest = athlete.guest;
                     delete athlete.guest;
                 }
                 if (athlete.isGuest === undefined) athlete.isGuest = false;
             });
+            
             for (const matchId in matchResults) {
                 if (!matchResults[matchId].assists) {
                     matchResults[matchId].assists = [];
                 }
             }
+            
+            console.log(`✅ Dati caricati: ${athletes.length} atleti`);
         } catch (error) {
             console.error('Errore nel caricamento dei dati dal server:', error);
-            athletes = []; 
+            athletes = [];
             window.athletes = [];
-            evaluations = {}; 
-            gpsData = {}; 
-            awards = {}; 
-            trainingSessions = {}; 
-            formationData = { starters: [], bench: [], tokens: [] }; 
+            evaluations = {};
+            gpsData = {};
+            awards = {};
+            trainingSessions = {};
+            formationData = { starters: [], bench: [], tokens: [] };
             matchResults = {};
             window.calendarEvents = {};
             window.calendarResponses = {};
         }
-    };
+    };  
+
+    // ⬅️ QUESTA PARENTESI È IMPORTANTE!
+
     const getWeekRange = (date) => {
         const d = new Date(date);
         const day = d.getDay();
@@ -229,6 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const sunday = new Date(new Date(monday).setDate(monday.getDate() + 6));
         return { start: monday.toISOString().split('T')[0], end: sunday.toISOString().split('T')[0] };
     };
+
     const calculateAthleteScore = (evaluation) => !evaluation ? 0 : Object.keys(evaluation).filter(k => k !== 'doccia').reduce((sum, key) => sum + parseInt(evaluation[key] || 0, 10), 0);
     const updateLogoutButtonVisibility = () => { elements.logoutBtn.style.display = isAuthenticated() ? 'block' : 'none'; };
     const updateUnlockButtonsVisibility = () => {
@@ -1541,9 +1589,34 @@ document.addEventListener('DOMContentLoaded', () => {
         currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
         renderCalendar();
     });
+    // Session/Calendar elements - solo se esistono
+if (elements.prevMonthBtn) {
+    elements.prevMonthBtn.addEventListener('click', () => {
+        currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+        renderCalendar();
+    });
+}
+
+if (elements.nextMonthBtn) {
+    elements.nextMonthBtn.addEventListener('click', () => {
+        currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+        renderCalendar();
+    });
+}
+
+if (elements.addSessionBtn) {
     elements.addSessionBtn.addEventListener('click', () => openSessionModal());
+}
+
+if (elements.quickAddAthleteBtn) {
     elements.quickAddAthleteBtn.addEventListener('click', () => elements.addAthleteBtn.click());
+}
+
+if (elements.quickPlanSessionBtn) {
     elements.quickPlanSessionBtn.addEventListener('click', () => elements.addSessionBtn.click());
+}
+
+if (elements.calendarGrid) {
     elements.calendarGrid.addEventListener('click', e => {
         if (e.target.classList.contains('calendar-session')) {
             const sessionId = e.target.dataset.sessionId;
@@ -1559,6 +1632,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+}
+
+if (elements.sessionForm) {
     elements.sessionForm.addEventListener('submit', e => {
         e.preventDefault();
         const date = document.getElementById('session-date').value;
@@ -1585,6 +1661,9 @@ document.addEventListener('DOMContentLoaded', () => {
         updateHomePage();
         sessionModal.hide();
     });
+}
+
+if (elements.deleteSessionBtn) {
     elements.deleteSessionBtn.addEventListener('click', () => {
         const date = document.getElementById('session-date').value;
         const id = document.getElementById('session-id').value;
@@ -1601,9 +1680,16 @@ document.addEventListener('DOMContentLoaded', () => {
             sessionModal.hide();
         }
     });
-    document.getElementById('gps-tipo_sessione').addEventListener('change', (e) => {
+}
+
+const gpsTipoSessione = document.getElementById('gps-tipo_sessione');
+if (gpsTipoSessione) {
+    gpsTipoSessione.addEventListener('change', (e) => {
         document.getElementById('match-stats-fields').style.display = (e.target.value === 'Partita') ? 'block' : 'none';
     });
+}
+
+if (elements.comparisonPeriodToggle) {
     elements.comparisonPeriodToggle.addEventListener('click', (e) => {
         if (e.target.dataset.period) {
             elements.comparisonPeriodToggle.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
@@ -1612,6 +1698,9 @@ document.addEventListener('DOMContentLoaded', () => {
             updateEvaluationCharts();
         }
     });
+}
+
+if (elements.attendancePeriodToggle) {
     elements.attendancePeriodToggle.addEventListener('click', (e) => {
         if (e.target.dataset.period) {
             elements.attendancePeriodToggle.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
@@ -1620,6 +1709,9 @@ document.addEventListener('DOMContentLoaded', () => {
             updateAttendanceChart();
         }
     });
+}
+
+if (elements.addAthleteBtn) {
     elements.addAthleteBtn.addEventListener('click', () => {
         document.getElementById('athleteModalLabel').textContent = 'Aggiungi Atleta';
         document.getElementById('athlete-form').reset();
@@ -1633,6 +1725,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('athlete-guest').checked = false;
         athleteModal.show();
     });
+}
+
+if (elements.athleteGrid) {
     elements.athleteGrid.addEventListener('click', (e) => {
         const card = e.target.closest('[data-athlete-id]');
         if (!card) return;
@@ -1724,14 +1819,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+}
+
+if (modalsContainer) {
     modalsContainer.addEventListener('change', (e) => {
         if (e.target.id === 'athlete-avatar-input') {
             const file = e.target.files[0];
             if (file) {
                 if (!confirm("ATTENZIONE: L'importazione sovrascriverà tutti i dati attuali. Vuoi continuare?")) {
-            e.target.value = null; // Resetta il file selezionato
-            return;
-        }
+                    e.target.value = null;
+                    return;
+                }
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     document.getElementById('athlete-avatar-base64').value = event.target.result;
@@ -1743,7 +1841,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
-        elements.athleteForm.addEventListener('submit', (e) => {
+}
+
+if (elements.athleteForm) {
+    elements.athleteForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const athleteId = document.getElementById('modal-athlete-id').value;
         const avatarBase64 = document.getElementById('athlete-avatar-base64').value;
@@ -1765,11 +1866,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (existingAthlete) {
-            // Aggiorna atleta esistente
             const index = athletes.findIndex(a => a.id === existingAthlete.id);
             athletes[index] = athleteData;
         } else {
-            // Aggiungi nuovo atleta
             athletes.push(athleteData);
         }
 
@@ -1779,6 +1878,9 @@ document.addEventListener('DOMContentLoaded', () => {
             alert(`${existingAthlete ? 'Atleta aggiornato' : 'Atleta aggiunto'} con successo!`);
         });
     });
+}
+
+if (elements.evaluationForm) {
     elements.evaluationForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const athleteId = document.getElementById('modal-athlete-id-eval').value;
@@ -1803,6 +1905,9 @@ document.addEventListener('DOMContentLoaded', () => {
         updateAllUI();
         evaluationModal.hide();
     });
+}
+
+if (elements.gpsForm) {
     elements.gpsForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const athleteId = document.getElementById('modal-athlete-id-gps').value;
@@ -2519,4 +2624,4 @@ document.addEventListener('DOMContentLoaded', () => {
         startPolling();
     }
     initializeApp();
-});
+}});
