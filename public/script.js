@@ -155,49 +155,80 @@ if (pwdModal) {
     let currentCalendarDate = new Date();
     let pollingInterval = null;
     let visuallyDeletedCards = [];
+    
+    // ===== MODIFICHE ALLE FUNZIONI saveData E loadData =====
+    
     const saveData = async () => {
-        const allData = { 
-            athletes, 
-            evaluations, 
-            gpsData, 
-            awards, 
-            trainingSessions, 
-            formationData, 
+        const allData = {
+            athletes,
+            evaluations,
+            gpsData,
+            awards,
+            trainingSessions,
+            formationData,
             matchResults,
             calendarEvents: window.calendarEvents || {},
             calendarResponses: window.calendarResponses || {}
         };
+        
         try {
-            const response = await fetch('/api/data', { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify(allData) 
+            // Ottieni l'annata corrente dalla sessione, oppure usa "2012" come default
+            const annataId = sessionStorage.getItem('gosport_current_annata') || '2012';
+            
+            console.log(`💾 Salvataggio dati per annata: ${annataId}`);
+            
+            const response = await fetch('/api/data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Annata-Id': annataId
+                },
+                body: JSON.stringify(allData)
             });
+            
             if (!response.ok) throw new Error('Errore salvataggio');
+            console.log('✅ Dati salvati con successo');
             return true;
-        } catch (error) { 
+        } catch (error) {
             console.error('Errore nel salvataggio dei dati sul server:', error);
             return false;
         }
     };
+    
     // Rendi saveData disponibile globalmente per calendario-admin.js e parent-view.js
     window.saveData = saveData;
+    
     const migrateGpsData = () => {
         for (const athleteId in gpsData) {
             for (const date in gpsData[athleteId]) {
                 if (gpsData[athleteId][date] && !Array.isArray(gpsData[athleteId][date])) {
                     const oldSessionObject = gpsData[athleteId][date];
-                    if (!oldSessionObject.id) { oldSessionObject.id = new Date(`${date}T${oldSessionObject.ora_registrazione || '00:00:00'}`).getTime().toString(); }
+                    if (!oldSessionObject.id) {
+                        oldSessionObject.id = new Date(`${date}T${oldSessionObject.ora_registrazione || '00:00:00'}`).getTime().toString();
+                    }
                     gpsData[athleteId][date] = [oldSessionObject];
                 }
             }
         }
     };
+    
     const loadData = async () => {
         try {
-            const response = await fetch('/api/data', { cache: 'no-store' });
+            // Ottieni l'annata corrente dalla sessione, oppure usa "2012" come default
+            const annataId = sessionStorage.getItem('gosport_current_annata') || '2012';
+            
+            console.log(`📥 Caricamento dati per annata: ${annataId}`);
+            
+            const response = await fetch('/api/data', {
+                cache: 'no-store',
+                headers: {
+                    'X-Annata-Id': annataId
+                }
+            });
+            
             if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
             const allData = await response.json();
+            
             athletes = allData.athletes || [];
             window.athletes = athletes; // Sincronizza con window
             evaluations = allData.evaluations || {};
@@ -209,6 +240,7 @@ if (pwdModal) {
             matchResults = allData.matchResults || {};
             window.calendarEvents = allData.calendarEvents || {};
             window.calendarResponses = allData.calendarResponses || {};
+            
             athletes.forEach(athlete => {
                 if (athlete.isViceCaptain === undefined) athlete.isViceCaptain = false;
                 // Migrazione dalla vecchia proprietà "guest" alla nuova "isGuest"
@@ -218,25 +250,29 @@ if (pwdModal) {
                 }
                 if (athlete.isGuest === undefined) athlete.isGuest = false;
             });
+            
             for (const matchId in matchResults) {
                 if (!matchResults[matchId].assists) {
                     matchResults[matchId].assists = [];
                 }
             }
+            
+            console.log(`✅ Dati caricati: ${athletes.length} atleti`);
         } catch (error) {
             console.error('Errore nel caricamento dei dati dal server:', error);
-            athletes = []; 
+            athletes = [];
             window.athletes = [];
-            evaluations = {}; 
-            gpsData = {}; 
-            awards = {}; 
-            trainingSessions = {}; 
-            formationData = { starters: [], bench: [], tokens: [] }; 
+            evaluations = {};
+            gpsData = {};
+            awards = {};
+            trainingSessions = {};
+            formationData = { starters: [], bench: [], tokens: [] };
             matchResults = {};
             window.calendarEvents = {};
             window.calendarResponses = {};
         }
     };
+    
     const getWeekRange = (date) => {
         const d = new Date(date);
         const day = d.getDay();
@@ -245,6 +281,7 @@ if (pwdModal) {
         const sunday = new Date(new Date(monday).setDate(monday.getDate() + 6));
         return { start: monday.toISOString().split('T')[0], end: sunday.toISOString().split('T')[0] };
     };
+
     const calculateAthleteScore = (evaluation) => !evaluation ? 0 : Object.keys(evaluation).filter(k => k !== 'doccia').reduce((sum, key) => sum + parseInt(evaluation[key] || 0, 10), 0);
     const updateLogoutButtonVisibility = () => { elements.logoutBtn.style.display = isAuthenticated() ? 'block' : 'none'; };
     const updateUnlockButtonsVisibility = () => {
