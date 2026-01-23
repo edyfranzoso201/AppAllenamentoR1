@@ -17,6 +17,8 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
+      console.log(`📥 GET richiesta per annata: ${annataId}`);
+      
       // Chiavi per l'annata specifica
       const athletesKey = `annate:${annataId}:athletes`;
       const eventsKey = `annate:${annataId}:calendarEvents`;
@@ -31,9 +33,17 @@ export default async function handler(req, res) {
       let awards = await kv.get(awardsKey);
       let attendanceResponses = await kv.get(attendanceKey);
 
+      console.log(`📊 Dati trovati per ${annataId}:`, {
+        athletes: athletes ? athletes.length : 0,
+        calendarEvents: calendarEvents ? calendarEvents.length : 0,
+        calendarResponses: calendarResponses ? calendarResponses.length : 0,
+        awards: awards ? awards.length : 0,
+        attendanceResponses: attendanceResponses ? attendanceResponses.length : 0
+      });
+
       // MIGRAZIONE AUTOMATICA: Se non ci sono dati per questa annata, prova a leggere i dati legacy
       if (!athletes || athletes.length === 0) {
-        console.log(`Nessun dato trovato per annata ${annataId}, tento migrazione legacy...`);
+        console.log(`⚠️ Nessun dato trovato per annata ${annataId}, tento migrazione legacy...`);
         
         // Leggi dati legacy
         const legacyAthletes = await kv.get('athletes');
@@ -42,9 +52,17 @@ export default async function handler(req, res) {
         const legacyAwards = await kv.get('awards');
         const legacyAttendance = await kv.get('attendanceResponses');
 
-        // Se i dati legacy esistono, migra nell'annata 2012 (annata principale)
+        console.log(`📦 Dati legacy trovati:`, {
+          athletes: legacyAthletes ? legacyAthletes.length : 0,
+          calendarEvents: legacyEvents ? legacyEvents.length : 0,
+          calendarResponses: legacyResponses ? legacyResponses.length : 0,
+          awards: legacyAwards ? legacyAwards.length : 0,
+          attendanceResponses: legacyAttendance ? legacyAttendance.length : 0
+        });
+
+        // Se i dati legacy esistono e stiamo chiedendo l'annata 2012, migra
         if (legacyAthletes && legacyAthletes.length > 0 && annataId === '2012') {
-          console.log('Migrazione dati legacy in corso...');
+          console.log('🔄 Migrazione dati legacy in corso per annata 2012...');
           
           await kv.set(athletesKey, legacyAthletes);
           await kv.set(eventsKey, legacyEvents || []);
@@ -58,7 +76,7 @@ export default async function handler(req, res) {
           awards = legacyAwards || [];
           attendanceResponses = legacyAttendance || [];
           
-          console.log('Migrazione completata!');
+          console.log('✅ Migrazione completata!');
         }
       }
 
@@ -78,9 +96,13 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Parametri type e data richiesti' });
       }
 
+      console.log(`💾 POST richiesta per annata ${annataId}, type: ${type}, items: ${Array.isArray(data) ? data.length : 'N/A'}`);
+
       // Chiave specifica per annata
       const key = `annate:${annataId}:${type}`;
       await kv.set(key, data);
+
+      console.log(`✅ Dati salvati: ${key}`);
 
       return res.status(200).json({ success: true, message: `${type} salvati per annata ${annataId}` });
     }
@@ -95,13 +117,15 @@ export default async function handler(req, res) {
       const key = `annate:${annataId}:${type}`;
       await kv.del(key);
 
+      console.log(`🗑️ Dati eliminati: ${key}`);
+
       return res.status(200).json({ success: true, message: `${type} eliminati per annata ${annataId}` });
     }
 
     return res.status(405).json({ error: 'Metodo non permesso' });
 
   } catch (error) {
-    console.error('Errore API data:', error);
+    console.error('❌ Errore API data:', error);
     return res.status(500).json({ error: error.message });
   }
 }
