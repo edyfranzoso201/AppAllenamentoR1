@@ -2624,4 +2624,4 @@ if (elements.gpsForm) {
         startPolling();
     }
     initializeApp();
-});
+}});
