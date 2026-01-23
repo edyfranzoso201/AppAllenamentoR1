@@ -113,20 +113,20 @@ const passwordModal = pwdModalEl ? new bootstrap.Modal(pwdModalEl) : null;
         passwordModal.show();
     };
     if (elements.passwordForm) {
-    elements.passwordForm.addEventListener('submit', ...);
+    elements.passwordForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const password = document.getElementById('password-input').value;
+    if (password === ACCESS_PASSWORD) {
+        sessionStorage.setItem('isAuthenticated', 'true');
+        elements.passwordError.style.display = 'none';
+        passwordModal.hide();
+        if (authSuccessCallback) authSuccessCallback();
+        updateAllUI();
+    } else {
+        elements.passwordError.style.display = 'block';
+    }
+});
 }
-        e.preventDefault();
-        const password = document.getElementById('password-input').value;
-        if (password === ACCESS_PASSWORD) {
-            sessionStorage.setItem('isAuthenticated', 'true');
-            elements.passwordError.style.display = 'none';
-            passwordModal.hide();
-            if (authSuccessCallback) authSuccessCallback();
-            updateAllUI();
-        } else {
-            elements.passwordError.style.display = 'block';
-        }
-    });
     document.getElementById('passwordModal').addEventListener('hidden.bs.modal', () => {
          if (!isAuthenticated() && authCancelCallback) {
              authCancelCallback();
