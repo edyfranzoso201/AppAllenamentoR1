@@ -364,8 +364,8 @@
             try {
                 let annate;
                 
-                if (role === 'admin' || role === 'supercoach') {
-                    annate = await getAllAnnate();  // ✅ SuperCoach vede TUTTE le annate
+        if (role === 'admin' || role === 'supercoach') {
+            annate = await getAllAnnate();
                 } else {
                     const userAnnate = await getUserAnnate(username);
                     const allAnnate = await getAllAnnate();
