@@ -671,98 +671,105 @@
         }
     });
 
-    // -------------------------------------------------------------------------
-    // SISTEMA DI BACKUP UNIVERSALE (Salva TUTTO il contenuto dell'App)
-    // -------------------------------------------------------------------------
-    document.getElementById('backup-btn').addEventListener('click', async function() {
-        const btn = this;
-        const originalHTML = btn.innerHTML;
-        
-        try {
-            console.log("🚀 Backup in corso...");
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Creazione Backup...';
+// =================================================================
+// CODICE BACKUP CORRETTO - Aspetta che il DOM sia pronto
+// Sostituisci dalla riga 678 alla 753 in /public/index.html
+// =================================================================
+
+    // Assicurati che il bottone esista prima di attaccare l'event listener
+    const backupBtn = document.getElementById('backup-btn');
+    if (backupBtn) {
+        backupBtn.addEventListener('click', async function() {
+            const btn = this;
+            const originalHTML = btn.innerHTML;
             
-            await new Promise(resolve => setTimeout(resolve, 300));
+            try {
+                console.log("🚀 Backup in corso...");
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Creazione Backup...';
+                
+                await new Promise(resolve => setTimeout(resolve, 300));
 
-            // Ottieni l'annata corrente (quella attiva ora)
-            const currentAnnata = sessionStorage.getItem('gosport_current_annata') || 'default';
-            console.log(`📌 Backup annata: ${currentAnnata}`);
+                // Ottieni l'annata corrente
+                const currentAnnata = sessionStorage.getItem('gosport_current_annata') || 'default';
+                console.log(`📌 Backup annata: ${currentAnnata}`);
 
-            // Scarica i dati dell'annata corrente
-            const response = await fetch('/api/data', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-annata-id': currentAnnata
+                // Scarica i dati
+                const response = await fetch('/api/data', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-annata-id': currentAnnata
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Errore nel caricamento dati dal server');
                 }
-            });
 
-            if (!response.ok) {
-                throw new Error('Errore nel caricamento dati dal server');
-            }
+                const annataData = await response.json();
+                const athletesCount = annataData.athletes?.length || 0;
+                console.log(`📊 Atleti trovati: ${athletesCount}`);
 
-            const annataData = await response.json();
-            
-            // Conta atleti
-            const athletesCount = annataData.athletes?.length || 0;
-            console.log(`📊 Atleti trovati: ${athletesCount}`);
+                // Crea backup
+                const fullBackup = {
+                    _backup_info: {
+                        data_creazione: new Date().toLocaleString('it-IT'),
+                        timestamp: Date.now(),
+                        tipo: "BACKUP_ANNATA_COMPLETO",
+                        annata_id: currentAnnata,
+                        atleti_totali: athletesCount
+                    },
+                    annata_data: annataData
+                };
 
-            // Crea il backup completo
-            const fullBackup = {
-                _backup_info: {
-                    data_creazione: new Date().toLocaleString('it-IT'),
-                    timestamp: Date.now(),
-                    tipo: "BACKUP_ANNATA_COMPLETO",
-                    annata_id: currentAnnata,
-                    atleti_totali: athletesCount
-                },
-                annata_data: annataData
-            };
-
-            // Aggiungi localStorage se presente
-            const localStorageData = {};
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                try {
-                    localStorageData[key] = JSON.parse(localStorage.getItem(key));
-                } catch (e) {
-                    localStorageData[key] = localStorage.getItem(key);
+                // Aggiungi localStorage
+                const localStorageData = {};
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    try {
+                        localStorageData[key] = JSON.parse(localStorage.getItem(key));
+                    } catch (e) {
+                        localStorageData[key] = localStorage.getItem(key);
+                    }
                 }
+                if (Object.keys(localStorageData).length > 0) {
+                    fullBackup._localStorage = localStorageData;
+                }
+
+                // Download
+                const dataStr = JSON.stringify(fullBackup, null, 2);
+                const blob = new Blob([dataStr], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                
+                const now = new Date();
+                const dateStr = now.toISOString().slice(0,10);
+                const timeStr = now.toTimeString().slice(0,5).replace(':','-');
+                
+                a.download = `GoSport_Backup_${dateStr}_${timeStr}.json`;
+                
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                console.log('✅ Backup completato!');
+                alert(`✅ BACKUP COMPLETATO!\n\n📊 Riepilogo:\n• ${athletesCount} atleti salvati\n• Annata: ${currentAnnata}\n• File: ${a.download}\n\nIl file è stato scaricato nella cartella Download.`);
+
+            } catch (error) {
+                console.error("❌ Errore backup:", error);
+                alert('❌ ERRORE: ' + error.message);
+            } finally {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
             }
-            if (Object.keys(localStorageData).length > 0) {
-                fullBackup._localStorage = localStorageData;
-            }
-
-            // Crea e scarica il file
-            const dataStr = JSON.stringify(fullBackup, null, 2);
-            const blob = new Blob([dataStr], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            
-            const now = new Date();
-            const dateStr = now.toISOString().slice(0,10);
-            const timeStr = now.toTimeString().slice(0,5).replace(':','-');
-            
-            a.download = `GoSport_Backup_${dateStr}_${timeStr}.json`;
-            
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-
-            console.log('✅ Backup completato!');
-            alert(`✅ BACKUP COMPLETATO!\n\n📊 Riepilogo:\n• ${athletesCount} atleti salvati\n• Annata: ${currentAnnata}\n• File: ${a.download}\n\nIl file è stato scaricato nella cartella Download.`);
-
-        } catch (error) {
-            console.error("❌ Errore backup:", error);
-            alert('❌ ERRORE: ' + error.message);
-        } finally {
-            btn.innerHTML = originalHTML;
-            btn.disabled = false;
-        }
-    });
+        });
+        console.log('✅ Event listener backup attaccato al bottone');
+    } else {
+        console.error('❌ Bottone backup-btn non trovato!');
+    }
 
     document.getElementById('restore-file').addEventListener('change', async function(e) {
         const file = e.target.files[0];
