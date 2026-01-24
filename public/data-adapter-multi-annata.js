@@ -1,8 +1,12 @@
-// data-adapter-multi-annata.js - CORRETTO per compatibilità API
+// data-adapter-multi-annata.js - Adapter per gestione dati multi-annata
 (function() {
     'use strict';
 
     console.log('📄 Data Adapter Multi-Annata: caricamento...');
+
+    // ==========================================
+    // UTILITY FUNCTIONS
+    // ==========================================
 
     function getCurrentAnnata() {
         return sessionStorage.getItem('gosport_current_annata');
@@ -12,51 +16,76 @@
         return sessionStorage.getItem('gosport_auth_session') === 'true';
     }
 
+    // Verifica se siamo in modalità genitore (link pubblico)
     function isParentMode() {
         const search = window.location.search;
         const path = window.location.pathname;
-        if (search.includes('athleteId=')) return true;
-        if (path.includes('/presenza/')) return true;
+        
+        // Se c'è athleteId, siamo in modalità genitore
+        if (search.includes('athleteId=')) {
+            return true;
+        }
+        
+        // Se siamo in una pagina presenza
+        if (path.includes('/presenza/')) {
+            return true;
+        }
+        
         return false;
     }
 
+    // Ottiene l'annata corrente o quella di default per genitori
     async function getAnnataForRequest() {
+        // Se autenticato, usa l'annata dalla sessione
         if (isAuthenticated()) {
             const annataId = getCurrentAnnata();
-            if (annataId) return annataId;
+            if (annataId) {
+                return annataId;
+            }
         }
         
+        // Se in modalità genitore, usa l'annata di default (la più recente)
         if (isParentMode()) {
             try {
                 const response = await fetch('/api/annate/list');
                 if (response.ok) {
                     const data = await response.json();
                     const annate = data.annate || [];
+                    
                     if (annate.length > 0) {
+                        // Ordina per data e prendi la più recente
                         const sorted = annate.sort((a, b) => {
                             return new Date(b.dataInizio) - new Date(a.dataInizio);
                         });
+                        
                         console.log(`🔓 Modalità Genitore: usando annata ${sorted[0].id}`);
                         return sorted[0].id;
                     }
                 }
             } catch (error) {
-                console.error('Errore recupero annata:', error);
+                console.error('Errore nel recupero annata per genitore:', error);
             }
         }
         
-        // Default a 2012 se non c'è annata
-        return '2012';
+        return null;
     }
 
     // ==========================================
-    // OVERRIDE GLOBALE loadData - CORRETTO
+    // OVERRIDE GLOBALE loadData
     // ==========================================
+
     window.loadData = async function(key) {
         try {
             const annataId = await getAnnataForRequest();
+            
+            if (!annataId) {
+                console.warn(`⚠️ loadData(${key}): Nessuna annata disponibile`);
+                return null;
+            }
+            
             console.log(`📥 loadData(${key}) per annata: ${annataId}`);
 
+            // Chiamata API - USANDO HEADER x-annata-id
             const response = await fetch(`/api/data`, {
                 method: 'GET',
                 headers: {
@@ -67,26 +96,20 @@
 
             if (!response.ok) {
                 if (response.status === 404) {
-                    console.log(`ℹ️ loadData(${key}): Nessun dato`);
+                    console.log(`ℹ️ loadData(${key}): Nessun dato trovato`);
                     return null;
                 }
                 console.error(`❌ loadData(${key}): HTTP ${response.status}`);
                 return null;
             }
 
-            // L'API ritorna direttamente { athletes: [...], evaluations: {...}, ... }
             const result = await response.json();
-            
-            // Ritorna il campo specifico richiesto
-            if (key && result[key] !== undefined) {
-                console.log(`✅ loadData(${key}): OK`);
-                return result[key];
+            if (result.success) {
+                const count = result.data ? (Array.isArray(result.data) ? result.data.length : 'OK') : 0;
+                console.log(`✅ loadData(${key}): ${count} elementi`);
+                return result.data;
             }
-            
-            // Se non c'è key, ritorna tutto
-            console.log(`✅ loadData: dati completi caricati`);
-            return result;
-            
+            return null;
         } catch (error) {
             console.error(`❌ loadData(${key}) errore:`, error);
             return null;
@@ -94,13 +117,21 @@
     };
 
     // ==========================================
-    // OVERRIDE GLOBALE saveData - CORRETTO
+    // OVERRIDE GLOBALE saveData
     // ==========================================
+
     window.saveData = async function(key, value) {
         try {
             const annataId = await getAnnataForRequest();
+            
+            if (!annataId) {
+                console.warn(`⚠️ saveData(${key}): Nessuna annata disponibile`);
+                return false;
+            }
+            
             console.log(`💾 saveData(${key}) per annata: ${annataId}`);
 
+            // Chiamata API - USANDO HEADER x-annata-id
             const response = await fetch(`/api/data`, {
                 method: 'POST',
                 headers: {
@@ -117,11 +148,11 @@
 
             const result = await response.json();
             if (result.success) {
-                console.log(`✅ saveData(${key}): Salvato`);
+                console.log(`✅ saveData(${key}): Salvato con successo`);
                 return true;
             }
 
-            console.error(`❌ saveData(${key}): Fallito`);
+            console.error(`❌ saveData(${key}): API ritornò success=false`);
             return false;
         } catch (error) {
             console.error(`❌ saveData(${key}) errore:`, error);
@@ -129,17 +160,24 @@
         }
     };
 
-    // Esponi funzioni globali
+    // ==========================================
+    // ESPONI FUNZIONI GLOBALI
+    // ==========================================
+
     window.getCurrentAnnata = getCurrentAnnata;
     window.isParentMode = isParentMode;
 
     console.log('✅ Data Adapter Multi-Annata: attivo');
     
-    const currentAnnata = getCurrentAnnata();
-    if (currentAnnata) {
-        console.log(`   - Annata corrente: ${currentAnnata}`);
+    if (isParentMode()) {
+        console.log('   - 🔓 Modalità Genitore (accesso pubblico)');
     } else {
-        console.log('   - Default annata: 2012');
+        const currentAnnata = getCurrentAnnata();
+        if (currentAnnata) {
+            console.log(`   - Annata corrente: ${currentAnnata}`);
+        } else {
+            console.log('   - Nessuna annata selezionata ancora');
+        }
     }
 
 })();
