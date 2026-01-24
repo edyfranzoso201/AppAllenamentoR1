@@ -627,49 +627,6 @@
     
     <!-- Sistema Backup/Restore -->
     <script>
-    // Backup Dati
-    document.getElementById('backup-btn').addEventListener('click', async function() {
-        try {
-            const btn = this;
-            const originalHTML = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Caricamento...';
-            
-            const response = await fetch('/api/data', {cache: 'no-store'});
-            const data = await response.json();
-            
-            // Crea file JSON con indentazione
-            const dataStr = JSON.stringify(data, null, 2);
-            const blob = new Blob([dataStr], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            
-            // Download
-            const a = document.createElement('a');
-            a.href = url;
-            const timestamp = new Date().toISOString().slice(0,10);
-            const time = new Date().toTimeString().slice(0,5).replace(':','-');
-            a.download = `backup-gosport-${timestamp}-${time}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            btn.innerHTML = '<i class="bi bi-check-circle"></i> Scaricato!';
-            btn.className = 'btn btn-success';
-            
-            setTimeout(() => {
-                btn.innerHTML = originalHTML;
-                btn.className = 'btn btn-success';
-                btn.disabled = false;
-            }, 3000);
-            
-            alert('✅ Backup completato!\\n\\nFile: backup-gosport-' + timestamp + '-' + time + '.json\\n\\nConserva questo file in un posto sicuro.');
-        } catch (e) {
-            alert('❌ Errore nel backup: ' + e.message);
-            this.disabled = false;
-            this.innerHTML = '<i class="bi bi-download"></i> Backup Dati';
-        }
-    });
 
 // =================================================================
 // CODICE BACKUP CORRETTO - Aspetta che il DOM sia pronto
