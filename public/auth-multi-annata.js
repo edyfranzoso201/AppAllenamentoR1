@@ -924,6 +924,189 @@ window.deleteUser = async function(username) {
     }
 };
 
+// ==========================================
+// GESTIONE UTENTI  
+// ==========================================
+
+async function showUtentiPanel() {
+    const contentArea = document.getElementById('content-area');
+    
+    contentArea.innerHTML = `
+        <div style="background:rgba(30,41,59,0.95);padding:30px;border-radius:15px;border:1px solid rgba(96,165,250,0.2);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:30px;">
+                <h2 style="color:#e2e8f0;margin:0;font-size:20px;">👥 Utenti Registrati</h2>
+                <button id="add-user-btn" style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:600;">
+                    ➕ Crea Nuovo Utente
+                </button>
+            </div>
+            
+            <div id="users-list-admin" style="display:flex;flex-direction:column;gap:15px;">
+                <div style="text-align:center;padding:40px;color:#94a3b8;">
+                    <div style="font-size:32px;margin-bottom:10px;">⏳</div>
+                    <p>Caricamento...</p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('add-user-btn').addEventListener('click', () => showUserModal());
+    
+    loadUsersList();
+}
+
+async function loadUsersList() {
+    const listDiv = document.getElementById('users-list-admin');
+    
+    try {
+        const response = await fetch('/api/auth/users');
+        if (!response.ok) throw new Error('Errore caricamento');
+        
+        const data = await response.json();
+        const users = data.users || [];
+        
+        if (users.length === 0) {
+            listDiv.innerHTML = `
+                <div style="text-align:center;padding:40px;color:#94a3b8;">
+                    <div style="font-size:32px;margin-bottom:10px;">📭</div>
+                    <p>Nessun utente trovato</p>
+                </div>
+            `;
+            return;
+        }
+        
+        listDiv.innerHTML = '';
+        
+        users.forEach(user => {
+            const roleIcon = user.role === 'admin' ? '👑' : user.role === 'supercoach' ? '⭐' : '👨‍🏫';
+            const roleName = user.role === 'admin' ? 'AMMINISTRATORE' : user.role === 'supercoach' ? 'SUPER COACH' : 'COACH';
+            const roleColor = user.role === 'admin' ? '#f59e0b' : user.role === 'supercoach' ? '#8b5cf6' : '#3b82f6';
+            
+            const card = document.createElement('div');
+            card.style.cssText = 'background:#1e293b;padding:20px;border-radius:12px;border:1px solid rgba(96,165,250,0.2);';
+            
+            const annateText = user.role === 'admin' 
+                ? 'Tutte le annate' 
+                : user.role === 'supercoach' 
+                    ? 'Tutte le annate' 
+                    : user.annate?.length > 0 
+                        ? user.annate.join(', ') 
+                        : 'Nessuna annata assegnata';
+            
+            card.innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:start;">
+                    <div style="flex:1;">
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <h3 style="color:#60a5fa;margin:0;font-size:18px;">${user.username}</h3>
+                            <span style="background:${roleColor};color:#fff;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">
+                                ${roleIcon} ${roleName}
+                            </span>
+                        </div>
+                        <p style="color:#94a3b8;margin:0;font-size:14px;">📧 ${user.email || 'Email non impostata'}</p>
+                        <p style="color:#94a3b8;margin:5px 0 0 0;font-size:14px;">📅 Accesso: ${annateText}</p>
+                    </div>
+                    <div style="display:flex;gap:10px;">
+                        <button onclick="editUser('${user.username}')" style="background:#3b82f6;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;">
+                            ✏️ Modifica
+                        </button>
+                        ${user.role !== 'admin' ? `
+                        <button onclick="deleteUser('${user.username}')" style="background:#ef4444;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;">
+                            🗑️ Elimina
+                        </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            
+            listDiv.appendChild(card);
+        });
+        
+    } catch (error) {
+        listDiv.innerHTML = `
+            <div style="text-align:center;padding:40px;color:#ef4444;">
+                <div style="font-size:32px;margin-bottom:10px;">⚠️</div>
+                <p>Errore: ${error.message}</p>
+            </div>
+        `;
+    }
+}
+
+async function showUserModal(userData = null) {
+    const isEdit = userData !== null;
+    
+    // Carica annate disponibili
+    let annateDisponibili = [];
+    try {
+        const response = await fetch('/api/annate/list');
+        const data = await response.json();
+        annateDisponibili = data.annate || [];
+    } catch (e) {}
+    
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:9999;overflow-y:auto;padding:20px;';
+    
+    const annateCheckboxes = annateDisponibili.map(annata => {
+        const checked = userData?.annate?.includes(annata.id) ? 'checked' : '';
+        return `
+            <label style="display:flex;align-items:center;gap:8px;color:#e2e8f0;cursor:pointer;padding:8px;border-radius:6px;background:#0f172a;">
+                <input type="checkbox" name="annate" value="${annata.id}" ${checked} style="width:18px;height:18px;cursor:pointer;" />
+                <span>${annata.nome}</span>
+            </label>
+        `;
+    }).join('');
+    
+    modal.innerHTML = `
+        <div style="background:#1e293b;padding:30px;border-radius:15px;max-width:500px;width:100%;border:1px solid rgba(96,165,250,0.2);">
+            <h2 style="color:#60a5fa;margin:0 0 20px 0;font-size:22px;">${isEdit ? '✏️ Modifica Utente' : '➕ Crea Nuovo Utente'}</h2>
+            
+            <form id="user-form" style="display:flex;flex-direction:column;gap:15px;">
+                <div>
+                    <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Username *</label>
+                    <input type="text" id="user-username" value="${userData?.username || ''}" ${isEdit ? 'disabled' : ''} placeholder="es. mario.rossi" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#fff;box-sizing:border-box;" required />
+                </div>
+                
+                ${!isEdit ? `
+                <div>
+                    <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Password *</label>
+                    <input type="password" id="user-password" placeholder="Password sicura" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#fff;box-sizing:border-box;" required />
+                </div>
+                ` : ''}
+                
+                <div>
+                    <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Email</label>
+                    <input type="email" id="user-email" value="${userData?.email || ''}" placeholder="email@esempio.com" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#fff;box-sizing:border-box;" />
+                </div>
+                
+                <div>
+                    <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Ruolo *</label>
+                    <select id="user-role" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#fff;box-sizing:border-box;" required>
+                        <option value="coach" ${userData?.role === 'coach' ? 'selected' : ''}>👨‍🏫 COACH (accesso limitato)</option>
+                        <option value="supercoach" ${userData?.role === 'supercoach' ? 'selected' : ''}>⭐ SUPER COACH (tutte le annate)</option>
+                        <option value="admin" ${userData?.role === 'admin' ? 'selected' : ''}>👑 AMMINISTRATORE (controllo totale)</option>
+                    </select>
+                </div>
+                
+                <div id="annate-container" style="display:${userData?.role === 'coach' || !userData ? 'block' : 'none'};">
+                    <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:8px;">Annate Assegnate</label>
+                    <div style="max-height:200px;overflow-y:auto;border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:10px;background:#0f172a;display:flex;flex-direction:column;gap:5px;">
+                        ${annateCheckboxes || '<p style="color:#64748b;margin:0;text-align:center;">Nessuna annata disponibile</p>'}
+                    </div>
+                    <p style="color:#64748b;font-size:12px;margin:5px 0 0 0;">Seleziona le annate a cui questo utente può accedere</p>
+                </div>
+                
+                <div style="display:flex;gap:10px;margin-top:10px;">
+                    <button type="submit" style="flex:1;background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
+                        ${isEdit ? '💾 Salva Modifiche' : '➕ Crea Utente'}
+                    </button>
+                    <button type="button" id="cancel-user-btn" style="flex:1;background:#64748b;color:#fff;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
+                        ❌ Annulla
+                    </button>
+                </div>
+            </form>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
     // Mostra/nascondi annate in base al ruolo
     document.getElementById('user-role').addEventListener('change', (e) => {
         const annateContainer = document.getElementById('annate-container');
