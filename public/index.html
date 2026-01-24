@@ -671,7 +671,6 @@
         }
     });
 
-    // Ripristina Backup
     // -------------------------------------------------------------------------
     // SISTEMA DI BACKUP UNIVERSALE (Salva TUTTO il contenuto dell'App)
     // -------------------------------------------------------------------------
@@ -680,73 +679,86 @@
         const originalHTML = btn.innerHTML;
         
         try {
-            // 1. Feedback visivo per capire che il click funziona
-            console.log("Avvio procedura di backup...");
+            console.log("🚀 Backup in corso...");
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Creazione Backup...';
-
-            // Pausa tecnica per permettere al browser di aggiornare l'interfaccia
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            // 2. RACCOLTA DATI UNIVERSALE
-            // Invece di scegliere cosa salvare, salviamo TUTTO il LocalStorage.
-            // In questo modo anche i dati del Calendario sono inclusi obbligatoriamente.
-            const fullBackup = {};
             
-            if (localStorage.length === 0) {
-                throw new Error("Nessun dato trovato in memoria da salvare!");
-            }
+            await new Promise(resolve => setTimeout(resolve, 300));
 
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                const value = localStorage.getItem(key);
-                
-                // Proviamo a convertire in oggetto se è JSON, altrimenti salviamo stringa
-                try {
-                    fullBackup[key] = JSON.parse(value);
-                } catch (e) {
-                    fullBackup[key] = value;
+            // Ottieni l'annata corrente (quella attiva ora)
+            const currentAnnata = sessionStorage.getItem('gosport_current_annata') || 'default';
+            console.log(`📌 Backup annata: ${currentAnnata}`);
+
+            // Scarica i dati dell'annata corrente
+            const response = await fetch('/api/data', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-annata-id': currentAnnata
                 }
+            });
+
+            if (!response.ok) {
+                throw new Error('Errore nel caricamento dati dal server');
             }
 
-            // 3. Aggiunta Meta-Dati (Data e Info)
-            fullBackup._backup_info = {
-                data_creazione: new Date().toLocaleString('it-IT'),
-                timestamp: Date.now(),
-                tipo: "BACKUP_COMPLETO_GOSPORT",
-                totale_chiavi: Object.keys(fullBackup).length
+            const annataData = await response.json();
+            
+            // Conta atleti
+            const athletesCount = annataData.athletes?.length || 0;
+            console.log(`📊 Atleti trovati: ${athletesCount}`);
+
+            // Crea il backup completo
+            const fullBackup = {
+                _backup_info: {
+                    data_creazione: new Date().toLocaleString('it-IT'),
+                    timestamp: Date.now(),
+                    tipo: "BACKUP_ANNATA_COMPLETO",
+                    annata_id: currentAnnata,
+                    atleti_totali: athletesCount
+                },
+                annata_data: annataData
             };
 
-            // 4. Creazione File
+            // Aggiungi localStorage se presente
+            const localStorageData = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                try {
+                    localStorageData[key] = JSON.parse(localStorage.getItem(key));
+                } catch (e) {
+                    localStorageData[key] = localStorage.getItem(key);
+                }
+            }
+            if (Object.keys(localStorageData).length > 0) {
+                fullBackup._localStorage = localStorageData;
+            }
+
+            // Crea e scarica il file
             const dataStr = JSON.stringify(fullBackup, null, 2);
             const blob = new Blob([dataStr], {type: 'application/json'});
             const url = URL.createObjectURL(blob);
-            
-            // 5. Download Automatico
             const a = document.createElement('a');
             a.href = url;
-            // Nome file con data e ora per non confondersi
-            const now = new Date();
-            const dateStr = now.toISOString().slice(0,10); // 2025-08-12
-            const timeStr = now.toTimeString().slice(0,5).replace(':','-'); // 14-30
             
-            a.download = `GoSport_FULL_Backup_${dateStr}_${timeStr}.json`;
+            const now = new Date();
+            const dateStr = now.toISOString().slice(0,10);
+            const timeStr = now.toTimeString().slice(0,5).replace(':','-');
+            
+            a.download = `GoSport_Backup_${dateStr}_${timeStr}.json`;
             
             document.body.appendChild(a);
             a.click();
-            
-            // Pulizia
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
 
-            // Conferma finale
-            alert(`✅ BACKUP ESEGUITO!\n\nSono stati salvati ${Object.keys(fullBackup).length - 1} archivi dati.\nIl file include TUTTO (Calendario, Atleti, ecc).`);
+            console.log('✅ Backup completato!');
+            alert(`✅ BACKUP COMPLETATO!\n\n📊 Riepilogo:\n• ${athletesCount} atleti salvati\n• Annata: ${currentAnnata}\n• File: ${a.download}\n\nIl file è stato scaricato nella cartella Download.`);
 
         } catch (error) {
-            console.error("Errore Backup:", error);
+            console.error("❌ Errore backup:", error);
             alert('❌ ERRORE: ' + error.message);
         } finally {
-            // Ripristina il bottone
             btn.innerHTML = originalHTML;
             btn.disabled = false;
         }
