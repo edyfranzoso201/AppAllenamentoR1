@@ -671,82 +671,60 @@
         }
     });
 
-    // Ripristina Backup
-    // -------------------------------------------------------------------------
-    // SISTEMA DI BACKUP UNIVERSALE (Salva TUTTO il contenuto dell'App)
-    // -------------------------------------------------------------------------
+// ===================================================================
+// COPIA QUESTO CODICE E SOSTITUISCI DALLA RIGA 678 ALLA RIGA 831
+// nel file index.html (public/index.html)
+// ===================================================================
+
     document.getElementById('backup-btn').addEventListener('click', async function() {
         const btn = this;
         const originalHTML = btn.innerHTML;
-        
         try {
-            // 1. Feedback visivo per capire che il click funziona
-            console.log("Avvio procedura di backup...");
+            console.log("🚀 Backup multi-annata...");
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Creazione Backup...';
-
-            // Pausa tecnica per permettere al browser di aggiornare l'interfaccia
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            // 2. RACCOLTA DATI UNIVERSALE
-            // Invece di scegliere cosa salvare, salviamo TUTTO il LocalStorage.
-            // In questo modo anche i dati del Calendario sono inclusi obbligatoriamente.
-            const fullBackup = {};
-            
-            if (localStorage.length === 0) {
-                throw new Error("Nessun dato trovato in memoria da salvare!");
+            await new Promise(resolve => setTimeout(resolve, 300));
+            let annateDisponibili = [];
+            try {
+                const annateResponse = await fetch('/api/annate/list');
+                if (annateResponse.ok) annateDisponibili = (await annateResponse.json()).annate || [];
+            } catch (error) {}
+            if (annateDisponibili.length === 0) {
+                annateDisponibili = [{ id: sessionStorage.getItem('gosport_current_annata') || '2012', nome: 'Annata 2012' }];
             }
-
+            const fullBackup = { _backup_info: { data_creazione: new Date().toLocaleString('it-IT'), timestamp: Date.now(), tipo: "BACKUP_MULTI_ANNATA_COMPLETO", annate_incluse: annateDisponibili.map(a => a.id) } };
+            for (const annata of annateDisponibili) {
+                try {
+                    const response = await fetch('/api/data', { headers: { 'X-Annata-Id': annata.id } });
+                    if (response.ok) {
+                        fullBackup[`annata_${annata.id}`] = { info: { id: annata.id, nome: annata.nome || `Annata ${annata.id}` }, data: await response.json() };
+                    }
+                } catch (error) {}
+            }
+            const localStorageData = {};
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
-                const value = localStorage.getItem(key);
-                
-                // Proviamo a convertire in oggetto se è JSON, altrimenti salviamo stringa
-                try {
-                    fullBackup[key] = JSON.parse(value);
-                } catch (e) {
-                    fullBackup[key] = value;
-                }
+                try { localStorageData[key] = JSON.parse(localStorage.getItem(key)); } catch (e) { localStorageData[key] = localStorage.getItem(key); }
             }
-
-            // 3. Aggiunta Meta-Dati (Data e Info)
-            fullBackup._backup_info = {
-                data_creazione: new Date().toLocaleString('it-IT'),
-                timestamp: Date.now(),
-                tipo: "BACKUP_COMPLETO_GOSPORT",
-                totale_chiavi: Object.keys(fullBackup).length
-            };
-
-            // 4. Creazione File
+            if (Object.keys(localStorageData).length > 0) fullBackup._localStorage = localStorageData;
             const dataStr = JSON.stringify(fullBackup, null, 2);
             const blob = new Blob([dataStr], {type: 'application/json'});
             const url = URL.createObjectURL(blob);
-            
-            // 5. Download Automatico
             const a = document.createElement('a');
             a.href = url;
-            // Nome file con data e ora per non confondersi
             const now = new Date();
-            const dateStr = now.toISOString().slice(0,10); // 2025-08-12
-            const timeStr = now.toTimeString().slice(0,5).replace(':','-'); // 14-30
-            
-            a.download = `GoSport_FULL_Backup_${dateStr}_${timeStr}.json`;
-            
+            a.download = `GoSport_MultiAnnata_Backup_${now.toISOString().slice(0,10)}_${now.toTimeString().slice(0,5).replace(':','-')}.json`;
             document.body.appendChild(a);
             a.click();
-            
-            // Pulizia
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-
-            // Conferma finale
-            alert(`✅ BACKUP ESEGUITO!\n\nSono stati salvati ${Object.keys(fullBackup).length - 1} archivi dati.\nIl file include TUTTO (Calendario, Atleti, ecc).`);
-
+            let totalAtleti = 0;
+            for (const key in fullBackup) { if (key.startsWith('annata_')) totalAtleti += fullBackup[key].data.athletes?.length || 0; }
+            alert(`✅ BACKUP COMPLETATO!\n\n• ${fullBackup._backup_info.annate_incluse.length} annate\n• ${totalAtleti} atleti totali\n• File: ${a.download}`);
         } catch (error) {
-            console.error("Errore Backup:", error);
+            console.error("❌ Errore:", error);
             alert('❌ ERRORE: ' + error.message);
         } finally {
-            // Ripristina il bottone
             btn.innerHTML = originalHTML;
             btn.disabled = false;
         }
@@ -755,80 +733,95 @@
     document.getElementById('restore-file').addEventListener('change', async function(e) {
         const file = e.target.files[0];
         if (!file) return;
-        
-        const btn = document.getElementById('restore-btn');
+        const btn = document.getElementById('restore-backup-btn');
         const originalHTML = btn.innerHTML;
-        
         try {
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Caricamento...';
-            
             const reader = new FileReader();
             reader.onload = async function(event) {
                 try {
-                    const data = JSON.parse(event.target.result);
-                    
-                    // Verifica struttura base
-                    if (!data.athletes || !Array.isArray(data.athletes)) {
-                        throw new Error('File non valido: struttura dati non corretta');
+                    const backupData = JSON.parse(event.target.result);
+                    let backupType = 'unknown';
+                    if (backupData._backup_info?.tipo === 'BACKUP_MULTI_ANNATA_COMPLETO') {
+                        backupType = 'multi_annata';
+                    } else if (backupData.athletes && Array.isArray(backupData.athletes)) {
+                        backupType = 'legacy_single';
+                    } else {
+                        throw new Error('Formato backup non riconosciuto');
                     }
-                    
-                    // Conferma finale
-                    const summary = `📊 Dati nel backup:\\n\\n` +
-                        `• Atleti: ${data.athletes.length}\\n` +
-                        `• Sessioni: ${data.sessions ? data.sessions.length : 0}\\n` +
-                        `• Eventi calendario: ${data.calendarEvents ? Object.keys(data.calendarEvents).length : 0}\\n\\n` +
-                        `Confermi il ripristino?`;
-                    
+                    let summary = '📊 CONTENUTO BACKUP:\n\n';
+                    if (backupType === 'multi_annata') {
+                        summary += `Tipo: Multi-Annata\nAnnate: ${backupData._backup_info.annate_incluse.length}\n\n`;
+                        for (const key in backupData) {
+                            if (key.startsWith('annata_')) {
+                                const annataData = backupData[key];
+                                summary += `• Annata ${annataData.info.id}: ${annataData.data.athletes?.length || 0} atleti\n`;
+                            }
+                        }
+                    } else {
+                        summary += `Tipo: Singola Annata\n• Atleti: ${backupData.athletes?.length || 0}\n`;
+                    }
+                    summary += `\n⚠️ Sovrascriverà i dati esistenti.\n\nContinuare?`;
                     if (!confirm(summary)) {
                         btn.innerHTML = originalHTML;
                         btn.disabled = false;
                         e.target.value = '';
                         return;
                     }
-                    
-                    // Salva
-                    const response = await fetch('/api/data', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(data)
-                    });
-                    
-                    if (!response.ok) throw new Error('Errore nel salvataggio dei dati');
-                    
-                    btn.innerHTML = '<i class="bi bi-check-circle"></i> Ripristinato!';
+                    let successCount = 0, errorCount = 0;
+                    if (backupType === 'multi_annata') {
+                        for (const key in backupData) {
+                            if (key.startsWith('annata_')) {
+                                const annataData = backupData[key];
+                                try {
+                                    const response = await fetch('/api/data', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Annata-Id': annataData.info.id }, body: JSON.stringify(annataData.data) });
+                                    if (response.ok) successCount++; else errorCount++;
+                                } catch (error) { errorCount++; }
+                            }
+                        }
+                    } else {
+                        const currentAnnata = sessionStorage.getItem('gosport_current_annata') || '2012';
+                        try {
+                            const response = await fetch('/api/data', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Annata-Id': currentAnnata }, body: JSON.stringify(backupData) });
+                            if (response.ok) successCount++; else errorCount++;
+                        } catch (error) { errorCount++; }
+                    }
+                    if (backupData._localStorage) {
+                        for (const key in backupData._localStorage) {
+                            try {
+                                const value = backupData._localStorage[key];
+                                localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+                            } catch (error) {}
+                        }
+                    }
+                    btn.innerHTML = '<i class="bi bi-check-circle"></i> Completato!';
                     btn.className = 'btn btn-success';
-                    
                     setTimeout(() => {
-                        alert('✅ Dati ripristinati con successo!\\n\\nLa pagina verrà ricaricata.');
+                        alert(`✅ RIPRISTINO COMPLETATO!\n\n✅ ${successCount} annate ripristinate${errorCount > 0 ? `\n⚠️ ${errorCount} errori` : ''}\n\nRicarico...`);
                         location.reload();
                     }, 1000);
-                    
                 } catch (err) {
-                    alert('❌ Errore nel ripristino: ' + err.message + '\\n\\nVerifica che il file sia un backup valido.');
+                    alert('❌ Errore: ' + err.message);
                     btn.innerHTML = originalHTML;
                     btn.className = 'btn btn-warning';
                     btn.disabled = false;
                 }
             };
-            
             reader.onerror = function() {
-                alert('❌ Errore nella lettura del file');
+                alert('❌ Errore lettura file');
                 btn.innerHTML = originalHTML;
                 btn.disabled = false;
             };
-            
             reader.readAsText(file);
-            
         } catch (e) {
             alert('❌ Errore: ' + e.message);
             btn.innerHTML = originalHTML;
             btn.disabled = false;
         }
-        
-        // Reset input
         e.target.value = '';
     });
+
     </script>
        <!-- Copyright Footer -->
     <footer class="text-center no-print" style="...">
