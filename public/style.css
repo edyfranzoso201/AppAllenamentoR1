@@ -7,6 +7,16 @@ html { scroll-behavior: smooth; }
 body { background-color: var(--primary-blue); color: var(--text-light); padding-top: 56px; }
 .bg-dark-blue { background-color: #051438 !important; border-bottom: 2px solid var(--primary-red); }
 .main-title { color: var(--text-light); border-left: 4px solid var(--primary-red); padding-left: 1rem; }
+* ✅ FIX: Aggiungi padding-top all'alerts-container per far spazio all'header */
+#alerts-container {
+    padding-top: 60px;
+}
+
+/* ✅ FIX: Assicura che gli alert abbiano z-index inferiore all'header */
+#alerts-container .alert {
+    position: relative;
+    z-index: 1040;
+}
 .athlete-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; transition: all 0.3s ease; position: relative; overflow: hidden; }
 .athlete-card-clickable { cursor: pointer; }
 .athlete-card-clickable:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(217, 4, 41, 0.2); border-color: var(--primary-red); }
