@@ -2542,11 +2542,11 @@ window.handleQuickLogout = function() {
 };
 
 window.handleQuickChangeAnnata = function() {
-    // Rimuovi solo l'annata corrente
-    sessionStorage.removeItem('currentAnnata');
+    // ✅ Rimuovi l'annata corrente (chiave corretta!)
+    sessionStorage.removeItem('gosport_current_annata');
     
-    // Ricarica la pagina (andrà alla selezione annata)
-    window.location.href = window.location.origin + window.location.pathname;
+    // Ricarica la pagina (mostrerà la selezione annate)
+    window.location.reload();
 };
 
 // Funzione per aggiornare l'header
