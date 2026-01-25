@@ -1749,7 +1749,8 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.athleteForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const athleteId = document.getElementById('modal-athlete-id').value;
-        const avatarBase64 = document.getElementById('athlete-avatar-base64').value;
+        const avatarElement = document.getElementById('athlete-avatar-base64');
+        const avatarBase64 = avatarElement ? avatarElement.value : '';
         const existingAthlete = athleteId ? athletes.find(a => a.id.toString() === athleteId) : null;
         const athleteData = {
             id: existingAthlete ? existingAthlete.id : generateId(),
