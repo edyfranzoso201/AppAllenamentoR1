@@ -1754,14 +1754,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const existingAthlete = athleteId ? athletes.find(a => a.id.toString() === athleteId) : null;
         const athleteData = {
             id: existingAthlete ? existingAthlete.id : generateId(),
-            name: document.getElementById('athlete-name').value.trim(),
-            role: document.getElementById('athlete-role').value.trim(),
-            number: parseInt(document.getElementById('athlete-number').value) || 0,
-            isCaptain: document.getElementById('athlete-captain').checked,
-            isViceCaptain: document.getElementById('athlete-vice-captain').checked,
-            isGuest: document.getElementById('athlete-guest').checked,
-            scadenzaVisita: document.getElementById('athlete-scadenza-visita').value || '',
-            scadenzaTesseraGO: document.getElementById('athlete-scadenza-tessera-go').value || ''
+            name: document.getElementById('athlete-name')?.value?.trim() || '',
+            role: document.getElementById('athlete-role')?.value?.trim() || '',
+            number: parseInt(document.getElementById('athlete-number')?.value) || 0,
+            isCaptain: document.getElementById('athlete-captain')?.checked || false,
+            isViceCaptain: document.getElementById('athlete-vice-captain')?.checked || false,
+            isGuest: document.getElementById('athlete-guest')?.checked || false,
+            scadenzaVisita: document.getElementById('athlete-scadenza-visita')?.value || '',
+            scadenzaTesseraGO: document.getElementById('athlete-scadenza-tessera-go')?.value || ''
         };
 
         if (avatarBase64) {
