@@ -2525,6 +2525,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
 });
 
+// ==========================================
+// HEADER CON TITOLO ANNATA E PULSANTI RAPIDI
+// ==========================================
+
 // Funzione per aggiornare l'header con titolo annata e pulsanti rapidi
 function updateAppHeader() {
     // Prendi le info dall'auth
@@ -2690,7 +2694,7 @@ if (document.readyState === 'loading') {
 }
 
 // Aggiorna l'header anche quando cambiano i dati
-// (aggiungi questa chiamata nella funzione updateAllUI se esiste)
+// (Hook nella funzione updateAllUI esistente)
 if (typeof updateAllUI !== 'undefined') {
     const originalUpdateAllUI = updateAllUI;
     updateAllUI = function() {
