@@ -2524,3 +2524,177 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     initializeApp();
 });
+
+// Funzione per aggiornare l'header con titolo annata e pulsanti rapidi
+function updateAppHeader() {
+    // Prendi le info dall'auth
+    const currentUser = window.getCurrentUser ? window.getCurrentUser() : localStorage.getItem('currentUser');
+    const currentAnnataId = window.getCurrentAnnata ? window.getCurrentAnnata() : sessionStorage.getItem('currentAnnata');
+    const userRole = window.getUserRole ? window.getUserRole() : localStorage.getItem('userRole');
+    
+    // Trova o crea il container dell'header
+    let headerContainer = document.getElementById('app-header-info');
+    
+    if (!headerContainer) {
+        // Crea il container se non esiste
+        headerContainer = document.createElement('div');
+        headerContainer.id = 'app-header-info';
+        headerContainer.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        `;
+        document.body.appendChild(headerContainer);
+    }
+    
+    // Trova il nome dell'annata corrente
+    let annataName = 'N/A';
+    if (currentAnnataId) {
+        // Prova a prendere il nome dalla lista annate (se disponibile)
+        fetch('/api/annate/list')
+            .then(r => r.json())
+            .then(data => {
+                const annata = data.annate?.find(a => a.id === currentAnnataId);
+                if (annata) {
+                    annataName = annata.nome;
+                    updateHeaderUI(annataName, currentUser, userRole, currentAnnataId);
+                }
+            })
+            .catch(() => {
+                // Se fallisce, usa l'ID
+                annataName = currentAnnataId.substring(0, 8) + '...';
+                updateHeaderUI(annataName, currentUser, userRole, currentAnnataId);
+            });
+    } else {
+        updateHeaderUI(annataName, currentUser, userRole, currentAnnataId);
+    }
+}
+
+function updateHeaderUI(annataName, currentUser, userRole, currentAnnataId) {
+    const headerContainer = document.getElementById('app-header-info');
+    
+    // Determina se mostrare il pulsante cambio annata
+    const canChangeAnnata = userRole === 'admin' || userRole === 'supercoach';
+    
+    headerContainer.innerHTML = `
+        <!-- Titolo Annata -->
+        <div style="
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        ">
+            <span style="font-size: 20px;">📅</span>
+            <span>Annata: ${annataName}</span>
+        </div>
+        
+        <!-- Pulsante Cambio Annata (solo per admin/supercoach) -->
+        ${canChangeAnnata ? `
+        <button id="quick-change-annata-btn" style="
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+            <span style="font-size: 16px;">🔄</span>
+            <span>Cambia Annata</span>
+        </button>
+        ` : ''}
+        
+        <!-- Info Utente + Logout -->
+        <div style="
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: white;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        ">
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 16px;">${userRole === 'admin' ? '👑' : userRole === 'supercoach' ? '⭐' : '👨‍🏫'}</span>
+                <span>${currentUser || 'Utente'}</span>
+            </div>
+            <button id="quick-logout-btn" style="
+                background: #ef4444;
+                color: white;
+                border: none;
+                padding: 6px 12px;
+                border-radius: 8px;
+                font-weight: 600;
+                font-size: 13px;
+                cursor: pointer;
+                transition: all 0.2s;
+            " onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
+                🚪 Esci
+            </button>
+        </div>
+    `;
+    
+    // Aggiungi event listeners
+    const logoutBtn = document.getElementById('quick-logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            if (confirm('Vuoi davvero uscire?')) {
+                // Pulisci tutto
+                sessionStorage.removeItem('currentAnnata');
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('userRole');
+                localStorage.removeItem('authToken');
+                
+                // Ricarica la pagina (tornerà al login)
+                window.location.reload();
+            }
+        });
+    }
+    
+    const changeAnnataBtn = document.getElementById('quick-change-annata-btn');
+    if (changeAnnataBtn) {
+        changeAnnataBtn.addEventListener('click', () => {
+            // Rimuovi solo l'annata corrente, mantieni l'utente loggato
+            sessionStorage.removeItem('currentAnnata');
+            
+            // Ricarica la pagina (andrà alla selezione annata)
+            window.location.reload();
+        });
+    }
+}
+
+// Chiama la funzione quando la pagina è pronta
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', updateAppHeader);
+} else {
+    updateAppHeader();
+}
+
+// Aggiorna l'header anche quando cambiano i dati
+// (aggiungi questa chiamata nella funzione updateAllUI se esiste)
+if (typeof updateAllUI !== 'undefined') {
+    const originalUpdateAllUI = updateAllUI;
+    updateAllUI = function() {
+        originalUpdateAllUI.apply(this, arguments);
+        updateAppHeader();
+    };
+}
