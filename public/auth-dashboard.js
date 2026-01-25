@@ -1,12 +1,27 @@
-// auth-dashboard.js - Sistema autenticazione robusto
+// auth-dashboard.js - Sistema autenticazione robusto con gestione annate
 (function() {
     'use strict';
 
     // UTENTI AUTORIZZATI - Aggiungi qui coach, allenatori, dirigenti
+    // Struttura: username: { password, role, annata }
+    // role: 'admin' | 'supercoach' | 'coach'
+    // annata: ID annata assegnata (null per admin/supercoach che possono scegliere)
     const AUTHORIZED_USERS = {
-        'admin': 'admin201',
-        'allenatore1': 'Allenatore123',
-        'dirigente1': 'Dirigente123'
+        'admin': { 
+            password: 'admin201', 
+            role: 'admin', 
+            annata: null // Admin può scegliere qualsiasi annata
+        },
+        'allenatore1': { 
+            password: 'Allenatore123', 
+            role: 'coach', 
+            annata: '2013' // Assegnato all'annata 2013
+        },
+        'dirigente1': { 
+            password: 'Dirigente123', 
+            role: 'coach', 
+            annata: '2012' // Assegnato all'annata 2012
+        }
     };
 
     // Verifica se siamo in modalità presenza (non serve auth)
@@ -24,6 +39,7 @@
     // Chiave sessione
     const SESSION_KEY = 'gosport_auth_session';
     const SESSION_USER = 'gosport_auth_user';
+    const SESSION_ANNATA = 'gosport_current_annata';
 
     // Controlla se già autenticato
     function isAuthenticated() {
@@ -46,6 +62,8 @@
         sessionStorage.removeItem(SESSION_KEY);
         sessionStorage.removeItem(SESSION_KEY + '_expiry');
         sessionStorage.removeItem(SESSION_USER);
+        sessionStorage.removeItem(SESSION_ANNATA);
+        localStorage.removeItem('userRole');
     }
 
     // Mostra schermata login
@@ -99,7 +117,7 @@
                     onmouseover="this.style.transform='scale(1.02)'"
                     onmouseout="this.style.transform='scale(1)'"
                 >
-                    🔓 Accedi
+                    🔐 Accedi
                 </button>
             </form>
             
@@ -132,12 +150,24 @@
             }
             
             // Verifica credenziali
-            if (AUTHORIZED_USERS[username] && AUTHORIZED_USERS[username] === password) {
+            const userData = AUTHORIZED_USERS[username];
+            
+            if (userData && userData.password === password) {
                 // Login riuscito
                 const expiry = Date.now() + (8 * 60 * 60 * 1000); // 8 ore
                 sessionStorage.setItem(SESSION_KEY, 'true');
                 sessionStorage.setItem(SESSION_KEY + '_expiry', expiry.toString());
                 sessionStorage.setItem(SESSION_USER, username);
+                
+                // ✅ Salva il ruolo in localStorage
+                localStorage.setItem('userRole', userData.role);
+                localStorage.setItem('currentUser', username);
+                
+                // ✅ Se l'utente ha un'annata assegnata, impostala automaticamente
+                if (userData.annata) {
+                    sessionStorage.setItem(SESSION_ANNATA, userData.annata);
+                    console.log(`✅ Annata ${userData.annata} assegnata automaticamente a ${username}`);
+                }
                 
                 // Ricarica pagina
                 window.location.reload();
@@ -157,11 +187,16 @@
         });
     }
 
-    // Aggiungi pulsante logout alla dashboard
+    // Aggiungi pulsante logout alla dashboard (legacy - ora gestito da script.js)
     function addLogoutButton() {
         setTimeout(() => {
             const username = sessionStorage.getItem(SESSION_USER);
             if (!username) return;
+            
+            // Controlla se esiste già l'header nuovo
+            if (document.getElementById('app-header-info')) {
+                return; // Il nuovo header è già presente
+            }
             
             const header = document.querySelector('h1, .main-title');
             if (!header) return;
@@ -178,6 +213,15 @@
             document.body.appendChild(logoutBtn);
         }, 100);
     }
+
+    // Esponi funzioni globali
+    window.getCurrentUser = function() {
+        return sessionStorage.getItem(SESSION_USER);
+    };
+
+    window.getUserRole = function() {
+        return localStorage.getItem('userRole');
+    };
 
     // Controlla autenticazione
     if (!isAuthenticated()) {
