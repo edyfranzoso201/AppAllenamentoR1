@@ -2545,9 +2545,9 @@ function updateAppHeader() {
         headerContainer.id = 'app-header-info';
         headerContainer.style.cssText = `
             position: fixed;
-            top: 20px;
+            top: 70px;
             right: 20px;
-            z-index: 1000;
+            z-index: 1060;
             display: flex;
             gap: 10px;
             align-items: center;
