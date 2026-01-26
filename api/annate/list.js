@@ -2,41 +2,41 @@
 import { kv } from '@vercel/kv';
 
 export default async function handler(req, res) {
-  // Ottieni la sessione (dalla richiesta)
-  const authHeader = req.headers.authorization;
-  const sessionToken = authHeader?.replace('Bearer ', '') || null;
+  // Gestisci CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
 
-  if (!sessionToken) {
-    return res.status(401).json({ error: 'Non autenticato' });
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Metodo non consentito' });
   }
 
   try {
-    // Carica tutti gli utenti
-    const usersData = await kv.get('auth:users');
-    const users = Array.isArray(usersData) ? usersData : [];
-
-    // Trova l'utente corrente
-    const currentUser = users.find(u => u.session === sessionToken);
-    if (!currentUser) {
-      return res.status(401).json({ error: 'Utente non trovato' });
-    }
-
     // Carica tutte le annate
-    const allAnnateData = await kv.get('annate:list');
-    const allAnnate = Array.isArray(allAnnateData) ? allAnnateData : [];
+    const allAnnate = await kv.get('annate:list') || [];
 
-    let annateToReturn = allAnnate;
+    // Se c'è un header di autenticazione, filtra per ruolo (solo per coach)
+    const authHeader = req.headers.authorization;
+    if (authHeader) {
+      const sessionToken = authHeader.replace('Bearer ', '');
+      const usersData = await kv.get('auth:users');
+      const users = Array.isArray(usersData) ? usersData : [];
+      const currentUser = users.find(u => u.session === sessionToken);
 
-    // Filtra SOLO per coach
-    if (currentUser.role === 'coach') {
-      const userAnnateIds = Array.isArray(currentUser.annate) ? currentUser.annate : [];
-      annateToReturn = allAnnate.filter(annata =>
-        userAnnateIds.includes(annata.id)
-      );
+      if (currentUser && currentUser.role === 'coach') {
+        const userAnnateIds = Array.isArray(currentUser.annate) ? currentUser.annate : [];
+        const filteredAnnate = allAnnate.filter(a => userAnnateIds.includes(a.id));
+        return res.status(200).json({ annate: filteredAnnate });
+      }
     }
-    // admin e supercoach → vedono tutto (comportamento invariato)
 
-    res.status(200).json({ annate: annateToReturn });
+    // Per admin o senza autenticazione, restituisci tutte le annate
+    res.status(200).json({ annate: allAnnate });
+
   } catch (error) {
     console.error('Errore in /api/annate/list:', error);
     res.status(500).json({ error: 'Errore interno del server' });
