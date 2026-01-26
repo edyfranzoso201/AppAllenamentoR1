@@ -354,84 +354,73 @@
             }
         }
 
-    async function loadUserAnnate() {
-    const username = getCurrentUser();
-    const role = getUserRole();
-    const listDiv = document.getElementById('annate-list');
-    
-    if (!listDiv) return;
-    
-    try {
-        let annate;
-        
-        if (role === 'admin' || role === 'supercoach') {
-            annate = await getAllAnnate();
-        } else {
-            const userAnnate = await getUserAnnate(username);
-            const allAnnate = await getAllAnnate();
-            annate = allAnnate.filter(a => userAnnate.includes(a.id));
+        async function loadUserAnnate() {
+            const username = getCurrentUser();
+            const role = getUserRole();
+            const listDiv = document.getElementById('annate-list');
+            
+            if (!listDiv) return;
+            
+            try {
+                let annate;
+                
+                if (role === 'admin') {
+                    annate = await getAllAnnate();
+                } else {
+                    const userAnnate = await getUserAnnate(username);
+                    const allAnnate = await getAllAnnate();
+                    annate = allAnnate.filter(a => userAnnate.includes(a.id));
+                }
+                
+                if (annate.length === 0) {
+                    listDiv.innerHTML = `
+                        <div style="text-align:center;color:#94a3b8;padding:40px;">
+                            <div style="font-size:32px;margin-bottom:10px;">📭</div>
+                            <p>Nessuna annata disponibile</p>
+                            <p style="font-size:13px;margin-top:10px;">Contatta l'amministratore</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                listDiv.innerHTML = '';
+                
+                annate.forEach(annata => {
+                    const annataCard = document.createElement('div');
+                    annataCard.style.cssText = 'background:linear-gradient(135deg,#1e293b 0%,#334155 100%);padding:20px;border-radius:12px;cursor:pointer;border:2px solid rgba(96,165,250,0.2);transition:all 0.3s;';
+                    
+                    annataCard.innerHTML = `
+                        <h3 style="color:#60a5fa;margin:0 0 8px 0;font-size:20px;">${annata.nome}</h3>
+                        <p style="color:#94a3b8;margin:0;font-size:14px;">📅 ${annata.dataInizio} - ${annata.dataFine}</p>
+                    `;
+                    
+                    annataCard.onmouseover = function() {
+                        this.style.borderColor = '#60a5fa';
+                        this.style.transform = 'translateY(-2px)';
+                        this.style.boxShadow = '0 4px 12px rgba(96,165,250,0.3)';
+                    };
+                    
+                    annataCard.onmouseout = function() {
+                        this.style.borderColor = 'rgba(96,165,250,0.2)';
+                        this.style.transform = 'translateY(0)';
+                        this.style.boxShadow = 'none';
+                    };
+                    
+                    annataCard.onclick = () => selectAnnata(annata.id);
+                    
+                    listDiv.appendChild(annataCard);
+                });
+                
+            } catch (error) {
+                listDiv.innerHTML = `
+                    <div style="text-align:center;color:#ef4444;padding:40px;">
+                        <div style="font-size:32px;margin-bottom:10px;">⚠️</div>
+                        <p>Errore nel caricamento</p>
+                        <p style="font-size:13px;margin-top:10px;">${error.message}</p>
+                    </div>
+                `;
+            }
         }
-        
-        if (annate.length === 0) {
-            listDiv.innerHTML = `
-                <div style="text-align:center;color:#94a3b8;padding:40px;">
-                    <div style="font-size:32px;margin-bottom:10px;">📭</div>
-                    <p>Nessuna annata disponibile</p>
-                    <p style="font-size:13px;margin-top:10px;">Contatta l'amministratore</p>
-                </div>
-            `;
-            return;
-        }
-        
-        // ✅ AUTO-SELEZIONE: Se l'utente ha UNA SOLA annata, assegnala automaticamente
-        if (annate.length === 1 && (role === 'coach' || role === 'allenatore')) {
-            console.log(`✅ Annata unica trovata per ${username}: ${annate[0].id}`);
-            console.log(`🔄 Assegnazione automatica...`);
-            selectAnnata(annate[0].id);
-            return; // Esce dalla funzione, il reload gestirà il resto
-        }
-        
-        // Se ci sono più annate o l'utente è admin, mostra la lista
-        listDiv.innerHTML = '';
-        
-        annate.forEach(annata => {
-            const annataCard = document.createElement('div');
-            annataCard.style.cssText = 'background:linear-gradient(135deg,#1e293b 0%,#334155 100%);padding:20px;border-radius:12px;cursor:pointer;border:2px solid rgba(96,165,250,0.2);transition:all 0.3s;';
-            
-            annataCard.innerHTML = `
-                <h3 style="color:#60a5fa;margin:0 0 8px 0;font-size:20px;">${annata.nome}</h3>
-                <p style="color:#94a3b8;margin:0;font-size:14px;">📅 ${annata.dataInizio} - ${annata.dataFine}</p>
-                ${annata.descrizione ? `<p style="color:#64748b;margin:8px 0 0 0;font-size:13px;">${annata.descrizione}</p>` : ''}
-            `;
-            
-            annataCard.onmouseover = function() {
-                this.style.borderColor = '#60a5fa';
-                this.style.transform = 'translateY(-2px)';
-                this.style.boxShadow = '0 4px 12px rgba(96,165,250,0.3)';
-            };
-            
-            annataCard.onmouseout = function() {
-                this.style.borderColor = 'rgba(96,165,250,0.2)';
-                this.style.transform = 'translateY(0)';
-                this.style.boxShadow = 'none';
-            };
-            
-            annataCard.onclick = () => selectAnnata(annata.id);
-            
-            listDiv.appendChild(annataCard);
-        });
-        
-    } catch (error) {
-        console.error('Errore loadUserAnnate:', error);
-        listDiv.innerHTML = `
-            <div style="text-align:center;color:#ef4444;padding:40px;">
-                <div style="font-size:32px;margin-bottom:10px;">⚠️</div>
-                <p>Errore nel caricamento</p>
-                <p style="font-size:13px;margin-top:10px;">${error.message}</p>
-            </div>
-        `;
-    }
-}
 
         function selectAnnata(annataId) {
             sessionStorage.setItem(SESSION_ANNATA, annataId);
@@ -935,6 +924,56 @@ window.deleteUser = async function(username) {
     }
 };
 
+// ==========================================
+// PANNELLO ADMIN AGGIORNATO - USA API UNIFICATE
+// ==========================================
+
+function showAdminPanel() {
+    document.body.innerHTML = '';
+    document.body.style.cssText = 'margin:0;padding:0;font-family:system-ui;background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);min-height:100vh;overflow-y:auto;';
+    
+    const container = document.createElement('div');
+    container.style.cssText = 'max-width:1200px;margin:0 auto;padding:40px 20px;';
+    
+    container.innerHTML = `
+        <div style="background:rgba(30,41,59,0.95);padding:30px;border-radius:15px;margin-bottom:30px;border:1px solid rgba(96,165,250,0.2);">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <h1 style="color:#60a5fa;margin:0 0 5px 0;font-size:28px;font-weight:700;">⚙️ Pannello Amministratore</h1>
+                    <p style="color:#94a3b8;margin:0;">Gestione Utenti e Annate</p>
+                </div>
+                <button id="back-btn" style="background:#64748b;color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px;">
+                    ← Torna Indietro
+                </button>
+            </div>
+        </div>
+        
+        <div style="background:rgba(30,41,59,0.95);padding:20px;border-radius:15px;margin-bottom:20px;border:1px solid rgba(96,165,250,0.2);">
+            <div style="display:flex;gap:10px;">
+                <button id="tab-annate" class="tab-btn active" style="flex:1;background:linear-gradient(135deg,#3b82f6 0%,#2563eb 100%);color:#fff;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
+                    📅 Gestione Annate
+                </button>
+                <button id="tab-utenti" class="tab-btn" style="flex:1;background:#334155;color:#94a3b8;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
+                    👥 Gestione Utenti
+                </button>
+            </div>
+        </div>
+        
+        <div id="content-area"></div>
+    `;
+    
+    document.body.appendChild(container);
+    
+    document.getElementById('back-btn').addEventListener('click', () => {
+        sessionStorage.removeItem(SESSION_ANNATA);
+        window.location.reload();
+    });
+    
+    document.getElementById('tab-annate').addEventListener('click', () => switchTab('annate'));
+    document.getElementById('tab-utenti').addEventListener('click', () => switchTab('utenti'));
+    
+    switchTab('annate');
+}
 
 function switchTab(tabName) {
     const tabs = document.querySelectorAll('.tab-btn');
@@ -954,6 +993,431 @@ function switchTab(tabName) {
         showUtentiPanel();
     }
 }
+
+// ==========================================
+// GESTIONE ANNATE
+// ==========================================
+
+async function showAnnatePanel() {
+    const contentArea = document.getElementById('content-area');
+    contentArea.innerHTML = `
+        <div style="background:rgba(30,41,59,0.95);padding:30px;border-radius:15px;border:1px solid rgba(96,165,250,0.2);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:30px;">
+                <h2 style="color:#e2e8f0;margin:0;font-size:20px;">📅 Annate Esistenti</h2>
+                <button id="add-annata-btn" style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:600;">
+                    ➕ Crea Nuova Annata
+                </button>
+            </div>
+            <div id="annate-list-admin" style="display:flex;flex-direction:column;gap:15px;">
+                <div style="text-align:center;padding:40px;color:#94a3b8;">
+                    <div style="font-size:32px;margin-bottom:10px;">⏳</div>
+                    <p>Caricamento...</p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('add-annata-btn').addEventListener('click', () => showAnnataModal());
+    loadAnnateList();
+}
+
+async function loadAnnateList() {
+    const listDiv = document.getElementById('annate-list-admin');
+    
+    try {
+        const response = await fetch('/api/annate/list');
+        if (!response.ok) throw new Error('Errore caricamento');
+        
+        const data = await response.json();
+        const annate = data.annate || [];
+        
+        if (annate.length === 0) {
+            listDiv.innerHTML = `
+                <div style="text-align:center;padding:40px;color:#94a3b8;">
+                    <div style="font-size:32px;margin-bottom:10px;">📭</div>
+                    <p>Nessuna annata trovata</p>
+                </div>
+            `;
+            return;
+        }
+        
+        listDiv.innerHTML = '';
+        
+        for (const annata of annate) {
+            let athletesCount = 0;
+            try {
+                const dataResponse = await fetch('/api/data', {
+                    headers: { 'X-Annata-Id': annata.id }
+                });
+                if (dataResponse.ok) {
+                    const annataData = await dataResponse.json();
+                    athletesCount = annataData.athletes?.length || 0;
+                }
+            } catch (e) {}
+            
+            const card = document.createElement('div');
+            card.style.cssText = 'background:#1e293b;padding:20px;border-radius:12px;border:1px solid rgba(96,165,250,0.2);';
+            card.innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:start;">
+                    <div style="flex:1;">
+                        <h3 style="color:#60a5fa;margin:0 0 8px 0;font-size:18px;">${annata.nome}</h3>
+                        <p style="color:#94a3b8;margin:0 0 5px 0;font-size:14px;">📅 ${annata.dataInizio} - ${annata.dataFine}</p>
+                        <p style="color:#94a3b8;margin:0;font-size:14px;">👥 ${athletesCount} atleti</p>
+                        ${annata.descrizione ? `<p style="color:#64748b;margin:10px 0 0 0;font-size:13px;">${annata.descrizione}</p>` : ''}
+                    </div>
+                    <div style="display:flex;gap:10px;">
+                        <button onclick="editAnnata('${annata.id}')" style="background:#3b82f6;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">
+                            ✏️ Modifica
+                        </button>
+                        <button onclick="deleteAnnata('${annata.id}', '${annata.nome}')" style="background:#ef4444;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">
+                            🗑️ Elimina
+                        </button>
+                    </div>
+                </div>
+            `;
+            listDiv.appendChild(card);
+        }
+    } catch (error) {
+        listDiv.innerHTML = `<div style="text-align:center;padding:40px;color:#ef4444;"><p>Errore: ${error.message}</p></div>`;
+    }
+}
+
+function showAnnataModal(annataData = null) {
+    const isEdit = annataData !== null;
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:9999;';
+    
+    modal.innerHTML = `
+        <div style="background:#1e293b;padding:30px;border-radius:15px;max-width:500px;width:90%;border:1px solid rgba(96,165,250,0.2);">
+            <h2 style="color:#60a5fa;margin:0 0 20px 0;">${isEdit ? '✏️ Modifica Annata' : '➕ Crea Nuova Annata'}</h2>
+            <form id="annata-form" style="display:flex;flex-direction:column;gap:15px;">
+                <div>
+                    <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Nome *</label>
+                    <input type="text" id="annata-nome" value="${annataData?.nome || ''}" placeholder="es. 2024" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#fff;box-sizing:border-box;" required />
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+                    <div>
+                        <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Data Inizio *</label>
+                        <input type="date" id="annata-inizio" value="${annataData?.dataInizio || ''}" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#fff;box-sizing:border-box;" required />
+                    </div>
+                    <div>
+                        <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Data Fine *</label>
+                        <input type="date" id="annata-fine" value="${annataData?.dataFine || ''}" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#fff;box-sizing:border-box;" required />
+                    </div>
+                </div>
+                <div>
+                    <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Descrizione</label>
+                    <textarea id="annata-desc" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#fff;box-sizing:border-box;min-height:80px;">${annataData?.descrizione || ''}</textarea>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:10px;">
+                    <button type="submit" style="flex:1;background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
+                        ${isEdit ? '💾 Salva' : '➕ Crea'}
+                    </button>
+                    <button type="button" id="cancel-btn" style="flex:1;background:#64748b;color:#fff;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
+                        ❌ Annulla
+                    </button>
+                </div>
+            </form>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    document.getElementById('cancel-btn').addEventListener('click', () => document.body.removeChild(modal));
+    
+    document.getElementById('annata-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const payload = {
+            action: isEdit ? 'update' : 'create',
+            nome: document.getElementById('annata-nome').value.trim(),
+            dataInizio: document.getElementById('annata-inizio').value,
+            dataFine: document.getElementById('annata-fine').value,
+            descrizione: document.getElementById('annata-desc').value.trim()
+        };
+        
+        if (isEdit) payload.id = annataData.id;
+        
+        try {
+            const response = await fetch('/api/annate/manage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Errore');
+            }
+            
+            document.body.removeChild(modal);
+            alert(`✅ Annata ${isEdit ? 'modificata' : 'creata'}!`);
+            loadAnnateList();
+        } catch (error) {
+            alert('❌ ' + error.message);
+        }
+    });
+}
+
+window.editAnnata = async function(annataId) {
+    try {
+        const response = await fetch('/api/annate/list');
+        const data = await response.json();
+        const annata = data.annate.find(a => a.id === annataId);
+        if (annata) showAnnataModal(annata);
+    } catch (error) {
+        alert('❌ ' + error.message);
+    }
+};
+
+window.deleteAnnata = async function(annataId, nomeAnnata) {
+    if (!confirm(`⚠️ Eliminare "${nomeAnnata}"?\n\nQuesta operazione eliminerà tutti i dati associati ed è IRREVERSIBILE!`)) return;
+    
+    try {
+        const response = await fetch('/api/annate/manage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', id: annataId })
+        });
+        
+        if (!response.ok) throw new Error('Errore');
+        alert('✅ Annata eliminata');
+        loadAnnateList();
+    } catch (error) {
+        alert('❌ ' + error.message);
+    }
+};
+
+// ==========================================
+// GESTIONE UTENTI
+// ==========================================
+
+async function showUtentiPanel() {
+    const contentArea = document.getElementById('content-area');
+    contentArea.innerHTML = `
+        <div style="background:rgba(30,41,59,0.95);padding:30px;border-radius:15px;border:1px solid rgba(96,165,250,0.2);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:30px;">
+                <h2 style="color:#e2e8f0;margin:0;">👥 Utenti Registrati</h2>
+                <button id="add-user-btn" style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:600;">
+                    ➕ Crea Nuovo Utente
+                </button>
+            </div>
+            <div id="users-list-admin" style="display:flex;flex-direction:column;gap:15px;">
+                <div style="text-align:center;padding:40px;color:#94a3b8;">
+                    <div style="font-size:32px;margin-bottom:10px;">⏳</div>
+                    <p>Caricamento...</p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('add-user-btn').addEventListener('click', () => showUserModal());
+    loadUsersList();
+}
+
+async function loadUsersList() {
+    const listDiv = document.getElementById('users-list-admin');
+    
+    try {
+        const response = await fetch('/api/auth/manage');
+        if (!response.ok) throw new Error('Errore caricamento');
+        
+        const data = await response.json();
+        const users = data.users || [];
+        
+        if (users.length === 0) {
+            listDiv.innerHTML = `<div style="text-align:center;padding:40px;color:#94a3b8;"><p>Nessun utente</p></div>`;
+            return;
+        }
+        
+        listDiv.innerHTML = '';
+        
+        users.forEach(user => {
+            const roleIcon = user.role === 'admin' ? '👑' : user.role === 'supercoach' ? '⭐' : '👨‍🏫';
+            const roleName = user.role === 'admin' ? 'ADMIN' : user.role === 'supercoach' ? 'SUPER COACH' : 'COACH';
+            const roleColor = user.role === 'admin' ? '#f59e0b' : user.role === 'supercoach' ? '#8b5cf6' : '#3b82f6';
+            
+            const card = document.createElement('div');
+            card.style.cssText = 'background:#1e293b;padding:20px;border-radius:12px;border:1px solid rgba(96,165,250,0.2);';
+            
+            const annateText = user.role === 'coach' && user.annate?.length > 0 ? user.annate.join(', ') : 'Tutte';
+            
+            card.innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:start;">
+                    <div style="flex:1;">
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <h3 style="color:#60a5fa;margin:0;">${user.username}</h3>
+                            <span style="background:${roleColor};color:#fff;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">
+                                ${roleIcon} ${roleName}
+                            </span>
+                        </div>
+                        <p style="color:#94a3b8;margin:0;font-size:14px;">📧 ${user.email || 'N/A'}</p>
+                        <p style="color:#94a3b8;margin:5px 0 0 0;font-size:14px;">📅 Annate: ${annateText}</p>
+                    </div>
+                    <div style="display:flex;gap:10px;">
+                        <button onclick="editUser('${user.username}')" style="background:#3b82f6;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">
+                            ✏️ Modifica
+                        </button>
+                        ${user.role !== 'admin' ? `
+                        <button onclick="deleteUser('${user.username}')" style="background:#ef4444;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">
+                            🗑️ Elimina
+                        </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            listDiv.appendChild(card);
+        });
+    } catch (error) {
+        listDiv.innerHTML = `<div style="text-align:center;padding:40px;color:#ef4444;"><p>Errore: ${error.message}</p></div>`;
+    }
+}
+
+async function showUserModal(userData = null) {
+    const isEdit = userData !== null;
+    
+    let annateDisponibili = [];
+    try {
+        const response = await fetch('/api/annate/list');
+        const data = await response.json();
+        annateDisponibili = data.annate || [];
+    } catch (e) {}
+    
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:9999;overflow-y:auto;padding:20px;';
+    
+    const annateCheckboxes = annateDisponibili.map(annata => {
+        const checked = userData?.annate?.includes(annata.id) ? 'checked' : '';
+        return `
+            <label style="display:flex;align-items:center;gap:8px;color:#e2e8f0;cursor:pointer;padding:8px;border-radius:6px;background:#0f172a;">
+                <input type="checkbox" name="annate" value="${annata.id}" ${checked} style="width:18px;height:18px;" />
+                <span>${annata.nome}</span>
+            </label>
+        `;
+    }).join('');
+    
+    modal.innerHTML = `
+        <div style="background:#1e293b;padding:30px;border-radius:15px;max-width:500px;width:100%;border:1px solid rgba(96,165,250,0.2);">
+            <h2 style="color:#60a5fa;margin:0 0 20px 0;">${isEdit ? '✏️ Modifica Utente' : '➕ Crea Nuovo Utente'}</h2>
+            <form id="user-form" style="display:flex;flex-direction:column;gap:15px;">
+                <div>
+                    <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Username *</label>
+                    <input type="text" id="user-username" value="${userData?.username || ''}" ${isEdit ? 'disabled' : ''} placeholder="es. mario.rossi" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#fff;box-sizing:border-box;" required />
+                </div>
+                ${!isEdit ? `
+                <div>
+                    <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Password *</label>
+                    <input type="password" id="user-password" placeholder="Password" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#fff;box-sizing:border-box;" required />
+                </div>
+                ` : ''}
+                <div>
+                    <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Email</label>
+                    <input type="email" id="user-email" value="${userData?.email || ''}" placeholder="email@esempio.com" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#fff;box-sizing:border-box;" />
+                </div>
+                <div>
+                    <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Ruolo *</label>
+                    <select id="user-role" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#fff;box-sizing:border-box;" required>
+                        <option value="coach" ${userData?.role === 'coach' ? 'selected' : ''}>👨‍🏫 COACH</option>
+                        <option value="supercoach" ${userData?.role === 'supercoach' ? 'selected' : ''}>⭐ SUPER COACH</option>
+                        <option value="admin" ${userData?.role === 'admin' ? 'selected' : ''}>👑 ADMIN</option>
+                    </select>
+                </div>
+                <div id="annate-container" style="display:${userData?.role === 'coach' || !userData ? 'block' : 'none'};">
+                    <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:8px;">Annate</label>
+                    <div style="max-height:200px;overflow-y:auto;border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:10px;background:#0f172a;display:flex;flex-direction:column;gap:5px;">
+                        ${annateCheckboxes || '<p style="color:#64748b;margin:0;text-align:center;">Nessuna annata</p>'}
+                    </div>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:10px;">
+                    <button type="submit" style="flex:1;background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
+                        ${isEdit ? '💾 Salva' : '➕ Crea'}
+                    </button>
+                    <button type="button" id="cancel-user-btn" style="flex:1;background:#64748b;color:#fff;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
+                        ❌ Annulla
+                    </button>
+                </div>
+            </form>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    document.getElementById('user-role').addEventListener('change', (e) => {
+        document.getElementById('annate-container').style.display = e.target.value === 'coach' ? 'block' : 'none';
+    });
+    
+    document.getElementById('cancel-user-btn').addEventListener('click', () => document.body.removeChild(modal));
+    
+    document.getElementById('user-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const role = document.getElementById('user-role').value;
+        const annateSelezionate = role === 'coach' ? Array.from(document.querySelectorAll('input[name="annate"]:checked')).map(cb => cb.value) : [];
+        
+        if (role === 'coach' && annateSelezionate.length === 0) {
+            alert('⚠️ Seleziona almeno un\'annata');
+            return;
+        }
+        
+        const payload = {
+            action: isEdit ? 'update' : 'create',
+            username: document.getElementById('user-username').value.trim(),
+            email: document.getElementById('user-email').value.trim(),
+            role,
+            annate: annateSelezionate
+        };
+        
+        if (!isEdit) payload.password = document.getElementById('user-password').value;
+        
+        try {
+            const response = await fetch('/api/auth/manage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Errore');
+            }
+            
+            document.body.removeChild(modal);
+            alert(`✅ Utente ${isEdit ? 'modificato' : 'creato'}!`);
+            loadUsersList();
+        } catch (error) {
+            alert('❌ ' + error.message);
+        }
+    });
+}
+
+window.editUser = async function(username) {
+    try {
+        const response = await fetch('/api/auth/manage');
+        const data = await response.json();
+        const user = data.users.find(u => u.username === username);
+        if (user) showUserModal(user);
+    } catch (error) {
+        alert('❌ ' + error.message);
+    }
+};
+
+window.deleteUser = async function(username) {
+    if (!confirm(`⚠️ Eliminare "${username}"?\n\nOperazione IRREVERSIBILE!`)) return;
+    
+    try {
+        const response = await fetch('/api/auth/manage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', username })
+        });
+        
+        if (!response.ok) throw new Error('Errore');
+        alert('✅ Utente eliminato');
+        loadUsersList();
+    } catch (error) {
+        alert('❌ ' + error.message);
+    }
+};
 
         // ==========================================
         // UI - LOGOUT BUTTON IN APP
