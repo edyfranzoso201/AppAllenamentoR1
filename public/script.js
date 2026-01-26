@@ -14,7 +14,7 @@ function generateId() {
     // ==========================================
     // GUARD: Verifica annata selezionata
     // ==========================================
-(function checkAnnataBeforeInit() {
+    (function checkAnnataBeforeInit() {
     'use strict';
     
     // Skip check per modalità genitore
@@ -27,30 +27,24 @@ function generateId() {
         return;
     }
     
-    // ✅ NUOVO: Skip check se siamo sulla pagina di selezione annata
-    const isAnnataSelectionPage = document.getElementById('annate-list') !== null;
-    
-    if (isAnnataSelectionPage) {
-        console.log('📅 Pagina selezione annata: skip controllo');
-        throw new Error('Annata selection page - blocking dashboard init');
-    }
-    
     // Verifica autenticazione
     const isAuthenticated = sessionStorage.getItem('gosport_auth_session') === 'true';
+    const currentAnnata = sessionStorage.getItem('gosport_current_annata');
     
+    // ✅ Se autenticato MA senza annata = siamo sulla pagina di selezione
+    // Non bloccare, lascia che auth-multi-annata.js gestisca la selezione
+    if (isAuthenticated && !currentAnnata) {
+        console.log('📅 Utente autenticato senza annata: pagina di selezione');
+        throw new Error('Awaiting annata selection - blocking dashboard init');
+    }
+    
+    // Se non autenticato, blocca
     if (!isAuthenticated) {
         console.log('🔒 Utente non autenticato, blocco inizializzazione dashboard');
         throw new Error('User not authenticated');
     }
     
-    // Verifica annata selezionata
-    const currentAnnata = sessionStorage.getItem('gosport_current_annata');
-    
-    if (!currentAnnata) {
-        console.log('⚠️ Nessuna annata selezionata, blocco inizializzazione dashboard');
-        throw new Error('No annata selected');
-    }
-    
+    // Se autenticato CON annata, procedi
     console.log(`✅ Annata selezionata: ${currentAnnata}. Inizializzazione dashboard...`);
 })();
 
