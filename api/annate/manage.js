@@ -1,4 +1,4 @@
-// api/annate/manage.js - Gestione unificata annate
+// api/annate/manage.js - Gestione unificata annate con supporto ID personalizzato
 import { createClient } from '@vercel/kv';
 import crypto from 'crypto';
 
@@ -54,8 +54,11 @@ export default async function handler(req, res) {
         });
       }
 
+      // ✅ Accetta ID personalizzato se fornito (per recupero annate esistenti)
+      const annataId = id || generateAnnataId();
+      
       const newAnnata = {
-        id: id || generateAnnataId(),  // ← Usa ID fornito o genera
+        id: annataId,
         nome,
         dataInizio,
         dataFine,
@@ -66,22 +69,32 @@ export default async function handler(req, res) {
       annate.push(newAnnata);
       await kv.set('annate:list', annate);
 
-      // Inizializza dati vuoti
-      await kv.set(`annate:${newAnnata.id}:athletes`, []);
-      await kv.set(`annate:${newAnnata.id}:evaluations`, {});
-      await kv.set(`annate:${newAnnata.id}:gpsData`, {});
-      await kv.set(`annate:${newAnnata.id}:awards`, {});
-      await kv.set(`annate:${newAnnata.id}:trainingSessions`, {});
-      await kv.set(`annate:${newAnnata.id}:formationData`, { starters: [], bench: [], tokens: [] });
-      await kv.set(`annate:${newAnnata.id}:matchResults`, {});
-      await kv.set(`annate:${newAnnata.id}:calendarEvents`, {});
-      await kv.set(`annate:${newAnnata.id}:calendarResponses`, {});
+      // ✅ Verifica se esistono già dati per questo ID
+      const existingAthletes = await kv.get(`annate:${annataId}:athletes`);
+      
+      if (existingAthletes && existingAthletes.length > 0) {
+        // Dati esistenti trovati - NON sovrascrivere
+        console.log(`✅ Annata recuperata con dati esistenti: ${nome} (${annataId}) - ${existingAthletes.length} atleti`);
+      } else {
+        // Nessun dato esistente - Inizializza dati vuoti
+        await kv.set(`annate:${annataId}:athletes`, []);
+        await kv.set(`annate:${annataId}:evaluations`, {});
+        await kv.set(`annate:${annataId}:gpsData`, {});
+        await kv.set(`annate:${annataId}:awards`, {});
+        await kv.set(`annate:${annataId}:trainingSessions`, {});
+        await kv.set(`annate:${annataId}:formationData`, { starters: [], bench: [], tokens: [] });
+        await kv.set(`annate:${annataId}:matchResults`, {});
+        await kv.set(`annate:${annataId}:calendarEvents`, {});
+        await kv.set(`annate:${annataId}:calendarResponses`, {});
+        console.log(`✅ Annata creata con dati vuoti: ${nome} (${annataId})`);
+      }
 
-      console.log(`✅ Annata creata: ${nome} (${newAnnata.id})`);
+      console.log(`✅ Annata aggiunta alla lista: ${nome} (${annataId})`);
       return res.status(200).json({ 
         success: true,
         message: 'Annata creata con successo',
-        annata: newAnnata
+        annata: newAnnata,
+        dataRecovered: !!(existingAthletes && existingAthletes.length > 0)
       });
     }
 
