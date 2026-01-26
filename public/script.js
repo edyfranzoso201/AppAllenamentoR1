@@ -2019,21 +2019,44 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.exportAllDataBtn.addEventListener('click', async () => {
         const performDownload = async (includeIndividual) => {
             // ✅ Recupera dati dall'API invece di usare variabili locali
-            const annataId = sessionStorage.getItem('gosport_current_annata');
+        const annataId = sessionStorage.getItem('gosport_current_annata');
+        let freshData = {};
+        
+        console.log('🔧 Backup - Annata ID:', annataId);
+        
+        try {
             const response = await fetch('/api/data', {
                 headers: { 'X-Annata-Id': annataId }
             });
-            const freshData = await response.json();
             
-            let dataToExport = {
-                athletes: freshData.athletes || athletes,
-                evaluations: freshData.evaluations || evaluations,
-                gpsData: freshData.gpsData || gpsData,
-                awards: freshData.awards || awards,
-                trainingSessions: freshData.trainingSessions || trainingSessions,
-                formationData: freshData.formationData || formationData,
-                matchResults: freshData.matchResults || matchResults
-            };
+            console.log('📡 Response status:', response.status, response.ok);
+            
+            if (response.ok) {
+                freshData = await response.json();
+                console.log('✅ Dati recuperati:', {
+                    atleti: (freshData.athletes || []).length,
+                    valutazioni: Object.keys(freshData.evaluations || {}).length
+                });
+            } else {
+                console.error('❌ Response non OK:', response.status);
+                // Fallback alle variabili locali
+                freshData = { athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults };
+            }
+        } catch (error) {
+            console.error('❌ Errore fetch backup:', error);
+            // Fallback alle variabili locali
+            freshData = { athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults };
+        }
+        
+        let dataToExport = {
+            athletes: freshData.athletes || athletes,
+            evaluations: freshData.evaluations || evaluations,
+            gpsData: freshData.gpsData || gpsData,
+            awards: freshData.awards || awards,
+            trainingSessions: freshData.trainingSessions || trainingSessions,
+            formationData: freshData.formationData || formationData,
+            matchResults: freshData.matchResults || matchResults
+        };
             if (!includeIndividual) {
                 dataToExport = JSON.parse(JSON.stringify(dataToExport));
                 for (const athleteId in dataToExport.gpsData) {
