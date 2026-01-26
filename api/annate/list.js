@@ -2,7 +2,7 @@
 import { kv } from '@vercel/kv';
 
 export default async function handler(req, res) {
-  // Gestisci CORS
+  // Aggiungi intestazioni CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
@@ -16,25 +16,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Carica tutte le annate
     const allAnnate = await kv.get('annate:list') || [];
-
-    // Se c'è un header di autenticazione, filtra per ruolo (solo per coach)
-    const authHeader = req.headers.authorization;
-    if (authHeader) {
-      const sessionToken = authHeader.replace('Bearer ', '');
-      const usersData = await kv.get('auth:users');
-      const users = Array.isArray(usersData) ? usersData : [];
-      const currentUser = users.find(u => u.session === sessionToken);
-
-      if (currentUser && currentUser.role === 'coach') {
-        const userAnnateIds = Array.isArray(currentUser.annate) ? currentUser.annate : [];
-        const filteredAnnate = allAnnate.filter(a => userAnnateIds.includes(a.id));
-        return res.status(200).json({ annate: filteredAnnate });
-      }
-    }
-
-    // Per admin o senza autenticazione, restituisci tutte le annate
     res.status(200).json({ annate: allAnnate });
 
   } catch (error) {
