@@ -40,10 +40,10 @@ export default async function handler(req, res) {
     // CREATE - Crea nuova annata
     // ==========================================
     if (action === 'create') {
-      if (!nome || !dataInizio || !dataFine) {
+      if (!nome) {
         return res.status(400).json({ 
           success: false,
-          message: 'Nome, data inizio e data fine obbligatori' 
+          message: 'Nome obbligatorio' 
         });
       }
 
@@ -60,8 +60,8 @@ export default async function handler(req, res) {
       const newAnnata = {
         id: annataId,
         nome,
-        dataInizio,
-        dataFine,
+        dataInizio: dataInizio || '',
+        dataFine: dataFine || '',
         descrizione: descrizione || '',
         createdAt: new Date().toISOString()
       };
@@ -102,10 +102,10 @@ export default async function handler(req, res) {
     // UPDATE - Modifica annata esistente
     // ==========================================
     if (action === 'update') {
-      if (!id || !nome || !dataInizio || !dataFine) {
+      if (!id || !nome) {
         return res.status(400).json({ 
           success: false,
-          message: 'ID, nome, data inizio e data fine obbligatori' 
+          message: 'ID e nome obbligatori' 
         });
       }
 
@@ -120,9 +120,9 @@ export default async function handler(req, res) {
       annate[annataIndex] = {
         ...annate[annataIndex],
         nome,
-        dataInizio,
-        dataFine,
-        descrizione: descrizione || '',
+        dataInizio: dataInizio || annate[annataIndex].dataInizio || '',
+        dataFine: dataFine || annate[annataIndex].dataFine || '',
+        descrizione: descrizione !== undefined ? descrizione : annate[annataIndex].descrizione || '',
         updatedAt: new Date().toISOString()
       };
 
