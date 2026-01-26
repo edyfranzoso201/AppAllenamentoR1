@@ -1322,7 +1322,7 @@ async function showUserModal(userData = null) {
                         <option value="admin" ${userData?.role === 'admin' ? 'selected' : ''}>👑 ADMIN</option>
                     </select>
                 </div>
-                <div id="annate-container" style="display:${userData?.role === 'coach' || !userData ? 'block' : 'none'};">
+                <div id="annate-container" style="display:${userData?.role === 'coach' || userData?.role === 'supercoach' || !userData ? 'block' : 'none'};">
                     <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:8px;">Annate</label>
                     <div style="max-height:200px;overflow-y:auto;border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:10px;background:#0f172a;display:flex;flex-direction:column;gap:5px;">
                         ${annateCheckboxes || '<p style="color:#64748b;margin:0;text-align:center;">Nessuna annata</p>'}
@@ -1352,9 +1352,9 @@ async function showUserModal(userData = null) {
         e.preventDefault();
         
         const role = document.getElementById('user-role').value;
-        const annateSelezionate = role === 'coach' ? Array.from(document.querySelectorAll('input[name="annate"]:checked')).map(cb => cb.value) : [];
+        const annateSelezionate = (role === 'coach' || role === 'supercoach') ? Array.from(document.querySelectorAll('input[name="annate"]:checked')).map(cb => cb.value) : [];
         
-        if (role === 'coach' && annateSelezionate.length === 0) {
+        if ((role === 'coach' || role === 'supercoach') && annateSelezionate.length === 0) {
             alert('⚠️ Seleziona almeno un\'annata');
             return;
         }
