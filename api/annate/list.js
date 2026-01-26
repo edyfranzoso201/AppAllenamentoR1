@@ -2,6 +2,7 @@
 import { kv } from '@vercel/kv';
 
 export default async function handler(req, res) {
+  // Ottieni la sessione (dalla richiesta)
   const authHeader = req.headers.authorization;
   const sessionToken = authHeader?.replace('Bearer ', '') || null;
 
@@ -10,22 +11,30 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Carica tutti gli utenti
     const usersData = await kv.get('auth:users');
     const users = Array.isArray(usersData) ? usersData : [];
-    const currentUser = users.find(u => u.session === sessionToken);
 
+    // Trova l'utente corrente
+    const currentUser = users.find(u => u.session === sessionToken);
     if (!currentUser) {
       return res.status(401).json({ error: 'Utente non trovato' });
     }
 
+    // Carica tutte le annate
     const allAnnateData = await kv.get('annate:list');
     const allAnnate = Array.isArray(allAnnateData) ? allAnnateData : [];
+
     let annateToReturn = allAnnate;
 
+    // Filtra SOLO per coach
     if (currentUser.role === 'coach') {
       const userAnnateIds = Array.isArray(currentUser.annate) ? currentUser.annate : [];
-      annateToReturn = allAnnate.filter(a => userAnnateIds.includes(a.id));
+      annateToReturn = allAnnate.filter(annata =>
+        userAnnateIds.includes(annata.id)
+      );
     }
+    // admin e supercoach → vedono tutto (comportamento invariato)
 
     res.status(200).json({ annate: annateToReturn });
   } catch (error) {
