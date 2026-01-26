@@ -355,82 +355,76 @@
         }
 
     async function loadUserAnnate() {
-    const username = getCurrentUser();
-    const role = getUserRole();
-    const listDiv = document.getElementById('annate-list');
+  const username = getCurrentUser();
+  const role = getUserRole();
+  const listDiv = document.getElementById('annate-list');
+  if (!listDiv) return;
+
+  try {
+    // Ottieni la sessione per autenticare la richiesta
+    const session = sessionStorage.getItem(SESSION_KEY);
+    const response = await fetch('/api/annate/list', {
+      headers: {
+        'Authorization': `Bearer ${session}`
+      }
+    });
+
+    if (!response.ok) throw new Error('Errore nel caricamento delle annate');
     
-    if (!listDiv) return;
-    
-    try {
-        let annate;
-        
-        if (role === 'admin' || role === 'supercoach') {
-            annate = await getAllAnnate();
-        } else {
-            const userAnnate = await getUserAnnate(username);
-            const allAnnate = await getAllAnnate();
-            annate = allAnnate.filter(a => userAnnate.includes(a.id));
-        }
-        
-        if (annate.length === 0) {
-            listDiv.innerHTML = `
-                <div style="text-align:center;color:#94a3b8;padding:40px;">
-                    <div style="font-size:32px;margin-bottom:10px;">📭</div>
-                    <p>Nessuna annata disponibile</p>
-                    <p style="font-size:13px;margin-top:10px;">Contatta l'amministratore</p>
-                </div>
-            `;
-            return;
-        }
-        
-        // ✅ AUTO-SELEZIONE: Se l'utente ha UNA SOLA annata, assegnala automaticamente
-        if (annate.length === 1 && (role === 'coach' || role === 'allenatore')) {
-            console.log(`✅ Annata unica trovata per ${username}: ${annate[0].id}`);
-            console.log(`🔄 Assegnazione automatica...`);
-            selectAnnata(annate[0].id);
-            return; // Esce dalla funzione, il reload gestirà il resto
-        }
-        
-        // Se ci sono più annate o l'utente è admin, mostra la lista
-        listDiv.innerHTML = '';
-        
-        annate.forEach(annata => {
-            const annataCard = document.createElement('div');
-            annataCard.style.cssText = 'background:linear-gradient(135deg,#1e293b 0%,#334155 100%);padding:20px;border-radius:12px;cursor:pointer;border:2px solid rgba(96,165,250,0.2);transition:all 0.3s;';
-            
-            annataCard.innerHTML = `
-                <h3 style="color:#60a5fa;margin:0 0 8px 0;font-size:20px;">${annata.nome}</h3>
-                <p style="color:#94a3b8;margin:0;font-size:14px;">📅 ${annata.dataInizio} - ${annata.dataFine}</p>
-                ${annata.descrizione ? `<p style="color:#64748b;margin:8px 0 0 0;font-size:13px;">${annata.descrizione}</p>` : ''}
-            `;
-            
-            annataCard.onmouseover = function() {
-                this.style.borderColor = '#60a5fa';
-                this.style.transform = 'translateY(-2px)';
-                this.style.boxShadow = '0 4px 12px rgba(96,165,250,0.3)';
-            };
-            
-            annataCard.onmouseout = function() {
-                this.style.borderColor = 'rgba(96,165,250,0.2)';
-                this.style.transform = 'translateY(0)';
-                this.style.boxShadow = 'none';
-            };
-            
-            annataCard.onclick = () => selectAnnata(annata.id);
-            
-            listDiv.appendChild(annataCard);
-        });
-        
-    } catch (error) {
-        console.error('Errore loadUserAnnate:', error);
-        listDiv.innerHTML = `
-            <div style="text-align:center;color:#ef4444;padding:40px;">
-                <div style="font-size:32px;margin-bottom:10px;">⚠️</div>
-                <p>Errore nel caricamento</p>
-                <p style="font-size:13px;margin-top:10px;">${error.message}</p>
-            </div>
-        `;
+    const data = await response.json();
+    const annate = data.annate || [];
+
+    if (annate.length === 0) {
+      listDiv.innerHTML = `
+        <div style="text-align:center;color:#94a3b8;padding:40px;">
+          <div style="font-size:32px;margin-bottom:10px;">📭</div>
+          <p>Nessuna annata disponibile</p>
+          <p style="font-size:13px;margin-top:10px;">Contatta l'amministratore</p>
+        </div>
+      `;
+      return;
     }
+
+    // ✅ AUTO-SELEZIONE: Se l'utente ha UNA SOLA annata, assegnala automaticamente
+    if (annate.length === 1 && (role === 'coach' || role === 'allenatore')) {
+      console.log(`✅ Annata unica trovata per ${username}: ${annate[0].id}`);
+      selectAnnata(annate[0].id);
+      return;
+    }
+
+    // Mostra lista
+    listDiv.innerHTML = '';
+    annate.forEach(annata => {
+      const annataCard = document.createElement('div');
+      annataCard.style.cssText = 'background:linear-gradient(135deg,#1e293b 0%,#334155 100%);padding:20px;border-radius:12px;cursor:pointer;border:2px solid rgba(96,165,250,0.2);transition:all 0.3s;';
+      annataCard.innerHTML = `
+        <h3 style="color:#60a5fa;margin:0 0 8px 0;font-size:20px;">${annata.nome}</h3>
+        <p style="color:#94a3b8;margin:0;font-size:14px;">📅 ${annata.dataInizio} - ${annata.dataFine}</p>
+        ${annata.descrizione ? `<p style="color:#64748b;margin:8px 0 0 0;font-size:13px;">${annata.descrizione}</p>` : ''}
+      `;
+      annataCard.onmouseover = function() {
+        this.style.borderColor = '#60a5fa';
+        this.style.transform = 'translateY(-2px)';
+        this.style.boxShadow = '0 4px 12px rgba(96,165,250,0.3)';
+      };
+      annataCard.onmouseout = function() {
+        this.style.borderColor = 'rgba(96,165,250,0.2)';
+        this.style.transform = 'translateY(0)';
+        this.style.boxShadow = 'none';
+      };
+      annataCard.onclick = () => selectAnnata(annata.id);
+      listDiv.appendChild(annataCard);
+    });
+  } catch (error) {
+    console.error('Errore loadUserAnnate:', error);
+    listDiv.innerHTML = `
+      <div style="text-align:center;color:#ef4444;padding:40px;">
+        <div style="font-size:32px;margin-bottom:10px;">⚠️</div>
+        <p>Errore nel caricamento</p>
+        <p style="font-size:13px;margin-top:10px;">${error.message}</p>
+      </div>
+    `;
+  }
 }
 
         function selectAnnata(annataId) {
@@ -934,76 +928,6 @@ window.deleteUser = async function(username) {
         alert('❌ ' + error.message);
     }
 };
-
-// ==========================================
-// PANNELLO ADMIN AGGIORNATO - USA API UNIFICATE
-// ==========================================
-
-function showAdminPanel() {
-    document.body.innerHTML = '';
-    document.body.style.cssText = 'margin:0;padding:0;font-family:system-ui;background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);min-height:100vh;overflow-y:auto;';
-    
-    const container = document.createElement('div');
-    container.style.cssText = 'max-width:1200px;margin:0 auto;padding:40px 20px;';
-    
-    container.innerHTML = `
-        <div style="background:rgba(30,41,59,0.95);padding:30px;border-radius:15px;margin-bottom:30px;border:1px solid rgba(96,165,250,0.2);">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-                <div>
-                    <h1 style="color:#60a5fa;margin:0 0 5px 0;font-size:28px;font-weight:700;">⚙️ Pannello Amministratore</h1>
-                    <p style="color:#94a3b8;margin:0;">Gestione Utenti e Annate</p>
-                </div>
-                <button id="back-btn" style="background:#64748b;color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px;">
-                    ← Torna Indietro
-                </button>
-            </div>
-        </div>
-        
-        <div style="background:rgba(30,41,59,0.95);padding:20px;border-radius:15px;margin-bottom:20px;border:1px solid rgba(96,165,250,0.2);">
-            <div style="display:flex;gap:10px;">
-                <button id="tab-annate" class="tab-btn active" style="flex:1;background:linear-gradient(135deg,#3b82f6 0%,#2563eb 100%);color:#fff;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
-                    📅 Gestione Annate
-                </button>
-                <button id="tab-utenti" class="tab-btn" style="flex:1;background:#334155;color:#94a3b8;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
-                    👥 Gestione Utenti
-                </button>
-            </div>
-        </div>
-        
-        <div id="content-area"></div>
-    `;
-    
-    document.body.appendChild(container);
-    
-    document.getElementById('back-btn').addEventListener('click', () => {
-        sessionStorage.removeItem(SESSION_ANNATA);
-        window.location.reload();
-    });
-    
-    document.getElementById('tab-annate').addEventListener('click', () => switchTab('annate'));
-    document.getElementById('tab-utenti').addEventListener('click', () => switchTab('utenti'));
-    
-    switchTab('annate');
-}
-
-function switchTab(tabName) {
-    const tabs = document.querySelectorAll('.tab-btn');
-    tabs.forEach(tab => {
-        if (tab.id === `tab-${tabName}`) {
-            tab.style.background = 'linear-gradient(135deg,#3b82f6 0%,#2563eb 100%)';
-            tab.style.color = '#fff';
-        } else {
-            tab.style.background = '#334155';
-            tab.style.color = '#94a3b8';
-        }
-    });
-    
-    if (tabName === 'annate') {
-        showAnnatePanel();
-    } else {
-        showUtentiPanel();
-    }
-}
 
         // ==========================================
         // UI - LOGOUT BUTTON IN APP
