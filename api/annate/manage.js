@@ -55,7 +55,7 @@ export default async function handler(req, res) {
       }
 
       const newAnnata = {
-        id: generateAnnataId(),
+        id: id || generateAnnataId(),  // ← Usa ID fornito o genera
         nome,
         dataInizio,
         dataFine,
