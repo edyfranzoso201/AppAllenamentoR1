@@ -936,6 +936,25 @@ window.deleteUser = async function(username) {
 };
 
 
+function switchTab(tabName) {
+    const tabs = document.querySelectorAll('.tab-btn');
+    tabs.forEach(tab => {
+        if (tab.id === `tab-${tabName}`) {
+            tab.style.background = 'linear-gradient(135deg,#3b82f6 0%,#2563eb 100%)';
+            tab.style.color = '#fff';
+        } else {
+            tab.style.background = '#334155';
+            tab.style.color = '#94a3b8';
+        }
+    });
+    
+    if (tabName === 'annate') {
+        showAnnatePanel();
+    } else {
+        showUtentiPanel();
+    }
+}
+
         // ==========================================
         // UI - LOGOUT BUTTON IN APP
         // ==========================================
