@@ -354,73 +354,84 @@
             }
         }
 
-        async function loadUserAnnate() {
-            const username = getCurrentUser();
-            const role = getUserRole();
-            const listDiv = document.getElementById('annate-list');
-            
-            if (!listDiv) return;
-            
-            try {
-                let annate;
-                
-                if (role === 'admin') {
-                    annate = await getAllAnnate();
-                } else {
-                    const userAnnate = await getUserAnnate(username);
-                    const allAnnate = await getAllAnnate();
-                    annate = allAnnate.filter(a => userAnnate.includes(a.id));
-                }
-                
-                if (annate.length === 0) {
-                    listDiv.innerHTML = `
-                        <div style="text-align:center;color:#94a3b8;padding:40px;">
-                            <div style="font-size:32px;margin-bottom:10px;">📭</div>
-                            <p>Nessuna annata disponibile</p>
-                            <p style="font-size:13px;margin-top:10px;">Contatta l'amministratore</p>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                listDiv.innerHTML = '';
-                
-                annate.forEach(annata => {
-                    const annataCard = document.createElement('div');
-                    annataCard.style.cssText = 'background:linear-gradient(135deg,#1e293b 0%,#334155 100%);padding:20px;border-radius:12px;cursor:pointer;border:2px solid rgba(96,165,250,0.2);transition:all 0.3s;';
-                    
-                    annataCard.innerHTML = `
-                        <h3 style="color:#60a5fa;margin:0 0 8px 0;font-size:20px;">${annata.nome}</h3>
-                        <p style="color:#94a3b8;margin:0;font-size:14px;">📅 ${annata.dataInizio} - ${annata.dataFine}</p>
-                    `;
-                    
-                    annataCard.onmouseover = function() {
-                        this.style.borderColor = '#60a5fa';
-                        this.style.transform = 'translateY(-2px)';
-                        this.style.boxShadow = '0 4px 12px rgba(96,165,250,0.3)';
-                    };
-                    
-                    annataCard.onmouseout = function() {
-                        this.style.borderColor = 'rgba(96,165,250,0.2)';
-                        this.style.transform = 'translateY(0)';
-                        this.style.boxShadow = 'none';
-                    };
-                    
-                    annataCard.onclick = () => selectAnnata(annata.id);
-                    
-                    listDiv.appendChild(annataCard);
-                });
-                
-            } catch (error) {
-                listDiv.innerHTML = `
-                    <div style="text-align:center;color:#ef4444;padding:40px;">
-                        <div style="font-size:32px;margin-bottom:10px;">⚠️</div>
-                        <p>Errore nel caricamento</p>
-                        <p style="font-size:13px;margin-top:10px;">${error.message}</p>
-                    </div>
-                `;
-            }
+    async function loadUserAnnate() {
+    const username = getCurrentUser();
+    const role = getUserRole();
+    const listDiv = document.getElementById('annate-list');
+    
+    if (!listDiv) return;
+    
+    try {
+        let annate;
+        
+        if (role === 'admin' || role === 'supercoach') {
+            annate = await getAllAnnate();
+        } else {
+            const userAnnate = await getUserAnnate(username);
+            const allAnnate = await getAllAnnate();
+            annate = allAnnate.filter(a => userAnnate.includes(a.id));
         }
+        
+        if (annate.length === 0) {
+            listDiv.innerHTML = `
+                <div style="text-align:center;color:#94a3b8;padding:40px;">
+                    <div style="font-size:32px;margin-bottom:10px;">📭</div>
+                    <p>Nessuna annata disponibile</p>
+                    <p style="font-size:13px;margin-top:10px;">Contatta l'amministratore</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // ✅ AUTO-SELEZIONE: Se l'utente ha UNA SOLA annata, assegnala automaticamente
+        if (annate.length === 1 && role === 'coach') {
+            console.log(`✅ Annata unica trovata per ${username}: ${annate[0].id}`);
+            console.log(`🔄 Assegnazione automatica...`);
+            selectAnnata(annate[0].id);
+            return; // Esce dalla funzione, il reload gestirà il resto
+        }
+        
+        // Se ci sono più annate o l'utente è admin, mostra la lista
+        listDiv.innerHTML = '';
+        
+        annate.forEach(annata => {
+            const annataCard = document.createElement('div');
+            annataCard.style.cssText = 'background:linear-gradient(135deg,#1e293b 0%,#334155 100%);padding:20px;border-radius:12px;cursor:pointer;border:2px solid rgba(96,165,250,0.2);transition:all 0.3s;';
+            
+            annataCard.innerHTML = `
+                <h3 style="color:#60a5fa;margin:0 0 8px 0;font-size:20px;">${annata.nome}</h3>
+                <p style="color:#94a3b8;margin:0;font-size:14px;">📅 ${annata.dataInizio} - ${annata.dataFine}</p>
+                ${annata.descrizione ? `<p style="color:#64748b;margin:8px 0 0 0;font-size:13px;">${annata.descrizione}</p>` : ''}
+            `;
+            
+            annataCard.onmouseover = function() {
+                this.style.borderColor = '#60a5fa';
+                this.style.transform = 'translateY(-2px)';
+                this.style.boxShadow = '0 4px 12px rgba(96,165,250,0.3)';
+            };
+            
+            annataCard.onmouseout = function() {
+                this.style.borderColor = 'rgba(96,165,250,0.2)';
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = 'none';
+            };
+            
+            annataCard.onclick = () => selectAnnata(annata.id);
+            
+            listDiv.appendChild(annataCard);
+        });
+        
+    } catch (error) {
+        console.error('Errore loadUserAnnate:', error);
+        listDiv.innerHTML = `
+            <div style="text-align:center;color:#ef4444;padding:40px;">
+                <div style="font-size:32px;margin-bottom:10px;">⚠️</div>
+                <p>Errore nel caricamento</p>
+                <p style="font-size:13px;margin-top:10px;">${error.message}</p>
+            </div>
+        `;
+    }
+}
 
         function selectAnnata(annataId) {
             sessionStorage.setItem(SESSION_ANNATA, annataId);
