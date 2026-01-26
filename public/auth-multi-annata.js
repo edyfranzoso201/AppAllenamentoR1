@@ -384,7 +384,7 @@
         }
         
         // ✅ AUTO-SELEZIONE: Se l'utente ha UNA SOLA annata, assegnala automaticamente
-        if (annate.length === 1 && role === 'coach') {
+        if (annate.length === 1 && (role === 'coach' || role === 'allenatore')) {
             console.log(`✅ Annata unica trovata per ${username}: ${annate[0].id}`);
             console.log(`🔄 Assegnazione automatica...`);
             selectAnnata(annate[0].id);
