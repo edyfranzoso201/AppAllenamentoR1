@@ -2016,9 +2016,24 @@ document.addEventListener('DOMContentLoaded', () => {
         multiAthleteFilterType = 'all';
         updateMultiAthleteChart();
     });
-    elements.exportAllDataBtn.addEventListener('click', () => {
-        const performDownload = (includeIndividual) => {
-            let dataToExport = { athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults };
+    elements.exportAllDataBtn.addEventListener('click', async () => {
+        const performDownload = async (includeIndividual) => {
+            // ✅ Recupera dati dall'API invece di usare variabili locali
+            const annataId = sessionStorage.getItem('gosport_current_annata');
+            const response = await fetch('/api/data', {
+                headers: { 'X-Annata-Id': annataId }
+            });
+            const freshData = await response.json();
+            
+            let dataToExport = {
+                athletes: freshData.athletes || athletes,
+                evaluations: freshData.evaluations || evaluations,
+                gpsData: freshData.gpsData || gpsData,
+                awards: freshData.awards || awards,
+                trainingSessions: freshData.trainingSessions || trainingSessions,
+                formationData: freshData.formationData || formationData,
+                matchResults: freshData.matchResults || matchResults
+            };
             if (!includeIndividual) {
                 dataToExport = JSON.parse(JSON.stringify(dataToExport));
                 for (const athleteId in dataToExport.gpsData) {
