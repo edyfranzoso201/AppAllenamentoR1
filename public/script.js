@@ -2017,86 +2017,207 @@ document.addEventListener('DOMContentLoaded', () => {
         updateMultiAthleteChart();
     });
     elements.exportAllDataBtn.addEventListener('click', async () => {
-        const performDownload = async (includeIndividual) => {
-            // ✅ Recupera dati dall'API invece di usare variabili locali
-        const annataId = sessionStorage.getItem('gosport_current_annata');
-        let freshData = {};
-        
-        console.log('🔧 Backup - Annata ID:', annataId);
-        
+    // Mostra messaggio di caricamento
+    const loadingAlert = document.createElement('div');
+    loadingAlert.className = 'alert alert-info';
+    loadingAlert.innerHTML = '<i class="bi bi-hourglass-split"></i> Preparazione backup in corso...';
+    elements.alertsContainer.appendChild(loadingAlert);
+    
+    const performDownload = async (includeIndividual) => {
         try {
-            const response = await fetch('/api/data', {
-                headers: { 'X-Annata-Id': annataId }
-            });
+            // 1. RECUPERA ANNATA E USERNAME CORRENTI
+            const annataId = sessionStorage.getItem('gosportcurrentannata');
+            const username = sessionStorage.getItem('gosportusername') || 'user';
             
-            console.log('📡 Response status:', response.status, response.ok);
+            console.log('🔄 Backup - Annata:', annataId, 'Username:', username);
             
-            if (response.ok) {
-                const apiResponse = await response.json();
-                // ✅ FIX: L'API restituisce { success: true, data: {...} }
-                freshData = apiResponse.data || apiResponse;
-                console.log('✅ Dati recuperati:', {
-                    atleti: (freshData.athletes || []).length,
-                    valutazioni: Object.keys(freshData.evaluations || {}).length
-                });
-            } else {
-                console.error('❌ Response non OK:', response.status);
-                // Fallback alle variabili locali
-                freshData = { athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults };
+            if (!annataId) {
+                throw new Error('Annata non selezionata. Seleziona un\'annata prima di fare il backup.');
             }
-        } catch (error) {
-            console.error('❌ Errore fetch backup:', error);
-            // Fallback alle variabili locali
-            freshData = { athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults };
-        }
-        
-        let dataToExport = {
-            athletes: freshData.athletes || athletes,
-            evaluations: freshData.evaluations || evaluations,
-            gpsData: freshData.gpsData || gpsData,
-            awards: freshData.awards || awards,
-            trainingSessions: freshData.trainingSessions || trainingSessions,
-            formationData: freshData.formationData || formationData,
-            matchResults: freshData.matchResults || matchResults
-        };
+            
+            // 2. RECUPERA DATI FRESCHI DALL'API REDIS
+            let freshData;
+            try {
+                const response = await fetch('/api/data', {
+                    method: 'GET',
+                    headers: {
+                        'X-Annata-Id': annataId,
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+                
+                console.log('📡 API Response status:', response.status);
+                
+                if (response.ok) {
+                    const apiResponse = await response.json();
+                    
+                    // Gestisci diverse strutture di risposta API
+                    if (apiResponse.success && apiResponse.data) {
+                        freshData = apiResponse.data;
+                    } else if (apiResponse.athletes || apiResponse.evaluations) {
+                        freshData = apiResponse;
+                    } else {
+                        throw new Error('Formato risposta API non riconosciuto');
+                    }
+                    
+                    console.log('✅ Dati recuperati da Redis:', {
+                        atleti: freshData.athletes?.length || 0,
+                        valutazioni: Object.keys(freshData.evaluations || {}).length,
+                        gpsData: Object.keys(freshData.gpsData || {}).length,
+                        partite: Object.keys(freshData.matchResults || {}).length
+                    });
+                } else {
+                    throw new Error(`Errore API: ${response.status} ${response.statusText}`);
+                }
+            } catch (apiError) {
+                console.error('❌ Errore fetch API:', apiError);
+                
+                // FALLBACK: usa dati locali se API fallisce
+                console.warn('⚠️ Usando dati locali come fallback');
+                freshData = {
+                    athletes,
+                    evaluations,
+                    gpsData,
+                    awards,
+                    trainingSessions,
+                    formationData,
+                    matchResults
+                };
+            }
+            
+            // 3. PREPARA I DATI PER L'EXPORT
+            let dataToExport = {
+                // Metadata del backup
+                _backup_metadata: {
+                    version: '1.0',
+                    annata: annataId,
+                    username: username,
+                    timestamp: new Date().toISOString(),
+                    dataTypes: {
+                        athletes: freshData.athletes?.length || 0,
+                        evaluations: Object.keys(freshData.evaluations || {}).length,
+                        gpsData: Object.keys(freshData.gpsData || {}).length,
+                        awards: Object.keys(freshData.awards || {}).length,
+                        trainingSessions: Object.keys(freshData.trainingSessions || {}).length,
+                        matchResults: Object.keys(freshData.matchResults || {}).length
+                    }
+                },
+                athletes: freshData.athletes || [],
+                evaluations: freshData.evaluations || {},
+                gpsData: freshData.gpsData || {},
+                awards: freshData.awards || {},
+                trainingSessions: freshData.trainingSessions || {},
+                formationData: freshData.formationData || { starters: [], bench: [], tokens: [] },
+                matchResults: freshData.matchResults || {}
+            };
+            
+            // 4. FILTRA SESSIONI "INDIVIDUAL" SE RICHIESTO
             if (!includeIndividual) {
-                dataToExport = JSON.parse(JSON.stringify(dataToExport));
+                console.log('🔒 Filtraggio sessioni Individual...');
+                dataToExport = JSON.parse(JSON.stringify(dataToExport)); // Deep clone
+                
                 for (const athleteId in dataToExport.gpsData) {
                     for (const date in dataToExport.gpsData[athleteId]) {
-                        dataToExport.gpsData[athleteId][date] = dataToExport.gpsData[athleteId][date].filter(session => session.tipo_sessione !== 'Individual');
+                        dataToExport.gpsData[athleteId][date] = dataToExport.gpsData[athleteId][date]
+                            .filter(session => session.tiposessione !== 'Individual');
+                        
                         if (dataToExport.gpsData[athleteId][date].length === 0) {
                             delete dataToExport.gpsData[athleteId][date];
                         }
                     }
                 }
             }
+            
+            // 5. VERIFICA CHE CI SIANO DATI DA ESPORTARE
+            const hasData = 
+                (dataToExport.athletes && dataToExport.athletes.length > 0) ||
+                Object.keys(dataToExport.evaluations).length > 0 ||
+                Object.keys(dataToExport.gpsData).length > 0;
+            
+            if (!hasData) {
+                throw new Error('Nessun dato disponibile per il backup. Il database potrebbe essere vuoto.');
+            }
+            
+            // 6. CREA E SCARICA IL FILE JSON
             const dataStr = JSON.stringify(dataToExport, null, 2);
-            const blob = new Blob([dataStr], {type: "application/json"});
+            const blob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
+            
+            const filename = `GoSport_Backup_${annataId}_${username}_${new Date().toISOString().split('T')[0]}.json`;
+            
             const a = document.createElement('a');
             a.href = url;
-            a.download = `coach_dashboard_backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.download = filename;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            if (!includeIndividual) {
-                alert("Download completato. I dati delle sessioni 'Individual' sono stati esclusi.");
-            }
-        };
-        const hasIndividualData = () => Object.values(gpsData).some(ath => Object.values(ath).some(sessions => sessions.some(sess => sess.tipo_sessione === 'Individual')));
-        if (hasIndividualData() && !isAuthenticated()) {
-            requestAuthentication( () => {
-                performDownload(true);
-            }, () => {
-                if (confirm("Accesso annullato o password errata. Desideri scaricare i dati escludendo le sessioni 'Individual' protette?")) {
+            
+            // Rimuovi alert di caricamento
+            loadingAlert.remove();
+            
+            // Mostra conferma
+            const successAlert = document.createElement('div');
+            successAlert.className = 'alert alert-success alert-dismissible fade show';
+            successAlert.innerHTML = `
+                <strong>✅ Backup completato!</strong><br>
+                File: ${filename}<br>
+                Atleti: ${dataToExport._backup_metadata.dataTypes.athletes} | 
+                Valutazioni: ${dataToExport._backup_metadata.dataTypes.evaluations}<br>
+                ${!includeIndividual ? '<em>Le sessioni Individual sono state escluse.</em>' : ''}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            elements.alertsContainer.appendChild(successAlert);
+            
+            console.log('✅ Backup completato:', filename);
+            
+            // Rimuovi l'alert dopo 8 secondi
+            setTimeout(() => successAlert.remove(), 8000);
+            
+        } catch (error) {
+            console.error('❌ Errore durante il backup:', error);
+            
+            // Rimuovi alert di caricamento
+            loadingAlert.remove();
+            
+            // Mostra errore
+            const errorAlert = document.createElement('div');
+            errorAlert.className = 'alert alert-danger alert-dismissible fade show';
+            errorAlert.innerHTML = `
+                <strong>❌ Errore durante il backup</strong><br>
+                ${error.message}<br>
+                <small>Controlla la console per dettagli (F12)</small>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            elements.alertsContainer.appendChild(errorAlert);
+            
+            setTimeout(() => errorAlert.remove(), 10000);
+        }
+    };
+    
+    // 7. GESTIONE SESSIONI INDIVIDUAL PROTETTE
+    const hasIndividualData = Object.values(gpsData).some(ath =>
+        Object.values(ath).some(sessions =>
+            sessions.some(sess => sess.tiposessione === 'Individual')
+        )
+    );
+    
+    if (hasIndividualData && !isAuthenticated) {
+        // Chiede autenticazione per includere sessioni Individual
+        requestAuthentication(
+            () => performDownload(true), // Include Individual se autenticato
+            () => {
+                // Se cancella autenticazione, chiede se vuole backup senza Individual
+                if (confirm('Accesso annullato. Desideri scaricare il backup SENZA le sessioni Individual protette?')) {
                     performDownload(false);
                 }
-            } );
-        } else {
-            performDownload(true);
-        }
-    });
+            }
+        );
+    } else {
+        // Scarica tutto (con o senza Individual a seconda dell'autenticazione)
+        performDownload(isAuthenticated);
+    }
+});
     elements.deleteDayDataBtn.addEventListener('click', () => {
         const date = elements.evaluationDatePicker.value;
         if (!date) {
