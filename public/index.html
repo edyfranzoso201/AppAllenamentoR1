@@ -628,118 +628,6 @@
     <script src="script.js"></script>
     <script>
 
-    // ========================================================================
-    // BACKUP SYSTEM - VERSIONE CON RITARDO PER EVITARE CONFLITTI
-    // Sostituisci il codice backup nell'index.html
-    // ========================================================================
-
-    // Aspetta che TUTTO sia caricato (incluso script.js)
-    window.addEventListener('load', function() {
-        // Ritardo aggiuntivo per assicurarsi che script.js abbia finito
-        setTimeout(function() {
-            const btn = document.getElementById('backup-btn');
-            if (!btn) {
-                console.error('❌ Bottone backup non trovato');
-                return;
-            }
-            
-            // Clona il bottone per rimuovere TUTTI gli event listener
-            const newBtn = btn.cloneNode(true);
-            btn.parentNode.replaceChild(newBtn, btn);
-            
-            // Aggiungi il nuovo event listener
-            newBtn.addEventListener('click', async function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                const button = this;
-                const originalHTML = button.innerHTML;
-                
-                try {
-                    console.log("🚀 Backup in corso...");
-                    button.disabled = true;
-                    button.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Backup...';
-                    
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                    
-                    const currentAnnata = sessionStorage.getItem('gosport_current_annata') || 'default';
-                    console.log(`📌 Annata: ${currentAnnata}`);
-                    
-                    const response = await fetch('/api/data', {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'x-annata-id': currentAnnata
-                        }
-                    });
-                    
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    
-                    const annataData = await response.json();
-                    const athletesCount = annataData.athletes?.length || 0;
-                    console.log(`📊 Atleti: ${athletesCount}`);
-                    
-                    const fullBackup = {
-                        _backup_info: {
-                            data_creazione: new Date().toLocaleString('it-IT'),
-                            timestamp: Date.now(),
-                            tipo: "BACKUP_ANNATA_COMPLETO",
-                            annata_id: currentAnnata,
-                            atleti_totali: athletesCount
-                        },
-                        annata_data: annataData
-                    };
-                    
-                    // localStorage
-                    const localStorageData = {};
-                    for (let i = 0; i < localStorage.length; i++) {
-                        const key = localStorage.key(i);
-                        try {
-                            localStorageData[key] = JSON.parse(localStorage.getItem(key));
-                        } catch (error) {
-                            localStorageData[key] = localStorage.getItem(key);
-                        }
-                    }
-                    if (Object.keys(localStorageData).length > 0) {
-                        fullBackup._localStorage = localStorageData;
-                    }
-                    
-                    // Download
-                    const dataStr = JSON.stringify(fullBackup, null, 2);
-                    const blob = new Blob([dataStr], {type: 'application/json'});
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    
-                    const now = new Date();
-                    const dateStr = now.toISOString().slice(0,10);
-                    const timeStr = now.toTimeString().slice(0,5).replace(':','-');
-                    
-                    a.download = `GoSport_Backup_${dateStr}_${timeStr}.json`;
-                    
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                    
-                    console.log('✅ Backup completato!');
-                    alert(`✅ BACKUP OK!\n${athletesCount} atleti\nFile: ${a.download}`);
-                    
-                    button.innerHTML = originalHTML;
-                    button.disabled = false;
-                    
-                } catch (error) {
-                    console.error("❌ Errore backup:", error);
-                    alert('❌ ERRORE: ' + error.message);
-                    button.innerHTML = originalHTML;
-                    button.disabled = false;
-                }
-            });
-            
-            console.log('✅ Bottone backup configurato (window.onload + timeout)');
-        }, 500); // Ritardo di 500ms dopo il load completo
-    });
-
     document.getElementById('restore-file').addEventListener('change', async function(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -776,11 +664,20 @@
                     }
                     
                     // Salva
-                    const response = await fetch('/api/data', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(data)
-                    });
+                    const annataId = sessionStorage.getItem('gosport_current_annata');
+
+                    if (!annataId) {
+                    throw new Error('Nessuna annata selezionata');
+                }
+
+            const response = await fetch('/api/data', {
+                method: 'POST',
+             headers: {
+                    'Content-Type': 'application/json',
+                    'X-Annata-Id': annataId  // ← AGGIUNTO!
+                },
+                body: JSON.stringify(data)
+            });
                     
                     if (!response.ok) throw new Error('Errore nel salvataggio dei dati');
                     
