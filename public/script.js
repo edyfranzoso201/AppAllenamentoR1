@@ -2016,153 +2016,117 @@ document.addEventListener('DOMContentLoaded', () => {
         multiAthleteFilterType = 'all';
         updateMultiAthleteChart();
          }); 
-// ✅ BACKUP VERDE - VERSIONE DEBUG
+         // ✅ BACKUP CORRETTO - Usa API /api/data
 elements.exportAllDataBtn.addEventListener('click', async () => {
-  try {
-    const username = sessionStorage.getItem('gosport:username') || 'admin';
-    
-    console.log('📦 Avvio backup completo...');
-    console.log('🔑 Token disponibile:', UPSTASH_TOKEN ? 'SÌ' : 'NO');
-
-    // 1. Recupera TUTTE le chiavi Redis
-    const allKeys = await new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open('GET', `https://infinite-cricket-45750.upstash.io/keys/*`, true);
-      xhr.setRequestHeader('Authorization', `Bearer ${UPSTASH_TOKEN}`);
-      xhr.onload = () => {
-        console.log('📡 Risposta keys:', xhr.status, xhr.responseText.substring(0, 200));
-        if (xhr.status === 200) {
-          const response = JSON.parse(xhr.responseText);
-          resolve(response.result || []);
-        } else {
-          reject(new Error('Errore nel recupero delle chiavi: ' + xhr.status));
+    const performDownload = async (includeIndividual) => {
+        const annataId = sessionStorage.getItem('gosport_current_annata');
+        
+        if (!annataId) {
+            alert('⚠️ Nessuna annata selezionata!');
+            return;
         }
-      };
-      xhr.onerror = () => reject(new Error('Errore di rete'));
-      xhr.send();
-    });
-
-    console.log('🔑 Chiavi trovate:', allKeys.length, allKeys);
-
-    // 2. Filtra solo le chiavi GoSport
-    const gosportKeys = allKeys.filter(key => 
-      key.startsWith('gosport:') && !key.includes(':token:')
-    );
-
-    console.log('🎯 Chiavi GoSport:', gosportKeys.length, gosportKeys);
-
-    if (gosportKeys.length === 0) {
-      alert('⚠️ Nessuna chiave GoSport trovata su Redis!\n\nVerifica che i dati siano stati salvati correttamente.');
-      return;
-    }
-
-    // 3. Recupera i dati per ogni chiave
-    const backupData = {
-      _metadata: {
-        username: username,
-        dataBackup: new Date().toISOString(),
-        versione: '3.0-multi-annata',
-        totalKeys: gosportKeys.length
-      },
-      dati: {}
-    };
-
-    // Recupera i dati in parallelo (max 5 alla volta per non sovraccaricare)
-    const chunkSize = 5;
-    for (let i = 0; i < gosportKeys.length; i += chunkSize) {
-      const chunk = gosportKeys.slice(i, i + chunkSize);
-      console.log(`📥 Recupero chunk ${i / chunkSize + 1}/${Math.ceil(gosportKeys.length / chunkSize)}:`, chunk);
-      
-      const promises = chunk.map(async (key) => {
+        
+        console.log('🔧 Backup - Annata ID:', annataId);
+        
         try {
-          const xhr = new XMLHttpRequest();
-          return new Promise((resolve) => {
-            xhr.open('GET', `https://infinite-cricket-45750.upstash.io/get/${key}`, true);
-            xhr.setRequestHeader('Authorization', `Bearer ${UPSTASH_TOKEN}`);
-            xhr.onload = () => {
-              if (xhr.status === 200) {
-                const response = JSON.parse(xhr.responseText);
-                const value = response.result;
-                console.log(`✓ ${key}:`, value ? `${value.length} chars` : 'NULL');
-                
-                if (value) {
-                  // Prova a parsare come JSON
-                  try {
-                    backupData.dati[key] = JSON.parse(value);
-                  } catch {
-                    backupData.dati[key] = value;
-                  }
-                } else {
-                  console.warn(`⚠️ ${key}: valore vuoto!`);
+            const response = await fetch('/api/data', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Annata-Id': annataId
                 }
-              } else {
-                console.error(`❌ ${key}: errore ${xhr.status}`);
-              }
-              resolve();
+            });
+            
+            console.log('📡 Response status:', response.status, response.ok);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            // L'API restituisce direttamente gli oggetti
+            const freshData = await response.json();
+            
+            console.log('✅ Dati recuperati:', {
+                atleti: (freshData.athletes || []).length,
+                valutazioni: Object.keys(freshData.evaluations || {}).length,
+                gps: Object.keys(freshData.gpsData || {}).length,
+                partite: Object.keys(freshData.matchResults || {}).length
+            });
+            
+            let dataToExport = {
+                athletes: freshData.athletes || [],
+                evaluations: freshData.evaluations || {},
+                gpsData: freshData.gpsData || {},
+                awards: freshData.awards || {},
+                trainingSessions: freshData.trainingSessions || {},
+                formationData: freshData.formationData || {},
+                matchResults: freshData.matchResults || {},
+                calendarEvents: freshData.calendarEvents || {},
+                calendarResponses: freshData.calendarResponses || {}
             };
-            xhr.onerror = () => {
-              console.error(`❌ ${key}: errore di rete`);
-              resolve();
-            };
-            xhr.send();
-          });
+            
+            // Filtra sessioni Individual se richiesto
+            if (!includeIndividual) {
+                dataToExport = JSON.parse(JSON.stringify(dataToExport));
+                for (const athleteId in dataToExport.gpsData) {
+                    for (const date in dataToExport.gpsData[athleteId]) {
+                        dataToExport.gpsData[athleteId][date] = dataToExport.gpsData[athleteId][date].filter(
+                            session => session.tipo_sessione !== 'Individual'
+                        );
+                        if (dataToExport.gpsData[athleteId][date].length === 0) {
+                            delete dataToExport.gpsData[athleteId][date];
+                        }
+                    }
+                }
+            }
+            
+            // Crea file
+            const dataStr = JSON.stringify(dataToExport, null, 2);
+            const blob = new Blob([dataStr], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `GoSport_Backup_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            console.log('✅ Backup completato!');
+            
+            if (!includeIndividual) {
+                alert("Download completato. I dati delle sessioni 'Individual' sono stati esclusi.");
+            } else {
+                alert("✅ Backup completato con successo!");
+            }
+            
         } catch (error) {
-          console.error(`❌ Errore chiave ${key}:`, error);
+            console.error('❌ Errore backup:', error);
+            alert('❌ Errore durante il backup: ' + error.message);
         }
-      });
-
-      await Promise.all(promises);
-    }
-
-    const dataCount = Object.keys(backupData.dati).length;
-    console.log('📊 Backup completato:', {
-      chiavi: dataCount,
-      dimensione: JSON.stringify(backupData).length + ' bytes'
-    });
-
-    if (dataCount === 0) {
-      alert('⚠️ Nessun dato recuperato!\n\nTutte le chiavi risultano vuote. Verifica i permessi del token Redis.');
-      return;
-    }
-
-    // 4. Funzione per eseguire il download
-    const performDownload = (data) => {
-      const dataStr = JSON.stringify(data, null, 2);
-      const blob = new Blob([dataStr], {type: 'application/json'});
-      const url = URL.createObjectURL(blob);
-      
-      const a = document.createElement('a');
-      a.href = url;
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T');
-      a.download = `GoSport_Backup_COMPLETO_${timestamp[0]}_${timestamp[1].substring(0,8)}.json`;
-      document.body.appendChild(a);
-      a.click();
-      
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      alert(`✅ Backup completo salvato!\n\n📦 ${dataCount} dataset salvati\n📁 Dimensione: ${(blob.size / 1024).toFixed(2)} KB`);
     };
-    // 5. Verifica autenticazione solo se necessario
-    const hasProtectedData = gosportKeys.some(key => key.includes(':gpsData'));
     
-    if (hasProtectedData && !isAuthenticated) {
-      requestAuthentication(
-        () => performDownload(backupData),
-        () => {
-          if (confirm("Accesso annullato.\n\nVuoi scaricare comunque il backup (potrebbero mancare alcuni dati protetti)?")) {
-            performDownload(backupData);
-          }
-        }
-      );
+    // Controlla se ci sono dati Individual
+    const hasIndividualData = () => {
+        return Object.values(gpsData).some(ath => 
+            Object.values(ath).some(sessions => 
+                sessions.some(sess => sess.tipo_sessione === 'Individual')
+            )
+        );
+    };
+    
+    if (hasIndividualData() && !isAuthenticated()) {
+        requestAuthentication(
+            () => performDownload(true),
+            () => {
+                if (confirm("Accesso annullato. Desideri scaricare escludendo le sessioni 'Individual'?")) {
+                    performDownload(false);
+                }
+            }
+        );
     } else {
-      performDownload(backupData);
+        performDownload(true);
     }
-    
-  } catch (error) {
-    console.error('❌ Errore durante il backup:', error);
-    alert(`❌ Errore durante il backup:\n\n${error.message}\n\nControlla la console (F12) per i dettagli.`);
-  }
 });
     elements.deleteDayDataBtn.addEventListener('click', () => {
         const date = elements.evaluationDatePicker.value;
