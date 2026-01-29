@@ -2016,12 +2016,13 @@ document.addEventListener('DOMContentLoaded', () => {
         multiAthleteFilterType = 'all';
         updateMultiAthleteChart();
          }); 
-    // ✅ BACKUP VERDE - VERSIONE CORRETTA
+// ✅ BACKUP VERDE - VERSIONE DEBUG
 elements.exportAllDataBtn.addEventListener('click', async () => {
   try {
     const username = sessionStorage.getItem('gosport:username') || 'admin';
     
-    console.log('📦 Avvio backup completo di tutte le annate...');
+    console.log('📦 Avvio backup completo...');
+    console.log('🔑 Token disponibile:', UPSTASH_TOKEN ? 'SÌ' : 'NO');
 
     // 1. Recupera TUTTE le chiavi Redis
     const allKeys = await new Promise((resolve, reject) => {
@@ -2029,25 +2030,31 @@ elements.exportAllDataBtn.addEventListener('click', async () => {
       xhr.open('GET', `https://infinite-cricket-45750.upstash.io/keys/*`, true);
       xhr.setRequestHeader('Authorization', `Bearer ${UPSTASH_TOKEN}`);
       xhr.onload = () => {
+        console.log('📡 Risposta keys:', xhr.status, xhr.responseText.substring(0, 200));
         if (xhr.status === 200) {
           const response = JSON.parse(xhr.responseText);
           resolve(response.result || []);
         } else {
-          reject(new Error('Errore nel recupero delle chiavi'));
+          reject(new Error('Errore nel recupero delle chiavi: ' + xhr.status));
         }
       };
       xhr.onerror = () => reject(new Error('Errore di rete'));
       xhr.send();
     });
 
-    console.log('🔑 Chiavi trovate:', allKeys.length);
+    console.log('🔑 Chiavi trovate:', allKeys.length, allKeys);
 
     // 2. Filtra solo le chiavi GoSport
     const gosportKeys = allKeys.filter(key => 
       key.startsWith('gosport:') && !key.includes(':token:')
     );
 
-    console.log('🎯 Chiavi GoSport:', gosportKeys.length);
+    console.log('🎯 Chiavi GoSport:', gosportKeys.length, gosportKeys);
+
+    if (gosportKeys.length === 0) {
+      alert('⚠️ Nessuna chiave GoSport trovata su Redis!\n\nVerifica che i dati siano stati salvati correttamente.');
+      return;
+    }
 
     // 3. Recupera i dati per ogni chiave
     const backupData = {
@@ -2060,40 +2067,63 @@ elements.exportAllDataBtn.addEventListener('click', async () => {
       dati: {}
     };
 
-    // Recupera i dati in parallelo
-    const promises = gosportKeys.map(async (key) => {
-      try {
-        const xhr = new XMLHttpRequest();
-        return new Promise((resolve) => {
-          xhr.open('GET', `https://infinite-cricket-45750.upstash.io/get/${key}`, true);
-          xhr.setRequestHeader('Authorization', `Bearer ${UPSTASH_TOKEN}`);
-          xhr.onload = () => {
-            if (xhr.status === 200) {
-              const response = JSON.parse(xhr.responseText);
-              const value = response.result;
-              // Prova a parsare come JSON, altrimenti salva come stringa
-              try {
-                backupData.dati[key] = JSON.parse(value);
-              } catch {
-                backupData.dati[key] = value;
+    // Recupera i dati in parallelo (max 5 alla volta per non sovraccaricare)
+    const chunkSize = 5;
+    for (let i = 0; i < gosportKeys.length; i += chunkSize) {
+      const chunk = gosportKeys.slice(i, i + chunkSize);
+      console.log(`📥 Recupero chunk ${i / chunkSize + 1}/${Math.ceil(gosportKeys.length / chunkSize)}:`, chunk);
+      
+      const promises = chunk.map(async (key) => {
+        try {
+          const xhr = new XMLHttpRequest();
+          return new Promise((resolve) => {
+            xhr.open('GET', `https://infinite-cricket-45750.upstash.io/get/${key}`, true);
+            xhr.setRequestHeader('Authorization', `Bearer ${UPSTASH_TOKEN}`);
+            xhr.onload = () => {
+              if (xhr.status === 200) {
+                const response = JSON.parse(xhr.responseText);
+                const value = response.result;
+                console.log(`✓ ${key}:`, value ? `${value.length} chars` : 'NULL');
+                
+                if (value) {
+                  // Prova a parsare come JSON
+                  try {
+                    backupData.dati[key] = JSON.parse(value);
+                  } catch {
+                    backupData.dati[key] = value;
+                  }
+                } else {
+                  console.warn(`⚠️ ${key}: valore vuoto!`);
+                }
+              } else {
+                console.error(`❌ ${key}: errore ${xhr.status}`);
               }
-            }
-            resolve();
-          };
-          xhr.onerror = () => resolve(); // Continua anche in caso di errore
-          xhr.send();
-        });
-      } catch (error) {
-        console.error(`Errore chiave ${key}:`, error);
-      }
-    });
+              resolve();
+            };
+            xhr.onerror = () => {
+              console.error(`❌ ${key}: errore di rete`);
+              resolve();
+            };
+            xhr.send();
+          });
+        } catch (error) {
+          console.error(`❌ Errore chiave ${key}:`, error);
+        }
+      });
 
-    await Promise.all(promises);
+      await Promise.all(promises);
+    }
 
+    const dataCount = Object.keys(backupData.dati).length;
     console.log('📊 Backup completato:', {
-      chiavi: Object.keys(backupData.dati).length,
+      chiavi: dataCount,
       dimensione: JSON.stringify(backupData).length + ' bytes'
     });
+
+    if (dataCount === 0) {
+      alert('⚠️ Nessun dato recuperato!\n\nTutte le chiavi risultano vuote. Verifica i permessi del token Redis.');
+      return;
+    }
 
     // 4. Funzione per eseguire il download
     const performDownload = (data) => {
@@ -2111,9 +2141,8 @@ elements.exportAllDataBtn.addEventListener('click', async () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      alert(`✅ Backup completo salvato!\n\n📦 ${Object.keys(data.dati).length} dataset salvati\n📁 Dimensione: ${(blob.size / 1024).toFixed(2)} KB`);
+      alert(`✅ Backup completo salvato!\n\n📦 ${dataCount} dataset salvati\n📁 Dimensione: ${(blob.size / 1024).toFixed(2)} KB`);
     };
-
     // 5. Verifica autenticazione solo se necessario
     const hasProtectedData = gosportKeys.some(key => key.includes(':gpsData'));
     
@@ -2132,10 +2161,9 @@ elements.exportAllDataBtn.addEventListener('click', async () => {
     
   } catch (error) {
     console.error('❌ Errore durante il backup:', error);
-    alert(`❌ Errore durante il backup:\n\n${error.message}`);
+    alert(`❌ Errore durante il backup:\n\n${error.message}\n\nControlla la console (F12) per i dettagli.`);
   }
 });
-
     elements.deleteDayDataBtn.addEventListener('click', () => {
         const date = elements.evaluationDatePicker.value;
         if (!date) {
