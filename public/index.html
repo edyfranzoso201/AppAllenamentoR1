@@ -671,10 +671,19 @@
                         return;
                     }
                     
-                    // Salva
+                    // Salva nell'annata corrente
+                    const annataId = sessionStorage.getItem('gosport_current_annata');
+                    
+                    if (!annataId) {
+                        throw new Error('Nessuna annata selezionata. Seleziona un\'annata prima di ripristinare.');
+                    }
+                    
                     const response = await fetch('/api/data', {
                         method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Annata-Id': annataId
+                        },
                         body: JSON.stringify(data)
                     });
                     
