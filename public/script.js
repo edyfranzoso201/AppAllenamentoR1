@@ -2018,52 +2018,66 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     elements.exportAllDataBtn.addEventListener('click', async () => {
             // ✅ BACKUP SEMPLICE - Bottone alternativo che usa solo dati locali
-    const btnSimple = document.getElementById('export-data-simple-btn');
-    if (btnSimple) {
-        btnSimple.addEventListener('click', () => {
-            try {
-                console.log('🔄 Backup Semplice avviato...');
-                
-                const annataId = sessionStorage.getItem('gosportcurrentannata') || 'mko5iuzhw2xrxxiuo1';
-                
-                const backupData = {
-                    _backup_metadata: {
-                        version: '1.0',
-                        annata: annataId,
-                        timestamp: new Date().toISOString(),
-                        athletes: athletes.length,
-                        evaluations: Object.keys(evaluations).length,
-                        gpsData: Object.keys(gpsData).length
-                    },
-                    athletes: athletes,
-                    evaluations: evaluations,
-                    gpsData: gpsData,
-                    awards: awards,
-                    trainingSessions: trainingSessions,
-                    formationData: formationData,
-                    matchResults: matchResults
-                };
-                
-                const dataStr = JSON.stringify(backupData, null, 2);
-                const blob = new Blob([dataStr], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const filename = `GoSport_Backup_${annataId}_${new Date().toISOString().split('T')[0]}.json`;
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                alert(`✅ Backup completato!\n\nFile: ${filename}\nAtleti: ${athletes.length}\nValutazioni: ${Object.keys(evaluations).length}`);
-                console.log('✅ Backup completato:', filename);
-            } catch (error) {
-                console.error('❌ Errore backup:', error);
-                alert('Errore durante il backup: ' + error.message);
+    // ✅ BACKUP SEMPLICE - Bottone alternativo che usa solo dati locali
+const btnSimple = document.getElementById('export-data-simple-btn');
+if (btnSimple) {
+    btnSimple.addEventListener('click', async () => {  // ← async qui!
+        try {
+            console.log('🔄 Backup Semplice avviato...');
+            
+            // ✅ RICARICA I DATI PRIMA
+            await loadData();
+            console.log('📊 Dati ricaricati:', athletes.length, 'atleti');
+            
+            // Verifica che ci siano dati
+            if (athletes.length === 0) {
+                alert('❌ ERRORE: Nessun atleta trovato!\n\nIl database potrebbe essere vuoto per questa annata.');
+                return;
             }
-        });
-    }
+            
+            const annataId = sessionStorage.getItem('gosportcurrentannata') || 'mko5iuzhw2xrxxiuo1';
+            
+            const backupData = {
+                _backup_metadata: {
+                    version: '1.0',
+                    annata: annataId,
+                    timestamp: new Date().toISOString(),
+                    athletes: athletes.length,
+                    evaluations: Object.keys(evaluations).length,
+                    gpsData: Object.keys(gpsData).length
+                },
+                athletes: athletes,
+                evaluations: evaluations,
+                gpsData: gpsData,
+                awards: awards,
+                trainingSessions: trainingSessions,
+                formationData: formationData,
+                matchResults: matchResults
+            };
+            
+            const dataStr = JSON.stringify(backupData, null, 2);
+            const dataSizeKB = (dataStr.length / 1024).toFixed(2);
+            console.log('💾 Dimensione backup:', dataSizeKB, 'KB');
+            
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const filename = `GoSport_Backup_${annataId}_${new Date().toISOString().split('T')[0]}.json`;
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert(`✅ Backup completato!\n\nFile: ${filename}\nDimensione: ${dataSizeKB} KB\n\nAtleti: ${athletes.length}\nValutazioni: ${Object.keys(evaluations).length}`);
+            console.log('✅ Backup completato:', filename);
+        } catch (error) {
+            console.error('❌ Errore backup:', error);
+            alert('Errore durante il backup: ' + error.message);
+        }
+    });
+}
     const performDownload = async (includeIndividual) => {
         try {
             // 1. FORZA RICARICA DATI DA API/REDIS PRIMA DEL BACKUP
