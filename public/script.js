@@ -2041,7 +2041,6 @@ elements.exportAllDataBtn.addEventListener('click', () => {
         }
       }
     }
-
     // 3. Crea il file JSON
     const dataStr = JSON.stringify(dataToExport, null, 2);
     const blob = new Blob([dataStr], {type: 'application/json'});
