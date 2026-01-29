@@ -664,11 +664,20 @@
                     }
                     
                     // Salva
-                    const response = await fetch('/api/data', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(data)
-                    });
+                    const annataId = sessionStorage.getItem('gosport_current_annata');
+
+                    if (!annataId) {
+                    throw new Error('Nessuna annata selezionata');
+                }
+
+            const response = await fetch('/api/data', {
+                method: 'POST',
+             headers: {
+                    'Content-Type': 'application/json',
+                    'X-Annata-Id': annataId  // ← AGGIUNTO!
+                },
+                body: JSON.stringify(data)
+            });
                     
                     if (!response.ok) throw new Error('Errore nel salvataggio dei dati');
                     
