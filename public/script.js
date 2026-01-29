@@ -2032,20 +2032,19 @@ document.addEventListener('DOMContentLoaded', () => {
         updateMultiAthleteChart();
     });
     elements.exportAllDataBtn.addEventListener('click', async () => {
-            // ✅ BACKUP SEMPLICE - Bottone alternativo che usa solo dati locali
     // ✅ BACKUP SEMPLICE - Bottone alternativo che usa solo dati locali
 const btnSimple = document.getElementById('export-data-simple-btn');
 if (btnSimple) {
-    btnSimple.addEventListener('click', async () => {  // ← async qui!
+    btnSimple.addEventListener('click', async () => {
         try {
             console.log('🔄 Backup Semplice avviato...');
             
             // ✅ RICARICA I DATI PRIMA
             await loadData();
-            console.log('📊 Dati ricaricati:', athletes.length, 'atleti');
+            console.log('📊 Dati ricaricati:', window.athletes.length, 'atleti');
             
-            // Verifica che ci siano dati
-            if (athletes.length === 0) {
+            // ✅ USA LE VARIABILI GLOBALI (window.*)
+            if (window.athletes.length === 0) {
                 alert('❌ ERRORE: Nessun atleta trovato!\n\nIl database potrebbe essere vuoto per questa annata.');
                 return;
             }
@@ -2057,17 +2056,17 @@ if (btnSimple) {
                     version: '1.0',
                     annata: annataId,
                     timestamp: new Date().toISOString(),
-                    athletes: athletes.length,
-                    evaluations: Object.keys(evaluations).length,
-                    gpsData: Object.keys(gpsData).length
+                    athletes: window.athletes.length,
+                    evaluations: Object.keys(window.evaluations).length,
+                    gpsData: Object.keys(window.gpsData).length
                 },
-                athletes: athletes,
-                evaluations: evaluations,
-                gpsData: gpsData,
-                awards: awards,
-                trainingSessions: trainingSessions,
-                formationData: formationData,
-                matchResults: matchResults
+                athletes: window.athletes,          // ← window.athletes
+                evaluations: window.evaluations,    // ← window.evaluations
+                gpsData: window.gpsData,            // ← window.gpsData
+                awards: window.awards,              // ← window.awards
+                trainingSessions: window.trainingSessions,  // ← window.trainingSessions
+                formationData: window.formationData,        // ← window.formationData
+                matchResults: window.matchResults           // ← window.matchResults
             };
             
             const dataStr = JSON.stringify(backupData, null, 2);
@@ -2085,7 +2084,7 @@ if (btnSimple) {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            alert(`✅ Backup completato!\n\nFile: ${filename}\nDimensione: ${dataSizeKB} KB\n\nAtleti: ${athletes.length}\nValutazioni: ${Object.keys(evaluations).length}`);
+            alert(`✅ Backup completato!\n\nFile: ${filename}\nDimensione: ${dataSizeKB} KB\n\nAtleti: ${window.athletes.length}\nValutazioni: ${Object.keys(window.evaluations).length}`);
             console.log('✅ Backup completato:', filename);
         } catch (error) {
             console.error('❌ Errore backup:', error);
