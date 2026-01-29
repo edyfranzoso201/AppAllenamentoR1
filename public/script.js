@@ -2019,12 +2019,16 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.exportAllDataBtn.addEventListener('click', async () => {
     const performDownload = async (includeIndividual) => {
         try {
-            // 1. RECUPERA ANNATA E USERNAME DA SESSIONSTORAGE
+            // 1. FORZA RICARICA DATI DA API/REDIS PRIMA DEL BACKUP
+            console.log('🔄 Ricarico i dati prima del backup...');
+            await loadData(); // Aspetta che loadData finisca
+            
+            // 2. RECUPERA ANNATA E USERNAME DA SESSIONSTORAGE
             const annataId = sessionStorage.getItem('gosportcurrentannata');
             const username = sessionStorage.getItem('gosportusername') || 'admin';
             
             console.log('🔄 Inizio backup - Annata:', annataId, 'Username:', username);
-            console.log('📊 Dati locali:', {
+            console.log('📊 Dati locali dopo reload:', {
                 atleti: athletes.length,
                 valutazioni: Object.keys(evaluations).length,
                 gpsData: Object.keys(gpsData).length,
@@ -2036,12 +2040,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             
-            // Verifica che ci siano dati
+            // Verifica che ci siano dati DOPO il reload
             if (athletes.length === 0) {
-                alert('⚠️ Attenzione: Non ci sono atleti da esportare. Il backup potrebbe essere vuoto.');
+                alert('⚠️ ERRORE: Non ci sono atleti da esportare dopo il caricamento.\n\nProblemi possibili:\n1. Database Redis vuoto per questa annata\n2. Errore di connessione\n3. Chiave Redis errata\n\nControlla la console (F12) per dettagli.');
+                console.error('❌ athletes array è vuoto dopo loadData()');
+                return;
             }
             
-            // 2. USA DIRETTAMENTE I DATI LOCALI (già caricati da loadData)
+            // 3. USA I DATI APPENA RICARICATI
             let dataToExport = {
                 // Metadata del backup
                 _backup_metadata: {
@@ -2058,19 +2064,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         matchResults: Object.keys(matchResults).length
                     }
                 },
-                athletes: athletes,
-                evaluations: evaluations,
-                gpsData: gpsData,
-                awards: awards,
-                trainingSessions: trainingSessions,
-                formationData: formationData,
-                matchResults: matchResults
+                athletes: JSON.parse(JSON.stringify(athletes)), // Deep clone
+                evaluations: JSON.parse(JSON.stringify(evaluations)),
+                gpsData: JSON.parse(JSON.stringify(gpsData)),
+                awards: JSON.parse(JSON.stringify(awards)),
+                trainingSessions: JSON.parse(JSON.stringify(trainingSessions)),
+                formationData: JSON.parse(JSON.stringify(formationData)),
+                matchResults: JSON.parse(JSON.stringify(matchResults))
             };
             
-            // 3. FILTRA SESSIONI "INDIVIDUAL" SE NON AUTENTICATO
+            // 4. FILTRA SESSIONI "INDIVIDUAL" SE NON AUTENTICATO
             if (!includeIndividual) {
                 console.log('🔒 Filtraggio sessioni Individual...');
-                dataToExport = JSON.parse(JSON.stringify(dataToExport)); // Deep clone
                 
                 for (const athleteId in dataToExport.gpsData) {
                     for (const date in dataToExport.gpsData[athleteId]) {
@@ -2083,18 +2088,27 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         }
                     }
+                    // Rimuovi atleti senza più dati GPS
+                    if (Object.keys(dataToExport.gpsData[athleteId]).length === 0) {
+                        delete dataToExport.gpsData[athleteId];
+                    }
                 }
             }
             
-            // 4. CREA E SCARICA IL FILE JSON
+            // 5. CREA E SCARICA IL FILE JSON
             const dataStr = JSON.stringify(dataToExport, null, 2);
             const dataSizeKB = (dataStr.length / 1024).toFixed(2);
             console.log('💾 Dimensione backup:', dataSizeKB, 'KB');
             
+            if (dataSizeKB < 5) {
+                console.warn('⚠️ Backup molto piccolo (< 5 KB), potrebbero mancare dati');
+            }
+            
             const blob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             
-            const filename = `GoSport_Backup_${annataId}_${username}_${new Date().toISOString().split('T')[0]}.json`;
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
+            const filename = `GoSport_Backup_${annataId}_${timestamp}.json`;
             
             const a = document.createElement('a');
             a.href = url;
@@ -2104,9 +2118,23 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            // 5. MOSTRA CONFERMA
+            // 6. MOSTRA CONFERMA DETTAGLIATA
             console.log('✅ Backup completato:', filename);
-            alert(`✅ Backup completato!\n\nFile: ${filename}\nDimensione: ${dataSizeKB} KB\n\nAtleti: ${dataToExport._backup_metadata.dataTypes.athletes}\nValutazioni: ${dataToExport._backup_metadata.dataTypes.evaluations}\nPartite: ${dataToExport._backup_metadata.dataTypes.matchResults}`);
+            const summary = `✅ Backup completato con successo!
+
+File: ${filename}
+Dimensione: ${dataSizeKB} KB
+
+Dati esportati:
+• Atleti: ${dataToExport._backup_metadata.dataTypes.athletes}
+• Valutazioni: ${dataToExport._backup_metadata.dataTypes.evaluations}
+• Dati GPS: ${dataToExport._backup_metadata.dataTypes.gpsData}
+• Sessioni Allenamento: ${dataToExport._backup_metadata.dataTypes.trainingSessions}
+• Risultati Partite: ${dataToExport._backup_metadata.dataTypes.matchResults}
+
+${!includeIndividual ? '\n⚠️ Le sessioni Individual sono state escluse dal backup.' : ''}`;
+            
+            alert(summary);
             
         } catch (error) {
             console.error('❌ Errore durante il backup:', error);
@@ -2114,7 +2142,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    // 6. GESTIONE SESSIONI INDIVIDUAL PROTETTE
+    // 7. GESTIONE SESSIONI INDIVIDUAL PROTETTE
     const hasIndividualData = Object.values(gpsData).some(ath =>
         Object.values(ath).some(sessions =>
             Array.isArray(sessions) && sessions.some(sess => sess.tiposessione === 'Individual')
@@ -2137,6 +2165,7 @@ document.addEventListener('DOMContentLoaded', () => {
         performDownload(isAuthenticated);
     }
 });
+
     elements.deleteDayDataBtn.addEventListener('click', () => {
         const date = elements.evaluationDatePicker.value;
         if (!date) {
