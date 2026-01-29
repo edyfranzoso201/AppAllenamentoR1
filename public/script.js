@@ -2032,7 +2032,9 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('📡 Response status:', response.status, response.ok);
             
             if (response.ok) {
-                freshData = await response.json();
+                const apiResponse = await response.json();
+                // ✅ FIX: L'API restituisce { success: true, data: {...} }
+                freshData = apiResponse.data || apiResponse;
                 console.log('✅ Dati recuperati:', {
                     atleti: (freshData.athletes || []).length,
                     valutazioni: Object.keys(freshData.evaluations || {}).length
