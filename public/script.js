@@ -31,17 +31,16 @@ function generateId() {
     const isAuthenticated = sessionStorage.getItem('gosport_auth_session') === 'true';
     const currentAnnata = sessionStorage.getItem('gosport_current_annata');
     
-    // Se autenticato MA senza annata = siamo sulla pagina di selezione
-    // Non bloccare, lascia che auth-multi-annata.js gestisca la selezione
-    if (isAuthenticated && !currentAnnata) {
-        console.log('📅 Utente autenticato senza annata: pagina di selezione');
-        throw new Error('Awaiting annata selection - blocking dashboard init');
+    // ✅ MODIFICA: Non bloccare se non autenticato, lascia che auth-multi-annata.js gestisca il login
+    if (!isAuthenticated) {
+        console.log('🔓 Utente non autenticato, in attesa di login...');
+        return;  // ← CAMBIATO da throw a return!
     }
     
-    // Se non autenticato, blocca
-    if (!isAuthenticated) {
-        console.log('🔒 Utente non autenticato, blocco inizializzazione dashboard');
-        throw new Error('User not authenticated');
+    // Se autenticato MA senza annata = siamo sulla pagina di selezione
+    if (isAuthenticated && !currentAnnata) {
+        console.log('📅 Utente autenticato senza annata: pagina di selezione');
+        return;  // ← CAMBIATO anche questo da throw a return!
     }
     
     // Se autenticato CON annata, procedi
