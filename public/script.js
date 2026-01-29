@@ -31,16 +31,17 @@ function generateId() {
     const isAuthenticated = sessionStorage.getItem('gosport_auth_session') === 'true';
     const currentAnnata = sessionStorage.getItem('gosport_current_annata');
     
-    // ✅ MODIFICA: Non bloccare se non autenticato, lascia che auth-multi-annata.js gestisca il login
-    if (!isAuthenticated) {
-        console.log('🔓 Utente non autenticato, in attesa di login...');
-        return;  // ← CAMBIATO da throw a return!
-    }
-    
     // Se autenticato MA senza annata = siamo sulla pagina di selezione
+    // Non bloccare, lascia che auth-multi-annata.js gestisca la selezione
     if (isAuthenticated && !currentAnnata) {
         console.log('📅 Utente autenticato senza annata: pagina di selezione');
-        return;  // ← CAMBIATO anche questo da throw a return!
+        throw new Error('Awaiting annata selection - blocking dashboard init');
+    }
+    
+    // Se non autenticato, blocca
+    if (!isAuthenticated) {
+        console.log('🔒 Utente non autenticato, blocco inizializzazione dashboard');
+        throw new Error('User not authenticated');
     }
     
     // Se autenticato CON annata, procedi
@@ -2014,20 +2015,22 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.multiAthleteTypeSelector.querySelector('.btn[data-type="all"]').classList.add('active');
         multiAthleteFilterType = 'all';
         updateMultiAthleteChart();
-         }); 
-         // ✅ BACKUP CORRETTO - Usa API /api/data
-elements.exportAllDataBtn.addEventListener('click', async () => {
+    });
+    elements.exportAllDataBtn.addEventListener('click', async () => {
     const performDownload = async (includeIndividual) => {
-        const annataId = sessionStorage.getItem('gosport_current_annata');
-        
-        if (!annataId) {
-            alert('⚠️ Nessuna annata selezionata!');
-            return;
-        }
-        
-        console.log('🔧 Backup - Annata ID:', annataId);
-        
         try {
+            // 1. RECUPERA ANNATA DA SESSIONSTORAGE (CON NOME CORRETTO!)
+            const annataId = sessionStorage.getItem('gosport_current_annata');
+            const username = sessionStorage.getItem('gosport_auth_user') || 'admin';
+            
+            if (!annataId) {
+                alert('⚠️ Errore: Nessuna annata selezionata.');
+                return;
+            }
+            
+            console.log('🔄 Backup - Annata:', annataId);
+            
+            // 2. CARICA DATI FRESCHI DA API
             const response = await fetch('/api/data', {
                 method: 'GET',
                 headers: {
@@ -2036,23 +2039,40 @@ elements.exportAllDataBtn.addEventListener('click', async () => {
                 }
             });
             
-            console.log('📡 Response status:', response.status, response.ok);
-            
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
+                throw new Error(`Errore caricamento dati: ${response.status}`);
             }
             
-            // L'API restituisce direttamente gli oggetti
             const freshData = await response.json();
             
-            console.log('✅ Dati recuperati:', {
+            console.log('📊 Dati caricati:', {
                 atleti: (freshData.athletes || []).length,
                 valutazioni: Object.keys(freshData.evaluations || {}).length,
                 gps: Object.keys(freshData.gpsData || {}).length,
                 partite: Object.keys(freshData.matchResults || {}).length
             });
             
+            if (!freshData.athletes || freshData.athletes.length === 0) {
+                alert('⚠️ Nessun atleta trovato per questa annata.');
+                return;
+            }
+            
+            // 3. PREPARA DATI DA ESPORTARE
             let dataToExport = {
+                _backup_metadata: {
+                    version: '1.0',
+                    annata: annataId,
+                    username: username,
+                    timestamp: new Date().toISOString(),
+                    dataTypes: {
+                        athletes: (freshData.athletes || []).length,
+                        evaluations: Object.keys(freshData.evaluations || {}).length,
+                        gpsData: Object.keys(freshData.gpsData || {}).length,
+                        awards: Object.keys(freshData.awards || {}).length,
+                        trainingSessions: Object.keys(freshData.trainingSessions || {}).length,
+                        matchResults: Object.keys(freshData.matchResults || {}).length
+                    }
+                },
                 athletes: freshData.athletes || [],
                 evaluations: freshData.evaluations || {},
                 gpsData: freshData.gpsData || {},
@@ -2064,69 +2084,94 @@ elements.exportAllDataBtn.addEventListener('click', async () => {
                 calendarResponses: freshData.calendarResponses || {}
             };
             
-            // Filtra sessioni Individual se richiesto
+            // 4. FILTRA SESSIONI "INDIVIDUAL" SE NON AUTENTICATO
             if (!includeIndividual) {
+                console.log('🔒 Filtraggio sessioni Individual...');
                 dataToExport = JSON.parse(JSON.stringify(dataToExport));
+                
                 for (const athleteId in dataToExport.gpsData) {
                     for (const date in dataToExport.gpsData[athleteId]) {
-                        dataToExport.gpsData[athleteId][date] = dataToExport.gpsData[athleteId][date].filter(
-                            session => session.tipo_sessione !== 'Individual'
-                        );
-                        if (dataToExport.gpsData[athleteId][date].length === 0) {
-                            delete dataToExport.gpsData[athleteId][date];
+                        if (Array.isArray(dataToExport.gpsData[athleteId][date])) {
+                            dataToExport.gpsData[athleteId][date] = dataToExport.gpsData[athleteId][date]
+                                .filter(session => session.tipo_sessione !== 'Individual');
+                            
+                            if (dataToExport.gpsData[athleteId][date].length === 0) {
+                                delete dataToExport.gpsData[athleteId][date];
+                            }
                         }
+                    }
+                    if (Object.keys(dataToExport.gpsData[athleteId]).length === 0) {
+                        delete dataToExport.gpsData[athleteId];
                     }
                 }
             }
             
-            // Crea file
+            // 5. CREA E SCARICA IL FILE JSON
             const dataStr = JSON.stringify(dataToExport, null, 2);
-            const blob = new Blob([dataStr], {type: "application/json"});
+            const dataSizeKB = (dataStr.length / 1024).toFixed(2);
+            console.log('💾 Dimensione backup:', dataSizeKB, 'KB');
+            
+            const blob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
+            
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
+            const filename = `GoSport_Backup_${timestamp}.json`;
+            
             const a = document.createElement('a');
             a.href = url;
-            a.download = `GoSport_Backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.download = filename;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            console.log('✅ Backup completato!');
+            // 6. MOSTRA CONFERMA
+            console.log('✅ Backup completato:', filename);
+            const summary = `✅ Backup completato!
+
+File: ${filename}
+Dimensione: ${dataSizeKB} KB
+
+Dati esportati:
+• Atleti: ${dataToExport._backup_metadata.dataTypes.athletes}
+• Valutazioni: ${dataToExport._backup_metadata.dataTypes.evaluations}
+• Dati GPS: ${dataToExport._backup_metadata.dataTypes.gpsData}
+• Partite: ${dataToExport._backup_metadata.dataTypes.matchResults}
+
+${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
             
-            if (!includeIndividual) {
-                alert("Download completato. I dati delle sessioni 'Individual' sono stati esclusi.");
-            } else {
-                alert("✅ Backup completato con successo!");
-            }
+            alert(summary);
             
         } catch (error) {
-            console.error('❌ Errore backup:', error);
-            alert('❌ Errore durante il backup: ' + error.message);
+            console.error('❌ Errore durante il backup:', error);
+            alert(`❌ Errore durante il backup:\n\n${error.message}\n\nControlla la console (F12) per maggiori dettagli.`);
         }
     };
     
-    // Controlla se ci sono dati Individual
-    const hasIndividualData = () => {
-        return Object.values(gpsData).some(ath => 
-            Object.values(ath).some(sessions => 
-                sessions.some(sess => sess.tipo_sessione === 'Individual')
-            )
-        );
-    };
+    // 7. GESTIONE SESSIONI INDIVIDUAL PROTETTE
+    const hasIndividualData = Object.values(gpsData).some(ath =>
+        Object.values(ath).some(sessions =>
+            Array.isArray(sessions) && sessions.some(sess => sess.tiposessione === 'Individual')
+        )
+    );
     
-    if (hasIndividualData() && !isAuthenticated()) {
+    if (hasIndividualData && !isAuthenticated) {
+        // Chiede autenticazione per includere sessioni Individual
         requestAuthentication(
-            () => performDownload(true),
+            () => performDownload(true), // Include Individual se autenticato
             () => {
-                if (confirm("Accesso annullato. Desideri scaricare escludendo le sessioni 'Individual'?")) {
+                // Se cancella autenticazione, chiede se vuole backup senza Individual
+                if (confirm('Accesso annullato. Desideri scaricare il backup SENZA le sessioni Individual protette?')) {
                     performDownload(false);
                 }
             }
         );
     } else {
-        performDownload(true);
+        // Scarica tutto (con o senza Individual a seconda dell'autenticazione)
+        performDownload(isAuthenticated);
     }
 });
+
     elements.deleteDayDataBtn.addEventListener('click', () => {
         const date = elements.evaluationDatePicker.value;
         if (!date) {
@@ -2245,125 +2290,42 @@ elements.exportAllDataBtn.addEventListener('click', async () => {
             }
         }
     });
-    // 📥 IMPORT COMPLETO - Ripristina tutte le annate
-elements.importFileInput.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    if (!confirm('⚠️ ATTENZIONE: L\'importazione sovrascriverà TUTTI i dati di TUTTE le annate.\n\nSei sicuro di voler continuare?')) {
-        e.target.value = '';
-        return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-        try {
-            const importedData = JSON.parse(event.target.result);
-            
-            // Verifica versione
-            const isMultiAnnata = importedData._metadata?.versione?.includes('multi-annata');
-            
-            console.log('📂 Tipo backup:', isMultiAnnata ? 'Multi-annata' : 'Singola annata');
-
-            if (isMultiAnnata) {
-                // ✅ BACKUP MULTI-ANNATA
-                const keysToImport = Object.keys(importedData.dati);
-                console.log('📦 Importazione di', keysToImport.length, 'dataset...');
-
-                let imported = 0;
-                let failed = 0;
-
-                // Importa ogni chiave su Redis
-                for (const key of keysToImport) {
-                    try {
-                        const value = typeof importedData.dati[key] === 'string' 
-                            ? importedData.dati[key] 
-                            : JSON.stringify(importedData.dati[key]);
-
-                        const xhr = new XMLHttpRequest();
-                        await new Promise((resolve, reject) => {
-                            xhr.open('POST', `https://infinite-cricket-45750.upstash.io/set/${key}`, true);
-                            xhr.setRequestHeader('Authorization', `Bearer ${UPSTASH_TOKEN}`);
-                            xhr.setRequestHeader('Content-Type', 'text/plain');
-                            xhr.onload = () => {
-                                if (xhr.status === 200) {
-                                    imported++;
-                                    resolve();
-                                } else {
-                                    failed++;
-                                    reject();
-                                }
-                            };
-                            xhr.onerror = () => {
-                                failed++;
-                                reject();
-                            };
-                            xhr.send(value);
+    elements.importFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) { return; }
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            if (confirm("ATTENZIONE: L'importazione sovrascriverà tutti i dati attuali. Vuoi continuare?")) {
+                try {
+                    const importedData = JSON.parse(event.target.result);
+                    if (importedData && typeof importedData === 'object' && 'athletes' in importedData) {
+                        athletes = importedData.athletes || [];
+                        evaluations = importedData.evaluations || {};
+                        gpsData = importedData.gpsData || {};
+                        awards = importedData.awards || {};
+                        trainingSessions = importedData.trainingSessions || {};
+                        formationData = importedData.formationData || { starters: [], bench: [], tokens: [] };
+                        matchResults = importedData.matchResults || {};
+                        athletes.forEach(athlete => {
+                            if (athlete.isViceCaptain === undefined) athlete.isViceCaptain = false;
+                            if (athlete.isGuest === undefined) athlete.isGuest = false;
                         });
-                    } catch (error) {
-                        console.error(`Errore chiave ${key}:`, error);
-                        failed++;
+                        migrateGpsData();
+                        saveData().then(() => {
+                            updateAllUI();
+                            alert('Dati importati con successo!');
+                        });
+                    } else {
+                        alert('Errore: Il file non sembra avere il formato corretto.');
                     }
-                }
-
-                console.log('✅ Importazione completata:', {imported, failed});
-
-                alert(
-                    `✅ Importazione completata!\n\n` +
-                    `✓ ${imported} dataset importati\n` +
-                    `${failed > 0 ? `✗ ${failed} errori\n` : ''}` +
-                    `\nLa pagina verrà ricaricata.`
-                );
-
-                setTimeout(() => location.reload(), 1000);
-
-            } else {
-                // ⚠️ BACKUP VECCHIO (singola annata)
-                const currentAnnata = sessionStorage.getItem('gosport:currentannata');
-                
-                if (!confirm(`⚠️ Questo è un backup di una singola annata.\n\nI dati verranno importati nell'annata corrente: ${currentAnnata}\n\nContinuare?`)) {
-                    e.target.value = '';
-                    return;
-                }
-
-                // Importa come prima (solo annata corrente)
-                athletes = importedData.athletes || [];
-                evaluations = importedData.evaluations || {};
-                gpsData = importedData.gpsData || {};
-                awards = importedData.awards || {};
-                trainingSessions = importedData.trainingSessions || {};
-                formationData = importedData.formationData || {starters: [], bench: [], tokens: []};
-                matchResults = importedData.matchResults || {};
-
-                window.athletes = athletes;
-                migrateGpsData();
-
-                const saved = await saveData();
-                
-                if (saved) {
-                    alert(`✅ Importazione nell'annata ${currentAnnata} completata!\n\nLa pagina verrà ricaricata.`);
-                    setTimeout(() => location.reload(), 1000);
-                } else {
-                    throw new Error('Errore nel salvataggio');
+                } catch (error) {
+                    alert(`Errore durante la lettura del file JSON: ${error.message}`);
                 }
             }
-
-        } catch (error) {
-            console.error('❌ Errore importazione:', error);
-            alert(`❌ Errore durante l'importazione:\n\n${error.message}`);
-        } finally {
-            e.target.value = '';
-        }
-    };
-
-    reader.onerror = () => {
-        alert('❌ Errore nella lettura del file.');
-        e.target.value = '';
-    };
-
-    reader.readAsText(file);
-});
-
+        };
+        reader.readAsText(file);
+        e.target.value = null;
+    });
     elements.performanceFilterToggle.addEventListener('click', (e) => {
         if (e.target.matches('.btn')) {
             elements.performanceFilterToggle.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
@@ -2881,3 +2843,4 @@ if (typeof updateAllUI !== 'undefined') {
         updateAppHeader();
     };
 }
+// 
