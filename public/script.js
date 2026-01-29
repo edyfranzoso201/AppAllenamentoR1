@@ -2017,75 +2017,31 @@ document.addEventListener('DOMContentLoaded', () => {
         updateMultiAthleteChart();
     });
     elements.exportAllDataBtn.addEventListener('click', async () => {
-    // Mostra messaggio di caricamento
-    const loadingAlert = document.createElement('div');
-    loadingAlert.className = 'alert alert-info';
-    loadingAlert.innerHTML = '<i class="bi bi-hourglass-split"></i> Preparazione backup in corso...';
-    elements.alertsContainer.appendChild(loadingAlert);
-    
     const performDownload = async (includeIndividual) => {
         try {
-            // 1. RECUPERA ANNATA E USERNAME CORRENTI
+            // 1. RECUPERA ANNATA E USERNAME DA SESSIONSTORAGE
             const annataId = sessionStorage.getItem('gosportcurrentannata');
-            const username = sessionStorage.getItem('gosportusername') || 'user';
+            const username = sessionStorage.getItem('gosportusername') || 'admin';
             
-            console.log('🔄 Backup - Annata:', annataId, 'Username:', username);
+            console.log('🔄 Inizio backup - Annata:', annataId, 'Username:', username);
+            console.log('📊 Dati locali:', {
+                atleti: athletes.length,
+                valutazioni: Object.keys(evaluations).length,
+                gpsData: Object.keys(gpsData).length,
+                partite: Object.keys(matchResults).length
+            });
             
             if (!annataId) {
-                throw new Error('Annata non selezionata. Seleziona un\'annata prima di fare il backup.');
+                alert('⚠️ Errore: Nessuna annata selezionata. Seleziona un\'annata prima di fare il backup.');
+                return;
             }
             
-            // 2. RECUPERA DATI FRESCHI DALL'API REDIS
-            let freshData;
-            try {
-                const response = await fetch('/api/data', {
-                    method: 'GET',
-                    headers: {
-                        'X-Annata-Id': annataId,
-                        'Cache-Control': 'no-cache'
-                    }
-                });
-                
-                console.log('📡 API Response status:', response.status);
-                
-                if (response.ok) {
-                    const apiResponse = await response.json();
-                    
-                    // Gestisci diverse strutture di risposta API
-                    if (apiResponse.success && apiResponse.data) {
-                        freshData = apiResponse.data;
-                    } else if (apiResponse.athletes || apiResponse.evaluations) {
-                        freshData = apiResponse;
-                    } else {
-                        throw new Error('Formato risposta API non riconosciuto');
-                    }
-                    
-                    console.log('✅ Dati recuperati da Redis:', {
-                        atleti: freshData.athletes?.length || 0,
-                        valutazioni: Object.keys(freshData.evaluations || {}).length,
-                        gpsData: Object.keys(freshData.gpsData || {}).length,
-                        partite: Object.keys(freshData.matchResults || {}).length
-                    });
-                } else {
-                    throw new Error(`Errore API: ${response.status} ${response.statusText}`);
-                }
-            } catch (apiError) {
-                console.error('❌ Errore fetch API:', apiError);
-                
-                // FALLBACK: usa dati locali se API fallisce
-                console.warn('⚠️ Usando dati locali come fallback');
-                freshData = {
-                    athletes,
-                    evaluations,
-                    gpsData,
-                    awards,
-                    trainingSessions,
-                    formationData,
-                    matchResults
-                };
+            // Verifica che ci siano dati
+            if (athletes.length === 0) {
+                alert('⚠️ Attenzione: Non ci sono atleti da esportare. Il backup potrebbe essere vuoto.');
             }
             
-            // 3. PREPARA I DATI PER L'EXPORT
+            // 2. USA DIRETTAMENTE I DATI LOCALI (già caricati da loadData)
             let dataToExport = {
                 // Metadata del backup
                 _backup_metadata: {
@@ -2094,52 +2050,47 @@ document.addEventListener('DOMContentLoaded', () => {
                     username: username,
                     timestamp: new Date().toISOString(),
                     dataTypes: {
-                        athletes: freshData.athletes?.length || 0,
-                        evaluations: Object.keys(freshData.evaluations || {}).length,
-                        gpsData: Object.keys(freshData.gpsData || {}).length,
-                        awards: Object.keys(freshData.awards || {}).length,
-                        trainingSessions: Object.keys(freshData.trainingSessions || {}).length,
-                        matchResults: Object.keys(freshData.matchResults || {}).length
+                        athletes: athletes.length,
+                        evaluations: Object.keys(evaluations).length,
+                        gpsData: Object.keys(gpsData).length,
+                        awards: Object.keys(awards).length,
+                        trainingSessions: Object.keys(trainingSessions).length,
+                        matchResults: Object.keys(matchResults).length
                     }
                 },
-                athletes: freshData.athletes || [],
-                evaluations: freshData.evaluations || {},
-                gpsData: freshData.gpsData || {},
-                awards: freshData.awards || {},
-                trainingSessions: freshData.trainingSessions || {},
-                formationData: freshData.formationData || { starters: [], bench: [], tokens: [] },
-                matchResults: freshData.matchResults || {}
+                athletes: athletes,
+                evaluations: evaluations,
+                gpsData: gpsData,
+                awards: awards,
+                trainingSessions: trainingSessions,
+                formationData: formationData,
+                matchResults: matchResults
             };
             
-            // 4. FILTRA SESSIONI "INDIVIDUAL" SE RICHIESTO
+            // 3. FILTRA SESSIONI "INDIVIDUAL" SE NON AUTENTICATO
             if (!includeIndividual) {
                 console.log('🔒 Filtraggio sessioni Individual...');
                 dataToExport = JSON.parse(JSON.stringify(dataToExport)); // Deep clone
                 
                 for (const athleteId in dataToExport.gpsData) {
                     for (const date in dataToExport.gpsData[athleteId]) {
-                        dataToExport.gpsData[athleteId][date] = dataToExport.gpsData[athleteId][date]
-                            .filter(session => session.tiposessione !== 'Individual');
-                        
-                        if (dataToExport.gpsData[athleteId][date].length === 0) {
-                            delete dataToExport.gpsData[athleteId][date];
+                        if (Array.isArray(dataToExport.gpsData[athleteId][date])) {
+                            dataToExport.gpsData[athleteId][date] = dataToExport.gpsData[athleteId][date]
+                                .filter(session => session.tiposessione !== 'Individual');
+                            
+                            if (dataToExport.gpsData[athleteId][date].length === 0) {
+                                delete dataToExport.gpsData[athleteId][date];
+                            }
                         }
                     }
                 }
             }
             
-            // 5. VERIFICA CHE CI SIANO DATI DA ESPORTARE
-            const hasData = 
-                (dataToExport.athletes && dataToExport.athletes.length > 0) ||
-                Object.keys(dataToExport.evaluations).length > 0 ||
-                Object.keys(dataToExport.gpsData).length > 0;
-            
-            if (!hasData) {
-                throw new Error('Nessun dato disponibile per il backup. Il database potrebbe essere vuoto.');
-            }
-            
-            // 6. CREA E SCARICA IL FILE JSON
+            // 4. CREA E SCARICA IL FILE JSON
             const dataStr = JSON.stringify(dataToExport, null, 2);
+            const dataSizeKB = (dataStr.length / 1024).toFixed(2);
+            console.log('💾 Dimensione backup:', dataSizeKB, 'KB');
+            
             const blob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             
@@ -2153,52 +2104,20 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            // Rimuovi alert di caricamento
-            loadingAlert.remove();
-            
-            // Mostra conferma
-            const successAlert = document.createElement('div');
-            successAlert.className = 'alert alert-success alert-dismissible fade show';
-            successAlert.innerHTML = `
-                <strong>✅ Backup completato!</strong><br>
-                File: ${filename}<br>
-                Atleti: ${dataToExport._backup_metadata.dataTypes.athletes} | 
-                Valutazioni: ${dataToExport._backup_metadata.dataTypes.evaluations}<br>
-                ${!includeIndividual ? '<em>Le sessioni Individual sono state escluse.</em>' : ''}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            elements.alertsContainer.appendChild(successAlert);
-            
+            // 5. MOSTRA CONFERMA
             console.log('✅ Backup completato:', filename);
-            
-            // Rimuovi l'alert dopo 8 secondi
-            setTimeout(() => successAlert.remove(), 8000);
+            alert(`✅ Backup completato!\n\nFile: ${filename}\nDimensione: ${dataSizeKB} KB\n\nAtleti: ${dataToExport._backup_metadata.dataTypes.athletes}\nValutazioni: ${dataToExport._backup_metadata.dataTypes.evaluations}\nPartite: ${dataToExport._backup_metadata.dataTypes.matchResults}`);
             
         } catch (error) {
             console.error('❌ Errore durante il backup:', error);
-            
-            // Rimuovi alert di caricamento
-            loadingAlert.remove();
-            
-            // Mostra errore
-            const errorAlert = document.createElement('div');
-            errorAlert.className = 'alert alert-danger alert-dismissible fade show';
-            errorAlert.innerHTML = `
-                <strong>❌ Errore durante il backup</strong><br>
-                ${error.message}<br>
-                <small>Controlla la console per dettagli (F12)</small>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            elements.alertsContainer.appendChild(errorAlert);
-            
-            setTimeout(() => errorAlert.remove(), 10000);
+            alert(`❌ Errore durante il backup:\n\n${error.message}\n\nControlla la console (F12) per maggiori dettagli.`);
         }
     };
     
-    // 7. GESTIONE SESSIONI INDIVIDUAL PROTETTE
+    // 6. GESTIONE SESSIONI INDIVIDUAL PROTETTE
     const hasIndividualData = Object.values(gpsData).some(ath =>
         Object.values(ath).some(sessions =>
-            sessions.some(sess => sess.tiposessione === 'Individual')
+            Array.isArray(sessions) && sessions.some(sess => sess.tiposessione === 'Individual')
         )
     );
     
