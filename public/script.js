@@ -2015,155 +2015,79 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.multiAthleteTypeSelector.querySelector('.btn[data-type="all"]').classList.add('active');
         multiAthleteFilterType = 'all';
         updateMultiAthleteChart();
-    });
-    elements.exportAllDataBtn.addEventListener('click', async () => {
-    const performDownload = async (includeIndividual) => {
-        try {
-            // 1. FORZA RICARICA DATI DA API/REDIS PRIMA DEL BACKUP
-            console.log('🔄 Ricarico i dati prima del backup...');
-            await loadData(); // Aspetta che loadData finisca
-            
-            // 2. RECUPERA ANNATA E USERNAME DA SESSIONSTORAGE
-            const annataId = sessionStorage.getItem('gosportcurrentannata');
-            const username = sessionStorage.getItem('gosportusername') || 'admin';
-            
-            console.log('🔄 Inizio backup - Annata:', annataId, 'Username:', username);
-            console.log('📊 Dati locali dopo reload:', {
-                atleti: athletes.length,
-                valutazioni: Object.keys(evaluations).length,
-                gpsData: Object.keys(gpsData).length,
-                partite: Object.keys(matchResults).length
-            });
-            
-            if (!annataId) {
-                alert('⚠️ Errore: Nessuna annata selezionata. Seleziona un\'annata prima di fare il backup.');
-                return;
-            }
-            
-            // Verifica che ci siano dati DOPO il reload
-            if (athletes.length === 0) {
-                alert('⚠️ ERRORE: Non ci sono atleti da esportare dopo il caricamento.\n\nProblemi possibili:\n1. Database Redis vuoto per questa annata\n2. Errore di connessione\n3. Chiave Redis errata\n\nControlla la console (F12) per dettagli.');
-                console.error('❌ athletes array è vuoto dopo loadData()');
-                return;
-            }
-            
-            // 3. USA I DATI APPENA RICARICATI
-            let dataToExport = {
-                // Metadata del backup
-                _backup_metadata: {
-                    version: '1.0',
-                    annata: annataId,
-                    username: username,
-                    timestamp: new Date().toISOString(),
-                    dataTypes: {
-                        athletes: athletes.length,
-                        evaluations: Object.keys(evaluations).length,
-                        gpsData: Object.keys(gpsData).length,
-                        awards: Object.keys(awards).length,
-                        trainingSessions: Object.keys(trainingSessions).length,
-                        matchResults: Object.keys(matchResults).length
-                    }
-                },
-                athletes: JSON.parse(JSON.stringify(athletes)), // Deep clone
-                evaluations: JSON.parse(JSON.stringify(evaluations)),
-                gpsData: JSON.parse(JSON.stringify(gpsData)),
-                awards: JSON.parse(JSON.stringify(awards)),
-                trainingSessions: JSON.parse(JSON.stringify(trainingSessions)),
-                formationData: JSON.parse(JSON.stringify(formationData)),
-                matchResults: JSON.parse(JSON.stringify(matchResults))
-            };
-            
-            // 4. FILTRA SESSIONI "INDIVIDUAL" SE NON AUTENTICATO
-            if (!includeIndividual) {
-                console.log('🔒 Filtraggio sessioni Individual...');
-                
-                for (const athleteId in dataToExport.gpsData) {
-                    for (const date in dataToExport.gpsData[athleteId]) {
-                        if (Array.isArray(dataToExport.gpsData[athleteId][date])) {
-                            dataToExport.gpsData[athleteId][date] = dataToExport.gpsData[athleteId][date]
-                                .filter(session => session.tiposessione !== 'Individual');
-                            
-                            if (dataToExport.gpsData[athleteId][date].length === 0) {
-                                delete dataToExport.gpsData[athleteId][date];
-                            }
-                        }
-                    }
-                    // Rimuovi atleti senza più dati GPS
-                    if (Object.keys(dataToExport.gpsData[athleteId]).length === 0) {
-                        delete dataToExport.gpsData[athleteId];
-                    }
-                }
-            }
-            
-            // 5. CREA E SCARICA IL FILE JSON
-            const dataStr = JSON.stringify(dataToExport, null, 2);
-            const dataSizeKB = (dataStr.length / 1024).toFixed(2);
-            console.log('💾 Dimensione backup:', dataSizeKB, 'KB');
-            
-            if (dataSizeKB < 5) {
-                console.warn('⚠️ Backup molto piccolo (< 5 KB), potrebbero mancare dati');
-            }
-            
-            const blob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
-            const filename = `GoSport_Backup_${annataId}_${timestamp}.json`;
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            // 6. MOSTRA CONFERMA DETTAGLIATA
-            console.log('✅ Backup completato:', filename);
-            const summary = `✅ Backup completato con successo!
-
-File: ${filename}
-Dimensione: ${dataSizeKB} KB
-
-Dati esportati:
-• Atleti: ${dataToExport._backup_metadata.dataTypes.athletes}
-• Valutazioni: ${dataToExport._backup_metadata.dataTypes.evaluations}
-• Dati GPS: ${dataToExport._backup_metadata.dataTypes.gpsData}
-• Sessioni Allenamento: ${dataToExport._backup_metadata.dataTypes.trainingSessions}
-• Risultati Partite: ${dataToExport._backup_metadata.dataTypes.matchResults}
-
-${!includeIndividual ? '\n⚠️ Le sessioni Individual sono state escluse dal backup.' : ''}`;
-            
-            alert(summary);
-            
-        } catch (error) {
-            console.error('❌ Errore durante il backup:', error);
-            alert(`❌ Errore durante il backup:\n\n${error.message}\n\nControlla la console (F12) per maggiori dettagli.`);
+         }); 
+    // ✅ BACKUP VERDE - VERSIONE CORRETTA
+elements.exportAllDataBtn.addEventListener('click', () => {
+  // Funzione che esegue effettivamente il download
+  const performDownload = (includeIndividual) => {
+    // 1. Prepara i dati da esportare
+    let dataToExport = {athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults};
+    
+    // 2. Se non include Individual, filtra i dati GPS
+    if (!includeIndividual) {
+      // Crea una copia profonda per non modificare i dati originali
+      dataToExport = JSON.parse(JSON.stringify(dataToExport));
+      
+      // Filtra sessioni Individual
+      for (const athleteId in dataToExport.gpsData) {
+        for (const date in dataToExport.gpsData[athleteId]) {
+          dataToExport.gpsData[athleteId][date] = dataToExport.gpsData[athleteId][date]
+            .filter(session => session.tiposessione !== 'Individual');
+          
+          // Se non ci sono più sessioni per questa data, elimina la chiave
+          if (dataToExport.gpsData[athleteId][date].length === 0) {
+            delete dataToExport.gpsData[athleteId][date];
+          }
         }
-    };
-    
-    // 7. GESTIONE SESSIONI INDIVIDUAL PROTETTE
-    const hasIndividualData = Object.values(gpsData).some(ath =>
-        Object.values(ath).some(sessions =>
-            Array.isArray(sessions) && sessions.some(sess => sess.tiposessione === 'Individual')
-        )
-    );
-    
-    if (hasIndividualData && !isAuthenticated) {
-        // Chiede autenticazione per includere sessioni Individual
-        requestAuthentication(
-            () => performDownload(true), // Include Individual se autenticato
-            () => {
-                // Se cancella autenticazione, chiede se vuole backup senza Individual
-                if (confirm('Accesso annullato. Desideri scaricare il backup SENZA le sessioni Individual protette?')) {
-                    performDownload(false);
-                }
-            }
-        );
-    } else {
-        // Scarica tutto (con o senza Individual a seconda dell'autenticazione)
-        performDownload(isAuthenticated);
+      }
     }
+
+    // 3. Crea il file JSON
+    const dataStr = JSON.stringify(dataToExport, null, 2);
+    const blob = new Blob([dataStr], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    
+    // 4. Crea il link di download
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `coachdashboard_backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    
+    // 5. Pulizia
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    // 6. Messaggio di conferma
+    if (!includeIndividual) {
+      alert("✅ Download completato. I dati delle sessioni Individual sono stati esclusi.");
+    }
+  };
+
+  // Verifica se ci sono sessioni Individual nei dati
+  const hasIndividualData = Object.values(gpsData).some(ath =>
+    Object.values(ath).some(sessions =>
+      sessions.some(sess => sess.tiposessione === 'Individual')
+    )
+  );
+
+  // Logica di autenticazione
+  if (hasIndividualData && !isAuthenticated) {
+    // Se ci sono dati Individual e l'utente NON è autenticato
+    requestAuthentication(
+      // onSuccess: scarica CON Individual
+      () => performDownload(true),
+      // onCancel: chiedi se vuole scaricare SENZA Individual
+      () => {
+        if (confirm("Accesso annullato o password errata.\n\nDesideri scaricare i dati escludendo le sessioni Individual protette?")) {
+          performDownload(false);
+        }
+      }
+    );
+  } else {
+    // Altrimenti scarica normalmente (con tutto)
+    performDownload(true);
+  }
 });
 
     elements.deleteDayDataBtn.addEventListener('click', () => {
@@ -2837,4 +2761,3 @@ if (typeof updateAllUI !== 'undefined') {
         updateAppHeader();
     };
 }
-// 
