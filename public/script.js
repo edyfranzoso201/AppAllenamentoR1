@@ -2017,75 +2017,122 @@ document.addEventListener('DOMContentLoaded', () => {
         updateMultiAthleteChart();
          }); 
     // ✅ BACKUP VERDE - VERSIONE CORRETTA
-elements.exportAllDataBtn.addEventListener('click', () => {
-  // Funzione che esegue effettivamente il download
-  const performDownload = (includeIndividual) => {
-    // 1. Prepara i dati da esportare
-    let dataToExport = {athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults};
+elements.exportAllDataBtn.addEventListener('click', async () => {
+  try {
+    const username = sessionStorage.getItem('gosport:username') || 'admin';
     
-    // 2. Se non include Individual, filtra i dati GPS
-    if (!includeIndividual) {
-      // Crea una copia profonda per non modificare i dati originali
-      dataToExport = JSON.parse(JSON.stringify(dataToExport));
+    console.log('📦 Avvio backup completo di tutte le annate...');
+
+    // 1. Recupera TUTTE le chiavi Redis
+    const allKeys = await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', `https://infinite-cricket-45750.upstash.io/keys/*`, true);
+      xhr.setRequestHeader('Authorization', `Bearer ${UPSTASH_TOKEN}`);
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText);
+          resolve(response.result || []);
+        } else {
+          reject(new Error('Errore nel recupero delle chiavi'));
+        }
+      };
+      xhr.onerror = () => reject(new Error('Errore di rete'));
+      xhr.send();
+    });
+
+    console.log('🔑 Chiavi trovate:', allKeys.length);
+
+    // 2. Filtra solo le chiavi GoSport
+    const gosportKeys = allKeys.filter(key => 
+      key.startsWith('gosport:') && !key.includes(':token:')
+    );
+
+    console.log('🎯 Chiavi GoSport:', gosportKeys.length);
+
+    // 3. Recupera i dati per ogni chiave
+    const backupData = {
+      _metadata: {
+        username: username,
+        dataBackup: new Date().toISOString(),
+        versione: '3.0-multi-annata',
+        totalKeys: gosportKeys.length
+      },
+      dati: {}
+    };
+
+    // Recupera i dati in parallelo
+    const promises = gosportKeys.map(async (key) => {
+      try {
+        const xhr = new XMLHttpRequest();
+        return new Promise((resolve) => {
+          xhr.open('GET', `https://infinite-cricket-45750.upstash.io/get/${key}`, true);
+          xhr.setRequestHeader('Authorization', `Bearer ${UPSTASH_TOKEN}`);
+          xhr.onload = () => {
+            if (xhr.status === 200) {
+              const response = JSON.parse(xhr.responseText);
+              const value = response.result;
+              // Prova a parsare come JSON, altrimenti salva come stringa
+              try {
+                backupData.dati[key] = JSON.parse(value);
+              } catch {
+                backupData.dati[key] = value;
+              }
+            }
+            resolve();
+          };
+          xhr.onerror = () => resolve(); // Continua anche in caso di errore
+          xhr.send();
+        });
+      } catch (error) {
+        console.error(`Errore chiave ${key}:`, error);
+      }
+    });
+
+    await Promise.all(promises);
+
+    console.log('📊 Backup completato:', {
+      chiavi: Object.keys(backupData.dati).length,
+      dimensione: JSON.stringify(backupData).length + ' bytes'
+    });
+
+    // 4. Funzione per eseguire il download
+    const performDownload = (data) => {
+      const dataStr = JSON.stringify(data, null, 2);
+      const blob = new Blob([dataStr], {type: 'application/json'});
+      const url = URL.createObjectURL(blob);
       
-      // Filtra sessioni Individual
-      for (const athleteId in dataToExport.gpsData) {
-        for (const date in dataToExport.gpsData[athleteId]) {
-          dataToExport.gpsData[athleteId][date] = dataToExport.gpsData[athleteId][date]
-            .filter(session => session.tiposessione !== 'Individual');
-          
-          // Se non ci sono più sessioni per questa data, elimina la chiave
-          if (dataToExport.gpsData[athleteId][date].length === 0) {
-            delete dataToExport.gpsData[athleteId][date];
+      const a = document.createElement('a');
+      a.href = url;
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T');
+      a.download = `GoSport_Backup_COMPLETO_${timestamp[0]}_${timestamp[1].substring(0,8)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      alert(`✅ Backup completo salvato!\n\n📦 ${Object.keys(data.dati).length} dataset salvati\n📁 Dimensione: ${(blob.size / 1024).toFixed(2)} KB`);
+    };
+
+    // 5. Verifica autenticazione solo se necessario
+    const hasProtectedData = gosportKeys.some(key => key.includes(':gpsData'));
+    
+    if (hasProtectedData && !isAuthenticated) {
+      requestAuthentication(
+        () => performDownload(backupData),
+        () => {
+          if (confirm("Accesso annullato.\n\nVuoi scaricare comunque il backup (potrebbero mancare alcuni dati protetti)?")) {
+            performDownload(backupData);
           }
         }
-      }
+      );
+    } else {
+      performDownload(backupData);
     }
-    // 3. Crea il file JSON
-    const dataStr = JSON.stringify(dataToExport, null, 2);
-    const blob = new Blob([dataStr], {type: 'application/json'});
-    const url = URL.createObjectURL(blob);
     
-    // 4. Crea il link di download
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `coachdashboard_backup_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    
-    // 5. Pulizia
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    // 6. Messaggio di conferma
-    if (!includeIndividual) {
-      alert("✅ Download completato. I dati delle sessioni Individual sono stati esclusi.");
-    }
-  };
-
-  // Verifica se ci sono sessioni Individual nei dati
-  const hasIndividualData = Object.values(gpsData).some(ath =>
-    Object.values(ath).some(sessions =>
-      sessions.some(sess => sess.tiposessione === 'Individual')
-    )
-  );
-
-  // Logica di autenticazione
-  if (hasIndividualData && !isAuthenticated) {
-    // Se ci sono dati Individual e l'utente NON è autenticato
-    requestAuthentication(
-      // onSuccess: scarica CON Individual
-      () => performDownload(true),
-      // onCancel: chiedi se vuole scaricare SENZA Individual
-      () => {
-        if (confirm("Accesso annullato o password errata.\n\nDesideri scaricare i dati escludendo le sessioni Individual protette?")) {
-          performDownload(false);
-        }
-      }
-    );
-  } else {
-    // Altrimenti scarica normalmente (con tutto)
-    performDownload(true);
+  } catch (error) {
+    console.error('❌ Errore durante il backup:', error);
+    alert(`❌ Errore durante il backup:\n\n${error.message}`);
   }
 });
 
@@ -2207,42 +2254,125 @@ elements.exportAllDataBtn.addEventListener('click', () => {
             }
         }
     });
-    elements.importFileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) { return; }
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            if (confirm("ATTENZIONE: L'importazione sovrascriverà tutti i dati attuali. Vuoi continuare?")) {
-                try {
-                    const importedData = JSON.parse(event.target.result);
-                    if (importedData && typeof importedData === 'object' && 'athletes' in importedData) {
-                        athletes = importedData.athletes || [];
-                        evaluations = importedData.evaluations || {};
-                        gpsData = importedData.gpsData || {};
-                        awards = importedData.awards || {};
-                        trainingSessions = importedData.trainingSessions || {};
-                        formationData = importedData.formationData || { starters: [], bench: [], tokens: [] };
-                        matchResults = importedData.matchResults || {};
-                        athletes.forEach(athlete => {
-                            if (athlete.isViceCaptain === undefined) athlete.isViceCaptain = false;
-                            if (athlete.isGuest === undefined) athlete.isGuest = false;
+    // 📥 IMPORT COMPLETO - Ripristina tutte le annate
+elements.importFileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!confirm('⚠️ ATTENZIONE: L\'importazione sovrascriverà TUTTI i dati di TUTTE le annate.\n\nSei sicuro di voler continuare?')) {
+        e.target.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+        try {
+            const importedData = JSON.parse(event.target.result);
+            
+            // Verifica versione
+            const isMultiAnnata = importedData._metadata?.versione?.includes('multi-annata');
+            
+            console.log('📂 Tipo backup:', isMultiAnnata ? 'Multi-annata' : 'Singola annata');
+
+            if (isMultiAnnata) {
+                // ✅ BACKUP MULTI-ANNATA
+                const keysToImport = Object.keys(importedData.dati);
+                console.log('📦 Importazione di', keysToImport.length, 'dataset...');
+
+                let imported = 0;
+                let failed = 0;
+
+                // Importa ogni chiave su Redis
+                for (const key of keysToImport) {
+                    try {
+                        const value = typeof importedData.dati[key] === 'string' 
+                            ? importedData.dati[key] 
+                            : JSON.stringify(importedData.dati[key]);
+
+                        const xhr = new XMLHttpRequest();
+                        await new Promise((resolve, reject) => {
+                            xhr.open('POST', `https://infinite-cricket-45750.upstash.io/set/${key}`, true);
+                            xhr.setRequestHeader('Authorization', `Bearer ${UPSTASH_TOKEN}`);
+                            xhr.setRequestHeader('Content-Type', 'text/plain');
+                            xhr.onload = () => {
+                                if (xhr.status === 200) {
+                                    imported++;
+                                    resolve();
+                                } else {
+                                    failed++;
+                                    reject();
+                                }
+                            };
+                            xhr.onerror = () => {
+                                failed++;
+                                reject();
+                            };
+                            xhr.send(value);
                         });
-                        migrateGpsData();
-                        saveData().then(() => {
-                            updateAllUI();
-                            alert('Dati importati con successo!');
-                        });
-                    } else {
-                        alert('Errore: Il file non sembra avere il formato corretto.');
+                    } catch (error) {
+                        console.error(`Errore chiave ${key}:`, error);
+                        failed++;
                     }
-                } catch (error) {
-                    alert(`Errore durante la lettura del file JSON: ${error.message}`);
+                }
+
+                console.log('✅ Importazione completata:', {imported, failed});
+
+                alert(
+                    `✅ Importazione completata!\n\n` +
+                    `✓ ${imported} dataset importati\n` +
+                    `${failed > 0 ? `✗ ${failed} errori\n` : ''}` +
+                    `\nLa pagina verrà ricaricata.`
+                );
+
+                setTimeout(() => location.reload(), 1000);
+
+            } else {
+                // ⚠️ BACKUP VECCHIO (singola annata)
+                const currentAnnata = sessionStorage.getItem('gosport:currentannata');
+                
+                if (!confirm(`⚠️ Questo è un backup di una singola annata.\n\nI dati verranno importati nell'annata corrente: ${currentAnnata}\n\nContinuare?`)) {
+                    e.target.value = '';
+                    return;
+                }
+
+                // Importa come prima (solo annata corrente)
+                athletes = importedData.athletes || [];
+                evaluations = importedData.evaluations || {};
+                gpsData = importedData.gpsData || {};
+                awards = importedData.awards || {};
+                trainingSessions = importedData.trainingSessions || {};
+                formationData = importedData.formationData || {starters: [], bench: [], tokens: []};
+                matchResults = importedData.matchResults || {};
+
+                window.athletes = athletes;
+                migrateGpsData();
+
+                const saved = await saveData();
+                
+                if (saved) {
+                    alert(`✅ Importazione nell'annata ${currentAnnata} completata!\n\nLa pagina verrà ricaricata.`);
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    throw new Error('Errore nel salvataggio');
                 }
             }
-        };
-        reader.readAsText(file);
-        e.target.value = null;
-    });
+
+        } catch (error) {
+            console.error('❌ Errore importazione:', error);
+            alert(`❌ Errore durante l'importazione:\n\n${error.message}`);
+        } finally {
+            e.target.value = '';
+        }
+    };
+
+    reader.onerror = () => {
+        alert('❌ Errore nella lettura del file.');
+        e.target.value = '';
+    };
+
+    reader.readAsText(file);
+});
+
     elements.performanceFilterToggle.addEventListener('click', (e) => {
         if (e.target.matches('.btn')) {
             elements.performanceFilterToggle.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
