@@ -2050,7 +2050,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // 3. USA I DATI APPENA RICARICATI
             let dataToExport = {
-                // Metadata del backup
                 _backup_metadata: {
                     version: '1.0',
                     annata: annataId,
@@ -2065,7 +2064,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         matchResults: Object.keys(matchResults).length
                     }
                 },
-                athletes: JSON.parse(JSON.stringify(athletes)), // Deep clone
+                athletes: JSON.parse(JSON.stringify(athletes)),
                 evaluations: JSON.parse(JSON.stringify(evaluations)),
                 gpsData: JSON.parse(JSON.stringify(gpsData)),
                 awards: JSON.parse(JSON.stringify(awards)),
@@ -2089,7 +2088,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         }
                     }
-                    // Rimuovi atleti senza più dati GPS
                     if (Object.keys(dataToExport.gpsData[athleteId]).length === 0) {
                         delete dataToExport.gpsData[athleteId];
                     }
@@ -2119,7 +2117,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            // 6. MOSTRA CONFERMA DETTAGLIATA
+            // 6. MOSTRA CONFERMA
             console.log('✅ Backup completato:', filename);
             const summary = `✅ Backup completato con successo!
 
@@ -2143,7 +2141,7 @@ ${!includeIndividual ? '\n⚠️ Le sessioni Individual sono state escluse dal b
         }
     };
     
-    // 7. GESTIONE SESSIONI INDIVIDUAL PROTETTE
+    // 7. GESTIONE SESSIONI INDIVIDUAL
     const hasIndividualData = Object.values(gpsData).some(ath =>
         Object.values(ath).some(sessions =>
             Array.isArray(sessions) && sessions.some(sess => sess.tiposessione === 'Individual')
@@ -2151,18 +2149,15 @@ ${!includeIndividual ? '\n⚠️ Le sessioni Individual sono state escluse dal b
     );
     
     if (hasIndividualData && !isAuthenticated) {
-        // Chiede autenticazione per includere sessioni Individual
         requestAuthentication(
-            () => performDownload(true), // Include Individual se autenticato
+            () => performDownload(true),
             () => {
-                // Se cancella autenticazione, chiede se vuole backup senza Individual
                 if (confirm('Accesso annullato. Desideri scaricare il backup SENZA le sessioni Individual protette?')) {
                     performDownload(false);
                 }
             }
         );
     } else {
-        // Scarica tutto (con o senza Individual a seconda dell'autenticazione)
         performDownload(isAuthenticated);
     }
 });
