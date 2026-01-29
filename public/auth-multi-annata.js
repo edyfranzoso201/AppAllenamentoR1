@@ -809,12 +809,19 @@ async function showUserModal(userData = null) {
                     <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Username *</label>
                     <input type="text" id="user-username" value="${userData?.username || ''}" ${isEdit ? 'disabled' : ''} placeholder="es. mario.rossi" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#fff;box-sizing:border-box;" required />
                 </div>
-                ${!isEdit ? `
                 <div>
-                    <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Password *</label>
-                    <input type="password" id="user-password" placeholder="Password" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#fff;box-sizing:border-box;" required />
+                    <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">
+                        Password ${isEdit ? '(opzionale - lascia vuoto per non modificare)' : '*'}
+                    </label>
+                    <input 
+                        type="password" 
+                        id="user-password" 
+                        placeholder="${isEdit ? 'Nuova password (opzionale)' : 'Password'}" 
+                        style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#fff;box-sizing:border-box;" 
+                        ${!isEdit ? 'required' : ''} 
+                    />
+                    ${isEdit ? '<small style="color:#94a3b8;font-size:12px;">Compila solo se vuoi cambiare la password</small>' : ''}
                 </div>
-                ` : ''}
                 <div>
                     <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Email</label>
                     <input type="email" id="user-email" value="${userData?.email || ''}" placeholder="email@esempio.com" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#fff;box-sizing:border-box;" />
@@ -872,7 +879,13 @@ async function showUserModal(userData = null) {
             annate: annateSelezionate
         };
         
-        if (!isEdit) payload.password = document.getElementById('user-password').value;
+        // Invia la password solo se:
+        // - È una creazione (!isEdit)
+        // - È una modifica E il campo password è compilato (isEdit && password non vuota)
+        const passwordValue = document.getElementById('user-password').value.trim();
+        if (!isEdit || (isEdit && passwordValue !== '')) {
+            payload.password = passwordValue;
+        }
         
         try {
             const response = await fetch('/api/auth/manage', {
@@ -1304,12 +1317,19 @@ async function showUserModal(userData = null) {
                     <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Username *</label>
                     <input type="text" id="user-username" value="${userData?.username || ''}" ${isEdit ? 'disabled' : ''} placeholder="es. mario.rossi" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#fff;box-sizing:border-box;" required />
                 </div>
-                ${!isEdit ? `
                 <div>
-                    <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Password *</label>
-                    <input type="password" id="user-password" placeholder="Password" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#fff;box-sizing:border-box;" required />
+                    <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">
+                        Password ${isEdit ? '(opzionale - lascia vuoto per non modificare)' : '*'}
+                    </label>
+                    <input 
+                        type="password" 
+                        id="user-password" 
+                        placeholder="${isEdit ? 'Nuova password (opzionale)' : 'Password'}" 
+                        style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#fff;box-sizing:border-box;" 
+                        ${!isEdit ? 'required' : ''} 
+                    />
+                    ${isEdit ? '<small style="color:#94a3b8;font-size:12px;">Compila solo se vuoi cambiare la password</small>' : ''}
                 </div>
-                ` : ''}
                 <div>
                     <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Email</label>
                     <input type="email" id="user-email" value="${userData?.email || ''}" placeholder="email@esempio.com" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#fff;box-sizing:border-box;" />
@@ -1367,7 +1387,13 @@ async function showUserModal(userData = null) {
             annate: annateSelezionate
         };
         
-        if (!isEdit) payload.password = document.getElementById('user-password').value;
+        // Invia la password solo se:
+        // - È una creazione (!isEdit)
+        // - È una modifica E il campo password è compilato (isEdit && password non vuota)
+        const passwordValue = document.getElementById('user-password').value.trim();
+        if (!isEdit || (isEdit && passwordValue !== '')) {
+            payload.password = passwordValue;
+        }
         
         try {
             const response = await fetch('/api/auth/manage', {
