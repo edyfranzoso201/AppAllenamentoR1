@@ -105,6 +105,7 @@ export default async function handler(req, res) {
           });
         }
 
+        // Aggiorna utente (mantieni password esistente se non fornita)
         users[userIndex] = {
           ...users[userIndex],
           email: email || users[userIndex].email,
@@ -112,6 +113,12 @@ export default async function handler(req, res) {
           annate: role === 'coach' ? (annate || []) : [],
           updatedAt: new Date().toISOString()
         };
+
+        // Se viene fornita una nuova password, aggiornala
+        if (password && password.trim() !== '') {
+          users[userIndex].password = hashPassword(password);
+          console.log(`🔐 Password aggiornata per: ${username}`);
+        }
 
         await kv.set('auth:users', users);
 
