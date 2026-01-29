@@ -167,7 +167,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let athletes = [], evaluations = {}, gpsData = {}, awards = {}, trainingSessions = {}, matchResults = {};
     // Rendi athletes disponibile globalmente per il calendario
     window.athletes = athletes;
+    window.evaluations = evaluations;
+    window.gpsData = gpsData;
+    window.awards = awards;
+    window.trainingSessions = trainingSessions;
+    window.matchResults = matchResults;
     let formationData = { starters: [], bench: [], tokens: [] };
+    window.formationData = formationData;  // ← SPOSTA QUESTA RIGA DOPO la dichiarazione
     let chartInstances = {};
     let comparisonChartPeriod = 'annual';
     let attendanceChartPeriod = 'annual';
@@ -246,6 +252,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     matchResults[matchId].assists = [];
                 }
             }
+                
+            // ✅ Aggiorna i riferimenti globali dopo il caricamento
+            window.athletes = athletes;
+            window.evaluations = evaluations;
+            window.gpsData = gpsData;
+            window.awards = awards;
+            window.trainingSessions = trainingSessions;
+            window.matchResults = matchResults;
+            window.formationData = formationData;
         } catch (error) {
             console.error('Errore nel caricamento dei dati dal server:', error);
             athletes = []; 
