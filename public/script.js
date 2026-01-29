@@ -2024,7 +2024,8 @@ document.addEventListener('DOMContentLoaded', () => {
             await loadData(); // Aspetta che loadData finisca
             
             // 2. RECUPERA ANNATA E USERNAME DA SESSIONSTORAGE
-            const annataId = sessionStorage.getItem('gosportcurrentannata');
+            const annataId = sessionStorage.getItem('gosportcurrentannata') || 'mko5iuzhw2xrxxiuo1';
+            console.log('🔑 AnnataId per backup:', annataId);
             const username = sessionStorage.getItem('gosportusername') || 'admin';
             
             console.log('🔄 Inizio backup - Annata:', annataId, 'Username:', username);
