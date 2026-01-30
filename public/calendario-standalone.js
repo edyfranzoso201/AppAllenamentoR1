@@ -222,17 +222,25 @@ async function markAbsence(athleteId, date, currentStatus) {
   }
 }
 function getAttendanceStatus(athleteId, date, data) {
+  // DEBUG: Stampa tutto per capire
+  console.log('[STATUS] 🔍 Controllo stato:', {
+    athleteId,
+    date,
+    attendanceResponses: data.attendanceResponses
+  });
+  
   if (!data.attendanceResponses || !data.attendanceResponses[date]) {
+    console.log('[STATUS] ⚠️ Nessuna risposta per', date);
     return null;
   }
   
-  // Converti l'athleteId a stringa per il confronto
   const athleteIdStr = String(athleteId);
+  const status = data.attendanceResponses[date][athleteIdStr] || 
+                 data.attendanceResponses[date][athleteId] || 
+                 null;
   
-  // Cerca sia con ID stringa che numero
-  return data.attendanceResponses[date][athleteIdStr] || 
-         data.attendanceResponses[date][athleteId] || 
-         null;
+  console.log('[STATUS] ✅ Stato trovato:', status, 'per ID:', athleteIdStr);
+  return status;
 }
 
 async function render(loadedData) {
@@ -341,61 +349,66 @@ async function render(loadedData) {
   h += `<tbody>`;
 
   visibleAthletes.forEach((a, i) => {
-    h += `<tr>`;
-    h += `<td style="color:#000" class="sticky-col sticky-col-1">${i + 1}</td>`;
-    h += `<td style="color:#000" class="sticky-col sticky-col-2">${a.name}</td>`;
+  h += `<tr>`;
+  h += `<td style="color:#000" class="sticky-col sticky-col-1">${i + 1}</td>`;
+  h += `<td style="color:#000" class="sticky-col sticky-col-2">${a.name}</td>`;
+  
+  if (!isParentView) {
+    h += `<td class="text-center sticky-col sticky-col-3">`;
+    h += `<button class="btn btn-sm btn-primary link-presenze-btn" data-athlete-id="${a.id}" data-athlete-name="${a.name.replace(/"/g, '&quot;')}">`;
+    h += `<i class="bi bi-link-45deg"></i> Link Presenze`;
+    h += `</button>`;
+    h += `</td>`;
+  }
+  
+  dates.forEach(date => {
+    console.log('[RENDER] 📅 Data:', date, 'Atleta:', a.id, a.name);
     
-    if (!isParentView) {
-      h += `<td class="text-center sticky-col sticky-col-3">`;
-      h += `<button class="btn btn-sm btn-primary link-presenze-btn" data-athlete-id="${a.id}" data-athlete-name="${a.name.replace(/"/g, '&quot;')}">`;
-      h += `<i class="bi bi-link-45deg"></i> Link Presenze`;
-      h += `</button>`;
-      h += `</td>`;
-    }
+    const status = getAttendanceStatus(a.id, date, attendanceData);
     
-    dates.forEach(date => {
-      const status = getAttendanceStatus(a.id, date, attendanceData);
-      
-      if (isParentView) {
-        if (status === 'Assente') {
-          h += `<td class="text-center" style="background-color:#ffcccc; color:#000">
-            <div style="display:flex; flex-direction:column; align-items:center; gap:5px">
-              <span style="color:#dc3545; font-weight:bold">❌ Assente</span>
-              <button class="btn btn-sm btn-success mark-presence-btn" 
-                      data-athlete-id="${a.id}" 
-                      data-date="${date}" 
-                      data-current-status="Assente" 
-                      style="font-size:0.75rem">
-                Segna Presente
-              </button>
-            </div>
-          </td>`;
-        } else {
-          h += `<td class="text-center" style="color:#000">
-            <div style="display:flex; flex-direction:column; align-items:center; gap:5px">
-              <span style="color:#28a745">✓ Presente</span>
-              <button class="btn btn-sm btn-danger mark-absence-btn" 
-                      data-athlete-id="${a.id}" 
-                      data-date="${date}" 
-                      data-current-status="" 
-                      style="font-size:0.75rem">
-                Segna Assente
-              </button>
-            </div>
-          </td>`;
-        }
+    console.log('[RENDER] 📋 Status ricevuto:', status);
+    
+    if (isParentView) {
+      // MODALITÀ GENITORE: mostra pulsanti
+      if (status === 'Assente') {
+        h += `<td class="text-center" style="background-color:#ffcccc; color:#000">
+          <div style="display:flex; flex-direction:column; align-items:center; gap:5px">
+            <span style="color:#dc3545; font-weight:bold">❌ Assente</span>
+            <button class="btn btn-sm btn-success mark-presence-btn" 
+                    data-athlete-id="${a.id}" 
+                    data-date="${date}" 
+                    data-current-status="Assente" 
+                    style="font-size:0.75rem">
+              Segna Presente
+            </button>
+          </div>
+        </td>`;
       } else {
-        if (status === 'Assente') {
-          h += `<td class="text-center" style="background-color:#ffcccc; color:#dc3545; font-weight:bold">❌ Assente</td>`;
-        } else {
-          h += `<td class="text-center" style="color:#000">-</td>`;
-        }
+        h += `<td class="text-center" style="color:#000">
+          <div style="display:flex; flex-direction:column; align-items:center; gap:5px">
+            <span style="color:#28a745">✓ Presente</span>
+            <button class="btn btn-sm btn-danger mark-absence-btn" 
+                    data-athlete-id="${a.id}" 
+                    data-date="${date}" 
+                    data-current-status="" 
+                    style="font-size:0.75rem">
+              Segna Assente
+            </button>
+          </div>
+        </td>`;
       }
-    });
-    h += `</tr>`;
-  });
+    } else {
+      // MODALITÀ COACH: solo visualizza
+      if (status === 'Assente') {
+        h += `<td class="text-center" style="background-color:#ffcccc; color:#dc3545; font-weight:bold">❌ Assente</td>`;
+      } else {
+        h += `<td class="text-center" style="color:#000">-</td>`;
+      }
+    }
+  }); // ← CHIUSURA DEL forEach delle DATE
+  h += `</tr>`;
+}); // ← CHIUSURA DEL forEach degli ATLETI
 
-  h += `</tbody></table></div>`;
   
   if (isParentView) {
     h += `<div class="alert alert-info mt-3">`;
