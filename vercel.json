@@ -6,7 +6,7 @@
     },
     {
       "source": "/presenza/:token",
-      "destination": "/index.html"
+      "destination": "/calendario.html"
     }
   ]
 }
