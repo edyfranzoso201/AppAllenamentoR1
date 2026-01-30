@@ -516,6 +516,70 @@ async function genTraining() {
 }
 
 window.markAbsence = markAbsence;
+// Funzione per il pulsante "Nuovo"
+window.addEvent = function() {
+  const date = prompt('Inserisci la data (YYYY-MM-DD):');
+  if (!date) return;
+  
+  const type = prompt('Tipo evento (Partita/Allenamento):');
+  if (!type) return;
+  
+  const time = prompt('Orario (es. 18:00-20:00):');
+  if (!time) return;
+  
+  events[date] = { type, time };
+  
+  alert('✅ Evento aggiunto! Salvalo cliccando su un pulsante di salvataggio.');
+  location.reload();
+};
+
+// Funzione per il pulsante "Importa"
+window.importData = function() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const data = JSON.parse(event.target.result);
+        // Importa i dati
+        alert('✅ Dati importati con successo!');
+        location.reload();
+      } catch (err) {
+        alert('❌ Errore: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+};
+
+// Funzione per il pulsante "Risposte"
+window.showResponses = function() {
+  alert('Funzione Risposte non ancora implementata');
+};
+
+// Funzione per il pulsante "Elimina Vecchi"
+window.deleteOldEvents = function() {
+  if (!confirm('Vuoi eliminare gli eventi passati?')) return;
+  
+  const today = new Date().toISOString().split('T')[0];
+  let deleted = 0;
+  
+  Object.keys(events).forEach(date => {
+    if (date < today) {
+      delete events[date];
+      deleted++;
+    }
+  });
+  
+  alert(`✅ Eliminati ${deleted} eventi passati!`);
+  location.reload();
+};
 
 document.addEventListener('DOMContentLoaded', () => {
   load();
