@@ -83,7 +83,6 @@ async function getAnnataId() {
         return null;
     }
 }
-
 async function load() {
   console.log('[CALENDARIO] 🔥 Caricamento dati calendario...');
   
@@ -104,8 +103,16 @@ async function load() {
   window.currentAnnata = annataId;
   
   try {
-    const response = await fetch(`/api/data?annataId=${annataId}`);
+    const url = `/api/data?annataId=${annataId}`;
+    console.log('[CALENDARIO] 🌐 Chiamata GET:', url);
+    
+    const response = await fetch(url);
+    
+    console.log('[CALENDARIO] 📡 Risposta HTTP:', response.status, response.statusText);
+    
     const result = await response.json();
+    
+    console.log('[CALENDARIO] 📦 Risultato API:', result);
     
     if (result.success && result.data) {
       athletes = result.data.athletes || [];
@@ -117,10 +124,9 @@ async function load() {
         attendanceResponses: result.data.attendanceResponses ? Object.keys(result.data.attendanceResponses).length : 0
       });
       
-      // ✅ PASSA TUTTO result.data (include attendanceResponses!)
       await render(result.data);
     } else {
-      console.error('[CALENDARIO] ❌ Risposta API non valida');
+      console.error('[CALENDARIO] ❌ Risposta API non valida:', result);
       await render({});
     }
   } catch (e) {
