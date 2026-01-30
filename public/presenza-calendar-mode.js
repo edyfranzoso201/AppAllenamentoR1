@@ -33,7 +33,7 @@
     // IMPORTANTE: Deve essere fatto PRIMA che calendario-standalone.js carichi i dati!
     const urlParams = new URLSearchParams(window.location.search);
     const annataFromUrl = urlParams.get('annata');
-    const defaultAnnata = 'mko51uzhw2xrxx1uo1'; // TODO: Rendere configurabile
+    const defaultAnnata = 'mko5iuzhw2xrxxiuo1'; // ← Annata corretta con 25 atleti
     
     const annataId = annataFromUrl || defaultAnnata;
     
@@ -42,6 +42,9 @@
     window.currentAnnata = annataId;
     
     console.log('[PRESENZA MODE] ⚡ Annata impostata SUBITO:', annataId);
+    
+    // NUOVO: Dispatch evento per notificare il cambio annata
+    window.dispatchEvent(new CustomEvent('annataChanged', { detail: { annataId } }));
 
     // Estrai token
     const parts = path.split('/presenza/');
@@ -70,33 +73,63 @@
         const interval = setInterval(() => {
             attempts++;
             
+            const calendar = document.getElementById('calendar');
             const table = document.querySelector('.calendar-table');
             const rows = table ? table.querySelectorAll('tbody tr') : [];
             
-            // Aspetta che ci sia almeno una riga nel tbody
+            // Caso 1: Tabella trovata con righe → SUCCESSO
             if (table && rows.length > 0) {
                 console.log('[PRESENZA MODE] Tabella trovata con', rows.length, 'righe');
                 clearInterval(interval);
                 applyPresenzaMode(athleteId);
-            } else if (attempts >= maxAttempts) {
-                console.error('[PRESENZA MODE] Timeout: tabella non trovata dopo 10 secondi');
+                return;
+            }
+            
+            // Caso 2: Messaggio "Nessun evento" → Genera automaticamente
+            if (calendar && calendar.innerHTML.includes('Nessun Evento')) {
+                console.log('[PRESENZA MODE] Nessun evento trovato, generazione automatica...');
                 clearInterval(interval);
                 
-                // Mostra errore all'utente
-                const calendar = document.getElementById('calendar');
-                if (calendar) {
-                    calendar.innerHTML = `
-                        <div class="alert alert-danger">
-                            <h5>❌ Errore Caricamento</h5>
-                            <p>Impossibile caricare il calendario. Riprova più tardi.</p>
-                            <button class="btn btn-primary" onclick="location.reload()">
-                                <i class="bi bi-arrow-clockwise"></i> Ricarica
-                            </button>
-                        </div>
-                    `;
+                // Clicca automaticamente sul pulsante "Genera"
+                const generateBtn = document.getElementById('generate-btn');
+                if (generateBtn) {
+                    console.log('[PRESENZA MODE] Click su Genera...');
+                    generateBtn.click();
+                    
+                    // Riavvia l'attesa dopo 2 secondi (tempo per generare)
+                    setTimeout(() => {
+                        console.log('[PRESENZA MODE] Riavvio attesa dopo generazione...');
+                        waitForCalendar();
+                    }, 2000);
+                } else {
+                    console.error('[PRESENZA MODE] Pulsante Genera non trovato');
+                    showError('Impossibile generare il calendario automaticamente.');
                 }
+                return;
+            }
+            
+            // Caso 3: Timeout → ERRORE
+            if (attempts >= maxAttempts) {
+                console.error('[PRESENZA MODE] Timeout: calendario non caricato dopo 10 secondi');
+                clearInterval(interval);
+                showError('Impossibile caricare il calendario. Riprova più tardi.');
             }
         }, 100);
+    }
+    
+    function showError(message) {
+        const calendar = document.getElementById('calendar');
+        if (calendar) {
+            calendar.innerHTML = `
+                <div class="alert alert-danger" style="margin:20px;">
+                    <h5><i class="bi bi-exclamation-triangle"></i> Errore Caricamento</h5>
+                    <p>${message}</p>
+                    <button class="btn btn-primary" onclick="location.reload()">
+                        <i class="bi bi-arrow-clockwise"></i> Ricarica Pagina
+                    </button>
+                </div>
+            `;
+        }
     }
 
     function applyPresenzaMode(athleteId) {
