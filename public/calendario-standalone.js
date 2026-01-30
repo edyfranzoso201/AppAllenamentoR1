@@ -403,7 +403,9 @@ async function render(loadedData) {
     h += `</div>`;
   }
   
-  el.innerHTML = h;
+      el.innerHTML = h;
+  
+  console.log('[RENDER] ✅ HTML generato, riattacco event listener...');
   
   // Aggiungi event listener per i pulsanti Link Presenze (solo per coach)
   if (!isParentView) {
@@ -414,11 +416,15 @@ async function render(loadedData) {
         window.generatePresenceLink(athleteId, athleteName);
       });
     });
+    console.log('[RENDER] ✅ Event listener Link Presenze attaccati');
   }
   
   // Aggiungi event listener per i pulsanti Segna Assente/Presente (solo per genitori)
   if (isParentView) {
-    document.querySelectorAll('.mark-absence-btn, .mark-presence-btn').forEach(btn => {
+    const absenceBtns = document.querySelectorAll('.mark-absence-btn, .mark-presence-btn');
+    console.log('[RENDER] 🔘 Trovati', absenceBtns.length, 'pulsanti presenza/assenza');
+    
+    absenceBtns.forEach(btn => {
       btn.addEventListener('click', function() {
         const athleteId = this.getAttribute('data-athlete-id');
         const date = this.getAttribute('data-date');
@@ -428,8 +434,12 @@ async function render(loadedData) {
         markAbsence(athleteId, date, currentStatus);
       });
     });
+    console.log('[RENDER] ✅ Event listener presenza/assenza attaccati');
   }
+  
+  console.log('[RENDER] ✅ Rendering completato!');
 }
+
 window.generatePresenceLink = function(athleteId, athleteName) {
   // IMPORTANTE: Ottieni l'annata corrente
   const currentAnnata = window.currentAnnata || 
