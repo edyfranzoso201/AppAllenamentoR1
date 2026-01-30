@@ -425,12 +425,20 @@ async function render(loadedData) {
   }
 }
 window.generatePresenceLink = function(athleteId, athleteName) {
-  // Link SEMPLICE senza token - USA SOLO athleteId
-  const link = `${window.location.origin}/calendario.html?athleteId=${athleteId}`;
+  // IMPORTANTE: Ottieni l'annata corrente
+  const currentAnnata = window.currentAnnata || 
+                        localStorage.getItem('currentAnnata') || 
+                        sessionStorage.getItem('gosport:currentannata');
+  
+  // Link con athleteId E annata
+  const link = currentAnnata 
+    ? `${window.location.origin}/calendario.html?athleteId=${athleteId}&annata=${currentAnnata}`
+    : `${window.location.origin}/calendario.html?athleteId=${athleteId}`;
   
   console.log('[CALENDARIO] 🔗 Link generato:', {
     athleteId,
     athleteName,
+    annata: currentAnnata,
     link
   });
   
@@ -442,6 +450,7 @@ window.generatePresenceLink = function(athleteId, athleteName) {
       <h3 style="margin:0 0 20px 0;color:#2563eb">🔗 Link Conferma Presenze</h3>
       <p style="margin-bottom:15px"><strong>Atleta:</strong> ${athleteName}</p>
       <p style="margin-bottom:10px"><strong>ID Atleta:</strong> <code>${athleteId}</code></p>
+      ${currentAnnata ? `<p style="margin-bottom:10px"><strong>Annata:</strong> <code>${currentAnnata}</code></p>` : ''}
       <div style="background:#f1f5f9;padding:15px;border-radius:8px;margin-bottom:20px;word-break:break-all;font-family:monospace;font-size:14px">
         ${link}
       </div>
