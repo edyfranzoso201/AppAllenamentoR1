@@ -19,9 +19,9 @@ function decodeToken(token) {
     const match = token.match(/x([0-9]+)$/);
     if (!match) return null;
     
-    // Reverse e rimuovi eventuali zeri iniziali
+    // Reverse e rimuovi zeri iniziali
     const reversed = match[1].split('').reverse().join('');
-    return reversed.replace(/^0+/, ''); // Rimuove zeri all'inizio
+    return reversed.replace(/^0+/, '');
   } catch (e) {
     return null;
   }
