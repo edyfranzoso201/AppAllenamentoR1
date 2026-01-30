@@ -60,26 +60,64 @@
     
     console.log('[PRESENZA MODE] Annata impostata:', annataId);
 
-    // Aspetta che il calendario sia renderizzato
+    // Aspetta che il calendario sia renderizzato E che i dati siano caricati
     function waitForCalendar() {
+        console.log('[PRESENZA MODE] Attesa rendering calendario...');
+        
+        let attempts = 0;
+        const maxAttempts = 100; // 10 secondi
+        
         const interval = setInterval(() => {
+            attempts++;
+            
             const table = document.querySelector('.calendar-table');
-            if (table) {
+            const rows = table ? table.querySelectorAll('tbody tr') : [];
+            
+            // Aspetta che ci sia almeno una riga nel tbody
+            if (table && rows.length > 0) {
+                console.log('[PRESENZA MODE] Tabella trovata con', rows.length, 'righe');
                 clearInterval(interval);
                 applyPresenzaMode(athleteId);
+            } else if (attempts >= maxAttempts) {
+                console.error('[PRESENZA MODE] Timeout: tabella non trovata dopo 10 secondi');
+                clearInterval(interval);
+                
+                // Mostra errore all'utente
+                const calendar = document.getElementById('calendar');
+                if (calendar) {
+                    calendar.innerHTML = `
+                        <div class="alert alert-danger">
+                            <h5>❌ Errore Caricamento</h5>
+                            <p>Impossibile caricare il calendario. Riprova più tardi.</p>
+                            <button class="btn btn-primary" onclick="location.reload()">
+                                <i class="bi bi-arrow-clockwise"></i> Ricarica
+                            </button>
+                        </div>
+                    `;
+                }
             }
         }, 100);
-
-        // Timeout dopo 10 secondi
-        setTimeout(() => clearInterval(interval), 10000);
     }
 
     function applyPresenzaMode(athleteId) {
         console.log('[PRESENZA MODE] Applicazione filtro atleta...');
 
-        // Nascondi pulsanti azioni del coach
-        const buttons = document.querySelectorAll('#generate-btn, #import-btn, #add-btn, #delete-btn, #responses-btn');
-        buttons.forEach(btn => btn.style.display = 'none');
+        // ===== 1. NASCONDI TUTTI I CONTROLLI DEL COACH =====
+        
+        // Nascondi TUTTI i pulsanti (incluso il bottone rosso "Nuovo" etc)
+        const allButtons = document.querySelectorAll('#generate-btn, #import-btn, #add-btn, #delete-btn, #responses-btn');
+        allButtons.forEach(btn => {
+            if (btn) btn.style.display = 'none';
+            // Nascondi anche il parent (la colonna)
+            const parent = btn.closest('.col-md-2');
+            if (parent) parent.style.display = 'none';
+        });
+
+        // Nascondi l'intera riga dei bottoni
+        const buttonRow = document.querySelector('.row');
+        if (buttonRow && buttonRow.querySelector('#add-btn')) {
+            buttonRow.style.display = 'none';
+        }
 
         // Nascondi link "Dashboard"
         const dashLink = document.querySelector('a[href="/"]');
@@ -89,16 +127,17 @@
         const title = document.querySelector('.main-title, h1');
         if (title) {
             title.innerHTML = '<i class="bi bi-calendar-check-fill"></i> Conferma Presenze GO SPORT';
+            title.style.textAlign = 'center';
         }
 
-        // Trova la tabella
+        // ===== 2. TROVA LA TABELLA E L'ATLETA =====
+        
         const table = document.querySelector('.calendar-table');
         if (!table) {
             console.error('[PRESENZA MODE] Tabella non trovata');
             return;
         }
 
-        // Trova tutte le righe atleti (tbody tr)
         const rows = table.querySelectorAll('tbody tr');
         let athleteRow = null;
         let athleteName = '';
@@ -107,46 +146,61 @@
             const cells = row.querySelectorAll('td');
             if (cells.length < 3) return;
 
-            // Seconda cella = nome atleta
-            const nameCell = cells[1];
-
-            // Cerca nella riga i dati dell'atleta tramite bottone Link se esiste
+            // Cerca il bottone Link per trovare l'ID atleta
             const linkBtn = row.querySelector('button[onclick*="generatePresenceLink"]');
             if (linkBtn) {
                 const onclick = linkBtn.getAttribute('onclick');
                 const match = onclick.match(/generatePresenceLink\((\d+)/);
                 if (match && match[1] == athleteId) {
                     athleteRow = row;
-                    athleteName = nameCell.textContent.trim();
+                    athleteName = cells[1].textContent.trim(); // Nome dalla seconda colonna
                 }
             }
         });
 
         if (!athleteRow) {
             console.error('[PRESENZA MODE] Riga atleta non trovata per ID:', athleteId);
-            alert('Atleta non trovato nel calendario');
+            
+            const calendar = document.getElementById('calendar');
+            if (calendar) {
+                calendar.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h5>❌ Atleta Non Trovato</h5>
+                        <p>L'atleta con ID ${athleteId} non è presente nel calendario.</p>
+                        <p class="mb-0">Contatta l'allenatore per un nuovo link.</p>
+                    </div>
+                `;
+            }
             return;
         }
 
         console.log('[PRESENZA MODE] Atleta trovato:', athleteName);
 
-        // Nascondi tutte le righe tranne questa
+        // ===== 3. NASCONDI TUTTE LE ALTRE RIGHE =====
+        
         rows.forEach(row => {
             if (row !== athleteRow) {
                 row.style.display = 'none';
             }
         });
 
-        // Nascondi colonna "Azioni"
-        const actionHeaders = table.querySelectorAll('th');
+        // ===== 4. NASCONDI COLONNA "AZIONI" =====
+        
+        const headerRows = table.querySelectorAll('thead tr');
         let actionColumnIndex = -1;
         
-        actionHeaders.forEach((th, index) => {
-            if (th.textContent.includes('Azioni')) {
-                th.style.display = 'none';
-                actionColumnIndex = index;
-            }
-        });
+        // Trova l'indice della colonna Azioni
+        if (headerRows.length > 0) {
+            const firstHeaderRow = headerRows[0];
+            const headers = firstHeaderRow.querySelectorAll('th');
+            
+            headers.forEach((th, index) => {
+                if (th.textContent.includes('Azioni')) {
+                    th.style.display = 'none';
+                    actionColumnIndex = index;
+                }
+            });
+        }
 
         // Nascondi la cella azioni nella riga atleta
         if (actionColumnIndex >= 0) {
@@ -154,21 +208,29 @@
             if (actionCell) actionCell.style.display = 'none';
         }
 
-        // Aggiungi nota in alto
+        // ===== 5. AGGIUNGI NOTA PERSONALIZZATA IN ALTO =====
+        
         const calendarContainer = document.querySelector('.card-body');
         if (calendarContainer) {
             const note = document.createElement('div');
-            note.style.cssText = 'background:#e0f2fe;padding:20px;border-radius:10px;margin-bottom:20px;';
+            note.style.cssText = 'background:linear-gradient(135deg,#e0f2fe 0%,#bae6fd 100%);padding:25px;border-radius:12px;margin-bottom:20px;border:2px solid #38bdf8;';
             note.innerHTML = `
-                <h4 style="margin:0 0 10px 0;color:#0369a1;">👤 ${athleteName}</h4>
-                <p style="margin:0;color:#0c4a6e;">Visualizzazione personale - Clicca sui pulsanti per confermare presenza/assenza</p>
+                <h4 style="margin:0 0 15px 0;color:#0369a1;font-size:1.5rem;text-align:center;">
+                    <i class="bi bi-person-circle"></i> ${athleteName}
+                </h4>
+                <p style="margin:0;color:#0c4a6e;text-align:center;font-size:1rem;">
+                    👇 Clicca sui pulsanti per confermare la tua presenza o assenza agli eventi
+                </p>
+                <p style="margin:10px 0 0 0;color:#075985;text-align:center;font-size:0.9rem;">
+                    ⚠️ Una volta confermato non potrai più modificare
+                </p>
             `;
             calendarContainer.insertBefore(note, calendarContainer.firstChild);
         }
 
-        // Ottieni le date dalle colonne della tabella
+        // ===== 6. OTTIENI LE DATE DALLE COLONNE =====
+        
         const dateHeaders = [];
-        const headerRows = table.querySelectorAll('thead tr');
         
         if (headerRows.length >= 1) {
             const firstHeaderRow = headerRows[0];
@@ -177,13 +239,12 @@
             // Salta le prime 3 colonne (#, Nome, Azioni)
             for (let i = 3; i < headers.length; i++) {
                 const headerText = headers[i].textContent.trim();
-                // Estrai la data dal testo (formato: "gio\n25/01")
+                // Estrai la data (formato: "gio\n25/01")
                 const dateMatch = headerText.match(/(\d{2})\/(\d{2})/);
                 if (dateMatch) {
                     const day = dateMatch[1];
                     const month = dateMatch[2];
                     const year = new Date().getFullYear();
-                    // Crea la data in formato YYYY-MM-DD
                     const date = `${year}-${month}-${day}`;
                     dateHeaders.push(date);
                 } else {
@@ -194,13 +255,13 @@
 
         console.log('[PRESENZA MODE] Date trovate:', dateHeaders);
 
-        // Trasforma le celle "-" in pulsanti
+        // ===== 7. TRASFORMA LE CELLE VUOTE IN PULSANTI =====
+        
         const dateCells = athleteRow.querySelectorAll('td');
         dateCells.forEach((cell, index) => {
             // Salta #, Nome, Azioni
             if (index <= 2) return;
             
-            // Calcola l'indice della data (sottrai 3 per le colonne iniziali)
             const dateIndex = index - 3;
             const date = dateHeaders[dateIndex];
             
@@ -211,14 +272,30 @@
 
             const cellContent = cell.textContent.trim();
             
-            // Se la cella è vuota (contiene solo "-" o è vuota)
+            // Se la cella è vuota (contiene "-" o è vuota)
             if (cellContent === '-' || cellContent === '') {
                 cell.innerHTML = `
-                    <button class="btn btn-sm btn-success" onclick="window.confirmPresenza(${athleteId}, '${date}', 'Si')" style="width:100%;margin-bottom:5px;">✅ Presente</button>
-                    <button class="btn btn-sm btn-danger" onclick="window.confirmPresenza(${athleteId}, '${date}', 'No')" style="width:100%;">❌ Assente</button>
+                    <button class="btn btn-sm btn-success" onclick="window.confirmPresenza(${athleteId}, '${date}', 'Si')" style="width:100%;margin-bottom:5px;font-weight:600;">
+                        ✅ Presente
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="window.confirmPresenza(${athleteId}, '${date}', 'No')" style="width:100%;font-weight:600;">
+                        ❌ Assente
+                    </button>
                 `;
             }
-            // Altrimenti lascia il contenuto esistente (già confermato)
+            // Se contiene già una risposta, mostrala in modo carino
+            else if (cellContent !== '-') {
+                const isPresent = cellContent.toLowerCase().includes('presente') || cellContent === '✅';
+                const icon = isPresent ? '✅' : '❌';
+                const color = isPresent ? '#10b981' : '#ef4444';
+                const bgColor = isPresent ? '#d1fae5' : '#fee2e2';
+                
+                cell.innerHTML = `
+                    <div style="background:${bgColor};color:${color};padding:8px;border-radius:6px;font-weight:600;text-align:center;">
+                        ${icon} ${isPresent ? 'PRESENTE' : 'ASSENTE'}
+                    </div>
+                `;
+            }
         });
 
         console.log('[PRESENZA MODE] ✅ Modalità presenza applicata con successo');
