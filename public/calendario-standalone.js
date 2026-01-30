@@ -212,9 +212,9 @@ async function markAbsence(athleteId, date, currentStatus) {
     
     console.log('[PRESENZA] ✅ Stato salvato con successo!');
     
-    // Mostra conferma e ricarica
+    // ✅ SOLUZIONE: Ricarica i dati e re-renderizza
     alert(`✅ Stato aggiornato: ${statusText}`);
-    window.location.reload();
+    await load(); // ← INVECE di window.location.reload()
     
   } catch (e) {
     console.error('[PRESENZA] ❌ Errore completo:', e);
