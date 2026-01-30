@@ -19,7 +19,7 @@
     
     // Reverse e rimuovi zeri iniziali
     const reversed = match[1].split('').reverse().join('');
-    return reversed.replace(/^0+/, ''); // Rimuove zeri iniziali
+    return reversed.replace(/^0+/, '');
   } catch (e) {
     return null;
   }
