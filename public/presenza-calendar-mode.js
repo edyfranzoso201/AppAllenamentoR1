@@ -29,6 +29,20 @@
 
     console.log('[PRESENZA MODE] Path:', path);
 
+    // ===== IMPOSTA SUBITO L'ANNATA CORRENTE =====
+    // IMPORTANTE: Deve essere fatto PRIMA che calendario-standalone.js carichi i dati!
+    const urlParams = new URLSearchParams(window.location.search);
+    const annataFromUrl = urlParams.get('annata');
+    const defaultAnnata = 'mko51uzhw2xrxx1uo1'; // TODO: Rendere configurabile
+    
+    const annataId = annataFromUrl || defaultAnnata;
+    
+    // Imposta nel localStorage E come variabile globale
+    localStorage.setItem('currentAnnata', annataId);
+    window.currentAnnata = annataId;
+    
+    console.log('[PRESENZA MODE] ⚡ Annata impostata SUBITO:', annataId);
+
     // Estrai token
     const parts = path.split('/presenza/');
     const token = parts[1] ? parts[1].replace(/[/.html]/g, '') : null;
@@ -45,20 +59,6 @@
     }
 
     console.log('[PRESENZA MODE] Attivo per atleta ID:', athleteId);
-
-    // IMPOSTA L'ANNATA CORRENTE per la modalità presenza
-    // Usa l'annata di default o quella passata nell'URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const annataFromUrl = urlParams.get('annata');
-    const defaultAnnata = 'mko51uzhw2xrxx1uo1'; // TODO: Rendere configurabile
-    
-    const annataId = annataFromUrl || defaultAnnata;
-    
-    // Imposta nel localStorage E come variabile globale
-    localStorage.setItem('currentAnnata', annataId);
-    window.currentAnnata = annataId;
-    
-    console.log('[PRESENZA MODE] Annata impostata:', annataId);
 
     // Aspetta che il calendario sia renderizzato E che i dati siano caricati
     function waitForCalendar() {
