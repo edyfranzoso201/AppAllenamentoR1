@@ -23,38 +23,75 @@ function decodeToken(token) {
   }
 }
 
-// Ottiene l'annata corretta per la richiesta
 async function getAnnataId() {
-  // Se già abbiamo l'annata, usala
-  if (currentAnnataId) {
-    return currentAnnataId;
-  }
-  
-  // Prova dal localStorage (impostato da presenza-calendar-mode.js)
-  const localAnnata = localStorage.getItem('currentAnnata');
-  if (localAnnata) {
-    currentAnnataId = localAnnata;
-    console.log('[CALENDARIO] Annata da localStorage:', localAnnata);
-    return localAnnata;
-  }
-  
-  // Prova dalla sessione
-  const sessionAnnata = sessionStorage.getItem('gosport_current_annata');
-  if (sessionAnnata) {
-    currentAnnataId = sessionAnnata;
-    console.log('[CALENDARIO] Annata da sessionStorage:', sessionAnnata);
-    return sessionAnnata;
-  }
-  
-  // Prova da window.currentAnnata (impostato da presenza-calendar-mode.js)
-  if (window.currentAnnata) {
-    currentAnnataId = window.currentAnnata;
-    console.log('[CALENDARIO] Annata da window.currentAnnata:', window.currentAnnata);
-    return window.currentAnnata;
-  }
-  
-  console.error('[CALENDARIO] ❌ Nessuna annata trovata!');
-  return null;
+    // 1. Prova dall'URL (PRIORITÀ MASSIMA)
+    const urlParams = new URLSearchParams(window.location.search);
+    const annataFromUrl = urlParams.get('annata');
+    if (annataFromUrl) {
+        currentAnnataId = annataFromUrl;
+        localStorage.setItem('currentAnnata', annataFromUrl);
+        console.log('[CALENDARIO] ✅ Annata da URL:', annataFromUrl);
+        return annataFromUrl;
+    }
+
+    // 2. Se già abbiamo l'annata in memoria, usala
+    if (currentAnnataId) {
+        return currentAnnataId;
+    }
+
+    // 3. Prova dal localStorage
+    const localAnnata = localStorage.getItem('currentAnnata');
+    if (localAnnata) {
+        currentAnnataId = localAnnata;
+        console.log('[CALENDARIO] Annata da localStorage:', localAnnata);
+        return localAnnata;
+    }
+
+    // 4. Prova dalla sessione
+    const sessionAnnata = sessionStorage.getItem('gosport_current_annata');
+    if (sessionAnnata) {
+        currentAnnataId = sessionAnnata;
+        console.log('[CALENDARIO] Annata da sessionStorage:', sessionAnnata);
+        return sessionAnnata;
+    }
+
+    // 5. Prova da window.currentAnnata
+    if (window.currentAnnata) {
+        currentAnnataId = window.currentAnnata;
+        console.log('[CALENDARIO] Annata da window.currentAnnata:', window.currentAnnata);
+        return window.currentAnnata;
+    }
+
+    // 6. FALLBACK: Ottieni l'annata più recente dal server
+    console.log('[CALENDARIO] ⚠️ Nessuna annata trovata, cerco la più recente...');
+    try {
+        const response = await fetch('/api/annate/list');
+        if (!response.ok) throw new Error('Errore recupero annate');
+        
+        const annateData = await response.json();
+        const annate = annateData.annate || [];
+        
+        if (annate.length === 0) {
+            throw new Error('Nessuna annata disponibile nel database');
+        }
+        
+        // Ordina per data inizio (più recente prima)
+        const sorted = annate.sort((a, b) => {
+            const dateA = new Date(a.dataInizio || a.year || '2000-01-01');
+            const dateB = new Date(b.dataInizio || b.year || '2000-01-01');
+            return dateB - dateA;
+        });
+        
+        const annataId = sorted[0].id;
+        currentAnnataId = annataId;
+        localStorage.setItem('currentAnnata', annataId);
+        console.log('[CALENDARIO] ✅ Annata più recente:', annataId);
+        return annataId;
+        
+    } catch (error) {
+        console.error('[CALENDARIO] ❌ Errore recupero annata:', error);
+        return null;
+    }
 }
 
 async function load() {
