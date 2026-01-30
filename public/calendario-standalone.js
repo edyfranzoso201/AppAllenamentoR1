@@ -16,8 +16,9 @@ let currentAnnataId = null;
 // Funzione decodifica token (dal path /presenza/token)
 function decodeToken(token) {
   try {
-    const match = token.match(/[0-9]+$/);
-    return match ? match[0].split('').reverse().join('') : null;
+    // Cerca i numeri DOPO l'ultima "x"
+    const match = token.match(/x([0-9]+)$/);
+    return match ? match[1].split('').reverse().join('') : null;
   } catch (e) {
     return null;
   }
@@ -451,15 +452,16 @@ async function render(loadedData) {
 window.generatePresenceLink = function(athleteId, athleteName) {
   // Funzione per generare il token
   function generateAthleteToken(athleteId) {
-    const salt = 'GO_SPORT_2025_SECRET_KEY';
-    const str = salt + athleteId;
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      hash = ((hash << 5) - hash) + str.charCodeAt(i);
-      hash = hash & hash;
-    }
-    return Math.abs(hash).toString(36) + athleteId.toString().split('').reverse().join('');
+  const salt = 'GO_SPORT_2025_SECRET_KEY';
+  const str = salt + athleteId;
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash = hash & hash;
   }
+  // AGGIUNTO separatore "x" tra hash e ID
+  return Math.abs(hash).toString(36) + 'x' + athleteId.toString().split('').reverse().join('');
+}
   
   const token = generateAthleteToken(athleteId);
   
