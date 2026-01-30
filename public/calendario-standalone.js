@@ -18,7 +18,11 @@ function decodeToken(token) {
   try {
     // Cerca i numeri DOPO l'ultima "x"
     const match = token.match(/x([0-9]+)$/);
-    return match ? match[1].split('').reverse().join('') : null;
+    if (!match) return null;
+    
+    // Reverse e rimuovi zeri iniziali
+    const reversed = match[1].split('').reverse().join('');
+    return reversed.replace(/^0+/, ''); // Rimuove zeri iniziali
   } catch (e) {
     return null;
   }
