@@ -425,9 +425,17 @@ window.generatePresenceLink = function(athleteId, athleteName) {
   }
   
   const token = generateAthleteToken(athleteId);
-  const link = `${window.location.origin}/presenza/${token}`;
   
-  console.log('[CALENDARIO] 🔗 Link generato:', { athleteId, athleteName, token, link });
+  // IMPORTANTE: Includi l'annata corrente nell'URL
+  const currentAnnata = window.currentAnnata || 
+                        localStorage.getItem('currentAnnata') || 
+                        sessionStorage.getItem('gosport_current_annata');
+  
+  const link = currentAnnata 
+    ? `${window.location.origin}/presenza/${token}?annata=${currentAnnata}`
+    : `${window.location.origin}/presenza/${token}`;
+  
+  console.log('[CALENDARIO] 🔗 Link generato:', { athleteId, athleteName, token, annata: currentAnnata, link });
   
   const modal = document.createElement('div');
   modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
@@ -436,6 +444,7 @@ window.generatePresenceLink = function(athleteId, athleteName) {
       <h3 style="margin:0 0 20px 0;color:#2563eb;">🔗 Link Conferma Presenze</h3>
       <p style="margin-bottom:15px;"><strong>Atleta:</strong> ${athleteName}</p>
       <p style="margin-bottom:10px;"><strong>ID Atleta:</strong> <code>${athleteId}</code></p>
+      ${currentAnnata ? `<p style="margin-bottom:10px;"><strong>Annata:</strong> <code>${currentAnnata}</code></p>` : ''}
       <div style="background:#f1f5f9;padding:15px;border-radius:8px;margin-bottom:20px;word-break:break-all;font-family:monospace;font-size:14px;">
         ${link}
       </div>
@@ -451,7 +460,8 @@ window.generatePresenceLink = function(athleteId, athleteName) {
       </div>
       <div style="margin-top:20px;padding:15px;background:#e0f2fe;border-radius:8px;font-size:14px;color:#0c4a6e;">
         <strong>📱 Invia questo link al genitore</strong><br>
-        Il link funziona con il formato: <code>/presenza/token</code>
+        Il link funziona con il formato: <code>/presenza/token?annata=ID</code><br>
+        L'annata è inclusa automaticamente nel link.
       </div>
     </div>
   `;
