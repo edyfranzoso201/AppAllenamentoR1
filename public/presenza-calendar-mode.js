@@ -33,9 +33,48 @@
     // IMPORTANTE: Deve essere fatto PRIMA che calendario-standalone.js carichi i dati!
     const urlParams = new URLSearchParams(window.location.search);
     const annataFromUrl = urlParams.get('annata');
-    const defaultAnnata = 'mko5iuzhw2xrxxiuo1'; // ← Annata corretta con 25 atleti
     
-    const annataId = annataFromUrl || defaultAnnata;
+    let annataId;
+    
+    if (annataFromUrl) {
+        // Usa l'annata dall'URL se specificata
+        annataId = annataFromUrl;
+        console.log('[PRESENZA MODE] ⚡ Annata da URL:', annataId);
+    } else {
+        // Altrimenti, ottieni l'annata più recente
+        console.log('[PRESENZA MODE] 🔍 Nessuna annata nell\'URL, cerco la più recente...');
+        try {
+            const annateResponse = await fetch('/api/annate/list');
+            if (annateResponse.ok) {
+                const annateData = await annateResponse.json();
+                const annate = annateData.annate || [];
+                
+                if (annate.length > 0) {
+                    // Ordina per data inizio (più recente prima)
+                    const sorted = annate.sort((a, b) => {
+                        const dateA = new Date(a.dataInizio || a.year || '2000-01-01');
+                        const dateB = new Date(b.dataInizio || b.year || '2000-01-01');
+                        return dateB - dateA;
+                    });
+                    
+                    annataId = sorted[0].id;
+                    console.log('[PRESENZA MODE] ✅ Annata più recente:', annataId, '(' + (sorted[0].name || sorted[0].year) + ')');
+                } else {
+                    console.error('[PRESENZA MODE] ❌ Nessuna annata disponibile!');
+                    alert('Errore: Nessuna annata disponibile. Contatta l\'amministratore.');
+                    return;
+                }
+            } else {
+                console.error('[PRESENZA MODE] ❌ Errore recupero annate');
+                alert('Errore nel caricamento. Riprova più tardi.');
+                return;
+            }
+        } catch (error) {
+            console.error('[PRESENZA MODE] ❌ Errore:', error);
+            alert('Errore nel caricamento. Riprova più tardi.');
+            return;
+        }
+    }
     
     // Imposta nel localStorage E come variabile globale
     localStorage.setItem('currentAnnata', annataId);
