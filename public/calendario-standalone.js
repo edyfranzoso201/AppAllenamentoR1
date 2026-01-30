@@ -13,20 +13,6 @@ let isParentView = false;
 let currentAthleteId = null;
 let currentAnnataId = null;
 
-// Funzione decodifica token (dal path /presenza/token)
-function decodeToken(token) {
-  try {
-    const match = token.match(/x([0-9]+)$/);
-    if (!match) return null;
-    
-    // Reverse e rimuovi zeri iniziali
-    const reversed = match[1].split('').reverse().join('');
-    return reversed.replace(/^0+/, '');
-  } catch (e) {
-    return null;
-  }
-}
-
 async function getAnnataId() {
     // 1. Prova dall'URL (PRIORITÀ MASSIMA)
     const urlParams = new URLSearchParams(window.location.search);
@@ -256,19 +242,6 @@ async function render(loadedData) {
   const urlParams = new URLSearchParams(window.location.search);
   let athleteIdParam = urlParams.get('athleteId');
   
-  // Se non c'è parametro, prova a decodificare token dal path
-  if (!athleteIdParam) {
-    const path = window.location.pathname;
-    if (path.includes('/presenza/')) {
-      const parts = path.split('/presenza/');
-      const token = parts[1] ? parts[1].replace(/[/.html]/g, '') : null;
-      if (token) {
-        athleteIdParam = decodeToken(token);
-        console.log('[PRESENZA] Token decodificato:', token, '→ ID:', athleteIdParam);
-      }
-    }
-  }
-  
   let visibleAthletes = athletes.filter(a => !a.guest);
   
   if (athleteIdParam) {
@@ -451,63 +424,46 @@ async function render(loadedData) {
     });
   }
 }
-
 window.generatePresenceLink = function(athleteId, athleteName) {
-  // Funzione per generare il token
-  function generateAthleteToken(athleteId) {
-  const salt = 'GO_SPORT_2025_SECRET_KEY';
-  const str = salt + athleteId;
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) - hash) + str.charCodeAt(i);
-    hash = hash & hash;
-  }
-  // AGGIUNTO separatore "x" tra hash e ID
-  return Math.abs(hash).toString(36) + 'x' + athleteId.toString().split('').reverse().join('');
-}
+  // Link SEMPLICE senza token - USA SOLO athleteId
+  const link = `${window.location.origin}/calendario.html?athleteId=${athleteId}`;
   
-  const token = generateAthleteToken(athleteId);
+  console.log('[CALENDARIO] 🔗 Link generato:', {
+    athleteId,
+    athleteName,
+    link
+  });
   
-  // IMPORTANTE: Includi l'annata corrente nell'URL
-  const currentAnnata = window.currentAnnata || 
-                        localStorage.getItem('currentAnnata') || 
-                        sessionStorage.getItem('gosport_current_annata');
-  
-  const link = currentAnnata 
-    ? `${window.location.origin}/presenza/${token}?annata=${currentAnnata}`
-    : `${window.location.origin}/presenza/${token}`;
-  
-  console.log('[CALENDARIO] 🔗 Link generato:', { athleteId, athleteName, token, annata: currentAnnata, link });
-  
+  // Modal di visualizzazione del link
   const modal = document.createElement('div');
-  modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
+  modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999';
   modal.innerHTML = `
-    <div style="background:white;padding:30px;border-radius:15px;max-width:600px;width:90%;">
-      <h3 style="margin:0 0 20px 0;color:#2563eb;">🔗 Link Conferma Presenze</h3>
-      <p style="margin-bottom:15px;"><strong>Atleta:</strong> ${athleteName}</p>
-      <p style="margin-bottom:10px;"><strong>ID Atleta:</strong> <code>${athleteId}</code></p>
-      ${currentAnnata ? `<p style="margin-bottom:10px;"><strong>Annata:</strong> <code>${currentAnnata}</code></p>` : ''}
-      <div style="background:#f1f5f9;padding:15px;border-radius:8px;margin-bottom:20px;word-break:break-all;font-family:monospace;font-size:14px;">
+    <div style="background:white;padding:30px;border-radius:15px;max-width:600px;width:90%">
+      <h3 style="margin:0 0 20px 0;color:#2563eb">🔗 Link Conferma Presenze</h3>
+      <p style="margin-bottom:15px"><strong>Atleta:</strong> ${athleteName}</p>
+      <p style="margin-bottom:10px"><strong>ID Atleta:</strong> <code>${athleteId}</code></p>
+      <div style="background:#f1f5f9;padding:15px;border-radius:8px;margin-bottom:20px;word-break:break-all;font-family:monospace;font-size:14px">
         ${link}
       </div>
-      <div style="display:flex;gap:10px;">
+      <div style="display:flex;gap:10px">
         <button onclick="navigator.clipboard.writeText('${link}').then(() => alert('✅ Link copiato!')).catch(() => alert('❌ Errore'))" 
-          style="flex:1;background:#10b981;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
+                style="flex:1;background:#10b981;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600">
           📋 Copia Link
         </button>
         <button onclick="this.parentElement.parentElement.parentElement.remove()" 
-          style="flex:1;background:#64748b;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
-          Chiudi
+                style="flex:1;background:#64748b;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600">
+          ❌ Chiudi
         </button>
       </div>
-      <div style="margin-top:20px;padding:15px;background:#e0f2fe;border-radius:8px;font-size:14px;color:#0c4a6e;">
-        <strong>📱 Invia questo link al genitore</strong><br>
-        Il link funziona con il formato: <code>/presenza/token?annata=ID</code><br>
-        L'annata è inclusa automaticamente nel link.
+      <div style="margin-top:20px;padding:15px;background:#e0f2fe;border-radius:8px;font-size:14px;color:#0c4a6e">
+        <strong>📨 Invia questo link al genitore</strong><br>
+        Il genitore potrà confermare presenza/assenza senza bisogno di login.
       </div>
     </div>
   `;
+  
   document.body.appendChild(modal);
+  
   modal.onclick = (e) => {
     if (e.target === modal) modal.remove();
   };
