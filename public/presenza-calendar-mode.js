@@ -46,6 +46,20 @@
 
     console.log('[PRESENZA MODE] Attivo per atleta ID:', athleteId);
 
+    // IMPOSTA L'ANNATA CORRENTE per la modalità presenza
+    // Usa l'annata di default o quella passata nell'URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const annataFromUrl = urlParams.get('annata');
+    const defaultAnnata = 'mko51uzhw2xrxx1uo1'; // TODO: Rendere configurabile
+    
+    const annataId = annataFromUrl || defaultAnnata;
+    
+    // Imposta nel localStorage E come variabile globale
+    localStorage.setItem('currentAnnata', annataId);
+    window.currentAnnata = annataId;
+    
+    console.log('[PRESENZA MODE] Annata impostata:', annataId);
+
     // Aspetta che il calendario sia renderizzato
     function waitForCalendar() {
         const interval = setInterval(() => {
