@@ -13,13 +13,17 @@
 
     // Funzione decodifica token
     function decodeToken(token) {
-        try {
-            const match = token.match(/[0-9]+$/);
-            return match ? match[0].split('').reverse().join('') : null;
-        } catch (e) {
-            return null;
-        }
-    }
+  try {
+    const match = token.match(/x([0-9]+)$/);
+    if (!match) return null;
+    
+    // Reverse e rimuovi zeri iniziali
+    const reversed = match[1].split('').reverse().join('');
+    return reversed.replace(/^0+/, ''); // Rimuove zeri iniziali
+  } catch (e) {
+    return null;
+  }
+}
 
     // Controlla se siamo in modalità presenza
     const path = window.location.pathname;
