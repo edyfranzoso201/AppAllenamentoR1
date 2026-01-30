@@ -85,51 +85,47 @@ async function getAnnataId() {
 }
 
 async function load() {
+  console.log('[CALENDARIO] 🔥 Caricamento dati calendario...');
+  
+  const urlParams = new URLSearchParams(window.location.search);
+  const annataFromUrl = urlParams.get('annata');
+  
+  let annataId = annataFromUrl || 
+                 window.currentAnnata || 
+                 localStorage.getItem('currentAnnata') || 
+                 sessionStorage.getItem('gosport:currentannata');
+  
+  if (!annataId) {
+    console.warn('[CALENDARIO] ⚠️ Nessuna annata trovata, uso default');
+    annataId = 'mko5iuzhw2xrxxi1';
+  }
+  
+  console.log('[CALENDARIO] ✅ Annata da URL:', annataId);
+  window.currentAnnata = annataId;
+  
   try {
-    console.log('[CALENDARIO] 🔥 Caricamento dati calendario...');
-    
-    const annataId = await getAnnataId();
-    
-    if (!annataId) {
-      throw new Error('Nessuna annata disponibile');
-    }
-    
-    console.log(`[CALENDARIO] 🔥 Caricamento per annata: ${annataId}`);
-    
-    // Chiamata API diretta con header
-    const response = await fetch('/api/data', {
-      cache: 'no-store',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Annata-Id': annataId
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    
+    const response = await fetch(`/api/data?annataId=${annataId}`);
     const result = await response.json();
-    const data = result.data || result;
     
-    events = data.calendarEvents || {};
-    
-    // Converti TUTTI gli ID a stringhe
-    athletes = (data.athletes || []).map(a => ({
-      ...a,
-      id: String(a.id)
-    }));
-    
-    console.log('[CALENDARIO] ✅ Dati caricati:', {
-      eventi: Object.keys(events).length,
-      atleti: athletes.length,
-      annata: annataId
-    });
-    
-    render(data);
+    if (result.success && result.data) {
+      athletes = result.data.athletes || [];
+      events = result.data.calendarEvents || {};
+      
+      console.log('[CALENDARIO] ✅ Dati caricati:', {
+        athletes: athletes.length,
+        events: Object.keys(events).length,
+        attendanceResponses: result.data.attendanceResponses ? Object.keys(result.data.attendanceResponses).length : 0
+      });
+      
+      // ✅ PASSA TUTTO result.data (include attendanceResponses!)
+      await render(result.data);
+    } else {
+      console.error('[CALENDARIO] ❌ Risposta API non valida');
+      await render({});
+    }
   } catch (e) {
     console.error('[CALENDARIO] ❌ Errore caricamento:', e);
-    document.getElementById('calendar').innerHTML = `<div class="alert alert-danger">Errore: ${e.message}</div>`;
+    await render({});
   }
 }
 
