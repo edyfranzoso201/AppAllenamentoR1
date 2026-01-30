@@ -221,12 +221,18 @@ async function markAbsence(athleteId, date, currentStatus) {
     alert('❌ Errore: ' + e.message);
   }
 }
-
 function getAttendanceStatus(athleteId, date, data) {
   if (!data.attendanceResponses || !data.attendanceResponses[date]) {
     return null;
   }
-  return data.attendanceResponses[date][athleteId] || null;
+  
+  // Converti l'athleteId a stringa per il confronto
+  const athleteIdStr = String(athleteId);
+  
+  // Cerca sia con ID stringa che numero
+  return data.attendanceResponses[date][athleteIdStr] || 
+         data.attendanceResponses[date][athleteId] || 
+         null;
 }
 
 async function render(loadedData) {
