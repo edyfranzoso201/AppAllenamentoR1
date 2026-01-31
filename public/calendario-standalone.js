@@ -172,24 +172,24 @@ async function markAbsence(athleteId, date, currentStatus) {
     console.log('[PRESENZA] 📦 Dati caricati per salvataggio');
     
     // Inizializza struttura
-    if (!data.attendanceResponses) {
-      data.attendanceResponses = {};
+    if (!data.calendarResponses) {
+      data.calendarResponses = {};
     }
-    if (!data.attendanceResponses[date]) {
-      data.attendanceResponses[date] = {};
+    if (!data.calendarResponses[date]) {
+      data.calendarResponses[date] = {};
     }
     
     // Imposta stato - USA STRINGA
     const athleteIdStr = String(athleteId);
     if (newStatus === 'Assente') {
-      data.attendanceResponses[date][athleteIdStr] = 'Assente';
+      data.calendarResponses[date][athleteIdStr] = 'Assente';
       console.log(`[PRESENZA] ✅ Impostato assente per ${athleteIdStr}`);
     } else {
-      delete data.attendanceResponses[date][athleteIdStr];
+      delete data.calendarResponses[date][athleteIdStr];
       console.log(`[PRESENZA] ✅ Rimosso assente per ${athleteIdStr}`);
     }
     
-    console.log('[PRESENZA] 💾 Salvataggio dati...', JSON.stringify(data.attendanceResponses[date], null, 2));
+    console.log('[PRESENZA] 💾 Salvataggio dati...', JSON.stringify(data.calendarResponses[date], null, 2));
     
     // Salva con header
     const saveResponse = await fetch('/api/data', {
@@ -226,17 +226,17 @@ function getAttendanceStatus(athleteId, date, data) {
   console.log('[STATUS] 🔍 Controllo stato:', {
     athleteId,
     date,
-    attendanceResponses: data.attendanceResponses
+    calendarResponses: data.calendarResponses
   });
   
-  if (!data.attendanceResponses || !data.attendanceResponses[date]) {
+  if (!data.calendarResponses || !data.calendarResponses[date]) {
     console.log('[STATUS] ⚠️ Nessuna risposta per', date);
     return null;
   }
   
   const athleteIdStr = String(athleteId);
-  const status = data.attendanceResponses[date][athleteIdStr] || 
-                 data.attendanceResponses[date][athleteId] || 
+  const status = data.calendarResponses[date][athleteIdStr] || 
+                 data.calendarResponses[date][athleteId] || 
                  null;
   
   console.log('[STATUS] ✅ Stato trovato:', status, 'per ID:', athleteIdStr);
