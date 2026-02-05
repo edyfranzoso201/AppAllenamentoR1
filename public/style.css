@@ -155,24 +155,23 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     max-height: 400px;
 }
 /* ============================================
-   TRASFORMAZIONE MODULO FORMAZIONE - VERSIONE OTTIMIZZATA FINALE
+   TRASFORMAZIONE MODULO FORMAZIONE - VERSIONE ULTRA-COMPATTA
    - Rotazione 90° senso orario
-   - Ingrandimento 70% (scale 1.7) - PIÙ GRANDE
-   - Campo e panchina ALZATI
-   - Panchina SOTTO il campo
-   - Eliminato spazio blu inutile
+   - Ingrandimento 70% (scale 1.7)
+   - ZERO spazio blu tra campo e panchina
+   - ZERO spazio blu sotto la panchina
    - Magliette e token NON ruotati
    ============================================ */
 
-/* Modifiche al contenitore wrapper - COMPATTO */
+/* Modifiche al contenitore wrapper - ULTRA COMPATTO */
 #pitch-wrapper {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    gap: 1rem;
+    gap: 0;
     min-height: auto;
-    margin: 20px auto 30px;
+    margin: 20px auto 10px;
     flex-wrap: nowrap;
     max-width: 100%;
     padding: 0;
@@ -190,18 +189,18 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     max-width: none;
     aspect-ratio: unset;
     
-    /* Trasformazione: rotazione + scala MAGGIORE */
+    /* Trasformazione: rotazione + scala */
     transform: rotate(90deg) scale(1.7);
     transform-origin: center center;
     
-    /* Spazio minimo - campo alzato */
-    margin: 80px auto 40px;
+    /* Margini minimi - campo alzato e compatto */
+    margin: 80px auto 0;
     
     box-sizing: border-box;
     flex-shrink: 0;
 }
 
-/* PANCHINA - Ruotata 90° e ingrandita 70%, SOTTO il campo */
+/* PANCHINA - Ruotata 90° e ingrandita 70%, ATTACCATA al campo */
 #field-bench-area {
     background-color: rgba(0,0,0,0.2);
     border: 2px dashed var(--border-color);
@@ -211,15 +210,15 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     width: 140px;
     height: 588px;
     
-    /* Trasformazione: rotazione + scala MAGGIORE */
+    /* Trasformazione: rotazione + scala */
     transform: rotate(90deg) scale(1.7);
     transform-origin: center center;
     
     position: relative;
     flex-shrink: 0;
     
-    /* Alzata e spazio ridotto */
-    margin: 40px auto 20px;
+    /* ZERO margini - attaccata al campo */
+    margin: 0 auto;
 }
 
 /* CONTRO-ROTAZIONE MAGLIETTE - per mantenerle dritte */
@@ -250,11 +249,11 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     transform: translate(-50%, -50%) rotate(-90deg);
 }
 
-/* Assicura che la sezione formazione sia COMPATTA */
+/* Sezione formazione ULTRA COMPATTA */
 #formazione-section {
     min-height: auto;
     overflow: visible;
-    padding: 10px 0 20px;
+    padding: 10px 0 10px;
 }
 
 /* Rimuovi padding extra dalla sezione */
@@ -262,11 +261,12 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     margin-bottom: 0.5rem;
 }
 
-/* Ajust per la lista atleti disponibili */
+/* Lista atleti disponibili */
 .available-athletes-container {
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    margin-top: 20px;
 }
 
 /* Media queries per responsive design */
@@ -275,14 +275,14 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
         transform: rotate(90deg) scale(1.6);
         width: 410px;
         height: 574px;
-        margin: 75px auto 35px;
+        margin: 75px auto 0;
     }
     
     #field-bench-area {
         transform: rotate(90deg) scale(1.6);
         width: 135px;
         height: 574px;
-        margin: 35px auto 20px;
+        margin: 0 auto;
     }
 }
 
@@ -291,14 +291,14 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
         transform: rotate(90deg) scale(1.5);
         width: 400px;
         height: 560px;
-        margin: 70px auto 30px;
+        margin: 70px auto 0;
     }
     
     #field-bench-area {
         transform: rotate(90deg) scale(1.5);
         width: 130px;
         height: 560px;
-        margin: 30px auto 20px;
+        margin: 0 auto;
     }
 }
 
@@ -307,14 +307,14 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
         transform: rotate(90deg) scale(1.3);
         width: 380px;
         height: 532px;
-        margin: 60px auto 25px;
+        margin: 60px auto 0;
     }
     
     #field-bench-area {
         transform: rotate(90deg) scale(1.3);
         width: 120px;
         height: 532px;
-        margin: 25px auto 15px;
+        margin: 0 auto;
     }
 }
 
@@ -323,14 +323,14 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
         transform: rotate(90deg) scale(1.1);
         width: 360px;
         height: 504px;
-        margin: 50px auto 20px;
+        margin: 50px auto 0;
     }
     
     #field-bench-area {
         transform: rotate(90deg) scale(1.1);
         width: 110px;
         height: 504px;
-        margin: 20px auto 15px;
+        margin: 0 auto;
     }
 }
 
@@ -342,7 +342,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
         max-width: 350px;
         height: auto;
         aspect-ratio: 5 / 7;
-        margin: 15px auto;
+        margin: 15px auto 10px;
     }
     
     #field-bench-area {
@@ -350,7 +350,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
         width: 100%;
         max-width: 350px;
         height: 150px;
-        margin: 15px auto;
+        margin: 10px auto;
     }
     
     .player-jersey {
@@ -374,7 +374,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
         width: 400px !important;
         height: 560px !important;
         page-break-inside: avoid;
-        margin: 60px auto 30px !important;
+        margin: 60px auto 0 !important;
     }
     
     .printing-now #field-bench-area {
@@ -382,7 +382,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
         width: 130px !important;
         height: 560px !important;
         page-break-inside: avoid;
-        margin: 30px auto 20px !important;
+        margin: 0 auto !important;
     }
     
     .printing-now .player-jersey {
@@ -395,7 +395,8 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     
     .printing-now #pitch-wrapper {
         flex-direction: column;
-        margin: 20px auto;
+        gap: 0;
+        margin: 20px auto 10px;
     }
     
     .printing-now #formazione-section {
