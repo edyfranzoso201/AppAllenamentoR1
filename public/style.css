@@ -291,7 +291,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     display: flex;
     flex-direction: column;
     gap: 0.8rem;
-    margin-top: 250px; /* Aumentato da 80px a 120px = più basso */
+    margin-top: 160px; /* Aumentato da 80px a 120px = più basso */
     position: relative;
 }
 
