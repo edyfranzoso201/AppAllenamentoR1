@@ -291,7 +291,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     display: flex;
     flex-direction: column;
     gap: 0.8rem;
-    margin-top: 200px; /* Aumentato da 80px a 120px = più basso */
+    margin-top: 250px; /* Aumentato da 80px a 120px = più basso */
     position: relative;
 }
 
@@ -316,7 +316,7 @@ section:has(h2:contains("Calendario")) {
 /* Titolo H2 del calendario molto alzato */
 #calendario-section h2,
 section[id*="calendario"] h2 {
-    margin-top: -40px !important; /* Aumentato da -30px a -40px */
+    margin-top: -60px !important; /* Aumentato da -30px a -40px */
     padding-top: 0 !important;
 }
 
