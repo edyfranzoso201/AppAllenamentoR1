@@ -155,11 +155,13 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     max-height: 400px;
 }
 /* ============================================
-   TRASFORMAZIONE MODULO FORMAZIONE - VERSIONE FINALE
-   - Titolo "Modulo Formazione" alzato
-   - Campo alzato
-   - Riga calendario MOLTO alzata
-   - Pannello laterale ABBASSATO (icone visibili)
+   TRASFORMAZIONE MODULO FORMAZIONE - VERSIONE FINALE COMPLETA
+   - Rotazione 90° senso orario
+   - Campo allungato solo in X (height aumentata)
+   - Panchina stretta e lunga come il campo
+   - Calendario ABBASSATO (non alzato)
+   - Pannello laterale visibile
+   - Drag & drop CORRETTO
    ============================================ */
 
 /* Modifiche al contenitore wrapper */
@@ -195,13 +197,13 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     margin-bottom: 0.2rem;
 }
 
-/* CAMPO DA CALCIO - ALZATO */
+/* CAMPO DA CALCIO - Ruotato 90° e allungato */
 #field-container {
     background-color: var(--field-green);
     border: 2px solid var(--field-line);
     position: relative;
     
-    /* Dimensioni base */
+    /* Dimensioni base - SOLO height aumentata per allungare */
     width: 420px;
     height: 700px;
     max-width: none;
@@ -219,7 +221,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     pointer-events: auto;
 }
 
-/* PANCHINA - ATTACCATA AL CAMPO */
+/* PANCHINA - Ruotata 90°, stretta e lunga come il campo */
 #field-bench-area {
     background-color: rgba(0,0,0,0.2);
     border: 2px dashed var(--border-color);
@@ -237,12 +239,12 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     flex-shrink: 0;
     
     /* Margini negativi estremi */
-    margin: -100px auto -180px; /* Aumentato a -180px per più spazio sotto */
+    margin: -100px auto -180px;
     
     pointer-events: auto;
 }
 
-/* CONTRO-ROTAZIONE MAGLIETTE */
+/* CONTRO-ROTAZIONE MAGLIETTE - per mantenerle dritte */
 .player-jersey {
     position: absolute;
     display: flex;
@@ -254,6 +256,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     user-select: none;
     font-size: clamp(4.5px, 0.6vw, 8px);
     
+    /* Prima trasla al centro, poi ruota per annullare la rotazione del campo */
     transform: translate(-50%, -50%) rotate(-90deg);
     
     pointer-events: auto;
@@ -266,7 +269,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     cursor: grabbing;
 }
 
-/* CONTRO-ROTAZIONE TOKEN */
+/* CONTRO-ROTAZIONE TOKEN (C, VC, palloni, avversari) */
 .token {
     position: absolute;
     cursor: grab;
@@ -274,6 +277,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     z-index: 10;
     text-align: center;
     
+    /* Prima trasla al centro, poi ruota per annullare la rotazione del campo */
     transform: translate(-50%, -50%) rotate(-90deg);
     
     pointer-events: auto;
@@ -286,12 +290,12 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     cursor: grabbing;
 }
 
-/* PANNELLO LATERALE - ABBASSATO per mostrare icone */
+/* PANNELLO LATERALE - Posizione normale (non modificata) */
 .available-athletes-container {
     display: flex;
     flex-direction: column;
     gap: 0.8rem;
-    margin-top: 160px; /* Aumentato da 80px a 120px = più basso */
+    margin-top: 80px;
     position: relative;
 }
 
@@ -305,34 +309,10 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     cursor: grabbing;
 }
 
-/* RIGA/TITOLO CALENDARIO - MOLTO ALZATO */
-#calendario-section,
-section[id*="calendario"],
-section:has(h2:contains("Calendario")) {
-    margin-top: -120px !important; /* Aumentato da -70px a -90px */
+/* CALENDARIO - ABBASSATO (tutto insieme: titolo + contenuto) */
+#calendario-section {
+    margin-top: 80px !important;
     padding-top: 0 !important;
-}
-
-/* Titolo H2 del calendario molto alzato */
-#calendario-section h2,
-section[id*="calendario"] h2 {
-    margin-top: -60px !important; /* Aumentato da -30px a -40px */
-    padding-top: 0 !important;
-}
-
-/* La riga che contiene il titolo alzata */
-#calendario-section > .row:first-child,
-section[id*="calendario"] > .row:first-child {
-    margin-top: -90px !important; /* Molto alzata */
-    padding-top: 0 !important;
-}
-
-/* NON alzare il contenuto del calendario */
-#calendario-section .calendar-grid,
-#calendario-section .card-body,
-#calendario-section > *:not(.row:first-child):not(h2),
-section[id*="calendario"] > *:not(.row:first-child):not(h2) {
-    margin-top: 0 !important;
 }
 
 /* Media queries per responsive design */
@@ -360,17 +340,11 @@ section[id*="calendario"] > *:not(.row:first-child):not(h2) {
     }
     
     .available-athletes-container {
-        margin-top: 110px;
+        margin-top: 70px;
     }
     
-    #calendario-section,
-    section[id*="calendario"] {
-        margin-top: -85px !important;
-    }
-    
-    #calendario-section > .row:first-child,
-    section[id*="calendario"] > .row:first-child {
-        margin-top: -85px !important;
+    #calendario-section {
+        margin-top: 70px !important;
     }
 }
 
@@ -398,17 +372,11 @@ section[id*="calendario"] > *:not(.row:first-child):not(h2) {
     }
     
     .available-athletes-container {
-        margin-top: 100px;
+        margin-top: 60px;
     }
     
-    #calendario-section,
-    section[id*="calendario"] {
-        margin-top: -80px !important;
-    }
-    
-    #calendario-section > .row:first-child,
-    section[id*="calendario"] > .row:first-child {
-        margin-top: -80px !important;
+    #calendario-section {
+        margin-top: 60px !important;
     }
 }
 
@@ -436,17 +404,11 @@ section[id*="calendario"] > *:not(.row:first-child):not(h2) {
     }
     
     .available-athletes-container {
-        margin-top: 90px;
+        margin-top: 50px;
     }
     
-    #calendario-section,
-    section[id*="calendario"] {
-        margin-top: -70px !important;
-    }
-    
-    #calendario-section > .row:first-child,
-    section[id*="calendario"] > .row:first-child {
-        margin-top: -70px !important;
+    #calendario-section {
+        margin-top: 50px !important;
     }
 }
 
@@ -474,21 +436,16 @@ section[id*="calendario"] > *:not(.row:first-child):not(h2) {
     }
     
     .available-athletes-container {
-        margin-top: 80px;
+        margin-top: 40px;
     }
     
-    #calendario-section,
-    section[id*="calendario"] {
-        margin-top: -60px !important;
-    }
-    
-    #calendario-section > .row:first-child,
-    section[id*="calendario"] > .row:first-child {
-        margin-top: -60px !important;
+    #calendario-section {
+        margin-top: 40px !important;
     }
 }
 
 @media (max-width: 768px) {
+    /* Su mobile, rimuovi completamente la rotazione per usabilità */
     #field-container {
         transform: none;
         width: 100%;
@@ -528,18 +485,12 @@ section[id*="calendario"] > *:not(.row:first-child):not(h2) {
         margin-top: 20px;
     }
     
-    #calendario-section,
-    section[id*="calendario"] {
-        margin-top: 0 !important;
-    }
-    
-    #calendario-section > .row:first-child,
-    section[id*="calendario"] > .row:first-child {
-        margin-top: 0 !important;
+    #calendario-section {
+        margin-top: 20px !important;
     }
 }
 
-/* STAMPA */
+/* STAMPA - Mantieni il campo ruotato anche in stampa */
 @media print {
     .printing-now #field-container {
         width: 400px !important;
@@ -574,5 +525,9 @@ section[id*="calendario"] > *:not(.row:first-child):not(h2) {
     .printing-now #formazione-section {
         padding: 0;
         margin-top: -20px;
+    }
+    
+    .printing-now #calendario-section {
+        margin-top: 50px !important;
     }
 }
