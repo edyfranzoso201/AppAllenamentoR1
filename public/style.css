@@ -155,11 +155,11 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     max-height: 400px;
 }
 /* ============================================
-   TRASFORMAZIONE MODULO FORMAZIONE - VERSIONE CORRETTA
-   - Titolo "Modulo Formazione" MOLTO alzato
-   - Campo MOLTO alzato
-   - Panchina attaccata al campo
-   - Solo TITOLO calendario alzato (non il contenuto)
+   TRASFORMAZIONE MODULO FORMAZIONE - VERSIONE FINALE
+   - Titolo "Modulo Formazione" alzato
+   - Campo alzato
+   - Riga calendario MOLTO alzata
+   - Pannello laterale ABBASSATO (icone visibili)
    ============================================ */
 
 /* Modifiche al contenitore wrapper */
@@ -176,18 +176,18 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     padding: 0;
 }
 
-/* SEZIONE FORMAZIONE - MOLTO ALZATA */
+/* SEZIONE FORMAZIONE - ALZATA */
 #formazione-section {
     min-height: auto;
     overflow: visible;
     padding: 0;
     margin-bottom: 0;
-    margin-top: -25px; /* Alza molto la sezione */
+    margin-top: -25px;
 }
 
-/* TITOLO "MODULO FORMAZIONE" - MOLTO ALZATO */
+/* TITOLO "MODULO FORMAZIONE" - ALZATO */
 #formazione-section > .row:first-child {
-    margin-top: -25px; /* Alza molto il titolo */
+    margin-top: -25px;
     margin-bottom: 5px;
 }
 
@@ -195,7 +195,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     margin-bottom: 0.2rem;
 }
 
-/* CAMPO DA CALCIO - MOLTO ALZATO */
+/* CAMPO DA CALCIO - ALZATO */
 #field-container {
     background-color: var(--field-green);
     border: 2px solid var(--field-line);
@@ -211,7 +211,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     transform: rotate(90deg) scale(1.7);
     transform-origin: center center;
     
-    /* MARGINI MOLTO ALZATI - campo ancora più su */
+    /* Margini alzati */
     margin: 30px auto -100px;
     
     box-sizing: border-box;
@@ -236,8 +236,8 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     position: relative;
     flex-shrink: 0;
     
-    /* MARGINI NEGATIVI ESTREMI - panchina quasi attaccata */
-    margin: -100px auto -170px;
+    /* Margini negativi estremi */
+    margin: -100px auto -180px; /* Aumentato a -180px per più spazio sotto */
     
     pointer-events: auto;
 }
@@ -286,12 +286,12 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     cursor: grabbing;
 }
 
-/* PANNELLO LATERALE ABBASSATO */
+/* PANNELLO LATERALE - ABBASSATO per mostrare icone */
 .available-athletes-container {
     display: flex;
     flex-direction: column;
     gap: 0.8rem;
-    margin-top: 80px;
+    margin-top: 120px; /* Aumentato da 80px a 120px = più basso */
     position: relative;
 }
 
@@ -305,24 +305,32 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     cursor: grabbing;
 }
 
-/* SOLO LA RIGA/TITOLO DEL CALENDARIO ALZATA - NON IL CONTENUTO */
-/* Cerca la sezione calendario e alza solo il titolo */
-#calendario-section > .row:first-child,
-#weekly-attendance-analysis-section > .row:first-child,
-section[id*="calendario"] > .row:first-child {
-    margin-top: -70px !important;
+/* RIGA/TITOLO CALENDARIO - MOLTO ALZATO */
+#calendario-section,
+section[id*="calendario"],
+section:has(h2:contains("Calendario")) {
+    margin-top: -90px !important; /* Aumentato da -70px a -90px */
     padding-top: 0 !important;
 }
 
-/* Il titolo H2 del calendario alzato */
+/* Titolo H2 del calendario molto alzato */
 #calendario-section h2,
 section[id*="calendario"] h2 {
-    margin-top: -30px !important;
+    margin-top: -40px !important; /* Aumentato da -30px a -40px */
+    padding-top: 0 !important;
 }
 
-/* NON alzare il contenuto del calendario (grid, cards, etc) */
+/* La riga che contiene il titolo alzata */
+#calendario-section > .row:first-child,
+section[id*="calendario"] > .row:first-child {
+    margin-top: -90px !important; /* Molto alzata */
+    padding-top: 0 !important;
+}
+
+/* NON alzare il contenuto del calendario */
 #calendario-section .calendar-grid,
 #calendario-section .card-body,
+#calendario-section > *:not(.row:first-child):not(h2),
 section[id*="calendario"] > *:not(.row:first-child):not(h2) {
     margin-top: 0 !important;
 }
@@ -340,7 +348,7 @@ section[id*="calendario"] > *:not(.row:first-child):not(h2) {
         width: 135px;
         height: 680px;
         transform: rotate(90deg) scale(1.6);
-        margin: -95px auto -160px;
+        margin: -95px auto -170px;
     }
     
     #formazione-section {
@@ -352,12 +360,17 @@ section[id*="calendario"] > *:not(.row:first-child):not(h2) {
     }
     
     .available-athletes-container {
-        margin-top: 70px;
+        margin-top: 110px;
+    }
+    
+    #calendario-section,
+    section[id*="calendario"] {
+        margin-top: -85px !important;
     }
     
     #calendario-section > .row:first-child,
     section[id*="calendario"] > .row:first-child {
-        margin-top: -65px !important;
+        margin-top: -85px !important;
     }
 }
 
@@ -373,7 +386,7 @@ section[id*="calendario"] > *:not(.row:first-child):not(h2) {
         width: 130px;
         height: 650px;
         transform: rotate(90deg) scale(1.5);
-        margin: -85px auto -150px;
+        margin: -85px auto -160px;
     }
     
     #formazione-section {
@@ -385,12 +398,17 @@ section[id*="calendario"] > *:not(.row:first-child):not(h2) {
     }
     
     .available-athletes-container {
-        margin-top: 60px;
+        margin-top: 100px;
+    }
+    
+    #calendario-section,
+    section[id*="calendario"] {
+        margin-top: -80px !important;
     }
     
     #calendario-section > .row:first-child,
     section[id*="calendario"] > .row:first-child {
-        margin-top: -60px !important;
+        margin-top: -80px !important;
     }
 }
 
@@ -406,7 +424,7 @@ section[id*="calendario"] > *:not(.row:first-child):not(h2) {
         width: 120px;
         height: 600px;
         transform: rotate(90deg) scale(1.3);
-        margin: -75px auto -130px;
+        margin: -75px auto -140px;
     }
     
     #formazione-section {
@@ -418,12 +436,17 @@ section[id*="calendario"] > *:not(.row:first-child):not(h2) {
     }
     
     .available-athletes-container {
-        margin-top: 50px;
+        margin-top: 90px;
+    }
+    
+    #calendario-section,
+    section[id*="calendario"] {
+        margin-top: -70px !important;
     }
     
     #calendario-section > .row:first-child,
     section[id*="calendario"] > .row:first-child {
-        margin-top: -50px !important;
+        margin-top: -70px !important;
     }
 }
 
@@ -439,7 +462,7 @@ section[id*="calendario"] > *:not(.row:first-child):not(h2) {
         width: 110px;
         height: 550px;
         transform: rotate(90deg) scale(1.1);
-        margin: -60px auto -110px;
+        margin: -60px auto -120px;
     }
     
     #formazione-section {
@@ -451,12 +474,17 @@ section[id*="calendario"] > *:not(.row:first-child):not(h2) {
     }
     
     .available-athletes-container {
-        margin-top: 40px;
+        margin-top: 80px;
+    }
+    
+    #calendario-section,
+    section[id*="calendario"] {
+        margin-top: -60px !important;
     }
     
     #calendario-section > .row:first-child,
     section[id*="calendario"] > .row:first-child {
-        margin-top: -40px !important;
+        margin-top: -60px !important;
     }
 }
 
@@ -500,6 +528,11 @@ section[id*="calendario"] > *:not(.row:first-child):not(h2) {
         margin-top: 20px;
     }
     
+    #calendario-section,
+    section[id*="calendario"] {
+        margin-top: 0 !important;
+    }
+    
     #calendario-section > .row:first-child,
     section[id*="calendario"] > .row:first-child {
         margin-top: 0 !important;
@@ -521,7 +554,7 @@ section[id*="calendario"] > *:not(.row:first-child):not(h2) {
         height: 650px !important;
         transform: rotate(90deg) scale(1.5) !important;
         page-break-inside: avoid;
-        margin: -85px auto -150px !important;
+        margin: -85px auto -160px !important;
     }
     
     .printing-now .player-jersey {
