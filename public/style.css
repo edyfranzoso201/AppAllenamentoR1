@@ -155,66 +155,71 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     max-height: 400px;
 }
 /* ============================================
-   TRASFORMAZIONE MODULO FORMAZIONE - VERSIONE CORRETTA
-   - Rotazione 90° senso orario del campo e panchina
-   - Ingrandimento 50% (scale 1.5)
+   TRASFORMAZIONE MODULO FORMAZIONE - VERSIONE OTTIMIZZATA FINALE
+   - Rotazione 90° senso orario
+   - Ingrandimento 70% (scale 1.7) - PIÙ GRANDE
+   - Campo e panchina ALZATI
    - Panchina SOTTO il campo
+   - Eliminato spazio blu inutile
    - Magliette e token NON ruotati
    ============================================ */
 
-/* Modifiche al contenitore wrapper - LAYOUT VERTICALE */
+/* Modifiche al contenitore wrapper - COMPATTO */
 #pitch-wrapper {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 2rem;
+    justify-content: flex-start;
+    gap: 1rem;
     min-height: auto;
-    margin: 30px auto;
+    margin: 20px auto 30px;
     flex-wrap: nowrap;
     max-width: 100%;
+    padding: 0;
 }
 
-/* CAMPO DA CALCIO - Ruotato 90° e ingrandito 50% */
+/* CAMPO DA CALCIO - Ruotato 90° e ingrandito 70% */
 #field-container {
     background-color: var(--field-green);
     border: 2px solid var(--field-line);
     position: relative;
     
-    /* Dimensioni base ridotte per evitare overflow */
-    width: 400px;
-    height: 560px;
+    /* Dimensioni base */
+    width: 420px;
+    height: 588px;
     max-width: none;
     aspect-ratio: unset;
     
-    /* Trasformazione: rotazione + scala */
-    transform: rotate(90deg) scale(1.5);
+    /* Trasformazione: rotazione + scala MAGGIORE */
+    transform: rotate(90deg) scale(1.7);
     transform-origin: center center;
     
-    /* Spazio per la rotazione */
-    margin: 120px auto;
+    /* Spazio minimo - campo alzato */
+    margin: 80px auto 40px;
     
     box-sizing: border-box;
     flex-shrink: 0;
 }
 
-/* PANCHINA - Ruotata 90° e ingrandita 50%, SOTTO il campo */
+/* PANCHINA - Ruotata 90° e ingrandita 70%, SOTTO il campo */
 #field-bench-area {
     background-color: rgba(0,0,0,0.2);
     border: 2px dashed var(--border-color);
     border-radius: 8px;
     
     /* Dimensioni base */
-    width: 130px;
-    height: 560px;
+    width: 140px;
+    height: 588px;
     
-    /* Trasformazione: rotazione + scala */
-    transform: rotate(90deg) scale(1.5);
+    /* Trasformazione: rotazione + scala MAGGIORE */
+    transform: rotate(90deg) scale(1.7);
     transform-origin: center center;
     
     position: relative;
     flex-shrink: 0;
-    margin: 80px auto;
+    
+    /* Alzata e spazio ridotto */
+    margin: 40px auto 20px;
 }
 
 /* CONTRO-ROTAZIONE MAGLIETTE - per mantenerle dritte */
@@ -245,14 +250,19 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     transform: translate(-50%, -50%) rotate(-90deg);
 }
 
-/* Assicura che la sezione formazione abbia spazio sufficiente */
+/* Assicura che la sezione formazione sia COMPATTA */
 #formazione-section {
     min-height: auto;
     overflow: visible;
-    padding: 20px 0;
+    padding: 10px 0 20px;
 }
 
-/* Ajust per la lista atleti disponibili - posizionamento migliorato */
+/* Rimuovi padding extra dalla sezione */
+#formazione-section .row {
+    margin-bottom: 0.5rem;
+}
+
+/* Ajust per la lista atleti disponibili */
 .available-athletes-container {
     display: flex;
     flex-direction: column;
@@ -260,51 +270,67 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 }
 
 /* Media queries per responsive design */
+@media (max-width: 1600px) {
+    #field-container {
+        transform: rotate(90deg) scale(1.6);
+        width: 410px;
+        height: 574px;
+        margin: 75px auto 35px;
+    }
+    
+    #field-bench-area {
+        transform: rotate(90deg) scale(1.6);
+        width: 135px;
+        height: 574px;
+        margin: 35px auto 20px;
+    }
+}
+
 @media (max-width: 1400px) {
+    #field-container {
+        transform: rotate(90deg) scale(1.5);
+        width: 400px;
+        height: 560px;
+        margin: 70px auto 30px;
+    }
+    
+    #field-bench-area {
+        transform: rotate(90deg) scale(1.5);
+        width: 130px;
+        height: 560px;
+        margin: 30px auto 20px;
+    }
+}
+
+@media (max-width: 1200px) {
     #field-container {
         transform: rotate(90deg) scale(1.3);
         width: 380px;
         height: 532px;
-        margin: 100px auto;
+        margin: 60px auto 25px;
     }
     
     #field-bench-area {
         transform: rotate(90deg) scale(1.3);
         width: 120px;
         height: 532px;
-        margin: 60px auto;
-    }
-}
-
-@media (max-width: 1200px) {
-    #field-container {
-        transform: rotate(90deg) scale(1.2);
-        width: 360px;
-        height: 504px;
-        margin: 80px auto;
-    }
-    
-    #field-bench-area {
-        transform: rotate(90deg) scale(1.2);
-        width: 110px;
-        height: 504px;
-        margin: 50px auto;
+        margin: 25px auto 15px;
     }
 }
 
 @media (max-width: 992px) {
     #field-container {
-        transform: rotate(90deg) scale(1);
-        width: 340px;
-        height: 476px;
-        margin: 60px auto;
+        transform: rotate(90deg) scale(1.1);
+        width: 360px;
+        height: 504px;
+        margin: 50px auto 20px;
     }
     
     #field-bench-area {
-        transform: rotate(90deg) scale(1);
-        width: 100px;
-        height: 476px;
-        margin: 40px auto;
+        transform: rotate(90deg) scale(1.1);
+        width: 110px;
+        height: 504px;
+        margin: 20px auto 15px;
     }
 }
 
@@ -316,7 +342,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
         max-width: 350px;
         height: auto;
         aspect-ratio: 5 / 7;
-        margin: 20px auto;
+        margin: 15px auto;
     }
     
     #field-bench-area {
@@ -324,7 +350,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
         width: 100%;
         max-width: 350px;
         height: 150px;
-        margin: 20px auto;
+        margin: 15px auto;
     }
     
     .player-jersey {
@@ -337,25 +363,26 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     
     #formazione-section {
         min-height: auto;
+        padding: 10px 0;
     }
 }
 
 /* STAMPA - Mantieni il campo ruotato anche in stampa */
 @media print {
     .printing-now #field-container {
-        transform: rotate(90deg) scale(1.2) !important;
-        width: 380px !important;
-        height: 532px !important;
+        transform: rotate(90deg) scale(1.4) !important;
+        width: 400px !important;
+        height: 560px !important;
         page-break-inside: avoid;
-        margin: 100px auto !important;
+        margin: 60px auto 30px !important;
     }
     
     .printing-now #field-bench-area {
-        transform: rotate(90deg) scale(1.2) !important;
-        width: 120px !important;
-        height: 532px !important;
+        transform: rotate(90deg) scale(1.4) !important;
+        width: 130px !important;
+        height: 560px !important;
         page-break-inside: avoid;
-        margin: 60px auto !important;
+        margin: 30px auto 20px !important;
     }
     
     .printing-now .player-jersey {
@@ -368,5 +395,10 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     
     .printing-now #pitch-wrapper {
         flex-direction: column;
+        margin: 20px auto;
+    }
+    
+    .printing-now #formazione-section {
+        padding: 10px 0;
     }
 }
