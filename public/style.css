@@ -239,7 +239,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     flex-shrink: 0;
     
     /* Margini negativi estremi */
-    margin: -100px auto -180px;
+    margin: -100px auto -220px;
     
     pointer-events: auto;
 }
@@ -295,7 +295,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     display: flex;
     flex-direction: column;
     gap: 0.8rem;
-    margin-top: 80px;
+    margin-top: 180px;
     position: relative;
 }
 
