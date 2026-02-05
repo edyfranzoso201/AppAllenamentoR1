@@ -155,15 +155,14 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     max-height: 400px;
 }
 /* ============================================
-   TRASFORMAZIONE MODULO FORMAZIONE - SOLO LUNGHEZZA AUMENTATA
-   - Rotazione 90° senso orario
-   - Campo PIÙ LUNGO solo in X (height aumentata)
-   - Panchina STRETTA come prima
-   - Ingrandimento 70% (scale 1.7) - come prima
-   - Magliette dimensioni ORIGINALI
+   TRASFORMAZIONE MODULO FORMAZIONE - TUTTO ALZATO
+   - Titolo "Modulo Formazione" alzato
+   - Campo alzato
+   - Panchina attaccata al campo
+   - Spazio blu eliminato completamente
    ============================================ */
 
-/* Modifiche al contenitore wrapper */
+/* Modifiche al contenitore wrapper - TUTTO COMPATTO */
 #pitch-wrapper {
     display: flex;
     flex-direction: column;
@@ -171,71 +170,89 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     justify-content: flex-start;
     gap: 0;
     min-height: auto;
-    margin: 20px auto 0;
+    margin: 0 auto;
     flex-wrap: nowrap;
     max-width: 100%;
     padding: 0;
 }
 
-/* CAMPO DA CALCIO - Ruotato 90° e SOLO PIÙ LUNGO */
+/* SEZIONE FORMAZIONE - ALZATA */
+#formazione-section {
+    min-height: auto;
+    overflow: visible;
+    padding: 5px 0 0;
+    margin-bottom: 0;
+    margin-top: -10px; /* Alza tutta la sezione */
+}
+
+/* TITOLO E ICONE - ALZATI VICINO ALL'HEADER */
+#formazione-section > .row:first-child {
+    margin-top: -15px; /* Alza il titolo */
+    margin-bottom: 5px;
+}
+
+#formazione-section .row {
+    margin-bottom: 0.2rem;
+}
+
+/* CAMPO DA CALCIO - ALZATO */
 #field-container {
     background-color: var(--field-green);
     border: 2px solid var(--field-line);
     position: relative;
     
-    /* Dimensioni base - SOLO height aumentata per allungare */
-    width: 420px;  /* Larghezza INVARIATA */
-    height: 700px; /* Altezza AUMENTATA (era 588px) = campo più lungo */
+    /* Dimensioni base - solo height aumentata */
+    width: 420px;
+    height: 700px;
     max-width: none;
     aspect-ratio: unset;
     
-    /* Trasformazione: rotazione + scala 1.7 (come prima) */
+    /* Trasformazione: rotazione + scala 1.7 */
     transform: rotate(90deg) scale(1.7);
     transform-origin: center center;
     
-    /* Margini ridotti */
-    margin: 90px auto -70px;
+    /* MARGINI ALZATI - campo molto più su */
+    margin: 50px auto -90px;
     
     box-sizing: border-box;
     flex-shrink: 0;
-    
     pointer-events: auto;
 }
 
-/* PANCHINA - Ruotata 90°, STRETTA come prima */
+/* PANCHINA - ATTACCATA AL CAMPO */
 #field-bench-area {
     background-color: rgba(0,0,0,0.2);
     border: 2px dashed var(--border-color);
     border-radius: 8px;
     
-    /* Dimensioni base - STRETTA come l'originale */
-    width: 140px;  /* Larghezza ORIGINALE - stretta */
-    height: 700px; /* Altezza UGUALE al campo per essere lunga */
+    /* Dimensioni base - stretta e lunga */
+    width: 140px;
+    height: 700px;
     
-    /* Trasformazione: rotazione + scala 1.7 (come prima) */
+    /* Trasformazione: rotazione + scala 1.7 */
     transform: rotate(90deg) scale(1.7);
     transform-origin: center center;
     
     position: relative;
     flex-shrink: 0;
     
-    /* Margini negativi per eliminare spazio */
-    margin: -70px auto -130px;
+    /* MARGINI NEGATIVI ESTREMI - panchina quasi attaccata */
+    margin: -90px auto -150px;
     
     pointer-events: auto;
 }
 
-/* CONTRO-ROTAZIONE MAGLIETTE - dimensioni ORIGINALI */
+/* CONTRO-ROTAZIONE MAGLIETTE */
 .player-jersey {
     position: absolute;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 15%;  /* INVARIATO */
+    width: 15%;
     cursor: grab;
     user-select: none;
-    font-size: clamp(4.5px, 0.6vw, 8px);  /* INVARIATO */
+    font-size: clamp(4.5px, 0.6vw, 8px);
     
     transform: translate(-50%, -50%) rotate(-90deg);
     
@@ -269,18 +286,6 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     cursor: grabbing;
 }
 
-/* Sezione formazione */
-#formazione-section {
-    min-height: auto;
-    overflow: visible;
-    padding: 10px 0 0;
-    margin-bottom: 5px;
-}
-
-#formazione-section .row {
-    margin-bottom: 0.2rem;
-}
-
 /* PANNELLO LATERALE ABBASSATO */
 .available-athletes-container {
     display: flex;
@@ -300,24 +305,49 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     cursor: grabbing;
 }
 
+/* SEZIONE CALENDARIO - ALZATA per eliminare spazio blu */
+#calendario-section,
+section[id*="calendario"] {
+    margin-top: -50px !important;
+    padding-top: 0 !important;
+}
+
+/* Se il calendario ha una classe specifica */
+.calendar-section,
+#weekly-attendance-analysis-section,
+[class*="calendar"] {
+    margin-top: -30px !important;
+}
+
+/* Alza anche altre sezioni dopo la formazione */
+#formazione-section ~ section,
+#formazione-section ~ div[id$="-section"] {
+    margin-top: -20px;
+}
+
 /* Media queries per responsive design */
 @media (max-width: 1600px) {
     #field-container {
         width: 410px;
         height: 680px;
         transform: rotate(90deg) scale(1.6);
-        margin: 85px auto -65px;
+        margin: 45px auto -85px;
     }
     
     #field-bench-area {
         width: 135px;
         height: 680px;
         transform: rotate(90deg) scale(1.6);
-        margin: -65px auto -120px;
+        margin: -85px auto -140px;
     }
     
     .available-athletes-container {
         margin-top: 70px;
+    }
+    
+    #calendario-section,
+    section[id*="calendario"] {
+        margin-top: -45px !important;
     }
 }
 
@@ -326,18 +356,23 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
         width: 400px;
         height: 650px;
         transform: rotate(90deg) scale(1.5);
-        margin: 80px auto -60px;
+        margin: 40px auto -75px;
     }
     
     #field-bench-area {
         width: 130px;
         height: 650px;
         transform: rotate(90deg) scale(1.5);
-        margin: -60px auto -110px;
+        margin: -75px auto -130px;
     }
     
     .available-athletes-container {
         margin-top: 60px;
+    }
+    
+    #calendario-section,
+    section[id*="calendario"] {
+        margin-top: -40px !important;
     }
 }
 
@@ -346,18 +381,23 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
         width: 380px;
         height: 600px;
         transform: rotate(90deg) scale(1.3);
-        margin: 70px auto -50px;
+        margin: 35px auto -65px;
     }
     
     #field-bench-area {
         width: 120px;
         height: 600px;
         transform: rotate(90deg) scale(1.3);
-        margin: -50px auto -90px;
+        margin: -65px auto -110px;
     }
     
     .available-athletes-container {
         margin-top: 50px;
+    }
+    
+    #calendario-section,
+    section[id*="calendario"] {
+        margin-top: -35px !important;
     }
 }
 
@@ -366,18 +406,23 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
         width: 360px;
         height: 550px;
         transform: rotate(90deg) scale(1.1);
-        margin: 60px auto -40px;
+        margin: 30px auto -50px;
     }
     
     #field-bench-area {
         width: 110px;
         height: 550px;
         transform: rotate(90deg) scale(1.1);
-        margin: -40px auto -70px;
+        margin: -50px auto -90px;
     }
     
     .available-athletes-container {
         margin-top: 40px;
+    }
+    
+    #calendario-section,
+    section[id*="calendario"] {
+        margin-top: -30px !important;
     }
 }
 
@@ -410,10 +455,20 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     #formazione-section {
         min-height: auto;
         padding: 10px 0;
+        margin-top: 0;
+    }
+    
+    #formazione-section > .row:first-child {
+        margin-top: 0;
     }
     
     .available-athletes-container {
         margin-top: 20px;
+    }
+    
+    #calendario-section,
+    section[id*="calendario"] {
+        margin-top: 0 !important;
     }
 }
 
@@ -424,7 +479,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
         height: 650px !important;
         transform: rotate(90deg) scale(1.5) !important;
         page-break-inside: avoid;
-        margin: 75px auto -60px !important;
+        margin: 40px auto -75px !important;
     }
     
     .printing-now #field-bench-area {
@@ -432,7 +487,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
         height: 650px !important;
         transform: rotate(90deg) scale(1.5) !important;
         page-break-inside: avoid;
-        margin: -60px auto -110px !important;
+        margin: -75px auto -130px !important;
     }
     
     .printing-now .player-jersey {
@@ -446,10 +501,11 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     .printing-now #pitch-wrapper {
         flex-direction: column;
         gap: 0;
-        margin: 20px auto 0;
+        margin: 0 auto;
     }
     
     .printing-now #formazione-section {
-        padding: 10px 0 0;
+        padding: 5px 0 0;
+        margin-top: 0;
     }
 }
