@@ -214,7 +214,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     transform-origin: center center;
     
     /* Margini alzati */
-    margin: 30px auto -100px;
+    margin: 10px auto -110px;
     
     box-sizing: border-box;
     flex-shrink: 0;
@@ -239,7 +239,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     flex-shrink: 0;
     
     /* Margini negativi estremi */
-    margin: -100px auto -220px;
+    margin: -110px auto -240px;
     
     pointer-events: auto;
 }
@@ -311,7 +311,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 
 /* CALENDARIO - ABBASSATO (tutto insieme: titolo + contenuto) */
 #calendario-section {
-    margin-top: 40px !important;
+    margin-top: 20px !important;
     padding-top: 0 !important;
 }
 
