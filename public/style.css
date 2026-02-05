@@ -311,7 +311,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 
 /* CALENDARIO - ABBASSATO (tutto insieme: titolo + contenuto) */
 #calendario-section {
-    margin-top: 80px !important;
+    margin-top: 40px !important;
     padding-top: 0 !important;
 }
 
