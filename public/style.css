@@ -213,8 +213,8 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     transform: rotate(90deg) scale(1.7);
     transform-origin: center center;
     
-    /* Margini alzati - CAMPO PIÙ ALTO */
-    margin: 5px auto -115px;
+    /* Margini alzati */
+    margin: 10px auto -110px;
     
     box-sizing: border-box;
     flex-shrink: 0;
@@ -238,26 +238,26 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     position: relative;
     flex-shrink: 0;
     
-    /* Margini negativi estremi - PIÙ COMPATTO */
-    margin: -115px auto -250px;
+    /* Margini negativi estremi */
+    margin: -110px auto -240px;
     
     pointer-events: auto;
 }
 
-/* CONTRO-ROTAZIONE MAGLIETTE - per mantenerle dritte */
+/* CONTRO-ROTAZIONE MAGLIETTE - per mantenerle dritte - RIDOTTE 20% */
 .player-jersey {
     position: absolute;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 15%;
+    width: 12%;  /* Era 15%, ora 12% = riduzione del 20% */
     cursor: grab;
     user-select: none;
-    font-size: clamp(4.5px, 0.6vw, 8px);
+    font-size: clamp(3.6px, 0.48vw, 6.4px);  /* Era clamp(4.5px, 0.6vw, 8px), ridotto del 20% */
     
     /* Prima trasla al centro, poi ruota per annullare la rotazione del campo */
-    transform: translate(-50%, -50%) rotate(-90deg);
+    transform: translate(-50%, -50%) rotate(-90deg) scale(0.9);  /* Aggiunto scale(0.9) per ridurre ulteriormente */
     
     pointer-events: auto;
     touch-action: none;
@@ -290,12 +290,100 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     cursor: grabbing;
 }
 
-/* PANNELLO LATERALE - ABBASSATO per mostrare icone */
+/* NUOVI STRUMENTI - Puntino BLU (avversario 2), X GIALLA (movimento), Frecce BIANCHE */
+
+/* Puntino BLU - Avversario squadra 2 */
+.opponent-blue-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    background-color: #1e40af;  /* Blu */
+    color: #1e40af;
+    border-radius: 50%;
+    font-size: 28px;
+    cursor: grab;
+    user-select: none;
+    border: 2px solid #1e40af;
+}
+
+/* X GIALLA - Movimento giocatore */
+.movement-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    background-color: transparent;
+    color: #fbbf24;  /* Giallo */
+    font-size: 32px;
+    font-weight: bold;
+    cursor: grab;
+    user-select: none;
+    border: 2px solid #fbbf24;
+    border-radius: 4px;
+}
+
+/* Freccia BIANCA - Linea di passaggio/movimento */
+.arrow-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    background-color: transparent;
+    color: white;
+    font-size: 28px;
+    cursor: grab;
+    user-select: none;
+    border: 2px solid white;
+    border-radius: 4px;
+}
+
+/* Token sul campo - Puntino BLU */
+.token[data-item-type="opponent-blue"] {
+    width: 20px;
+    height: 20px;
+    background-color: #1e40af;
+    border-radius: 50%;
+    border: 2px solid #1e40af;
+}
+
+/* Token sul campo - X GIALLA */
+.token[data-item-type="movement"] {
+    width: 24px;
+    height: 24px;
+    background-color: transparent;
+    color: #fbbf24;
+    font-size: 20px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fbbf24;
+    border-radius: 3px;
+}
+
+/* Token sul campo - FRECCIA BIANCA */
+.token[data-item-type="arrow"] {
+    width: 30px;
+    height: 30px;
+    background-color: transparent;
+    color: white;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+}
+
+/* PANNELLO LATERALE - Posizione normale (non modificata) */
 .available-athletes-container {
     display: flex;
     flex-direction: column;
     gap: 0.8rem;
-    margin-top: 180px !important;
+    margin-top: 180px;
     position: relative;
 }
 
@@ -311,7 +399,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 
 /* CALENDARIO - ABBASSATO (tutto insieme: titolo + contenuto) */
 #calendario-section {
-    margin-top: 10px !important;
+    margin-top: 20px !important;
     padding-top: 0 !important;
 }
 
