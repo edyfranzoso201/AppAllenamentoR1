@@ -179,6 +179,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let pollingInterval = null;
     let visuallyDeletedCards = [];
     const saveData = async () => {
+        // Salva frecce in formationData
+        if (typeof arrows !== 'undefined') {
+            formationData.arrows = arrows;
+        }
+        
         const allData = { 
             athletes, 
             evaluations, 
@@ -229,6 +234,17 @@ document.addEventListener('DOMContentLoaded', () => {
             awards = allData.awards || {};
             trainingSessions = allData.trainingSessions || {};
             formationData = allData.formationData || { starters: [], bench: [], tokens: [] };
+            
+            // Carica frecce se esistono
+            if (formationData.arrows && typeof arrows !== 'undefined') {
+                arrows = formationData.arrows;
+                setTimeout(() => {
+                    if (typeof redrawAllArrows === 'function') {
+                        redrawAllArrows();
+                    }
+                }, 600);
+            }
+            
             matchResults = allData.matchResults || {};
             window.calendarEvents = allData.calendarEvents || {};
             window.calendarResponses = allData.calendarResponses || {};
@@ -2445,19 +2461,8 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
                 formationData.tokens = formationData.tokens.filter(t => t.id != tokenId);
             }
             const rect = dropZone.getBoundingClientRect();
-            
-            // ✅ CORREZIONE: Calcola posizione considerando la rotazione di 90°
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
-            
-            // Posizione normalizzata rispetto al contenitore visibile
-            const normalizedX = mouseX / rect.width;
-            const normalizedY = mouseY / rect.height;
-            
-            // Converti le coordinate ruotate in coordinate del campo originale
-            // Rotazione 90° senso orario: (x, y) -> (y, 1-x)
-            const left = normalizedY * 100;
-            const top = (1 - normalizedX) * 100;
+            const left = ((e.clientX - rect.left) / rect.width) * 100;
+            const top = ((e.clientY - rect.top) / rect.height) * 100;
             if (athleteId) {
                 if (dropZone.id === 'field-container' || dropZone.id === 'field-bench-area') {
                     const targetArray = dropZone.id === 'field-container' ? formationData.starters : formationData.bench;
@@ -2488,6 +2493,200 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
         document.removeEventListener('mousemove', onDragMove);
     };
     document.getElementById('formazione-section').addEventListener('mousedown', onDragStart);
+    
+    // ============================================
+    // FRECCE DINAMICHE - CODICE COMPLETO
+    // ============================================
+    let isDrawingArrow = false;
+    let arrowStartPoint = null;
+    let arrowCanvas = null;
+    let arrowCtx = null;
+    let arrows = []; // Array per salvare tutte le frecce disegnate
+    
+    // Inizializzazione Canvas
+    function initArrowCanvas() {
+        const fieldContainer = document.getElementById('field-container');
+        if (!fieldContainer) return;
+        
+        arrowCanvas = document.getElementById('arrow-canvas');
+        if (!arrowCanvas) return;
+        
+        arrowCanvas.width = fieldContainer.offsetWidth;
+        arrowCanvas.height = fieldContainer.offsetHeight;
+        arrowCtx = arrowCanvas.getContext('2d');
+        
+        window.addEventListener('resize', () => {
+            arrowCanvas.width = fieldContainer.offsetWidth;
+            arrowCanvas.height = fieldContainer.offsetHeight;
+            redrawAllArrows();
+        });
+    }
+    
+    // Setup strumento freccia
+    function setupArrowTool() {
+        const arrowTool = document.querySelector('.arrow-tool');
+        if (!arrowTool) return;
+        
+        arrowTool.addEventListener('click', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            
+            isDrawingArrow = !isDrawingArrow;
+            
+            if (isDrawingArrow) {
+                arrowTool.classList.add('active');
+                document.getElementById('field-container').classList.add('drawing-arrow');
+            } else {
+                arrowTool.classList.remove('active');
+                document.getElementById('field-container').classList.remove('drawing-arrow');
+            }
+        });
+    }
+    
+    // Setup disegno frecce
+    function setupArrowDrawing() {
+        const fieldContainer = document.getElementById('field-container');
+        if (!fieldContainer) return;
+        
+        fieldContainer.addEventListener('mousedown', function(e) {
+            if (!isDrawingArrow) return;
+            
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const rect = fieldContainer.getBoundingClientRect();
+            arrowStartPoint = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        });
+        
+        fieldContainer.addEventListener('mousemove', function(e) {
+            if (!isDrawingArrow || !arrowStartPoint) return;
+            
+            e.preventDefault();
+            
+            const rect = fieldContainer.getBoundingClientRect();
+            const currentPoint = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+            
+            redrawAllArrows();
+            drawArrow(arrowStartPoint, currentPoint, 'rgba(255, 255, 255, 0.6)', true);
+        });
+        
+        fieldContainer.addEventListener('mouseup', function(e) {
+            if (!isDrawingArrow || !arrowStartPoint) return;
+            
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const rect = fieldContainer.getBoundingClientRect();
+            const endPoint = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+            
+            const distance = Math.sqrt(
+                Math.pow(endPoint.x - arrowStartPoint.x, 2) + 
+                Math.pow(endPoint.y - arrowStartPoint.y, 2)
+            );
+            
+            if (distance > 20) {
+                arrows.push({
+                    start: { ...arrowStartPoint },
+                    end: { ...endPoint },
+                    color: 'white'
+                });
+                
+                redrawAllArrows();
+                saveData();
+            }
+            
+            arrowStartPoint = null;
+        });
+        
+        fieldContainer.addEventListener('mouseleave', function() {
+            if (arrowStartPoint) {
+                arrowStartPoint = null;
+                redrawAllArrows();
+            }
+        });
+    }
+    
+    // Disegna una singola freccia
+    function drawArrow(start, end, color = 'white', isPreview = false) {
+        if (!arrowCtx) return;
+        
+        const lineWidth = isPreview ? 2 : 3;
+        const headLength = 15;
+        const angle = Math.atan2(end.y - start.y, end.x - start.x);
+        
+        arrowCtx.beginPath();
+        arrowCtx.moveTo(start.x, start.y);
+        arrowCtx.lineTo(end.x, end.y);
+        arrowCtx.strokeStyle = color;
+        arrowCtx.lineWidth = lineWidth;
+        arrowCtx.lineCap = 'round';
+        arrowCtx.stroke();
+        
+        arrowCtx.beginPath();
+        arrowCtx.moveTo(end.x, end.y);
+        arrowCtx.lineTo(
+            end.x - headLength * Math.cos(angle - Math.PI / 6),
+            end.y - headLength * Math.sin(angle - Math.PI / 6)
+        );
+        arrowCtx.lineTo(
+            end.x - headLength * Math.cos(angle + Math.PI / 6),
+            end.y - headLength * Math.sin(angle + Math.PI / 6)
+        );
+        arrowCtx.closePath();
+        arrowCtx.fillStyle = color;
+        arrowCtx.fill();
+    }
+    
+    // Ridisegna tutte le frecce
+    function redrawAllArrows() {
+        if (!arrowCtx || !arrowCanvas) return;
+        arrowCtx.clearRect(0, 0, arrowCanvas.width, arrowCanvas.height);
+        arrows.forEach(arrow => {
+            drawArrow(arrow.start, arrow.end, arrow.color);
+        });
+    }
+    
+    // Cancella tutte le frecce
+    function clearAllArrows() {
+        arrows = [];
+        redrawAllArrows();
+        saveData();
+    }
+    
+    // Setup pulsante cancella frecce
+    function setupClearArrowsButton() {
+        const clearBtn = document.getElementById('clear-arrows-btn');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                if (arrows.length > 0) {
+                    if (confirm('Vuoi cancellare tutte le frecce?')) {
+                        clearAllArrows();
+                    }
+                }
+            });
+        }
+    }
+    
+    // Inizializza tutto dopo il caricamento
+    setTimeout(() => {
+        initArrowCanvas();
+        setupArrowTool();
+        setupArrowDrawing();
+        setupClearArrowsButton();
+    }, 500);
+    // ============================================
+    // FINE FRECCE DINAMICHE
+    // ============================================
+    
     document.body.addEventListener('click', (e) => {
         const printBtn = e.target.closest('.print-section-btn');
         if (printBtn) {
