@@ -213,8 +213,8 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     transform: rotate(90deg) scale(1.7);
     transform-origin: center center;
     
-    /* Margini alzati */
-    margin: 10px auto -110px;
+    /* Margini alzati - CAMPO PIÙ ALTO */
+    margin: 5px auto -115px;
     
     box-sizing: border-box;
     flex-shrink: 0;
@@ -238,8 +238,8 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     position: relative;
     flex-shrink: 0;
     
-    /* Margini negativi estremi */
-    margin: -110px auto -240px;
+    /* Margini negativi estremi - PIÙ COMPATTO */
+    margin: -115px auto -250px;
     
     pointer-events: auto;
 }
@@ -290,12 +290,12 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     cursor: grabbing;
 }
 
-/* PANNELLO LATERALE - Posizione normale (non modificata) */
+/* PANNELLO LATERALE - ABBASSATO per mostrare icone */
 .available-athletes-container {
     display: flex;
     flex-direction: column;
     gap: 0.8rem;
-    margin-top: 180px;
+    margin-top: 180px !important;
     position: relative;
 }
 
@@ -311,7 +311,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 
 /* CALENDARIO - ABBASSATO (tutto insieme: titolo + contenuto) */
 #calendario-section {
-    margin-top: 20px !important;
+    margin-top: 10px !important;
     padding-top: 0 !important;
 }
 
