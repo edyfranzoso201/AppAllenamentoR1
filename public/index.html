@@ -166,6 +166,9 @@
                 <div class="col-lg-9 mb-4">
                     <div id="pitch-wrapper">
                         <div id="field-container" class="drop-zone">
+                            <!-- Canvas per frecce dinamiche -->
+                            <canvas id="arrow-canvas"></canvas>
+                            
                             <div class="field-line halfway-line"></div>
                             <div class="field-circle center-circle"></div>
                             <div class="field-spot center-spot"></div>
@@ -190,8 +193,11 @@
                                 <div class="tool-item opponent-tool" data-item-type="opponent" title="Trascina per duplicare (Rosso)">●</div>
                                 <div class="tool-item opponent-blue-tool" data-item-type="opponent-blue" title="Trascina per duplicare (Blu)">●</div>
                                 <div class="tool-item movement-tool" data-item-type="movement" title="Movimento giocatore">✕</div>
-                                <div class="tool-item arrow-tool" data-item-type="arrow" title="Freccia direzione">➜</div>
+                                <div class="tool-item arrow-tool" data-item-type="arrow" title="Disegna frecce (Click per attivare)">➜</div>
                              </div>
+                             <button id="clear-arrows-btn" class="btn btn-sm btn-outline-danger mt-2 w-100" title="Cancella tutte le frecce">
+                                🗑️ Cancella Frecce
+                             </button>
                          </div>
                          <div class="card-header fw-bold mt-3">Atleti Disponibili</div>
                          <div class="card-body available-slot p-2 drop-zone" id="available-list" style="max-height: 400px; overflow-y: auto;"></div>
