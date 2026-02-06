@@ -244,20 +244,20 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     pointer-events: auto;
 }
 
-/* CONTRO-ROTAZIONE MAGLIETTE - per mantenerle dritte - RIDOTTE 20% */
+/* CONTRO-ROTAZIONE MAGLIETTE - per mantenerle dritte */
 .player-jersey {
     position: absolute;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 12%;  /* Era 15%, ora 12% = riduzione del 20% */
+    width: 15%;
     cursor: grab;
     user-select: none;
-    font-size: clamp(3.6px, 0.48vw, 6.4px);  /* Era clamp(4.5px, 0.6vw, 8px), ridotto del 20% */
+    font-size: clamp(4.5px, 0.6vw, 8px);
     
     /* Prima trasla al centro, poi ruota per annullare la rotazione del campo */
-    transform: translate(-50%, -50%) rotate(-90deg) scale(0.9);  /* Aggiunto scale(0.9) per ridurre ulteriormente */
+    transform: translate(-50%, -50%) rotate(-90deg);
     
     pointer-events: auto;
     touch-action: none;
@@ -290,25 +290,11 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     cursor: grabbing;
 }
 
-/* NUOVI STRUMENTI - Puntino BLU (avversario 2), X GIALLA (movimento), Frecce BIANCHE */
+/* ============================================
+   NUOVI STRUMENTI - CORRETTI
+   ============================================ */
 
-/* Puntino BLU - Avversario squadra 2 */
-.opponent-blue-tool {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 45px;
-    height: 45px;
-    background-color: #1e40af;  /* Blu */
-    color: #1e40af;
-    border-radius: 50%;
-    font-size: 28px;
-    cursor: grab;
-    user-select: none;
-    border: 2px solid #1e40af;
-}
-
-/* X GIALLA - Movimento giocatore */
+/* X GIALLA - Movimento giocatore - NEL PANNELLO */
 .movement-tool {
     display: inline-flex;
     align-items: center;
@@ -316,16 +302,72 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     width: 45px;
     height: 45px;
     background-color: transparent;
-    color: #fbbf24;  /* Giallo */
-    font-size: 32px;
-    font-weight: bold;
+    color: #fbbf24 !important;  /* Giallo brillante */
+    font-size: 40px !important;  /* Più grande per visibilità */
+    font-weight: 900 !important;  /* Molto grassetto */
+    line-height: 1;
     cursor: grab;
     user-select: none;
-    border: 2px solid #fbbf24;
+    border: 3px solid #fbbf24;
     border-radius: 4px;
 }
 
-/* Freccia BIANCA - Linea di passaggio/movimento */
+/* X GIALLA - SUL CAMPO */
+.token[data-item-type="movement"] {
+    width: 28px;
+    height: 28px;
+    background-color: transparent;
+    color: #fbbf24 !important;
+    font-size: 26px !important;  /* Grande e visibile */
+    font-weight: 900 !important;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #fbbf24;
+    border-radius: 3px;
+}
+
+.token[data-item-type="movement"]::before {
+    content: "✕";
+    display: block;
+}
+
+/* Puntino BLU - NEL PANNELLO */
+.opponent-blue-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    background-color: #2563eb;  /* Blu */
+    color: #2563eb;
+    border-radius: 50%;
+    font-size: 28px;
+    cursor: grab;
+    user-select: none;
+    border: 2px solid #2563eb;
+}
+
+/* Puntino BLU - SUL CAMPO - STESSE DIMENSIONI DEL ROSSO */
+.token[data-item-type="opponent-blue"] {
+    width: 40px;  /* Uguale al rosso */
+    height: 40px;  /* Uguale al rosso */
+    background-color: #2563eb;
+    border-radius: 50%;
+    border: 3px solid white;  /* Bordo bianco come il rosso */
+}
+
+/* PUNTINO ROSSO - RIDOTTO ALLE STESSE DIMENSIONI DEL BLU */
+.token[data-item-type="opponent"] {
+    width: 40px !important;  /* Ridotto da più grande */
+    height: 40px !important;
+    background-color: var(--primary-red) !important;
+    border-radius: 50% !important;
+    border: 3px solid white !important;  /* Bordo bianco */
+}
+
+/* Freccia BIANCA - NEL PANNELLO */
 .arrow-tool {
     display: inline-flex;
     align-items: center;
@@ -334,44 +376,21 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     height: 45px;
     background-color: transparent;
     color: white;
-    font-size: 28px;
+    font-size: 32px;
     cursor: grab;
     user-select: none;
     border: 2px solid white;
     border-radius: 4px;
 }
 
-/* Token sul campo - Puntino BLU */
-.token[data-item-type="opponent-blue"] {
-    width: 20px;
-    height: 20px;
-    background-color: #1e40af;
-    border-radius: 50%;
-    border: 2px solid #1e40af;
-}
-
-/* Token sul campo - X GIALLA */
-.token[data-item-type="movement"] {
-    width: 24px;
-    height: 24px;
-    background-color: transparent;
-    color: #fbbf24;
-    font-size: 20px;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid #fbbf24;
-    border-radius: 3px;
-}
-
-/* Token sul campo - FRECCIA BIANCA */
+/* NOTA: La freccia dinamica sarà gestita tramite canvas/SVG nel JavaScript */
+/* Per ora rimane come icona trascinabile */
 .token[data-item-type="arrow"] {
-    width: 30px;
-    height: 30px;
+    width: 35px;
+    height: 35px;
     background-color: transparent;
     color: white;
-    font-size: 22px;
+    font-size: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
