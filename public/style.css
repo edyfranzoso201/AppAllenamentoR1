@@ -308,11 +308,11 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     line-height: 1;
     cursor: grab;
     user-select: none;
-    border: 3px solid #fbbf24;
-    border-radius: 4px;
+    border: none !important;  /* NESSUN BORDO */
+    border-radius: 0;
 }
 
-/* X GIALLA - SUL CAMPO */
+/* X GIALLA - SUL CAMPO - SENZA BORDO */
 .token[data-item-type="movement"] {
     width: 28px;
     height: 28px;
@@ -324,8 +324,8 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 3px solid #fbbf24;
-    border-radius: 3px;
+    border: none !important;  /* NESSUN BORDO */
+    border-radius: 0;
 }
 
 .token[data-item-type="movement"]::before {
@@ -377,25 +377,44 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     background-color: transparent;
     color: white;
     font-size: 32px;
-    cursor: grab;
+    cursor: pointer;  /* Pointer invece di grab */
     user-select: none;
     border: 2px solid white;
     border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.arrow-tool:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.arrow-tool.active {
+    background-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+/* CANVAS per frecce dinamiche */
+#arrow-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;  /* Permetti click attraverso il canvas */
+    z-index: 5;
+}
+
+/* Quando si sta disegnando una freccia */
+#field-container.drawing-arrow {
+    cursor: crosshair !important;
+}
+
+#field-container.drawing-arrow * {
+    pointer-events: none !important;  /* Disabilita tutti gli elementi durante il disegno */
 }
 
 /* NOTA: La freccia dinamica sarà gestita tramite canvas/SVG nel JavaScript */
 /* Per ora rimane come icona trascinabile */
-.token[data-item-type="arrow"] {
-    width: 35px;
-    height: 35px;
-    background-color: transparent;
-    color: white;
-    font-size: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-}
 
 /* PANNELLO LATERALE - Posizione normale (non modificata) */
 .available-athletes-container {
