@@ -56,6 +56,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <!-- Foglio di stile personalizzato -->
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="formation-field-transform-optimized.css">
 </head>
 <body>
 <body>
@@ -186,7 +187,9 @@
                                 <div class="tool-item" data-item-type="captain-c">(C)</div>
                                  <div class="tool-item" data-item-type="captain-vc">(VC)</div>
                                  <div class="tool-item ball-tool" data-item-type="ball">⚽</div>
-                                <div class="tool-item opponent-tool" data-item-type="opponent" title="Trascina per duplicare">●</div>
+                                <div class="tool-item opponent-tool" data-item-type="opponent" title="Trascina per duplicare (Rosso)">●</div>
+                                <div class="tool-item opponent-blue-tool" data-item-type="opponent-blue" title="Trascina per duplicare (Blu)">●</div>
+                                <div class="tool-item movement-tool" data-item-type="movement" title="Movimento giocatore">✕</div>
                              </div>
                          </div>
                          <div class="card-header fw-bold mt-3">Atleti Disponibili</div>
@@ -631,10 +634,7 @@
 
     // ========================================================================
     // BACKUP SYSTEM - VERSIONE CON RITARDO PER EVITARE CONFLITTI
-    // Sostituisci il codice backup nell'index.html
     // ========================================================================
-
-    });
 
     document.getElementById('restore-file').addEventListener('change', async function(e) {
         const file = e.target.files[0];
