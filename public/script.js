@@ -2445,19 +2445,8 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
                 formationData.tokens = formationData.tokens.filter(t => t.id != tokenId);
             }
             const rect = dropZone.getBoundingClientRect();
-            
-            // ✅ CORREZIONE: Calcola posizione considerando la rotazione di 90°
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
-            
-            // Posizione normalizzata rispetto al contenitore visibile
-            const normalizedX = mouseX / rect.width;
-            const normalizedY = mouseY / rect.height;
-            
-            // Converti le coordinate ruotate in coordinate del campo originale
-            // Rotazione 90° senso orario: (x, y) -> (y, 1-x)
-            const left = normalizedY * 100;
-            const top = (1 - normalizedX) * 100;
+            const left = ((e.clientX - rect.left) / rect.width) * 100;
+            const top = ((e.clientY - rect.top) / rect.height) * 100;
             if (athleteId) {
                 if (dropZone.id === 'field-container' || dropZone.id === 'field-bench-area') {
                     const targetArray = dropZone.id === 'field-container' ? formationData.starters : formationData.bench;
