@@ -1,81 +1,161 @@
-/* ============================================
-   MODIFICHE MODULO FORMAZIONE - SOLO ESSENZIALI
-   - X gialla SENZA BORDO
-   - Puntini rosso e blu STESSE DIMENSIONI
-   - NO frecce dinamiche
-   ============================================ */
-
-/* AGGIUNGI QUESTE RIGHE ALLA FINE DEL TUO style.css */
-
-/* X GIALLA - Movimento giocatore - NEL PANNELLO - SENZA BORDO */
-.movement-tool {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 45px;
-    height: 45px;
-    background-color: transparent;
-    color: #fbbf24 !important;
-    font-size: 40px !important;
-    font-weight: 900 !important;
-    line-height: 1;
-    cursor: grab;
-    user-select: none;
-    border: none !important;
-    border-radius: 0;
+:root {
+    --primary-blue: #0a2463; --secondary-blue: #1e5095; --primary-red: #d90429;
+    --text-light: #ffffff; --card-bg: #1a3a7a; --border-color: #3b5a9d; --gold-star: #FFD700;
+    --field-green: #008000; --field-line: #FFF; --gk-color: #E8C135; --custom-purple: #6f42c1;
+}
+html { scroll-behavior: smooth; }
+body { background-color: var(--primary-blue); color: var(--text-light); padding-top: 56px; }
+.bg-dark-blue { background-color: #051438 !important; border-bottom: 2px solid var(--primary-red); }
+.main-title { color: var(--text-light); border-left: 4px solid var(--primary-red); padding-left: 1rem; }
+* ✅ FIX: Aggiungi padding-top all'alerts-container per far spazio all'header */
+#alerts-container {
+    padding-top: 60px;
 }
 
-/* X GIALLA - SUL CAMPO - SENZA BORDO */
-.token[data-item-type="movement"] {
-    width: 28px;
-    height: 28px;
-    background-color: transparent;
-    color: #fbbf24 !important;
-    font-size: 26px !important;
-    font-weight: 900 !important;
-    line-height: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none !important;
-    border-radius: 0;
+/* ✅ FIX: Assicura che gli alert abbiano z-index inferiore all'header */
+#alerts-container .alert {
+    position: relative;
+    z-index: 1040;
+}
+.athlete-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; transition: all 0.3s ease; position: relative; overflow: hidden; }
+.athlete-card-clickable { cursor: pointer; }
+.athlete-card-clickable:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(217, 4, 41, 0.2); border-color: var(--primary-red); }
+.athlete-avatar { width: 70px; height: 70px; border-radius: 50%; border: 3px solid var(--border-color); object-fit: cover; background-color: var(--secondary-blue); }
+.athlete-card .card-title { font-size: 1.1rem; margin-bottom: 0.1rem; }
+.shirt-number { font-size: 1.5rem; font-weight: bold; color: var(--text-light); background-color: var(--primary-red); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: absolute; top: 50%; right: 15px; transform: translateY(-50%); }
+.is-captain { color: var(--gold-star); }
+.card-actions { position: absolute; bottom: 10px; right: 10px; z-index: 5; display: flex; gap: 5px; }
+.card-actions .btn { background: rgba(0,0,0,0.3); border: none; }
+.chart-card, .table-card, .summary-card { background-color: var(--card-bg); border: 1px solid var(--border-color); }
+.modal-content { background-color: var(--primary-blue); border: 1px solid var(--primary-red); }
+.modal-header, .modal-footer { border-bottom: 1px solid var(--border-color); border-top: 1px solid var(--border-color); }
+.btn-primary-custom { background-color: var(--primary-red); border-color: var(--primary-red); color: white; }
+.btn-primary-custom:hover { background-color: #b80323; border-color: #b80323; }
+.form-control, .form-select { background-color: var(--secondary-blue); color: var(--text-light); border-color: var(--border-color); }
+.form-control::placeholder { color: #8a9fc1; }
+.form-control:focus, .form-select:focus { background-color: var(--secondary-blue); color: var(--text-light); border-color: var(--primary-red); box-shadow: 0 0 0 0.25rem rgba(217, 4, 41, 0.25); }
+.award-card { background: linear-gradient(45deg, var(--gold-star), #d4af37); color: #000; border: 2px solid #fff; width: 180px; }
+.award-avatar { width: 50px; height: 50px; }
+.text-muted { color: rgba(255, 255, 255, 0.75) !important; }
+.summary-card .card-body { min-height: 150px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;}
+.summary-card .display-4 { font-weight: 500; }
+.calendar-card { background-color: var(--card-bg); border: 1px solid var(--border-color); }
+.calendar-header { display: flex; justify-content: space-between; align-items: center; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.calendar-day { background-color: var(--secondary-blue); border: 1px solid var(--border-color); min-height: 120px; padding: 8px; font-size: 0.9rem; }
+.calendar-day.today { border-color: var(--primary-red); }
+.calendar-day-header { font-weight: bold; }
+/* Nuove classi per sessioni */
+.calendar-session {
+    padding: 4px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    margin-top: 5px;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.session-allenamento { background-color: var(--primary-red); color: white; }
+.session-partita-casa { background-color: var(--primary-blue); color: white; }
+.session-partita-trasferta { background-color: var(--primary-red); color: white; }
+.session-partita-futura { background-color: #006400; color: white; } /* Verde scuro */
+.deadline-status { font-size: 1.2rem; position: absolute; top: 50%; right: 70px; transform: translateY(-50%); }
+.text-purple { color: var(--custom-purple) !important; }
+.available-player.disabled { opacity: 0.5; cursor: not-allowed; background-color: #343a40 !important; }
+.dragging { opacity: 0.5; z-index: 1056; pointer-events: none; }
+#pitch-wrapper { display: flex; align-items: flex-start; gap: 1rem; }
+#field-container { background-color: var(--field-green); border: 2px solid var(--field-line); position: relative; width: 100%; max-width: 450px; aspect-ratio: 5 / 7; box-sizing: border-box; flex-shrink: 0; }
+#field-bench-area { background-color: rgba(0,0,0,0.2); border: 2px dashed var(--border-color); border-radius: 8px; width: 150px; height: 630px; position: relative; flex-shrink: 0; }
+.field-line, .field-box, .field-circle, .field-spot { position: absolute; box-sizing: border-box; border-color: var(--field-line); }
+.halfway-line { border-top: 2px solid var(--field-line); width: 100%; top: 50%; }
+.center-circle { top: 50%; left: 50%; transform: translate(-50%, -50%); width: 25%; aspect-ratio: 1/1; border: 2px solid var(--field-line); border-radius: 50%; }
+.center-spot { top: 50%; left: 50%; transform: translate(-50%, -50%); width: 2%; aspect-ratio: 1/1; background-color: var(--field-line); border-radius: 50%; }
+.penalty-box-top { top: 0; left: 50%; transform: translateX(-50%); width: 60%; height: 16.5%; border: 2px solid var(--field-line); border-top: none; }
+.penalty-box-bottom { bottom: 0; left: 50%; transform: translateX(-50%); width: 60%; height: 16.5%; border: 2px solid var(--field-line); border-bottom: none; }
+.goal-box-top { top: 0; left: 50%; transform: translateX(-50%); width: 30%; height: 6%; border: 2px solid var(--field-line); border-top: none; }
+.goal-box-bottom { bottom: 0; left: 50%; transform: translateX(-50%); width: 30%; height: 6%; border: 2px solid var(--field-line); border-bottom: none; }
+.penalty-spot-top { top: 11.5%; left: 50%; transform: translateX(-50%); width: 1.5%; aspect-ratio: 1/1; background-color: var(--field-line); border-radius: 50%; }
+.penalty-spot-bottom { bottom: 11.5%; left: 50%; transform: translateX(-50%); width: 1.5%; aspect-ratio: 1/1; background-color: var(--field-line); border-radius: 50%; }
+.player-jersey { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 15%; cursor: grab; user-select: none; font-size: clamp(4.5px, 0.6vw, 8px); transform: translate(-50%, -50%); }
+.jersey-body { position: relative; width: 5em; height: 5em; background-color: var(--secondary-blue); border-radius: 0.8em 0.8em 0.5em 0.5em; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 -4px 8px rgba(0,0,0,0.3); }
+.jersey-body::before, .jersey-body::after { content: ''; position: absolute; width: 2.5em; height: 1em; background-color: inherit; top: 0; }
+.jersey-body::before { left: -1.8em; transform: rotate(-40deg); border-radius: 0.5em 0.2em 0 0; }
+.jersey-body::after { right: -1.8em; transform: rotate(40deg); border-radius: 0.2em 0.5em 0 0; }
+.jersey-number { font-size: 2.2em; font-weight: bold; color: white; text-shadow: 1px 1px 2px black; }
+.player-name { margin-top: 0.5em; font-size: 1.33em; font-weight: bold; color: white; background-color: rgba(0,0,0,0.6); padding: 0.1em 0.4em; border-radius: 4px; white-space: nowrap; }
+#available-list .list-group-item, .tool-item { cursor: grab; background-color: var(--secondary-blue); }
+.available-slot { border: 1px dashed var(--border-color); border-radius: 8px; min-height: 50px; }
+#formation-tools { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 1rem; }
+.tool-item { border: 1px solid var(--border-color); border-radius: 8px; padding: 5px 10px; text-align: center; }
+.tool-item.opponent-tool { background-color: var(--primary-red); font-size: 1.5rem; line-height: 1; padding: 5px 12px; }
+.tool-item.ball-tool { font-size: 1.5rem; line-height: 1; padding: 5px 10px; }
+.token { position: absolute; cursor: grab; user-select: none; z-index: 10; text-align: center; transform: translate(-50%, -50%); }
+.token-captain { font-weight: bold; color: white; background: black; padding: 0.2em 0.5em; border-radius: 4px; font-size: clamp(8px, 1vw, 12px); }
+.token-ball { font-size: 2rem; }
+.token-opponent { width: 2.5em; height: 2.5em; background-color: var(--primary-red); border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.5); font-size: clamp(8px, 1vw, 12px); }
+.match-result-item { background-color: var(--card-bg); border: 1px solid var(--border-color); }
+.match-score { font-weight: bold; font-size: 1.1rem; }
+.yellow-card { width: 10px; height: 14px; background-color: #ffc107; display: inline-block; border-radius: 2px; }
+.red-card { width: 10px; height: 14px; background-color: #dc3545; display: inline-block; border-radius: 2px; }
+.scorers-list { font-size: 0.8rem; color: var(--text-muted); }
+.assists-list { font-size: 0.8rem; color: var(--text-muted); }
+/* Stile per partite future nel box Risultati Partite */
+.match-future { border-left: 4px solid #006400 !important; }
+.match-home { border-left: 4px solid var(--primary-blue) !important; }
+.match-away { border-left: 4px solid var(--primary-red) !important; }
+
+/* ✅ NUOVO: stile per atleti ospiti */
+.guest-athlete {
+    border-color: var(--session-partita-futura) !important;
+    box-shadow: 0 0 0 2px var(--session-partita-futura);
+}
+.guest-athlete .card-title::after {
+    content: " 👤";
+    color: var(--session-partita-futura);
 }
 
-.token[data-item-type="movement"]::before {
-    content: "✕";
-    display: block;
+#cards-summary-table { --bs-table-bg: var(--secondary-blue); --bs-table-striped-bg: var(--secondary-blue); --bs-table-hover-bg: var(--border-color); border-color: var(--border-color); }
+.season-stats-card { background-color: var(--card-bg); border: 1px solid var(--border-color); }
+.season-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 1rem; text-align: center;}
+.stat-item h6 { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.2rem;}
+.stat-item p { font-size: 1.4rem; font-weight: 500; margin-bottom: 0;}
+.stat-item .diff-pos { color: #28a745; }
+.stat-item .diff-neg { color: var(--primary-red); }
+@media print {
+    body { padding-top: 0; }
+    .no-print { display: none !important; }
+    body * { visibility: hidden; }
+    .printing-now, .printing-now * { visibility: visible; }
+    .printing-now { position: absolute; left: 0; top: 0; width: 100%; }
+    .printing-now #athlete-grid { display: flex !important; flex-wrap: wrap !important; }
+    .printing-now #athlete-grid > [class*="col-"] { flex: 0 0 25% !important; max-width: 25% !important; padding: 5px !important; page-break-inside: avoid; }
+    .printing-now .athlete-card { box-shadow: none !important; }
+    .printing-now .card, .printing-now .list-group-item, .printing-now .calendar-day, .printing-now .table { background-color: #fff !important; border: 1px solid #ccc !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
+    .printing-now table, .printing-now th, .printing-now td { background-color: #fff !important; color: #000 !important; border-color: #000 !important; }
+    .printing-now .calendar-session, .printing-now .shirt-number { background-color: #cccccc !important; color: #000 !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
+    .printing-now *, .printing-now .main-title, .printing-now .text-muted, .printing-now .card-title, .printing-now p, .printing-now h1, .printing-now h2, .printing-now h3, .printing-now h4, .printing-now h5, .printing-now h6 { color: #000 !important; }
+    .printing-now .player-name, .printing-now .jersey-number, .printing-now .token-captain { color: #fff !important; }
+    .printing-now .main-title { border-left-color: #000 !important; }
+    .printing-now canvas { max-width: 100% !important; height: auto !important; }
+    .printing-now #field-container { background-color: var(--field-green) !important; -webkit-print-color-adjust: exact; color-adjust: exact; }
+    .printing-now #field-container .field-line, .printing-now #field-container .field-box, .printing-now #field-container .field-circle { border-color: var(--field-line) !important; }
+    .printing-now #field-container .field-spot { background-color: var(--field-line) !important; }
+    .printing-now .jersey-body, .printing-now .player-name, .printing-now .token-captain { -webkit-print-color-adjust: exact; color-adjust: exact; }
+    .printing-now .player-jersey[data-role*="Portiere"] .jersey-body { background-color: var(--gk-color) !important; }
 }
 
-/* PUNTINO BLU - NEL PANNELLO */
-.opponent-blue-tool {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 45px;
-    height: 45px;
-    background-color: #2563eb;
-    color: #2563eb;
-    border-radius: 50%;
-    font-size: 28px;
-    cursor: grab;
-    user-select: none;
-    border: 2px solid #2563eb;
+/* Riduzione altezza grafico presenze per migliore visualizzazione */
+#attendanceChart {
+    max-height: 400px;
 }
 
-/* PUNTINO BLU - SUL CAMPO - STESSE DIMENSIONI DEL ROSSO */
-.token[data-item-type="opponent-blue"] {
-    width: 40px;
-    height: 40px;
-    background-color: #2563eb;
-    border-radius: 50%;
-    border: 3px solid white;
+/* Riduzione altezza grafico confronto performance squadra per migliore visualizzazione */
+#multiAthleteChart {
+    max-height: 350px;
 }
 
-/* PUNTINO ROSSO - RIDOTTO ALLE STESSE DIMENSIONI DEL BLU */
-.token[data-item-type="opponent"] {
-    width: 40px !important;
-    height: 40px !important;
-    background-color: var(--primary-red) !important;
-    border-radius: 50% !important;
-    border: 3px solid white !important;
+/* Altezza grafico presenze settimanali */
+#weeklyAttendanceChart {
+    max-height: 400px;
 }
