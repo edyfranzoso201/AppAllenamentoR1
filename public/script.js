@@ -2499,34 +2499,6 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
         }
     });
     });
-    
-    // ============================================
-    // ROTAZIONE FRECCE AL CLICK
-    // ============================================
-    
-    let isDraggingArrow = false;
-    
-    // Gestione click su frecce per ruotare
-    document.addEventListener('click', function(e) {
-        const arrow = e.target.closest('.token[data-item-type="arrow"]');
-        
-        if (arrow && !isDraggingArrow) {
-            e.stopPropagation();
-            e.preventDefault();
-            
-            // Ottieni rotazione attuale
-            let currentRotation = parseInt(arrow.getAttribute('data-rotation') || '0');
-            
-            // Ruota di 45 gradi
-            currentRotation = (currentRotation + 45) % 360;
-            
-            // Applica nuova rotazione
-            arrow.setAttribute('data-rotation', currentRotation);
-            
-            console.log('Freccia ruotata a:', currentRotation, '°');
-        }
-    });
-    
     // Previeni rotazione durante il drag
     document.addEventListener('mousedown', function(e) {
         if (e.target.closest('.token[data-item-type="arrow"]')) {
