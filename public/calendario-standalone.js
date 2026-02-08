@@ -264,6 +264,20 @@ async function render(loadedData) {
     
     console.log('[PRESENZA] 🔓 Modalità Genitore:', athleteIdParam);
     
+    // NASCONDI tutti i pulsanti del coach in modalità genitore
+    const coachButtons = document.querySelectorAll('#add-btn, #generate-btn, #import-btn, #responses-btn, #delete-btn');
+    coachButtons.forEach(btn => {
+      if (btn && btn.parentElement) {
+        btn.parentElement.style.display = 'none';
+      }
+    });
+    
+    // Nascondi anche il pulsante Dashboard
+    const dashboardBtn = document.querySelector('.btn-outline-primary[href="/"]');
+    if (dashboardBtn) {
+      dashboardBtn.style.display = 'none';
+    }
+    
     visibleAthletes = visibleAthletes.filter(a => {
       return String(a.id) === String(athleteIdParam);
     });
