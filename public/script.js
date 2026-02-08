@@ -2499,26 +2499,17 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
         }
     });
     });
-    // Previeni rotazione durante il drag
-    document.addEventListener('mousedown', function(e) {
-        if (e.target.closest('.token[data-item-type="arrow"]')) {
-            isDraggingArrow = false;
-            
-            setTimeout(() => {
-                if (dragGhost) {
-                    isDraggingArrow = true;
-                }
-            }, 100);
+    document.getElementById('formazione-section').addEventListener('mousedown', onDragStart);
+    document.body.addEventListener('click', (e) => {
+        const printBtn = e.target.closest('.print-section-btn');
+        if (printBtn) {
+            const sectionToPrint = printBtn.closest('.printable-area');
+            if (sectionToPrint) {
+                sectionToPrint.classList.add('printing-now');
+                window.print();
+            }
         }
     });
-    
-    document.addEventListener('mouseup', function() {
-        setTimeout(() => {
-            isDraggingArrow = false;
-        }, 150);
-    });
-    
-    window.addEventListener('beforeprint', () => {
     window.addEventListener('beforeprint', () => {
         for (const key in chartInstances) {
             const chart = chartInstances[key];
