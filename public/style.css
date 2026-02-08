@@ -657,3 +657,58 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
         margin-top: 50px !important;
     }
 }
+/* ============================================
+   FRECCIA STATICA - STRUMENTO SEMPLICE
+   ============================================ */
+
+/* Freccia nel pannello strumenti */
+.arrow-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    background-color: transparent;
+    color: white !important;
+    font-size: 32px !important;
+    font-weight: 900 !important;
+    line-height: 1;
+    cursor: grab;
+    user-select: none;
+    border: 2px solid white;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.arrow-tool:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+}
+
+/* Freccia sul campo */
+.token[data-item-type="arrow"] {
+    width: 60px;
+    height: 40px;
+    background-color: transparent;
+    color: white !important;
+    font-size: 32px !important;
+    font-weight: 900 !important;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none !important;
+    cursor: move;
+    user-select: none;
+}
+
+.token[data-item-type="arrow"]::before {
+    content: "➜";
+    display: block;
+}
+
+/* Freccia quando viene trascinata */
+.token[data-item-type="arrow"]:active {
+    cursor: grabbing;
+    opacity: 0.8;
+}
