@@ -2498,18 +2498,6 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
             }
         }
     });
-    });
-    document.getElementById('formazione-section').addEventListener('mousedown', onDragStart);
-    document.body.addEventListener('click', (e) => {
-        const printBtn = e.target.closest('.print-section-btn');
-        if (printBtn) {
-            const sectionToPrint = printBtn.closest('.printable-area');
-            if (sectionToPrint) {
-                sectionToPrint.classList.add('printing-now');
-                window.print();
-            }
-        }
-    });
     window.addEventListener('beforeprint', () => {
         for (const key in chartInstances) {
             const chart = chartInstances[key];
@@ -2697,6 +2685,7 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
         startPolling();
     }
     initializeApp();
+});
 
 // ==========================================
 // HEADER CON TITOLO ANNATA E PULSANTI RAPIDI
