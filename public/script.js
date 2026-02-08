@@ -2697,7 +2697,6 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
         startPolling();
     }
     initializeApp();
-});
 
 // ==========================================
 // HEADER CON TITOLO ANNATA E PULSANTI RAPIDI
