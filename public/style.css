@@ -64,9 +64,6 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 .text-purple { color: var(--custom-purple) !important; }
 .available-player.disabled { opacity: 0.5; cursor: not-allowed; background-color: #343a40 !important; }
 .dragging { opacity: 0.5; z-index: 1056; pointer-events: none; }
-#pitch-wrapper { display: flex; align-items: flex-start; gap: 1rem; }
-#field-container { background-color: var(--field-green); border: 2px solid var(--field-line); position: relative; width: 100%; max-width: 450px; aspect-ratio: 5 / 7; box-sizing: border-box; flex-shrink: 0; }
-#field-bench-area { background-color: rgba(0,0,0,0.2); border: 2px dashed var(--border-color); border-radius: 8px; width: 150px; height: 630px; position: relative; flex-shrink: 0; }
 .field-line, .field-box, .field-circle, .field-spot { position: absolute; box-sizing: border-box; border-color: var(--field-line); }
 .halfway-line { border-top: 2px solid var(--field-line); width: 100%; top: 50%; }
 .center-circle { top: 50%; left: 50%; transform: translate(-50%, -50%); width: 25%; aspect-ratio: 1/1; border: 2px solid var(--field-line); border-radius: 50%; }
@@ -77,7 +74,6 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 .goal-box-bottom { bottom: 0; left: 50%; transform: translateX(-50%); width: 30%; height: 6%; border: 2px solid var(--field-line); border-bottom: none; }
 .penalty-spot-top { top: 11.5%; left: 50%; transform: translateX(-50%); width: 1.5%; aspect-ratio: 1/1; background-color: var(--field-line); border-radius: 50%; }
 .penalty-spot-bottom { bottom: 11.5%; left: 50%; transform: translateX(-50%); width: 1.5%; aspect-ratio: 1/1; background-color: var(--field-line); border-radius: 50%; }
-.player-jersey { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 15%; cursor: grab; user-select: none; font-size: clamp(4.5px, 0.6vw, 8px); transform: translate(-50%, -50%); }
 .jersey-body { position: relative; width: 5em; height: 5em; background-color: var(--secondary-blue); border-radius: 0.8em 0.8em 0.5em 0.5em; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 -4px 8px rgba(0,0,0,0.3); }
 .jersey-body::before, .jersey-body::after { content: ''; position: absolute; width: 2.5em; height: 1em; background-color: inherit; top: 0; }
 .jersey-body::before { left: -1.8em; transform: rotate(-40deg); border-radius: 0.5em 0.2em 0 0; }
@@ -90,7 +86,6 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 .tool-item { border: 1px solid var(--border-color); border-radius: 8px; padding: 5px 10px; text-align: center; }
 .tool-item.opponent-tool { background-color: var(--primary-red); font-size: 1.5rem; line-height: 1; padding: 5px 12px; }
 .tool-item.ball-tool { font-size: 1.5rem; line-height: 1; padding: 5px 10px; }
-.token { position: absolute; cursor: grab; user-select: none; z-index: 10; text-align: center; transform: translate(-50%, -50%); }
 .token-captain { font-weight: bold; color: white; background: black; padding: 0.2em 0.5em; border-radius: 4px; font-size: clamp(8px, 1vw, 12px); }
 .token-ball { font-size: 2rem; }
 .token-opponent { width: 2.5em; height: 2.5em; background-color: var(--primary-red); border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.5); font-size: clamp(8px, 1vw, 12px); }
@@ -158,4 +153,507 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 /* Altezza grafico presenze settimanali */
 #weeklyAttendanceChart {
     max-height: 400px;
+}
+/* ============================================
+   TRASFORMAZIONE MODULO FORMAZIONE - VERSIONE FINALE COMPLETA
+   - Rotazione 90° senso orario
+   - Campo allungato solo in X (height aumentata)
+   - Panchina stretta e lunga come il campo
+   - Calendario ABBASSATO (non alzato)
+   - Pannello laterale visibile
+   - Drag & drop CORRETTO
+   ============================================ */
+
+/* Modifiche al contenitore wrapper */
+#pitch-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0;
+    min-height: auto;
+    margin: 0 auto;
+    flex-wrap: nowrap;
+    max-width: 100%;
+    padding: 0;
+}
+
+/* SEZIONE FORMAZIONE - ALZATA */
+#formazione-section {
+    min-height: auto;
+    overflow: visible;
+    padding: 0;
+    margin-bottom: 0;
+    margin-top: -25px;
+}
+
+/* TITOLO "MODULO FORMAZIONE" - ALZATO */
+#formazione-section > .row:first-child {
+    margin-top: -25px;
+    margin-bottom: 5px;
+}
+
+#formazione-section .row {
+    margin-bottom: 0.2rem;
+}
+
+/* CAMPO DA CALCIO - Ruotato 90° e allungato */
+#field-container {
+    background-color: var(--field-green);
+    border: 2px solid var(--field-line);
+    position: relative;
+    
+    /* Dimensioni base - SOLO height aumentata per allungare */
+    width: 420px;
+    height: 700px;
+    max-width: none;
+    aspect-ratio: unset;
+    
+    /* Trasformazione: rotazione + scala 1.7 */
+    transform: rotate(90deg) scale(1.7);
+    transform-origin: center center;
+    
+    /* Margini alzati */
+    margin: 10px auto -110px;
+    
+    box-sizing: border-box;
+    flex-shrink: 0;
+    pointer-events: auto;
+}
+
+/* PANCHINA - Ruotata 90°, stretta e lunga come il campo */
+#field-bench-area {
+    background-color: rgba(0,0,0,0.2);
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    
+    /* Dimensioni base - stretta e lunga */
+    width: 140px;
+    height: 700px;
+    
+    /* Trasformazione: rotazione + scala 1.7 */
+    transform: rotate(90deg) scale(1.7);
+    transform-origin: center center;
+    
+    position: relative;
+    flex-shrink: 0;
+    
+    /* Margini negativi estremi */
+    margin: -110px auto -240px;
+    
+    pointer-events: auto;
+}
+
+/* CONTRO-ROTAZIONE MAGLIETTE - per mantenerle dritte */
+.player-jersey {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 15%;
+    cursor: grab;
+    user-select: none;
+    font-size: clamp(4.5px, 0.6vw, 8px);
+    
+    /* Prima trasla al centro, poi ruota per annullare la rotazione del campo */
+    transform: translate(-50%, -50%) rotate(-90deg);
+    
+    pointer-events: auto;
+    touch-action: none;
+}
+
+.player-jersey.dragging {
+    opacity: 0.5;
+    z-index: 1000;
+    cursor: grabbing;
+}
+
+/* CONTRO-ROTAZIONE TOKEN (C, VC, palloni, avversari) */
+.token {
+    position: absolute;
+    cursor: grab;
+    user-select: none;
+    z-index: 10;
+    text-align: center;
+    
+    /* Prima trasla al centro, poi ruota per annullare la rotazione del campo */
+    transform: translate(-50%, -50%) rotate(-90deg);
+    
+    pointer-events: auto;
+    touch-action: none;
+}
+
+.token.dragging {
+    opacity: 0.5;
+    z-index: 1000;
+    cursor: grabbing;
+}
+
+/* ============================================
+   NUOVI STRUMENTI - CORRETTI
+   ============================================ */
+
+/* X GIALLA - Movimento giocatore - NEL PANNELLO */
+.movement-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    background-color: transparent;
+    color: #fbbf24 !important;  /* Giallo brillante */
+    font-size: 40px !important;  /* Più grande per visibilità */
+    font-weight: 900 !important;  /* Molto grassetto */
+    line-height: 1;
+    cursor: grab;
+    user-select: none;
+    border: none !important;  /* NESSUN BORDO */
+    border-radius: 0;
+}
+
+/* X GIALLA - SUL CAMPO - SENZA BORDO */
+.token[data-item-type="movement"] {
+    width: 28px;
+    height: 28px;
+    background-color: transparent;
+    color: #fbbf24 !important;
+    font-size: 26px !important;  /* Grande e visibile */
+    font-weight: 900 !important;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none !important;  /* NESSUN BORDO */
+    border-radius: 0;
+}
+
+.token[data-item-type="movement"]::before {
+    content: "✕";
+    display: block;
+}
+
+/* Puntino BLU - NEL PANNELLO */
+.opponent-blue-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    background-color: #2563eb;  /* Blu */
+    color: #2563eb;
+    border-radius: 50%;
+    font-size: 28px;
+    cursor: grab;
+    user-select: none;
+    border: 2px solid #2563eb;
+}
+
+/* Puntino BLU - SUL CAMPO - STESSE DIMENSIONI DEL ROSSO */
+.token[data-item-type="opponent-blue"] {
+    width: 40px;  /* Uguale al rosso */
+    height: 40px;  /* Uguale al rosso */
+    background-color: #2563eb;
+    border-radius: 50%;
+    border: 3px solid white;  /* Bordo bianco come il rosso */
+}
+
+/* PUNTINO ROSSO - RIDOTTO ALLE STESSE DIMENSIONI DEL BLU */
+.token[data-item-type="opponent"] {
+    width: 40px !important;  /* Ridotto da più grande */
+    height: 40px !important;
+    background-color: var(--primary-red) !important;
+    border-radius: 50% !important;
+    border: 3px solid white !important;  /* Bordo bianco */
+}
+
+/* Freccia BIANCA - NEL PANNELLO */
+.arrow-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    background-color: transparent;
+    color: white;
+    font-size: 32px;
+    cursor: pointer;  /* Pointer invece di grab */
+    user-select: none;
+    border: 2px solid white;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.arrow-tool:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.arrow-tool.active {
+    background-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+/* CANVAS per frecce dinamiche */
+#arrow-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;  /* Permetti click attraverso il canvas */
+    z-index: 5;
+}
+
+/* Quando si sta disegnando una freccia */
+#field-container.drawing-arrow {
+    cursor: crosshair !important;
+}
+
+#field-container.drawing-arrow * {
+    pointer-events: none !important;  /* Disabilita tutti gli elementi durante il disegno */
+}
+
+/* NOTA: La freccia dinamica sarà gestita tramite canvas/SVG nel JavaScript */
+/* Per ora rimane come icona trascinabile */
+
+/* PANNELLO LATERALE - Posizione normale (non modificata) */
+.available-athletes-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    margin-top: 180px;
+    position: relative;
+}
+
+.available-player {
+    cursor: grab;
+    pointer-events: auto;
+}
+
+.available-player.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+/* CALENDARIO - ABBASSATO (tutto insieme: titolo + contenuto) */
+#calendario-section {
+    margin-top: 20px !important;
+    padding-top: 0 !important;
+}
+
+/* Media queries per responsive design */
+@media (max-width: 1600px) {
+    #field-container {
+        width: 410px;
+        height: 680px;
+        transform: rotate(90deg) scale(1.6);
+        margin: 25px auto -95px;
+    }
+    
+    #field-bench-area {
+        width: 135px;
+        height: 680px;
+        transform: rotate(90deg) scale(1.6);
+        margin: -95px auto -170px;
+    }
+    
+    #formazione-section {
+        margin-top: -20px;
+    }
+    
+    #formazione-section > .row:first-child {
+        margin-top: -20px;
+    }
+    
+    .available-athletes-container {
+        margin-top: 70px;
+    }
+    
+    #calendario-section {
+        margin-top: 70px !important;
+    }
+}
+
+@media (max-width: 1400px) {
+    #field-container {
+        width: 400px;
+        height: 650px;
+        transform: rotate(90deg) scale(1.5);
+        margin: 20px auto -85px;
+    }
+    
+    #field-bench-area {
+        width: 130px;
+        height: 650px;
+        transform: rotate(90deg) scale(1.5);
+        margin: -85px auto -160px;
+    }
+    
+    #formazione-section {
+        margin-top: -18px;
+    }
+    
+    #formazione-section > .row:first-child {
+        margin-top: -18px;
+    }
+    
+    .available-athletes-container {
+        margin-top: 60px;
+    }
+    
+    #calendario-section {
+        margin-top: 60px !important;
+    }
+}
+
+@media (max-width: 1200px) {
+    #field-container {
+        width: 380px;
+        height: 600px;
+        transform: rotate(90deg) scale(1.3);
+        margin: 15px auto -75px;
+    }
+    
+    #field-bench-area {
+        width: 120px;
+        height: 600px;
+        transform: rotate(90deg) scale(1.3);
+        margin: -75px auto -140px;
+    }
+    
+    #formazione-section {
+        margin-top: -15px;
+    }
+    
+    #formazione-section > .row:first-child {
+        margin-top: -15px;
+    }
+    
+    .available-athletes-container {
+        margin-top: 50px;
+    }
+    
+    #calendario-section {
+        margin-top: 50px !important;
+    }
+}
+
+@media (max-width: 992px) {
+    #field-container {
+        width: 360px;
+        height: 550px;
+        transform: rotate(90deg) scale(1.1);
+        margin: 10px auto -60px;
+    }
+    
+    #field-bench-area {
+        width: 110px;
+        height: 550px;
+        transform: rotate(90deg) scale(1.1);
+        margin: -60px auto -120px;
+    }
+    
+    #formazione-section {
+        margin-top: -10px;
+    }
+    
+    #formazione-section > .row:first-child {
+        margin-top: -10px;
+    }
+    
+    .available-athletes-container {
+        margin-top: 40px;
+    }
+    
+    #calendario-section {
+        margin-top: 40px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Su mobile, rimuovi completamente la rotazione per usabilità */
+    #field-container {
+        transform: none;
+        width: 100%;
+        max-width: 350px;
+        height: auto;
+        aspect-ratio: 5 / 7;
+        margin: 15px auto 10px;
+    }
+    
+    #field-bench-area {
+        transform: none;
+        width: 100%;
+        max-width: 350px;
+        height: 150px;
+        margin: 10px auto 15px;
+    }
+    
+    .player-jersey {
+        transform: translate(-50%, -50%);
+    }
+    
+    .token {
+        transform: translate(-50%, -50%);
+    }
+    
+    #formazione-section {
+        min-height: auto;
+        padding: 10px 0;
+        margin-top: 0;
+    }
+    
+    #formazione-section > .row:first-child {
+        margin-top: 0;
+    }
+    
+    .available-athletes-container {
+        margin-top: 20px;
+    }
+    
+    #calendario-section {
+        margin-top: 20px !important;
+    }
+}
+
+/* STAMPA - Mantieni il campo ruotato anche in stampa */
+@media print {
+    .printing-now #field-container {
+        width: 400px !important;
+        height: 650px !important;
+        transform: rotate(90deg) scale(1.5) !important;
+        page-break-inside: avoid;
+        margin: 20px auto -85px !important;
+    }
+    
+    .printing-now #field-bench-area {
+        width: 130px !important;
+        height: 650px !important;
+        transform: rotate(90deg) scale(1.5) !important;
+        page-break-inside: avoid;
+        margin: -85px auto -160px !important;
+    }
+    
+    .printing-now .player-jersey {
+        transform: translate(-50%, -50%) rotate(-90deg) !important;
+    }
+    
+    .printing-now .token {
+        transform: translate(-50%, -50%) rotate(-90deg) !important;
+    }
+    
+    .printing-now #pitch-wrapper {
+        flex-direction: column;
+        gap: 0;
+        margin: 0 auto;
+    }
+    
+    .printing-now #formazione-section {
+        padding: 0;
+        margin-top: -20px;
+    }
+    
+    .printing-now #calendario-section {
+        margin-top: 50px !important;
+    }
 }
