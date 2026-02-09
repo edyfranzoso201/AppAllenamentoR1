@@ -724,15 +724,23 @@ async function render(loadedData) {
       
       h += `</td>`;
     }
-  }); // ← CHIUSURA forEach DATE
+    }); // ← CHIUSURA forEach DATE
   
-  if (isParentView) {
-    h += `<div class="alert alert-info mt-3">`;
-    h += `<strong>ℹ️ Istruzioni:</strong> Usa i pulsanti per segnalare assenze. Predefinito: "Presente".`;
-    h += `</div>`;
-  }
-  
-      el.innerHTML = h;
+  h += `</tr>`;  // chiude la riga dell'atleta
+});  // chiude visibleAthletes.forEach
+
+h += `</tbody>`;
+h += `</table>`;
+h += `</div>`;
+
+if (isParentView) {
+  h += `<div class="alert alert-info mt-3">`;
+  h += `<strong>ℹ️ Istruzioni:</strong> Usa i pulsanti per segnalare assenze. Predefinito: "Presente".`;
+  h += `</div>`;
+}
+
+el.innerHTML = h;
+
   
   console.log('[RENDER] ✅ HTML generato, riattacco event listener...');
   
