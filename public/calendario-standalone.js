@@ -279,6 +279,7 @@ async function markAbsence(athleteId, date, currentStatus) {
     alert('❌ Errore nel salvataggio: ' + e.message);
   }
 }
+
 /**
  * Mostra lo storico delle modifiche per un atleta in una data
  */
@@ -439,6 +440,7 @@ window.showHistory = function(athleteId, date, athleteName) {
     alert('❌ Errore nel caricamento dello storico: ' + e.message);
   });
 };
+
 function getAttendanceStatus(athleteId, date, data) {
   console.log('[STATUS] 🔍 Cerco status per', { athleteId, date });
   
@@ -673,7 +675,7 @@ async function render(loadedData) {
       // ICONA STORICO (se esiste)
       if (hasHistory) {
         h += `
-          <button onclick="showHistory(${a.id}, '${date}', '${a.name}')" 
+          <button onclick="showHistory(${a.id}, '${date}', ${JSON.stringify(a.name)})" 
             class="history-icon"
             title="Visualizza storico modifiche"
             style="position:absolute;top:2px;right:2px;background:#3b82f6;color:white;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:0.75rem;box-shadow:0 2px 4px rgba(0,0,0,0.2);z-index:10;display:flex;align-items:center;justify-content:center;transition:all 0.2s;"
@@ -699,7 +701,7 @@ async function render(loadedData) {
       // ICONA STORICO (se esiste)
       if (hasHistory) {
         h += `
-          <button onclick="showHistory(${a.id}, '${date}', '${a.name}')" 
+          <button onclick="showHistory(${a.id}, '${date}', ${JSON.stringify(a.name)})" 
             class="history-icon"
             title="Visualizza storico modifiche"
             style="position:absolute;top:2px;right:2px;background:#3b82f6;color:white;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:0.65rem;box-shadow:0 2px 4px rgba(0,0,0,0.2);z-index:10;display:flex;align-items:center;justify-content:center;transition:all 0.2s;"
