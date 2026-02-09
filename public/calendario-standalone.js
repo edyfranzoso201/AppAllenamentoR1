@@ -149,6 +149,7 @@ async function load() {
     `;
   }
 }
+}
 async function markAbsence(athleteId, date, currentStatus) {
   console.log('[PRESENZA] 🔔 markAbsence chiamata!', { athleteId, date, currentStatus });
   
