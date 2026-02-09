@@ -137,20 +137,18 @@ async function load() {
 
     render(data);
   } catch (e) {
-    console.error('[CALENDARIO] ❌ Errore caricamento:', e);
+  console.error('[CALENDARIO] ❌ Errore caricamento:', e);
 
-    const calendarEl = document.getElementById('calendar');
-    if (calendarEl) {
-      calendarEl.innerHTML = `
-        <div style="padding: 1rem; text-align: center;">
-          <p>Si è verificato un errore nel caricamento del calendario.</p>
-          <p>Riprova più tardi o contatta l'allenatore.</p>
-        </div>
-      `;
-    }
+  const calendarEl = document.getElementById('calendar');
+  if (calendarEl) {
+    calendarEl.innerHTML = `
+      <div style="padding: 1rem; text-align: center;">
+        <p>Si è verificato un errore nel caricamento del calendario.</p>
+        <p>Riprova più tardi o contatta l'allenatore.</p>
+      </div>
+    `;
   }
 }
-
 async function markAbsence(athleteId, date, currentStatus) {
   console.log('[PRESENZA] 🔔 markAbsence chiamata!', { athleteId, date, currentStatus });
   
