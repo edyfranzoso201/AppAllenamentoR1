@@ -97,15 +97,14 @@ async function getAnnataId() {
 async function load() {
   try {
     console.log('[CALENDARIO] 🔥 Caricamento dati calendario...');
-    
+
     const annataId = await getAnnataId();
-    
     if (!annataId) {
       throw new Error('Nessuna annata disponibile');
     }
-    
+
     console.log(`[CALENDARIO] 🔥 Caricamento per annata: ${annataId}`);
-    
+
     // Chiamata API diretta con header
     const response = await fetch('/api/data', {
       cache: 'no-store',
@@ -114,42 +113,44 @@ async function load() {
         'X-Annata-Id': annataId
       }
     });
-    
+
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
-    
+
     const result = await response.json();
     const data = result.data || result;
-    
+
     events = data.calendarEvents || {};
-    
+
     // Converti TUTTI gli ID a stringhe
     athletes = (data.athletes || []).map(a => ({
       ...a,
       id: String(a.id)
     }));
-    
+
     console.log('[CALENDARIO] ✅ Dati caricati:', {
       eventi: Object.keys(events).length,
       atleti: athletes.length,
       annata: annataId
     });
-    
-    } catch (e) {
-  console.error('[CALENDARIO] ❌ Errore caricamento:', e);
 
-  const calendarEl = document.getElementById('calendar');
-  if (calendarEl) {
-    calendarEl.innerHTML = `
-      <div style="padding: 1rem; text-align: center;">
-        <p>Si è verificato un errore nel caricamento del calendario.</p>
-        <p>Riprova più tardi o contatta l'allenatore.</p>
-      </div>
-    `;
+    render(data);
+  } catch (e) {
+    console.error('[CALENDARIO] ❌ Errore caricamento:', e);
+
+    const calendarEl = document.getElementById('calendar');
+    if (calendarEl) {
+      calendarEl.innerHTML = `
+        <div style="padding: 1rem; text-align: center;">
+          <p>Si è verificato un errore nel caricamento del calendario.</p>
+          <p>Riprova più tardi o contatta l'allenatore.</p>
+        </div>
+      `;
+    }
   }
 }
-}
+
 async function markAbsence(athleteId, date, currentStatus) {
   console.log('[PRESENZA] 🔔 markAbsence chiamata!', { athleteId, date, currentStatus });
   
@@ -800,11 +801,12 @@ window.generatePresenceLink = function(athleteId, athleteName) {
       <div style="background:#f1f5f9;padding:15px;border-radius:8px;margin-bottom:20px;word-break:break-all;font-family:monospace;font-size:14px">
         ${link}
       </div>
-      <div style="display:flex;gap:10px">
-        <button onclick="navigator.clipboard.writeText('${link}').then(() => alert('✅ Link copiato!')).catch(() => alert('❌ Errore'))" 
+            <div style="display:flex;gap:10px">
+        <button onclick="navigator.clipboard.writeText('${link}').then(() => alert('✅ Link copiato!')).catch(() => alert('❌ Errore'))"
                 style="flex:1;background:#10b981;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600">
           📋 Copia Link
         </button>
+
         <button onclick="this.parentElement.parentElement.parentElement.remove()" 
                 style="flex:1;background:#64748b;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600">
           ❌ Chiudi
