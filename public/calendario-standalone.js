@@ -13,6 +13,16 @@ let isParentView = false;
 let currentAthleteId = null;
 let currentAnnataId = null;
 
+/**
+ * Controlla se un evento è entro 72 ore
+ */
+function isWithin72Hours(eventDate) {
+  const now = new Date();
+  const event = new Date(eventDate);
+  const diffHours = (event - now) / (1000 * 60 * 60);
+  return diffHours < 72 && diffHours > 0;
+}
+
 async function getAnnataId() {
     // 1. Prova dall'URL (PRIORITÀ MASSIMA)
     const urlParams = new URLSearchParams(window.location.search);
@@ -136,6 +146,13 @@ async function load() {
 async function markAbsence(athleteId, date, currentStatus) {
   console.log('[PRESENZA] 🔔 markAbsence chiamata!', { athleteId, date, currentStatus });
   
+  // CONTROLLO 72 ORE PER GENITORI
+  if (isParentView && isWithin72Hours(date)) {
+    alert('⚠️ NON PIÙ MODIFICABILE\n\nL\'evento è tra meno di 72 ore.\n\nContatta il dirigente o la società per modifiche dell\'ultimo minuto.');
+    console.log('[PRESENZA] ⛔ Bloccato: evento entro 72 ore');
+    return;
+  }
+  
   const newStatus = currentStatus === 'Assente' ? null : 'Assente';
   const statusText = newStatus === 'Assente' ? 'assente' : 'presente';
   
@@ -152,6 +169,9 @@ async function markAbsence(athleteId, date, currentStatus) {
     if (!annataId) {
       throw new Error('Nessuna annata disponibile');
     }
+    
+    // Salva annata corrente
+    currentAnnataId = annataId;
     
     // Carica i dati correnti
     const response = await fetch('/api/data', {
@@ -179,17 +199,60 @@ async function markAbsence(athleteId, date, currentStatus) {
       data.calendarResponses[date] = {};
     }
     
-    // Imposta stato - USA STRINGA
+    // Imposta stato con STORICO
     const athleteIdStr = String(athleteId);
-    if (newStatus === 'Assente') {
-      data.calendarResponses[date][athleteIdStr] = 'Assente';
-      console.log(`[PRESENZA] ✅ Impostato assente per ${athleteIdStr}`);
-    } else {
-      delete data.calendarResponses[date][athleteIdStr];
-      console.log(`[PRESENZA] ✅ Rimosso assente per ${athleteIdStr}`);
+    const timestamp = new Date().toISOString();
+    const modifiedBy = isParentView ? 'genitore' : 'coach';
+    
+    // Recupera record esistente o crea nuovo
+    let record = data.calendarResponses[date][athleteIdStr];
+    
+    if (typeof record === 'string') {
+      // Vecchio formato (solo stringa), converti a nuovo formato
+      record = {
+        status: record,
+        lastModified: timestamp,
+        modifiedBy: 'unknown',
+        history: [{
+          timestamp: timestamp,
+          status: record,
+          by: 'unknown',
+          note: 'Migrato da vecchio formato'
+        }]
+      };
+    } else if (!record || typeof record !== 'object') {
+      // Nessun record, crea nuovo
+      record = {
+        status: 'Presente',
+        lastModified: timestamp,
+        modifiedBy: modifiedBy,
+        history: []
+      };
     }
     
-    console.log('[PRESENZA] 💾 Salvataggio dati...', JSON.stringify(data.calendarResponses[date], null, 2));
+    // Assicura che history esista
+    if (!record.history) {
+      record.history = [];
+    }
+    
+    // Aggiungi nuova modifica allo storico
+    const newEntry = {
+      timestamp: timestamp,
+      status: newStatus || 'Presente',
+      by: modifiedBy
+    };
+    
+    record.history.push(newEntry);
+    
+    // Aggiorna stato corrente
+    record.status = newStatus || 'Presente';
+    record.lastModified = timestamp;
+    record.modifiedBy = modifiedBy;
+    
+    data.calendarResponses[date][athleteIdStr] = record;
+    
+    console.log(`[PRESENZA] ✅ Aggiornato: ${record.status} per ${athleteIdStr}`);
+    console.log('[PRESENZA] 📜 Storico:', record.history.length, 'modifiche');
     
     // Salva con header
     const saveResponse = await fetch('/api/data', {
@@ -205,42 +268,218 @@ async function markAbsence(athleteId, date, currentStatus) {
       throw new Error(`Salvataggio fallito: HTTP ${saveResponse.status}`);
     }
     
-    const saveResult = await saveResponse.json();
-    if (!saveResult.success) {
-      throw new Error('API ritornò success=false');
-    }
-    
     console.log('[PRESENZA] ✅ Stato salvato con successo!');
+    alert('✅ Stato aggiornato: ' + (newStatus || 'presente'));
     
-    // ✅ SOLUZIONE: Ricarica i dati e re-renderizza
-    alert(`✅ Stato aggiornato: ${statusText}`);
-    await load(); // ← INVECE di window.location.reload()
+    // Ricarica pagina per mostrare nuovo stato
+    location.reload();
     
   } catch (e) {
-    console.error('[PRESENZA] ❌ Errore completo:', e);
-    alert('❌ Errore: ' + e.message);
+    console.error('[PRESENZA] ❌ Errore:', e);
+    alert('❌ Errore nel salvataggio: ' + e.message);
   }
 }
-function getAttendanceStatus(athleteId, date, data) {
-  // DEBUG: Stampa tutto per capire
-  console.log('[STATUS] 🔍 Controllo stato:', {
-    athleteId,
-    date,
-    calendarResponses: data.calendarResponses
-  });
+/**
+ * Mostra lo storico delle modifiche per un atleta in una data
+ */
+window.showHistory = function(athleteId, date, athleteName) {
+  console.log('[STORICO] 📋 Richiesto storico per', athleteName, 'data', date);
   
-  if (!data.calendarResponses || !data.calendarResponses[date]) {
+  const annataId = currentAnnataId || localStorage.getItem('currentAnnata');
+  
+  // Recupera dati
+  fetch('/api/data', {
+    cache: 'no-store',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Annata-Id': annataId
+    }
+  })
+  .then(r => {
+    if (!r.ok) throw new Error('Errore caricamento dati');
+    return r.json();
+  })
+  .then(data => {
+    const responses = data.calendarResponses || {};
+    const athleteIdStr = String(athleteId);
+    const record = responses[date] ? responses[date][athleteIdStr] : null;
+    
+    if (!record) {
+      alert('📋 Nessuna modifica registrata per questo evento.');
+      return;
+    }
+    
+    // Converti vecchio formato se necessario
+    let history = [];
+    if (typeof record === 'string') {
+      // Vecchio formato: solo una stringa
+      history = [{
+        timestamp: new Date().toISOString(),
+        status: record,
+        by: 'unknown',
+        note: 'Dato nel vecchio formato'
+      }];
+    } else if (record.history && Array.isArray(record.history)) {
+      history = record.history;
+    }
+    
+    if (history.length === 0) {
+      alert('📋 Nessuna modifica registrata per questo evento.');
+      return;
+    }
+    
+    // Crea modal
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
+    
+    // Costruisci lista storico (dal più recente al più vecchio)
+    const sortedHistory = [...history].reverse();
+    let historyHTML = '';
+    
+    sortedHistory.forEach((entry, idx) => {
+      const entryDate = new Date(entry.timestamp);
+      const dateStr = entryDate.toLocaleDateString('it-IT', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      const icon = entry.status === 'Assente' ? '❌' : '✅';
+      const color = entry.status === 'Assente' ? '#ef4444' : '#10b981';
+      const bgColor = entry.status === 'Assente' ? '#fee2e2' : '#d1fae5';
+      const byIcon = entry.by === 'genitore' ? '👨‍👩‍👧' : (entry.by === 'coach' ? '👔' : '❓');
+      const byText = entry.by === 'genitore' ? 'Genitore' : (entry.by === 'coach' ? 'Coach' : 'Sconosciuto');
+      
+      historyHTML += `
+        <div style="padding:12px;background:${bgColor};border-radius:8px;margin-bottom:10px;border-left:4px solid ${color}">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+            <div style="flex:1;min-width:150px;">
+              <strong style="color:${color};font-size:1rem;">${icon} ${entry.status}</strong>
+              <span style="margin-left:10px;color:#64748b;font-size:0.85rem;">${byIcon} ${byText}</span>
+            </div>
+            <span style="color:#94a3b8;font-size:0.8rem;white-space:nowrap;">${dateStr}</span>
+          </div>
+          ${entry.note ? `<div style="margin-top:8px;color:#475569;font-size:0.85rem;font-style:italic;padding:8px;background:rgba(255,255,255,0.5);border-radius:4px;">${entry.note}</div>` : ''}
+        </div>
+      `;
+    });
+    
+    // Stato attuale
+    const currentStatus = typeof record === 'object' ? record.status : record;
+    const currentColor = currentStatus === 'Assente' ? '#ef4444' : '#10b981';
+    const currentBg = currentStatus === 'Assente' ? '#fee2e2' : '#d1fae5';
+    
+    modal.innerHTML = `
+      <div style="background:white;padding:30px;border-radius:15px;max-width:600px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <h3 style="margin:0;color:#1e293b;display:flex;align-items:center;gap:10px;">
+            <span style="font-size:1.5rem;">📋</span>
+            <span>Storico Modifiche</span>
+          </h3>
+          <button onclick="this.closest('[style*=fixed]').remove()" 
+            style="background:none;border:none;font-size:2rem;cursor:pointer;color:#64748b;line-height:1;padding:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:background 0.2s;"
+            onmouseover="this.style.background='#f1f5f9'"
+            onmouseout="this.style.background='none'">×</button>
+        </div>
+        
+        <div style="background:#e0f2fe;padding:15px;border-radius:10px;margin-bottom:20px;border:2px solid #38bdf8;">
+          <div style="color:#0369a1;font-weight:600;margin-bottom:5px;font-size:1rem;">
+            <i class="bi bi-person-circle"></i> ${athleteName}
+          </div>
+          <div style="color:#0c4a6e;font-size:0.9rem;">
+            <i class="bi bi-calendar-event"></i> ${new Date(date).toLocaleDateString('it-IT', { 
+              weekday: 'long', 
+              day: 'numeric', 
+              month: 'long', 
+              year: 'numeric' 
+            })}
+          </div>
+        </div>
+        
+        <div style="margin-bottom:20px;padding:12px;background:${currentBg};border-radius:8px;border:2px solid ${currentColor};">
+          <div style="font-size:0.85rem;color:#64748b;margin-bottom:5px;">Stato attuale:</div>
+          <div style="font-size:1.1rem;font-weight:700;color:${currentColor};">
+            ${currentStatus === 'Assente' ? '❌ ASSENTE' : '✅ PRESENTE'}
+          </div>
+        </div>
+        
+        <div style="margin-bottom:15px;">
+          <div style="color:#64748b;font-size:0.9rem;margin-bottom:10px;">
+            <strong>📜 Cronologia delle modifiche</strong>
+            <span style="margin-left:8px;padding:2px 8px;background:#e2e8f0;border-radius:12px;font-size:0.75rem;">${history.length}</span>
+          </div>
+        </div>
+        
+        <div style="max-height:300px;overflow-y:auto;padding-right:5px;">
+          ${historyHTML}
+        </div>
+        
+        <div style="margin-top:25px;text-align:center;">
+          <button onclick="this.closest('[style*=fixed]').remove()" 
+            style="background:#64748b;color:white;border:none;padding:12px 40px;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.95rem;transition:background 0.2s;"
+            onmouseover="this.style.background='#475569'"
+            onmouseout="this.style.background='#64748b'">
+            Chiudi
+          </button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Chiudi cliccando fuori
+    modal.onclick = (e) => {
+      if (e.target === modal) modal.remove();
+    };
+  })
+  .catch(e => {
+    console.error('[STORICO] ❌ Errore:', e);
+    alert('❌ Errore nel caricamento dello storico: ' + e.message);
+  });
+};
+function getAttendanceStatus(athleteId, date, data) {
+  console.log('[STATUS] 🔍 Cerco status per', { athleteId, date });
+  
+  if (!data) {
+    console.log('[STATUS] ⚠️ Nessun dato fornito');
+    return null;
+  }
+  
+  const responses = data.calendarResponses || {};
+  
+  if (!responses[date]) {
     console.log('[STATUS] ⚠️ Nessuna risposta per', date);
     return null;
   }
   
   const athleteIdStr = String(athleteId);
-  const status = data.calendarResponses[date][athleteIdStr] || 
-                 data.calendarResponses[date][athleteId] || 
-                 null;
+  const record = responses[date][athleteIdStr] || responses[date][athleteId] || null;
   
-  console.log('[STATUS] ✅ Stato trovato:', status, 'per ID:', athleteIdStr);
-  return status;
+  if (!record) {
+    console.log('[STATUS] ⚠️ Nessun record per atleta', athleteIdStr);
+    return null;
+  }
+  
+  // Nuovo formato: oggetto con status e history
+  if (typeof record === 'object' && record.status) {
+    console.log('[STATUS] ✅ Stato trovato (nuovo formato):', record.status);
+    return record;
+  }
+  
+  // Vecchio formato: solo stringa
+  if (typeof record === 'string') {
+    console.log('[STATUS] ✅ Stato trovato (vecchio formato):', record);
+    return {
+      status: record,
+      history: [],
+      legacy: true
+    };
+  }
+  
+  console.log('[STATUS] ⚠️ Formato sconosciuto:', typeof record);
+  return null;
 }
 
 async function render(loadedData) {
@@ -378,51 +617,102 @@ async function render(loadedData) {
   dates.forEach(date => {
     console.log('[RENDER] 📅 Data:', date, 'Atleta:', a.id, a.name);
     
-    const status = getAttendanceStatus(a.id, date, attendanceData);
+    const statusRecord = getAttendanceStatus(a.id, date, attendanceData);
     
-    console.log('[RENDER] 📋 Status ricevuto:', status);
+    // Estrai status effettivo (può essere oggetto o stringa)
+    const status = statusRecord ? (statusRecord.status || statusRecord) : null;
+    const hasHistory = statusRecord && statusRecord.history && statusRecord.history.length > 0;
+    
+    console.log('[RENDER] 📋 Status:', status, 'HasHistory:', hasHistory);
+    
+    const within72 = isWithin72Hours(date);
+    const isBlocked = isParentView && within72;
     
     if (isParentView) {
-      // MODALITÀ GENITORE: mostra pulsanti
-      if (status === 'Assente') {
-        h += `<td class="text-center" style="background-color:#ffcccc; color:#000">
-          <div style="display:flex; flex-direction:column; align-items:center; gap:5px">
-            <span style="color:#dc3545; font-weight:bold">❌ Assente</span>
+      // ===== MODALITÀ GENITORE =====
+      h += `<td class="text-center" style="position:relative;color:#000;">`;
+      
+      if (isBlocked) {
+        // BLOCCATO (entro 72 ore)
+        h += `
+          <div style="background:#fee2e2;color:#991b1b;padding:12px 8px;border-radius:6px;font-size:0.75rem;font-weight:600;line-height:1.3;">
+            🔒 NON MODIFICABILE<br>
+            <span style="font-size:0.7rem;font-weight:normal;">Contatta società</span>
+          </div>
+        `;
+      } else if (status === 'Assente') {
+        // ASSENTE (può modificare)
+        h += `
+          <div style="display:flex;flex-direction:column;align-items:center;gap:5px;background-color:#ffcccc;padding:8px;border-radius:6px;">
+            <span style="color:#dc3545;font-weight:bold;">❌ Assente</span>
             <button class="btn btn-sm btn-success mark-presence-btn" 
                     data-athlete-id="${a.id}" 
                     data-date="${date}" 
                     data-current-status="Assente" 
-                    style="font-size:0.75rem">
-              Segna Presente
+                    style="font-size:0.75rem;font-weight:600;">
+              ✅ Segna Presente
             </button>
           </div>
-        </td>`;
+        `;
       } else {
-        h += `<td class="text-center" style="color:#000">
-          <div style="display:flex; flex-direction:column; align-items:center; gap:5px">
-            <span style="color:#28a745">✓ Presente</span>
+        // PRESENTE (può modificare)
+        h += `
+          <div style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px;">
+            <span style="color:#28a745;font-weight:600;">✓ Presente</span>
             <button class="btn btn-sm btn-danger mark-absence-btn" 
                     data-athlete-id="${a.id}" 
                     data-date="${date}" 
                     data-current-status="" 
-                    style="font-size:0.75rem">
-              Segna Assente
+                    style="font-size:0.75rem;font-weight:600;">
+              ❌ Segna Assente
             </button>
           </div>
-        </td>`;
+        `;
       }
+      
+      // ICONA STORICO (se esiste)
+      if (hasHistory) {
+        h += `
+          <button onclick="showHistory(${a.id}, '${date}', '${a.name.replace(/'/g, "\\'")}')" 
+            class="history-icon"
+            title="Visualizza storico modifiche"
+            style="position:absolute;top:2px;right:2px;background:#3b82f6;color:white;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:0.75rem;box-shadow:0 2px 4px rgba(0,0,0,0.2);z-index:10;display:flex;align-items:center;justify-content:center;transition:all 0.2s;"
+            onmouseover="this.style.background='#2563eb';this.style.transform='scale(1.1)'"
+            onmouseout="this.style.background='#3b82f6';this.style.transform='scale(1)'">
+            📋
+          </button>
+        `;
+      }
+      
+      h += `</td>`;
+      
     } else {
-      // MODALITÀ COACH: solo visualizza
+      // ===== MODALITÀ COACH =====
+      h += `<td class="text-center" style="position:relative;`;
+      
       if (status === 'Assente') {
-        h += `<td class="text-center" style="background-color:#ffcccc; color:#dc3545; font-weight:bold">❌ Assente</td>`;
+        h += `background-color:#ffcccc;color:#dc3545;font-weight:bold;">❌ Assente`;
       } else {
-        h += `<td class="text-center" style="color:#000">-</td>`;
+        h += `color:#000;">-`;
       }
+      
+      // ICONA STORICO (se esiste)
+      if (hasHistory) {
+        h += `
+          <button onclick="showHistory(${a.id}, '${date}', '${a.name.replace(/'/g, "\\'")}')" 
+            class="history-icon"
+            title="Visualizza storico modifiche"
+            style="position:absolute;top:2px;right:2px;background:#3b82f6;color:white;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:0.65rem;box-shadow:0 2px 4px rgba(0,0,0,0.2);z-index:10;display:flex;align-items:center;justify-content:center;transition:all 0.2s;"
+            onmouseover="this.style.background='#2563eb';this.style.transform='scale(1.15)'"
+            onmouseout="this.style.background='#3b82f6';this.style.transform='scale(1)'">
+            📋
+          </button>
+        `;
+      }
+      
+      h += `</td>`;
     }
-  }); // ← CHIUSURA DEL forEach delle DATE
-  h += `</tr>`;
-}); // ← CHIUSURA DEL forEach degli ATLETI
-
+  }); // ← CHIUSURA forEach DATE
   
   if (isParentView) {
     h += `<div class="alert alert-info mt-3">`;
