@@ -887,21 +887,78 @@ window.showResponses = function() {
 };
 
 // Funzione per il pulsante "Elimina Vecchi"
-window.deleteOldEvents = function() {
-  if (!confirm('Vuoi eliminare gli eventi passati?')) return;
+window.deleteOldEvents = async function() {
+  if (!confirm('Vuoi eliminare gli eventi passati e le relative risposte?')) return;
   
-  const today = new Date().toISOString().split('T')[0];
-  let deleted = 0;
-  
-  Object.keys(events).forEach(date => {
-    if (date < today) {
-      delete events[date];
-      deleted++;
+  try {
+    const annataId = await getAnnataId();
+    if (!annataId) {
+      alert('❌ Errore: nessuna annata disponibile');
+      return;
     }
-  });
-  
-  alert(`✅ Eliminati ${deleted} eventi passati!`);
-  location.reload();
+    
+    // Carica i dati correnti
+    const response = await fetch('/api/data', {
+      cache: 'no-store',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Annata-Id': annataId
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const result = await response.json();
+    const data = result.data || result;
+    
+    const today = new Date().toISOString().split('T')[0];
+    let deletedEvents = 0;
+    let deletedResponses = 0;
+    
+    // Elimina eventi passati da calendarEvents
+    if (data.calendarEvents) {
+      Object.keys(data.calendarEvents).forEach(date => {
+        if (date < today) {
+          delete data.calendarEvents[date];
+          deletedEvents++;
+        }
+      });
+    }
+    
+    // Elimina risposte associate a date passate
+    if (data.calendarResponses) {
+      Object.keys(data.calendarResponses).forEach(date => {
+        if (date < today) {
+          delete data.calendarResponses[date];
+          deletedResponses++;
+        }
+      });
+    }
+    
+    // Salva i dati aggiornati su Vercel/Redis
+    const saveResponse = await fetch('/api/data', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Annata-Id': annataId
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!saveResponse.ok) {
+      throw new Error(`Salvataggio fallito: HTTP ${saveResponse.status}`);
+    }
+    
+    console.log('[DELETE] ✅ Eventi e risposte eliminati:', { deletedEvents, deletedResponses });
+    alert(`✅ Eliminati:\n- ${deletedEvents} eventi passati\n- ${deletedResponses} date con risposte`);
+    location.reload();
+    
+  } catch (error) {
+    console.error('[DELETE] ❌ Errore:', error);
+    alert('❌ Errore nell\'eliminazione: ' + error.message);
+  }
 };
 
 document.addEventListener('DOMContentLoaded', () => {
