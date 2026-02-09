@@ -283,7 +283,11 @@ async function markAbsence(athleteId, date, currentStatus) {
 /**
  * Mostra lo storico delle modifiche per un atleta in una data
  */
-window.showHistory = function(athleteId, date, athleteName) {
+window.showHistory = function(athleteId, date) {
+  // Recupera il nome dell'atleta dalla lista globale
+  const athlete = athletes.find(a => String(a.id) === String(athleteId));
+  const athleteName = athlete ? athlete.name : `Atleta ${athleteId}`;
+  
   console.log('[STORICO] 📋 Richiesto storico per', athleteName, 'data', date);
   
   const annataId = currentAnnataId || localStorage.getItem('currentAnnata');
@@ -675,7 +679,7 @@ async function render(loadedData) {
       // ICONA STORICO (se esiste)
       if (hasHistory) {
         h += `
-          <button onclick="showHistory(${a.id}, '${date}', ${JSON.stringify(a.name)})" 
+          <button onclick="window.showHistory(${a.id}, '${date}')" 
             class="history-icon"
             title="Visualizza storico modifiche"
             style="position:absolute;top:2px;right:2px;background:#3b82f6;color:white;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:0.75rem;box-shadow:0 2px 4px rgba(0,0,0,0.2);z-index:10;display:flex;align-items:center;justify-content:center;transition:all 0.2s;"
@@ -701,7 +705,7 @@ async function render(loadedData) {
       // ICONA STORICO (se esiste)
       if (hasHistory) {
         h += `
-          <button onclick="showHistory(${a.id}, '${date}', ${JSON.stringify(a.name)})" 
+          <button onclick="window.showHistory(${a.id}, '${date}')" 
             class="history-icon"
             title="Visualizza storico modifiche"
             style="position:absolute;top:2px;right:2px;background:#3b82f6;color:white;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:0.65rem;box-shadow:0 2px 4px rgba(0,0,0,0.2);z-index:10;display:flex;align-items:center;justify-content:center;transition:all 0.2s;"
