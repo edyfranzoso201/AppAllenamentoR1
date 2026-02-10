@@ -97,14 +97,15 @@ async function getAnnataId() {
 async function load() {
   try {
     console.log('[CALENDARIO] 🔥 Caricamento dati calendario...');
-
+    
     const annataId = await getAnnataId();
+    
     if (!annataId) {
       throw new Error('Nessuna annata disponibile');
     }
-
+    
     console.log(`[CALENDARIO] 🔥 Caricamento per annata: ${annataId}`);
-
+    
     // Chiamata API diretta con header
     const response = await fetch('/api/data', {
       cache: 'no-store',
@@ -113,43 +114,35 @@ async function load() {
         'X-Annata-Id': annataId
       }
     });
-
+    
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
-
+    
     const result = await response.json();
     const data = result.data || result;
-
+    
     events = data.calendarEvents || {};
-
+    
     // Converti TUTTI gli ID a stringhe
     athletes = (data.athletes || []).map(a => ({
       ...a,
       id: String(a.id)
     }));
-
+    
     console.log('[CALENDARIO] ✅ Dati caricati:', {
       eventi: Object.keys(events).length,
       atleti: athletes.length,
       annata: annataId
     });
-
+    
     render(data);
   } catch (e) {
-  console.error('[CALENDARIO] ❌ Errore caricamento:', e);
-
-  const calendarEl = document.getElementById('calendar');
-  if (calendarEl) {
-    calendarEl.innerHTML = `
-      <div style="padding: 1rem; text-align: center;">
-        <p>Si è verificato un errore nel caricamento del calendario.</p>
-        <p>Riprova più tardi o contatta l'allenatore.</p>
-      </div>
-    `;
+    console.error('[CALENDARIO] ❌ Errore caricamento:', e);
+    document.getElementById('calendar').innerHTML = `<div class="alert alert-danger">Errore: ${e.message}</div>`;
   }
 }
-}
+
 async function markAbsence(athleteId, date, currentStatus) {
   console.log('[PRESENZA] 🔔 markAbsence chiamata!', { athleteId, date, currentStatus });
   
@@ -725,23 +718,17 @@ async function render(loadedData) {
       
       h += `</td>`;
     }
-    }); // ← CHIUSURA forEach DATE
+  }); // ← CHIUSURA forEach DATE
+  h += `</tr>`;
+}); // ← CHIUSURA forEach ATLETI
+
+  if (isParentView) {
+    h += `<div class="alert alert-info mt-3">`;
+    h += `<strong>ℹ️ Istruzioni:</strong> Usa i pulsanti per segnalare assenze. Predefinito: "Presente".`;
+    h += `</div>`;
+  }
   
-  h += `</tr>`;  // chiude la riga dell'atleta
-});  // chiude visibleAthletes.forEach
-
-h += `</tbody>`;
-h += `</table>`;
-h += `</div>`;
-
-if (isParentView) {
-  h += `<div class="alert alert-info mt-3">`;
-  h += `<strong>ℹ️ Istruzioni:</strong> Usa i pulsanti per segnalare assenze. Predefinito: "Presente".`;
-  h += `</div>`;
-}
-
-el.innerHTML = h;
-
+      el.innerHTML = h;
   
   console.log('[RENDER] ✅ HTML generato, riattacco event listener...');
   
@@ -780,7 +767,8 @@ el.innerHTML = h;
 
 window.generatePresenceLink = function(athleteId, athleteName) {
   // IMPORTANTE: Ottieni l'annata corrente
-  const currentAnnata = window.currentAnnata || 
+  const currentAnnata = sessionStorage.getItem('gosport_current_annata') ||
+                        window.currentAnnata || 
                         localStorage.getItem('currentAnnata') || 
                         sessionStorage.getItem('gosport:currentannata');
   
@@ -808,12 +796,11 @@ window.generatePresenceLink = function(athleteId, athleteName) {
       <div style="background:#f1f5f9;padding:15px;border-radius:8px;margin-bottom:20px;word-break:break-all;font-family:monospace;font-size:14px">
         ${link}
       </div>
-            <div style="display:flex;gap:10px">
-        <button onclick="navigator.clipboard.writeText('${link}').then(() => alert('✅ Link copiato!')).catch(() => alert('❌ Errore'))"
+      <div style="display:flex;gap:10px">
+        <button onclick="navigator.clipboard.writeText('${link}').then(() => alert('✅ Link copiato!')).catch(() => alert('❌ Errore'))" 
                 style="flex:1;background:#10b981;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600">
           📋 Copia Link
         </button>
-
         <button onclick="this.parentElement.parentElement.parentElement.remove()" 
                 style="flex:1;background:#64748b;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600">
           ❌ Chiudi
@@ -887,78 +874,21 @@ window.showResponses = function() {
 };
 
 // Funzione per il pulsante "Elimina Vecchi"
-window.deleteOldEvents = async function() {
-  if (!confirm('Vuoi eliminare gli eventi passati e le relative risposte?')) return;
+window.deleteOldEvents = function() {
+  if (!confirm('Vuoi eliminare gli eventi passati?')) return;
   
-  try {
-    const annataId = await getAnnataId();
-    if (!annataId) {
-      alert('❌ Errore: nessuna annata disponibile');
-      return;
+  const today = new Date().toISOString().split('T')[0];
+  let deleted = 0;
+  
+  Object.keys(events).forEach(date => {
+    if (date < today) {
+      delete events[date];
+      deleted++;
     }
-    
-    // Carica i dati correnti
-    const response = await fetch('/api/data', {
-      cache: 'no-store',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Annata-Id': annataId
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    
-    const result = await response.json();
-    const data = result.data || result;
-    
-    const today = new Date().toISOString().split('T')[0];
-    let deletedEvents = 0;
-    let deletedResponses = 0;
-    
-    // Elimina eventi passati da calendarEvents
-    if (data.calendarEvents) {
-      Object.keys(data.calendarEvents).forEach(date => {
-        if (date < today) {
-          delete data.calendarEvents[date];
-          deletedEvents++;
-        }
-      });
-    }
-    
-    // Elimina risposte associate a date passate
-    if (data.calendarResponses) {
-      Object.keys(data.calendarResponses).forEach(date => {
-        if (date < today) {
-          delete data.calendarResponses[date];
-          deletedResponses++;
-        }
-      });
-    }
-    
-    // Salva i dati aggiornati su Vercel/Redis
-    const saveResponse = await fetch('/api/data', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Annata-Id': annataId
-      },
-      body: JSON.stringify(data)
-    });
-    
-    if (!saveResponse.ok) {
-      throw new Error(`Salvataggio fallito: HTTP ${saveResponse.status}`);
-    }
-    
-    console.log('[DELETE] ✅ Eventi e risposte eliminati:', { deletedEvents, deletedResponses });
-    alert(`✅ Eliminati:\n- ${deletedEvents} eventi passati\n- ${deletedResponses} date con risposte`);
-    location.reload();
-    
-  } catch (error) {
-    console.error('[DELETE] ❌ Errore:', error);
-    alert('❌ Errore nell\'eliminazione: ' + error.message);
-  }
+  });
+  
+  alert(`✅ Eliminati ${deleted} eventi passati!`);
+  location.reload();
 };
 
 document.addEventListener('DOMContentLoaded', () => {
