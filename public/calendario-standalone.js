@@ -1,9 +1,9 @@
 // calendario-standalone.js - VERSIONE UNIFICATA (URL param + Token path)
 
 const TRAINING = [
-  { day: 1, time: '18:30-20:00' },
-  { day: 3, time: '17:30-19:00' },
-  { day: 5, time: '18:00-19:15' }
+  { day: 1, time: '18:00-19:30' },
+  { day: 3, time: '18:30-20:00' },
+  { day: 5, time: '18:00-19:30' }
 ];
 const END = new Date('2026-06-30');
 
