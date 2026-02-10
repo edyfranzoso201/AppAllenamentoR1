@@ -794,7 +794,8 @@ window.deleteEvent = async function(date) {
       headers: { 'Content-Type': 'application/json', 'X-Annata-Id': annataId }
     });
     
-    const data = await response.json();
+    const rawData = await response.json();
+    const data = rawData.data || rawData;
     if (data.events && data.events[date]) {
       delete data.events[date];
     }
@@ -912,13 +913,20 @@ window.editEvent = function(date) {
         }
       });
       
-      const data = await response.json();
+      const rawData = await response.json();
+      // La risposta API può essere { success, data } oppure direttamente l'oggetto
+      const data = rawData.data || rawData;
       data.events = data.events || {};
+      
+      console.log('[EDIT EVENT] 📦 Dati caricati, events:', Object.keys(data.events).length);
+      
       // Se la data è cambiata, elimina quella vecchia
       if (newDate !== date && data.events[date]) {
         delete data.events[date];
+        console.log('[EDIT EVENT] 🗑️ Eliminata vecchia data:', date);
       }
       data.events[newDate] = { type: newType, time: newTime };
+      console.log('[EDIT EVENT] ✅ Aggiunto nuovo evento:', newDate, newType, newTime);
       
       const saveResponse = await fetch('/api/data', {
         method: 'POST',
