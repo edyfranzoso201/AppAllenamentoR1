@@ -596,13 +596,18 @@ async function render(loadedData) {
     const e = events[d];
     const eventIcon = e.type === 'Partita' ? '⚽' : '🏃';
     
+    const editBtn = !isParentView ?
+      `<button onclick="editEvent('${d}')" class="btn btn-sm btn-warning ms-1" style="padding:0.1rem 0.3rem;font-size:0.6rem" title="Modifica evento">
+        <i class="bi bi-pencil"></i>
+      </button>` : '';
+
     const deleteBtn = !isParentView ? 
-      `<button onclick="deleteEvent('${d}')" class="btn btn-sm btn-danger ms-1" style="padding:0.1rem 0.3rem;font-size:0.6rem">
+      `<button onclick="deleteEvent('${d}')" class="btn btn-sm btn-danger ms-1" style="padding:0.1rem 0.3rem;font-size:0.6rem" title="Elimina evento">
         <i class="bi bi-trash"></i>
       </button>` : '';
     
     h += `<th class="text-center" style="color:#000">
-      <small>${eventIcon} ${e.type}<br>${e.time}${deleteBtn}</small>
+      <small>${eventIcon} ${e.type}<br>${e.time}${editBtn}${deleteBtn}</small>
     </th>`;
   });
   h += `</tr>`;
@@ -766,6 +771,167 @@ async function render(loadedData) {
   
   console.log('[RENDER] ✅ Rendering completato!');
 }
+
+
+
+window.deleteEvent = async function(date) {
+  const event = events[date];
+  if (!event) return;
+  
+  const dateFormatted = new Date(date).toLocaleDateString('it-IT', { 
+    weekday: 'long', day: 'numeric', month: 'long' 
+  });
+  
+  if (!confirm(`Vuoi eliminare l'evento del ${dateFormatted}?`)) return;
+  
+  try {
+    const annataId = currentAnnataId || 
+                     sessionStorage.getItem('gosport_current_annata') ||
+                     localStorage.getItem('currentAnnata');
+    
+    const response = await fetch('/api/data', {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json', 'X-Annata-Id': annataId }
+    });
+    
+    const data = await response.json();
+    if (data.events && data.events[date]) {
+      delete data.events[date];
+    }
+    
+    const saveResponse = await fetch('/api/data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Annata-Id': annataId },
+      body: JSON.stringify(data)
+    });
+    
+    if (saveResponse.ok) {
+      alert('✅ Evento eliminato!');
+      location.reload();
+    } else {
+      alert('❌ Errore nel salvataggio!');
+    }
+  } catch(e) {
+    console.error('[DELETE EVENT] ❌ Errore:', e);
+    alert('❌ Errore: ' + e.message);
+  }
+};
+
+window.editEvent = function(date) {
+  const event = events[date];
+  if (!event) {
+    alert('❌ Evento non trovato!');
+    return;
+  }
+
+  // Crea modal di modifica
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
+  
+  const dateFormatted = new Date(date).toLocaleDateString('it-IT', { 
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' 
+  });
+
+  modal.innerHTML = `
+    <div style="background:white;padding:30px;border-radius:15px;max-width:450px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+      <h3 style="margin:0 0 20px 0;color:#1e293b;display:flex;align-items:center;gap:10px;">
+        ✏️ Modifica Evento
+      </h3>
+      <div style="background:#e0f2fe;padding:12px;border-radius:8px;margin-bottom:20px;color:#0369a1;font-weight:600;">
+        📅 ${dateFormatted}
+      </div>
+      
+      <div style="margin-bottom:15px;">
+        <label style="display:block;font-weight:600;color:#374151;margin-bottom:6px;">Tipo Evento:</label>
+        <select id="edit-event-type" style="width:100%;padding:10px;border:2px solid #e2e8f0;border-radius:8px;font-size:1rem;color:#1e293b;">
+          <option value="Allenamento" ${event.type === 'Allenamento' ? 'selected' : ''}>🏃 Allenamento</option>
+          <option value="Partita" ${event.type === 'Partita' ? 'selected' : ''}>⚽ Partita</option>
+        </select>
+      </div>
+      
+      <div style="margin-bottom:20px;">
+        <label style="display:block;font-weight:600;color:#374151;margin-bottom:6px;">Orario (es. 18:00-19:30):</label>
+        <input id="edit-event-time" type="text" value="${event.time}" 
+          placeholder="es. 18:00-19:30"
+          style="width:100%;padding:10px;border:2px solid #e2e8f0;border-radius:8px;font-size:1rem;color:#1e293b;box-sizing:border-box;" />
+      </div>
+      
+      <div style="display:flex;gap:10px;">
+        <button id="edit-save-btn"
+          style="flex:1;background:#10b981;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;font-size:1rem;">
+          ✅ Salva
+        </button>
+        <button onclick="this.closest('[style*=fixed]').remove()"
+          style="flex:1;background:#64748b;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;font-size:1rem;">
+          ❌ Annulla
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  
+  // Focus sull'input orario
+  setTimeout(() => document.getElementById('edit-event-time').focus(), 100);
+
+  // Handler salvataggio
+  document.getElementById('edit-save-btn').onclick = async function() {
+    const newType = document.getElementById('edit-event-type').value;
+    const newTime = document.getElementById('edit-event-time').value.trim();
+    
+    if (!newTime) {
+      alert('⚠️ Inserisci un orario!');
+      return;
+    }
+    
+    // Aggiorna evento
+    events[date] = { type: newType, time: newTime };
+    
+    // Salva su server
+    try {
+      const annataId = currentAnnataId || 
+                       sessionStorage.getItem('gosport_current_annata') ||
+                       localStorage.getItem('currentAnnata');
+      
+      const response = await fetch('/api/data', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Annata-Id': annataId
+        }
+      });
+      
+      const data = await response.json();
+      data.events = data.events || {};
+      data.events[date] = { type: newType, time: newTime };
+      
+      const saveResponse = await fetch('/api/data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Annata-Id': annataId
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (saveResponse.ok) {
+        alert('✅ Evento aggiornato!');
+        modal.remove();
+        location.reload();
+      } else {
+        alert('❌ Errore nel salvataggio!');
+      }
+    } catch(e) {
+      console.error('[EDIT EVENT] ❌ Errore:', e);
+      alert('❌ Errore: ' + e.message);
+    }
+  };
+  
+  // Chiudi cliccando fuori
+  modal.onclick = (e) => {
+    if (e.target === modal) modal.remove();
+  };
+};
 
 window.generatePresenceLink = function(athleteId, athleteName) {
   // IMPORTANTE: Ottieni l'annata corrente
