@@ -837,10 +837,12 @@ window.editEvent = function(date) {
       <h3 style="margin:0 0 20px 0;color:#1e293b;display:flex;align-items:center;gap:10px;">
         ✏️ Modifica Evento
       </h3>
-      <div style="background:#e0f2fe;padding:12px;border-radius:8px;margin-bottom:20px;color:#0369a1;font-weight:600;">
-        📅 ${dateFormatted}
+      <div style="margin-bottom:15px;">
+        <label style="display:block;font-weight:600;color:#374151;margin-bottom:6px;">📅 Data:</label>
+        <input id="edit-event-date" type="date" value="${date}" 
+          style="width:100%;padding:10px;border:2px solid #e2e8f0;border-radius:8px;font-size:1rem;color:#1e293b;box-sizing:border-box;" />
       </div>
-      
+
       <div style="margin-bottom:15px;">
         <label style="display:block;font-weight:600;color:#374151;margin-bottom:6px;">Tipo Evento:</label>
         <select id="edit-event-type" style="width:100%;padding:10px;border:2px solid #e2e8f0;border-radius:8px;font-size:1rem;color:#1e293b;">
@@ -876,16 +878,25 @@ window.editEvent = function(date) {
 
   // Handler salvataggio
   document.getElementById('edit-save-btn').onclick = async function() {
+    const newDate = document.getElementById('edit-event-date').value;
     const newType = document.getElementById('edit-event-type').value;
     const newTime = document.getElementById('edit-event-time').value.trim();
     
+    if (!newDate) {
+      alert('⚠️ Inserisci una data!');
+      return;
+    }
     if (!newTime) {
       alert('⚠️ Inserisci un orario!');
       return;
     }
     
     // Aggiorna evento
-    events[date] = { type: newType, time: newTime };
+    events[newDate] = { type: newType, time: newTime };
+    // Se la data è cambiata, elimina quella vecchia
+    if (newDate !== date) {
+      delete events[date];
+    }
     
     // Salva su server
     try {
@@ -903,7 +914,11 @@ window.editEvent = function(date) {
       
       const data = await response.json();
       data.events = data.events || {};
-      data.events[date] = { type: newType, time: newTime };
+      // Se la data è cambiata, elimina quella vecchia
+      if (newDate !== date && data.events[date]) {
+        delete data.events[date];
+      }
+      data.events[newDate] = { type: newType, time: newTime };
       
       const saveResponse = await fetch('/api/data', {
         method: 'POST',
