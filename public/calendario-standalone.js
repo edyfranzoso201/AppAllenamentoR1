@@ -1018,19 +1018,98 @@ async function genTraining() {
 window.markAbsence = markAbsence;
 // Funzione per il pulsante "Nuovo"
 window.addEvent = function() {
-  const date = prompt('Inserisci la data (YYYY-MM-DD):');
-  if (!date) return;
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
   
-  const type = prompt('Tipo evento (Partita/Allenamento):');
-  if (!type) return;
+  const today = new Date().toISOString().split('T')[0];
   
-  const time = prompt('Orario (es. 18:00-20:00):');
-  if (!time) return;
+  modal.innerHTML = `
+    <div style="background:white;padding:30px;border-radius:15px;max-width:450px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+      <h3 style="margin:0 0 20px 0;color:#1e293b;display:flex;align-items:center;gap:10px;">
+        ➕ Nuovo Evento
+      </h3>
+      
+      <div style="margin-bottom:15px;">
+        <label style="display:block;font-weight:600;color:#374151;margin-bottom:6px;">📅 Data:</label>
+        <input id="new-event-date" type="date" value="${today}"
+          style="width:100%;padding:10px;border:2px solid #e2e8f0;border-radius:8px;font-size:1rem;color:#1e293b;box-sizing:border-box;" />
+      </div>
+
+      <div style="margin-bottom:15px;">
+        <label style="display:block;font-weight:600;color:#374151;margin-bottom:6px;">Tipo Evento:</label>
+        <select id="new-event-type" style="width:100%;padding:10px;border:2px solid #e2e8f0;border-radius:8px;font-size:1rem;color:#1e293b;">
+          <option value="Allenamento">🏃 Allenamento</option>
+          <option value="Partita">⚽ Partita</option>
+        </select>
+      </div>
+      
+      <div style="margin-bottom:20px;">
+        <label style="display:block;font-weight:600;color:#374151;margin-bottom:6px;">Orario (es. 18:00-19:30):</label>
+        <input id="new-event-time" type="text" placeholder="es. 18:00-19:30"
+          style="width:100%;padding:10px;border:2px solid #e2e8f0;border-radius:8px;font-size:1rem;color:#1e293b;box-sizing:border-box;" />
+      </div>
+      
+      <div style="display:flex;gap:10px;">
+        <button id="new-save-btn"
+          style="flex:1;background:#10b981;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;font-size:1rem;">
+          ✅ Salva
+        </button>
+        <button onclick="this.closest('[style*=fixed]').remove()"
+          style="flex:1;background:#64748b;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;font-size:1rem;">
+          ❌ Annulla
+        </button>
+      </div>
+    </div>
+  `;
   
-  events[date] = { type, time };
+  document.body.appendChild(modal);
+  setTimeout(() => document.getElementById('new-event-time').focus(), 100);
   
-  alert('✅ Evento aggiunto! Salvalo cliccando su un pulsante di salvataggio.');
-  location.reload();
+  document.getElementById('new-save-btn').onclick = async function() {
+    const newDate = document.getElementById('new-event-date').value;
+    const newType = document.getElementById('new-event-type').value;
+    const newTime = document.getElementById('new-event-time').value.trim();
+    
+    if (!newDate) { alert('⚠️ Inserisci una data!'); return; }
+    if (!newTime) { alert('⚠️ Inserisci un orario!'); return; }
+    
+    try {
+      const annataId = currentAnnataId || 
+                       sessionStorage.getItem('gosport_current_annata') ||
+                       localStorage.getItem('currentAnnata');
+      
+      const response = await fetch('/api/data', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json', 'X-Annata-Id': annataId }
+      });
+      
+      const rawData = await response.json();
+      const data = rawData.data || rawData;
+      data.calendarEvents = data.calendarEvents || {};
+      data.calendarEvents[newDate] = { type: newType, time: newTime };
+      
+      console.log('[ADD EVENT] ✅ Aggiunto:', newDate, newType, newTime);
+      
+      const saveResponse = await fetch('/api/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Annata-Id': annataId },
+        body: JSON.stringify(data)
+      });
+      
+      if (saveResponse.ok) {
+        alert('✅ Evento aggiunto!');
+        modal.remove();
+        location.reload();
+      } else {
+        alert('❌ Errore nel salvataggio!');
+      }
+    } catch(e) {
+      console.error('[ADD EVENT] ❌ Errore:', e);
+      alert('❌ Errore: ' + e.message);
+    }
+  };
+  
+  modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
 };
 
 // Funzione per il pulsante "Importa"
