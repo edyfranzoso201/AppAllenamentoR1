@@ -19,8 +19,10 @@ let currentAnnataId = null;
 function isWithin72Hours(eventDate) {
   const now = new Date();
   const event = new Date(eventDate);
+  // Calcola differenza in ore (positiva = futuro, negativa = passato)
   const diffHours = (event - now) / (1000 * 60 * 60);
-  return diffHours < 72 && diffHours > 0;
+  // Blocca se l'evento è entro 72 ore NEL FUTURO oppure già PASSATO
+  return diffHours < 72;
 }
 
 async function getAnnataId() {
