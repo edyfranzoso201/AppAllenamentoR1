@@ -1796,8 +1796,9 @@ document.addEventListener('DOMContentLoaded', () => {
             isCaptain: document.getElementById('athlete-captain')?.checked || false,
             isViceCaptain: document.getElementById('athlete-vice-captain')?.checked || false,
             isGuest: document.getElementById('athlete-guest')?.checked || false,
-            scadenzaVisita: document.getElementById('athlete-scadenza-visita')?.value || '',
-            scadenzaTesseraGO: document.getElementById('athlete-scadenza-tessera-go')?.value || ''
+            scadenzaVisita: document.getElementById('scadenza-visita')?.value || '',
+            dataPrenotazioneVisita: document.getElementById('prenotazione-visita')?.value || '',
+            scadenzaTessera: document.getElementById('scadenza-tessera')?.value || ''
         };
 
         if (avatarBase64) {
@@ -1805,9 +1806,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (existingAthlete) {
-            // Aggiorna atleta esistente
+            // Aggiorna atleta esistente - merge per preservare campi non nel form
             const index = athletes.findIndex(a => a.id === existingAthlete.id);
-            athletes[index] = athleteData;
+            athletes[index] = { ...existingAthlete, ...athleteData };
         } else {
             // Aggiungi nuovo atleta
             athletes.push(athleteData);
