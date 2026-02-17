@@ -2886,7 +2886,7 @@ function showMobileEvalPanel(athleteName, athleteId, date) {
     if (existing) existing.remove();
 
     const dateFormatted = new Date(date + 'T00:00:00').toLocaleDateString('it-IT', {
-        weekday: 'long', day: 'numeric', month: 'long'
+        day: 'numeric', month: 'short'
     });
 
     const existingEval = {};
@@ -2896,72 +2896,70 @@ function showMobileEvalPanel(athleteName, athleteId, date) {
     const awardChecked = document.getElementById('award-checkbox')?.checked || false;
 
     const categories = [
-        { id: 'presenza-allenamento', label: 'Presenza Allenamento', hasNegative: true },
-        { id: 'serieta-allenamento', label: 'Serietà Allenamento', hasNegative: false },
-        { id: 'abbigliamento-allenamento', label: 'Abbigliamento Allenamento', hasNegative: false },
+        { id: 'presenza-allenamento', label: 'Presenza', hasNegative: true },
+        { id: 'serieta-allenamento', label: 'Serietà All.', hasNegative: false },
+        { id: 'abbigliamento-allenamento', label: 'Abbigliamento All.', hasNegative: false },
         { id: 'abbigliamento-partita', label: 'Abbigliamento Partita', hasNegative: false },
-        { id: 'comunicazioni', label: 'Serietà Comunicazioni', hasNegative: false },
-        { id: 'doccia', label: 'Doccia (Opzionale)', hasNegative: false }
+        { id: 'comunicazioni', label: 'Comunicazioni', hasNegative: false },
+        { id: 'doccia', label: 'Doccia', hasNegative: false }
     ];
 
-    // Altezze fisse header e footer
-    const HEADER_H = 80;
-    const FOOTER_H = 80;
+    const HEADER_H = 44;
+    const FOOTER_H = 64;
 
-    // Pannello contenitore
     const panel = document.createElement('div');
     panel.id = 'mobile-eval-panel';
-    panel.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#1a1a2e;font-family:inherit';
+    panel.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#0f172a;font-family:inherit';
 
-    // Header fisso in cima
+    // Header compatto: solo una riga
     const header = document.createElement('div');
-    header.style.cssText = `position:absolute;top:0;left:0;right:0;height:${HEADER_H}px;background:#0f3460;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,0.5);box-sizing:border-box;z-index:2`;
+    header.style.cssText = `position:absolute;top:0;left:0;right:0;height:${HEADER_H}px;background:#0f3460;padding:0 12px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 6px rgba(0,0,0,0.5);box-sizing:border-box;z-index:2`;
     header.innerHTML = `
-        <div>
-            <div style="font-size:0.72rem;color:#94a3b8">Valutazione</div>
-            <div style="font-weight:700;font-size:1rem;color:white">${athleteName}</div>
-            <div style="font-size:0.75rem;color:#7dd3fc">${dateFormatted}</div>
+        <div style="display:flex;align-items:center;gap:8px;overflow:hidden">
+            <span style="font-weight:700;font-size:0.95rem;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">${athleteName}</span>
+            <span style="font-size:0.78rem;color:#7dd3fc;white-space:nowrap">${dateFormatted}</span>
         </div>
-        <button id="mobile-eval-close" style="background:rgba(255,255,255,0.15);border:none;color:white;width:36px;height:36px;border-radius:50%;font-size:1.1rem;cursor:pointer;flex-shrink:0">✕</button>
+        <button id="mobile-eval-close" style="background:rgba(255,255,255,0.15);border:none;color:white;width:30px;height:30px;border-radius:50%;font-size:1rem;cursor:pointer;flex-shrink:0;line-height:1">✕</button>
     `;
 
-    // Body scrollabile tra header e footer
+    // Body scrollabile
     const body = document.createElement('div');
-    body.style.cssText = `position:absolute;top:${HEADER_H}px;left:0;right:0;bottom:${FOOTER_H}px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px;box-sizing:border-box;z-index:1`;
+    body.style.cssText = `position:absolute;top:${HEADER_H}px;left:0;right:0;bottom:${FOOTER_H}px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 12px;box-sizing:border-box;z-index:1`;
 
     let bodyHTML = '';
     categories.forEach(cat => {
         const val = existingEval[cat.id] || '0';
         const options = cat.hasNegative
-            ? ['-1:Assenza Giustificata','0:0-NV','1:1-B','2:2-M','3:3-A']
+            ? ['-1:Ass. Giustificata','0:0-NV','1:1-B','2:2-M','3:3-A']
             : ['0:0-NV','1:1-B','2:2-M','3:3-A'];
         const optionsHTML = options.map(o => {
             const [v, l] = o.split(':');
             return `<option value="${v}" ${v === val ? 'selected' : ''}>${l}</option>`;
         }).join('');
+        // Label e select sulla stessa riga
         bodyHTML += `
-            <div style="margin-bottom:14px">
-                <label style="display:block;font-size:0.8rem;color:#94a3b8;margin-bottom:5px;font-weight:600">${cat.label}</label>
-                <select id="mob-${cat.id}" style="width:100%;padding:11px 12px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:white;font-size:1rem;box-sizing:border-box">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e293b">
+                <label style="font-size:0.82rem;color:#94a3b8;font-weight:500;flex:1;margin-right:8px">${cat.label}</label>
+                <select id="mob-${cat.id}" style="width:130px;flex-shrink:0;padding:7px 8px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:white;font-size:0.9rem">
                     ${optionsHTML}
                 </select>
             </div>`;
     });
     bodyHTML += `
-        <div style="margin-bottom:8px;padding:12px;background:#0f172a;border-radius:8px;display:flex;align-items:center;gap:12px">
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;margin-top:2px">
             <input type="checkbox" id="mob-award-checkbox" ${awardChecked ? 'checked' : ''}
-                style="width:22px;height:22px;cursor:pointer;accent-color:#f59e0b;flex-shrink:0">
-            <label for="mob-award-checkbox" style="color:#f59e0b;font-weight:600;cursor:pointer;font-size:0.95rem">🏆 Assegna Premio</label>
+                style="width:20px;height:20px;cursor:pointer;accent-color:#f59e0b;flex-shrink:0">
+            <label for="mob-award-checkbox" style="color:#f59e0b;font-weight:600;cursor:pointer;font-size:0.9rem">🏆 Assegna Premio</label>
         </div>`;
     body.innerHTML = bodyHTML;
 
-    // Footer fisso in fondo
+    // Footer compatto
     const footer = document.createElement('div');
-    footer.style.cssText = `position:absolute;bottom:0;left:0;right:0;height:${FOOTER_H}px;background:#0f3460;padding:12px 16px;display:flex;gap:8px;align-items:center;box-shadow:0 -2px 8px rgba(0,0,0,0.5);box-sizing:border-box;z-index:2`;
+    footer.style.cssText = `position:absolute;bottom:0;left:0;right:0;height:${FOOTER_H}px;background:#0f3460;padding:10px 12px;display:flex;gap:8px;align-items:center;box-shadow:0 -2px 6px rgba(0,0,0,0.5);box-sizing:border-box;z-index:2`;
     footer.innerHTML = `
-        <button id="mob-eval-delete" style="background:#dc2626;color:white;border:none;padding:10px 12px;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.85rem;white-space:nowrap;flex-shrink:0">🗑</button>
-        <button id="mob-eval-cancel" style="flex:1;background:#334155;color:white;border:none;padding:10px;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.95rem">Chiudi</button>
-        <button id="mob-eval-save" style="flex:2;background:#10b981;color:white;border:none;padding:10px;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.95rem">✅ Salva</button>
+        <button id="mob-eval-delete" style="background:#dc2626;color:white;border:none;padding:0;width:42px;height:42px;border-radius:8px;cursor:pointer;font-size:1rem;flex-shrink:0">🗑</button>
+        <button id="mob-eval-cancel" style="flex:1;background:#334155;color:white;border:none;height:42px;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.9rem">Chiudi</button>
+        <button id="mob-eval-save" style="flex:2;background:#10b981;color:white;border:none;height:42px;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.95rem">✅ Salva</button>
     `;
 
     panel.appendChild(header);
