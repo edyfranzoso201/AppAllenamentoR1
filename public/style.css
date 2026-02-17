@@ -575,7 +575,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     #field-container {
         transform: none;
         width: 100%;
-        max-width: 350px;
+        max-width: 100%;
         height: auto;
         aspect-ratio: 5 / 7;
         margin: 15px auto 10px;
@@ -584,13 +584,53 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     #field-bench-area {
         transform: none;
         width: 100%;
-        max-width: 350px;
-        height: 150px;
+        max-width: 100%;
+        min-height: 220px;
+        height: auto;
         margin: 10px auto 15px;
+        display: flex;
+        flex-wrap: wrap;
+        align-content: flex-start;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 8px;
     }
     
+    /* Magliette più grandi su mobile */
     .player-jersey {
         transform: translate(-50%, -50%);
+        font-size: clamp(7px, 2.5vw, 12px);
+        width: 18%;
+    }
+    
+    .jersey-body {
+        width: 4em;
+        height: 4em;
+    }
+    
+    .jersey-number {
+        font-size: 1.8em;
+    }
+    
+    .player-name {
+        font-size: 0.7em;
+        padding: 0.15em 0.3em;
+        max-width: 80px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    /* Magliette in panchina: posizione relativa (non assoluta) */
+    #field-bench-area .player-jersey {
+        position: relative !important;
+        transform: none !important;
+        top: auto !important;
+        left: auto !important;
+        width: auto;
+        flex: 0 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
     
     .token {
@@ -816,19 +856,56 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 
 /* ===================================================================
    MOBILE RESPONSIVE - Ottimizzazione smartphone
-   Tutte le regole qui sotto NON impattano il layout desktop.
+   Tutte le regole sono in @media → ZERO impatto su desktop
    =================================================================== */
+
+/* ─── HEADER PULSANTI (Annata/Cambia Annata/admin) fissi in alto ─── */
+@media (max-width: 767.98px) {
+    #app-header-info {
+        position: fixed !important;
+        top: 46px !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        justify-content: center !important;
+        padding: 6px 8px !important;
+        gap: 6px !important;
+        background: rgba(5, 20, 56, 0.95) !important;
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        z-index: 1060 !important;
+        flex-wrap: nowrap !important;
+    }
+
+    /* Pulsanti header più piccoli su mobile */
+    #app-header-info > div,
+    #app-header-info > button {
+        padding: 5px 10px !important;
+        font-size: 11px !important;
+        border-radius: 8px !important;
+        gap: 4px !important;
+    }
+
+    #app-header-info > div span[style*="font-size: 20px"],
+    #app-header-info > div span[style*="font-size: 16px"],
+    #app-header-info > button span[style*="font-size: 16px"] {
+        font-size: 13px !important;
+    }
+
+    /* Spazio extra in alto per il body (navbar + header bar) */
+    body {
+        padding-top: 100px !important;
+    }
+}
 
 /* ─── LAYOUT GENERALE ─── */
 @media (max-width: 767.98px) {
-
-    /* Padding container più stretto */
     main.container-fluid {
         padding-left: 10px !important;
         padding-right: 10px !important;
     }
 
-    /* Tutte le colonne Bootstrap → full width su mobile */
     .col-lg-3, .col-lg-4, .col-lg-5, .col-lg-6,
     .col-lg-7, .col-lg-8, .col-lg-9,
     .col-md-3, .col-md-4, .col-md-6, .col-md-8 {
@@ -837,17 +914,13 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
         flex: 0 0 100% !important;
     }
 
-    /* Card sempre full width */
     .card, .summary-card, .chart-card, .table-card,
     .calendar-card, .season-stats-card {
         width: 100% !important;
         max-width: 100% !important;
     }
 
-    /* Gutter ridotto */
     .row { --bs-gutter-x: 0.75rem; }
-
-    /* Previeni overflow orizzontale */
     html, body { overflow-x: hidden !important; }
     .container-fluid { overflow-x: hidden; }
 }
@@ -901,11 +974,8 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
         min-height: 220px;
     }
 
-    .chart-card .card-body {
-        padding: 12px 8px !important;
-    }
+    .chart-card .card-body { padding: 12px 8px !important; }
 
-    /* Override altezze fisse grafici */
     #attendanceChart,
     #multiAthleteChart,
     #weeklyAttendanceChart {
@@ -913,7 +983,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     }
 }
 
-/* ─── TABELLE RESPONSIVE ─── */
+/* ─── TABELLE ─── */
 @media (max-width: 767.98px) {
     .table-responsive,
     .card-body .table-responsive {
@@ -921,7 +991,6 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
     }
-
     .table { font-size: 0.8rem !important; }
     .table th, .table td {
         padding: 6px 8px !important;
@@ -935,13 +1004,10 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
         text-align: center;
         padding: 16px 12px !important;
     }
-
     #home-section .d-grid.gap-2 .btn {
         font-size: 0.9rem;
         padding: 10px 12px;
     }
-
-    /* Statistiche stagionali: griglia 2 colonne */
     .season-stats-grid {
         grid-template-columns: 1fr 1fr !important;
         gap: 8px !important;
@@ -960,7 +1026,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     }
 }
 
-/* ─── CALENDARIO: giorni più compatti ─── */
+/* ─── CALENDARIO ─── */
 @media (max-width: 767.98px) {
     .calendar-day {
         min-height: 70px;
@@ -971,35 +1037,26 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
         font-size: 0.65rem;
         padding: 2px 3px;
     }
-    .calendar-grid {
-        gap: 2px;
-    }
+    .calendar-grid { gap: 2px; }
 }
 
-/* ─── PARTITE: filtri e classifiche ─── */
+/* ─── PARTITE ─── */
 @media (max-width: 767.98px) {
     #top-scorers-container,
     #top-assists-container {
         max-height: 250px !important;
         font-size: 0.9rem;
     }
-
     #match-results-section .d-flex.gap-2.mb-3 {
         flex-direction: column !important;
     }
-    #match-results-section .form-select {
-        width: 100% !important;
-    }
+    #match-results-section .form-select { width: 100% !important; }
 }
 
 /* ─── CONFRONTO PERFORMANCE SQUADRA ─── */
 @media (max-width: 767.98px) {
-    #multi-athlete-chart-container .row.g-3 {
-        flex-direction: column !important;
-    }
-    #multi-athlete-metric-selector {
-        width: 100% !important;
-    }
+    #multi-athlete-chart-container .row.g-3 { flex-direction: column !important; }
+    #multi-athlete-metric-selector { width: 100% !important; }
     #multi-athlete-datepicker-container {
         width: 100% !important;
         max-width: 100% !important;
@@ -1008,33 +1065,21 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 
 /* ─── ANALISI PRESENZE SETTIMANALI ─── */
 @media (max-width: 767.98px) {
-    #weekly-attendance-analysis-section .row.g-3 {
-        flex-direction: column;
-    }
-    #weekly-attendance-analysis-section .col-md-3 {
-        margin-bottom: 10px;
-    }
+    #weekly-attendance-analysis-section .row.g-3 { flex-direction: column; }
+    #weekly-attendance-analysis-section .col-md-3 { margin-bottom: 10px; }
 }
 
 /* ─── ANALISI ATLETA SINGOLO ─── */
 @media (max-width: 767.98px) {
-    #analisi-singolo-section .card.chart-card.p-3 .row {
-        flex-direction: column;
-    }
-    #analisi-singolo-section .col-md-6 {
-        margin-bottom: 12px;
-    }
+    #analisi-singolo-section .card.chart-card.p-3 .row { flex-direction: column; }
+    #analisi-singolo-section .col-md-6 { margin-bottom: 12px; }
 }
 
 /* ─── MONITORAGGIO GPS ─── */
 @media (max-width: 767.98px) {
-    #monitoraggio-gps-section .row.align-items-end {
-        flex-direction: column;
-    }
+    #monitoraggio-gps-section .row.align-items-end { flex-direction: column; }
     #monitoraggio-gps-section .col-md-4,
-    #monitoraggio-gps-section .col-md-8 {
-        margin-bottom: 10px;
-    }
+    #monitoraggio-gps-section .col-md-8 { margin-bottom: 10px; }
 }
 
 /* ─── REPORT VALUTAZIONI ─── */
@@ -1043,13 +1088,8 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
         flex-direction: column !important;
         gap: 10px;
     }
-    #report-valutazioni-section .d-flex.align-items-center.gap-2 {
-        flex-wrap: wrap;
-    }
-    #evaluation-date-picker-2 {
-        max-width: 100% !important;
-        width: 100% !important;
-    }
+    #report-valutazioni-section .d-flex.align-items-center.gap-2 { flex-wrap: wrap; }
+    #evaluation-date-picker-2 { max-width: 100% !important; width: 100% !important; }
 }
 
 /* ─── HALL OF FAME ─── */
@@ -1058,27 +1098,17 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
         flex-direction: column !important;
         align-items: stretch !important;
     }
-    #hall-of-fame-container > * {
-        width: 100% !important;
-        max-width: 100% !important;
-    }
-    .award-card {
-        width: 100% !important;
-    }
+    #hall-of-fame-container > * { width: 100% !important; max-width: 100% !important; }
+    .award-card { width: 100% !important; }
 }
 
-/* ─── FORM / INPUT: Touch-friendly ─── */
+/* ─── FORM / INPUT Touch-friendly ─── */
 @media (max-width: 767.98px) {
-    .form-select, .form-control {
-        font-size: 0.9rem !important;
-        min-height: 42px;
-    }
-    .form-label {
-        font-size: 0.85rem !important;
-    }
+    .form-select, .form-control { font-size: 0.9rem !important; min-height: 42px; }
+    .form-label { font-size: 0.85rem !important; }
 }
 
-/* ─── MODALS: Fullscreen su mobile ─── */
+/* ─── MODALS Fullscreen ─── */
 @media (max-width: 575.98px) {
     .modal-dialog {
         margin: 0 !important;
@@ -1086,35 +1116,21 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
         width: 100% !important;
         min-height: 100dvh;
     }
-    .modal-content {
-        border-radius: 0 !important;
-        min-height: 100dvh;
-    }
-    .modal-body {
-        -webkit-overflow-scrolling: touch;
-    }
+    .modal-content { border-radius: 0 !important; min-height: 100dvh; }
+    .modal-body { -webkit-overflow-scrolling: touch; }
 }
 
 /* ─── FOOTER ─── */
 @media (max-width: 575.98px) {
-    footer {
-        font-size: 0.75rem !important;
-        padding: 10px 8px !important;
-    }
+    footer { font-size: 0.75rem !important; padding: 10px 8px !important; }
 }
 
-/* ─── ALERT / NOTIFICHE ─── */
+/* ─── ALERT ─── */
 @media (max-width: 767.98px) {
-    #alerts-container .alert {
-        font-size: 0.8rem !important;
-        padding: 10px 12px !important;
-    }
+    #alerts-container .alert { font-size: 0.8rem !important; padding: 10px 12px !important; }
 }
 
 /* ─── ANNATA BADGE ─── */
 @media (max-width: 575.98px) {
-    .badge, #annata-badge {
-        font-size: 0.75rem !important;
-        padding: 4px 8px !important;
-    }
+    .badge, #annata-badge { font-size: 0.75rem !important; padding: 4px 8px !important; }
 }
