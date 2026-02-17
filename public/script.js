@@ -2417,88 +2417,111 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
     let dragGhost = null;
     let offsetX, offsetY;
     let isTouchDrag = false;
+    let lastTouchPos = { x: 0, y: 0 };
+    let dragStarted = false;
+    let startPos = { x: 0, y: 0 };
+    const DRAG_THRESHOLD = 8; // px minimi per avviare il drag
     
-    // Detect if field is rotated (desktop) or not (mobile)
+    // Rileva se il campo è ruotato (desktop) o no (mobile)
     function isFieldRotated() {
         const field = document.getElementById('field-container');
         if (!field) return false;
         const style = window.getComputedStyle(field);
         const transform = style.transform || style.webkitTransform;
         if (!transform || transform === 'none') return false;
-        // Parse matrix to check for rotation
         const match = transform.match(/^matrix\((.+)\)$/);
         if (!match) return false;
         const values = match[1].split(',').map(Number);
-        // For rotate(90deg): matrix(0, 1, -1, 0, tx, ty) → values[0] ≈ 0
         return Math.abs(values[0]) < 0.1;
     }
 
     function getPointerPos(e) {
-        if (isTouchDrag && e.touches && e.touches.length > 0) {
+        if (e.touches && e.touches.length > 0) {
             return { x: e.touches[0].clientX, y: e.touches[0].clientY };
         }
-        if (isTouchDrag && e.changedTouches && e.changedTouches.length > 0) {
+        if (e.changedTouches && e.changedTouches.length > 0) {
             return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
         }
         return { x: e.clientX, y: e.clientY };
     }
 
-    function onDragStart(e) {
+    function onPointerDown(e) {
         const target = e.target.closest('.player-jersey, .available-player, .tool-item, .token');
         if (!target || target.classList.contains('disabled')) return;
-        // Determine if touch or mouse
-        if (e.type === 'touchstart') {
-            isTouchDrag = true;
-        } else {
-            if (e.button !== 0) return;
-            isTouchDrag = false;
-        }
-        e.preventDefault();
+        
+        isTouchDrag = (e.type === 'touchstart');
+        if (!isTouchDrag && e.button !== 0) return;
+        
+        // NON fare preventDefault qui — lascia lo scroll libero finché non si supera la soglia
         draggedEl = target;
-        if (draggedEl.classList.contains('available-player')) {
-            const athleteId = draggedEl.dataset.athleteId;
-            const athlete = athletes.find(a => String(a.id) === athleteId);
-            if (!athlete) return;
-            dragGhost = createJerseyElement(athlete);
-        } else {
-            dragGhost = draggedEl.cloneNode(true);
-        }
-        dragGhost.classList.add('dragging');
-        dragGhost.style.position = 'fixed';
-        dragGhost.style.zIndex = '9999';
-        dragGhost.style.pointerEvents = 'none';
-        document.body.appendChild(dragGhost);
-        const rect = draggedEl.getBoundingClientRect();
+        dragStarted = false;
         const pos = getPointerPos(e);
+        startPos = { x: pos.x, y: pos.y };
+        lastTouchPos = { x: pos.x, y: pos.y };
+        
+        const rect = draggedEl.getBoundingClientRect();
         offsetX = pos.x - rect.left;
         offsetY = pos.y - rect.top;
-        dragGhost.style.left = `${pos.x - offsetX}px`;
-        dragGhost.style.top = `${pos.y - offsetY}px`;
+
         if (isTouchDrag) {
-            document.addEventListener('touchmove', onDragMove, { passive: false });
-            document.addEventListener('touchend', onDragEnd, { once: true });
-            document.addEventListener('touchcancel', onDragEnd, { once: true });
+            document.addEventListener('touchmove', onPointerMove, { passive: false });
+            document.addEventListener('touchend', onPointerUp);
+            document.addEventListener('touchcancel', onPointerUp);
         } else {
-            document.addEventListener('mousemove', onDragMove);
-            document.addEventListener('mouseup', onDragEnd, { once: true });
+            e.preventDefault();
+            document.addEventListener('mousemove', onPointerMove);
+            document.addEventListener('mouseup', onPointerUp);
         }
     }
-    function onDragMove(e) {
-        if (!dragGhost) return;
-        if (isTouchDrag) e.preventDefault();
+    
+    function onPointerMove(e) {
+        if (!draggedEl) return;
         const pos = getPointerPos(e);
-        dragGhost.style.left = `${pos.x - offsetX}px`;
-        dragGhost.style.top = `${pos.y - offsetY}px`;
-    }
-    function onDragEnd(e) {
-        if (!draggedEl || !dragGhost) {
-            cleanUpDrag();
-            return;
+        lastTouchPos = { x: pos.x, y: pos.y };
+        
+        if (!dragStarted) {
+            const dx = pos.x - startPos.x;
+            const dy = pos.y - startPos.y;
+            if (Math.sqrt(dx * dx + dy * dy) < DRAG_THRESHOLD) return;
+            
+            // Soglia superata → inizia il drag vero
+            dragStarted = true;
+            
+            if (draggedEl.classList.contains('available-player')) {
+                const athleteId = draggedEl.dataset.athleteId;
+                const athlete = athletes.find(a => String(a.id) === athleteId);
+                if (!athlete) { cleanUpDrag(); return; }
+                dragGhost = createJerseyElement(athlete);
+            } else {
+                dragGhost = draggedEl.cloneNode(true);
+            }
+            dragGhost.classList.add('dragging');
+            dragGhost.style.position = 'fixed';
+            dragGhost.style.zIndex = '9999';
+            dragGhost.style.pointerEvents = 'none';
+            dragGhost.style.touchAction = 'none';
+            document.body.appendChild(dragGhost);
         }
+        
+        // Solo se il drag è partito, blocca lo scroll
+        if (dragStarted && dragGhost) {
+            e.preventDefault();
+            dragGhost.style.left = `${pos.x - offsetX}px`;
+            dragGhost.style.top = `${pos.y - offsetY}px`;
+        }
+    }
+    
+    function onPointerUp(e) {
+        if (!draggedEl) { cleanUpDrag(); return; }
+        
+        // Se non abbiamo mai iniziato il drag (era un tap), ignora
+        if (!dragStarted || !dragGhost) { cleanUpDrag(); return; }
+        
         dragGhost.style.display = 'none';
-        const pos = getPointerPos(e);
+        const pos = (e.type === 'touchend' || e.type === 'touchcancel') ? lastTouchPos : getPointerPos(e);
         const dropTarget = document.elementFromPoint(pos.x, pos.y);
         dragGhost.style.display = '';
+        
         const dropZone = dropTarget ? dropTarget.closest('.drop-zone') : null;
         if (dropZone) {
             const athleteId = draggedEl.dataset.athleteId;
@@ -2511,20 +2534,18 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
                 formationData.tokens = formationData.tokens.filter(t => t.id != tokenId);
             }
             const rect = dropZone.getBoundingClientRect();
-            
             const mouseX = pos.x - rect.left;
             const mouseY = pos.y - rect.top;
-            
             const normalizedX = mouseX / rect.width;
             const normalizedY = mouseY / rect.height;
             
             let left, top;
             if (isFieldRotated()) {
-                // Campo ruotato 90° (desktop): (x, y) -> (y, 1-x)
+                // Desktop: campo ruotato 90° → (x,y) → (y, 1-x)
                 left = normalizedY * 100;
                 top = (1 - normalizedX) * 100;
             } else {
-                // Campo non ruotato (mobile): coordinate dirette
+                // Mobile: campo dritto → coordinate dirette
                 left = normalizedX * 100;
                 top = normalizedY * 100;
             }
@@ -2550,19 +2571,22 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
         }
         cleanUpDrag();
     }
+    
     function cleanUpDrag() {
-        if (dragGhost) {
-            dragGhost.remove();
-        }
+        if (dragGhost) dragGhost.remove();
         draggedEl = null;
         dragGhost = null;
         isTouchDrag = false;
-        document.removeEventListener('mousemove', onDragMove);
-        document.removeEventListener('touchmove', onDragMove);
+        dragStarted = false;
+        document.removeEventListener('mousemove', onPointerMove);
+        document.removeEventListener('mouseup', onPointerUp);
+        document.removeEventListener('touchmove', onPointerMove);
+        document.removeEventListener('touchend', onPointerUp);
+        document.removeEventListener('touchcancel', onPointerUp);
     };
     const formSection = document.getElementById('formazione-section');
-    formSection.addEventListener('mousedown', onDragStart);
-    formSection.addEventListener('touchstart', onDragStart, { passive: false });
+    formSection.addEventListener('mousedown', onPointerDown);
+    formSection.addEventListener('touchstart', onPointerDown, { passive: true });
     document.body.addEventListener('click', (e) => {
         const printBtn = e.target.closest('.print-section-btn');
         if (printBtn) {
