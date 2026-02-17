@@ -2416,9 +2416,43 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
     let draggedEl = null;
     let dragGhost = null;
     let offsetX, offsetY;
+    let isTouchDrag = false;
+    
+    // Detect if field is rotated (desktop) or not (mobile)
+    function isFieldRotated() {
+        const field = document.getElementById('field-container');
+        if (!field) return false;
+        const style = window.getComputedStyle(field);
+        const transform = style.transform || style.webkitTransform;
+        if (!transform || transform === 'none') return false;
+        // Parse matrix to check for rotation
+        const match = transform.match(/^matrix\((.+)\)$/);
+        if (!match) return false;
+        const values = match[1].split(',').map(Number);
+        // For rotate(90deg): matrix(0, 1, -1, 0, tx, ty) → values[0] ≈ 0
+        return Math.abs(values[0]) < 0.1;
+    }
+
+    function getPointerPos(e) {
+        if (isTouchDrag && e.touches && e.touches.length > 0) {
+            return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }
+        if (isTouchDrag && e.changedTouches && e.changedTouches.length > 0) {
+            return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+        }
+        return { x: e.clientX, y: e.clientY };
+    }
+
     function onDragStart(e) {
         const target = e.target.closest('.player-jersey, .available-player, .tool-item, .token');
-        if (!target || target.classList.contains('disabled') || e.button !== 0) return;
+        if (!target || target.classList.contains('disabled')) return;
+        // Determine if touch or mouse
+        if (e.type === 'touchstart') {
+            isTouchDrag = true;
+        } else {
+            if (e.button !== 0) return;
+            isTouchDrag = false;
+        }
         e.preventDefault();
         draggedEl = target;
         if (draggedEl.classList.contains('available-player')) {
@@ -2430,19 +2464,31 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
             dragGhost = draggedEl.cloneNode(true);
         }
         dragGhost.classList.add('dragging');
+        dragGhost.style.position = 'fixed';
+        dragGhost.style.zIndex = '9999';
+        dragGhost.style.pointerEvents = 'none';
         document.body.appendChild(dragGhost);
         const rect = draggedEl.getBoundingClientRect();
-        offsetX = e.clientX - rect.left;
-        offsetY = e.clientY - rect.top;
-        dragGhost.style.left = `${e.clientX - offsetX}px`;
-        dragGhost.style.top = `${e.clientY - offsetY}px`;
-        document.addEventListener('mousemove', onDragMove);
-        document.addEventListener('mouseup', onDragEnd, { once: true });
+        const pos = getPointerPos(e);
+        offsetX = pos.x - rect.left;
+        offsetY = pos.y - rect.top;
+        dragGhost.style.left = `${pos.x - offsetX}px`;
+        dragGhost.style.top = `${pos.y - offsetY}px`;
+        if (isTouchDrag) {
+            document.addEventListener('touchmove', onDragMove, { passive: false });
+            document.addEventListener('touchend', onDragEnd, { once: true });
+            document.addEventListener('touchcancel', onDragEnd, { once: true });
+        } else {
+            document.addEventListener('mousemove', onDragMove);
+            document.addEventListener('mouseup', onDragEnd, { once: true });
+        }
     }
     function onDragMove(e) {
         if (!dragGhost) return;
-        dragGhost.style.left = `${e.clientX - offsetX}px`;
-        dragGhost.style.top = `${e.clientY - offsetY}px`;
+        if (isTouchDrag) e.preventDefault();
+        const pos = getPointerPos(e);
+        dragGhost.style.left = `${pos.x - offsetX}px`;
+        dragGhost.style.top = `${pos.y - offsetY}px`;
     }
     function onDragEnd(e) {
         if (!draggedEl || !dragGhost) {
@@ -2450,7 +2496,8 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
             return;
         }
         dragGhost.style.display = 'none';
-        const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
+        const pos = getPointerPos(e);
+        const dropTarget = document.elementFromPoint(pos.x, pos.y);
         dragGhost.style.display = '';
         const dropZone = dropTarget ? dropTarget.closest('.drop-zone') : null;
         if (dropZone) {
@@ -2465,18 +2512,23 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
             }
             const rect = dropZone.getBoundingClientRect();
             
-            // ✅ CORREZIONE: Calcola posizione considerando la rotazione di 90°
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
+            const mouseX = pos.x - rect.left;
+            const mouseY = pos.y - rect.top;
             
-            // Posizione normalizzata rispetto al contenitore visibile
             const normalizedX = mouseX / rect.width;
             const normalizedY = mouseY / rect.height;
             
-            // Converti le coordinate ruotate in coordinate del campo originale
-            // Rotazione 90° senso orario: (x, y) -> (y, 1-x)
-            const left = normalizedY * 100;
-            const top = (1 - normalizedX) * 100;
+            let left, top;
+            if (isFieldRotated()) {
+                // Campo ruotato 90° (desktop): (x, y) -> (y, 1-x)
+                left = normalizedY * 100;
+                top = (1 - normalizedX) * 100;
+            } else {
+                // Campo non ruotato (mobile): coordinate dirette
+                left = normalizedX * 100;
+                top = normalizedY * 100;
+            }
+            
             if (athleteId) {
                 if (dropZone.id === 'field-container' || dropZone.id === 'field-bench-area') {
                     const targetArray = dropZone.id === 'field-container' ? formationData.starters : formationData.bench;
@@ -2504,9 +2556,13 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
         }
         draggedEl = null;
         dragGhost = null;
+        isTouchDrag = false;
         document.removeEventListener('mousemove', onDragMove);
+        document.removeEventListener('touchmove', onDragMove);
     };
-    document.getElementById('formazione-section').addEventListener('mousedown', onDragStart);
+    const formSection = document.getElementById('formazione-section');
+    formSection.addEventListener('mousedown', onDragStart);
+    formSection.addEventListener('touchstart', onDragStart, { passive: false });
     document.body.addEventListener('click', (e) => {
         const printBtn = e.target.closest('.print-section-btn');
         if (printBtn) {
