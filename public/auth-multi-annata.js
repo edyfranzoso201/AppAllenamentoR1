@@ -347,7 +347,11 @@
 
         async function getAllAnnate() {
             try {
-                const response = await fetch('/api/annate/list');
+                const societyId = sessionStorage.getItem(SESSION_SOCIETY);
+                const headers = {};
+                if (societyId) headers['X-Society-Id'] = societyId;
+                
+                const response = await fetch('/api/annate/list', { headers });
                 
                 if (!response.ok) {
                     throw new Error('Errore nel recupero delle annate');
@@ -730,7 +734,8 @@ async function loadAnnateList() {
     const listDiv = document.getElementById('annate-list-admin');
     
     try {
-        const response = await fetch('/api/annate/list');
+        const _sid = sessionStorage.getItem('gosport_society_id');
+        const response = await fetch('/api/annate/list', _sid ? {headers:{'X-Society-Id':_sid}} : {});
         if (!response.ok) throw new Error('Errore caricamento');
         
         const data = await response.json();
@@ -866,7 +871,8 @@ function showAnnataModal(annataData = null) {
 
 window.editAnnata = async function(annataId) {
     try {
-        const response = await fetch('/api/annate/list');
+        const _sid = sessionStorage.getItem('gosport_society_id');
+        const response = await fetch('/api/annate/list', _sid ? {headers:{'X-Society-Id':_sid}} : {});
         const data = await response.json();
         const annata = data.annate.find(a => a.id === annataId);
         if (annata) showAnnataModal(annata);
@@ -924,7 +930,8 @@ async function loadUsersList() {
     const listDiv = document.getElementById('users-list-admin');
     
     try {
-        const response = await fetch('/api/auth/manage');
+        const _sid2 = sessionStorage.getItem('gosport_society_id');
+        const response = await fetch('/api/auth/manage', _sid2 ? {headers:{'X-Society-Id':_sid2}} : {});
         if (!response.ok) throw new Error('Errore caricamento');
         
         const data = await response.json();
@@ -983,7 +990,8 @@ async function showUserModal(userData = null) {
     
     let annateDisponibili = [];
     try {
-        const response = await fetch('/api/annate/list');
+        const _sid = sessionStorage.getItem('gosport_society_id');
+        const response = await fetch('/api/annate/list', _sid ? {headers:{'X-Society-Id':_sid}} : {});
         const data = await response.json();
         annateDisponibili = data.annate || [];
     } catch (e) {}
@@ -1110,7 +1118,8 @@ async function showUserModal(userData = null) {
 
 window.editUser = async function(username) {
     try {
-        const response = await fetch('/api/auth/manage');
+        const _sid2 = sessionStorage.getItem('gosport_society_id');
+        const response = await fetch('/api/auth/manage', _sid2 ? {headers:{'X-Society-Id':_sid2}} : {});
         const data = await response.json();
         const user = data.users.find(u => u.username === username);
         if (user) showUserModal(user);
@@ -1238,7 +1247,8 @@ async function loadAnnateList() {
     const listDiv = document.getElementById('annate-list-admin');
     
     try {
-        const response = await fetch('/api/annate/list');
+        const _sid = sessionStorage.getItem('gosport_society_id');
+        const response = await fetch('/api/annate/list', _sid ? {headers:{'X-Society-Id':_sid}} : {});
         if (!response.ok) throw new Error('Errore caricamento');
         
         const data = await response.json();
@@ -1374,7 +1384,8 @@ function showAnnataModal(annataData = null) {
 
 window.editAnnata = async function(annataId) {
     try {
-        const response = await fetch('/api/annate/list');
+        const _sid = sessionStorage.getItem('gosport_society_id');
+        const response = await fetch('/api/annate/list', _sid ? {headers:{'X-Society-Id':_sid}} : {});
         const data = await response.json();
         const annata = data.annate.find(a => a.id === annataId);
         if (annata) showAnnataModal(annata);
@@ -1432,7 +1443,8 @@ async function loadUsersList() {
     const listDiv = document.getElementById('users-list-admin');
     
     try {
-        const response = await fetch('/api/auth/manage');
+        const _sid2 = sessionStorage.getItem('gosport_society_id');
+        const response = await fetch('/api/auth/manage', _sid2 ? {headers:{'X-Society-Id':_sid2}} : {});
         if (!response.ok) throw new Error('Errore caricamento');
         
         const data = await response.json();
@@ -1491,7 +1503,8 @@ async function showUserModal(userData = null) {
     
     let annateDisponibili = [];
     try {
-        const response = await fetch('/api/annate/list');
+        const _sid = sessionStorage.getItem('gosport_society_id');
+        const response = await fetch('/api/annate/list', _sid ? {headers:{'X-Society-Id':_sid}} : {});
         const data = await response.json();
         annateDisponibili = data.annate || [];
     } catch (e) {}
@@ -1618,7 +1631,8 @@ async function showUserModal(userData = null) {
 
 window.editUser = async function(username) {
     try {
-        const response = await fetch('/api/auth/manage');
+        const _sid2 = sessionStorage.getItem('gosport_society_id');
+        const response = await fetch('/api/auth/manage', _sid2 ? {headers:{'X-Society-Id':_sid2}} : {});
         const data = await response.json();
         const user = data.users.find(u => u.username === username);
         if (user) showUserModal(user);
