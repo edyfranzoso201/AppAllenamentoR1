@@ -17,6 +17,7 @@
     const LICENSE_DATA = 'gosport_license_data';
     const LICENSE_VERIFIED = 'gosport_license_verified';
     const LICENSE_VERIFIED_EXPIRY = 'gosport_license_verified_expiry';
+    const SESSION_SOCIETY = 'gosport_society_id'; // societyId della società loggata
 
     // ==========================================
     // VERIFICA MODALITÀ GENITORE (SENZA AUTH)
@@ -116,6 +117,7 @@
             sessionStorage.removeItem(SESSION_USER);
             sessionStorage.removeItem(SESSION_ANNATA);
             sessionStorage.removeItem(SESSION_USER_ROLE);
+            sessionStorage.removeItem(SESSION_SOCIETY);
         }
 
         // ==========================================
@@ -455,7 +457,13 @@
                         sessionStorage.setItem(SESSION_KEY, 'true');
                         sessionStorage.setItem(SESSION_USER, username);
                         sessionStorage.setItem(SESSION_USER_ROLE, result.role);
-                        
+                        // Salva societyId per filtrare annate e utenti
+                        if (result.societyId) {
+                            sessionStorage.setItem(SESSION_SOCIETY, result.societyId);
+                        } else {
+                            sessionStorage.removeItem(SESSION_SOCIETY);
+                        }
+
                         const expiry = Date.now() + (8 * 60 * 60 * 1000);
                         sessionStorage.setItem(SESSION_KEY + '_expiry', expiry.toString());
                         
@@ -1671,17 +1679,24 @@ window.deleteUser = async function(username) {
             window.fetch = function(...args) {
                 const [url, options = {}] = args;
                 
-                if (url && url.includes('/api/data')) {
-                    const currentAnnata = getCurrentAnnata();
-                    
-                    if (currentAnnata) {
-                        options.headers = options.headers || {};
-                        
-                        if (options.headers instanceof Headers) {
-                            options.headers.set('X-Annata-Id', currentAnnata);
-                        } else {
-                            options.headers['X-Annata-Id'] = currentAnnata;
+                if (url && url.includes('/api/')) {
+                    options.headers = options.headers || {};
+                    const isHeaders = options.headers instanceof Headers;
+
+                    // Aggiunge X-Annata-Id per /api/data
+                    if (url.includes('/api/data')) {
+                        const currentAnnata = getCurrentAnnata();
+                        if (currentAnnata) {
+                            if (isHeaders) options.headers.set('X-Annata-Id', currentAnnata);
+                            else options.headers['X-Annata-Id'] = currentAnnata;
                         }
+                    }
+
+                    // Aggiunge X-Society-Id per tutte le API (annate, auth, data)
+                    const societyId = sessionStorage.getItem('gosport_society_id');
+                    if (societyId) {
+                        if (isHeaders) options.headers.set('X-Society-Id', societyId);
+                        else options.headers['X-Society-Id'] = societyId;
                     }
                 }
                 
