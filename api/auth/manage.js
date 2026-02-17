@@ -1,4 +1,4 @@
-// api/auth/manage.js - Gestione unificata utenti
+// api/auth/manage.js - Gestione utenti con societyId per separazione società
 import { createClient } from '@vercel/kv';
 import crypto from 'crypto';
 
@@ -14,22 +14,39 @@ function hashPassword(password) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Society-Id');
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
+    // societyId dall'header — identifica quale società sta facendo la richiesta
+    const societyId = req.headers['x-society-id'] || null;
+
     const { action, username, password, email, role, annate } = req.body || {};
 
     // ==========================================
-    // GET - Lista tutti gli utenti
+    // GET - Lista utenti della società
     // ==========================================
     if (req.method === 'GET') {
       const users = (await kv.get('auth:users')) || [];
-      console.log(`✅ Caricati ${users.length} utenti`);
-      return res.status(200).json({ success: true, users });
+
+      // Filtra: ogni admin vede SOLO i suoi utenti
+      const filtered = societyId
+        ? users.filter(u => u.societyId === societyId)
+        : users.filter(u => !u.societyId); // legacy
+
+      // Non restituire le password
+      const safeUsers = filtered.map(u => ({
+        username: u.username,
+        email: u.email || '',
+        role: u.role,
+        annate: u.annate || [],
+        societyId: u.societyId || null,
+        createdAt: u.createdAt
+      }));
+
+      console.log(`✅ Caricati ${safeUsers.length} utenti per societyId=${societyId || 'legacy'}`);
+      return res.status(200).json({ success: true, users: safeUsers });
     }
 
     // ==========================================
@@ -37,10 +54,7 @@ export default async function handler(req, res) {
     // ==========================================
     if (req.method === 'POST') {
       if (!action) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Parametro "action" obbligatorio (create, update, delete)' 
-        });
+        return res.status(400).json({ success: false, message: 'Parametro "action" obbligatorio (create, update, delete)' });
       }
 
       const users = (await kv.get('auth:users')) || [];
@@ -48,24 +62,16 @@ export default async function handler(req, res) {
       // CREATE
       if (action === 'create') {
         if (!username || !password || !role) {
-          return res.status(400).json({ 
-            success: false,
-            message: 'Username, password e ruolo obbligatori' 
-          });
+          return res.status(400).json({ success: false, message: 'Username, password e ruolo obbligatori' });
         }
 
         if (!['admin', 'supercoach', 'coach'].includes(role)) {
-          return res.status(400).json({ 
-            success: false,
-            message: 'Ruolo non valido' 
-          });
+          return res.status(400).json({ success: false, message: 'Ruolo non valido' });
         }
 
+        // Username univoco globalmente (evita confusioni tra società diverse)
         if (users.find(u => u.username === username)) {
-          return res.status(400).json({ 
-            success: false,
-            message: 'Username già esistente' 
-          });
+          return res.status(400).json({ success: false, message: 'Username già esistente' });
         }
 
         const newUser = {
@@ -73,6 +79,7 @@ export default async function handler(req, res) {
           password: hashPassword(password),
           email: email || '',
           role,
+          societyId: societyId || null,   // ← collegato alla società
           annate: role === 'coach' ? (annate || []) : [],
           createdAt: new Date().toISOString()
         };
@@ -80,8 +87,8 @@ export default async function handler(req, res) {
         users.push(newUser);
         await kv.set('auth:users', users);
 
-        console.log(`✅ Utente creato: ${username} (${role})`);
-        return res.status(200).json({ 
+        console.log(`✅ Utente creato: ${username} (${role}) societyId=${societyId}`);
+        return res.status(200).json({
           success: true,
           message: 'Utente creato con successo',
           user: { username: newUser.username, email: newUser.email, role: newUser.role, annate: newUser.annate }
@@ -91,21 +98,19 @@ export default async function handler(req, res) {
       // UPDATE
       if (action === 'update') {
         if (!username || !role) {
-          return res.status(400).json({ 
-            success: false,
-            message: 'Username e ruolo obbligatori' 
-          });
+          return res.status(400).json({ success: false, message: 'Username e ruolo obbligatori' });
         }
 
         const userIndex = users.findIndex(u => u.username === username);
         if (userIndex === -1) {
-          return res.status(404).json({ 
-            success: false,
-            message: 'Utente non trovato' 
-          });
+          return res.status(404).json({ success: false, message: 'Utente non trovato' });
         }
 
-        // Aggiorna utente (mantieni password esistente se non fornita)
+        // Sicurezza: non modificare utenti di altre società
+        if (societyId && users[userIndex].societyId && users[userIndex].societyId !== societyId) {
+          return res.status(403).json({ success: false, message: 'Non autorizzato' });
+        }
+
         users[userIndex] = {
           ...users[userIndex],
           email: email || users[userIndex].email,
@@ -114,16 +119,14 @@ export default async function handler(req, res) {
           updatedAt: new Date().toISOString()
         };
 
-        // Se viene fornita una nuova password, aggiornala
         if (password && password.trim() !== '') {
           users[userIndex].password = hashPassword(password);
-          console.log(`🔐 Password aggiornata per: ${username}`);
         }
 
         await kv.set('auth:users', users);
 
         console.log(`✅ Utente aggiornato: ${username}`);
-        return res.status(200).json({ 
+        return res.status(200).json({
           success: true,
           message: 'Utente aggiornato con successo',
           user: { username: users[userIndex].username, email: users[userIndex].email, role: users[userIndex].role, annate: users[userIndex].annate }
@@ -133,51 +136,36 @@ export default async function handler(req, res) {
       // DELETE
       if (action === 'delete') {
         if (!username) {
-          return res.status(400).json({ 
-            success: false,
-            message: 'Username obbligatorio' 
-          });
+          return res.status(400).json({ success: false, message: 'Username obbligatorio' });
         }
 
         const user = users.find(u => u.username === username);
         if (!user) {
-          return res.status(404).json({ 
-            success: false,
-            message: 'Utente non trovato' 
-          });
+          return res.status(404).json({ success: false, message: 'Utente non trovato' });
+        }
+
+        // Sicurezza: non eliminare utenti di altre società
+        if (societyId && user.societyId && user.societyId !== societyId) {
+          return res.status(403).json({ success: false, message: 'Non autorizzato' });
         }
 
         if (user.role === 'admin') {
-          return res.status(403).json({ 
-            success: false,
-            message: 'Non è possibile eliminare un amministratore' 
-          });
+          return res.status(403).json({ success: false, message: 'Non è possibile eliminare un amministratore' });
         }
 
-        const updatedUsers = users.filter(u => u.username !== username);
-        await kv.set('auth:users', updatedUsers);
+        await kv.set('auth:users', users.filter(u => u.username !== username));
 
         console.log(`✅ Utente eliminato: ${username}`);
-        return res.status(200).json({ 
-          success: true,
-          message: 'Utente eliminato con successo'
-        });
+        return res.status(200).json({ success: true, message: 'Utente eliminato con successo' });
       }
 
-      return res.status(400).json({ 
-        success: false,
-        message: 'Azione non valida. Usa: create, update, delete' 
-      });
+      return res.status(400).json({ success: false, message: 'Azione non valida. Usa: create, update, delete' });
     }
 
     return res.status(405).json({ message: 'Metodo non consentito' });
 
   } catch (error) {
     console.error('❌ Errore in /api/auth/manage:', error);
-    return res.status(500).json({ 
-      success: false,
-      message: 'Errore del server', 
-      error: error.message 
-    });
+    return res.status(500).json({ success: false, message: 'Errore del server', error: error.message });
   }
 }
