@@ -813,3 +813,308 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
         grid-template-columns: 1fr;
     }
 }
+
+/* ===================================================================
+   MOBILE RESPONSIVE - Ottimizzazione smartphone
+   Tutte le regole qui sotto NON impattano il layout desktop.
+   =================================================================== */
+
+/* ─── LAYOUT GENERALE ─── */
+@media (max-width: 767.98px) {
+
+    /* Padding container più stretto */
+    main.container-fluid {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+
+    /* Tutte le colonne Bootstrap → full width su mobile */
+    .col-lg-3, .col-lg-4, .col-lg-5, .col-lg-6,
+    .col-lg-7, .col-lg-8, .col-lg-9,
+    .col-md-3, .col-md-4, .col-md-6, .col-md-8 {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: 0 0 100% !important;
+    }
+
+    /* Card sempre full width */
+    .card, .summary-card, .chart-card, .table-card,
+    .calendar-card, .season-stats-card {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Gutter ridotto */
+    .row { --bs-gutter-x: 0.75rem; }
+
+    /* Previeni overflow orizzontale */
+    html, body { overflow-x: hidden !important; }
+    .container-fluid { overflow-x: hidden; }
+}
+
+/* ─── NAVBAR ─── */
+@media (max-width: 575.98px) {
+    .navbar { padding: 6px 10px !important; }
+    .navbar-brand { font-size: 0.95rem !important; }
+}
+
+/* ─── TITOLI ─── */
+@media (max-width: 767.98px) {
+    .main-title, h2.main-title { font-size: 1.3rem !important; }
+    .card-title { font-size: 1rem !important; }
+    .display-4 { font-size: 2.2rem !important; }
+}
+
+/* ─── BUTTON GROUP: Wrap su più righe ─── */
+@media (max-width: 767.98px) {
+    .btn-group,
+    #match-period-toggle,
+    #comparison-period-toggle,
+    #attendance-period-toggle,
+    #weekly-period-toggle,
+    #performance-filter-toggle,
+    #multi-athlete-type-selector {
+        flex-wrap: wrap !important;
+        gap: 4px;
+    }
+
+    .btn-group .btn,
+    #match-period-toggle .btn,
+    #comparison-period-toggle .btn,
+    #attendance-period-toggle .btn,
+    #weekly-period-toggle .btn,
+    #performance-filter-toggle .btn,
+    #multi-athlete-type-selector .btn {
+        font-size: 0.72rem !important;
+        padding: 4px 8px !important;
+        border-radius: 4px !important;
+        flex: 0 0 auto;
+    }
+}
+
+/* ─── GRAFICI / CANVAS ─── */
+@media (max-width: 767.98px) {
+    canvas {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        min-height: 220px;
+    }
+
+    .chart-card .card-body {
+        padding: 12px 8px !important;
+    }
+
+    /* Override altezze fisse grafici */
+    #attendanceChart,
+    #multiAthleteChart,
+    #weeklyAttendanceChart {
+        max-height: none;
+    }
+}
+
+/* ─── TABELLE RESPONSIVE ─── */
+@media (max-width: 767.98px) {
+    .table-responsive,
+    .card-body .table-responsive {
+        max-width: 100vw;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table { font-size: 0.8rem !important; }
+    .table th, .table td {
+        padding: 6px 8px !important;
+        white-space: nowrap;
+    }
+}
+
+/* ─── HOME: Card riepilogo ─── */
+@media (max-width: 767.98px) {
+    #home-section .summary-card .card-body {
+        text-align: center;
+        padding: 16px 12px !important;
+    }
+
+    #home-section .d-grid.gap-2 .btn {
+        font-size: 0.9rem;
+        padding: 10px 12px;
+    }
+
+    /* Statistiche stagionali: griglia 2 colonne */
+    .season-stats-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+    }
+    .season-stats-grid .stat-item:last-child {
+        grid-column: span 2;
+        text-align: center;
+    }
+}
+
+/* ─── NAVIGAZIONE RAPIDA ─── */
+@media (max-width: 767.98px) {
+    .d-flex.flex-wrap.justify-content-center.gap-2 .btn {
+        font-size: 0.75rem !important;
+        padding: 6px 10px !important;
+    }
+}
+
+/* ─── CALENDARIO: giorni più compatti ─── */
+@media (max-width: 767.98px) {
+    .calendar-day {
+        min-height: 70px;
+        padding: 4px;
+        font-size: 0.75rem;
+    }
+    .calendar-session {
+        font-size: 0.65rem;
+        padding: 2px 3px;
+    }
+    .calendar-grid {
+        gap: 2px;
+    }
+}
+
+/* ─── PARTITE: filtri e classifiche ─── */
+@media (max-width: 767.98px) {
+    #top-scorers-container,
+    #top-assists-container {
+        max-height: 250px !important;
+        font-size: 0.9rem;
+    }
+
+    #match-results-section .d-flex.gap-2.mb-3 {
+        flex-direction: column !important;
+    }
+    #match-results-section .form-select {
+        width: 100% !important;
+    }
+}
+
+/* ─── CONFRONTO PERFORMANCE SQUADRA ─── */
+@media (max-width: 767.98px) {
+    #multi-athlete-chart-container .row.g-3 {
+        flex-direction: column !important;
+    }
+    #multi-athlete-metric-selector {
+        width: 100% !important;
+    }
+    #multi-athlete-datepicker-container {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}
+
+/* ─── ANALISI PRESENZE SETTIMANALI ─── */
+@media (max-width: 767.98px) {
+    #weekly-attendance-analysis-section .row.g-3 {
+        flex-direction: column;
+    }
+    #weekly-attendance-analysis-section .col-md-3 {
+        margin-bottom: 10px;
+    }
+}
+
+/* ─── ANALISI ATLETA SINGOLO ─── */
+@media (max-width: 767.98px) {
+    #analisi-singolo-section .card.chart-card.p-3 .row {
+        flex-direction: column;
+    }
+    #analisi-singolo-section .col-md-6 {
+        margin-bottom: 12px;
+    }
+}
+
+/* ─── MONITORAGGIO GPS ─── */
+@media (max-width: 767.98px) {
+    #monitoraggio-gps-section .row.align-items-end {
+        flex-direction: column;
+    }
+    #monitoraggio-gps-section .col-md-4,
+    #monitoraggio-gps-section .col-md-8 {
+        margin-bottom: 10px;
+    }
+}
+
+/* ─── REPORT VALUTAZIONI ─── */
+@media (max-width: 767.98px) {
+    #report-valutazioni-section .d-flex.justify-content-between {
+        flex-direction: column !important;
+        gap: 10px;
+    }
+    #report-valutazioni-section .d-flex.align-items-center.gap-2 {
+        flex-wrap: wrap;
+    }
+    #evaluation-date-picker-2 {
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+}
+
+/* ─── HALL OF FAME ─── */
+@media (max-width: 767.98px) {
+    #hall-of-fame-container {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+    #hall-of-fame-container > * {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .award-card {
+        width: 100% !important;
+    }
+}
+
+/* ─── FORM / INPUT: Touch-friendly ─── */
+@media (max-width: 767.98px) {
+    .form-select, .form-control {
+        font-size: 0.9rem !important;
+        min-height: 42px;
+    }
+    .form-label {
+        font-size: 0.85rem !important;
+    }
+}
+
+/* ─── MODALS: Fullscreen su mobile ─── */
+@media (max-width: 575.98px) {
+    .modal-dialog {
+        margin: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        min-height: 100dvh;
+    }
+    .modal-content {
+        border-radius: 0 !important;
+        min-height: 100dvh;
+    }
+    .modal-body {
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* ─── FOOTER ─── */
+@media (max-width: 575.98px) {
+    footer {
+        font-size: 0.75rem !important;
+        padding: 10px 8px !important;
+    }
+}
+
+/* ─── ALERT / NOTIFICHE ─── */
+@media (max-width: 767.98px) {
+    #alerts-container .alert {
+        font-size: 0.8rem !important;
+        padding: 10px 12px !important;
+    }
+}
+
+/* ─── ANNATA BADGE ─── */
+@media (max-width: 575.98px) {
+    .badge, #annata-badge {
+        font-size: 0.75rem !important;
+        padding: 4px 8px !important;
+    }
+}
