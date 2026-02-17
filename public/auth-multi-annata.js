@@ -164,6 +164,35 @@
         }
 
         // ==========================================
+        // AGGIORNA EMAIL UTENTE SU SERVER
+        // ==========================================
+        async function updateUserEmailOnServer(email) {
+            const username = getCurrentUser();
+            const societyId = sessionStorage.getItem(SESSION_SOCIETY);
+            
+            if (!username || !societyId) return;
+
+            try {
+                await fetch('/api/auth/manage', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Society-Id': societyId
+                    },
+                    body: JSON.stringify({
+                        action: 'update',
+                        username,
+                        role: 'admin',
+                        email
+                    })
+                });
+                console.log('✅ Email utente aggiornata su server');
+            } catch(e) {
+                console.error('❌ Errore aggiornamento email:', e);
+            }
+        }
+
+        // ==========================================
         // LICENZA - SCHERMATA ATTIVAZIONE
         // ==========================================
 
@@ -255,13 +284,15 @@
                     const result = await verifyLicense(email, key);
 
                     if (result.valid) {
-                        // Salva localmente
-                        localStorage.setItem(LICENSE_EMAIL, email);
-                        localStorage.setItem(LICENSE_KEY, key);
-                        saveLicenseVerified(result);
+                        // Salva societyId e licenseStatus in sessione
+                        sessionStorage.setItem(SESSION_SOCIETY, result.societyId);
+                        sessionStorage.setItem('gosport_license_status', JSON.stringify(result));
 
                         const expiry = new Date(result.expiry + 'T00:00:00').toLocaleDateString('it-IT');
                         showLicenseAlert(`✅ Benvenuto ${result.societyName}! Licenza valida fino al ${expiry}`, 'success');
+
+                        // Aggiorna l'utente su Redis con l'email (per futuri login automatici)
+                        updateUserEmailOnServer(email).catch(e => console.warn('Errore aggiornamento email:', e));
 
                         setTimeout(() => proceedAfterLogin(), 1200);
                     } else if (result.expired) {
@@ -461,11 +492,17 @@
                         sessionStorage.setItem(SESSION_KEY, 'true');
                         sessionStorage.setItem(SESSION_USER, username);
                         sessionStorage.setItem(SESSION_USER_ROLE, result.role);
+                        
                         // Salva societyId per filtrare annate e utenti
                         if (result.societyId) {
                             sessionStorage.setItem(SESSION_SOCIETY, result.societyId);
                         } else {
                             sessionStorage.removeItem(SESSION_SOCIETY);
+                        }
+
+                        // Salva licenseStatus per verifiche
+                        if (result.licenseStatus) {
+                            sessionStorage.setItem('gosport_license_status', JSON.stringify(result.licenseStatus));
                         }
 
                         const expiry = Date.now() + (8 * 60 * 60 * 1000);
@@ -1761,20 +1798,25 @@ window.deleteUser = async function(username) {
         }
 
         async function proceedAfterLogin() {
-            // Chiamata dopo il login per decidere il passo successivo
-            const role = getUserRole();
-
-            if (role === 'admin') {
-                const licenseOk = await checkLicenseForAdmin();
-
-                if (licenseOk === 'expired') {
-                    showLicenseScreen('La licenza GO Sport è scaduta. Contatta GO Sport per rinnovarla.');
-                    return;
-                }
-                if (!licenseOk) {
-                    showLicenseScreen(null);
-                    return;
-                }
+            // Verifica se il login ha restituito info sulla licenza
+            const licenseStatus = sessionStorage.getItem('gosport_license_status');
+            
+            if (licenseStatus) {
+                try {
+                    const status = JSON.parse(licenseStatus);
+                    
+                    if (!status.valid) {
+                        if (status.reason === 'expired') {
+                            showLicenseScreen(`Licenza scaduta il ${new Date(status.expiry + 'T00:00:00').toLocaleDateString('it-IT')}. Contatta GO Sport per rinnovarla.`);
+                        } else if (status.reason === 'revoked') {
+                            showLicenseScreen('Licenza disattivata. Contatta GO Sport.');
+                        } else if (status.reason === 'missing') {
+                            showLicenseScreen(null); // Prima attivazione
+                        }
+                        return;
+                    }
+                    // Licenza valida → procedi
+                } catch(e) {}
             }
 
             // Coach o admin con licenza ok → selezione annata
