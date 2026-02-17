@@ -165,7 +165,7 @@
         // LICENZA - SCHERMATA ATTIVAZIONE
         // ==========================================
 
-        function showLicenseScreen() {
+        function showLicenseScreen(errorMessage) {
             document.body.innerHTML = '';
             document.body.style.cssText = 'margin:0;padding:0;font-family:system-ui,-apple-system,sans-serif;background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;';
 
@@ -181,7 +181,7 @@
                     <p style="color:#64748b;margin:0;font-size:0.85rem">Attivazione Licenza</p>
                 </div>
 
-                <div id="license-alert" style="display:none;padding:10px 14px;border-radius:8px;font-size:0.85rem;margin-bottom:16px"></div>
+                <div id="license-alert" style="padding:10px 14px;border-radius:8px;font-size:0.85rem;margin-bottom:16px;${errorMessage ? '' : 'display:none'}background:#450a0a;border:1px solid #ef4444;color:#fca5a5">${errorMessage || ''}</div>
 
                 <div style="margin-bottom:14px">
                     <label style="display:block;font-size:0.8rem;color:#94a3b8;font-weight:600;margin-bottom:6px">
@@ -261,7 +261,7 @@
                         const expiry = new Date(result.expiry + 'T00:00:00').toLocaleDateString('it-IT');
                         showLicenseAlert(`✅ Benvenuto ${result.societyName}! Licenza valida fino al ${expiry}`, 'success');
 
-                        setTimeout(() => showLoginScreen(), 1200);
+                        setTimeout(() => proceedAfterLogin(), 1200);
                     } else if (result.expired) {
                         showLicenseAlert(`❌ Licenza scaduta. Contatta GO Sport per rinnovarla.`, 'error');
                         btn.textContent = '🔓 Attiva Licenza';
@@ -462,7 +462,7 @@
                         errorDiv.textContent = '✅ Login effettuato!';
                         errorDiv.style.color = '#10b981';
                         
-                        setTimeout(() => showAnnataSelection(), 500);
+                        setTimeout(() => proceedAfterLogin(), 500);
                     } else {
                         errorDiv.textContent = '❌ Credenziali non valide';
                         errorDiv.style.color = '#ef4444';
@@ -1693,16 +1693,20 @@ window.deleteUser = async function(username) {
         // MAIN FLOW
         // ==========================================
 
-        // STEP 0: Verifica licenza
-        // Se non verificata (o cache scaduta) → mostra schermata attivazione
-        async function checkLicenseAndProceed() {
-            // Se licenza già verificata in cache → procedi direttamente
-            if (isLicenseVerified()) {
-                proceedWithAuth();
-                return;
-            }
+        // Flusso:
+        // 1. Non autenticato → Login
+        // 2. Autenticato come ADMIN + no licenza verificata → Schermata licenza
+        // 3. Autenticato (qualsiasi ruolo) + no annata → Selezione annata
+        // 4. Tutto ok → Dashboard
 
-            // Se ho email e key salvate → ri-verifica silenziosamente
+        async function checkLicenseForAdmin() {
+            // Solo l'admin deve verificare la licenza
+            if (!isAdmin()) return true;
+
+            // Licenza già verificata in cache (24h) → ok
+            if (isLicenseVerified()) return true;
+
+            // Ho email e key salvate → ri-verifica silenziosamente
             const savedEmail = localStorage.getItem(LICENSE_EMAIL);
             const savedKey = localStorage.getItem(LICENSE_KEY);
 
@@ -1711,53 +1715,67 @@ window.deleteUser = async function(username) {
                     const result = await verifyLicense(savedEmail, savedKey);
                     if (result.valid) {
                         saveLicenseVerified(result);
-                        proceedWithAuth();
-                        return;
+                        return true;
                     } else if (result.expired) {
-                        // Licenza scaduta - mostra schermata con messaggio
-                        showLicenseScreen();
-                        return;
+                        return 'expired';
                     }
+                    return false;
                 } catch(e) {
-                    // Errore di rete - se ho dati salvati procedi offline con warning
-                    console.warn('⚠️ Verifica licenza offline - procedo con dati salvati');
-                    proceedWithAuth();
+                    // Errore rete → procedi offline con warning
+                    console.warn('⚠️ Verifica licenza offline');
+                    return true;
+                }
+            }
+
+            // Nessuna licenza salvata → serve attivazione
+            return false;
+        }
+
+        async function proceedAfterLogin() {
+            // Chiamata dopo il login per decidere il passo successivo
+            const role = getUserRole();
+
+            if (role === 'admin') {
+                const licenseOk = await checkLicenseForAdmin();
+
+                if (licenseOk === 'expired') {
+                    showLicenseScreen('La licenza GO Sport è scaduta. Contatta GO Sport per rinnovarla.');
+                    return;
+                }
+                if (!licenseOk) {
+                    showLicenseScreen(null);
                     return;
                 }
             }
 
-            // Nessuna licenza salvata → mostra schermata attivazione
-            showLicenseScreen();
+            // Coach o admin con licenza ok → selezione annata
+            showAnnataSelection();
         }
 
-        function proceedWithAuth() {
-            if (!isAuthenticated()) {
-                showLoginScreen();
-            } else if (!hasSelectedAnnata()) {
-                showAnnataSelection();
-            } else {
-                // Ripristina il contenuto originale
-                if (originalBodyHTML) {
-                    document.body.innerHTML = originalBodyHTML;
-                }
-                
-                document.documentElement.classList.add('authenticated');
-                setupFetchInterceptor();
-                addLogoutButton();
-                
-                // Mostra banner scadenza se necessario
-                setTimeout(() => showLicenseBanner(), 1000);
-                
-                // Esponi funzioni globali
-                window.getCurrentAnnata = getCurrentAnnata;
-                window.getCurrentUser = getCurrentUser;
-                window.getUserRole = getUserRole;
-                window.isAdmin = isAdmin;
+        if (!isAuthenticated()) {
+            showLoginScreen();
+        } else if (!hasSelectedAnnata()) {
+            // Già autenticato ma no annata → controlla licenza se admin
+            proceedAfterLogin();
+        } else {
+            // Già autenticato e annata selezionata → dashboard
+            if (originalBodyHTML) {
+                document.body.innerHTML = originalBodyHTML;
             }
-        }
+            document.documentElement.classList.add('authenticated');
+            setupFetchInterceptor();
+            addLogoutButton();
 
-        // Avvia il flusso
-        checkLicenseAndProceed();
+            // Banner scadenza solo per admin
+            if (isAdmin()) {
+                setTimeout(() => showLicenseBanner(), 1000);
+            }
+
+            window.getCurrentAnnata = getCurrentAnnata;
+            window.getCurrentUser = getCurrentUser;
+            window.getUserRole = getUserRole;
+            window.isAdmin = isAdmin;
+        }
     }
 
     // ==========================================
