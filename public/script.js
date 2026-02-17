@@ -179,6 +179,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let pollingInterval = null;
     let visuallyDeletedCards = [];
     const saveData = async () => {
+        const annataId = sessionStorage.getItem('gosport_current_annata') ||
+                         localStorage.getItem('currentAnnata');
+        if (!annataId) {
+            console.error('❌ saveData: nessuna annata selezionata!');
+            return false;
+        }
         const allData = { 
             athletes, 
             evaluations, 
@@ -193,7 +199,10 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/data', { 
                 method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Annata-Id': annataId
+                }, 
                 body: JSON.stringify(allData) 
             });
             if (!response.ok) throw new Error('Errore salvataggio');
@@ -218,7 +227,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const loadData = async () => {
         try {
-            const response = await fetch('/api/data', { cache: 'no-store' });
+            const annataId = sessionStorage.getItem('gosport_current_annata') ||
+                             localStorage.getItem('currentAnnata');
+            const headers = { cache: 'no-store' };
+            if (annataId) headers['X-Annata-Id'] = annataId;
+            const response = await fetch('/api/data', { 
+                cache: 'no-store',
+                headers: annataId ? { 'X-Annata-Id': annataId } : {}
+            });
             if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
             const allData = await response.json();
             athletes = allData.athletes || [];
@@ -1759,7 +1775,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById(category).value = existingEvaluation[category] || '0';
                 });
                 document.getElementById('award-checkbox').checked = !!(awards[date]?.find(a => a.athleteId.toString() === athleteId));
-                evaluationModal.show();
+                // Su mobile usa pannello fisso, su desktop usa modal Bootstrap
+                // Usa sempre il pannello mobile custom (più stabile del Bootstrap modal)
+                showMobileEvalPanel(athlete.name, athlete.id, date);
             }
         }
     });
@@ -2855,4 +2873,113 @@ if (typeof updateAllUI !== 'undefined') {
         updateAppHeader();
     };
 }
-// 
+//
+
+// ==========================================
+// PANNELLO VALUTAZIONE MOBILE - FIXED FULLSCREEN
+// ==========================================
+function showMobileEvalPanel(athleteName, athleteId, date) {
+    const existing = document.getElementById('mobile-eval-panel');
+    if (existing) existing.remove();
+
+    const dateFormatted = new Date(date + 'T00:00:00').toLocaleDateString('it-IT', {
+        day: 'numeric', month: 'short'
+    });
+
+    const existingEval = {};
+    document.querySelectorAll('#evaluation-form select').forEach(sel => {
+        existingEval[sel.id] = sel.value;
+    });
+    const awardChecked = document.getElementById('award-checkbox')?.checked || false;
+
+    const categories = [
+        { id: 'presenza-allenamento', label: 'Presenza', hasNegative: true },
+        { id: 'serieta-allenamento', label: 'Serietà All.', hasNegative: false },
+        { id: 'abbigliamento-allenamento', label: 'Abbig. All.', hasNegative: false },
+        { id: 'abbigliamento-partita', label: 'Abbig. Partita', hasNegative: false },
+        { id: 'comunicazioni', label: 'Comunicazioni', hasNegative: false },
+        { id: 'doccia', label: 'Doccia', hasNegative: false }
+    ];
+
+    let rowsHTML = '';
+    categories.forEach(cat => {
+        const val = existingEval[cat.id] || '0';
+        const options = cat.hasNegative
+            ? ['-1:Ass. Giust.','0:0-NV','1:1-B','2:2-M','3:3-A']
+            : ['0:0-NV','1:1-B','2:2-M','3:3-A'];
+        const optHTML = options.map(o => {
+            const [v, l] = o.split(':');
+            return `<option value="${v}"${v===val?' selected':''}>${l}</option>`;
+        }).join('');
+        rowsHTML += `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #334155">
+                <span style="font-size:0.85rem;color:#cbd5e1">${cat.label}</span>
+                <select id="mob-${cat.id}" style="width:130px;padding:5px 8px;border-radius:6px;border:1px solid #475569;background:#0f172a;color:white;font-size:0.88rem">${optHTML}</select>
+            </div>`;
+    });
+
+    // Overlay scuro dietro
+    const overlay = document.createElement('div');
+    overlay.id = 'mobile-eval-panel';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:2147483647;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box';
+
+    // Card centrata (NON fullscreen)
+    overlay.innerHTML = `
+        <div style="background:#1e293b;border-radius:12px;width:100%;max-width:420px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.8)">
+            
+            <div style="background:#1e40af;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-radius:12px 12px 0 0">
+                <span style="font-weight:700;color:white;font-size:0.95rem">
+                    ${athleteName}
+                    <span style="font-weight:400;font-size:0.78rem;color:#bfdbfe;margin-left:6px">${dateFormatted}</span>
+                </span>
+                <button id="mobile-eval-close" style="background:rgba(0,0,0,0.3);border:none;color:white;width:28px;height:28px;border-radius:50%;font-size:0.9rem;cursor:pointer;line-height:1">✕</button>
+            </div>
+
+            <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 14px 0 14px;min-height:0">
+                ${rowsHTML}
+                <div style="display:flex;align-items:center;padding:8px 0">
+                    <input type="checkbox" id="mob-award-checkbox" ${awardChecked?'checked':''} style="width:18px;height:18px;accent-color:#f59e0b;margin-right:8px;cursor:pointer">
+                    <label for="mob-award-checkbox" style="color:#fbbf24;font-weight:600;font-size:0.88rem;cursor:pointer">🏆 Assegna Premio</label>
+                </div>
+            </div>
+
+            <div style="background:#1e40af;padding:10px 14px;display:flex;gap:8px;flex-shrink:0;border-radius:0 0 12px 12px">
+                <button id="mob-eval-delete" style="background:#dc2626;color:white;border:none;width:40px;height:40px;border-radius:8px;cursor:pointer;font-size:1rem;flex-shrink:0">🗑</button>
+                <button id="mob-eval-cancel" style="flex:1;background:#475569;color:white;border:none;height:40px;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.9rem">Chiudi</button>
+                <button id="mob-eval-save" style="flex:2;background:#16a34a;color:white;border:none;height:40px;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.95rem">✅ Salva</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
+
+    const closePanel = () => { overlay.remove(); document.body.style.overflow = ''; };
+
+    // Chiudi cliccando fuori dalla card
+    overlay.onclick = (e) => { if (e.target === overlay) closePanel(); };
+    overlay.querySelector('#mobile-eval-close').onclick = closePanel;
+    overlay.querySelector('#mob-eval-cancel').onclick = closePanel;
+
+    overlay.querySelector('#mob-eval-delete').onclick = () => {
+        if (confirm('Eliminare i dati di valutazione per questo giorno?')) {
+            document.getElementById('modal-athlete-id-eval').value = athleteId;
+            document.getElementById('delete-single-athlete-day-btn').click();
+            closePanel();
+        }
+    };
+
+    overlay.querySelector('#mob-eval-save').onclick = () => {
+        categories.forEach(cat => {
+            const s = overlay.querySelector('#mob-' + cat.id);
+            const o = document.getElementById(cat.id);
+            if (s && o) o.value = s.value;
+        });
+        const ma = overlay.querySelector('#mob-award-checkbox');
+        const oa = document.getElementById('award-checkbox');
+        if (ma && oa) oa.checked = ma.checked;
+        const form = document.getElementById('evaluation-form');
+        if (form) form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        closePanel();
+    };
+}
