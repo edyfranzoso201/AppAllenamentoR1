@@ -142,7 +142,7 @@
         function saveLicenseVerified(licenseData) {
             localStorage.setItem(LICENSE_VERIFIED, 'true');
             // Cache verifica per 24 ore
-            localStorage.setItem(LICENSE_VERIFIED_EXPIRY, (Date.now() + 24 * 60 * 60 * 1000).toString());
+            localStorage.setItem(LICENSE_VERIFIED_EXPIRY, (Date.now() + 30 * 24 * 60 * 60 * 1000).toString()); // 30 giorni
             localStorage.setItem(LICENSE_DATA, JSON.stringify(licenseData));
         }
 
@@ -1732,32 +1732,32 @@ window.deleteUser = async function(username) {
             // Solo l'admin deve verificare la licenza
             if (!isAdmin()) return true;
 
-            // Licenza già verificata in cache (24h) → ok
-            if (isLicenseVerified()) return true;
-
-            // Ho email e key salvate → ri-verifica silenziosamente
             const savedEmail = localStorage.getItem(LICENSE_EMAIL);
             const savedKey = localStorage.getItem(LICENSE_KEY);
 
-            if (savedEmail && savedKey) {
-                try {
-                    const result = await verifyLicense(savedEmail, savedKey);
-                    if (result.valid) {
-                        saveLicenseVerified(result);
-                        return true;
-                    } else if (result.expired) {
-                        return 'expired';
-                    }
-                    return false;
-                } catch(e) {
-                    // Errore rete → procedi offline con warning
-                    console.warn('⚠️ Verifica licenza offline');
-                    return true;
-                }
-            }
+            // Se non ha mai inserito la licenza → mostra schermata
+            if (!savedEmail || !savedKey) return false;
 
-            // Nessuna licenza salvata → serve attivazione
-            return false;
+            // Ha email+chiave salvate → verifica in cache valida?
+            if (isLicenseVerified()) return true;
+
+            // Cache scaduta → ri-verifica in background silenziosamente
+            // Nel frattempo lascia passare (non bloccare l'utente)
+            try {
+                const result = await verifyLicense(savedEmail, savedKey);
+                if (result.valid) {
+                    saveLicenseVerified(result); // rinnova cache 30gg
+                    return true;
+                } else if (result.expired) {
+                    return 'expired';
+                }
+                // Chiave non più valida (revocata) → chiede reinserimento
+                return false;
+            } catch(e) {
+                // Errore rete → lascia passare con i dati salvati
+                console.warn('⚠️ Verifica licenza offline - accesso consentito');
+                return true;
+            }
         }
 
         async function proceedAfterLogin() {
