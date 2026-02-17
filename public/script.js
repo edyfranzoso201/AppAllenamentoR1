@@ -179,6 +179,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let pollingInterval = null;
     let visuallyDeletedCards = [];
     const saveData = async () => {
+        const annataId = sessionStorage.getItem('gosport_current_annata') ||
+                         localStorage.getItem('currentAnnata');
+        if (!annataId) {
+            console.error('❌ saveData: nessuna annata selezionata!');
+            return false;
+        }
         const allData = { 
             athletes, 
             evaluations, 
@@ -193,7 +199,10 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/data', { 
                 method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Annata-Id': annataId
+                }, 
                 body: JSON.stringify(allData) 
             });
             if (!response.ok) throw new Error('Errore salvataggio');
@@ -218,7 +227,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const loadData = async () => {
         try {
-            const response = await fetch('/api/data', { cache: 'no-store' });
+            const annataId = sessionStorage.getItem('gosport_current_annata') ||
+                             localStorage.getItem('currentAnnata');
+            const headers = { cache: 'no-store' };
+            if (annataId) headers['X-Annata-Id'] = annataId;
+            const response = await fetch('/api/data', { 
+                cache: 'no-store',
+                headers: annataId ? { 'X-Annata-Id': annataId } : {}
+            });
             if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
             const allData = await response.json();
             athletes = allData.athletes || [];
