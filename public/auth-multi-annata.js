@@ -11,6 +11,13 @@
     const SESSION_ANNATA = 'gosport_current_annata';
     const SESSION_USER_ROLE = 'gosport_user_role';
 
+    // Chiavi localStorage per la licenza (persistente tra sessioni)
+    const LICENSE_KEY = 'gosport_license_key';
+    const LICENSE_EMAIL = 'gosport_license_email';
+    const LICENSE_DATA = 'gosport_license_data';
+    const LICENSE_VERIFIED = 'gosport_license_verified';
+    const LICENSE_VERIFIED_EXPIRY = 'gosport_license_verified_expiry';
+
     // ==========================================
     // VERIFICA MODALITÀ GENITORE (SENZA AUTH)
     // ==========================================
@@ -109,6 +116,191 @@
             sessionStorage.removeItem(SESSION_USER);
             sessionStorage.removeItem(SESSION_ANNATA);
             sessionStorage.removeItem(SESSION_USER_ROLE);
+        }
+
+        // ==========================================
+        // LICENZA - FUNZIONI
+        // ==========================================
+
+        function getLicenseData() {
+            try {
+                const data = localStorage.getItem(LICENSE_DATA);
+                return data ? JSON.parse(data) : null;
+            } catch(e) { return null; }
+        }
+
+        function isLicenseVerified() {
+            // Controlla se la verifica è ancora valida (cache 24h)
+            const verified = localStorage.getItem(LICENSE_VERIFIED);
+            const expiry = localStorage.getItem(LICENSE_VERIFIED_EXPIRY);
+            if (verified !== 'true' || !expiry) return false;
+            return Date.now() < parseInt(expiry);
+        }
+
+        function saveLicenseVerified(licenseData) {
+            localStorage.setItem(LICENSE_VERIFIED, 'true');
+            // Cache verifica per 24 ore
+            localStorage.setItem(LICENSE_VERIFIED_EXPIRY, (Date.now() + 24 * 60 * 60 * 1000).toString());
+            localStorage.setItem(LICENSE_DATA, JSON.stringify(licenseData));
+        }
+
+        function clearLicense() {
+            localStorage.removeItem(LICENSE_KEY);
+            localStorage.removeItem(LICENSE_EMAIL);
+            localStorage.removeItem(LICENSE_DATA);
+            localStorage.removeItem(LICENSE_VERIFIED);
+            localStorage.removeItem(LICENSE_VERIFIED_EXPIRY);
+        }
+
+        async function verifyLicense(email, licenseKey) {
+            const response = await fetch('/api/licenze?action=verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, licenseKey })
+            });
+            return await response.json();
+        }
+
+        // ==========================================
+        // LICENZA - SCHERMATA ATTIVAZIONE
+        // ==========================================
+
+        function showLicenseScreen() {
+            document.body.innerHTML = '';
+            document.body.style.cssText = 'margin:0;padding:0;font-family:system-ui,-apple-system,sans-serif;background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;';
+
+            const savedEmail = localStorage.getItem(LICENSE_EMAIL) || '';
+            const savedKey = localStorage.getItem(LICENSE_KEY) || '';
+
+            const card = document.createElement('div');
+            card.style.cssText = 'background:#1e293b;border:1px solid #334155;border-radius:16px;padding:36px;width:100%;max-width:420px;box-shadow:0 25px 50px rgba(0,0,0,0.5);';
+            card.innerHTML = `
+                <div style="text-align:center;margin-bottom:28px">
+                    <div style="font-size:3rem;margin-bottom:8px">⚽</div>
+                    <h1 style="color:white;margin:0 0 4px 0;font-size:1.5rem;font-weight:700">GO Sport</h1>
+                    <p style="color:#64748b;margin:0;font-size:0.85rem">Attivazione Licenza</p>
+                </div>
+
+                <div id="license-alert" style="display:none;padding:10px 14px;border-radius:8px;font-size:0.85rem;margin-bottom:16px"></div>
+
+                <div style="margin-bottom:14px">
+                    <label style="display:block;font-size:0.8rem;color:#94a3b8;font-weight:600;margin-bottom:6px">
+                        📧 Email Amministratore
+                    </label>
+                    <input type="email" id="license-email" value="${savedEmail}"
+                        placeholder="admin@società.com"
+                        style="width:100%;padding:11px 14px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:white;font-size:0.95rem;box-sizing:border-box;outline:none">
+                </div>
+
+                <div style="margin-bottom:20px">
+                    <label style="display:block;font-size:0.8rem;color:#94a3b8;font-weight:600;margin-bottom:6px">
+                        🔑 Chiave Licenza
+                    </label>
+                    <input type="text" id="license-key" value="${savedKey}"
+                        placeholder="GS-XXXXX-XXXXX-XXXXX-XXXXX-XXXXXXXX"
+                        style="width:100%;padding:11px 14px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#7dd3fc;font-family:monospace;font-size:0.88rem;box-sizing:border-box;outline:none;letter-spacing:0.5px">
+                </div>
+
+                <button id="license-btn"
+                    style="width:100%;padding:13px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;transition:opacity 0.2s">
+                    🔓 Attiva Licenza
+                </button>
+
+                <p style="text-align:center;font-size:0.75rem;color:#475569;margin-top:16px;margin-bottom:0">
+                    Non hai una licenza? Contatta GO Sport per acquistarla.
+                </p>
+            `;
+
+            document.body.appendChild(card);
+
+            const alertEl = card.querySelector('#license-alert');
+            const btn = card.querySelector('#license-btn');
+            const emailInput = card.querySelector('#license-email');
+            const keyInput = card.querySelector('#license-key');
+
+            function showLicenseAlert(msg, type) {
+                alertEl.textContent = msg;
+                alertEl.style.display = 'block';
+                if (type === 'error') {
+                    alertEl.style.background = '#450a0a';
+                    alertEl.style.border = '1px solid #ef4444';
+                    alertEl.style.color = '#fca5a5';
+                } else if (type === 'success') {
+                    alertEl.style.background = '#064e3b';
+                    alertEl.style.border = '1px solid #10b981';
+                    alertEl.style.color = '#6ee7b7';
+                } else {
+                    alertEl.style.background = '#1e3a5f';
+                    alertEl.style.border = '1px solid #3b82f6';
+                    alertEl.style.color = '#93c5fd';
+                }
+            }
+
+            async function doActivate() {
+                const email = emailInput.value.trim();
+                const key = keyInput.value.trim();
+
+                if (!email || !key) {
+                    showLicenseAlert('⚠️ Inserisci email e chiave licenza', 'error');
+                    return;
+                }
+
+                btn.textContent = '⏳ Verifica in corso...';
+                btn.disabled = true;
+                showLicenseAlert('Connessione al server...', 'info');
+
+                try {
+                    const result = await verifyLicense(email, key);
+
+                    if (result.valid) {
+                        // Salva localmente
+                        localStorage.setItem(LICENSE_EMAIL, email);
+                        localStorage.setItem(LICENSE_KEY, key);
+                        saveLicenseVerified(result);
+
+                        const expiry = new Date(result.expiry + 'T00:00:00').toLocaleDateString('it-IT');
+                        showLicenseAlert(`✅ Benvenuto ${result.societyName}! Licenza valida fino al ${expiry}`, 'success');
+
+                        setTimeout(() => showLoginScreen(), 1200);
+                    } else if (result.expired) {
+                        showLicenseAlert(`❌ Licenza scaduta. Contatta GO Sport per rinnovarla.`, 'error');
+                        btn.textContent = '🔓 Attiva Licenza';
+                        btn.disabled = false;
+                    } else {
+                        showLicenseAlert('❌ ' + (result.message || 'Licenza non valida'), 'error');
+                        btn.textContent = '🔓 Attiva Licenza';
+                        btn.disabled = false;
+                    }
+                } catch(e) {
+                    showLicenseAlert('❌ Errore di connessione. Riprova.', 'error');
+                    btn.textContent = '🔓 Attiva Licenza';
+                    btn.disabled = false;
+                }
+            }
+
+            btn.addEventListener('click', doActivate);
+            keyInput.addEventListener('keydown', e => { if (e.key === 'Enter') doActivate(); });
+        }
+
+        // ==========================================
+        // LICENZA - BANNER SCADENZA (avviso 30gg)
+        // ==========================================
+
+        function showLicenseBanner() {
+            const data = getLicenseData();
+            if (!data || !data.expiry) return;
+
+            const daysLeft = Math.ceil((new Date(data.expiry) - new Date()) / (1000 * 60 * 60 * 24));
+            if (daysLeft > 30) return; // Nessun banner se mancano più di 30 giorni
+
+            const banner = document.createElement('div');
+            const isExpired = daysLeft <= 0;
+            banner.style.cssText = `position:fixed;top:0;left:0;right:0;z-index:99999;padding:8px 16px;text-align:center;font-size:0.82rem;font-weight:600;${isExpired ? 'background:#450a0a;color:#fca5a5;border-bottom:2px solid #ef4444' : 'background:#422006;color:#fde68a;border-bottom:2px solid #f59e0b'}`;
+            banner.innerHTML = isExpired
+                ? `⚠️ Licenza GO Sport <strong>SCADUTA</strong>. Contatta GO Sport per rinnovarla. <button onclick="this.parentElement.remove()" style="background:none;border:none;color:inherit;cursor:pointer;margin-left:8px;font-size:1rem">✕</button>`
+                : `⏰ Licenza GO Sport in scadenza tra <strong>${daysLeft} giorni</strong> (${new Date(data.expiry+'T00:00:00').toLocaleDateString('it-IT')}). <button onclick="this.parentElement.remove()" style="background:none;border:none;color:inherit;cursor:pointer;margin-left:8px;font-size:1rem">✕</button>`;
+
+            document.body.prepend(banner);
         }
 
         // ==========================================
@@ -1501,26 +1693,71 @@ window.deleteUser = async function(username) {
         // MAIN FLOW
         // ==========================================
 
-        if (!isAuthenticated()) {
-            showLoginScreen();
-        } else if (!hasSelectedAnnata()) {
-            showAnnataSelection();
-        } else {
-            // Ripristina il contenuto originale
-            if (originalBodyHTML) {
-                document.body.innerHTML = originalBodyHTML;
+        // STEP 0: Verifica licenza
+        // Se non verificata (o cache scaduta) → mostra schermata attivazione
+        async function checkLicenseAndProceed() {
+            // Se licenza già verificata in cache → procedi direttamente
+            if (isLicenseVerified()) {
+                proceedWithAuth();
+                return;
             }
-            
-            document.documentElement.classList.add('authenticated');
-            setupFetchInterceptor();
-            addLogoutButton();
-            
-            // Esponi funzioni globali
-            window.getCurrentAnnata = getCurrentAnnata;
-            window.getCurrentUser = getCurrentUser;
-            window.getUserRole = getUserRole;
-            window.isAdmin = isAdmin;
+
+            // Se ho email e key salvate → ri-verifica silenziosamente
+            const savedEmail = localStorage.getItem(LICENSE_EMAIL);
+            const savedKey = localStorage.getItem(LICENSE_KEY);
+
+            if (savedEmail && savedKey) {
+                try {
+                    const result = await verifyLicense(savedEmail, savedKey);
+                    if (result.valid) {
+                        saveLicenseVerified(result);
+                        proceedWithAuth();
+                        return;
+                    } else if (result.expired) {
+                        // Licenza scaduta - mostra schermata con messaggio
+                        showLicenseScreen();
+                        return;
+                    }
+                } catch(e) {
+                    // Errore di rete - se ho dati salvati procedi offline con warning
+                    console.warn('⚠️ Verifica licenza offline - procedo con dati salvati');
+                    proceedWithAuth();
+                    return;
+                }
+            }
+
+            // Nessuna licenza salvata → mostra schermata attivazione
+            showLicenseScreen();
         }
+
+        function proceedWithAuth() {
+            if (!isAuthenticated()) {
+                showLoginScreen();
+            } else if (!hasSelectedAnnata()) {
+                showAnnataSelection();
+            } else {
+                // Ripristina il contenuto originale
+                if (originalBodyHTML) {
+                    document.body.innerHTML = originalBodyHTML;
+                }
+                
+                document.documentElement.classList.add('authenticated');
+                setupFetchInterceptor();
+                addLogoutButton();
+                
+                // Mostra banner scadenza se necessario
+                setTimeout(() => showLicenseBanner(), 1000);
+                
+                // Esponi funzioni globali
+                window.getCurrentAnnata = getCurrentAnnata;
+                window.getCurrentUser = getCurrentUser;
+                window.getUserRole = getUserRole;
+                window.isAdmin = isAdmin;
+            }
+        }
+
+        // Avvia il flusso
+        checkLicenseAndProceed();
     }
 
     // ==========================================
