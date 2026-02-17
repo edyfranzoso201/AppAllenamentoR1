@@ -1776,11 +1776,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 document.getElementById('award-checkbox').checked = !!(awards[date]?.find(a => a.athleteId.toString() === athleteId));
                 // Su mobile usa pannello fisso, su desktop usa modal Bootstrap
-                if (window.innerWidth < 768) {
-                    showMobileEvalPanel(athlete.name, athlete.id, date);
-                } else {
-                    evaluationModal.show();
-                }
+                // Usa sempre il pannello mobile custom (più stabile del Bootstrap modal)
+                showMobileEvalPanel(athlete.name, athlete.id, date);
             }
         }
     });
@@ -2898,85 +2895,73 @@ function showMobileEvalPanel(athleteName, athleteId, date) {
     const categories = [
         { id: 'presenza-allenamento', label: 'Presenza', hasNegative: true },
         { id: 'serieta-allenamento', label: 'Serietà All.', hasNegative: false },
-        { id: 'abbigliamento-allenamento', label: 'Abbigliamento All.', hasNegative: false },
-        { id: 'abbigliamento-partita', label: 'Abbigliamento Partita', hasNegative: false },
+        { id: 'abbigliamento-allenamento', label: 'Abbig. All.', hasNegative: false },
+        { id: 'abbigliamento-partita', label: 'Abbig. Partita', hasNegative: false },
         { id: 'comunicazioni', label: 'Comunicazioni', hasNegative: false },
         { id: 'doccia', label: 'Doccia', hasNegative: false }
     ];
 
-    const HEADER_H = 44;
-    const FOOTER_H = 64;
-
-    const panel = document.createElement('div');
-    panel.id = 'mobile-eval-panel';
-    panel.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#0f172a;font-family:inherit';
-
-    // Header compatto: solo una riga
-    const header = document.createElement('div');
-    header.style.cssText = `position:absolute;top:0;left:0;right:0;height:${HEADER_H}px;background:#0f3460;padding:0 12px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 6px rgba(0,0,0,0.5);box-sizing:border-box;z-index:2`;
-    header.innerHTML = `
-        <div style="display:flex;align-items:center;gap:8px;overflow:hidden">
-            <span style="font-weight:700;font-size:0.95rem;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">${athleteName}</span>
-            <span style="font-size:0.78rem;color:#7dd3fc;white-space:nowrap">${dateFormatted}</span>
-        </div>
-        <button id="mobile-eval-close" style="background:rgba(255,255,255,0.15);border:none;color:white;width:30px;height:30px;border-radius:50%;font-size:1rem;cursor:pointer;flex-shrink:0;line-height:1">✕</button>
-    `;
-
-    // Body scrollabile
-    const body = document.createElement('div');
-    body.style.cssText = `position:absolute;top:${HEADER_H}px;left:0;right:0;bottom:${FOOTER_H}px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 12px;box-sizing:border-box;z-index:1`;
-
-    let bodyHTML = '';
+    let rowsHTML = '';
     categories.forEach(cat => {
         const val = existingEval[cat.id] || '0';
         const options = cat.hasNegative
-            ? ['-1:Ass. Giustificata','0:0-NV','1:1-B','2:2-M','3:3-A']
+            ? ['-1:Ass. Giust.','0:0-NV','1:1-B','2:2-M','3:3-A']
             : ['0:0-NV','1:1-B','2:2-M','3:3-A'];
-        const optionsHTML = options.map(o => {
+        const optHTML = options.map(o => {
             const [v, l] = o.split(':');
-            return `<option value="${v}" ${v === val ? 'selected' : ''}>${l}</option>`;
+            return `<option value="${v}"${v===val?' selected':''}>${l}</option>`;
         }).join('');
-        // Label e select sulla stessa riga
-        bodyHTML += `
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e293b">
-                <label style="font-size:0.82rem;color:#94a3b8;font-weight:500;flex:1;margin-right:8px">${cat.label}</label>
-                <select id="mob-${cat.id}" style="width:130px;flex-shrink:0;padding:7px 8px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:white;font-size:0.9rem">
-                    ${optionsHTML}
-                </select>
+        rowsHTML += `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #334155">
+                <span style="font-size:0.85rem;color:#cbd5e1">${cat.label}</span>
+                <select id="mob-${cat.id}" style="width:130px;padding:5px 8px;border-radius:6px;border:1px solid #475569;background:#0f172a;color:white;font-size:0.88rem">${optHTML}</select>
             </div>`;
     });
-    bodyHTML += `
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;margin-top:2px">
-            <input type="checkbox" id="mob-award-checkbox" ${awardChecked ? 'checked' : ''}
-                style="width:20px;height:20px;cursor:pointer;accent-color:#f59e0b;flex-shrink:0">
-            <label for="mob-award-checkbox" style="color:#f59e0b;font-weight:600;cursor:pointer;font-size:0.9rem">🏆 Assegna Premio</label>
-        </div>`;
-    body.innerHTML = bodyHTML;
 
-    // Footer compatto
-    const footer = document.createElement('div');
-    footer.style.cssText = `position:absolute;bottom:0;left:0;right:0;height:${FOOTER_H}px;background:#0f3460;padding:10px 12px;display:flex;gap:8px;align-items:center;box-shadow:0 -2px 6px rgba(0,0,0,0.5);box-sizing:border-box;z-index:2`;
-    footer.innerHTML = `
-        <button id="mob-eval-delete" style="background:#dc2626;color:white;border:none;padding:0;width:42px;height:42px;border-radius:8px;cursor:pointer;font-size:1rem;flex-shrink:0">🗑</button>
-        <button id="mob-eval-cancel" style="flex:1;background:#334155;color:white;border:none;height:42px;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.9rem">Chiudi</button>
-        <button id="mob-eval-save" style="flex:2;background:#10b981;color:white;border:none;height:42px;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.95rem">✅ Salva</button>
+    // Overlay scuro dietro
+    const overlay = document.createElement('div');
+    overlay.id = 'mobile-eval-panel';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:2147483647;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box';
+
+    // Card centrata (NON fullscreen)
+    overlay.innerHTML = `
+        <div style="background:#1e293b;border-radius:12px;width:100%;max-width:420px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.8)">
+            
+            <div style="background:#1e40af;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-radius:12px 12px 0 0">
+                <span style="font-weight:700;color:white;font-size:0.95rem">
+                    ${athleteName}
+                    <span style="font-weight:400;font-size:0.78rem;color:#bfdbfe;margin-left:6px">${dateFormatted}</span>
+                </span>
+                <button id="mobile-eval-close" style="background:rgba(0,0,0,0.3);border:none;color:white;width:28px;height:28px;border-radius:50%;font-size:0.9rem;cursor:pointer;line-height:1">✕</button>
+            </div>
+
+            <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 14px 0 14px;min-height:0">
+                ${rowsHTML}
+                <div style="display:flex;align-items:center;padding:8px 0">
+                    <input type="checkbox" id="mob-award-checkbox" ${awardChecked?'checked':''} style="width:18px;height:18px;accent-color:#f59e0b;margin-right:8px;cursor:pointer">
+                    <label for="mob-award-checkbox" style="color:#fbbf24;font-weight:600;font-size:0.88rem;cursor:pointer">🏆 Assegna Premio</label>
+                </div>
+            </div>
+
+            <div style="background:#1e40af;padding:10px 14px;display:flex;gap:8px;flex-shrink:0;border-radius:0 0 12px 12px">
+                <button id="mob-eval-delete" style="background:#dc2626;color:white;border:none;width:40px;height:40px;border-radius:8px;cursor:pointer;font-size:1rem;flex-shrink:0">🗑</button>
+                <button id="mob-eval-cancel" style="flex:1;background:#475569;color:white;border:none;height:40px;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.9rem">Chiudi</button>
+                <button id="mob-eval-save" style="flex:2;background:#16a34a;color:white;border:none;height:40px;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.95rem">✅ Salva</button>
+            </div>
+        </div>
     `;
 
-    panel.appendChild(header);
-    panel.appendChild(body);
-    panel.appendChild(footer);
-    document.body.appendChild(panel);
+    document.body.appendChild(overlay);
     document.body.style.overflow = 'hidden';
 
-    const closePanel = () => {
-        panel.remove();
-        document.body.style.overflow = '';
-    };
+    const closePanel = () => { overlay.remove(); document.body.style.overflow = ''; };
 
-    document.getElementById('mobile-eval-close').onclick = closePanel;
-    document.getElementById('mob-eval-cancel').onclick = closePanel;
+    // Chiudi cliccando fuori dalla card
+    overlay.onclick = (e) => { if (e.target === overlay) closePanel(); };
+    overlay.querySelector('#mobile-eval-close').onclick = closePanel;
+    overlay.querySelector('#mob-eval-cancel').onclick = closePanel;
 
-    document.getElementById('mob-eval-delete').onclick = () => {
+    overlay.querySelector('#mob-eval-delete').onclick = () => {
         if (confirm('Eliminare i dati di valutazione per questo giorno?')) {
             document.getElementById('modal-athlete-id-eval').value = athleteId;
             document.getElementById('delete-single-athlete-day-btn').click();
@@ -2984,15 +2969,15 @@ function showMobileEvalPanel(athleteName, athleteId, date) {
         }
     };
 
-    document.getElementById('mob-eval-save').onclick = () => {
+    overlay.querySelector('#mob-eval-save').onclick = () => {
         categories.forEach(cat => {
-            const mobSel = document.getElementById('mob-' + cat.id);
-            const origSel = document.getElementById(cat.id);
-            if (mobSel && origSel) origSel.value = mobSel.value;
+            const s = overlay.querySelector('#mob-' + cat.id);
+            const o = document.getElementById(cat.id);
+            if (s && o) o.value = s.value;
         });
-        const mobAward = document.getElementById('mob-award-checkbox');
-        const origAward = document.getElementById('award-checkbox');
-        if (mobAward && origAward) origAward.checked = mobAward.checked;
+        const ma = overlay.querySelector('#mob-award-checkbox');
+        const oa = document.getElementById('award-checkbox');
+        if (ma && oa) oa.checked = ma.checked;
         const form = document.getElementById('evaluation-form');
         if (form) form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
         closePanel();
