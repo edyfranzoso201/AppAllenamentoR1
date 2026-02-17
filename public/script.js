@@ -2882,7 +2882,6 @@ if (typeof updateAllUI !== 'undefined') {
 // PANNELLO VALUTAZIONE MOBILE - FIXED FULLSCREEN
 // ==========================================
 function showMobileEvalPanel(athleteName, athleteId, date) {
-    // Rimuovi pannello esistente se presente
     const existing = document.getElementById('mobile-eval-panel');
     if (existing) existing.remove();
 
@@ -2890,7 +2889,6 @@ function showMobileEvalPanel(athleteName, athleteId, date) {
         weekday: 'long', day: 'numeric', month: 'long'
     });
 
-    // Leggi valori attuali
     const existingEval = {};
     document.querySelectorAll('#evaluation-form select').forEach(sel => {
         existingEval[sel.id] = sel.value;
@@ -2906,37 +2904,30 @@ function showMobileEvalPanel(athleteName, athleteId, date) {
         { id: 'doccia', label: 'Doccia (Opzionale)', hasNegative: false }
     ];
 
+    // Altezze fisse header e footer
+    const HEADER_H = 80;
+    const FOOTER_H = 80;
+
+    // Pannello contenitore
     const panel = document.createElement('div');
     panel.id = 'mobile-eval-panel';
-    panel.style.cssText = [
-        'position: fixed',
-        'top: 0',
-        'left: 0',
-        'width: 100%',
-        'height: 100%',
-        'background: #1a1a2e',
-        'z-index: 99999',
-        'display: flex',
-        'flex-direction: column',
-        'overflow: hidden',
-        'font-family: inherit'
-    ].join(';');
+    panel.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#1a1a2e;font-family:inherit';
 
-    // Header
+    // Header fisso in cima
     const header = document.createElement('div');
-    header.style.cssText = 'flex-shrink:0;background:#0f3460;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,0.4)';
+    header.style.cssText = `position:absolute;top:0;left:0;right:0;height:${HEADER_H}px;background:#0f3460;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,0.5);box-sizing:border-box;z-index:2`;
     header.innerHTML = `
         <div>
-            <div style="font-size:0.75rem;color:#94a3b8;margin-bottom:2px">Valutazione</div>
-            <div style="font-weight:700;font-size:1.05rem;color:white">${athleteName}</div>
-            <div style="font-size:0.78rem;color:#7dd3fc">${dateFormatted}</div>
+            <div style="font-size:0.72rem;color:#94a3b8">Valutazione</div>
+            <div style="font-weight:700;font-size:1rem;color:white">${athleteName}</div>
+            <div style="font-size:0.75rem;color:#7dd3fc">${dateFormatted}</div>
         </div>
-        <button id="mobile-eval-close" style="background:rgba(255,255,255,0.15);border:none;color:white;width:36px;height:36px;border-radius:50%;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+        <button id="mobile-eval-close" style="background:rgba(255,255,255,0.15);border:none;color:white;width:36px;height:36px;border-radius:50%;font-size:1.1rem;cursor:pointer;flex-shrink:0">✕</button>
     `;
 
-    // Body scrollabile
+    // Body scrollabile tra header e footer
     const body = document.createElement('div');
-    body.style.cssText = 'flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 16px';
+    body.style.cssText = `position:absolute;top:${HEADER_H}px;left:0;right:0;bottom:${FOOTER_H}px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px;box-sizing:border-box;z-index:1`;
 
     let bodyHTML = '';
     categories.forEach(cat => {
@@ -2949,41 +2940,36 @@ function showMobileEvalPanel(athleteName, athleteId, date) {
             return `<option value="${v}" ${v === val ? 'selected' : ''}>${l}</option>`;
         }).join('');
         bodyHTML += `
-            <div style="margin-bottom:12px">
-                <label style="display:block;font-size:0.82rem;color:#94a3b8;margin-bottom:4px;font-weight:600">${cat.label}</label>
-                <select id="mob-${cat.id}" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:white;font-size:1rem">
+            <div style="margin-bottom:14px">
+                <label style="display:block;font-size:0.8rem;color:#94a3b8;margin-bottom:5px;font-weight:600">${cat.label}</label>
+                <select id="mob-${cat.id}" style="width:100%;padding:11px 12px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:white;font-size:1rem;box-sizing:border-box">
                     ${optionsHTML}
                 </select>
             </div>`;
     });
-
     bodyHTML += `
-        <div style="margin-bottom:12px;padding:10px 12px;background:#0f172a;border-radius:8px;display:flex;align-items:center;gap:10px">
-            <input type="checkbox" id="mob-award-checkbox" ${awardChecked ? 'checked' : ''} 
-                style="width:20px;height:20px;cursor:pointer;accent-color:#f59e0b">
+        <div style="margin-bottom:8px;padding:12px;background:#0f172a;border-radius:8px;display:flex;align-items:center;gap:12px">
+            <input type="checkbox" id="mob-award-checkbox" ${awardChecked ? 'checked' : ''}
+                style="width:22px;height:22px;cursor:pointer;accent-color:#f59e0b;flex-shrink:0">
             <label for="mob-award-checkbox" style="color:#f59e0b;font-weight:600;cursor:pointer;font-size:0.95rem">🏆 Assegna Premio</label>
         </div>`;
-
     body.innerHTML = bodyHTML;
 
-    // Footer fisso
+    // Footer fisso in fondo
     const footer = document.createElement('div');
-    footer.style.cssText = 'flex-shrink:0;padding:12px 16px;background:#0f3460;display:flex;gap:10px;box-shadow:0 -2px 8px rgba(0,0,0,0.4)';
+    footer.style.cssText = `position:absolute;bottom:0;left:0;right:0;height:${FOOTER_H}px;background:#0f3460;padding:12px 16px;display:flex;gap:8px;align-items:center;box-shadow:0 -2px 8px rgba(0,0,0,0.5);box-sizing:border-box;z-index:2`;
     footer.innerHTML = `
-        <button id="mob-eval-delete" style="background:#dc2626;color:white;border:none;padding:12px 16px;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.9rem;white-space:nowrap">🗑 Elimina</button>
-        <button id="mob-eval-cancel" style="flex:1;background:#334155;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;font-size:1rem">Chiudi</button>
-        <button id="mob-eval-save" style="flex:2;background:#10b981;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:700;font-size:1rem">✅ Salva</button>
+        <button id="mob-eval-delete" style="background:#dc2626;color:white;border:none;padding:10px 12px;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.85rem;white-space:nowrap;flex-shrink:0">🗑</button>
+        <button id="mob-eval-cancel" style="flex:1;background:#334155;color:white;border:none;padding:10px;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.95rem">Chiudi</button>
+        <button id="mob-eval-save" style="flex:2;background:#10b981;color:white;border:none;padding:10px;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.95rem">✅ Salva</button>
     `;
 
     panel.appendChild(header);
     panel.appendChild(body);
     panel.appendChild(footer);
     document.body.appendChild(panel);
-
-    // Blocca scroll del body
     document.body.style.overflow = 'hidden';
 
-    // Chiudi
     const closePanel = () => {
         panel.remove();
         document.body.style.overflow = '';
@@ -2992,19 +2978,15 @@ function showMobileEvalPanel(athleteName, athleteId, date) {
     document.getElementById('mobile-eval-close').onclick = closePanel;
     document.getElementById('mob-eval-cancel').onclick = closePanel;
 
-    // Elimina dati giorno
     document.getElementById('mob-eval-delete').onclick = () => {
         if (confirm('Eliminare i dati di valutazione per questo giorno?')) {
-            // Sincronizza con il form nascosto e triggera il delete
             document.getElementById('modal-athlete-id-eval').value = athleteId;
             document.getElementById('delete-single-athlete-day-btn').click();
             closePanel();
         }
     };
 
-    // Salva
     document.getElementById('mob-eval-save').onclick = () => {
-        // Sincronizza i valori dal pannello mobile al form Bootstrap (che ha già i listener)
         categories.forEach(cat => {
             const mobSel = document.getElementById('mob-' + cat.id);
             const origSel = document.getElementById(cat.id);
@@ -3013,8 +2995,6 @@ function showMobileEvalPanel(athleteName, athleteId, date) {
         const mobAward = document.getElementById('mob-award-checkbox');
         const origAward = document.getElementById('award-checkbox');
         if (mobAward && origAward) origAward.checked = mobAward.checked;
-
-        // Triggera il submit del form originale
         const form = document.getElementById('evaluation-form');
         if (form) form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
         closePanel();
