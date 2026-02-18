@@ -2814,9 +2814,18 @@ window.handleQuickChangeAnnata = function() {
 
 // Funzione per aggiornare l'header
 function updateAppHeader() {
-    const currentUser = window.getCurrentUser ? window.getCurrentUser() : localStorage.getItem('currentUser');
-    const currentAnnataId = window.getCurrentAnnata ? window.getCurrentAnnata() : sessionStorage.getItem('currentAnnata');
-    const userRole = window.getUserRole ? window.getUserRole() : localStorage.getItem('userRole');
+    // ✅ Non mostrare l'header se non autenticati o senza annata selezionata
+    const isAuth = sessionStorage.getItem('gosport_auth_session') === 'true';
+    const hasAnnata = !!sessionStorage.getItem('gosport_current_annata');
+    if (!isAuth || !hasAnnata) {
+        const existing = document.getElementById('app-header-info');
+        if (existing) existing.remove();
+        return;
+    }
+
+    const currentUser = window.getCurrentUser ? window.getCurrentUser() : sessionStorage.getItem('gosport_auth_user');
+    const currentAnnataId = window.getCurrentAnnata ? window.getCurrentAnnata() : sessionStorage.getItem('gosport_current_annata');
+    const userRole = window.getUserRole ? window.getUserRole() : sessionStorage.getItem('gosport_user_role');
     
     let headerContainer = document.getElementById('app-header-info');
     
