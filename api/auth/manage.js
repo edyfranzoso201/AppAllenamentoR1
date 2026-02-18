@@ -62,7 +62,7 @@ export default async function handler(req, res) {
           return res.status(400).json({ success: false, message: 'Username, password e ruolo obbligatori' });
         }
 
-        if (!['admin', 'supercoach', 'coach'].includes(role)) {
+        if (!['admin', 'coach_l1', 'coach_l2', 'coach_l3', 'coach_readonly'].includes(role)) {
           return res.status(400).json({ success: false, message: 'Ruolo non valido' });
         }
 
@@ -80,7 +80,7 @@ export default async function handler(req, res) {
           email: email || '',
           role,
           societyId: societyId || null,
-          annate: (role === 'coach' || role === 'supercoach') ? (annate || []) : [],
+          annate: role !== 'admin' ? (annate || []) : [],
           createdAt: new Date().toISOString()
         };
 
@@ -118,7 +118,7 @@ export default async function handler(req, res) {
           role,
           // ✅ FIX: aggiorna societyId se l'utente era orfano (societyId null/undefined)
           societyId: users[userIndex].societyId || societyId || null,
-          annate: (role === 'coach' || role === 'supercoach') ? (annate || []) : [],
+          annate: role !== 'admin' ? (annate || []) : [],
           updatedAt: new Date().toISOString()
         };
 
@@ -151,7 +151,7 @@ export default async function handler(req, res) {
           return res.status(403).json({ success: false, message: 'Non autorizzato' });
         }
 
-        if (user.role === 'admin') {
+        if (user.role === 'admin') { // protected
           return res.status(403).json({ success: false, message: 'Non è possibile eliminare un amministratore' });
         }
 
