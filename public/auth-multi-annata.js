@@ -886,9 +886,13 @@ function showAnnataModal(annataData = null) {
         if (isEdit) payload.id = annataData.id;
         
         try {
+            const _sid = sessionStorage.getItem('gosport_society_id');
             const response = await fetch('/api/annate/manage', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(_sid ? { 'X-Society-Id': _sid } : {})
+                },
                 body: JSON.stringify(payload)
             });
             
@@ -922,9 +926,13 @@ window.deleteAnnata = async function(annataId, nomeAnnata) {
     if (!confirm(`⚠️ Eliminare "${nomeAnnata}"?\n\nQuesta operazione eliminerà tutti i dati associati ed è IRREVERSIBILE!`)) return;
     
     try {
+        const _sid = sessionStorage.getItem('gosport_society_id');
         const response = await fetch('/api/annate/manage', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                ...(_sid ? { 'X-Society-Id': _sid } : {})
+            },
             body: JSON.stringify({ action: 'delete', id: annataId })
         });
         
@@ -1407,9 +1415,13 @@ function showAnnataModal(annataData = null) {
         if (isEdit) payload.id = annataData.id;
         
         try {
+            const _sid = sessionStorage.getItem('gosport_society_id');
             const response = await fetch('/api/annate/manage', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(_sid ? { 'X-Society-Id': _sid } : {})
+                },
                 body: JSON.stringify(payload)
             });
             
@@ -1443,9 +1455,13 @@ window.deleteAnnata = async function(annataId, nomeAnnata) {
     if (!confirm(`⚠️ Eliminare "${nomeAnnata}"?\n\nQuesta operazione eliminerà tutti i dati associati ed è IRREVERSIBILE!`)) return;
     
     try {
+        const _sid = sessionStorage.getItem('gosport_society_id');
         const response = await fetch('/api/annate/manage', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                ...(_sid ? { 'X-Society-Id': _sid } : {})
+            },
             body: JSON.stringify({ action: 'delete', id: annataId })
         });
         
