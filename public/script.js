@@ -35,13 +35,13 @@ function generateId() {
     // Non bloccare, lascia che auth-multi-annata.js gestisca la selezione
     if (isAuthenticated && !currentAnnata) {
         console.log('📅 Utente autenticato senza annata: pagina di selezione');
-        throw new Error('Awaiting annata selection - blocking dashboard init');
+        return;
     }
     
     // Se non autenticato, blocca
     if (!isAuthenticated) {
         console.log('🔒 Utente non autenticato, blocco inizializzazione dashboard');
-        throw new Error('User not authenticated');
+        return;
     }
     
     // Se autenticato CON annata, procedi
