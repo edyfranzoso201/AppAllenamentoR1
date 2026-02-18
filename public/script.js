@@ -1403,7 +1403,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }]
         };
         if (chartInstances.performance) chartInstances.performance.destroy();
-        chartInstances.performance = new Chart(document.getElementById('performanceChart').getContext('2d'), {
+        // Larghezza dinamica per scroll orizzontale su mobile
+        const perfCanvas = document.getElementById('performanceChart');
+        const perfWrapper = document.getElementById('performance-chart-wrapper');
+        if (perfWrapper && window.innerWidth < 768) {
+            const numCols = chartData.labels ? chartData.labels.length : 5;
+            const perfMinWidth = Math.max(numCols * 80, window.innerWidth - 40);
+            perfWrapper.style.minWidth = perfMinWidth + 'px';
+            perfWrapper.style.width = perfMinWidth + 'px';
+        }
+        chartInstances.performance = new Chart(perfCanvas.getContext('2d'), {
             type: 'bar',
             data: chartData,
             options: {
