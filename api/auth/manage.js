@@ -19,7 +19,6 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    // societyId dall'header — identifica quale società sta facendo la richiesta
     const societyId = req.headers['x-society-id'] || null;
 
     const { action, username, password, email, role, annate } = req.body || {};
@@ -30,12 +29,10 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const users = (await kv.get('auth:users')) || [];
 
-      // Filtra: ogni admin vede SOLO i suoi utenti
       const filtered = societyId
         ? users.filter(u => u.societyId === societyId)
-        : users.filter(u => !u.societyId); // legacy
+        : users.filter(u => !u.societyId);
 
-      // Non restituire le password
       const safeUsers = filtered.map(u => ({
         username: u.username,
         email: u.email || '',
@@ -50,11 +47,11 @@ export default async function handler(req, res) {
     }
 
     // ==========================================
-    // POST - Azioni: create, update, delete
+    // POST - Azioni: create, update, delete, fix_society
     // ==========================================
     if (req.method === 'POST') {
       if (!action) {
-        return res.status(400).json({ success: false, message: 'Parametro "action" obbligatorio (create, update, delete)' });
+        return res.status(400).json({ success: false, message: 'Parametro "action" obbligatorio' });
       }
 
       const users = (await kv.get('auth:users')) || [];
@@ -69,9 +66,8 @@ export default async function handler(req, res) {
           return res.status(400).json({ success: false, message: 'Ruolo non valido' });
         }
 
-        // Username univoco nella stessa società
-        const duplicateInSociety = users.find(u => 
-          u.username === username && 
+        const duplicateInSociety = users.find(u =>
+          u.username === username &&
           (societyId ? u.societyId === societyId : !u.societyId)
         );
         if (duplicateInSociety) {
@@ -83,7 +79,7 @@ export default async function handler(req, res) {
           password: hashPassword(password),
           email: email || '',
           role,
-          societyId: societyId || null,   // ← collegato alla società
+          societyId: societyId || null,
           annate: (role === 'coach' || role === 'supercoach') ? (annate || []) : [],
           createdAt: new Date().toISOString()
         };
@@ -111,6 +107,7 @@ export default async function handler(req, res) {
         }
 
         // Sicurezza: non modificare utenti di altre società
+        // MA permetti aggiornamento se l'utente non ha societyId (orfano)
         if (societyId && users[userIndex].societyId && users[userIndex].societyId !== societyId) {
           return res.status(403).json({ success: false, message: 'Non autorizzato' });
         }
@@ -119,6 +116,8 @@ export default async function handler(req, res) {
           ...users[userIndex],
           email: email || users[userIndex].email,
           role,
+          // ✅ FIX: aggiorna societyId se l'utente era orfano (societyId null/undefined)
+          societyId: users[userIndex].societyId || societyId || null,
           annate: (role === 'coach' || role === 'supercoach') ? (annate || []) : [],
           updatedAt: new Date().toISOString()
         };
@@ -129,11 +128,11 @@ export default async function handler(req, res) {
 
         await kv.set('auth:users', users);
 
-        console.log(`✅ Utente aggiornato: ${username}`);
+        console.log(`✅ Utente aggiornato: ${username} societyId=${users[userIndex].societyId}`);
         return res.status(200).json({
           success: true,
           message: 'Utente aggiornato con successo',
-          user: { username: users[userIndex].username, email: users[userIndex].email, role: users[userIndex].role, annate: users[userIndex].annate }
+          user: { username: users[userIndex].username, email: users[userIndex].email, role: users[userIndex].role, annate: users[userIndex].annate, societyId: users[userIndex].societyId }
         });
       }
 
@@ -148,7 +147,6 @@ export default async function handler(req, res) {
           return res.status(404).json({ success: false, message: 'Utente non trovato' });
         }
 
-        // Sicurezza: non eliminare utenti di altre società (a meno che siano orfani senza societyId)
         if (societyId && user.societyId && user.societyId !== societyId) {
           return res.status(403).json({ success: false, message: 'Non autorizzato' });
         }
@@ -163,15 +161,47 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, message: 'Utente eliminato con successo' });
       }
 
-      // CLEANUP - Elimina utenti orfani (senza societyId o con societyId diverso)
+      // ==========================================
+      // FIX_SOCIETY - Assegna societyId agli utenti orfani
+      // ==========================================
+      if (action === 'fix_society') {
+        if (!societyId) {
+          return res.status(400).json({ success: false, message: 'X-Society-Id header obbligatorio' });
+        }
+
+        const orphans = users.filter(u => !u.societyId || u.societyId === 'NESSUNO');
+        if (orphans.length === 0) {
+          return res.status(200).json({ success: true, message: 'Nessun utente orfano trovato', fixed: 0 });
+        }
+
+        let fixedCount = 0;
+        for (let i = 0; i < users.length; i++) {
+          if (!users[i].societyId || users[i].societyId === 'NESSUNO') {
+            users[i].societyId = societyId;
+            fixedCount++;
+            console.log(`✅ Fix societyId per utente: ${users[i].username} → ${societyId}`);
+          }
+        }
+
+        await kv.set('auth:users', users);
+
+        return res.status(200).json({
+          success: true,
+          message: `Corretti ${fixedCount} utenti orfani`,
+          fixed: fixedCount,
+          users: orphans.map(u => u.username)
+        });
+      }
+
+      // CLEANUP
       if (action === 'cleanup') {
-        const orphans = users.filter(u => 
-          u.role !== 'admin' && 
-          societyId && 
-          u.societyId !== societyId && 
+        const orphans = users.filter(u =>
+          u.role !== 'admin' &&
+          societyId &&
+          u.societyId !== societyId &&
           u.username !== 'admin'
         );
-        
+
         if (orphans.length === 0) {
           return res.status(200).json({ success: true, message: 'Nessun utente orfano trovato', cleaned: 0 });
         }
@@ -180,16 +210,16 @@ export default async function handler(req, res) {
         const cleanedUsers = users.filter(u => !orphanUsernames.includes(u.username));
         await kv.set('auth:users', cleanedUsers);
 
-        console.log(`✅ Cleanup: rimossi ${orphans.length} utenti orfani: ${orphanUsernames.join(', ')}`);
-        return res.status(200).json({ 
-          success: true, 
-          message: `Rimossi ${orphans.length} utenti orfani`, 
+        console.log(`✅ Cleanup: rimossi ${orphans.length} utenti orfani`);
+        return res.status(200).json({
+          success: true,
+          message: `Rimossi ${orphans.length} utenti orfani`,
           cleaned: orphans.length,
           removed: orphanUsernames
         });
       }
 
-      // LIST_ALL - Debug: mostra tutti gli utenti nel database (solo per debug)
+      // LIST_ALL - Debug
       if (action === 'list_all') {
         const allUsers = users.map(u => ({
           username: u.username,
@@ -200,7 +230,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, total: allUsers.length, users: allUsers });
       }
 
-      return res.status(400).json({ success: false, message: 'Azione non valida. Usa: create, update, delete, cleanup, list_all' });
+      return res.status(400).json({ success: false, message: 'Azione non valida. Usa: create, update, delete, fix_society, cleanup, list_all' });
     }
 
     return res.status(405).json({ message: 'Metodo non consentito' });
