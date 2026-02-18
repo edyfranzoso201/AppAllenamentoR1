@@ -1059,13 +1059,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const assenzeGiustificateData = combinedData.map(d => d.assenzeGiustificate);
         
         if(chartInstances.attendance) chartInstances.attendance.destroy();
-        // Altezza dinamica: 40px per atleta, min 300px, max 500px su mobile
         const attendanceCanvas = document.getElementById('attendanceChart');
+        // Larghezza dinamica per scroll orizzontale su mobile
         const isMobile = window.innerWidth < 768;
         if (isMobile) {
-            const dynamicHeight = Math.min(Math.max(labels.length * 20, 200), 400);
-            attendanceCanvas.style.height = dynamicHeight + 'px';
-            attendanceCanvas.parentElement.style.height = dynamicHeight + 'px';
+            const minWidth = Math.max(labels.length * 45, window.innerWidth - 40);
+            attendanceCanvas.parentElement.style.minWidth = minWidth + 'px';
+            attendanceCanvas.parentElement.style.width = minWidth + 'px';
+        } else {
+            attendanceCanvas.parentElement.style.minWidth = '';
+            attendanceCanvas.parentElement.style.width = '';
         }
         chartInstances.attendance = new Chart(attendanceCanvas.getContext('2d'), {
             type: 'bar',
@@ -1233,12 +1236,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         if (chartInstances.weeklyAttendance) chartInstances.weeklyAttendance.destroy();
-        // Altezza dinamica su mobile in base al numero di settimane/atleti
         const weeklyCanvas = document.getElementById('weeklyAttendanceChart');
+        // Larghezza dinamica per scroll orizzontale su mobile
         if (window.innerWidth < 768) {
-            const weeklyHeight = Math.min(Math.max(labels.length * 20, 200), 400);
-            weeklyCanvas.style.height = weeklyHeight + 'px';
-            weeklyCanvas.parentElement.style.height = weeklyHeight + 'px';
+            const weeklyMinWidth = Math.max(labels.length * 50, window.innerWidth - 40);
+            weeklyCanvas.parentElement.style.minWidth = weeklyMinWidth + 'px';
+            weeklyCanvas.parentElement.style.width = weeklyMinWidth + 'px';
+        } else {
+            weeklyCanvas.parentElement.style.minWidth = '';
+            weeklyCanvas.parentElement.style.width = '';
         }
         chartInstances.weeklyAttendance = new Chart(weeklyCanvas.getContext('2d'), {
             type: 'bar',
