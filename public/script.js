@@ -1063,7 +1063,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const attendanceCanvas = document.getElementById('attendanceChart');
         const isMobile = window.innerWidth < 768;
         if (isMobile) {
-            const dynamicHeight = Math.min(Math.max(labels.length * 40, 300), 600);
+            const dynamicHeight = Math.min(Math.max(labels.length * 30, 250), 500);
             attendanceCanvas.style.height = dynamicHeight + 'px';
             attendanceCanvas.parentElement.style.height = dynamicHeight + 'px';
         }
@@ -1233,7 +1233,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         if (chartInstances.weeklyAttendance) chartInstances.weeklyAttendance.destroy();
-        chartInstances.weeklyAttendance = new Chart(document.getElementById('weeklyAttendanceChart').getContext('2d'), {
+        // Altezza dinamica su mobile in base al numero di settimane/atleti
+        const weeklyCanvas = document.getElementById('weeklyAttendanceChart');
+        if (window.innerWidth < 768) {
+            const weeklyHeight = Math.min(Math.max(labels.length * 35, 250), 500);
+            weeklyCanvas.style.height = weeklyHeight + 'px';
+            weeklyCanvas.parentElement.style.height = weeklyHeight + 'px';
+        }
+        chartInstances.weeklyAttendance = new Chart(weeklyCanvas.getContext('2d'), {
             type: 'bar',
             data: {
                 labels: labels,
