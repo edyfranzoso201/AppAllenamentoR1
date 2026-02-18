@@ -25,7 +25,6 @@ export default async function handler(req, res) {
   try {
     const { action, id, nome, dataInizio, dataFine, descrizione } = req.body;
 
-    // societyId dall'header — identifica a quale società appartiene l'annata
     const societyId = req.headers['x-society-id'] || null;
 
     if (!action) {
@@ -52,7 +51,7 @@ export default async function handler(req, res) {
       const newAnnata = {
         id: annataId,
         nome,
-        societyId: societyId || null,   // ← collegata alla società
+        societyId: societyId || null,
         dataInizio: dataInizio || '',
         dataFine: dataFine || '',
         descrizione: descrizione || '',
@@ -62,7 +61,6 @@ export default async function handler(req, res) {
       annate.push(newAnnata);
       await kv.set('annate:list', annate);
 
-      // Verifica se esistono già dati per questo ID (recupero annata esistente)
       const existingAthletes = await kv.get(`annate:${annataId}:athletes`);
 
       if (existingAthletes && existingAthletes.length > 0) {
@@ -102,6 +100,7 @@ export default async function handler(req, res) {
       }
 
       // Sicurezza: verifica che l'annata appartenga alla società che fa la richiesta
+      // MA permetti aggiornamento se l'annata è orfana (societyId null)
       if (societyId && annate[annataIndex].societyId && annate[annataIndex].societyId !== societyId) {
         return res.status(403).json({ success: false, message: 'Non autorizzato' });
       }
@@ -109,6 +108,8 @@ export default async function handler(req, res) {
       annate[annataIndex] = {
         ...annate[annataIndex],
         nome,
+        // ✅ FIX: aggiorna societyId se l'annata era orfana (societyId null)
+        societyId: annate[annataIndex].societyId || societyId || null,
         dataInizio: dataInizio || annate[annataIndex].dataInizio || '',
         dataFine: dataFine || annate[annataIndex].dataFine || '',
         descrizione: descrizione !== undefined ? descrizione : annate[annataIndex].descrizione || '',
@@ -117,7 +118,7 @@ export default async function handler(req, res) {
 
       await kv.set('annate:list', annate);
 
-      console.log(`✅ Annata aggiornata: ${nome} (${id})`);
+      console.log(`✅ Annata aggiornata: ${nome} (${id}) societyId=${annate[annataIndex].societyId}`);
       return res.status(200).json({ success: true, message: 'Annata aggiornata con successo', annata: annate[annataIndex] });
     }
 
@@ -134,7 +135,6 @@ export default async function handler(req, res) {
         return res.status(404).json({ success: false, message: 'Annata non trovata' });
       }
 
-      // Sicurezza: solo la società proprietaria può eliminare
       if (societyId && annata.societyId && annata.societyId !== societyId) {
         return res.status(403).json({ success: false, message: 'Non autorizzato' });
       }
@@ -167,7 +167,39 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, message: 'Annata eliminata con successo' });
     }
 
-    return res.status(400).json({ success: false, message: 'Azione non valida. Usa: create, update, delete' });
+    // ==========================================
+    // FIX_SOCIETY - Assegna societyId alle annate orfane
+    // ==========================================
+    if (action === 'fix_society') {
+      if (!societyId) {
+        return res.status(400).json({ success: false, message: 'X-Society-Id header obbligatorio' });
+      }
+
+      const orphans = annate.filter(a => !a.societyId);
+      if (orphans.length === 0) {
+        return res.status(200).json({ success: true, message: 'Nessuna annata orfana trovata', fixed: 0 });
+      }
+
+      let fixedCount = 0;
+      for (let i = 0; i < annate.length; i++) {
+        if (!annate[i].societyId) {
+          annate[i].societyId = societyId;
+          fixedCount++;
+          console.log(`✅ Fix societyId per annata: ${annate[i].nome} → ${societyId}`);
+        }
+      }
+
+      await kv.set('annate:list', annate);
+
+      return res.status(200).json({
+        success: true,
+        message: `Corrette ${fixedCount} annate orfane`,
+        fixed: fixedCount,
+        annate: orphans.map(a => a.nome)
+      });
+    }
+
+    return res.status(400).json({ success: false, message: 'Azione non valida. Usa: create, update, delete, fix_society' });
 
   } catch (error) {
     console.error('❌ Errore in /api/annate/manage:', error);
