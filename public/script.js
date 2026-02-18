@@ -1059,7 +1059,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const assenzeGiustificateData = combinedData.map(d => d.assenzeGiustificate);
         
         if(chartInstances.attendance) chartInstances.attendance.destroy();
-        chartInstances.attendance = new Chart(document.getElementById('attendanceChart').getContext('2d'), {
+        // Altezza dinamica: 40px per atleta, min 300px, max 500px su mobile
+        const attendanceCanvas = document.getElementById('attendanceChart');
+        const isMobile = window.innerWidth < 768;
+        if (isMobile) {
+            const dynamicHeight = Math.min(Math.max(labels.length * 40, 300), 600);
+            attendanceCanvas.style.height = dynamicHeight + 'px';
+            attendanceCanvas.parentElement.style.height = dynamicHeight + 'px';
+        }
+        chartInstances.attendance = new Chart(attendanceCanvas.getContext('2d'), {
             type: 'bar',
             data: {
                 labels: labels,
