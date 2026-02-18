@@ -1405,25 +1405,27 @@ document.addEventListener('DOMContentLoaded', () => {
         if (chartInstances.performance) chartInstances.performance.destroy();
         const perfCanvas = document.getElementById('performanceChart');
         const perfWrapper = document.getElementById('performance-chart-wrapper');
-        // Forza altezza fissa 300px su tutti i dispositivi
-        perfCanvas.style.height = '300px';
-        perfCanvas.style.maxHeight = '300px';
+        const isMobilePerf = window.innerWidth < 768;
+        const numCols = chartData.labels ? chartData.labels.length : 5;
+        // Calcola larghezza: su mobile 80px per colonna, su desktop usa il contenitore
+        const perfW = isMobilePerf ? Math.max(numCols * 80, 300) : (perfWrapper ? perfWrapper.parentElement.offsetWidth - 32 : 500);
+        const perfH = 300;
+        // Imposta attributi HTML diretti sul canvas (unico modo affidabile con Chart.js)
+        perfCanvas.width = perfW;
+        perfCanvas.height = perfH;
+        perfCanvas.style.width = perfW + 'px';
+        perfCanvas.style.height = perfH + 'px';
         if (perfWrapper) {
-            perfWrapper.style.height = '300px';
-            perfWrapper.style.maxHeight = '300px';
-            // Larghezza dinamica per scroll orizzontale su mobile
-            if (window.innerWidth < 768) {
-                const numCols = chartData.labels ? chartData.labels.length : 5;
-                const perfMinWidth = Math.max(numCols * 80, window.innerWidth - 40);
-                perfWrapper.style.minWidth = perfMinWidth + 'px';
-                perfWrapper.style.width = perfMinWidth + 'px';
-            }
+            perfWrapper.style.width = perfW + 'px';
+            perfWrapper.style.minWidth = perfW + 'px';
+            perfWrapper.style.height = perfH + 'px';
         }
         chartInstances.performance = new Chart(perfCanvas.getContext('2d'), {
             type: 'bar',
             data: chartData,
             options: {
                 maintainAspectRatio: false,
+                responsive: false,
                 scales: {
                     y: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.2)' } },
                     x: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.2)' } }
