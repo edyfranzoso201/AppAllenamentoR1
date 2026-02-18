@@ -2855,7 +2855,7 @@ function updateAppHeader() {
 
 function updateHeaderUI(annataName, currentUser, userRole, currentAnnataId) {
     const headerContainer = document.getElementById('app-header-info');
-    const canChangeAnnata = userRole === 'admin' || userRole === 'supercoach';
+    const canChangeAnnata = userRole === 'admin';
     
     headerContainer.innerHTML = `
         <div style="
@@ -2914,7 +2914,7 @@ function updateHeaderUI(annataName, currentUser, userRole, currentAnnataId) {
             gap: 12px;
         ">
             <div style="display: flex; align-items: center; gap: 6px;">
-                <span style="font-size: 16px;">${userRole === 'admin' ? '👑' : userRole === 'supercoach' ? '⭐' : '👨‍🏫'}</span>
+                <span style="font-size: 16px;">${userRole === 'admin' ? '👑' : '👨‍🏫'}</span>
                 <span>${currentUser || 'Utente'}</span>
             </div>
             <button 
