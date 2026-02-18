@@ -1403,14 +1403,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }]
         };
         if (chartInstances.performance) chartInstances.performance.destroy();
-        // Larghezza dinamica per scroll orizzontale su mobile
         const perfCanvas = document.getElementById('performanceChart');
         const perfWrapper = document.getElementById('performance-chart-wrapper');
-        if (perfWrapper && window.innerWidth < 768) {
-            const numCols = chartData.labels ? chartData.labels.length : 5;
-            const perfMinWidth = Math.max(numCols * 80, window.innerWidth - 40);
-            perfWrapper.style.minWidth = perfMinWidth + 'px';
-            perfWrapper.style.width = perfMinWidth + 'px';
+        // Forza altezza fissa 300px su tutti i dispositivi
+        perfCanvas.style.height = '300px';
+        perfCanvas.style.maxHeight = '300px';
+        if (perfWrapper) {
+            perfWrapper.style.height = '300px';
+            perfWrapper.style.maxHeight = '300px';
+            // Larghezza dinamica per scroll orizzontale su mobile
+            if (window.innerWidth < 768) {
+                const numCols = chartData.labels ? chartData.labels.length : 5;
+                const perfMinWidth = Math.max(numCols * 80, window.innerWidth - 40);
+                perfWrapper.style.minWidth = perfMinWidth + 'px';
+                perfWrapper.style.width = perfMinWidth + 'px';
+            }
         }
         chartInstances.performance = new Chart(perfCanvas.getContext('2d'), {
             type: 'bar',
