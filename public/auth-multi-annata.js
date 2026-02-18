@@ -492,6 +492,10 @@
                         sessionStorage.setItem(SESSION_KEY, 'true');
                         sessionStorage.setItem(SESSION_USER, username);
                         sessionStorage.setItem(SESSION_USER_ROLE, result.role);
+                        // Salva permissions per controllo lato client
+                        if (result.user && result.user.permissions) {
+                            sessionStorage.setItem('gosport_permissions', JSON.stringify(result.user.permissions));
+                        }
                         
                         // Salva societyId per filtrare annate e utenti
                         if (result.societyId) {
@@ -990,9 +994,17 @@ async function loadUsersList() {
         listDiv.innerHTML = '';
         
         users.forEach(user => {
-            const roleIcon = user.role === 'admin' ? '👑' : '👨‍🏫';
-            const roleName = user.role === 'admin' ? 'ADMIN' : 'COACH';
-            const roleColor = user.role === 'admin' ? '#f59e0b' : '#3b82f6';
+            const roleMap = {
+                'admin': { icon: '👑', name: 'ADMIN', color: '#f59e0b' },
+                'coach_l1': { icon: '🥇', name: 'COACH L1', color: '#10b981' },
+                'coach_l2': { icon: '🥈', name: 'COACH L2', color: '#3b82f6' },
+                'coach_l3': { icon: '🥉', name: 'COACH L3', color: '#8b5cf6' },
+                'coach_readonly': { icon: '👁️', name: 'READ-ONLY', color: '#64748b' },
+            };
+            const roleInfo = roleMap[user.role] || { icon: '👨‍🏫', name: user.role.toUpperCase(), color: '#3b82f6' };
+            const roleIcon = roleInfo.icon;
+            const roleName = roleInfo.name;
+            const roleColor = roleInfo.color;
             
             const card = document.createElement('div');
             card.style.cssText = 'background:#1e293b;padding:20px;border-radius:12px;border:1px solid rgba(96,165,250,0.2);';
@@ -1085,6 +1097,10 @@ async function showUserModal(userData = null) {
                         <option value="coach" ${userData?.role === 'coach' ? 'selected' : ''}>👨‍🏫 COACH</option>
                         <!-- supercoach nascosto -->
                         <option value="admin" ${userData?.role === 'admin' ? 'selected' : ''}>👑 ADMIN</option>
+                        <option value="coach_l1" ${userData?.role === 'coach_l1' ? 'selected' : ''}>🥇 Coach L1 (Edit + GPS)</option>
+                        <option value="coach_l2" ${userData?.role === 'coach_l2' ? 'selected' : ''}>🥈 Coach L2 (Edit, GPS View)</option>
+                        <option value="coach_l3" ${userData?.role === 'coach_l3' ? 'selected' : ''}>🥉 Coach L3 (Read + GPS View)</option>
+                        <option value="coach_readonly" ${userData?.role === 'coach_readonly' ? 'selected' : ''}>👁️ Coach Read-only</option>
                     </select>
                 </div>
                 <div id="annate-container" style="display:${userData?.role === 'coach' || userData?.role === 'supercoach' || !userData ? 'block' : 'none'};">
@@ -1519,9 +1535,17 @@ async function loadUsersList() {
         listDiv.innerHTML = '';
         
         users.forEach(user => {
-            const roleIcon = user.role === 'admin' ? '👑' : '👨‍🏫';
-            const roleName = user.role === 'admin' ? 'ADMIN' : 'COACH';
-            const roleColor = user.role === 'admin' ? '#f59e0b' : '#3b82f6';
+            const roleMap = {
+                'admin': { icon: '👑', name: 'ADMIN', color: '#f59e0b' },
+                'coach_l1': { icon: '🥇', name: 'COACH L1', color: '#10b981' },
+                'coach_l2': { icon: '🥈', name: 'COACH L2', color: '#3b82f6' },
+                'coach_l3': { icon: '🥉', name: 'COACH L3', color: '#8b5cf6' },
+                'coach_readonly': { icon: '👁️', name: 'READ-ONLY', color: '#64748b' },
+            };
+            const roleInfo = roleMap[user.role] || { icon: '👨‍🏫', name: user.role.toUpperCase(), color: '#3b82f6' };
+            const roleIcon = roleInfo.icon;
+            const roleName = roleInfo.name;
+            const roleColor = roleInfo.color;
             
             const card = document.createElement('div');
             card.style.cssText = 'background:#1e293b;padding:20px;border-radius:12px;border:1px solid rgba(96,165,250,0.2);';
@@ -1614,6 +1638,10 @@ async function showUserModal(userData = null) {
                         <option value="coach" ${userData?.role === 'coach' ? 'selected' : ''}>👨‍🏫 COACH</option>
                         <!-- supercoach nascosto -->
                         <option value="admin" ${userData?.role === 'admin' ? 'selected' : ''}>👑 ADMIN</option>
+                        <option value="coach_l1" ${userData?.role === 'coach_l1' ? 'selected' : ''}>🥇 Coach L1 (Edit + GPS)</option>
+                        <option value="coach_l2" ${userData?.role === 'coach_l2' ? 'selected' : ''}>🥈 Coach L2 (Edit, GPS View)</option>
+                        <option value="coach_l3" ${userData?.role === 'coach_l3' ? 'selected' : ''}>🥉 Coach L3 (Read + GPS View)</option>
+                        <option value="coach_readonly" ${userData?.role === 'coach_readonly' ? 'selected' : ''}>👁️ Coach Read-only</option>
                     </select>
                 </div>
                 <div id="annate-container" style="display:${userData?.role === 'coach' || userData?.role === 'supercoach' || !userData ? 'block' : 'none'};">
