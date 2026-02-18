@@ -1094,7 +1094,6 @@ async function showUserModal(userData = null) {
                 <div>
                     <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Ruolo *</label>
                     <select id="user-role" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#fff;box-sizing:border-box;" required>
-                        <option value="coach" ${userData?.role === 'coach' ? 'selected' : ''}>👨‍🏫 COACH</option>
                         <!-- supercoach nascosto -->
                         <option value="admin" ${userData?.role === 'admin' ? 'selected' : ''}>👑 ADMIN</option>
                         <option value="coach_l1" ${userData?.role === 'coach_l1' ? 'selected' : ''}>🥇 Coach L1 (Edit + GPS)</option>
@@ -1635,7 +1634,6 @@ async function showUserModal(userData = null) {
                 <div>
                     <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Ruolo *</label>
                     <select id="user-role" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#fff;box-sizing:border-box;" required>
-                        <option value="coach" ${userData?.role === 'coach' ? 'selected' : ''}>👨‍🏫 COACH</option>
                         <!-- supercoach nascosto -->
                         <option value="admin" ${userData?.role === 'admin' ? 'selected' : ''}>👑 ADMIN</option>
                         <option value="coach_l1" ${userData?.role === 'coach_l1' ? 'selected' : ''}>🥇 Coach L1 (Edit + GPS)</option>
