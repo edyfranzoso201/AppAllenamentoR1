@@ -982,9 +982,9 @@ async function loadUsersList() {
         listDiv.innerHTML = '';
         
         users.forEach(user => {
-            const roleIcon = user.role === 'admin' ? '👑' : user.role === 'supercoach' ? '⭐' : '👨‍🏫';
-            const roleName = user.role === 'admin' ? 'ADMIN' : user.role === 'supercoach' ? 'SUPER COACH' : 'COACH';
-            const roleColor = user.role === 'admin' ? '#f59e0b' : user.role === 'supercoach' ? '#8b5cf6' : '#3b82f6';
+            const roleIcon = user.role === 'admin' ? '👑' : '👨‍🏫';
+            const roleName = user.role === 'admin' ? 'ADMIN' : 'COACH';
+            const roleColor = user.role === 'admin' ? '#f59e0b' : '#3b82f6';
             
             const card = document.createElement('div');
             card.style.cssText = 'background:#1e293b;padding:20px;border-radius:12px;border:1px solid rgba(96,165,250,0.2);';
@@ -1075,7 +1075,7 @@ async function showUserModal(userData = null) {
                     <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Ruolo *</label>
                     <select id="user-role" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#fff;box-sizing:border-box;" required>
                         <option value="coach" ${userData?.role === 'coach' ? 'selected' : ''}>👨‍🏫 COACH</option>
-                        <option value="supercoach" ${userData?.role === 'supercoach' ? 'selected' : ''}>⭐ SUPER COACH</option>
+                        <!-- supercoach nascosto -->
                         <option value="admin" ${userData?.role === 'admin' ? 'selected' : ''}>👑 ADMIN</option>
                     </select>
                 </div>
@@ -1495,9 +1495,9 @@ async function loadUsersList() {
         listDiv.innerHTML = '';
         
         users.forEach(user => {
-            const roleIcon = user.role === 'admin' ? '👑' : user.role === 'supercoach' ? '⭐' : '👨‍🏫';
-            const roleName = user.role === 'admin' ? 'ADMIN' : user.role === 'supercoach' ? 'SUPER COACH' : 'COACH';
-            const roleColor = user.role === 'admin' ? '#f59e0b' : user.role === 'supercoach' ? '#8b5cf6' : '#3b82f6';
+            const roleIcon = user.role === 'admin' ? '👑' : '👨‍🏫';
+            const roleName = user.role === 'admin' ? 'ADMIN' : 'COACH';
+            const roleColor = user.role === 'admin' ? '#f59e0b' : '#3b82f6';
             
             const card = document.createElement('div');
             card.style.cssText = 'background:#1e293b;padding:20px;border-radius:12px;border:1px solid rgba(96,165,250,0.2);';
@@ -1588,7 +1588,7 @@ async function showUserModal(userData = null) {
                     <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Ruolo *</label>
                     <select id="user-role" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#fff;box-sizing:border-box;" required>
                         <option value="coach" ${userData?.role === 'coach' ? 'selected' : ''}>👨‍🏫 COACH</option>
-                        <option value="supercoach" ${userData?.role === 'supercoach' ? 'selected' : ''}>⭐ SUPER COACH</option>
+                        <!-- supercoach nascosto -->
                         <option value="admin" ${userData?.role === 'admin' ? 'selected' : ''}>👑 ADMIN</option>
                     </select>
                 </div>
