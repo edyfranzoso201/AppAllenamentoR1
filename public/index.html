@@ -398,8 +398,8 @@
                                 <button type="button" class="btn btn-outline-secondary active" data-period="annual">Annuale</button>
                              </div>
                          </div>
-                         <div style="position:relative; width:100%; overflow-x:auto; overflow-y:auto; max-height:280px; -webkit-overflow-scrolling:touch;">
-                             <div style="position:relative; min-height:300px; height:100%;">
+                         <div style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;">
+                             <div style="position:relative; height:300px; min-width:max(100%, calc(var(--athlete-count, 12) * 45px));">
                                  <canvas id="attendanceChart"></canvas>
                              </div>
                          </div>
@@ -451,8 +451,8 @@
                                 </div>
                             </div>
                         </div>
-                        <div style="position:relative; width:100%; overflow-x:auto; overflow-y:auto; max-height:280px; -webkit-overflow-scrolling:touch;">
-                            <div style="position:relative; min-height:300px; height:100%;">
+                        <div style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;">
+                            <div style="position:relative; height:300px; min-width:max(100%, calc(var(--week-count, 20) * 50px));">
                                 <canvas id="weeklyAttendanceChart"></canvas>
                             </div>
                         </div>
