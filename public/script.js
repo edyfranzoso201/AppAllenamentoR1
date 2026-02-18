@@ -134,15 +134,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 el.style.cursor = 'default';
             });
 
-            // Osserva aggiunta dinamica di nuovi elementi (card atleti caricate dopo)
+            // Nascondi anche bottoni matita partite e aggiungi partita (statici)
+            const addMatchBtn = document.getElementById('add-match-btn');
+            if (addMatchBtn) addMatchBtn.style.display = 'none';
+            const deleteMatchBtn = document.getElementById('delete-match-btn');
+            if (deleteMatchBtn) deleteMatchBtn.style.display = 'none';
+
+            // Osserva aggiunta dinamica di nuovi elementi
             const observer = new MutationObserver(() => {
-                document.querySelectorAll('.edit-btn, .delete-btn, .remove-card-summary-row-btn, .remove-row-btn, .rating-btn').forEach(el => {
-                    el.style.display = 'none';
-                });
+                document.querySelectorAll(
+                    '.edit-btn, .delete-btn, .remove-card-summary-row-btn, ' +
+                    '.remove-row-btn, .rating-btn, .edit-match-btn'
+                ).forEach(el => { el.style.display = 'none'; });
                 document.querySelectorAll('td[data-date]').forEach(el => {
                     el.style.pointerEvents = 'none';
                     el.style.cursor = 'default';
                 });
+                // Nascondi Elimina Partita se appare nel modal
+                const dmb = document.getElementById('delete-match-btn');
+                if (dmb) dmb.style.display = 'none';
+                // Nascondi Aggiungi Partita
+                const amb = document.getElementById('add-match-btn');
+                if (amb) amb.style.display = 'none';
             });
             observer.observe(document.body, { childList: true, subtree: true });
         }
