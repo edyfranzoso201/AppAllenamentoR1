@@ -1133,9 +1133,13 @@ async function showUserModal(userData = null) {
         }
         
         try {
+            const _sid2 = sessionStorage.getItem('gosport_society_id');
             const response = await fetch('/api/auth/manage', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(_sid2 ? { 'X-Society-Id': _sid2 } : {})
+                },
                 body: JSON.stringify(payload)
             });
             
@@ -1169,9 +1173,13 @@ window.deleteUser = async function(username) {
     if (!confirm(`⚠️ Eliminare "${username}"?\n\nOperazione IRREVERSIBILE!`)) return;
     
     try {
+        const _sid2 = sessionStorage.getItem('gosport_society_id');
         const response = await fetch('/api/auth/manage', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                ...(_sid2 ? { 'X-Society-Id': _sid2 } : {})
+            },
             body: JSON.stringify({ action: 'delete', username })
         });
         
@@ -1646,9 +1654,13 @@ async function showUserModal(userData = null) {
         }
         
         try {
+            const _sid2 = sessionStorage.getItem('gosport_society_id');
             const response = await fetch('/api/auth/manage', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(_sid2 ? { 'X-Society-Id': _sid2 } : {})
+                },
                 body: JSON.stringify(payload)
             });
             
@@ -1682,9 +1694,13 @@ window.deleteUser = async function(username) {
     if (!confirm(`⚠️ Eliminare "${username}"?\n\nOperazione IRREVERSIBILE!`)) return;
     
     try {
+        const _sid2 = sessionStorage.getItem('gosport_society_id');
         const response = await fetch('/api/auth/manage', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                ...(_sid2 ? { 'X-Society-Id': _sid2 } : {})
+            },
             body: JSON.stringify({ action: 'delete', username })
         });
         
