@@ -1416,6 +1416,7 @@ document.addEventListener('DOMContentLoaded', () => {
             type: 'bar',
             data: chartData,
             options: {
+                maintainAspectRatio: false,
                 scales: {
                     y: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.2)' } },
                     x: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.2)' } }
