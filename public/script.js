@@ -99,9 +99,9 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // --- EDIT GENERALE: nasconde tutti i pulsanti di modifica/salvataggio ---
+        // --- EDIT GENERALE: nasconde tutti i pulsanti di modifica/salvataggio/eliminazione ---
         if (!perms.canEditGeneral) {
-            // Pulsanti salvataggio nei modal
+            // Pulsanti salvataggio nei modal (statici)
             const editBtns = [
                 document.querySelector('[form="evaluation-form"]'),   // Salva Valutazione
                 document.querySelector('[form="athlete-form"]'),       // Salva Atleta
@@ -111,14 +111,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('delete-single-athlete-day-btn'),
                 document.getElementById('delete-session-btn'),
                 document.getElementById('delete-match-btn'),
+                document.getElementById('delete-gps-session-btn'),    // Elimina sessione GPS
+                document.getElementById('add-scorer-btn'),             // Aggiungi marcatore
+                document.getElementById('add-assist-btn'),             // Aggiungi assist
+                document.getElementById('add-card-btn'),               // Aggiungi cartellino
             ];
             editBtns.forEach(el => { if (el) el.style.display = 'none'; });
 
-            // Disabilita click su celle valutazione (calendario)
-            document.querySelectorAll('.eval-cell, .evaluation-cell, [data-eval]').forEach(el => {
+            // Bottoni dinamici sulle card atleti (edit, delete)
+            document.querySelectorAll('.edit-btn, .delete-btn, .remove-card-summary-row-btn, .remove-row-btn').forEach(el => {
+                el.style.display = 'none';
+            });
+
+            // Bottone pagelle (rating-btn) - nasconde accesso alle pagelle
+            document.querySelectorAll('.rating-btn').forEach(el => {
+                el.style.display = 'none';
+            });
+
+            // Disabilita click su celle valutazione (calendario presenze)
+            document.querySelectorAll('.eval-cell, .evaluation-cell, [data-eval], td[data-date]').forEach(el => {
                 el.style.pointerEvents = 'none';
                 el.style.cursor = 'default';
             });
+
+            // Osserva aggiunta dinamica di nuovi elementi (card atleti caricate dopo)
+            const observer = new MutationObserver(() => {
+                document.querySelectorAll('.edit-btn, .delete-btn, .remove-card-summary-row-btn, .remove-row-btn, .rating-btn').forEach(el => {
+                    el.style.display = 'none';
+                });
+                document.querySelectorAll('td[data-date]').forEach(el => {
+                    el.style.pointerEvents = 'none';
+                    el.style.cursor = 'default';
+                });
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
         }
 
         console.log('🔒 Permessi applicati:', perms);
