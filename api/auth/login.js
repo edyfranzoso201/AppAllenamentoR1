@@ -11,6 +11,24 @@ function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
 }
 
+// Restituisce i permessi in base al ruolo
+function getPermissions(role) {
+  switch(role) {
+    case 'admin':
+      return { canEditGeneral: true, canViewGPS: true, canEditGPS: true, isAdmin: true };
+    case 'coach_l1':
+      return { canEditGeneral: true, canViewGPS: true, canEditGPS: true, isAdmin: false };
+    case 'coach_l2':
+      return { canEditGeneral: true, canViewGPS: true, canEditGPS: false, isAdmin: false };
+    case 'coach_l3':
+      return { canEditGeneral: false, canViewGPS: true, canEditGPS: false, isAdmin: false };
+    case 'coach_readonly':
+      return { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false };
+    default:
+      return { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false };
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -107,7 +125,8 @@ export default async function handler(req, res) {
         email: user.email || '',
         role: user.role,
         societyId: user.societyId || null,
-        annate: user.annate || []
+        annate: user.annate || [],
+        permissions: getPermissions(user.role)
       }
     });
 
