@@ -69,8 +69,12 @@ export default async function handler(req, res) {
           return res.status(400).json({ success: false, message: 'Ruolo non valido' });
         }
 
-        // Username univoco globalmente (evita confusioni tra società diverse)
-        if (users.find(u => u.username === username)) {
+        // Username univoco nella stessa società
+        const duplicateInSociety = users.find(u => 
+          u.username === username && 
+          (societyId ? u.societyId === societyId : !u.societyId)
+        );
+        if (duplicateInSociety) {
           return res.status(400).json({ success: false, message: 'Username già esistente' });
         }
 
@@ -80,7 +84,7 @@ export default async function handler(req, res) {
           email: email || '',
           role,
           societyId: societyId || null,   // ← collegato alla società
-          annate: role === 'coach' ? (annate || []) : [],
+          annate: (role === 'coach' || role === 'supercoach') ? (annate || []) : [],
           createdAt: new Date().toISOString()
         };
 
@@ -115,7 +119,7 @@ export default async function handler(req, res) {
           ...users[userIndex],
           email: email || users[userIndex].email,
           role,
-          annate: role === 'coach' ? (annate || []) : [],
+          annate: (role === 'coach' || role === 'supercoach') ? (annate || []) : [],
           updatedAt: new Date().toISOString()
         };
 
@@ -144,7 +148,7 @@ export default async function handler(req, res) {
           return res.status(404).json({ success: false, message: 'Utente non trovato' });
         }
 
-        // Sicurezza: non eliminare utenti di altre società
+        // Sicurezza: non eliminare utenti di altre società (a meno che siano orfani senza societyId)
         if (societyId && user.societyId && user.societyId !== societyId) {
           return res.status(403).json({ success: false, message: 'Non autorizzato' });
         }
@@ -159,7 +163,44 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, message: 'Utente eliminato con successo' });
       }
 
-      return res.status(400).json({ success: false, message: 'Azione non valida. Usa: create, update, delete' });
+      // CLEANUP - Elimina utenti orfani (senza societyId o con societyId diverso)
+      if (action === 'cleanup') {
+        const orphans = users.filter(u => 
+          u.role !== 'admin' && 
+          societyId && 
+          u.societyId !== societyId && 
+          u.username !== 'admin'
+        );
+        
+        if (orphans.length === 0) {
+          return res.status(200).json({ success: true, message: 'Nessun utente orfano trovato', cleaned: 0 });
+        }
+
+        const orphanUsernames = orphans.map(u => u.username);
+        const cleanedUsers = users.filter(u => !orphanUsernames.includes(u.username));
+        await kv.set('auth:users', cleanedUsers);
+
+        console.log(`✅ Cleanup: rimossi ${orphans.length} utenti orfani: ${orphanUsernames.join(', ')}`);
+        return res.status(200).json({ 
+          success: true, 
+          message: `Rimossi ${orphans.length} utenti orfani`, 
+          cleaned: orphans.length,
+          removed: orphanUsernames
+        });
+      }
+
+      // LIST_ALL - Debug: mostra tutti gli utenti nel database (solo per debug)
+      if (action === 'list_all') {
+        const allUsers = users.map(u => ({
+          username: u.username,
+          role: u.role,
+          societyId: u.societyId || 'NESSUNO',
+          annate: u.annate || []
+        }));
+        return res.status(200).json({ success: true, total: allUsers.length, users: allUsers });
+      }
+
+      return res.status(400).json({ success: false, message: 'Azione non valida. Usa: create, update, delete, cleanup, list_all' });
     }
 
     return res.status(405).json({ message: 'Metodo non consentito' });
