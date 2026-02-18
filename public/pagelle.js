@@ -17,16 +17,12 @@
     });
     
     function initializeRatingSystem() {
-        console.log('🎯 Inizializzazione Sistema Pagelle...');
-        
-        // Inizializza i modal Bootstrap
+        // ✅ Esce silenziosamente se non siamo nel dashboard principale
         const ratingSheetModalEl = document.getElementById('ratingSheetModal');
         const ratingListModalEl = document.getElementById('ratingListModal');
-        
-        if (!ratingSheetModalEl || !ratingListModalEl) {
-            console.error('❌ Modal pagelle non trovati nell\'HTML!');
-            return;
-        }
+        if (!ratingSheetModalEl || !ratingListModalEl) return;
+
+        console.log('🎯 Inizializzazione Sistema Pagelle...');
         
         ratingSheetModal = new bootstrap.Modal(ratingSheetModalEl);
         ratingListModal = new bootstrap.Modal(ratingListModalEl);
