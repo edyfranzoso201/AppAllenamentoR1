@@ -1410,7 +1410,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const numCols = chartData.labels ? chartData.labels.length : 5;
         // Calcola larghezza: su mobile 80px per colonna, su desktop usa il contenitore
         const perfW = isMobilePerf ? Math.max(numCols * 80, 300) : (perfWrapper ? perfWrapper.parentElement.offsetWidth - 32 : 500);
-        const perfH = 300;
+        const perfH = window.innerWidth < 768 ? 300 : 400;
         // Imposta attributi HTML diretti sul canvas (unico modo affidabile con Chart.js)
         perfCanvas.width = perfW;
         perfCanvas.height = perfH;
@@ -1515,7 +1515,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const trendWrapper = trendCanvas.parentElement;
         const isMobileT = window.innerWidth < 768;
         const trendW = isMobileT ? Math.max(window.innerWidth - 40, 300) : (trendWrapper ? trendWrapper.offsetWidth - 32 : 600);
-        const trendH = window.innerWidth < 768 ? 300 : 480;
+        const trendH = window.innerWidth < 768 ? 300 : 600;
         trendCanvas.width = trendW; trendCanvas.height = trendH;
         trendCanvas.style.width = trendW + 'px'; trendCanvas.style.height = trendH + 'px';
         if (trendWrapper) { trendWrapper.style.width = trendW + 'px'; trendWrapper.style.height = trendH + 'px'; }
@@ -1590,7 +1590,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const radarCanvas = document.getElementById('athleteRadarChart');
         const radarWrapper = radarCanvas.parentElement;
         const isMobileR = window.innerWidth < 768;
-        const radarSize = isMobileR ? Math.min(window.innerWidth - 40, 300) : (radarWrapper ? Math.min(radarWrapper.offsetWidth - 32, 480) : 480);
+        const radarSize = isMobileR ? Math.min(window.innerWidth - 40, 300) : (radarWrapper ? Math.min(radarWrapper.offsetWidth - 32, 600) : 600);
         radarCanvas.width = radarSize; radarCanvas.height = radarSize;
         radarCanvas.style.width = radarSize + 'px'; radarCanvas.style.height = radarSize + 'px';
         if (radarWrapper) { radarWrapper.style.width = radarSize + 'px'; radarWrapper.style.height = radarSize + 'px'; }
