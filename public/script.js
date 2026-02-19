@@ -1060,16 +1060,15 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if(chartInstances.attendance) chartInstances.attendance.destroy();
         const attendanceCanvas = document.getElementById('attendanceChart');
-        // Larghezza dinamica per scroll orizzontale su mobile
+        const attWrapper = attendanceCanvas.parentElement;
         const isMobile = window.innerWidth < 768;
-        if (isMobile) {
-            const minWidth = Math.max(labels.length * 45, window.innerWidth - 40);
-            attendanceCanvas.parentElement.style.minWidth = minWidth + 'px';
-            attendanceCanvas.parentElement.style.width = minWidth + 'px';
-        } else {
-            attendanceCanvas.parentElement.style.minWidth = '';
-            attendanceCanvas.parentElement.style.width = '';
-        }
+        const attW = isMobile ? Math.max(labels.length * 45, window.innerWidth - 40) : (attWrapper ? attWrapper.offsetWidth : 600);
+        const attH = 300;
+        attendanceCanvas.width = attW;
+        attendanceCanvas.height = attH;
+        attendanceCanvas.style.width = attW + 'px';
+        attendanceCanvas.style.height = attH + 'px';
+        if (attWrapper) { attWrapper.style.width = attW + 'px'; attWrapper.style.minWidth = attW + 'px'; attWrapper.style.height = attH + 'px'; }
         chartInstances.attendance = new Chart(attendanceCanvas.getContext('2d'), {
             type: 'bar',
             data: {
@@ -1089,6 +1088,7 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             options: {
                 maintainAspectRatio: false,
+                responsive: false,
                 scales: {
                     y: { 
                         stacked: true,
@@ -1237,15 +1237,15 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (chartInstances.weeklyAttendance) chartInstances.weeklyAttendance.destroy();
         const weeklyCanvas = document.getElementById('weeklyAttendanceChart');
-        // Larghezza dinamica per scroll orizzontale su mobile
-        if (window.innerWidth < 768) {
-            const weeklyMinWidth = Math.max(labels.length * 50, window.innerWidth - 40);
-            weeklyCanvas.parentElement.style.minWidth = weeklyMinWidth + 'px';
-            weeklyCanvas.parentElement.style.width = weeklyMinWidth + 'px';
-        } else {
-            weeklyCanvas.parentElement.style.minWidth = '';
-            weeklyCanvas.parentElement.style.width = '';
-        }
+        const weeklyWrapper = weeklyCanvas.parentElement;
+        const isMobileW = window.innerWidth < 768;
+        const weeklyW = isMobileW ? Math.max(labels.length * 50, window.innerWidth - 40) : (weeklyWrapper ? weeklyWrapper.offsetWidth : 600);
+        const weeklyH = 300;
+        weeklyCanvas.width = weeklyW;
+        weeklyCanvas.height = weeklyH;
+        weeklyCanvas.style.width = weeklyW + 'px';
+        weeklyCanvas.style.height = weeklyH + 'px';
+        if (weeklyWrapper) { weeklyWrapper.style.width = weeklyW + 'px'; weeklyWrapper.style.minWidth = weeklyW + 'px'; weeklyWrapper.style.height = weeklyH + 'px'; }
         chartInstances.weeklyAttendance = new Chart(weeklyCanvas.getContext('2d'), {
             type: 'bar',
             data: {
@@ -1254,6 +1254,7 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             options: {
                 maintainAspectRatio: false,
+                responsive: false,
                 scales: {
                     y: { 
                         beginAtZero: true,
@@ -1510,10 +1511,20 @@ document.addEventListener('DOMContentLoaded', () => {
             { label: 'Media Squadra', data: teamAvgValues, borderColor: 'rgba(54, 162, 235, 1)', borderDash: [5, 5], fill: false, tension: 0.3 },
             { label: 'Max Squadra', data: teamMaxValues, borderColor: 'rgba(255, 206, 86, 1)', borderDash: [5, 5], fill: false, tension: 0.3 }
         ];
-        chartInstances.athleteTrend = new Chart(document.getElementById('athleteTrendChart').getContext('2d'), {
+        const trendCanvas = document.getElementById('athleteTrendChart');
+        const trendWrapper = trendCanvas.parentElement;
+        const isMobileT = window.innerWidth < 768;
+        const trendW = isMobileT ? Math.max(window.innerWidth - 40, 300) : (trendWrapper ? trendWrapper.offsetWidth - 32 : 600);
+        const trendH = 300;
+        trendCanvas.width = trendW; trendCanvas.height = trendH;
+        trendCanvas.style.width = trendW + 'px'; trendCanvas.style.height = trendH + 'px';
+        if (trendWrapper) { trendWrapper.style.width = trendW + 'px'; trendWrapper.style.height = trendH + 'px'; }
+        chartInstances.athleteTrend = new Chart(trendCanvas.getContext('2d'), {
             type: 'line',
             data: { labels, datasets },
             options: {
+                maintainAspectRatio: false,
+                responsive: false,
                 scales: {
                     y: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.2)' } },
                     x: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.2)' } }
@@ -1576,10 +1587,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 pointHoverBorderColor: color
             };
         });
-        chartInstances.athleteRadar = new Chart(document.getElementById('athleteRadarChart').getContext('2d'), {
+        const radarCanvas = document.getElementById('athleteRadarChart');
+        const radarWrapper = radarCanvas.parentElement;
+        const isMobileR = window.innerWidth < 768;
+        const radarSize = isMobileR ? Math.min(window.innerWidth - 40, 300) : (radarWrapper ? Math.min(radarWrapper.offsetWidth - 32, 350) : 350);
+        radarCanvas.width = radarSize; radarCanvas.height = radarSize;
+        radarCanvas.style.width = radarSize + 'px'; radarCanvas.style.height = radarSize + 'px';
+        if (radarWrapper) { radarWrapper.style.width = radarSize + 'px'; radarWrapper.style.height = radarSize + 'px'; }
+        chartInstances.athleteRadar = new Chart(radarCanvas.getContext('2d'), {
             type: 'radar',
             data: { labels: Object.values(radarMetrics), datasets: datasets },
             options: {
+                maintainAspectRatio: false,
+                responsive: false,
                 scales: {
                     r: {
                         beginAtZero: true,
