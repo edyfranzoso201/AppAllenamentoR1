@@ -416,7 +416,7 @@
         </div>
     </div>
 </div>
-<div id="weekly-attendance-analysis-section" class="row my-4 printable-area d-none d-md-block">
+<div id="weekly-attendance-analysis-section" class="row my-4 printable-area" style="display:none !important;" data-desktop-only="true">
             <div class="col-12 d-flex align-items-center gap-2 mb-3">
                 <h2 class="main-title mb-0">Analisi Presenze Settimanali</h2>
                 <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
@@ -459,7 +459,11 @@
                                 </div>
                             </div>
                         </div>
-                        <canvas id="weeklyAttendanceChart"></canvas>
+                        <div style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;">
+                            <div style="position:relative; height:350px; min-width:600px;" id="weekly-chart-wrapper">
+                                <canvas id="weeklyAttendanceChart"></canvas>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -609,8 +613,8 @@
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-lg-8 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Andamento Performance nel Tempo</h5><div style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;"><div style="position:relative; height:300px; min-width:max(100%, 300px);" id="trend-chart-wrapper"><canvas id="athleteTrendChart"></canvas></div></div></div></div></div>
-            <div class="col-12 col-lg-4 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Profilo Atleta (vs. Top di Squadra)</h5><div style="position:relative; height:300px;" id="radar-chart-wrapper"><canvas id="athleteRadarChart"></canvas></div></div></div></div>
+            <div class="col-12 col-lg-7 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Andamento Performance nel Tempo</h5><div style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;"><div style="position:relative; height:480px; min-width:max(100%, 300px);" id="trend-chart-wrapper"><canvas id="athleteTrendChart"></canvas></div></div></div></div></div>
+            <div class="col-12 col-lg-5 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Profilo Atleta (vs. Top di Squadra)</h5><div style="position:relative; height:480px;" id="radar-chart-wrapper"><canvas id="athleteRadarChart"></canvas></div></div></div></div>
         </div>
     </main>
     <footer class="bg-dark-blue py-3 mt-5 no-print">
@@ -948,5 +952,20 @@
     </div>
 </div>
 <script src="pagelle.js"></script>
+<script>
+(function() {
+    function handleWeeklyVisibility() {
+        const section = document.getElementById('weekly-attendance-analysis-section');
+        if (!section) return;
+        if (window.innerWidth >= 768) {
+            section.style.removeProperty('display');
+        } else {
+            section.style.setProperty('display', 'none', 'important');
+        }
+    }
+    handleWeeklyVisibility();
+    window.addEventListener('resize', handleWeeklyVisibility);
+})();
+</script>
 </body>
 </html>
