@@ -1633,7 +1633,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         chartData.sort((a, b) => b.value - a.value);
         if(chartInstances.multiAthlete) chartInstances.multiAthlete.destroy();
-        chartInstances.multiAthlete = new Chart(document.getElementById('multiAthleteChart').getContext('2d'), {
+        // Dimensioni dinamiche per mobile
+        const multiCanvas = document.getElementById('multiAthleteChart');
+        const multiWrapper = document.getElementById('multi-athlete-chart-wrapper');
+        const isMobileMulti = window.innerWidth < 768;
+        const multiW = isMobileMulti ? Math.max(chartData.length * 55, window.innerWidth - 40) : (multiWrapper ? multiWrapper.parentElement.offsetWidth - 32 : 600);
+        const multiH = 300;
+        multiCanvas.width = multiW;
+        multiCanvas.height = multiH;
+        multiCanvas.style.width = multiW + 'px';
+        multiCanvas.style.height = multiH + 'px';
+        if (multiWrapper) {
+            multiWrapper.style.width = multiW + 'px';
+            multiWrapper.style.minWidth = multiW + 'px';
+            multiWrapper.style.height = multiH + 'px';
+        }
+        chartInstances.multiAthlete = new Chart(multiCanvas.getContext('2d'), {
             type: 'bar',
             data: {
                 labels: chartData.map(d => d.name),
@@ -1645,6 +1660,7 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             options: {
                 maintainAspectRatio: false,
+                responsive: false,
                 scales: {
                     y: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.2)' } },
                     x: { ticks: { color: '#ffffff' }, grid: { color: 'rgba(241, 241, 241, 0.1)' } }
