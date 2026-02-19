@@ -565,8 +565,8 @@
                  <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
                 <button class="btn btn-sm btn-outline-warning ms-1 no-print unlock-btn" title="Sblocca Dati Individuali" style="display: none;"><i class="bi bi-key-fill"></i></button>
             </div>
-            <div class="card chart-card p-3 mb-4 no-print">
-                <div class="row">
+            <div class="card chart-card p-3 mb-4 no-print" style="overflow:hidden;">
+                <div class="row g-3">
                     <div class="col-12 col-md-6">
                         <label for="trend-athlete-selector" class="form-label">Atleta per Andamento nel Tempo:</label>
                         <select id="trend-athlete-selector" class="form-select"></select>
@@ -581,8 +581,8 @@
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-lg-8 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Andamento Performance nel Tempo</h5><canvas id="athleteTrendChart"></canvas></div></div></div>
-            <div class="col-12 col-lg-4 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Profilo Atleta (vs. Top di Squadra)</h5><canvas id="athleteRadarChart"></canvas></div></div></div>
+            <div class="col-12 col-lg-8 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Andamento Performance nel Tempo</h5><div style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;"><div style="position:relative; height:300px; min-width:max(100%, 300px);" id="trend-chart-wrapper"><canvas id="athleteTrendChart"></canvas></div></div></div></div></div>
+            <div class="col-12 col-lg-4 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Profilo Atleta (vs. Top di Squadra)</h5><div style="position:relative; height:300px;" id="radar-chart-wrapper"><canvas id="athleteRadarChart"></canvas></div></div></div></div>
         </div>
     </main>
     <footer class="bg-dark-blue py-3 mt-5 no-print">
