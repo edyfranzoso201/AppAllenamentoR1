@@ -1240,7 +1240,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const weeklyWrapper = weeklyCanvas.parentElement;
         const isMobileW = window.innerWidth < 768;
         const weeklyW = isMobileW ? Math.max(labels.length * 50, window.innerWidth - 40) : (weeklyWrapper ? weeklyWrapper.offsetWidth : 600);
-        const weeklyH = 300;
+        const weeklyH = window.innerWidth < 768 ? 300 : 350;
         weeklyCanvas.width = weeklyW;
         weeklyCanvas.height = weeklyH;
         weeklyCanvas.style.width = weeklyW + 'px';
@@ -1515,7 +1515,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const trendWrapper = trendCanvas.parentElement;
         const isMobileT = window.innerWidth < 768;
         const trendW = isMobileT ? Math.max(window.innerWidth - 40, 300) : (trendWrapper ? trendWrapper.offsetWidth - 32 : 600);
-        const trendH = 300;
+        const trendH = window.innerWidth < 768 ? 300 : 480;
         trendCanvas.width = trendW; trendCanvas.height = trendH;
         trendCanvas.style.width = trendW + 'px'; trendCanvas.style.height = trendH + 'px';
         if (trendWrapper) { trendWrapper.style.width = trendW + 'px'; trendWrapper.style.height = trendH + 'px'; }
@@ -1590,7 +1590,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const radarCanvas = document.getElementById('athleteRadarChart');
         const radarWrapper = radarCanvas.parentElement;
         const isMobileR = window.innerWidth < 768;
-        const radarSize = isMobileR ? Math.min(window.innerWidth - 40, 300) : (radarWrapper ? Math.min(radarWrapper.offsetWidth - 32, 350) : 350);
+        const radarSize = isMobileR ? Math.min(window.innerWidth - 40, 300) : (radarWrapper ? Math.min(radarWrapper.offsetWidth - 32, 480) : 480);
         radarCanvas.width = radarSize; radarCanvas.height = radarSize;
         radarCanvas.style.width = radarSize + 'px'; radarCanvas.style.height = radarSize + 'px';
         if (radarWrapper) { radarWrapper.style.width = radarSize + 'px'; radarWrapper.style.height = radarSize + 'px'; }
