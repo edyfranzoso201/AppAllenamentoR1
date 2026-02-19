@@ -398,13 +398,25 @@
                                 <button type="button" class="btn btn-outline-secondary active" data-period="annual">Annuale</button>
                              </div>
                          </div>
-                         <canvas id="attendanceChart"></canvas>
+                         <div style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;">
+                             <div style="position:relative; height:300px; min-width:max(100%, 400px);" id="attendance-chart-wrapper">
+                                 <canvas id="attendanceChart"></canvas>
+                             </div>
+                         </div>
                      </div>
                  </div>
              </div>
         </div>
         <hr class="my-5 no-print">
-        <div id="weekly-attendance-analysis-section" class="row my-4 printable-area">
+        <div class="d-block d-md-none my-4 px-2">
+    <div class="card" style="background:#1a2a4a; border:1px solid #3b5280;">
+        <div class="card-body text-center py-4">
+            <i class="bi bi-display" style="font-size:2rem; color:#64748b;"></i>
+            <p class="mt-2 mb-0" style="color:#94a3b8;">📊 <strong>Analisi Presenze Settimanali</strong><br><small>Disponibile solo su tablet e desktop</small></p>
+        </div>
+    </div>
+</div>
+<div id="weekly-attendance-analysis-section" class="row my-4 printable-area d-none d-md-block">
             <div class="col-12 d-flex align-items-center gap-2 mb-3">
                 <h2 class="main-title mb-0">Analisi Presenze Settimanali</h2>
                 <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
@@ -523,7 +535,15 @@
             </div>
         </div>
         <hr class="my-5 no-print">
-        <div id="monitoraggio-gps-section" class="row my-4 printable-area">
+        <div class="d-block d-md-none my-4 px-2">
+    <div class="card" style="background:#1a2a4a; border:1px solid #3b5280;">
+        <div class="card-body text-center py-4">
+            <i class="bi bi-display" style="font-size:2rem; color:#64748b;"></i>
+            <p class="mt-2 mb-0" style="color:#94a3b8;">📊 <strong>Monitoraggio Performance GPS</strong><br><small>Disponibile solo su tablet e desktop</small></p>
+        </div>
+    </div>
+</div>
+<div id="monitoraggio-gps-section" class="row my-4 printable-area d-none d-md-block">
              <div class="col-12 d-flex align-items-center gap-2 mb-3">
                  <h2 class="main-title mb-0">Monitoraggio Performance (GPS)</h2>
                  <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
@@ -558,7 +578,15 @@
             <div class="col-12 col-lg-5 mb-4"><div class="card table-card"><div class="card-body"><h5 class="card-title">Tabella Dati a Confronto</h5><div class="table-responsive" id="performance-table-container"></div><div id="export-buttons-container" class="mt-3 d-flex gap-2 no-print"></div></div></div></div>
         </div>
         <hr class="my-5 no-print">
-        <div id="analisi-singolo-section" class="row my-4 printable-area">
+        <div class="d-block d-md-none my-4 px-2">
+    <div class="card" style="background:#1a2a4a; border:1px solid #3b5280;">
+        <div class="card-body text-center py-4">
+            <i class="bi bi-display" style="font-size:2rem; color:#64748b;"></i>
+            <p class="mt-2 mb-0" style="color:#94a3b8;">📊 <strong>Analisi Atleta Singolo</strong><br><small>Disponibile solo su tablet e desktop</small></p>
+        </div>
+    </div>
+</div>
+<div id="analisi-singolo-section" class="row my-4 printable-area d-none d-md-block">
              <div class="col-12 d-flex align-items-center gap-2 mb-3">
                  <h2 class="main-title mb-0">Analisi Atleta Singolo</h2>
                  <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
