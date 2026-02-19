@@ -1060,7 +1060,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if(chartInstances.attendance) chartInstances.attendance.destroy();
         const attendanceCanvas = document.getElementById('attendanceChart');
-        const attWrapper = attendanceCanvas.parentElement;
+        const attWrapper = document.getElementById('attendance-chart-wrapper') || attendanceCanvas.parentElement;
         const isMobile = window.innerWidth < 768;
         const attW = isMobile ? Math.max(labels.length * 45, window.innerWidth - 40) : (attWrapper ? attWrapper.offsetWidth : 600);
         const attH = 300;
