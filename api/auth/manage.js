@@ -1,4 +1,4 @@
-// api/auth/manage.js - Gestione utenti con societyId per separazione società
+// api/auth/manage.js - Gestione utenti (create, update, delete, list)
 import { createClient } from '@vercel/kv';
 import crypto from 'crypto';
 
@@ -7,153 +7,189 @@ const kv = createClient({
   token: process.env.UPSTASH_KV_REST_API_TOKEN || process.env.KV_REST_API_TOKEN,
 });
 
+// Helper CORS — accetta solo domini autorizzati
+function setCors(req, res) {
+  const origin = req.headers['origin'] || '';
+  const allowed = [
+    'https://app-allenamento-r1.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3000'
+  ];
+  const originToSet = allowed.includes(origin) ? origin : allowed[0];
+  res.setHeader('Access-Control-Allow-Origin', originToSet);
+  res.setHeader('Vary', 'Origin');
+}
+
+// Ruoli validi accettati dal sistema
+const VALID_ROLES = [
+  'admin',
+  'coach_l1', 'coach_l2', 'coach_l3', 'coach_readonly',
+  'dirigente_l1', 'dirigente_l2', 'dirigente_l3', 'dirigente_l4',
+  'societa_l1', 'societa_l2', 'societa_l3',
+];
+
+// SHA256 — stesso metodo usato da api/auth/login.js
 function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  setCors(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Society-Id');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Society-Id, X-Super-Admin-Password');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+  // Il superadmin può passare societyId esplicitamente nel body
+  const superAdminPwd = req.headers['x-super-admin-password'] || null;
+  const SUPER_PWD = process.env.SUPER_ADMIN_PASSWORD || 'superadmin_gosport_2026';
+  const isSuperAdmin = superAdminPwd === SUPER_PWD;
+  const societyId = req.headers['x-society-id'] || (req.body && req.body.societyId) || null;
+
   try {
-    // societyId dall'header — identifica quale società sta facendo la richiesta
-    const societyId = req.headers['x-society-id'] || null;
-
-    const { action, username, password, email, role, annate } = req.body || {};
-
     // ==========================================
-    // GET - Lista utenti della società
+    // GET — Lista utenti
     // ==========================================
     if (req.method === 'GET') {
       const users = (await kv.get('auth:users')) || [];
 
-      // Filtra: ogni admin vede SOLO i suoi utenti
-      const filtered = societyId
-        ? users.filter(u => u.societyId === societyId)
-        : users.filter(u => !u.societyId); // legacy
+      // Superadmin vede tutti gli utenti; altrimenti filtra per societyId
+      const filtered = isSuperAdmin
+        ? users
+        : societyId
+          ? users.filter(u => !u.societyId || u.societyId === societyId)
+          : users;
 
-      // Non restituire le password
+      // Restituisce i dati senza la password
       const safeUsers = filtered.map(u => ({
-        username: u.username,
-        email: u.email || '',
-        role: u.role,
-        annate: u.annate || [],
+        username:  u.username,
+        email:     u.email     || '',
+        nome:      u.nome      || '',
+        cognome:   u.cognome   || '',
+        note:      u.note      || '',
+        role:      u.role      || 'coach_readonly',
+        annate:    u.annate    || [],
         societyId: u.societyId || null,
-        createdAt: u.createdAt
+        createdAt: u.createdAt || null,
+        updatedAt: u.updatedAt || null,
       }));
 
-      console.log(`✅ Caricati ${safeUsers.length} utenti per societyId=${societyId || 'legacy'}`);
-      return res.status(200).json({ success: true, users: safeUsers });
+      console.log(`✅ GET /api/auth/manage - ${safeUsers.length} utenti`);
+      return res.status(200).json({ users: safeUsers });
     }
 
     // ==========================================
-    // POST - Azioni: create, update, delete
+    // POST — Azioni CRUD
     // ==========================================
     if (req.method === 'POST') {
+      const { action, username, password, email, nome, cognome, note, role, annate } = req.body;
+
       if (!action) {
-        return res.status(400).json({ success: false, message: 'Parametro "action" obbligatorio (create, update, delete)' });
+        return res.status(400).json({ success: false, message: 'Parametro "action" obbligatorio' });
       }
 
       const users = (await kv.get('auth:users')) || [];
 
-      // CREATE
+      // ── CREATE ────────────────────────────────
       if (action === 'create') {
-        if (!username || !password || !role) {
-          return res.status(400).json({ success: false, message: 'Username, password e ruolo obbligatori' });
+        if (!username || !password) {
+          return res.status(400).json({ success: false, message: 'Username e password obbligatori' });
         }
 
-        if (!['admin', 'supercoach', 'coach'].includes(role)) {
-          return res.status(400).json({ success: false, message: 'Ruolo non valido' });
-        }
-
-        // Username univoco globalmente (evita confusioni tra società diverse)
-        if (users.find(u => u.username === username)) {
+        // Controlla duplicati (case-insensitive)
+        if (users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
           return res.status(400).json({ success: false, message: 'Username già esistente' });
         }
 
+        if (role && !VALID_ROLES.includes(role)) {
+          return res.status(400).json({ success: false, message: `Ruolo non valido: ${role}` });
+        }
+
         const newUser = {
-          username,
-          password: hashPassword(password),
-          email: email || '',
-          role,
-          societyId: societyId || null,   // ← collegato alla società
-          annate: role === 'coach' ? (annate || []) : [],
-          createdAt: new Date().toISOString()
+          username:  username.trim(),
+          password:  hashPassword(password),
+          email:     (email     || '').trim(),
+          nome:      (nome      || '').trim(),
+          cognome:   (cognome   || '').trim(),
+          note:      (note      || '').trim(),
+          role:      role || 'coach_readonly',
+          annate:    role === 'admin' ? [] : (annate || []),
+          societyId: societyId || null,
+          createdAt: new Date().toISOString(),
+          createdBySuperAdmin: isSuperAdmin || false,
         };
 
         users.push(newUser);
         await kv.set('auth:users', users);
 
-        console.log(`✅ Utente creato: ${username} (${role}) societyId=${societyId}`);
-        return res.status(200).json({
-          success: true,
-          message: 'Utente creato con successo',
-          user: { username: newUser.username, email: newUser.email, role: newUser.role, annate: newUser.annate }
-        });
+        console.log(`✅ Utente creato: ${username} (${newUser.role}) societyId=${societyId}`);
+        return res.status(200).json({ success: true, message: 'Utente creato con successo' });
       }
 
-      // UPDATE
+      // ── UPDATE ────────────────────────────────
       if (action === 'update') {
-        if (!username || !role) {
-          return res.status(400).json({ success: false, message: 'Username e ruolo obbligatori' });
+        if (!username) {
+          return res.status(400).json({ success: false, message: 'Username obbligatorio' });
         }
 
-        const userIndex = users.findIndex(u => u.username === username);
-        if (userIndex === -1) {
+        const idx = users.findIndex(u => u.username === username);
+        if (idx === -1) {
           return res.status(404).json({ success: false, message: 'Utente non trovato' });
         }
 
-        // Sicurezza: non modificare utenti di altre società
-        if (societyId && users[userIndex].societyId && users[userIndex].societyId !== societyId) {
+        // Sicurezza: un utente di una società non può modificare utenti di un'altra
+        if (!isSuperAdmin && societyId && users[idx].societyId && users[idx].societyId !== societyId) {
           return res.status(403).json({ success: false, message: 'Non autorizzato' });
         }
 
-        users[userIndex] = {
-          ...users[userIndex],
-          email: email || users[userIndex].email,
-          role,
-          annate: role === 'coach' ? (annate || []) : [],
-          updatedAt: new Date().toISOString()
-        };
-
-        if (password && password.trim() !== '') {
-          users[userIndex].password = hashPassword(password);
+        if (role && !VALID_ROLES.includes(role)) {
+          return res.status(400).json({ success: false, message: `Ruolo non valido: ${role}` });
         }
 
+        // Aggiorna solo i campi forniti, mantieni quelli esistenti
+        const updated = { ...users[idx] };
+
+        if (email     !== undefined) updated.email     = email.trim();
+        if (nome      !== undefined) updated.nome      = nome.trim();
+        if (cognome   !== undefined) updated.cognome   = cognome.trim();
+        if (note      !== undefined) updated.note      = note.trim();
+        if (role      !== undefined) updated.role      = role;
+        if (annate    !== undefined) updated.annate    = role === 'admin' ? [] : annate;
+        if (password  && password.trim() !== '') {
+          updated.password = hashPassword(password.trim());
+        }
+        updated.updatedAt = new Date().toISOString();
+
+        users[idx] = updated;
         await kv.set('auth:users', users);
 
-        console.log(`✅ Utente aggiornato: ${username}`);
-        return res.status(200).json({
-          success: true,
-          message: 'Utente aggiornato con successo',
-          user: { username: users[userIndex].username, email: users[userIndex].email, role: users[userIndex].role, annate: users[userIndex].annate }
-        });
+        console.log(`✅ Utente aggiornato: ${username} (${updated.role})`);
+        return res.status(200).json({ success: true, message: 'Utente aggiornato con successo' });
       }
 
-      // DELETE
+      // ── DELETE ────────────────────────────────
       if (action === 'delete') {
         if (!username) {
           return res.status(400).json({ success: false, message: 'Username obbligatorio' });
         }
 
-        const user = users.find(u => u.username === username);
-        if (!user) {
+        // Protezione: non si può eliminare l'admin principale (a meno che non sia superadmin)
+        if (username === 'admin' && !isSuperAdmin) {
+          return res.status(403).json({ success: false, message: 'Non puoi eliminare l\'utente admin principale' });
+        }
+
+        const target = users.find(u => u.username === username);
+        if (!target) {
           return res.status(404).json({ success: false, message: 'Utente non trovato' });
         }
 
-        // Sicurezza: non eliminare utenti di altre società
-        if (societyId && user.societyId && user.societyId !== societyId) {
+        if (!isSuperAdmin && societyId && target.societyId && target.societyId !== societyId) {
           return res.status(403).json({ success: false, message: 'Non autorizzato' });
         }
 
-        if (user.role === 'admin') {
-          return res.status(403).json({ success: false, message: 'Non è possibile eliminare un amministratore' });
-        }
-
-        await kv.set('auth:users', users.filter(u => u.username !== username));
+        const updated = users.filter(u => u.username !== username);
+        await kv.set('auth:users', updated);
 
         console.log(`✅ Utente eliminato: ${username}`);
         return res.status(200).json({ success: true, message: 'Utente eliminato con successo' });
@@ -166,6 +202,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('❌ Errore in /api/auth/manage:', error);
-    return res.status(500).json({ success: false, message: 'Errore del server', error: error.message });
+    return res.status(500).json({ success: false, message: 'Errore del server' });
   }
 }

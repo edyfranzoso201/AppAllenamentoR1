@@ -9,6 +9,20 @@ const kv = createClient({
   token: process.env.UPSTASH_KV_REST_API_TOKEN || process.env.KV_REST_API_TOKEN,
 });
 
+// Helper CORS — accetta solo domini autorizzati
+function setCors(req, res) {
+  const origin = req.headers['origin'] || '';
+  const allowed = [
+    'https://app-allenamento-r1.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3000'
+  ];
+  const originToSet = allowed.includes(origin) ? origin : allowed[0];
+  res.setHeader('Access-Control-Allow-Origin', originToSet);
+  res.setHeader('Vary', 'Origin');
+}
+
 // Chiave segreta per firmare le licenze - CAMBIA QUESTO VALORE!
 const SECRET_KEY = process.env.LICENSE_SECRET_KEY || 'GOSPORT_SECRET_2026_CAMBIA_QUESTO';
 
@@ -63,7 +77,7 @@ function verifyLicense(licenseKey, storedData) {
 
 export default async function handler(req, res) {
   // CORS - accetta chiamate anche da file:// locale
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  setCors(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Super-Admin-Password, X-License-Key, X-License-Email');
 
@@ -278,8 +292,6 @@ export default async function handler(req, res) {
     console.error('❌ Errore in /api/licenze:', error);
     return res.status(500).json({ 
       success: false, 
-      message: 'Errore del server',
-      error: error.message 
-    });
+      message: 'Errore del server' });
   }
 }

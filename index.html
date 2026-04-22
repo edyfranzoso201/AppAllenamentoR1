@@ -1,0 +1,2751 @@
+<!DOCTYPE html>
+<html lang="it" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coach Dashboard</title>
+    
+    <!-- CRITICAL CSS: Nasconde contenuto ma permette login dinamico -->
+    <style>
+        /* Nascondi il contenuto della dashboard */
+        body > nav,
+        body > main,
+        body > footer,
+        body > .container,
+        body > .container-fluid {
+            display: none !important;
+            visibility: hidden !important;
+        }
+        
+        /* Schermo scuro di default */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            z-index: -1;
+        }
+        
+        /* Quando autenticato, mostra tutto */
+        html.authenticated body > nav,
+        html.authenticated body > main,
+        html.authenticated body > footer,
+        html.authenticated body > .container,
+        html.authenticated body > .container-fluid {
+            display: block !important;
+            visibility: visible !important;
+        }
+        
+        /* Quando autenticato, rimuovi lo sfondo scuro */
+        html.authenticated body::before {
+            display: none !important;
+        }
+    </style>
+    <style>
+    /* ===== MODAL VALUTAZIONE MOBILE-FRIENDLY ===== */
+    /* Su smartphone: fullscreen, footer sempre visibile */
+    @media (max-width: 575.98px) {
+        #evaluationModal .modal-dialog {
+            margin: 0;
+            max-width: 100% !important;
+            width: 100%;
+            height: 100%;
+            max-height: 100dvh;
+        }
+        #evaluationModal .modal-content {
+            height: 100dvh;
+            height: 100vh; /* fallback */
+            border-radius: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        #evaluationModal .modal-header {
+            flex-shrink: 0;
+            padding: 12px 16px;
+        }
+        #evaluationModal .modal-body {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 12px 16px;
+        }
+        #evaluationModal .modal-footer {
+            flex-shrink: 0;
+            padding: 10px 16px;
+            border-top: 1px solid #dee2e6;
+            background: white;
+            /* Assicura che il footer sia sempre visibile sopra la tastiera */
+            position: sticky;
+            bottom: 0;
+            z-index: 10;
+        }
+        #evaluationModal .form-label {
+            font-size: 0.85rem;
+            margin-bottom: 2px;
+        }
+        #evaluationModal .form-select {
+            padding: 6px 10px;
+            font-size: 0.95rem;
+        }
+        #evaluationModal .mb-2 {
+            margin-bottom: 8px !important;
+        }
+    }
+    </style>
+    
+    <!-- Auth script DEVE essere caricato per primo -->
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Librerie JS (caricate in fondo per performance) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <!-- Foglio di stile personalizzato -->
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+    /* ===== TAB BAR - seconda riga dell'header fisso ===== */
+    .tab-nav-inner::-webkit-scrollbar { display: none; }
+
+    .tab-nav-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 0 13px;
+        height: 48px;
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: #94a3b8 !important;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        cursor: pointer;
+        white-space: nowrap;
+        text-decoration: none !important;
+        flex-shrink: 0;
+        transition: color 0.15s;
+    }
+    .tab-nav-btn i {
+        font-size: 1rem;
+        color: #94a3b8 !important;
+    }
+    .tab-nav-btn:hover { color: #e2e8f0 !important; }
+    .tab-nav-btn:hover i { color: #e2e8f0 !important; }
+    .tab-nav-btn.active { color: #60a5fa !important; border-bottom-color: #60a5fa; font-weight: 600; }
+    .tab-nav-btn.active i { color: #60a5fa !important; }
+    .tab-nav-btn.tab-external { color: #34d399 !important; }
+    .tab-nav-btn.tab-external i { color: #34d399 !important; }
+
+    /* Bottone account compatto */
+    .tab-account-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 5px 9px;
+        background: rgba(30,58,95,0.7);
+        border: 1px solid rgba(96,165,250,0.3);
+        border-radius: 8px;
+        color: #94a3b8 !important;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    /* Mobile: nasconde testo, mostra solo icone nella barra desktop */
+    @media (max-width: 991px) {
+        .tab-nav-btn .tab-label { display: none; }
+        .tab-nav-btn i { font-size: 1.2rem !important; }
+        .tab-account-btn .tab-acc-label { display: none; }
+    }
+
+    /* ===== SECTION VISIBILITY ===== */
+    /* Desktop: navbar(56) + tabbar(46) = 102px */
+    main.container-fluid { margin-top: 102px !important; padding-top: 8px !important; }
+    /* Mobile: solo navbar(56), menu si apre sopra il contenuto senza spostarlo */
+    @media (max-width: 991px) {
+        main.container-fluid { margin-top: 56px !important; padding-top: 0 !important; }
+    }
+
+    .tab-section { display: none !important; }
+    .tab-section.tab-active { display: block !important; visibility: visible !important; }
+    .tab-section.tab-active.row { display: flex !important; }
+    main > hr { display: none !important; }
+    .mobile-tab-warning { display: none !important; }
+    /* Confronto squadra: sempre nascosto, mostrato solo via JS quando tab GPS è attivo */
+    #confronto-squadra-section { display: none !important; }
+    /* GPS e Analisi: nascondi grafici su mobile, mostra solo avviso */
+    @media (max-width: 991px) {
+        #monitoraggio-gps-section > *:not(.d-lg-none),
+        #analisi-singolo-section > *:not(.d-lg-none) {
+            display: none !important;
+        }
+        /* Confronto performance: nascosto su mobile (è fuori da GPS section) */
+        #confronto-squadra-section {
+            display: none !important;
+        }
+    }
+
+    /* ===== MENU NAVIGAZIONE ===== */
+
+    /* Desktop: bordo inferiore + barra orizzontale visibile */
+    @media (min-width: 992px) {
+        #navbarNav {
+            border-bottom: 2px solid #1e3a5f;
+        }
+        #navbarNav .tab-nav-inner {
+            display: flex !important;
+            height: 46px !important;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+    }
+
+    /* Desktop: nascondi riga admin (non serve nella barra orizzontale) */
+    @media (min-width: 992px) {
+        #navbarNav #app-header-info { display: none !important; }
+    }
+
+    /* Mobile: menu a tendina */
+    @media (max-width: 991px) {
+        #navbarNav { border-bottom: none !important; }
+        /* Info admin mobile: nascosta quando menu chiuso */
+        #navbarNav #app-header-info { display: none !important; }
+        #navbarNav .tab-nav-inner {
+            display: none !important;
+            height: 0 !important;
+            min-height: 0 !important;
+        }
+        #app-header-mobile { display: none; }
+        /* Menu aperto */
+        #navbarNav.show { border-bottom: 2px solid #1e3a5f !important; box-shadow: 0 8px 20px rgba(0,0,0,0.6); }
+        #navbarNav.show .tab-nav-inner {
+            display: flex !important;
+            flex-direction: column !important;
+            height: auto !important;
+            min-height: auto !important;
+            max-height: 65vh !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+        }
+        #navbarNav.show #app-header-mobile {
+            display: flex !important;
+        }
+        #navbarNav.show .tab-nav-btn {
+            width: 100% !important;
+            height: 52px !important;
+            justify-content: flex-start !important;
+            padding: 0 20px !important;
+            border-bottom: 1px solid rgba(255,255,255,0.07) !important;
+            border-left: none !important; border-right: none !important; border-top: none !important;
+        }
+        #navbarNav.show .tab-nav-btn i { font-size: 1.2rem !important; margin-right: 12px !important; }
+        #navbarNav.show .tab-label { display: inline !important; font-size: 0.95rem !important; }
+        #navbarNav.show .tab-nav-btn.active {
+            background: rgba(96,165,250,0.1) !important;
+            border-left: 3px solid #60a5fa !important;
+        }
+    }
+    </style>
+</head>
+<body>
+    <!-- NAVBAR: brand + admin (desktop) + hamburger (mobile) -->
+    <nav class="navbar navbar-dark bg-dark-blue fixed-top no-print"
+         style="height:56px; padding:0 12px; flex-wrap:nowrap; z-index:1030; display:flex; align-items:center;">
+        <a class="navbar-brand fw-bold mb-0" href="#" style="white-space:nowrap; flex-shrink:1; min-width:0; overflow:hidden; text-overflow:ellipsis; margin-right:8px;">
+            <i class="bi bi-person-workspace"></i> Coach Dashboard
+        </a>
+        <!-- Admin: visibile su desktop, nascosto su mobile -->
+        <div id="app-header-info" class="d-none d-lg-flex" style="flex-shrink:0; margin-left:auto; margin-right:8px; position:relative; align-items:center;"></div>
+        <!-- Hamburger: solo su mobile -->
+        <button class="navbar-toggler d-lg-none ms-auto" type="button"
+            onclick="(function(){var m=document.getElementById('navbarNav');m.classList.toggle('show');})()"
+            style="border-color:rgba(255,255,255,0.4); padding:4px 8px; flex-shrink:0;">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <button id="logout-btn" style="display:none !important; width:0 !important; height:0 !important; padding:0 !important; margin:0 !important; border:none !important; position:absolute !important; overflow:hidden !important; pointer-events:none !important;"></button>
+    </nav>
+
+    <!-- MENU NAVIGAZIONE -->
+    <div id="navbarNav" class="no-print"
+         style="position:fixed; top:56px; left:0; right:0; background:#0d1b2a; z-index:1029;">
+        <div class="tab-nav-inner"
+             style="display:flex; align-items:center; overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; scrollbar-width:none; white-space:nowrap; height:46px; min-height:46px;">
+            <button class="tab-nav-btn active" data-tab="home-section" onclick="switchTab('home-section')"><i class="bi bi-house-fill"></i><span class="tab-label"> Home</span></button>
+            <button class="tab-nav-btn" data-tab="formazione-section" onclick="switchTab('formazione-section')"><i class="bi bi-grid-3x3-gap-fill"></i><span class="tab-label"> Formazione</span></button>
+            <button class="tab-nav-btn" data-tab="calendario-section" onclick="switchTab('calendario-section')"><i class="bi bi-calendar3"></i><span class="tab-label"> Calendario</span></button>
+            <button class="tab-nav-btn" data-tab="squadra-section" onclick="switchTab('squadra-section')"><i class="bi bi-people-fill"></i><span class="tab-label"> Squadra</span></button>
+            <button class="tab-nav-btn" data-tab="match-results-section" onclick="switchTab('match-results-section')"><i class="bi bi-trophy-fill"></i><span class="tab-label"> Risultati</span></button>
+            <button class="tab-nav-btn" data-tab="report-valutazioni-section" onclick="switchTab('report-valutazioni-section')"><i class="bi bi-card-checklist"></i><span class="tab-label"> Valutazioni</span></button>
+            <button class="tab-nav-btn" data-tab="report-presenze-section" onclick="switchTab('report-presenze-section')"><i class="bi bi-person-check-fill"></i><span class="tab-label"> Presenze</span></button>
+            <button class="tab-nav-btn" data-tab="hall-of-fame-section" onclick="switchTab('hall-of-fame-section')"><i class="bi bi-award-fill"></i><span class="tab-label"> Hall of Fame</span></button>
+            <button class="tab-nav-btn" data-tab="monitoraggio-gps-section" onclick="switchTab('monitoraggio-gps-section')"><i class="bi bi-graph-up-arrow"></i><span class="tab-label"> GPS</span></button>
+            <button class="tab-nav-btn" data-tab="analisi-singolo-section" onclick="switchTab('analisi-singolo-section')"><i class="bi bi-person-lines-fill"></i><span class="tab-label"> Analisi</span></button>
+            <a href="/calendario.html" class="tab-nav-btn tab-external" target="_blank"><i class="bi bi-calendar-plus"></i><span class="tab-label"> Cal. ↗</span></a>
+            <button class="tab-nav-btn" data-tab="materiale-section" onclick="switchTab('materiale-section')"><i class="bi bi-box-seam-fill"></i><span class="tab-label"> Materiale</span></button>
+            <button class="tab-nav-btn" data-tab="pagamenti-section" onclick="switchTab('pagamenti-section')"><i class="bi bi-credit-card-fill"></i><span class="tab-label"> Pagamenti</span></button>
+            <button class="tab-nav-btn" data-tab="convocazioni-section" onclick="switchTab('convocazioni-section')"><i class="bi bi-megaphone-fill"></i><span class="tab-label"> Convocazioni</span></button>
+            <button class="tab-nav-btn admin-only" data-tab="accessi-section" onclick="switchTab('accessi-section')" style="display:none;"><i class="bi bi-clock-history"></i><span class="tab-label"> Accessi</span></button>
+        </div>
+        <!-- Riga admin mobile: in fondo alla tendina, solo su mobile -->
+        <div id="app-header-mobile" class="d-lg-none"
+             style="display:none; border-top:1px solid rgba(255,255,255,0.1); padding:10px 16px; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; background:#0d1b2a;">
+        </div>
+    </div>
+
+    <main class="container-fluid no-print-margin">
+        <div id="alerts-container"></div>
+        <div id="home-section" class="tab-section tab-active printable-area">
+            <div class="row my-4">
+                <div class="col-12 d-flex align-items-center gap-2">
+                    <h2 class="main-title mb-0">Home Riepilogo</h2>
+                    <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card summary-card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title text-muted">ATLETI IN ROSA</h5>
+                            <p class="display-4" id="home-total-athletes">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card summary-card h-100">
+                        <div class="card-body" id="home-next-session">
+                            <h5 class="card-title text-muted">PROSSIMA SESSIONE</h5>
+                            <p class="text-muted">Nessuna sessione pianificata</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card summary-card h-100">
+                        <div class="card-body" id="home-top-performer">
+                            <h5 class="card-title text-muted">TOP PERFORMER MENSILE</h5>
+                            <p class="text-muted">Nessuna valutazione</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card summary-card h-100">
+                        <div class="card-body" id="home-quick-actions">
+                            <h5 class="card-title text-muted">AZIONI RAPIDE</h5>
+                            <div class="d-grid gap-2 w-100 no-print">
+                                <button class="btn btn-primary-custom" id="quick-add-athlete-btn"><i class="bi bi-person-plus-fill"></i> Aggiungi Atleta</button>
+                                <button class="btn btn-secondary" id="quick-plan-session-btn"><i class="bi bi-calendar-plus"></i> Pianifica Sessione</button>
+                                <button class="btn btn-success" id="export-all-data-btn" title="Scarica backup completo dati"><i class="bi bi-download"></i> Backup Dati</button>
+                                <button class="btn btn-warning admin-only no-print" id="change-individual-pwd-btn" style="display:none;" title="Cambia password sessioni Individual"><i class="bi bi-key-fill"></i> Password Individual</button>
+                                <button class="btn btn-warning" id="restore-backup-btn" onclick="document.getElementById('import-file-input').click();"><i class="bi bi-upload"></i> Ripristina Backup</button>
+                                <input type="file" id="restore-file" accept=".json" style="display:none">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card season-stats-card">
+                        <div class="card-body">
+                            <h5 class="card-title text-muted mb-3 text-center">📈 Statistiche Stagionali 📉</h5>
+                            <div class="season-stats-grid" id="season-stats-container">
+                                <div class="stat-item"><h6>Partite Giocate</h6><p id="stat-pg">0</p></div>
+                                <div class="stat-item"><h6>V-P-S</h6><p id="stat-vps">0-0-0</p></div>
+                                <div class="stat-item"><h6>Gol Fatti</h6><p id="stat-gf">0</p></div>
+                                <div class="stat-item"><h6>Gol Subiti</h6><p id="stat-gs">0</p></div>
+                                <div class="stat-item"><h6>Diff. Reti</h6><p id="stat-dr">0</p></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="formazione-section" class="tab-section printable-area">
+             <div class="row my-4 align-items-center">
+                <div class="col-12 d-flex align-items-center gap-2">
+                     <h2 class="main-title mb-0">Modulo Formazione</h2>
+                     <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
+                     <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
+                     <div class="btn-group btn-group-sm no-print ms-2" id="field-type-switch">
+                         <button type="button" class="btn btn-success active" onclick="switchField('calcio')">⚽ Calcio</button>
+                         <button type="button" class="btn btn-outline-warning" onclick="switchField('basket')">🏀 Basket</button>
+                         <button type="button" class="btn btn-outline-info" onclick="switchField('volley')">🏐 Volley</button>
+                     </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-9 mb-4">
+                    <div id="pitch-wrapper">
+                        <div id="field-container" class="drop-zone">
+                            <div class="field-line halfway-line"></div>
+                            <div class="field-circle center-circle"></div>
+                            <div class="field-spot center-spot"></div>
+                            <div class="field-box penalty-box-top"></div>
+                            <div class="field-box goal-box-top"></div>
+                            <div class="field-spot penalty-spot-top"></div>
+                            <div class="field-box penalty-box-bottom"></div>
+                            <div class="field-box goal-box-bottom"></div>
+                            <div class="field-spot penalty-spot-bottom"></div>
+                        </div>
+                        <div id="field-bench-area" class="drop-zone"></div>
+                    </div>
+                </div>
+                <div class="col-lg-3">
+                    <div class="card" style="background-color: var(--card-bg);">
+                         <div class="card-header fw-bold">Strumenti</div>
+                         <div class="card-body">
+                             <div id="formation-tools">
+                                <div class="tool-item" data-item-type="captain-c">(C)</div>
+                                 <div class="tool-item" data-item-type="captain-vc">(VC)</div>
+                                 <div class="tool-item ball-tool" data-item-type="ball">⚽</div>
+                                <div class="tool-item opponent-tool" data-item-type="opponent" title="Trascina per duplicare (Rosso)">●</div>
+                                <div class="tool-item opponent-blue-tool" data-item-type="opponent-blue" title="Trascina per duplicare (Blu)">●</div>
+                                <div class="tool-item movement-tool" data-item-type="movement" title="Movimento giocatore">✕</div>
+                             </div>
+                         </div>
+                         <div class="card-header fw-bold mt-3">Atleti Disponibili</div>
+                         <div class="card-body available-slot p-2 drop-zone" id="available-list" style="max-height: 400px; overflow-y: auto;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr class="my-5 no-print">
+        <div id="calendario-section" class="tab-section printable-area">
+              <div class="row my-4 align-items-center">
+                   <div class="col-md-8 d-flex align-items-center gap-2">
+                       <h2 class="main-title mb-0">Calendario Attività Sportiva</h2>
+                       <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
+                       <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
+                  </div>
+                   <div class="col-md-4 d-flex justify-content-md-end no-print">
+                      <button class="btn btn-primary-custom" id="add-session-btn"><i class="bi bi-calendar-plus"></i> Pianifica Sessione</button>
+                  </div>
+              </div>
+              <div class="row">
+                  <div class="col-12 mt-3">
+                      <div class="card calendar-card">
+                          <div class="card-body">
+                              <div class="calendar-header mb-3">
+                                  <button id="prev-month-btn" class="btn btn-outline-secondary no-print"><i class="bi bi-chevron-left"></i></button>
+                                  <h4 id="current-month-year"></h4>
+                                  <button id="next-month-btn" class="btn btn-outline-secondary no-print"><i class="bi bi-chevron-right"></i></button>
+                              </div>
+              <div style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;">
+                <div style="min-width:560px;">
+                              <div class="calendar-grid-header calendar-grid mb-1" style="font-weight: bold; text-align: center;">
+                                  <div>Lunedì</div><div>Martedì</div><div>Mercoledì</div><div>Giovedì</div><div>Venerdì</div><div>Sabato</div><div>Domenica</div>
+                              </div>
+                              <div class="calendar-grid" id="calendar-grid"></div>
+                </div>
+              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+        </div>
+        <hr class="my-5 no-print">
+        <div id="squadra-section" class="tab-section printable-area">
+             <div class="row align-items-center my-4">
+                 <div class="col-md-4 d-flex align-items-center gap-2">
+                     <h2 class="main-title mb-0">Gestione Squadra</h2>
+                     <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
+                    <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
+                </div>
+                <div class="col-md-8 d-flex justify-content-md-end align-items-center flex-wrap gap-2 no-print">
+                    <button class="btn btn-secondary" id="export-squadra-btn"><i class="bi bi-download"></i> Esporta Dati</button>
+                    <label for="import-file-input" class="btn btn-secondary mb-0"><i class="bi bi-upload"></i> Importa Dati</label>
+                    <input type="file" id="import-file-input" accept=".json" style="display: none;">
+                    <button class="btn btn-primary-custom" id="add-athlete-btn"><i class="bi bi-person-plus-fill"></i> Aggiungi Atleta</button>
+                    <button class="btn btn-warning" id="add-staff-btn" style="color:#000;"><i class="bi bi-person-badge-fill"></i> Aggiungi Staff</button>
+                    <div class="d-flex align-items-center gap-2">
+                        <label for="evaluation-date-picker" class="form-label mb-0 text-nowrap">Data Valutazioni:</label>
+                        <input type="date" id="evaluation-date-picker" class="form-control" style="max-width: 180px;">
+                        <button class="btn btn-outline-danger" id="delete-day-data-btn" title="Elimina tutti i dati del giorno selezionato"><i class="bi bi-calendar-x-fill"></i></button>
+                    </div>
+                </div>
+            </div>
+            <div class="row" id="athlete-grid"></div>
+        </div>
+        <hr class="my-5 no-print">
+        <div id="match-results-section" class="tab-section printable-area">
+             <div class="row my-4 align-items-center">
+                <div class="col-md-8 d-flex align-items-center gap-2">
+                    <h2 class="main-title mb-0">Risultati Partite</h2>
+                    <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
+                    <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
+                </div>
+                <div class="col-md-4 d-flex justify-content-md-end no-print">
+                    <button class="btn btn-primary-custom" id="add-match-btn"><i class="bi bi-plus-circle-fill"></i> Aggiungi Partita</button>
+                </div>
+            </div>
+            <div class="row" id="match-results-container">
+                 <p class="text-muted">Nessun risultato inserito.</p>
+            </div>
+            <div class="row mt-5">
+                <div class="col-lg-7 mb-4">
+                    <div class="card chart-card">
+                         <div class="card-body">
+                            <h5 class="card-title">Andamento Risultati</h5>
+                            <div class="d-flex gap-2 mb-3 no-print">
+                                <select id="match-opponent-filter" class="form-select form-select-sm" style="width: 200px;">
+                                    <option value="all">Tutti gli avversari</option>
+                                </select>
+                                <div class="btn-group btn-group-sm" id="match-period-toggle">
+                                    <button type="button" class="btn btn-outline-secondary active" data-period="monthly">Mensile</button>
+                                    <button type="button" class="btn btn-outline-secondary" data-period="bimonthly">Bimestrale</button>
+                                    <button type="button" class="btn btn-outline-secondary" data-period="trimester">Trimestre</button>
+                                    <button type="button" class="btn btn-outline-secondary" data-period="semester">Semestre</button>
+                                    <button type="button" class="btn btn-outline-secondary" data-period="annual">Annuale</button>
+                                </div>
+                            </div>
+                            <canvas id="matchResultsChart"></canvas>
+                         </div>
+                    </div>
+                </div>
+                <div class="col-lg-5 mb-4">
+                    <div class="card table-card mb-4">
+                        <div class="card-body">
+                           <h5 class="card-title">Classifica Marcatori</h5>
+                            <div id="top-scorers-container" style="max-height: 200px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+                    <div class="card table-card mb-4">
+                         <div class="card-body">
+                             <h5 class="card-title">Classifica Assist</h5>
+                             <div id="top-assists-container" style="max-height: 200px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+                    <div class="card table-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Riepilogo Cartellini</h5>
+                            <div class="table-responsive mt-2" style="max-height: 200px;">
+                                <table class="table table-dark table-striped table-hover table-sm" id="cards-summary-table">
+                                     <thead><tr><th>Atleta</th><th><span class="yellow-card"></span></th><th><span class="red-card"></span></th><th>Data</th><th class="no-print"></th></tr></thead>
+                                    <tbody id="cards-summary-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr class="my-5 no-print">
+        <div id="report-valutazioni-section" class="tab-section row my-4 printable-area">
+              <div class="col-12 d-flex justify-content-between align-items-center gap-2 mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <h2 class="main-title mb-0">Report Valutazioni Comportamentali</h2>
+                    <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
+                    <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
+                </div>
+                <div class="d-flex align-items-center gap-2 no-print">
+                    <label for="evaluation-date-picker-2" class="form-label mb-0 text-nowrap">Data Report:</label>
+                    <input type="date" id="evaluation-date-picker-2" class="form-control" style="max-width: 180px;">
+                </div>
+            </div>
+            <div class="col-lg-6 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Andamento Medio Squadra (Ultimi 7 Giorni)</h5><canvas id="dailyTeamChart"></canvas></div></div></div>
+            <div class="col-lg-6 mb-4"><div class="card chart-card"><div class="card-body" id="comparison-chart-container"><h5 class="card-title mb-0">Confronto Valutazioni Atleti</h5><div class="btn-group btn-group-sm float-end no-print" id="comparison-period-toggle"><button type="button" class="btn btn-outline-secondary" data-period="daily">Giornaliero</button><button type="button" class="btn btn-outline-secondary" data-period="weekly">Settimanale</button><button type="button" class="btn btn-outline-secondary" data-period="monthly">Mensile</button><button type="button" class="btn btn-outline-secondary" data-period="semester">Semestrale</button><button type="button" class="btn btn-outline-secondary active" data-period="annual">Annuale</button></div><canvas id="monthlyComparisonChart"></canvas></div></div></div>
+        </div>
+        <div id="report-presenze-section" class="tab-section row my-4 printable-area">
+              <div class="col-12 d-flex align-items-center gap-2 mb-3 flex-wrap">
+                 <h2 class="main-title mb-0">Report Presenze Allenamenti</h2>
+                <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
+                 <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
+                 <!-- Date picker sincronizzato con quello della sezione Squadra -->
+                 <div class="d-flex align-items-center gap-2 ms-auto no-print">
+                     <label for="presenze-date-picker" class="form-label mb-0 text-nowrap">Data:</label>
+                     <input type="date" id="presenze-date-picker" class="form-control" style="max-width:180px;">
+                 </div>
+            </div>
+             <div class="col-12 mb-4">
+                 <div class="card chart-card">
+                    <div class="card-body">
+                         <div class="d-flex justify-content-between align-items-center">
+                             <h5 class="card-title mb-0">Conteggio Presenze Atleti</h5>
+                                <div class="btn-group btn-group-sm no-print" id="attendance-period-toggle">
+                                 <button type="button" class="btn btn-outline-secondary" data-period="daily">Giornaliero</button>
+                                 <button type="button" class="btn btn-outline-secondary" data-period="weekly">Settimanale</button>
+                                <button type="button" class="btn btn-outline-secondary" data-period="monthly">Mensile</button>
+                                <button type="button" class="btn btn-outline-secondary" data-period="semester">Semestrale</button>
+                                <button type="button" class="btn btn-outline-secondary active" data-period="annual">Annuale</button>
+                             </div>
+                         </div>
+                         <div style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;">
+                             <div style="position:relative; height:300px; min-width:max(100%, 400px);" id="attendance-chart-wrapper">
+                                 <canvas id="attendanceChart"></canvas>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+             </div>
+             <!-- Analisi Presenze Settimanali (ex tab Sett.) -->
+             <div class="col-12 mb-4">
+                <div class="card chart-card">
+                    <div class="card-body">
+                        <h5 class="card-title mb-3">Analisi Presenze Settimanali</h5>
+                        <div class="row g-3 align-items-end mb-3 no-print">
+                            <div class="col-md-3">
+                                <label for="weekly-athlete-1-selector" class="form-label">Atleta 1 (Principale)</label>
+                                <select id="weekly-athlete-1-selector" class="form-select"></select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="weekly-athlete-2-selector" class="form-label">Atleta 2 (Confronto - Opzionale)</label>
+                                <select id="weekly-athlete-2-selector" class="form-select">
+                                    <option value="">-- Nessun confronto --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Periodo di Analisi</label>
+                                <div class="btn-group w-100" role="group" id="weekly-period-toggle">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" data-period="month">1 Mese</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" data-period="trimester">3 Mesi</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" data-period="semester">6 Mesi</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm active" data-period="year">1 Anno</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" data-period="custom">Personalizzato</button>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label for="weekly-start-date-picker" class="form-label">Da</label>
+                                        <input type="date" id="weekly-start-date-picker" class="form-control" title="Data di inizio">
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="weekly-date-picker" class="form-label">A</label>
+                                        <input type="date" id="weekly-date-picker" class="form-control" title="Data finale">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;">
+                            <div style="position:relative; height:350px; min-width:600px;" id="weekly-chart-wrapper">
+                                <canvas id="weeklyAttendanceChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr class="my-5 no-print">
+        
+        <!-- SEZIONE CALENDARIO SQUADRA -->
+        <div id="hall-of-fame-section" class="tab-section row my-4 printable-area">
+             <div class="col-12 d-flex align-items-center gap-2 mb-3">
+                <h2 class="main-title mb-0">Hall of Fame - Atleti Premiati della Stagione</h2>
+                <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
+                <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
+            </div>
+             <div id="hall-of-fame-container" class="d-flex flex-wrap gap-3 justify-content-center"></div>
+        </div>
+        <hr class="my-5 no-print">
+         <div class="d-block d-md-none my-4 px-2 mobile-tab-warning">
+    <div class="card" style="background:#1a2a4a; border:1px solid #3b5280;">
+        <div class="card-body text-center py-4">
+            <i class="bi bi-display" style="font-size:2rem; color:#64748b;"></i>
+            <p class="mt-2 mb-0" style="color:#94a3b8;">📊 <strong>Confronto Performance Squadra</strong><br><small>Disponibile solo su tablet e desktop</small></p>
+        </div>
+    </div>
+</div>
+<div id="confronto-squadra-section" class="printable-area" style="display:none !important;">
+             <div class="row my-4" id="multi-athlete-chart-container">
+                <div class="col-12 d-flex align-items-center gap-2 mb-3">
+                     <h2 class="main-title mb-0">Confronto Performance Squadra</h2>
+                    <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
+                     <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
+                     <button class="btn btn-sm btn-outline-warning ms-1 no-print unlock-btn" title="Sblocca Dati Individuali" style="display: none;"><i class="bi bi-key-fill"></i></button>
+                </div>
+                <div class="col-12 mb-4">
+                    <div class="card chart-card">
+                        <div class="card-body">
+                            <div class="row g-3 align-items-center mb-3 no-print">
+                                <div class="col-md-4">
+                                    <label for="multi-athlete-metric-selector" class="form-label">Parametro</label>
+                                    <select id="multi-athlete-metric-selector" class="form-select"></select>
+                                </div>
+                                <div class="col-md-8">
+                                    <label class="form-label">Tipo Sessione</label>
+                                    <div class="btn-group w-100" id="multi-athlete-type-selector">
+                                        <button type="button" class="btn btn-outline-secondary active" data-type="all">Tutti</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-type="Allenamento">Allenamento</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-type="Partita">Partita</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-type="Individual">Individual</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-3 align-items-end no-print">
+                                <div class="col-md-8">
+                                    <label class="form-label">Filtro Temporale (mostra valore massimo nel periodo)</label>
+                                    <!-- ✅ MODIFICA: aggiunto "Annuale" -->
+                                    <div class="btn-group w-100" role="group">
+                                        <button type="button" class="btn btn-outline-secondary" data-period="day">Giorno</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-period="month">Mese</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-period="bimonth">Bimestre</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-period="trimester">Trimestre</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-period="semester">Semestre</button>
+                                        <button type="button" class="btn btn-outline-secondary active" data-period="annual">Annuale</button>
+                                    </div>
+                                </div>
+                                <div class="col-md-3" id="multi-athlete-datepicker-container" style="display: none;">
+                                    <label for="multi-athlete-datepicker" class="form-label">Seleziona Data</label>
+                                    <input type="date" id="multi-athlete-datepicker" class="form-control">
+                                </div>
+                                <div class="col-md-1">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button class="btn btn-secondary w-100" id="multi-athlete-reset-btn" title="Reset Filtri"><i class="bi bi-arrow-clockwise"></i></button>
+                                </div>
+                            </div>
+                            <div style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;">
+                                <div style="position:relative; height:300px; min-width:max(100%, 600px);" id="multi-athlete-chart-wrapper">
+                                    <canvas id="multiAthleteChart" class="mt-4"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr class="my-5 no-print">
+        <div class="d-block d-md-none my-4 px-2 mobile-tab-warning">
+    <div class="card" style="background:#1a2a4a; border:1px solid #3b5280;">
+        <div class="card-body text-center py-4">
+            <i class="bi bi-display" style="font-size:2rem; color:#64748b;"></i>
+            <p class="mt-2 mb-0" style="color:#94a3b8;">📊 <strong>Monitoraggio Performance GPS</strong><br><small>Disponibile solo su tablet e desktop</small></p>
+        </div>
+    </div>
+</div>
+<div id="monitoraggio-gps-section" class="tab-section row my-4 printable-area">
+    <!-- Avviso mobile: visibile solo su smartphone -->
+    <div class="col-12 d-lg-none mb-3">
+        <div class="card" style="background:#1a2a4a; border:1px solid #3b5280;">
+            <div class="card-body text-center py-4">
+                <i class="bi bi-display" style="font-size:2rem; color:#60a5fa;"></i>
+                <p class="mt-2 mb-0" style="color:#94a3b8;">📊 <strong style="color:#e2e8f0;">Grafici GPS &amp; Performance</strong><br><small>Dati disponibili solo su PC</small></p>
+            </div>
+        </div>
+    </div>
+             <div class="col-12 d-flex align-items-center gap-2 mb-3">
+                 <h2 class="main-title mb-0">Monitoraggio Performance (GPS)</h2>
+                 <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
+                <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
+                 <button class="btn btn-sm btn-outline-warning ms-1 no-print unlock-btn" title="Sblocca Dati Individuali" style="display: none;"><i class="bi bi-key-fill"></i></button>
+            </div>
+            <div class="card chart-card p-3 mb-4 no-print">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <label class="form-label mb-0">Filtra sessioni per tipo:</label>
+                    <div class="btn-group btn-group-sm" id="performance-filter-toggle">
+                        <button type="button" class="btn btn-outline-secondary active" data-type="all">Tutti</button>
+                        <button type="button" class="btn btn-outline-secondary" data-type="Allenamento">Allenamento</button>
+                        <button type="button" class="btn btn-outline-secondary" data-type="Partita">Partita</button>
+                        <button type="button" class="btn btn-outline-secondary" data-type="Individual">Individual</button>
+                    </div>
+                </div>
+                <div class="row align-items-end">
+                    <div class="col-12 col-md-8">
+                        <label class="form-label">Seleziona le sessioni da confrontare:</label>
+                        <div id="performance-selectors-container" class="d-grid gap-2"></div>
+                    </div>
+                    <div class="col-12 col-md-4 d-flex align-items-end gap-2 mt-2">
+                        <div class="flex-grow-1">
+                            <label for="performance-metric-selector" class="form-label">Metrica:</label>
+                            <select id="performance-metric-selector" class="form-select"></select>
+                        </div>
+                        <button class="btn btn-primary-custom mt-auto" id="add-comparison-btn"><i class="bi bi-plus-lg"></i> Aggiungi</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-7 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Grafico Confronto Performance</h5><div style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;"><div style="position:relative; height:400px; min-width:max(100%, 400px);" id="performance-chart-wrapper"><canvas id="performanceChart"></canvas></div></div></div></div></div>
+            <div class="col-12 col-lg-5 mb-4"><div class="card table-card" style="height:100%;"><div class="card-body d-flex flex-column"><h5 class="card-title">Tabella Dati a Confronto</h5><div class="table-responsive flex-grow-1" id="performance-table-container"></div><div id="export-buttons-container" class="mt-3 d-flex gap-2 no-print"></div></div></div></div>
+        </div>
+        <hr class="my-5 no-print">
+        <div class="d-block d-md-none my-4 px-2 mobile-tab-warning">
+    <div class="card" style="background:#1a2a4a; border:1px solid #3b5280;">
+        <div class="card-body text-center py-4">
+            <i class="bi bi-display" style="font-size:2rem; color:#64748b;"></i>
+            <p class="mt-2 mb-0" style="color:#94a3b8;">📊 <strong>Analisi Atleta Singolo</strong><br><small>Disponibile solo su tablet e desktop</small></p>
+        </div>
+    </div>
+</div>
+<div id="analisi-singolo-section" class="tab-section row my-4 printable-area">
+    <!-- Avviso mobile -->
+    <div class="col-12 d-lg-none mb-3">
+        <div class="card" style="background:#1a2a4a; border:1px solid #3b5280;">
+            <div class="card-body text-center py-4">
+                <i class="bi bi-display" style="font-size:2rem; color:#60a5fa;"></i>
+                <p class="mt-2 mb-0" style="color:#94a3b8;">📊 <strong style="color:#e2e8f0;">Analisi Atleta Singolo</strong><br><small>Dati disponibili solo su PC</small></p>
+            </div>
+        </div>
+    </div>
+             <div class="col-12 d-flex align-items-center gap-2 mb-3">
+                 <h2 class="main-title mb-0">Analisi Atleta Singolo</h2>
+                 <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
+                 <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
+                <button class="btn btn-sm btn-outline-warning ms-1 no-print unlock-btn" title="Sblocca Dati Individuali" style="display: none;"><i class="bi bi-key-fill"></i></button>
+            </div>
+            <div class="card chart-card p-3 mb-4 no-print" style="overflow:hidden;">
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label for="trend-athlete-selector" class="form-label">Atleta per Andamento nel Tempo:</label>
+                        <select id="trend-athlete-selector" class="form-select"></select>
+                        <label for="trend-metric-selector" class="form-label mt-2">Metrica per Andamento:</label>
+                        <select id="trend-metric-selector" class="form-select"></select>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label for="radar-athlete-selector-1" class="form-label">Atleta 1 (Radar):</label>
+                        <select id="radar-athlete-selector-1" class="form-select"></select>
+                        <label for="radar-athlete-selector-2" class="form-label mt-2">Atleta 2 (Confronto Radar):</label>
+                        <select id="radar-athlete-selector-2" class="form-select"></select>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-7 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Andamento Performance nel Tempo</h5><div style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;"><div style="position:relative; height:600px; min-width:max(100%, 300px);" id="trend-chart-wrapper"><canvas id="athleteTrendChart"></canvas></div></div></div></div></div>
+            <div class="col-12 col-lg-5 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Profilo Atleta (vs. Top di Squadra)</h5><div style="position:relative; height:600px;" id="radar-chart-wrapper"><canvas id="athleteRadarChart"></canvas></div></div></div></div>
+        </div>
+
+        <!-- ===== SEZIONE MATERIALE ===== -->
+        <div id="materiale-section" class="tab-section row my-4 printable-area">
+            <div class="col-12 d-flex align-items-center gap-2 mb-3 flex-wrap">
+                <h2 class="main-title mb-0">Gestione Materiale</h2>
+                <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa"><i class="bi bi-printer-fill"></i></button>
+                <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print"><i class="bi bi-arrow-up-circle-fill"></i></a>
+                <button id="mat-add-btn" onclick="window.materialeAddItem()" class="btn btn-sm btn-success ms-auto no-print" style="display:none;">
+                    <i class="bi bi-plus-circle-fill"></i> Aggiungi Articolo
+                </button>
+                <button id="mat-excel-btn" onclick="window.materialeExportExcel()" class="btn btn-sm btn-outline-success no-print" style="display:none;">
+                    <i class="bi bi-file-earmark-excel-fill"></i> Esporta Excel
+                </button>
+            </div>
+            <!-- TABELLA ATLETI -->
+            <div class="col-12 mb-4">
+                <div class="d-flex align-items-center gap-2 mb-2" style="cursor:pointer;" onclick="matToggleSection('atleti')">
+                    <h5 class="mb-0" style="color:#93c5fd;"><i class="bi bi-people-fill"></i> Atleti</h5>
+                    <i id="mat-chevron-atleti" class="bi bi-chevron-up" style="color:#93c5fd;font-size:1rem;transition:transform 0.2s;"></i>
+                    <span id="mat-count-atleti" style="color:#64748b;font-size:0.8rem;margin-left:4px;"></span>
+                </div>
+                <div id="mat-body-atleti" class="card chart-card">
+                    <div class="card-body p-0" style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+                        <table id="materiale-table-atleti" class="table table-dark table-bordered mb-0" style="border-color:#1e3a5f;min-width:600px;"></table>
+                    </div>
+                </div>
+            </div>
+            <!-- TABELLA STAFF -->
+            <div class="col-12 mb-3">
+                <div class="d-flex align-items-center gap-2 mb-2" style="cursor:pointer;" onclick="matToggleSection('staff')">
+                    <h5 class="mb-0" style="color:#fbbf24;"><i class="bi bi-person-badge-fill"></i> Staff</h5>
+                    <i id="mat-chevron-staff" class="bi bi-chevron-up" style="color:#fbbf24;font-size:1rem;transition:transform 0.2s;"></i>
+                    <span id="mat-count-staff" style="color:#64748b;font-size:0.8rem;margin-left:4px;"></span>
+                </div>
+                <div id="mat-body-staff" class="card chart-card">
+                    <div class="card-body p-0" style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+                        <table id="materiale-table-staff" class="table table-dark table-bordered mb-0" style="border-color:#1e3a5f;min-width:600px;"></table>
+                    </div>
+                </div>
+            </div>
+            <!-- Legenda -->
+            <div class="col-12 mt-1 no-print d-flex gap-3 flex-wrap" style="font-size:0.82rem;color:#94a3b8;">
+                <span><span style="display:inline-block;width:14px;height:14px;background:#166534;border-radius:3px;vertical-align:middle;margin-right:4px;"></span>Consegnato</span>
+                <span><span style="display:inline-block;width:14px;height:14px;background:#7f1d1d;border-radius:3px;vertical-align:middle;margin-right:4px;"></span>Restituito</span>
+                <span><span style="display:inline-block;width:14px;height:14px;background:#1e293b;border:1px solid #334155;border-radius:3px;vertical-align:middle;margin-right:4px;"></span>Nessuno</span>
+                <span style="margin-left:auto;">💡 Clicca su una cella per cambiare stato</span>
+            </div>
+        </div>
+
+
+        <!-- ===== SEZIONE PAGAMENTI ===== -->
+        <div id="pagamenti-section" class="tab-section row my-4 printable-area">
+            <div class="col-12 d-flex align-items-center gap-2 mb-3 flex-wrap">
+                <h2 class="main-title mb-0">💳 Gestione Pagamenti</h2>
+                <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa"><i class="bi bi-printer-fill"></i></button>
+                <div class="ms-auto d-flex gap-2 flex-wrap no-print admin-only" id="pag-default-btns" style="display:none!important;">
+                    <button class="btn btn-sm btn-outline-info" onclick="window.pagOpenDefaults('atleti')"><i class="bi bi-people-fill"></i> Default Atleti</button>
+                    <button class="btn btn-sm btn-outline-warning" onclick="window.pagOpenDefaults('dirigenti')"><i class="bi bi-person-badge-fill"></i> Default Dirigenti</button>
+                    <button class="btn btn-sm btn-outline-success" onclick="window.pagOpenDefaults('allenatori')"><i class="bi bi-whistle-fill"></i> Default Allenatori</button>
+                </div>
+            </div>
+
+            <!-- Modal Default Categoria -->
+            <div class="modal fade" id="pagDefaultModal" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="pagDefaultModalTitle">Pagamenti Default</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body" id="pagDefaultModalBody"></div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                            <button type="button" class="btn btn-warning" onclick="window.pagApplyDefaults()">⚡ Applica a tutti</button>
+                            <button type="button" class="btn btn-primary-custom" onclick="window.pagSaveDefaults()">💾 Salva Default</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alert scadenze -->
+            <div class="col-12 mb-3" id="pag-alerts-box"></div>
+
+            <!-- Legenda -->
+            <div class="col-12 mb-3 no-print d-flex gap-3 flex-wrap" style="font-size:0.82rem;">
+                <span><span style="display:inline-block;width:12px;height:12px;background:#22c55e;border-radius:50%;vertical-align:middle;margin-right:4px;"></span>Pagato</span>
+                <span><span style="display:inline-block;width:12px;height:12px;background:#3b82f6;border-radius:50%;vertical-align:middle;margin-right:4px;"></span>Scadenza &gt; 15 gg</span>
+                <span><span style="display:inline-block;width:12px;height:12px;background:#f97316;border-radius:50%;vertical-align:middle;margin-right:4px;"></span>Scadenza ≤ 15 gg</span>
+                <span><span style="display:inline-block;width:12px;height:12px;background:#ef4444;border-radius:50%;vertical-align:middle;margin-right:4px;"></span>Scaduto</span>
+                <span><span style="display:inline-block;width:12px;height:12px;background:#475569;border-radius:50%;vertical-align:middle;margin-right:4px;"></span>Nessun importo</span>
+            </div>
+
+            <!-- ATLETI -->
+            <div class="col-12 mb-4">
+                <div class="d-flex align-items-center gap-2 mb-2" style="cursor:pointer;" onclick="pagToggleSection('atleti')">
+                    <h5 class="mb-0" style="color:#93c5fd;"><i class="bi bi-people-fill"></i> Atleti</h5>
+                    <i id="pag-chevron-atleti" class="bi bi-chevron-up" style="color:#93c5fd;font-size:1rem;transition:transform 0.2s;"></i>
+                    <span id="pag-count-atleti" style="color:#64748b;font-size:0.8rem;"></span>
+                </div>
+                <div id="pag-body-atleti">
+                    <div class="card chart-card">
+                        <div class="card-body p-0" style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+                            <table id="pag-table-atleti" class="table table-dark table-bordered mb-0" style="border-color:#1e3a5f;min-width:700px;"></table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STAFF -->
+            <div class="col-12 mb-4">
+                <div class="d-flex align-items-center gap-2 mb-2" style="cursor:pointer;" onclick="pagToggleSection('staff')">
+                    <h5 class="mb-0" style="color:#fbbf24;"><i class="bi bi-person-badge-fill"></i> Staff</h5>
+                    <i id="pag-chevron-staff" class="bi bi-chevron-up" style="color:#fbbf24;font-size:1rem;transition:transform 0.2s;"></i>
+                    <span id="pag-count-staff" style="color:#64748b;font-size:0.8rem;"></span>
+                </div>
+                <div id="pag-body-staff">
+                    <div class="card chart-card">
+                        <div class="card-body p-0" style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+                            <table id="pag-table-staff" class="table table-dark table-bordered mb-0" style="border-color:#1e3a5f;min-width:700px;"></table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Pagamento -->
+        <div class="modal fade" id="pagModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="pagModalTitle">Gestisci Pagamento</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" id="pagModalBody"></div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                        <button type="button" class="btn btn-primary-custom" onclick="window.pagSave()">💾 Salva</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ===== SEZIONE CONVOCAZIONI ===== -->
+        <div id="convocazioni-section" class="tab-section row my-4">
+            <div class="col-12 d-flex align-items-center gap-2 mb-3 flex-wrap">
+                <h2 class="main-title mb-0">📣 Convocazioni</h2>
+                <button class="btn btn-sm btn-primary-custom ms-auto no-print" onclick="window.convNuova()"><i class="bi bi-plus-circle-fill"></i> Nuova Convocazione</button>
+            </div>
+
+            <!-- Settings upload immagini -->
+            <div class="col-12 mb-3">
+                <div class="card chart-card">
+                    <div class="card-body p-3">
+                        <h6 style="color:#93c5fd;" class="mb-2"><i class="bi bi-image-fill"></i> Immagini Società <small class="text-muted">(salvate per tutte le convocazioni)</small></h6>
+                        <div class="d-flex gap-3 flex-wrap align-items-center">
+                            <div>
+                                <label class="form-label small mb-1">Sfondo PDF</label><br>
+                                <img id="conv-bg-preview" src="" style="height:48px;border-radius:4px;border:1px solid #1e3a5f;display:none;">
+                                <label class="btn btn-sm btn-outline-secondary mt-1 no-print">
+                                    <i class="bi bi-upload"></i> Carica Sfondo
+                                    <input type="file" accept="image/*" id="conv-bg-upload" style="display:none;" onchange="window.convUploadImg(this,'bg')">
+                                </label>
+                            </div>
+                            <div>
+                                <label class="form-label small mb-1">Logo Società (centro)</label><br>
+                                <img id="conv-logo-preview" src="" style="height:48px;border-radius:4px;border:1px solid #1e3a5f;display:none;">
+                                <label class="btn btn-sm btn-outline-secondary mt-1 no-print">
+                                    <i class="bi bi-upload"></i> Carica Logo
+                                    <input type="file" accept="image/*" id="conv-logo-upload" style="display:none;" onchange="window.convUploadImg(this,'logo')">
+                                </label>
+                            </div>
+                            <div>
+                                <label class="form-label small mb-1">Logo Sponsor (sx/dx)</label><br>
+                                <img id="conv-sponsor-preview" src="" style="height:48px;border-radius:4px;border:1px solid #1e3a5f;display:none;">
+                                <label class="btn btn-sm btn-outline-secondary mt-1 no-print">
+                                    <i class="bi bi-upload"></i> Carica Sponsor
+                                    <input type="file" accept="image/*" id="conv-sponsor-upload" style="display:none;" onchange="window.convUploadImg(this,'sponsor')">
+                                </label>
+                            </div>
+                            <div>
+                                <label class="form-label small mb-1">Firmato da</label>
+                                <input type="text" class="form-control form-control-sm" id="conv-firma" placeholder="es. Franzoso Edy" style="max-width:180px;" oninput="window.convSaveSettings()">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Nuova Convocazione -->
+            <div class="col-12 col-lg-5 mb-3" id="conv-form-panel" style="display:none;">
+                <div class="card chart-card h-100">
+                    <div class="card-body p-3">
+                        <h6 style="color:#93c5fd;" class="mb-3" id="conv-form-title">📋 Nuova Convocazione</h6>
+                        <input type="hidden" id="conv-edit-id">
+                        <div class="row">
+                            <div class="col-md-6 mb-2"><label class="form-label small">Categoria</label>
+                                <input type="text" class="form-control form-control-sm" id="conv-categoria" placeholder="es. Under 14">
+                            </div>
+                            <div class="col-md-6 mb-2"><label class="form-label small">Tipo</label>
+                                <select class="form-select form-select-sm" id="conv-tipo">
+                                    <option>CONVOCAZIONE PARTITA</option>
+                                    <option>CONVOCAZIONE ALLENAMENTO</option>
+                                    <option>CONVOCAZIONE TORNEO</option>
+                                    <option>CONVOCAZIONE AMICHEVOLE</option>
+                                </select>
+                            </div>
+                            <div class="col-12 mb-2"><label class="form-label small">Avversario / Titolo</label>
+                                <input type="text" class="form-control form-control-sm" id="conv-avversario" placeholder="es. vs Piossasco">
+                            </div>
+                            <div class="col-md-4 mb-2"><label class="form-label small">Data</label>
+                                <input type="date" class="form-control form-control-sm" id="conv-data">
+                            </div>
+                            <div class="col-md-4 mb-2"><label class="form-label small">Ritrovo Ore</label>
+                                <input type="time" class="form-control form-control-sm" id="conv-ritrovo">
+                            </div>
+                            <div class="col-md-4 mb-2"><label class="form-label small">Inizio Gara Ore</label>
+                                <input type="time" class="form-control form-control-sm" id="conv-inizio">
+                            </div>
+                            <div class="col-12 mb-2"><label class="form-label small">Luogo (indirizzo completo)</label>
+                                <input type="text" class="form-control form-control-sm" id="conv-luogo" placeholder="es. Corso Martin Luther King n°8 Grugliasco (TO)">
+                            </div>
+                            <div class="col-12 mb-3"><label class="form-label small">Note (opzionale)</label>
+                                <textarea class="form-control form-control-sm" id="conv-note" rows="2" placeholder="es. Portare kit completo, scarpe da gara..."></textarea>
+                            </div>
+                        </div>
+                        <hr class="my-2">
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label small fw-bold" style="color:#fbbf24;">👔 Staff da includere</label>
+                                <div id="conv-staff-list" style="max-height:180px;overflow-y:auto;"></div>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label small fw-bold" style="color:#4ade80;">⚽ Atleti Convocati</label>
+                                <div class="d-flex gap-1 mb-1 no-print">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.convSelectAll(true)">Tutti</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.convSelectAll(false)">Nessuno</button>
+                                </div>
+                                <div id="conv-atleti-list" style="max-height:180px;overflow-y:auto;"></div>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 mt-3">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('conv-form-panel').style.display='none'">Annulla</button>
+                            <button type="button" class="btn btn-primary-custom btn-sm" onclick="window.convSalva()"><i class="bi bi-save"></i> Salva</button>
+                            <button type="button" class="btn btn-success btn-sm ms-auto" onclick="window.convStampa()"><i class="bi bi-printer-fill"></i> Anteprima / PDF</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista convocazioni salvate -->
+            <div class="col-12 col-lg-7 mb-3" id="conv-list-panel">
+                <div class="card chart-card">
+                    <div class="card-body p-3">
+                        <h6 style="color:#93c5fd;" class="mb-2">📁 Storico Convocazioni</h6>
+                        <div id="conv-storico"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== SEZIONE ACCESSI (solo admin) ===== -->
+        <div id="accessi-section" class="tab-section row my-4">
+            <div class="col-12 d-flex align-items-center gap-2 mb-3 flex-wrap">
+                <h2 class="main-title mb-0">Log Accessi Utenti</h2>
+                <button class="btn btn-sm btn-outline-secondary ms-2 no-print" onclick="window.loadAccessLog()">
+                    <i class="bi bi-arrow-clockwise"></i> Aggiorna
+                </button>
+                <div class="ms-auto d-flex align-items-center gap-2 no-print">
+                    <label class="form-label mb-0 text-nowrap" style="color:#94a3b8;">Filtra utente:</label>
+                    <select id="accessi-user-filter" class="form-select form-select-sm" style="max-width:180px;" onchange="window.loadAccessLog()">
+                        <option value="">— Tutti —</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="card chart-card">
+                    <div class="card-body p-0" style="overflow-x:auto;">
+                        <table id="accessi-table" class="table table-dark table-bordered mb-0" style="min-width:500px; border-color:#1e3a5f;">
+                            <thead>
+                                <tr style="background:#0a1628;">
+                                    <th style="border-color:#1e3a5f; color:#93c5fd; padding:10px 14px;">Data e Ora</th>
+                                    <th style="border-color:#1e3a5f; color:#93c5fd; padding:10px 14px;">Utente</th>
+                                    <th style="border-color:#1e3a5f; color:#93c5fd; padding:10px 14px;">Ruolo</th>
+                                    <th style="border-color:#1e3a5f; color:#93c5fd; padding:10px 14px; text-align:center;">Giorno</th>
+                                </tr>
+                            </thead>
+                            <tbody id="accessi-tbody">
+                                <tr><td colspan="4" style="text-align:center; color:#64748b; padding:20px;">Caricamento...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- Statistiche rapide -->
+            <div class="col-12 mt-3">
+                <div id="accessi-stats" class="d-flex flex-wrap gap-3"></div>
+            </div>
+        </div>
+
+    </main>
+    <footer class="bg-dark-blue py-3 mt-5 no-print">
+        <div class="container text-center">
+            <p class="text-muted mb-0">By Edy Franzoso</p>
+        </div>
+    </footer>
+    <div id="modals-container"></div>
+    
+    <!-- Modal Calendario Squadra -->
+    <div class="modal fade" id="calendarEventModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Gestisci Evento Calendario</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="calendar-event-form">
+                        <input type="hidden" id="event-date-id">
+                        <div class="mb-3">
+                            <label class="form-label">Data Evento</label>
+                            <input type="date" class="form-control" id="event-date" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Tipo Evento</label>
+                            <select class="form-select" id="event-type" required>
+                                <option value="">-- Seleziona --</option>
+                                <option value="Allenamento">Allenamento</option>
+                                <option value="Partita">Partita</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Orario</label>
+                            <input type="time" class="form-control" id="event-time">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Blocca modifiche (giorni prima)</label>
+                            <input type="number" class="form-control" id="event-lock-days" min="0" value="2">
+                            <small class="text-muted">I genitori non potranno rispondere X giorni prima dell'evento</small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-outline-danger" id="delete-event-btn" style="display:none;">
+                        Elimina Evento
+                    </button>
+                    <div>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn btn-primary-custom" form="calendar-event-form">Salva</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal fade" id="responsesModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Risposte Atleti</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="responses-content"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal fade" id="athleteLinksModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Link Calendario Atleti</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">Copia e invia questi link ai genitori:</p>
+                    <div id="athlete-links-content"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Librerie JS di Bootstrap e Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Multi-annata system - ORDINE IMPORTANTE! -->
+    <script src="data-adapter-multi-annata.js"></script>
+    <script src="auth-multi-annata.js"></script>
+    
+    <!-- Script personalizzato -->
+    <script src="script.js"></script>
+    <script>
+
+    // ========================================================================
+    // BACKUP SYSTEM - VERSIONE CON RITARDO PER EVITARE CONFLITTI
+    // ========================================================================
+
+    document.getElementById('restore-file').addEventListener('change', async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const btn = document.getElementById('restore-btn');
+        const originalHTML = btn.innerHTML;
+        
+        try {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Caricamento...';
+            
+            const reader = new FileReader();
+            reader.onload = async function(event) {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    
+                    // Verifica struttura base
+                    if (!data.athletes || !Array.isArray(data.athletes)) {
+                        throw new Error('File non valido: struttura dati non corretta');
+                    }
+                    
+                    // Conferma finale
+                    const summary = `📊 Dati nel backup:\\n\\n` +
+                        `• Atleti: ${data.athletes.length}\\n` +
+                        `• Sessioni: ${data.sessions ? data.sessions.length : 0}\\n` +
+                        `• Eventi calendario: ${data.calendarEvents ? Object.keys(data.calendarEvents).length : 0}\\n\\n` +
+                        `Confermi il ripristino?`;
+                    
+                    if (!confirm(summary)) {
+                        btn.innerHTML = originalHTML;
+                        btn.disabled = false;
+                        e.target.value = '';
+                        return;
+                    }
+                    
+                    // Salva nell'annata corrente
+                    const annataId = sessionStorage.getItem('gosport_current_annata');
+                    
+                    if (!annataId) {
+                        throw new Error('Nessuna annata selezionata. Seleziona un\'annata prima di ripristinare.');
+                    }
+                    
+                    const response = await fetch('/api/data', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Annata-Id': annataId
+                        },
+                        body: JSON.stringify(data)
+                    });
+                    
+                    if (!response.ok) throw new Error('Errore nel salvataggio dei dati');
+                    
+                    btn.innerHTML = '<i class="bi bi-check-circle"></i> Ripristinato!';
+                    btn.className = 'btn btn-success';
+                    
+                    setTimeout(() => {
+                        alert('✅ Dati ripristinati con successo!\\n\\nLa pagina verrà ricaricata.');
+                        location.reload();
+                    }, 1000);
+                    
+                } catch (err) {
+                    alert('❌ Errore nel ripristino: ' + err.message + '\\n\\nVerifica che il file sia un backup valido.');
+                    btn.innerHTML = originalHTML;
+                    btn.className = 'btn btn-warning';
+                    btn.disabled = false;
+                }
+            };
+            
+            reader.onerror = function() {
+                alert('❌ Errore nella lettura del file');
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            };
+            
+            reader.readAsText(file);
+            
+        } catch (e) {
+            alert('❌ Errore: ' + e.message);
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+        }
+        
+        // Reset input
+        e.target.value = '';
+    });
+    </script>
+       <!-- Copyright Footer -->
+    <footer class="text-center no-print" style="...">
+        © 2025 Edy Franzoso.<br>
+        Codice sorgente e contenuti protetti ai sensi della 
+        Legge sul Diritto d'Autore (L. 633/1941).<br>
+        Riproduzione, distribuzione o modifica vietati 
+        senza autorizzazione scritta.
+    </footer>
+    <!-- ========================================== -->
+<!-- MODAL PAGELLA VALUTAZIONE -->
+<!-- ========================================== -->
+<div class="modal fade" id="ratingSheetModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-clipboard-check-fill"></i> Pagella Valutazione
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="rating-sheet-form">
+                    <input type="hidden" id="rating-athlete-id">
+                    <input type="hidden" id="rating-sheet-id">
+                    
+                    <!-- Info Header -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Atleta</label>
+                            <input type="text" id="rating-athlete-name" class="form-control" readonly>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Coach</label>
+                            <input type="text" id="rating-coach-name" class="form-control" placeholder="Nome Coach" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Data</label>
+                            <input type="date" id="rating-date" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <!-- Tabella Valutazioni -->
+                    <div class="card mb-4" style="background-color: var(--card-bg);">
+                        <div class="card-header">
+                            <h6 class="mb-0">Valutazioni (clicca sulle stelle)</h6>
+                        </div>
+                        <div class="card-body">
+                            <!-- Tecnica -->
+                            <div class="rating-row mb-3">
+                                <label class="rating-label">⚙️ Tecnica</label>
+                                <div class="rating-stars" data-category="tecnica">
+                                    <i class="bi bi-star rating-star" data-category="tecnica" data-value="1"></i>
+                                    <i class="bi bi-star rating-star" data-category="tecnica" data-value="2"></i>
+                                    <i class="bi bi-star rating-star" data-category="tecnica" data-value="3"></i>
+                                    <i class="bi bi-star rating-star" data-category="tecnica" data-value="4"></i>
+                                    <i class="bi bi-star rating-star" data-category="tecnica" data-value="5"></i>
+                                </div>
+                                <input type="hidden" id="rating-tecnica" value="0">
+                            </div>
+                            
+                            <!-- Tattica -->
+                            <div class="rating-row mb-3">
+                                <label class="rating-label">🎯 Tattica</label>
+                                <div class="rating-stars" data-category="tattica">
+                                    <i class="bi bi-star rating-star" data-category="tattica" data-value="1"></i>
+                                    <i class="bi bi-star rating-star" data-category="tattica" data-value="2"></i>
+                                    <i class="bi bi-star rating-star" data-category="tattica" data-value="3"></i>
+                                    <i class="bi bi-star rating-star" data-category="tattica" data-value="4"></i>
+                                    <i class="bi bi-star rating-star" data-category="tattica" data-value="5"></i>
+                                </div>
+                                <input type="hidden" id="rating-tattica" value="0">
+                            </div>
+                            
+                            <!-- Fisico-Atletico -->
+                            <div class="rating-row mb-3">
+                                <label class="rating-label">💪 Fisico-Atletico</label>
+                                <div class="rating-stars" data-category="fisico">
+                                    <i class="bi bi-star rating-star" data-category="fisico" data-value="1"></i>
+                                    <i class="bi bi-star rating-star" data-category="fisico" data-value="2"></i>
+                                    <i class="bi bi-star rating-star" data-category="fisico" data-value="3"></i>
+                                    <i class="bi bi-star rating-star" data-category="fisico" data-value="4"></i>
+                                    <i class="bi bi-star rating-star" data-category="fisico" data-value="5"></i>
+                                </div>
+                                <input type="hidden" id="rating-fisico" value="0">
+                            </div>
+                            
+                            <!-- Comportamentale -->
+                            <div class="rating-row mb-3">
+                                <label class="rating-label">🤝 Comportamentale</label>
+                                <div class="rating-stars" data-category="comportamentale">
+                                    <i class="bi bi-star rating-star" data-category="comportamentale" data-value="1"></i>
+                                    <i class="bi bi-star rating-star" data-category="comportamentale" data-value="2"></i>
+                                    <i class="bi bi-star rating-star" data-category="comportamentale" data-value="3"></i>
+                                    <i class="bi bi-star rating-star" data-category="comportamentale" data-value="4"></i>
+                                    <i class="bi bi-star rating-star" data-category="comportamentale" data-value="5"></i>
+                                </div>
+                                <input type="hidden" id="rating-comportamentale" value="0">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Note e Commenti -->
+                    <div class="mb-3">
+                        <label for="rating-notes" class="form-label fw-bold">
+                            📝 Note e/o Commenti alle Valutazioni
+                        </label>
+                        <textarea id="rating-notes" class="form-control" rows="5" 
+                                  placeholder="Inserisci note, commenti o osservazioni..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Chiudi
+                </button>
+                <button type="button" class="btn btn-danger" id="delete-rating-btn" style="display: none;">
+                    <i class="bi bi-trash-fill"></i> Elimina
+                </button>
+                <button type="button" class="btn btn-primary" id="save-rating-btn">
+                    <i class="bi bi-save-fill"></i> Salva
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL STORICO PAGELLE -->
+<div class="modal fade" id="ratingListModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-clipboard-data-fill"></i> Storico Pagelle
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="rating-list-container" class="row"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="pagelle.js"></script>
+<script>
+(function() {
+    function handleWeeklyVisibility() {
+        const section = document.getElementById('weekly-attendance-analysis-section');
+        if (!section) return;
+        if (window.innerWidth >= 768) {
+            section.style.removeProperty('display');
+        } else {
+            section.style.setProperty('display', 'none', 'important');
+        }
+    }
+    handleWeeklyVisibility();
+    window.addEventListener('resize', handleWeeklyVisibility);
+})();
+</script>
+
+<script>
+/* ===== TAB NAVIGATION CONTROLLER ===== */
+
+function switchTab(sectionId) {
+    // Mostra la sezione corretta
+    document.querySelectorAll('.tab-section').forEach(function(s) {
+        s.classList.remove('tab-active');
+    });
+    var target = document.getElementById(sectionId);
+    if (target) {
+        target.classList.add('tab-active');
+        target.style.removeProperty('display');
+    }
+    // Banner scadenze: solo sulla Home
+    var _ac = document.getElementById('alerts-container');
+    if (_ac) _ac.style.display = (sectionId === 'home-section') ? '' : 'none';
+
+    // confronto-squadra: SOLO con GPS su desktop — usa setProperty per sovrascrivere !important
+    var confronto = document.getElementById('confronto-squadra-section');
+    if (confronto) {
+        if (sectionId === 'monitoraggio-gps-section' && window.innerWidth >= 992) {
+            confronto.style.setProperty('display', 'block', 'important');
+        } else {
+            confronto.style.setProperty('display', 'none', 'important');
+        }
+    }
+
+    // Aggiorna bottone attivo
+    document.querySelectorAll('.tab-nav-btn[data-tab]').forEach(function(b) {
+        b.classList.remove('active');
+    });
+    var activeBtn = document.querySelector('.tab-nav-btn[data-tab="' + sectionId + '"]');
+    if (activeBtn) activeBtn.classList.add('active');
+
+    // Chiudi il menu hamburger mobile
+    var navMenu = document.getElementById('navbarNav');
+    if (navMenu) navMenu.classList.remove('show');
+
+    // Resize Chart.js
+    setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 100);
+
+    // Se si va al tab Presenze, ridisegna il grafico (era nascosto, offsetWidth era 0)
+    if (sectionId === 'report-presenze-section') {
+        setTimeout(function() {
+            if (window.updateAttendanceChart) window.updateAttendanceChart();
+        }, 200);
+    }
+    // Se si va al tab Materiale, carica/ridisegna la tabella
+    if (sectionId === 'materiale-section') {
+        setTimeout(function() {
+            if (window.renderMateriale) window.renderMateriale();
+        }, 100);
+    }
+    // Se si va al tab Pagamenti, renderizza
+    if (sectionId === 'pagamenti-section') {
+        setTimeout(function() {
+            if (window.renderPagamenti) window.renderPagamenti();
+        }, 100);
+    }
+    // Se si va al tab Convocazioni
+    if (sectionId === 'convocazioni-section') {
+        setTimeout(function() {
+            if (window.renderConvocazioni) window.renderConvocazioni();
+        }, 100);
+    }
+    // Se si va al tab Accessi, carica i log
+    if (sectionId === 'accessi-section') {
+        setTimeout(function() {
+            if (window.loadAccessLog) window.loadAccessLog();
+        }, 100);
+    }
+}
+
+// Intercetta link hash interni
+document.addEventListener('click', function(e) {
+    var a = e.target.closest('a[href^="#"]');
+    if (!a) return;
+    var hash = a.getAttribute('href').substring(1);
+    var el = document.getElementById(hash);
+    if (el && el.classList.contains('tab-section')) {
+        e.preventDefault();
+        switchTab(hash);
+    }
+}); // ✅ CHIUDI QUI il click listener!
+
+// ✅ Chiudi menu mobile dopo click su un pulsante (SEPARATO)
+document.addEventListener('DOMContentLoaded', function() {
+    const navbarNav = document.getElementById('navbarNav');
+    const hamburger = document.querySelector('.navbar-toggler');
+    
+    if (navbarNav && hamburger) {
+        navbarNav.querySelectorAll('.tab-nav-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                navbarNav.classList.remove('show');
+                hamburger.setAttribute('aria-expanded', 'false');
+            });
+        });
+    }
+});
+
+// Date picker sezione Presenze — chiama syncAndUpdateEvaluationDate direttamente
+document.addEventListener('DOMContentLoaded', function() {
+    var presenzePicker = document.getElementById('presenze-date-picker');
+    var mainPicker = document.getElementById('evaluation-date-picker');
+    if (!presenzePicker || !mainPicker) return;
+
+    // Inizializza con il valore del picker principale
+    presenzePicker.value = mainPicker.value;
+
+    // Quando cambia → chiama la funzione centrale che aggiorna tutto
+    presenzePicker.addEventListener('change', function() {
+        if (window.syncAndUpdateEvaluationDate) {
+            window.syncAndUpdateEvaluationDate(this.value);
+        }
+    });
+
+    // Quando cambia il picker principale → aggiorna quello presenze
+    mainPicker.addEventListener('change', function() {
+        if (presenzePicker.value !== this.value) presenzePicker.value = this.value;
+    });
+});
+
+// ===== MODULO GESTIONE MATERIALE — due tabelle separate =====
+(function() {
+    var DEFAULT_ITEMS = ['Maglia Blu','Pantaloncino Blu','Calzettone Blu','Maglia Rossa','Pantaloncino Rosso','Calzettone Rosso','Maglia Riscaldamento','Pallone'];
+    var TAGLIE = ['','6','8','10','12','14','S','M','L','XL','2XL','3XL'];
+    var materialeItems = DEFAULT_ITEMS.slice();
+    var materialeData  = {};   // { pid: { _numero: "16", "Maglia Blu": { status, qty, taglia } } }
+    var materialeLoaded = false;
+
+    function getAnnataId() { return sessionStorage.getItem('gosport_current_annata') || ''; }
+    function getMatPerm() {
+        var r = sessionStorage.getItem('gosport_user_role') || '';
+        if (r === 'admin' || r === 'dirigente_l1') return 'full';
+        if (r === 'dirigente_l2' || r === 'dirigente_l4') return 'athletes';
+        return 'readonly';
+    }
+
+    async function loadMateriale() {
+        try {
+            var res = await fetch('/api/data', { headers: { 'x-annata-id': getAnnataId() } });
+            if (res.ok) {
+                var d = await res.json();
+                if (d && d.materiale) {
+                    if (Array.isArray(d.materiale.items) && d.materiale.items.length > 0) materialeItems = d.materiale.items;
+                    if (d.materiale.assignments) materialeData = d.materiale.assignments;
+                }
+            }
+        } catch(e) { console.warn('Materiale load:', e); }
+        materialeLoaded = true;
+        renderMateriale();
+    }
+
+    async function saveMateriale() {
+        try {
+            await fetch('/api/data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-annata-id': getAnnataId() },
+                body: JSON.stringify({ materiale: { items: materialeItems, assignments: materialeData } })
+            });
+        } catch(e) { console.warn('Materiale save:', e); }
+    }
+
+    function getEntry(pid, item) {
+        var raw = (materialeData[pid] || {})[item];
+        if (!raw) return { status: '', qty: 1, taglia: '' };
+        if (typeof raw === 'string') return { status: raw, qty: 1, taglia: '' };
+        return { status: raw.status || '', qty: raw.qty || 1, taglia: raw.taglia || '' };
+    }
+    function setEntry(pid, item, status, qty, taglia) {
+        if (!materialeData[pid]) materialeData[pid] = {};
+        materialeData[pid][item] = { status: status, qty: Math.max(1, parseInt(qty)||1), taglia: taglia || '' };
+    }
+    function getNumero(pid) {
+        return (materialeData[pid] || {})._numero || '';
+    }
+    function setNumero(pid, val) {
+        if (!materialeData[pid]) materialeData[pid] = {};
+        materialeData[pid]._numero = val;
+    }
+    function nextStatus(s) {
+        if (!s || s==='') return 'consegnato';
+        if (s==='consegnato') return 'restituito';
+        return '';
+    }
+    function stStyle(s) {
+        if (s==='consegnato') return { bg:'#166534', color:'#bbf7d0', border:'#22c55e', icon:'&#x2705;', label:'Consegnato' };
+        if (s==='restituito') return { bg:'#7f1d1d', color:'#fecaca', border:'#ef4444', icon:'&#x21A9;&#xFE0F;', label:'Restituito' };
+        return { bg:'#1e293b', color:'#64748b', border:'#334155', icon:'&mdash;', label:'Nessuno' };
+    }
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function buildTable(people, editable, showArticleButtons) {
+        if (people.length === 0) {
+            return '<tbody><tr><td colspan="99" style="color:#64748b;text-align:center;padding:16px;">Nessun membro</td></tr></tbody>';
+        }
+
+        var html = '<thead><tr style="background:#0a1628;position:sticky;top:0;z-index:2;">';
+        html += '<th style="min-width:170px;position:sticky;left:0;z-index:3;background:#0a1628;border-color:#1e3a5f;color:#93c5fd;padding:10px 12px;">Nome</th>';
+        for (var i = 0; i < materialeItems.length; i++) {
+            var item = materialeItems[i];
+            html += '<th style="min-width:150px;text-align:center;border-color:#1e3a5f;color:#e2e8f0;padding:6px 8px;white-space:nowrap;">';
+            html += '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">';
+            html += '<div style="display:flex;align-items:center;gap:4px;">';
+            if (showArticleButtons) {
+                html += '<button onclick="window.materialeColMove(' + i + ',-1)" title="Sposta sinistra" style="background:#1e293b;color:#94a3b8;border:1px solid #334155;border-radius:4px;padding:1px 5px;font-size:0.7rem;cursor:pointer;" class="no-print">&#9664;</button>';
+            }
+            html += '<span style="font-size:0.78rem;font-weight:600;">' + esc(item) + '</span>';
+            if (showArticleButtons) {
+                html += '<button onclick="window.materialeColMove(' + i + ',1)" title="Sposta destra" style="background:#1e293b;color:#94a3b8;border:1px solid #334155;border-radius:4px;padding:1px 5px;font-size:0.7rem;cursor:pointer;" class="no-print">&#9654;</button>';
+            }
+            html += '</div>';
+            if (showArticleButtons) {
+                html += '<div style="display:flex;gap:4px;" class="no-print">';
+                html += '<button onclick="window.materialeEditItem(' + i + ')" style="background:#1e3a5f;color:#60a5fa;border:none;border-radius:4px;padding:2px 7px;font-size:0.72rem;cursor:pointer;">&#x270F;&#xFE0F;</button>';
+                html += '<button onclick="window.materialeDeleteItem(' + i + ')" style="background:#3f1010;color:#f87171;border:none;border-radius:4px;padding:2px 7px;font-size:0.72rem;cursor:pointer;">&#x1F5D1;&#xFE0F;</button>';
+                html += '</div>';
+            }
+            html += '</div></th>';
+        }
+        html += '</tr></thead><tbody>';
+
+        for (var pi = 0; pi < people.length; pi++) {
+            var person = people[pi];
+            var pid = String(person.id);
+            var rowBg = pi % 2 === 0 ? '#0f2035' : '#0d1b2a';
+            var numero = getNumero(pid);
+
+            html += '<tr style="background:' + rowBg + ';">';
+
+            // Colonna nome + campo N° Maglia
+            html += '<td style="font-weight:600;color:#e2e8f0;position:sticky;left:0;background:' + rowBg + ';border-color:#1e3a5f;padding:8px 12px;vertical-align:top;">';
+            html += '<div>' + esc(person.name) + '</div>';
+            if (editable) {
+                html += '<input type="text" placeholder="N° Maglia" value="' + esc(numero) + '" maxlength="10" ';
+                html += 'data-pid="' + esc(pid) + '" onchange="window.matNumero(this)" ';
+                html += 'style="margin-top:5px;width:100%;background:#0a1628;border:1px solid #334155;color:#93c5fd;border-radius:5px;padding:3px 7px;font-size:0.78rem;">';
+            } else if (numero) {
+                html += '<div style="color:#93c5fd;font-size:0.75rem;margin-top:4px;">N° ' + esc(numero) + '</div>';
+            }
+            html += '</td>';
+
+            // Colonne articoli
+            for (var j = 0; j < materialeItems.length; j++) {
+                var itm = materialeItems[j];
+                var entry = getEntry(pid, itm);
+                var st = stStyle(entry.status);
+                var showQty = entry.status !== '';
+
+                html += '<td style="text-align:center;border-color:#1e3a5f;padding:4px 6px;vertical-align:middle;">';
+                if (editable) {
+                    html += '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;">';
+                    // Pulsante stato
+                    html += '<button data-pid="' + esc(pid) + '" data-item="' + esc(itm) + '" onclick="window.matCycle(this)" ';
+                    html += 'style="background:' + st.bg + ';color:' + st.color + ';border:1px solid ' + st.border + ';border-radius:6px;padding:4px 8px;font-size:0.75rem;cursor:pointer;width:100%;min-width:120px;">';
+                    html += st.icon + ' ' + st.label + '</button>';
+                    if (showQty) {
+                        // Quantità
+                        html += '<div style="display:flex;align-items:center;gap:4px;margin-top:2px;">';
+                        html += '<span style="color:#94a3b8;font-size:0.7rem;">Qt&agrave;:</span>';
+                        html += '<input type="number" min="1" max="999" value="' + entry.qty + '" ';
+                        html += 'data-pid="' + esc(pid) + '" data-item="' + esc(itm) + '" onchange="window.matQty(this)" ';
+                        html += 'style="width:48px;background:#0d1b2a;border:1px solid ' + st.border + ';color:' + st.color + ';border-radius:5px;padding:2px 4px;font-size:0.8rem;text-align:center;">';
+                        html += '</div>';
+                        // Taglia (dropdown)
+                        html += '<select data-pid="' + esc(pid) + '" data-item="' + esc(itm) + '" onchange="window.matTaglia(this)" ';
+                        html += 'style="width:100%;background:#0d1b2a;border:1px solid ' + st.border + ';color:#94a3b8;border-radius:5px;padding:2px 4px;font-size:0.75rem;margin-top:1px;">';
+                        for (var t = 0; t < TAGLIE.length; t++) {
+                            var tg = TAGLIE[t];
+                            var sel = (entry.taglia === tg) ? ' selected' : '';
+                            html += '<option value="' + esc(tg) + '"' + sel + '>' + (tg === '' ? '— Taglia —' : tg) + '</option>';
+                        }
+                        html += '</select>';
+                    }
+                    html += '</div>';
+                } else {
+                    // Sola lettura
+                    html += '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;">';
+                    html += '<span style="background:' + st.bg + ';color:' + st.color + ';border:1px solid ' + st.border + ';border-radius:6px;padding:4px 10px;font-size:0.75rem;display:inline-block;">';
+                    html += st.icon + ' ' + st.label;
+                    if (showQty) html += ' <small style="opacity:0.7;">&times;' + entry.qty + '</small>';
+                    html += '</span>';
+                    if (showQty && entry.taglia) {
+                        html += '<span style="color:#94a3b8;font-size:0.72rem;">Taglia: ' + esc(entry.taglia) + '</span>';
+                    }
+                    html += '</div>';
+                }
+                html += '</td>';
+            }
+            html += '</tr>';
+        }
+
+        // Riga riepilogo
+        html += '<tr style="background:#0a1628;border-top:2px solid #3b5280;font-weight:700;">';
+        html += '<td style="position:sticky;left:0;background:#0a1628;color:#93c5fd;border-color:#3b5280;padding:8px 12px;font-size:0.82rem;">Riepilogo</td>';
+        for (var k = 0; k < materialeItems.length; k++) {
+            var itm2 = materialeItems[k];
+            var totC=0,totR=0,nC=0,nR=0;
+            for (var m = 0; m < people.length; m++) {
+                var e = getEntry(String(people[m].id), itm2);
+                if (e.status==='consegnato') { totC+=e.qty; nC++; }
+                if (e.status==='restituito') { totR+=e.qty; nR++; }
+            }
+            html += '<td style="text-align:center;border-color:#3b5280;padding:5px;font-size:0.78rem;line-height:1.6;">';
+            html += '<div><span style="color:#4ade80;">&#x2705; ' + nC + ' &times; ' + totC + ' pz</span></div>';
+            html += '<div><span style="color:#f87171;">&#x21A9;&#xFE0F; ' + nR + ' &times; ' + totR + ' pz</span></div>';
+            html += '</td>';
+        }
+        html += '</tr></tbody>';
+        return html;
+    }
+
+    function renderMateriale() {
+        var tA = document.getElementById('materiale-table-atleti');
+        var tS = document.getElementById('materiale-table-staff');
+        if (!tA || !tS) return;
+        var all = (window.athletes || []).filter(function(a) { return !a.isGuest; });
+        var atleti = all.filter(function(a) { return !a.isStaff; });
+        var staff  = all.filter(function(a) { return  a.isStaff; });
+        var perm = getMatPerm();
+        tA.innerHTML = buildTable(atleti, perm==='full'||perm==='athletes', perm==='full');
+        tS.innerHTML  = buildTable(staff,  perm==='full',                   perm==='full');
+        var addBtn = document.getElementById('mat-add-btn');
+        if (addBtn) addBtn.style.display = (perm==='full') ? '' : 'none';
+    }
+
+    // Gestori eventi
+    window.matCycle = function(btn) {
+        var pid = btn.getAttribute('data-pid');
+        var item = btn.getAttribute('data-item');
+        var entry = getEntry(pid, item);
+        var newSt = nextStatus(entry.status);
+        setEntry(pid, item, newSt, newSt==='' ? 1 : entry.qty, entry.taglia);
+        renderMateriale(); saveMateriale();
+    };
+    window.matQty = function(input) {
+        var pid = input.getAttribute('data-pid');
+        var item = input.getAttribute('data-item');
+        var entry = getEntry(pid, item);
+        if (entry.status==='') return;
+        setEntry(pid, item, entry.status, input.value, entry.taglia);
+        saveMateriale();
+    };
+    window.matTaglia = function(sel) {
+        var pid = sel.getAttribute('data-pid');
+        var item = sel.getAttribute('data-item');
+        var entry = getEntry(pid, item);
+        setEntry(pid, item, entry.status, entry.qty, sel.value);
+        saveMateriale();
+    };
+    window.matNumero = function(input) {
+        var pid = input.getAttribute('data-pid');
+        setNumero(pid, input.value.trim());
+        saveMateriale();
+    };
+    // Alias compatibilità
+    window.materaileCycleStatus = function(pid, item) {
+        var entry = getEntry(pid, item);
+        setEntry(pid, item, nextStatus(entry.status), entry.qty, entry.taglia);
+        renderMateriale(); saveMateriale();
+    };
+    window.materialeSetQty = function(pid, item, qty) {
+        var entry = getEntry(pid, item);
+        if (entry.status==='') return;
+        setEntry(pid, item, entry.status, qty, entry.taglia);
+        saveMateriale();
+    };
+    window.materialeAddItem = function() {
+        var name = prompt('Nome del nuovo articolo:');
+        if (!name || !name.trim()) return;
+        var t = name.trim();
+        if (materialeItems.indexOf(t)>=0) { alert('Articolo già presente.'); return; }
+        materialeItems.push(t);
+        renderMateriale(); saveMateriale();
+    };
+    window.materialeEditItem = function(i) {
+        var old = materialeItems[i];
+        var nw = prompt('Modifica nome articolo:', old);
+        if (!nw || !nw.trim() || nw.trim()===old) return;
+        var t = nw.trim();
+        Object.keys(materialeData).forEach(function(pid) {
+            if (materialeData[pid] && materialeData[pid][old] !== undefined) {
+                materialeData[pid][t] = materialeData[pid][old];
+                delete materialeData[pid][old];
+            }
+        });
+        materialeItems[i] = t;
+        renderMateriale(); saveMateriale();
+    };
+    window.materialeDeleteItem = function(i) {
+        var name = materialeItems[i];
+        if (!confirm('Eliminare "' + name + '"? I dati saranno persi.')) return;
+        Object.keys(materialeData).forEach(function(pid) { if (materialeData[pid]) delete materialeData[pid][name]; });
+        materialeItems.splice(i, 1);
+        renderMateriale(); saveMateriale();
+    };
+    window.renderMateriale = function() {
+        if (!materialeLoaded) { loadMateriale(); return; }
+        renderMateriale();
+        matUpdateCounts();
+    };
+
+    // ── N°1: Collapse sezioni Atleti / Staff ─────────────────────────────
+    var matCollapsed = { atleti: false, staff: false };
+
+    window.matToggleSection = function(section) {
+        matCollapsed[section] = !matCollapsed[section];
+        var body = document.getElementById('mat-body-' + section);
+        var chev = document.getElementById('mat-chevron-' + section);
+        if (!body || !chev) return;
+        if (matCollapsed[section]) {
+            body.style.display = 'none';
+            chev.style.transform = 'rotate(180deg)';
+        } else {
+            body.style.display = '';
+            chev.style.transform = 'rotate(0deg)';
+        }
+    };
+
+    function matUpdateCounts() {
+        var all = (window.athletes || []).filter(function(a) { return !a.isGuest; });
+        var nA = all.filter(function(a) { return !a.isStaff; }).length;
+        var nS = all.filter(function(a) { return  a.isStaff; }).length;
+        var cA = document.getElementById('mat-count-atleti');
+        var cS = document.getElementById('mat-count-staff');
+        if (cA) cA.textContent = '(' + nA + ' persone)';
+        if (cS) cS.textContent = '(' + nS + ' persone)';
+    }
+
+    // ── N°2: Sposta colonna sinistra/destra ──────────────────────────────
+    window.materialeColMove = function(idx, dir) {
+        var newIdx = idx + dir;
+        if (newIdx < 0 || newIdx >= materialeItems.length) return;
+        var tmp = materialeItems[idx];
+        materialeItems[idx] = materialeItems[newIdx];
+        materialeItems[newIdx] = tmp;
+        renderMateriale();
+        saveMateriale();
+    };
+    // Espone dati interni per la funzione export Excel
+    window._getMaterialeData = function() {
+        return {
+            items: materialeItems,
+            assignments: materialeData,
+            athletes: (window.athletes || []).filter(function(a) { return !a.isGuest; })
+        };
+    };
+})();
+
+// ===== MODULO LOG ACCESSI (solo admin) =====
+(function() {
+    function getAnnataId() { return sessionStorage.getItem('gosport_current_annata') || ''; }
+    function getUserRole() { return sessionStorage.getItem('gosport_user_role') || ''; }
+
+    // Mostra il tab Accessi solo se admin
+    function showAccessTabIfAdmin() {
+        if (getUserRole() === 'admin') {
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
+        }
+    }
+
+    // Formatta data italiana
+    function fmtDate(isoStr) {
+        try {
+            const d = new Date(isoStr);
+            return d.toLocaleDateString('it-IT', { day:'2-digit', month:'2-digit', year:'numeric' })
+                + ' ' + d.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+        } catch(e) { return isoStr; }
+    }
+
+    function fmtDay(isoStr) {
+        try {
+            const d = new Date(isoStr);
+            return d.toLocaleDateString('it-IT', { weekday:'long' });
+        } catch(e) { return ''; }
+    }
+
+    window.loadAccessLog = async function() {
+        const tbody = document.getElementById('accessi-tbody');
+        const filter = document.getElementById('accessi-user-filter');
+        const statsDiv = document.getElementById('accessi-stats');
+        if (!tbody) return;
+
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#64748b;padding:20px;">Caricamento...</td></tr>';
+
+        try {
+            // Legge da /api/log (endpoint dedicato senza annata)
+            const res = await fetch('/api/log');
+            const data = await res.json();
+            let allLogs = Array.isArray(data.logs) ? data.logs : [];
+
+            // Filtra per utente se selezionato
+            const selectedUser = filter ? filter.value : '';
+            const logs = selectedUser ? allLogs.filter(l => l.username === selectedUser) : allLogs;
+
+            // Popola filtro utenti (prima volta)
+            if (filter && filter.options.length <= 1) {
+                const users = [...new Set(allLogs.map(l => l.username))].sort();
+                users.forEach(u => {
+                    const opt = document.createElement('option');
+                    opt.value = u; opt.textContent = u;
+                    filter.appendChild(opt);
+                });
+            }
+
+            if (logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#64748b;padding:20px;">Nessun accesso registrato</td></tr>';
+                return;
+            }
+
+            // Render righe
+            tbody.innerHTML = logs.map((l, i) => {
+                const rowBg = i % 2 === 0 ? '#0f2035' : '#0d1b2a';
+                const roleClr = l.role === 'admin' ? '#fbbf24' : '#93c5fd';
+                return `<tr style="background:${rowBg};">
+                    <td style="border-color:#1e3a5f;padding:8px 14px;font-family:monospace;font-size:0.85rem;color:#e2e8f0;">${fmtDate(l.ts)}</td>
+                    <td style="border-color:#1e3a5f;padding:8px 14px;font-weight:600;color:#e2e8f0;">${l.username || '—'}</td>
+                    <td style="border-color:#1e3a5f;padding:8px 14px;"><span style="color:${roleClr};font-size:0.8rem;font-weight:600;">${l.role || 'user'}</span></td>
+                    <td style="border-color:#1e3a5f;padding:8px 14px;text-align:center;color:#94a3b8;font-size:0.82rem;text-transform:capitalize;">${fmtDay(l.ts)}</td>
+                </tr>`;
+            }).join('');
+
+            // Statistiche: accessi per utente
+            const counts = {};
+            const lastAccess = {};
+            logs.forEach(l => {
+                counts[l.username] = (counts[l.username] || 0) + 1;
+                if (!lastAccess[l.username] || l.ts > lastAccess[l.username]) {
+                    lastAccess[l.username] = l.ts;
+                }
+            });
+
+            if (statsDiv) {
+                statsDiv.innerHTML = Object.keys(counts).sort().map(u => `
+                    <div style="background:#0f2035;border:1px solid #1e3a5f;border-radius:8px;padding:10px 16px;min-width:180px;">
+                        <div style="color:#93c5fd;font-weight:700;font-size:0.9rem;">${u}</div>
+                        <div style="color:#4ade80;font-size:1.1rem;font-weight:800;">${counts[u]} <span style="color:#64748b;font-size:0.75rem;font-weight:400;">accessi</span></div>
+                        <div style="color:#64748b;font-size:0.72rem;margin-top:2px;">Ultimo: ${fmtDate(lastAccess[u])}</div>
+                    </div>
+                `).join('');
+            }
+
+        } catch(e) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#ef4444;padding:20px;">❌ Errore: ${e.message}</td></tr>`;
+        }
+    };
+
+    // Mostra tab admin appena possibile
+    document.addEventListener('DOMContentLoaded', showAccessTabIfAdmin);
+    // Fallback: controlla dopo auth
+    setTimeout(showAccessTabIfAdmin, 1500);
+})();
+</script>
+
+<style>
+/* Calcio — immagine reale (landscape, ruotata verticale col wrapper) */
+#field-container.field-calcio {
+    background-image: url("calcio.jpg") !important;
+    background-repeat: no-repeat !important;
+    background-size: 100% 100% !important;
+}
+/* Nascondi linee SVG calcio quando si usa l'immagine */
+#field-container.field-calcio .field-line,
+#field-container.field-calcio .field-circle,
+#field-container.field-calcio .field-spot,
+#field-container.field-calcio .field-box { display:none !important; }
+
+/* Basket — immagine reale, orientamento orizzontale */
+#field-container.field-basket {
+    background-image: url("basket.png") !important;
+    background-repeat: no-repeat !important;
+    background-size: 100% 100% !important;
+    background-color: #c4832a !important;
+    aspect-ratio: 9/14 !important;
+}
+/* Volley — immagine reale, orientamento orizzontale */
+#field-container.field-volley {
+    background-image: url("pallavolo.jpg") !important;
+    background-repeat: no-repeat !important;
+    background-size: 100% 100% !important;
+    background-color: #1a5fa8 !important;
+    aspect-ratio: 11/18 !important;
+}
+/* Nascondi linee SVG per basket e volley */
+#field-container.field-basket .field-line,
+#field-container.field-basket .field-circle,
+#field-container.field-basket .field-spot,
+#field-container.field-basket .field-box,
+#field-container.field-volley .field-line,
+#field-container.field-volley .field-circle,
+#field-container.field-volley .field-spot,
+#field-container.field-volley .field-box { display:none !important; }
+</style>
+<script>
+function switchField(type) {
+    var field = document.getElementById('field-container');
+    if (!field) return;
+    field.classList.remove('field-calcio','field-basket','field-volley');
+    field.classList.add('field-' + type);
+    localStorage.setItem('fieldType', type);
+    var colors = {calcio:'success', basket:'warning', volley:'info'};
+    var idx = {calcio:1, basket:2, volley:3};
+    document.querySelectorAll('#field-type-switch .btn').forEach(function(b, i) {
+        var t = i===0?'calcio':i===1?'basket':'volley';
+        b.className = 'btn btn-sm btn-outline-' + colors[t];
+    });
+    var active = document.querySelector('#field-type-switch .btn:nth-child('+idx[type]+')');
+    if (active) { active.classList.remove('btn-outline-'+colors[type]); active.classList.add('btn-'+colors[type],'active'); }
+    var ball = document.querySelector('[data-item-type="ball"]');
+    if (ball) ball.textContent = type==='basket'?'🏀':type==='volley'?'🏐':'⚽';
+}
+document.addEventListener('DOMContentLoaded', function() {
+    var saved = localStorage.getItem('fieldType') || 'calcio';
+    if (saved !== 'calcio') setTimeout(function(){ switchField(saved); }, 400);
+});
+
+
+    // ═══════════════════════════════════════════════════════════════
+
+    // ═══ GESTIONE PAGAMENTI ═══════════════════════════════════════════
+    var _pagData = {};
+    var _pagLoaded = false;
+    var _pagModalInst = null;
+    var _pagEditId = null;
+    var _pagEditVoce = null;
+    var _pagCollapsed = {atleti:false, staff:false};
+    var PAG_VOCI = ['tessera','iscrizione','vestiario'];
+    var PAG_LABELS = {tessera:'Tessera', iscrizione:'Iscrizione Annua', vestiario:'Vestiario'};
+
+    function _pagAnnataId() { return sessionStorage.getItem('gosport_current_annata') || ''; }
+
+    async function _pagLoad() {
+        try {
+            var res = await fetch('/api/data', {headers:{'x-annata-id':_pagAnnataId()}});
+            var d = await res.json();
+            if (d && d.pagamenti) _pagData = d.pagamenti;
+        } catch(e) { console.warn('Pagamenti load:',e); }
+        _pagLoaded = true;
+        _pagRender();
+    }
+
+    async function _pagSave() {
+        try {
+            await fetch('/api/data', {
+                method:'POST',
+                headers:{'Content-Type':'application/json','x-annata-id':_pagAnnataId()},
+                body:JSON.stringify({pagamenti:_pagData})
+            });
+        } catch(e) { console.warn('Pagamenti save:',e); }
+    }
+
+    function _pagRataStatus(rata) {
+        if (!rata || !rata.dueDate) return 'none';
+        if (rata.paid) return 'paid';
+        var today = new Date(); today.setHours(0,0,0,0);
+        var due = new Date(rata.dueDate + 'T00:00:00');
+        var diff = Math.ceil((due - today) / 86400000);
+        if (diff < 0) return 'overdue';
+        if (diff <= 15) return 'warning';
+        return 'ok';
+    }
+
+    function _pagStyle(st) {
+        if (st==='paid')    return {bg:'#14532d',color:'#4ade80',border:'#166534',icon:'✅'};
+        if (st==='overdue') return {bg:'#450a0a',color:'#ef4444',border:'#7f1d1d',icon:'🔴'};
+        if (st==='warning') return {bg:'#431407',color:'#f97316',border:'#7c2d12',icon:'🟠'};
+        if (st==='ok')      return {bg:'#1e3a5f',color:'#60a5fa',border:'#2d5a9e',icon:'🔵'};
+        return {bg:'#1e293b',color:'#475569',border:'#334155',icon:'—'};
+    }
+
+    function _pagNetto(voce) {
+        if (!voce || !voce.base) return 0;
+        var base = parseFloat(voce.base) || 0;
+        var disc = parseFloat(voce.discount) || 0;
+        if (voce.discountType === 'percent') return base * (1 - disc/100);
+        return Math.max(0, base - disc);
+    }
+
+    function _pagBuildTable(people, editable) {
+        if (!people.length) return '<tbody><tr><td colspan="99" style="color:#64748b;text-align:center;padding:16px;">Nessun membro</td></tr></tbody>';
+        var h = '<thead><tr style="background:#0a1628;position:sticky;top:0;z-index:2;">';
+        h += '<th style="min-width:160px;position:sticky;left:0;z-index:3;background:#0a1628;border-color:#1e3a5f;color:#93c5fd;padding:10px 12px;">Nome</th>';
+        PAG_VOCI.forEach(function(v){ h += '<th style="min-width:190px;text-align:center;border-color:#1e3a5f;color:#e2e8f0;padding:8px;">' + PAG_LABELS[v] + '</th>'; });
+        h += '<th style="min-width:100px;text-align:center;border-color:#1e3a5f;color:#e2e8f0;padding:8px;">Totale</th></tr></thead><tbody>';
+
+        people.forEach(function(person, pi) {
+            var pid = String(person.id);
+            var pag = _pagData[pid] || {};
+            var rowBg = pi%2===0 ? '#0f2035' : '#0d1b2a';
+            var totale = 0;
+            h += '<tr style="background:' + rowBg + ';">';
+            h += '<td style="font-weight:600;color:#e2e8f0;position:sticky;left:0;background:' + rowBg + ';border-color:#1e3a5f;padding:8px 12px;vertical-align:middle;">';
+            h += '<div>' + person.name + '</div>';
+            if (person.isStaff) h += '<div style="font-size:0.72rem;color:#fbbf24;margin-top:2px;">' + (person.role||'Staff') + '</div>';
+            h += '</td>';
+            PAG_VOCI.forEach(function(v) {
+                var voce = pag[v] || {};
+                var netto = _pagNetto(voce);
+                totale += netto;
+                var rate = voce.installments || [];
+                var allPaid = rate.length>0 && rate.every(function(r){return r.paid;});
+                h += '<td style="text-align:center;border-color:#1e3a5f;padding:6px;vertical-align:middle;">';
+                if (voce.base) {
+                    h += '<div style="font-size:0.8rem;color:#94a3b8;">€ ' + netto.toFixed(2);
+                    if (parseFloat(voce.discount)>0) h += ' <span style="color:#fbbf24;font-size:0.72rem;">(-' + voce.discount + (voce.discountType==='percent'?'%':'€') + ')</span>';
+                    h += '</div>';
+                    rate.forEach(function(r,ri) {
+                        var rs = _pagStyle(_pagRataStatus(r));
+                        var dLabel = r.dueDate ? new Date(r.dueDate+'T00:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short'}) : '—';
+                        h += '<div style="font-size:0.72rem;margin-top:3px;padding:2px 6px;border-radius:4px;background:' + rs.bg + ';color:' + rs.color + ';border:1px solid ' + rs.border + ';display:inline-block;">';
+                        h += rs.icon + ' Rata ' + (ri+1) + ': € ' + (parseFloat(r.amount)||0).toFixed(2) + ' · ' + dLabel + '</div><br>';
+                    });
+                } else {
+                    h += '<span style="color:#475569;font-size:0.75rem;">—</span>';
+                }
+                if (editable) {
+                    h += '<br><button data-pid="' + pid + '" data-voce="' + v + '" onclick="window.pagOpenModal(this.dataset.pid,this.dataset.voce)" ';
+                    h += 'style="margin-top:4px;background:#1e3a5f;color:#60a5fa;border:none;border-radius:5px;padding:3px 10px;font-size:0.72rem;cursor:pointer;" class="no-print">✏️ Modifica</button>';
+                }
+                h += '</td>';
+            });
+            h += '<td style="text-align:center;border-color:#1e3a5f;padding:8px;font-weight:700;color:#4ade80;vertical-align:middle;">';
+            h += totale>0 ? '€ '+totale.toFixed(2) : '<span style="color:#475569;">—</span>';
+            h += '</td></tr>';
+        });
+        return h + '</tbody>';
+    }
+
+    function _pagRenderAlerts(all) {
+        var box = document.getElementById('pag-alerts-box');
+        if (!box) return;
+        var alerts = [];
+        all.forEach(function(person) {
+            var pid = String(person.id);
+            PAG_VOCI.forEach(function(v) {
+                var voce = (_pagData[pid]||{})[v] || {};
+                (voce.installments||[]).forEach(function(r,ri) {
+                    var st = _pagRataStatus(r);
+                    if (st==='warning'||st==='overdue') {
+                        var diff = Math.ceil((new Date(r.dueDate+'T00:00:00')-new Date())/86400000);
+                        alerts.push({name:person.name,voce:PAG_LABELS[v],ri:ri+1,amount:r.amount,dueDate:r.dueDate,st:st,diff:diff});
+                    }
+                });
+            });
+        });
+        if (!alerts.length) { box.innerHTML=''; return; }
+        var h='';
+        alerts.forEach(function(a) {
+            var ss = _pagStyle(a.st);
+            var msg = a.st==='overdue' ? 'SCADUTA il '+new Date(a.dueDate+'T00:00:00').toLocaleDateString('it-IT') : 'scade tra '+a.diff+' giorni';
+            h += '<div style="background:'+ss.bg+';border:1px solid '+ss.border+';border-radius:8px;padding:8px 14px;margin-bottom:6px;color:'+ss.color+';font-size:0.85rem;">';
+            h += ss.icon+' <strong>'+a.name+'</strong> — '+a.voce+' Rata '+a.ri+': € '+(parseFloat(a.amount)||0).toFixed(2)+' · '+msg+'</div>';
+        });
+        box.innerHTML = h;
+    }
+
+    function _pagRender() {
+        var tA = document.getElementById('pag-table-atleti');
+        var tS = document.getElementById('pag-table-staff');
+        if (!tA||!tS) return;
+        var all = (window.athletes||[]).filter(function(a){return !a.isGuest;});
+        var atleti = all.filter(function(a){return !a.isStaff;});
+        var staff = all.filter(function(a){return a.isStaff;});
+        var editable = sessionStorage.getItem('gosport_user_role')==='admin';
+        tA.innerHTML = _pagBuildTable(atleti, editable);
+        tS.innerHTML = _pagBuildTable(staff, editable);
+        var cA=document.getElementById('pag-count-atleti'); if(cA) cA.textContent='('+atleti.length+')';
+        var cS=document.getElementById('pag-count-staff');  if(cS) cS.textContent='('+staff.length+')';
+        _pagRenderAlerts(all);
+    }
+
+    window.pagToggleSection = function(section) {
+        _pagCollapsed[section] = !_pagCollapsed[section];
+        var body=document.getElementById('pag-body-'+section);
+        var chev=document.getElementById('pag-chevron-'+section);
+        if(body) body.style.display = _pagCollapsed[section]?'none':'';
+        if(chev) chev.style.transform = _pagCollapsed[section]?'rotate(180deg)':'rotate(0deg)';
+    };
+
+    window.pagOpenModal = function(pid, voce) {
+        _pagEditId = pid;
+        _pagEditVoce = voce;
+        var person = (window.athletes||[]).find(function(a){return String(a.id)===pid;});
+        var pag = (_pagData[pid]||{})[voce] || {base:'',discount:'0',discountType:'percent',installments:[]};
+        var el = document.getElementById('pagModalTitle');
+        if(el) el.textContent = (person?person.name:'') + ' — ' + PAG_LABELS[voce];
+        var rateHtml = '';
+        (pag.installments||[]).forEach(function(r,i){
+            rateHtml += '<div class="rata-row d-flex gap-2 align-items-center mb-2">';
+            rateHtml += '<span style="color:#94a3b8;font-size:0.8rem;white-space:nowrap;">Rata '+(i+1)+'</span>';
+            rateHtml += '<input type="number" step="0.01" min="0" class="form-control form-control-sm rata-amount" value="'+(r.amount||'')+'" placeholder="€" style="width:90px;">';
+            rateHtml += '<input type="date" class="form-control form-control-sm rata-date" value="'+(r.dueDate||'')+'">';
+            rateHtml += '<div class="form-check mb-0"><input class="form-check-input rata-paid" type="checkbox"'+(r.paid?' checked':'')+' id="rp'+i+'"><label class="form-check-label" for="rp'+i+'" style="font-size:0.8rem;">Pagato</label></div>';
+            rateHtml += '<button type="button" onclick="this.closest(\'.rata-row\').remove()" style="background:#7f1d1d;color:#f87171;border:none;border-radius:4px;padding:2px 7px;cursor:pointer;">✕</button>';
+            rateHtml += '</div>';
+        });
+        var b = document.getElementById('pagModalBody');
+        if(!b) return;
+        b.innerHTML = '<div class="row mb-3">'
+            +'<div class="col-md-4 mb-2"><label class="form-label">Importo Base (€)</label><input type="number" step="0.01" min="0" class="form-control" id="pag-base" value="'+(pag.base||'')+'"></div>'
+            +'<div class="col-md-4 mb-2"><label class="form-label">Sconto</label><input type="number" step="0.01" min="0" class="form-control" id="pag-discount" value="'+(pag.discount||'0')+'"></div>'
+            +'<div class="col-md-4 mb-2"><label class="form-label">Tipo Sconto</label><select class="form-select" id="pag-discountType">'
+            +'<option value="percent"'+(pag.discountType==='percent'?' selected':'')+'>% Percentuale</option>'
+            +'<option value="euro"'+(pag.discountType==='euro'?' selected':'')+'>€ Euro</option>'
+            +'</select></div></div>'
+            +'<div class="mb-3"><label class="form-label">📝 Note</label><textarea class="form-control" id="pag-note" rows="2" placeholder="Es. accordo verbale, pagamento dilazionato, ecc.">'+(pag.note||'')+'</textarea></div>'
+            +'<hr><h6>📅 Rate di pagamento</h6>'
+            +'<div id="pag-rate-list">'+rateHtml+'</div>'
+            +'<button type="button" onclick="window.pagAddRata()" class="btn btn-outline-info btn-sm mt-2"><i class="bi bi-plus-circle"></i> Aggiungi Rata</button>';
+        if(!_pagModalInst) _pagModalInst = new bootstrap.Modal(document.getElementById('pagModal'));
+        _pagModalInst.show();
+    };
+
+    window.pagAddRata = function() {
+        var list = document.getElementById('pag-rate-list');
+        var i = list.querySelectorAll('.rata-row').length;
+        var div = document.createElement('div');
+        div.className = 'rata-row d-flex gap-2 align-items-center mb-2';
+        div.innerHTML = '<span style="color:#94a3b8;font-size:0.8rem;white-space:nowrap;">Rata '+(i+1)+'</span>'
+            +'<input type="number" step="0.01" min="0" class="form-control form-control-sm rata-amount" placeholder="€" style="width:90px;">'
+            +'<input type="date" class="form-control form-control-sm rata-date">'
+            +'<div class="form-check mb-0"><input class="form-check-input rata-paid" type="checkbox" id="rp'+i+'"><label class="form-check-label" for="rp'+i+'" style="font-size:0.8rem;">Pagato</label></div>'
+            +'<button type="button" onclick="this.closest(\'.rata-row\').remove()" style="background:#7f1d1d;color:#f87171;border:none;border-radius:4px;padding:2px 7px;cursor:pointer;">✕</button>';
+        list.appendChild(div);
+    };
+
+    window.pagSave = function() {
+        if(!_pagEditId||!_pagEditVoce) return;
+        var base = (document.getElementById('pag-base')||{}).value||'';
+        var discount = (document.getElementById('pag-discount')||{}).value||'0';
+        var discountType = (document.getElementById('pag-discountType')||{}).value||'percent';
+        var note = (document.getElementById('pag-note')||{}).value||'';
+        var installments = [];
+        document.querySelectorAll('#pag-rate-list .rata-row').forEach(function(row){
+            var amt = row.querySelector('.rata-amount').value;
+            var date = row.querySelector('.rata-date').value;
+            var paid = row.querySelector('.rata-paid').checked;
+            if(amt||date) installments.push({amount:amt,dueDate:date,paid:paid});
+        });
+        if(!_pagData[_pagEditId]) _pagData[_pagEditId]={};
+        _pagData[_pagEditId][_pagEditVoce] = {base:base,discount:discount,discountType:discountType,note:note,installments:installments};
+        _pagSave();
+        _pagRender();
+        if(_pagModalInst) _pagModalInst.hide();
+    };
+
+    window.renderPagamenti = function() {
+        if(!_pagLoaded) { _pagLoad(); return; }
+        _pagRender();
+        // Mostra pulsanti default solo admin
+        var role = sessionStorage.getItem('gosport_user_role')||'';
+        var db = document.getElementById('pag-default-btns');
+        if(db) db.style.display = role==='admin' ? 'flex' : 'none';
+    };
+
+    // ── Default per categoria ─────────────────────────────────────
+    var _pagDefModalInst = null;
+    var _pagEditCat = null;
+    var PAG_CAT_LABELS = {atleti:'👥 Atleti', dirigenti:'🪪 Dirigenti', allenatori:'🏋️ Allenatori'};
+
+    window.pagOpenDefaults = function(cat) {
+        _pagEditCat = cat;
+        var defs = (_pagData['__defaults__']||{})[cat]||{};
+        var el = document.getElementById('pagDefaultModalTitle');
+        if(el) el.textContent = 'Pagamenti Default — ' + PAG_CAT_LABELS[cat];
+        var b = document.getElementById('pagDefaultModalBody');
+        if(!b) return;
+        var h = '';
+        PAG_VOCI.forEach(function(v) {
+            var voce = (defs[v])||{base:'',discount:'0',discountType:'percent',installments:[]};
+            h += '<div class="card mb-3" style="background:#0f2035;border-color:#1e3a5f;">';
+            h += '<div class="card-body">';
+            h += '<h6 style="color:#93c5fd;">'+PAG_LABELS[v]+'</h6>';
+            h += '<div class="row">';
+            h += '<div class="col-md-4 mb-2"><label class="form-label small">Importo Base (€)</label><input type="number" step="0.01" min="0" class="form-control form-control-sm def-base" data-voce="'+v+'" value="'+(voce.base||'')+'"></div>';
+            h += '<div class="col-md-4 mb-2"><label class="form-label small">Sconto</label><input type="number" step="0.01" min="0" class="form-control form-control-sm def-discount" data-voce="'+v+'" value="'+(voce.discount||'0')+'"></div>';
+            h += '<div class="col-md-4 mb-2"><label class="form-label small">Tipo Sconto</label><select class="form-select form-select-sm def-discountType" data-voce="'+v+'">';
+            h += '<option value="percent"'+(voce.discountType==='percent'?' selected':'')+'>% Percentuale</option>';
+            h += '<option value="euro"'+(voce.discountType==='euro'?' selected':'')+'>€ Euro</option>';
+            h += '</select></div></div>';
+            // Rate default
+            h += '<label class="form-label small mt-1">📅 Rate (date e importi tipo)</label>';
+            h += '<div class="def-rate-list" data-voce="'+v+'">';
+            (voce.installments||[]).forEach(function(r,i) {
+                h += '<div class="def-rata d-flex gap-2 align-items-center mb-1">';
+                h += '<span style="color:#94a3b8;font-size:0.75rem;white-space:nowrap;">Rata '+(i+1)+'</span>';
+                h += '<input type="number" step="0.01" min="0" class="form-control form-control-sm def-rata-amount" placeholder="€" style="width:85px;" value="'+(r.amount||'')+'">';
+                h += '<input type="date" class="form-control form-control-sm def-rata-date" value="'+(r.dueDate||'')+'">';
+                h += '<button type="button" onclick="this.closest(\'.def-rata\').remove()" style="background:#7f1d1d;color:#f87171;border:none;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:0.75rem;">✕</button>';
+                h += '</div>';
+            });
+            h += '</div>';
+            h += '<button type="button" class="btn btn-outline-info btn-sm mt-1" onclick="window.pagAddDefRata(\''+v+'\')"><i class="bi bi-plus-circle"></i> Aggiungi Rata</button>';
+            h += '</div></div>';
+        });
+        b.innerHTML = h;
+        if(!_pagDefModalInst) _pagDefModalInst = new bootstrap.Modal(document.getElementById('pagDefaultModal'));
+        _pagDefModalInst.show();
+    };
+
+    window.pagAddDefRata = function(voce) {
+        var list = document.querySelector('.def-rate-list[data-voce="'+voce+'"]');
+        if(!list) return;
+        var i = list.querySelectorAll('.def-rata').length;
+        var div = document.createElement('div');
+        div.className = 'def-rata d-flex gap-2 align-items-center mb-1';
+        div.innerHTML = '<span style="color:#94a3b8;font-size:0.75rem;white-space:nowrap;">Rata '+(i+1)+'</span>'
+            +'<input type="number" step="0.01" min="0" class="form-control form-control-sm def-rata-amount" placeholder="€" style="width:85px;">'
+            +'<input type="date" class="form-control form-control-sm def-rata-date">'
+            +'<button type="button" onclick="this.closest(\'.def-rata\').remove()" style="background:#7f1d1d;color:#f87171;border:none;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:0.75rem;">✕</button>';
+        list.appendChild(div);
+    };
+
+    window.pagSaveDefaults = function() {
+        if(!_pagEditCat) return;
+        if(!_pagData['__defaults__']) _pagData['__defaults__']={};
+        var catDef = {};
+        PAG_VOCI.forEach(function(v) {
+            var base = (document.querySelector('.def-base[data-voce="'+v+'"]')||{}).value||'';
+            var discount = (document.querySelector('.def-discount[data-voce="'+v+'"]')||{}).value||'0';
+            var discountType = (document.querySelector('.def-discountType[data-voce="'+v+'"]')||{}).value||'percent';
+            var installments = [];
+            document.querySelectorAll('.def-rate-list[data-voce="'+v+'"] .def-rata').forEach(function(row){
+                var amt = row.querySelector('.def-rata-amount').value;
+                var date = row.querySelector('.def-rata-date').value;
+                if(amt||date) installments.push({amount:amt,dueDate:date,paid:false});
+            });
+            catDef[v] = {base:base,discount:discount,discountType:discountType,installments:installments};
+        });
+        _pagData['__defaults__'][_pagEditCat] = catDef;
+        _pagSave();
+        if(_pagDefModalInst) _pagDefModalInst.hide();
+        alert('✅ Default salvati per ' + PAG_CAT_LABELS[_pagEditCat]);
+    };
+
+    window.pagApplyDefaults = function() {
+        if(!_pagEditCat) return;
+        var defs = (_pagData['__defaults__']||{})[_pagEditCat];
+        if(!defs) { alert('⚠️ Nessun default configurato. Salvali prima.'); return; }
+        // Determina quali persone appartengono alla categoria
+        var all = (window.athletes||[]).filter(function(a){return !a.isGuest;});
+        var targets;
+        if(_pagEditCat==='atleti') targets = all.filter(function(a){return !a.isStaff;});
+        else {
+            var role = _pagEditCat==='dirigenti' ? 'dirigente' : 'allenatore';
+            targets = all.filter(function(a){
+                return a.isStaff && a.role && a.role.toLowerCase().includes(role);
+            });
+            // Fallback: tutti gli staff se non si trovano per ruolo
+            if(!targets.length) targets = all.filter(function(a){return a.isStaff;});
+        }
+        if(!confirm('Applicare i default a ' + targets.length + ' persone?\n\nAttenzione: sovrascriverà i valori esistenti.')) return;
+        targets.forEach(function(p) {
+            var pid = String(p.id);
+            if(!_pagData[pid]) _pagData[pid]={};
+            PAG_VOCI.forEach(function(v) {
+                if(defs[v] && defs[v].base) {
+                    // Deep copy installments
+                    var insts = (defs[v].installments||[]).map(function(r){ return {amount:r.amount,dueDate:r.dueDate,paid:false}; });
+                    _pagData[pid][v] = {base:defs[v].base,discount:defs[v].discount,discountType:defs[v].discountType,installments:insts,note:''};
+                }
+            });
+        });
+        _pagSave();
+        _pagRender();
+        if(_pagDefModalInst) _pagDefModalInst.hide();
+        alert('✅ Default applicati a ' + targets.length + ' persone!');
+    };
+    // ═══ FINE GESTIONE PAGAMENTI ════════════════════════════════════
+
+
+    // ═══════════════════════════════════════════════════════════════
+    // ████  GESTIONE CONVOCAZIONI  ████
+    // ═══════════════════════════════════════════════════════════════
+    var _convData = [];          // array convocazioni
+    var _convSettings = {};      // { bg, logo, sponsor, firma }
+    var _convLoaded = false;
+
+    function _convAnnataId() { return sessionStorage.getItem('gosport_current_annata') || ''; }
+
+    async function _convLoad() {
+        try {
+            var res = await fetch('/api/data', {headers:{'x-annata-id':_convAnnataId()}});
+            var d = await res.json();
+            if (d && d.convocazioni) _convData = d.convocazioni;
+            if (d && d.convSettings) {
+                _convSettings = d.convSettings;
+                _convApplySettings();
+            }
+        } catch(e) { console.warn('Conv load:',e); }
+        _convLoaded = true;
+        _convRender();
+    }
+
+    async function _convSaveAll() {
+        try {
+            await fetch('/api/data', {
+                method:'POST',
+                headers:{'Content-Type':'application/json','x-annata-id':_convAnnataId()},
+                body:JSON.stringify({convocazioni:_convData, convSettings:_convSettings})
+            });
+        } catch(e) { console.warn('Conv save:',e); }
+    }
+
+    function _convApplySettings() {
+        var s = _convSettings;
+        function setImg(id, src) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            if (src) { el.src = src; el.style.display = ''; }
+            else el.style.display = 'none';
+        }
+        setImg('conv-bg-preview',      s.bg);
+        setImg('conv-logo-preview',    s.logo);
+        setImg('conv-sponsor-preview', s.sponsor);
+        var firma = document.getElementById('conv-firma');
+        if (firma && s.firma) firma.value = s.firma;
+    }
+
+    window.convUploadImg = function(input, type) {
+        var file = input.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            _convSettings[type] = e.target.result;
+            _convApplySettings();
+            _convSaveAll();
+        };
+        reader.readAsDataURL(file);
+    };
+
+    window.convSaveSettings = function() {
+        var firma = document.getElementById('conv-firma');
+        if (firma) _convSettings.firma = firma.value;
+        _convSaveAll();
+    };
+
+    // ── Apri form nuova/modifica ───────────────────────────────────
+    window.convNuova = function(id) {
+        document.getElementById('conv-form-panel').style.display = '';
+        document.getElementById('conv-form-title').textContent = id ? '✏️ Modifica Convocazione' : '📋 Nuova Convocazione';
+        var conv = id ? _convData.find(function(x){return x.id===id;}) : null;
+        document.getElementById('conv-edit-id').value = id || '';
+        document.getElementById('conv-categoria').value  = conv ? conv.categoria  : '';
+        document.getElementById('conv-tipo').value        = conv ? conv.tipo       : 'CONVOCAZIONE PARTITA';
+        document.getElementById('conv-avversario').value  = conv ? conv.avversario : '';
+        document.getElementById('conv-data').value        = conv ? conv.data       : '';
+        document.getElementById('conv-ritrovo').value     = conv ? conv.ritrovo    : '';
+        document.getElementById('conv-inizio').value      = conv ? conv.inizio     : '';
+        document.getElementById('conv-luogo').value       = conv ? conv.luogo      : '';
+        document.getElementById('conv-note').value        = conv ? (conv.note || '') : '';
+
+        // Popola staff
+        var all = (window.athletes || []).filter(function(a){return !a.isGuest;});
+        var staff = all.filter(function(a){return a.isStaff;});
+        var selStaff = conv ? (conv.staffIds || []) : [];
+        var staffHtml = '';
+        staff.forEach(function(s) {
+            var chk = selStaff.includes(String(s.id)) ? 'checked' : '';
+            staffHtml += '<div class="form-check"><input class="form-check-input conv-staff-chk" type="checkbox" value="'+s.id+'" id="cst'+s.id+'" '+chk+'><label class="form-check-label small" for="cst'+s.id+'">'+(s.role||'Staff')+': '+s.name+'</label></div>';
+        });
+        document.getElementById('conv-staff-list').innerHTML = staffHtml || '<span class="text-muted small">Nessuno staff</span>';
+
+        // Popola atleti
+        var atleti = all.filter(function(a){return !a.isStaff;});
+        var selAtl = conv ? (conv.atletiIds || []) : [];
+        var atlHtml = '';
+        atleti.forEach(function(a) {
+            var chk = selAtl.includes(String(a.id)) ? 'checked' : '';
+            atlHtml += '<div class="form-check"><input class="form-check-input conv-atleta-chk" type="checkbox" value="'+a.id+'" id="cat'+a.id+'" '+chk+'><label class="form-check-label small" for="cat'+a.id+'">'+a.name+'</label></div>';
+        });
+        document.getElementById('conv-atleti-list').innerHTML = atlHtml || '<span class="text-muted small">Nessun atleta</span>';
+    };
+
+    window.convSelectAll = function(val) {
+        document.querySelectorAll('.conv-atleta-chk').forEach(function(c){c.checked=val;});
+    };
+
+    // ── Salva convocazione ─────────────────────────────────────────
+    window.convSalva = function() {
+        var id = document.getElementById('conv-edit-id').value || ('conv_'+Date.now());
+        var staffIds = Array.from(document.querySelectorAll('.conv-staff-chk:checked')).map(function(x){return x.value;});
+        var atletiIds = Array.from(document.querySelectorAll('.conv-atleta-chk:checked')).map(function(x){return x.value;});
+        var conv = {
+            id: id,
+            categoria:  document.getElementById('conv-categoria').value,
+            tipo:       document.getElementById('conv-tipo').value,
+            avversario: document.getElementById('conv-avversario').value,
+            data:       document.getElementById('conv-data').value,
+            ritrovo:    document.getElementById('conv-ritrovo').value,
+            inizio:     document.getElementById('conv-inizio').value,
+            luogo:      document.getElementById('conv-luogo').value,
+                note:       document.getElementById('conv-note').value,
+            staffIds:   staffIds,
+            atletiIds:  atletiIds,
+            createdAt:  Date.now()
+        };
+        var idx = _convData.findIndex(function(x){return x.id===id;});
+        if (idx >= 0) _convData[idx] = conv; else _convData.unshift(conv);
+        _convSaveAll();
+        _convRender();
+        document.getElementById('conv-form-panel').style.display = 'none';
+        alert('✅ Convocazione salvata!');
+    };
+
+    // ── Storico ────────────────────────────────────────────────────
+    function _convRender() {
+        var box = document.getElementById('conv-storico');
+        if (!box) return;
+        if (!_convData.length) { box.innerHTML = '<p class="text-muted small">Nessuna convocazione salvata.</p>'; return; }
+        var h = '';
+        _convData.forEach(function(c) {
+            var dataLabel = c.data ? new Date(c.data+'T00:00:00').toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}) : '—';
+            var atletiCount = (c.atletiIds||[]).length;
+            h += '<div style="background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">';
+            h += '<div style="flex:1;min-width:0;">';
+            h += '<div style="font-weight:700;color:#e2e8f0;">'+(c.categoria||'—')+' — '+(c.avversario||'—')+'</div>';
+            h += '<div style="font-size:0.8rem;color:#64748b;">'+dataLabel+' · '+atletiCount+' atleti · '+(c.tipo||'')+'</div>';
+            h += '</div>';
+            h += '<div class="d-flex gap-1 no-print">';
+            h += '<button onclick="window.convNuova(\''+c.id+'\')" class="btn btn-sm btn-outline-light" title="Modifica"><i class="bi bi-pencil-fill"></i></button>';
+            h += '<button onclick="window.convStampa(\''+c.id+'\')" class="btn btn-sm btn-success" title="Stampa/PDF"><i class="bi bi-printer-fill"></i></button>';
+            h += '<button onclick="window.convElimina(\''+c.id+'\')" class="btn btn-sm btn-outline-danger" title="Elimina"><i class="bi bi-trash-fill"></i></button>';
+            h += '</div>';
+            h += '</div>';
+        });
+        box.innerHTML = h;
+    }
+
+    window.convElimina = function(id) {
+        if (!confirm('Eliminare questa convocazione?')) return;
+        _convData = _convData.filter(function(x){return x.id!==id;});
+        _convSaveAll();
+        _convRender();
+    };
+
+    // ── STAMPA / PDF ───────────────────────────────────────────────
+    window.convStampa = function(id) {
+        var conv;
+        if (id) {
+            conv = _convData.find(function(x){return x.id===id;});
+        } else {
+            // Leggi dal form aperto
+            var staffIds = Array.from(document.querySelectorAll('.conv-staff-chk:checked')).map(function(x){return x.value;});
+            var atletiIds = Array.from(document.querySelectorAll('.conv-atleta-chk:checked')).map(function(x){return x.value;});
+            conv = {
+                categoria:  document.getElementById('conv-categoria').value,
+                tipo:       document.getElementById('conv-tipo').value,
+                avversario: document.getElementById('conv-avversario').value,
+                data:       document.getElementById('conv-data').value,
+                ritrovo:    document.getElementById('conv-ritrovo').value,
+                inizio:     document.getElementById('conv-inizio').value,
+                luogo:      document.getElementById('conv-luogo').value,
+                note:       (document.getElementById('conv-note')||{value:''}).value||'',
+                staffIds:   staffIds,
+                atletiIds:  atletiIds
+            };
+        }
+        if (!conv) return;
+
+        var all = (window.athletes || []).filter(function(a){return !a.isGuest;});
+        var staffMap = {};
+        all.filter(function(a){return a.isStaff;}).forEach(function(a){ staffMap[String(a.id)]=a; });
+        var atletiMap = {};
+        all.filter(function(a){return !a.isStaff;}).forEach(function(a){ atletiMap[String(a.id)]=a; });
+
+        var staffSelezionati = (conv.staffIds||[]).map(function(id){return staffMap[id];}).filter(Boolean);
+        var atletiSelezionati = (conv.atletiIds||[]).map(function(id){return atletiMap[id];}).filter(Boolean);
+
+        // Raggruppa staff per ruolo
+        var allenatori = staffSelezionati.filter(function(s){return (s.role||'').toLowerCase().includes('allenator');});
+        var dirigenti  = staffSelezionati.filter(function(s){return !allenatori.includes(s);});
+
+        var s = _convSettings;
+        var bgStyle = s.bg ? 'background-image:url('+s.bg+');background-size:cover;background-position:center;' : 'background:linear-gradient(135deg,#c0392b,#2980b9);';
+        var dataLabel = conv.data ? new Date(conv.data+'T00:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+        var mapsUrl = conv.luogo ? 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(conv.luogo) : '#';
+        var firma = s.firma || 'Sport Monitoring';
+
+        // Build atleti in 2 columns
+        var metaAtl = Math.ceil(atletiSelezionati.length/2);
+        var col1 = atletiSelezionati.slice(0,metaAtl);
+        var col2 = atletiSelezionati.slice(metaAtl);
+        var atletiRows = '';
+        var maxRows = Math.max(col1.length, col2.length);
+        for (var i=0;i<maxRows;i++) {
+            atletiRows += '<tr>';
+            atletiRows += '<td>'+(col1[i] ? col1[i].name : '')+'</td>';
+            atletiRows += '<td>'+(col2[i] ? col2[i].name : '')+'</td>';
+            atletiRows += '</tr>';
+        }
+
+        var staffHtml = '';
+        if (allenatori.length) {
+            staffHtml += '<p style="font-size:0.75rem;font-weight:700;color:#ccc;margin:0 0 2px 0;">Allenatori</p>';
+            allenatori.forEach(function(s){ staffHtml += '<p style="margin:3px 0;font-size:1.05rem;font-weight:500;">'+s.name+'</p>'; });
+        }
+        if (dirigenti.length) {
+            staffHtml += '<p style="font-size:0.75rem;font-weight:700;color:#ccc;margin:8px 0 2px 0;">Dirigenti</p>';
+            dirigenti.forEach(function(s){ staffHtml += '<p style="margin:3px 0;font-size:1.05rem;font-weight:500;">'+s.name+'</p>'; });
+        }
+
+        var logoCenter = s.logo ? '<img src="'+s.logo+'" style="height:70px;object-fit:contain;">' : '<span style="font-size:1.5rem;font-weight:900;color:white;">SPORT<br>MONITORING</span>';
+        var logoSponsor = s.sponsor ? '<img src="'+s.sponsor+'" style="height:70px;object-fit:contain;">' : '';
+
+        var html = '<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8">'
+            +'<title>Convocazione '+conv.categoria+'</title>'
+            +'<style>'
+            +'*{margin:0;padding:0;box-sizing:border-box;}'
+            +'@page{size:A4 portrait;margin:0;}'
+            +'html,body{margin:0;padding:0;background:#000;}'
+            +'.page{width:210mm;height:297mm;overflow:hidden;position:relative;'+bgStyle+'background-size:cover;background-position:center;background-repeat:no-repeat;}'
+            +'.overlay{position:absolute;inset:0;background:rgba(0,0,0,0.38);padding:16px 20px 16px 20px;display:flex;flex-direction:column;gap:10px;overflow:hidden;}'
+            +'.top-logos{display:flex;justify-content:space-between;align-items:center;}'
+            +'.top-logos div{flex:1;display:flex;justify-content:center;align-items:center;}'
+            +'.categoria{text-align:center;font-size:2.4rem;font-weight:900;text-transform:uppercase;letter-spacing:3px;text-shadow:2px 2px 6px rgba(0,0,0,0.7);}'
+            +'.conv-box{background:rgba(50,50,50,0.65);border-radius:10px;padding:14px 20px;text-align:center;}'
+            +'.conv-box .tipo{font-size:1.1rem;font-weight:800;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;}'
+            +'.conv-box .avv{font-size:1.6rem;font-weight:400;}'
+            +'.info-row{display:flex;gap:12px;}'
+            +'.info-box{flex:1;background:rgba(50,50,50,0.65);border-radius:8px;padding:12px;text-align:center;}'
+            +'.info-box .lbl{font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;color:#ddd;}'
+            +'.info-box .val{font-size:1.3rem;font-weight:400;}'
+            +'.luogo-box{background:rgba(50,50,50,0.65);border-radius:8px;padding:12px 18px;text-align:center;}'
+            +'.luogo-box .lbl{font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;color:#ddd;}'
+            +'.luogo-box a{color:#90caf9;font-size:0.95rem;text-decoration:none;}'
+            +'.note-box{background:rgba(50,50,50,0.55);border-radius:8px;padding:10px 18px;}'
+            +'.note-box .lbl{font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;color:#ddd;}'
+            +'.note-box .note-text{font-size:1rem;color:#fff;}'
+            +'.columns{display:flex;gap:20px;flex:1;}'
+            +'.col-staff{flex:0 0 180px;}'
+            +'.col-atleti{flex:1;}'
+            +'.col-title{font-size:0.75rem;font-weight:900;text-transform:uppercase;letter-spacing:2px;border-bottom:2px solid rgba(255,255,255,0.4);padding-bottom:4px;margin-bottom:10px;}'
+            +'table{width:100%;border-collapse:collapse;}'
+            +'td{padding:5px 8px;font-size:1.05rem;font-weight:500;}'
+            +'tr:nth-child(odd) td{background:rgba(255,255,255,0.06);}'
+            +'.footer{text-align:right;font-size:0.7rem;color:rgba(255,255,255,0.5);margin-top:auto;padding-top:8px;}'
+            +'@media print{'
+            +'body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
+            +'@page{size:A4 portrait;margin:0;}'
+            +'}'
+            +'</style></head><body>'
+            +'<div class="page"><div class="overlay">'
+            +'<div class="top-logos">'
+            +'<div>'+logoSponsor+'</div>'
+            +'<div>'+logoCenter+'</div>'
+            +'<div>'+logoSponsor+'</div>'
+            +'</div>'
+            +'<div class="categoria">'+(conv.categoria||'')+'</div>'
+            +'<div class="conv-box"><div class="tipo">'+(conv.tipo||'')+'</div><div class="avv">vs '+(conv.avversario||'')+'</div></div>'
+            +'<div class="info-row">'
+            +'<div class="info-box"><div class="lbl">Data</div><div class="val">'+dataLabel+'</div></div>'
+            +'<div class="info-box"><div class="lbl">Ritrovo Ore</div><div class="val">'+(conv.ritrovo||'—')+'</div></div>'
+            +'<div class="info-box"><div class="lbl">Inizio Gara Ore</div><div class="val">'+(conv.inizio||'—')+'</div></div>'
+            +'</div>';
+
+        if (conv.luogo) {
+            html += '<div class="luogo-box"><div class="lbl">Luogo</div>'
+                +'<a href="'+mapsUrl+'" target="_blank">'+conv.luogo+' — Google Maps</a>'
+                +'</div>';
+        }
+
+        if (conv.note) {
+            html += '<div class="note-box"><div class="lbl">Note</div><div class="note-text">'+conv.note+'</div></div>';
+        }
+
+        html += '<div class="columns">'
+            +'<div class="col-staff"><div class="col-title">Staff</div>'+staffHtml+'</div>'
+            +'<div class="col-atleti"><div class="col-title">Atleti Convocati</div>'
+            +'<table>'+atletiRows+'</table>'
+            +'</div>'
+            +'</div>'
+            +'<div class="footer">By '+firma+'</div>'
+            +'</div></div>'
+            +'<script>window.onload=function(){window.print();}<\/script>'
+            +'</body></html>';
+
+        var w = window.open('','_blank','width=820,height=1100');
+        w.document.write(html);
+        w.document.close();
+    };
+
+    window.renderConvocazioni = function() {
+        if (!_convLoaded) { _convLoad(); return; }
+        _convRender();
+        _convApplySettings();
+    };
+    // ═══ FINE GESTIONE CONVOCAZIONI ══════════════════════════════════
+
+</script>
+</body>
+</html>

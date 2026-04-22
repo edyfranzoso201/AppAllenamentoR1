@@ -15,21 +15,13 @@ function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
-const _crypto = await import('crypto');
-
-function hashPassword(password) {
-  return _crypto.createHash('sha256').update(password).digest('hex');
-}
-
-function hashPasswordLegacy(password) {
+async function hashPassword(password) {
+  // In produzione usare bcrypt, per ora hash semplice
   return Buffer.from(password).toString('base64');
 }
 
 async function verifyPassword(password, hash) {
-  // Accetta sia SHA256 (nuovo) che base64 (legacy)
-  const sha = hashPassword(password);
-  const b64 = hashPasswordLegacy(password);
-  return hash === sha || hash === b64;
+  return Buffer.from(password).toString('base64') === hash;
 }
 
 // ==========================================
@@ -500,10 +492,7 @@ async function handleGare(req, res) {
 
 export default async function handler(req, res) {
   // CORS headers
-  const _orig = req.headers['origin'] || '';
-  const _ok = ['https://app-allenamento-r1.vercel.app','http://localhost:3000','http://localhost:3001','http://127.0.0.1:3000'];
-  res.setHeader('Access-Control-Allow-Origin', _ok.includes(_orig) ? _orig : _ok[0]);
-  res.setHeader('Vary', 'Origin');
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Annata-Id');
 
@@ -551,22 +540,13 @@ export default async function handler(req, res) {
     if (path === '/api/auth/login') {
       return await handleLogin(req, res);
     }
-
-    // Endpoint admin — richiedono X-Super-Admin-Password
-    const ADMIN_PWD = process.env.SUPER_ADMIN_PASSWORD || 'superadmin_gosport_2026';
-    const adminPwd  = req.headers['x-super-admin-password'] || req.body?.adminPassword;
-    const isAdminReq = adminPwd === ADMIN_PWD;
-
     if (path === '/api/auth/create-user') {
-      if (!isAdminReq) return res.status(401).json({ success: false, message: 'Non autorizzato' });
       return await handleCreateUser(req, res);
     }
     if (path === '/api/auth/list-users') {
-      if (!isAdminReq) return res.status(401).json({ success: false, message: 'Non autorizzato' });
       return await handleListUsers(req, res);
     }
     if (path === '/api/auth/delete-user') {
-      if (!isAdminReq) return res.status(401).json({ success: false, message: 'Non autorizzato' });
       return await handleDeleteUser(req, res);
     }
     if (path === '/api/auth/access-log') {

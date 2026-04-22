@@ -454,36 +454,9 @@
                     <div class="result-detail">ID Società: <span id="result-sid">—</span></div>
                     <div class="result-detail">Piano: <span id="result-plan">—</span></div>
                 </div>
-                <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+                <div style="margin-top:14px">
                     <button class="btn btn-primary btn-sm" onclick="copyEmail()">
                         📧 Copia Testo Email da Inviare
-                    </button>
-                    <button class="btn btn-success btn-sm" onclick="toggleAdminForm()">
-                        👤 Crea Utente Admin Società
-                    </button>
-                </div>
-
-                <!-- Form crea utente admin società -->
-                <div id="admin-user-box" style="display:none;margin-top:20px;border-top:1px solid rgba(96,165,250,0.2);padding-top:16px;">
-                    <div style="font-weight:600;color:#60a5fa;margin-bottom:12px;font-size:14px;">👤 Crea Utente Admin per questa Società</div>
-                    <div class="alert alert-error" id="admin-user-error"></div>
-                    <div class="alert alert-success" id="admin-user-success"></div>
-                    <div class="form-grid" style="margin-bottom:12px;">
-                        <div class="form-group">
-                            <label>Username *</label>
-                            <input type="text" id="new-admin-username" placeholder="es. admin.prova" autocomplete="off">
-                        </div>
-                        <div class="form-group">
-                            <label>Password *</label>
-                            <input type="password" id="new-admin-password" placeholder="Password sicura" autocomplete="new-password">
-                        </div>
-                    </div>
-                    <div style="font-size:11px;color:#64748b;margin-bottom:12px;">
-                        Il societyId verrà assegnato automaticamente dalla licenza appena creata.<br>
-                        L'utente avrà ruolo Admin e accesso a tutte le annate della società.
-                    </div>
-                    <button class="btn btn-success btn-sm" onclick="createAdminUser()">
-                        ✅ Crea Utente Admin
                     </button>
                 </div>
             </div>
@@ -509,24 +482,6 @@
                 <div class="empty-state">
                     <div>🔄</div>
                     <div>Caricamento licenze...</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Gestione Utenti Società -->
-        <div class="section">
-            <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
-                <span>👥 Gestione Utenti Società</span>
-                <button class="btn btn-ghost btn-sm" onclick="loadUsers()">🔄 Aggiorna</button>
-            </div>
-            <div class="search-bar">
-                <input type="text" id="user-search-input" placeholder="Cerca per username, email, società..."
-                       oninput="filterUsers()">
-            </div>
-            <div id="users-table-container">
-                <div class="empty-state">
-                    <div>👥</div>
-                    <div>Clicca Aggiorna per caricare gli utenti</div>
                 </div>
             </div>
         </div>
@@ -582,62 +537,6 @@
 </div>
 
 <!-- ===== MODAL ELIMINA ===== -->
-<!-- Modal modifica utente -->
-<div class="modal-overlay" id="edit-user-modal">
-    <div class="modal-card">
-        <div class="modal-title">✏️ Modifica Utente</div>
-        <input type="hidden" id="edit-user-username">
-        <input type="hidden" id="edit-user-society-id">
-        <div class="alert alert-error" id="edit-user-error"></div>
-        <div class="alert alert-success" id="edit-user-success"></div>
-        <div class="form-group" style="margin-bottom:14px">
-            <label>Username</label>
-            <input type="text" id="edit-user-username-display" disabled style="opacity:0.5">
-        </div>
-        <div class="form-group" style="margin-bottom:14px">
-            <label>Nuova Password <small style="color:#64748b">(lascia vuoto per non modificare)</small></label>
-            <input type="password" id="edit-user-new-password" placeholder="Nuova password..." autocomplete="new-password">
-        </div>
-        <div class="form-group" style="margin-bottom:4px">
-            <label>Ruolo</label>
-            <select id="edit-user-role" style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid #334155;background:#1e293b;color:#e2e8f0;">
-                <option value="admin">👑 Admin</option>
-                <option value="coach_l1">🥇 Coach L1</option>
-                <option value="coach_l2">🥈 Coach L2</option>
-                <option value="coach_l3">🥉 Coach L3</option>
-                <option value="coach_readonly">👁️ Coach Read-only</option>
-                <option value="dirigente_l1">🏅 Dirigente L1</option>
-                <option value="dirigente_l2">📂 Dirigente L2</option>
-                <option value="dirigente_l3">📋 Dirigente L3</option>
-                <option value="dirigente_l4">📋 Dirigente L4</option>
-                <option value="societa_l1">🏛️ Società L1</option>
-                <option value="societa_l3">🏢 Società L3</option>
-            </select>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-ghost" onclick="closeModal('edit-user-modal')">Annulla</button>
-            <button class="btn btn-primary" onclick="saveUser()">💾 Salva</button>
-        </div>
-    </div>
-</div>
-
-<!-- Modal elimina utente -->
-<div class="modal-overlay" id="delete-user-modal">
-    <div class="modal-card">
-        <div class="modal-title">🗑️ Elimina Utente</div>
-        <p style="color:#94a3b8;margin:0 0 20px 0">
-            Stai per eliminare l'utente <strong id="delete-user-name-display" style="color:white"></strong>.<br>
-            Questa azione è irreversibile.
-        </p>
-        <input type="hidden" id="delete-user-username-val">
-        <input type="hidden" id="delete-user-society-id-val">
-        <div class="modal-footer">
-            <button class="btn btn-ghost" onclick="closeModal('delete-user-modal')">Annulla</button>
-            <button class="btn btn-danger" onclick="confirmDeleteUser()">🗑️ Elimina</button>
-        </div>
-    </div>
-</div>
-
 <div class="modal-overlay" id="delete-modal">
     <div class="modal-card">
         <div class="modal-title">🗑️ Elimina Licenza</div>
@@ -916,7 +815,7 @@ async function createLicense() {
 
         if (!data.success) throw new Error(data.message);
 
-        lastCreated = { key: data.licenseKey, email, society, expiry, plan, societyId: data.licenseData.societyId };
+        lastCreated = { key: data.licenseKey, email, society, expiry };
 
         // Mostra risultato
         document.getElementById('result-key').textContent = data.licenseKey;
@@ -1026,15 +925,6 @@ function clearForm() {
     document.getElementById('new-society').value = '';
     document.getElementById('new-notes').value = '';
     document.getElementById('new-plan').value = 'gold';
-    // Reset form utente admin
-    const adminBox = document.getElementById('admin-user-box');
-    if (adminBox) adminBox.style.display = 'none';
-    const uEl = document.getElementById('new-admin-username');
-    const pEl = document.getElementById('new-admin-password');
-    if (uEl) uEl.value = '';
-    if (pEl) pEl.value = '';
-    showAlert('admin-user-error', '');
-    showAlert('admin-user-success', '');
     const d = new Date();
     d.setFullYear(d.getFullYear() + 1);
     document.getElementById('new-expiry').value = d.toISOString().split('T')[0];
@@ -1048,265 +938,28 @@ function copyText(text) {
     navigator.clipboard.writeText(text).then(() => showToast('✅ Copiato!'));
 }
 
-// ==========================================
-// CREA UTENTE ADMIN SOCIETÀ
-// ==========================================
-function toggleAdminForm() {
-    const box = document.getElementById('admin-user-box');
-    if (box) box.style.display = box.style.display === 'none' ? 'block' : 'none';
-}
-
-async function createAdminUser() {
-    const username = document.getElementById('new-admin-username').value.trim();
-    const password = document.getElementById('new-admin-password').value.trim();
-    const errEl    = document.getElementById('admin-user-error');
-    const okEl     = document.getElementById('admin-user-success');
-
-    showAlert('admin-user-error', '');
-    showAlert('admin-user-success', '');
-
-    if (!username || !password) {
-        showAlert('admin-user-error', '⚠️ Username e password obbligatori');
-        return;
-    }
-    if (!lastCreated || !lastCreated.societyId) {
-        showAlert('admin-user-error', '❌ Nessuna licenza generata — genera prima la licenza');
-        return;
-    }
-
-    const btn = document.querySelector('#admin-user-box .btn-success');
-    btn.disabled = true;
-    btn.textContent = 'Creazione...';
-
-    try {
-        const r = await fetch(`${API_BASE}/api/auth/manage`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Super-Admin-Password': ADMIN_PWD,
-                'X-Society-Id': lastCreated.societyId
-            },
-            body: JSON.stringify({
-                action: 'create',
-                username,
-                password,
-                email: lastCreated.email,
-                role: 'admin',
-                annate: [],
-                nome: '',
-                cognome: '',
-                note: ''
-            })
-        });
-        const data = await r.json();
-        if (!data.success) throw new Error(data.message);
-
-        showAlert('admin-user-success', `✅ Utente "${username}" creato! La società può ora fare login.`);
-        document.getElementById('new-admin-username').value = '';
-        document.getElementById('new-admin-password').value = '';
-
-        // Aggiorna testo email con credenziali utente
-        lastCreated.adminUsername = username;
-        lastCreated.adminPassword = password;
-
-    } catch(e) {
-        showAlert('admin-user-error', '❌ ' + e.message);
-    } finally {
-        btn.disabled = false;
-        btn.textContent = '✅ Crea Utente Admin';
-    }
-}
-
 function copyEmail() {
     if (!lastCreated) return;
     const expiryFormatted = new Date(lastCreated.expiry + 'T00:00:00').toLocaleDateString('it-IT');
-    const planLabel = lastCreated.plan === 'platinum' ? 'Platinum' : lastCreated.plan === 'gold' ? 'Gold' : 'Silver';
-    const hasUser = lastCreated.adminUsername && lastCreated.adminPassword;
     const text = `Gentile ${lastCreated.society},
 
-le inviamo le istruzioni per accedere all'app Sport Monitoring.
+le inviamo le credenziali per accedere all'app GO Sport:
 
-━━━━━━━━━━━━━━━━━━━━━━━━━
-DATI LICENZA
-━━━━━━━━━━━━━━━━━━━━━━━━━
-📧 Email licenza: ${lastCreated.email}
+📧 Email: ${lastCreated.email}
 🔑 Chiave Licenza: ${lastCreated.key}
 📅 Scadenza: ${expiryFormatted}
-🏅 Piano: ${planLabel}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━
-${hasUser ? `CREDENZIALI ACCESSO
-━━━━━━━━━━━━━━━━━━━━━━━━━
-👤 Username: ${lastCreated.adminUsername}
-🔒 Password: ${lastCreated.adminPassword}
-
-` : ''}━━━━━━━━━━━━━━━━━━━━━━━━━
-COME ATTIVARE L'APP (solo al primo accesso)
-━━━━━━━━━━━━━━━━━━━━━━━━━
+Per attivare l'app:
 1. Aprire l'app all'indirizzo ${API_BASE}
-2. Effettuare il login con username e password qui sopra
-3. Al primo accesso apparirà la schermata di attivazione licenza
-4. Inserire l'email e la chiave licenza nei campi appositi
-5. L'app è pronta — selezionare l'annata e iniziare
+2. Inserire email e chiave licenza nel pannello di attivazione
+3. Procedere con la configurazione della squadra
 
-NOTA: la chiave licenza si inserisce UNA SOLA VOLTA nella schermata
-di attivazione, NON nel campo password del login.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━
 Per assistenza contattare GO Sport.
 
 Cordiali saluti,
 GO Sport`;
 
     navigator.clipboard.writeText(text).then(() => showToast('📧 Testo email copiato!'));
-}
-
-// ==========================================
-// GESTIONE UTENTI SOCIETÀ
-// ==========================================
-let allUsers = [];
-
-async function loadUsers() {
-    const container = document.getElementById('users-table-container');
-    container.innerHTML = '<div class="empty-state"><div>⏳</div><div>Caricamento...</div></div>';
-    try {
-        const r = await fetch(`${API_BASE}/api/auth/manage`, {
-            headers: { 'X-Super-Admin-Password': ADMIN_PWD }
-        });
-        const data = await r.json();
-        allUsers = data.users || [];
-        renderUsers(allUsers);
-    } catch(e) {
-        container.innerHTML = `<div class="empty-state"><div>❌</div><div>Errore: ${e.message}</div></div>`;
-    }
-}
-
-function renderUsers(users) {
-    const container = document.getElementById('users-table-container');
-    if (users.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div>👥</div><div>Nessun utente trovato</div></div>';
-        return;
-    }
-    const today = new Date().toISOString().split('T')[0];
-    const rows = users.map(u => {
-        const roleLabels = {
-            admin:'👑 Admin', coach_l1:'🥇 C-L1', coach_l2:'🥈 C-L2', coach_l3:'🥉 C-L3',
-            coach_readonly:'👁️ Read-only', dirigente_l1:'🏅 D-L1', dirigente_l2:'📂 D-L2',
-            dirigente_l3:'📋 D-L3', dirigente_l4:'📋 D-L4', societa_l1:'🏛️ Soc-L1', societa_l3:'🏢 Soc-L3'
-        };
-        const roleLabel = roleLabels[u.role] || u.role;
-        const society = u.societyId ? `<span style="font-size:0.72rem;color:#64748b">${u.societyId.substring(0,8)}...</span>` : '<span style="font-size:0.72rem;color:#ef4444">no societyId</span>';
-        const fullName = [u.nome, u.cognome].filter(Boolean).join(' ') || '—';
-        return `<tr>
-            <td>
-                <div style="font-weight:600;color:white">${u.username}</div>
-                <div style="font-size:0.75rem;color:#64748b">${u.email || '—'}</div>
-            </td>
-            <td><span class="badge badge-gray">${roleLabel}</span></td>
-            <td>${fullName}</td>
-            <td>${society}</td>
-            <td>
-                <div class="actions-cell">
-                    <button class="btn btn-warning btn-sm" onclick="openEditUser('${u.username}')">✏️</button>
-                    <button class="btn btn-danger btn-sm" onclick="openDeleteUser('${u.username}', '${(u.nome || u.username).replace(/'/g, "\\'")}')">🗑️</button>
-                </div>
-            </td>
-        </tr>`;
-    }).join('');
-    container.innerHTML = `
-        <table>
-            <thead><tr>
-                <th>Username / Email</th>
-                <th>Ruolo</th>
-                <th>Nome</th>
-                <th>Society ID</th>
-                <th>Azioni</th>
-            </tr></thead>
-            <tbody>${rows}</tbody>
-        </table>`;
-}
-
-function filterUsers() {
-    const q = document.getElementById('user-search-input').value.toLowerCase();
-    if (!q) { renderUsers(allUsers); return; }
-    renderUsers(allUsers.filter(u =>
-        u.username.toLowerCase().includes(q) ||
-        (u.email || '').toLowerCase().includes(q) ||
-        (u.nome || '').toLowerCase().includes(q) ||
-        (u.cognome || '').toLowerCase().includes(q)
-    ));
-}
-
-function openEditUser(username) {
-    const u = allUsers.find(x => x.username === username);
-    if (!u) return;
-    document.getElementById('edit-user-username').value = username;
-    document.getElementById('edit-user-username-display').value = username;
-    document.getElementById('edit-user-society-id').value = u.societyId || '';
-    document.getElementById('edit-user-role').value = u.role || 'admin';
-    document.getElementById('edit-user-new-password').value = '';
-    showAlert('edit-user-error', '');
-    showAlert('edit-user-success', '');
-    openModal('edit-user-modal');
-}
-
-async function saveUser() {
-    const username = document.getElementById('edit-user-username').value;
-    const societyId = document.getElementById('edit-user-society-id').value;
-    const password = document.getElementById('edit-user-new-password').value.trim();
-    const role = document.getElementById('edit-user-role').value;
-    showAlert('edit-user-error', '');
-    showAlert('edit-user-success', '');
-    const payload = { action: 'update', username, role };
-    if (password) payload.password = password;
-    try {
-        const r = await fetch(`${API_BASE}/api/auth/manage`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Super-Admin-Password': ADMIN_PWD,
-                ...(societyId ? { 'X-Society-Id': societyId } : {})
-            },
-            body: JSON.stringify(payload)
-        });
-        const data = await r.json();
-        if (!data.success) throw new Error(data.message);
-        showAlert('edit-user-success', '✅ Utente aggiornato con successo');
-        setTimeout(() => { closeModal('edit-user-modal'); loadUsers(); }, 1200);
-    } catch(e) {
-        showAlert('edit-user-error', '❌ ' + e.message);
-    }
-}
-
-function openDeleteUser(username, displayName) {
-    document.getElementById('delete-user-username-val').value = username;
-    const u = allUsers.find(x => x.username === username);
-    document.getElementById('delete-user-society-id-val').value = u ? (u.societyId || '') : '';
-    document.getElementById('delete-user-name-display').textContent = displayName;
-    openModal('delete-user-modal');
-}
-
-async function confirmDeleteUser() {
-    const username = document.getElementById('delete-user-username-val').value;
-    const societyId = document.getElementById('delete-user-society-id-val').value;
-    try {
-        const r = await fetch(`${API_BASE}/api/auth/manage`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Super-Admin-Password': ADMIN_PWD,
-                ...(societyId ? { 'X-Society-Id': societyId } : {})
-            },
-            body: JSON.stringify({ action: 'delete', username })
-        });
-        const data = await r.json();
-        if (!data.success) throw new Error(data.message);
-        closeModal('delete-user-modal');
-        showToast('✅ Utente eliminato');
-        loadUsers();
-    } catch(e) {
-        alert('❌ ' + e.message);
-    }
 }
 
 function showToast(msg) {
