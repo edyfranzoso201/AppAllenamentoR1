@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it" data-bs-theme="dark">
+<html lang="it" data-bs-theme="dark" style="color-scheme: dark;">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -594,7 +594,14 @@
     // Applica subito su <html> (body non ancora disponibile nel <head>)
     (function() {
         var saved = localStorage.getItem('gosport_theme') || 'dark';
-        if (saved === 'light') document.documentElement.classList.add('theme-light');
+        if (saved === 'light') {
+            document.documentElement.classList.add('theme-light');
+            document.documentElement.setAttribute('data-bs-theme', 'light');
+            document.documentElement.style.colorScheme = 'light';
+        } else {
+            document.documentElement.setAttribute('data-bs-theme', 'dark');
+            document.documentElement.style.colorScheme = 'dark';
+        }
     })();
 
     function updateThemeBtn() {
@@ -610,6 +617,9 @@
     window.toggleTheme = function() {
         var isLight = document.documentElement.classList.toggle('theme-light');
         document.body.classList.toggle('theme-light', isLight);
+        // Forza Bootstrap e browser a usare il tema corretto
+        document.documentElement.setAttribute('data-bs-theme', isLight ? 'light' : 'dark');
+        document.documentElement.style.colorScheme = isLight ? 'light' : 'dark';
         localStorage.setItem('gosport_theme', isLight ? 'light' : 'dark');
         updateThemeBtn();
         applyChartTheme(isLight);
@@ -696,8 +706,11 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         // Sincronizza body con html all'avvio
-        if (document.documentElement.classList.contains('theme-light')) {
+        var isLightInit = document.documentElement.classList.contains('theme-light');
+        if (isLightInit) {
             document.body.classList.add('theme-light');
+            document.documentElement.setAttribute('data-bs-theme', 'light');
+            document.documentElement.style.colorScheme = 'light';
         }
         setTimeout(function() {
             updateThemeBtn();
