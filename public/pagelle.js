@@ -17,16 +17,12 @@
     });
     
     function initializeRatingSystem() {
-        console.log('🎯 Inizializzazione Sistema Pagelle...');
-        
-        // Inizializza i modal Bootstrap
+        // ✅ Esce silenziosamente se non siamo nel dashboard principale
         const ratingSheetModalEl = document.getElementById('ratingSheetModal');
         const ratingListModalEl = document.getElementById('ratingListModal');
-        
-        if (!ratingSheetModalEl || !ratingListModalEl) {
-            console.error('❌ Modal pagelle non trovati nell\'HTML!');
-            return;
-        }
+        if (!ratingSheetModalEl || !ratingListModalEl) return;
+
+        console.log('🎯 Inizializzazione Sistema Pagelle...');
         
         ratingSheetModal = new bootstrap.Modal(ratingSheetModalEl);
         ratingListModal = new bootstrap.Modal(ratingListModalEl);
@@ -36,42 +32,64 @@
         
         // Setup event listeners
         setupRatingListeners();
+
+        // Espone loadRatingSheets globalmente — verrà richiamata da script.js
+        // dopo che _appData è popolato con i dati Redis
+        window.reloadRatingSheets = loadRatingSheets;
         
         console.log('✅ Sistema Pagelle inizializzato!');
     }
     
-    // Carica le pagelle dal database
+    // Carica le pagelle da window._appData (già caricato da Redis via script.js)
     function loadRatingSheets() {
-        const savedData = localStorage.getItem('coachDashboardData');
-        if (savedData) {
-            try {
-                const allData = JSON.parse(savedData);
-                ratingSheets = allData.ratingSheets || {};
-                console.log('📊 Pagelle caricate:', Object.keys(ratingSheets).length, 'atleti');
-            } catch (e) {
-                console.error('Errore caricamento pagelle:', e);
-                ratingSheets = {};
+        try {
+            if (window._appData && window._appData.ratingSheets) {
+                ratingSheets = window._appData.ratingSheets || {};
+            } else {
+                // Fallback: prova localStorage per retrocompatibilità
+                const savedData = localStorage.getItem('coachDashboardData');
+                if (savedData) {
+                    const allData = JSON.parse(savedData);
+                    ratingSheets = allData.ratingSheets || {};
+                } else {
+                    ratingSheets = {};
+                }
             }
+            console.log('📊 Pagelle caricate:', Object.keys(ratingSheets).length, 'atleti');
+        } catch (e) {
+            console.error('Errore caricamento pagelle:', e);
+            ratingSheets = {};
         }
     }
     
-    // Salva le pagelle nel database
+    // Salva le pagelle su Redis via /api/data
     function saveRatingSheets() {
-        const savedData = localStorage.getItem('coachDashboardData');
-        if (savedData) {
-            try {
-                const allData = JSON.parse(savedData);
-                allData.ratingSheets = ratingSheets;
-                localStorage.setItem('coachDashboardData', JSON.stringify(allData));
-                console.log('💾 Pagelle salvate!');
-                
-                // Trigger update UI se la funzione esiste
-                if (typeof window.saveData === 'function') {
-                    window.saveData();
-                }
-            } catch (e) {
-                console.error('Errore salvataggio pagelle:', e);
+        try {
+            // Aggiorna cache locale
+            if (window._appData) window._appData.ratingSheets = ratingSheets;
+
+            const annataId = sessionStorage.getItem('gosport_current_annata');
+            if (!annataId) {
+                console.warn('⚠️ Nessuna annata selezionata, pagelle non salvate su Redis');
+                return;
             }
+
+            fetch('/api/data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Annata-Id': annataId
+                },
+                body: JSON.stringify({ ratingSheets })
+            })
+            .then(r => r.json())
+            .then(d => {
+                if (d.success) console.log('💾 Pagelle salvate su Redis!');
+                else console.error('❌ Errore salvataggio pagelle:', d);
+            })
+            .catch(e => console.error('❌ Errore rete pagelle:', e));
+        } catch (e) {
+            console.error('Errore salvataggio pagelle:', e);
         }
     }
     

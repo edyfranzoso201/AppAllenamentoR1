@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="Bacheca Comunicazioni">
+<meta property="og:description" content="Comunicati e aggiornamenti della squadra">
+<title>Bacheca Squadra</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0a2463; color: #ffffff; font-family: system-ui, sans-serif; min-height: 100vh; overflow-x: hidden; }
+
+/* ── HEADER ── */
+.header {
+  background: linear-gradient(90deg,#051438 0%,#0a2463 60%,#051438 100%);
+  border-bottom: 3px solid #d90429;
+  padding: 14px 24px; display: flex; align-items: center; gap: 16px;
+  position: relative;
+}
+.header-logo { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; border: 2px solid #3b5a9d; }
+.header-title { font-size: 1.5rem; font-weight: 800; color: #fff; letter-spacing: 0.02em; }
+.header-sub { font-size: 0.78rem; color: #8a9fc1; margin-top: 2px; }
+.header-ticker {
+  flex: 1; overflow: hidden; margin-left: 20px;
+  border-left: 1px solid #3b5a9d; padding-left: 16px;
+}
+.ticker-inner {
+  display: inline-block; white-space: nowrap;
+  animation: ticker 30s linear infinite;
+  color: #fbbf24; font-size: 0.85rem; font-weight: 600;
+}
+@keyframes ticker { 0%{ transform:translateX(100%); } 100%{ transform:translateX(-100%); } }
+
+/* ── LAYOUT ── */
+.page { display: grid; grid-template-columns: 200px 1fr 200px; gap: 14px; padding: 14px; height: calc(100vh - 85px); min-width: 700px; align-items: stretch; }
+
+/* ── LEFT SIDEBAR ── */
+.sidebar-left { display: flex; flex-direction: column; gap: 10px; height: 100%; }
+.ad-box {
+  background: #1a3a7a; border: 1px solid #3b5a9d; border-radius: 12px;
+  overflow: hidden; flex: 1; min-height: 80px; position: relative;
+  cursor: pointer; transition: border-color 0.2s;
+}
+.ad-box:hover { border-color: #d90429; }
+.ad-box > img { 
+  position: absolute; top: 0; left: 0; 
+  width: 100% !important; height: 100% !important; 
+  object-fit: cover; border-radius: 11px; display: block;
+}
+.ad-box-placeholder {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  color: #8a9fc1; font-size: 0.75rem; text-align: center; padding: 12px;
+}
+.ad-box-placeholder .ad-icon { font-size: 2rem; opacity: 0.4; }
+.ad-label {
+  position: absolute; top: 6px; left: 6px;
+  background: rgba(0,0,0,0.6); color: #8a9fc1; font-size: 0.65rem;
+  padding: 2px 6px; border-radius: 4px;
+}
+
+/* ── CENTER ── */
+.center { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.section-title {
+  color: #ffffff; font-size: 0.95rem; font-weight: 700;
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 10px; padding-bottom: 8px;
+  border-bottom: 1px solid #3b5a9d;
+}
+.post-card {
+  background: #1a3a7a; border: 1px solid #3b5a9d; border-radius: 12px;
+  padding: 14px; margin-bottom: 12px; display: flex; gap: 14px; align-items: flex-start;
+  transition: border-color 0.2s;
+}
+.post-card:hover { border-color: #d90429; }
+.post-card.pinned { border-color: #fbbf24; box-shadow: 0 0 0 1px #fbbf2440; }
+.post-img {
+  width: 88px; height: 88px; object-fit: cover; border-radius: 8px;
+  flex-shrink: 0; cursor: pointer; transition: transform 0.2s;
+}
+.post-img:hover { transform: scale(1.05); }
+.post-img.expanded { width: 100%; height: auto; cursor: zoom-out; }
+.post-body { flex: 1; min-width: 0; }
+.post-title { font-weight: 700; font-size: 1rem; color: #ffffff; margin-bottom: 5px; }
+.post-text { color: #c8d8f0; font-size: 0.87rem; line-height: 1.55; word-break: break-word; }
+.post-date { color: #8a9fc1; font-size: 0.72rem; margin-top: 8px; }
+.pin-badge {
+  display: inline-block; background: #92400e; color: #fcd34d;
+  font-size: 0.68rem; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; margin-bottom: 5px;
+}
+.empty { text-align: center; padding: 48px 0; color: #8a9fc1; }
+.spinner {
+  width: 32px; height: 32px; border: 3px solid #3b5a9d;
+  border-top-color: #ffffff; border-radius: 50%;
+  animation: spin 0.8s linear infinite; margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── RIGHT SIDEBAR ── */
+.sidebar-right { display: flex; flex-direction: column; gap: 10px; height: 100%; }
+
+/* Clock */
+.clock-box {
+  background: #1a3a7a; border: 1px solid #3b5a9d; border-radius: 12px;
+  padding: 16px; text-align: center;
+}
+.clock-time { font-size: 2.4rem; font-weight: 800; color: #ffffff; letter-spacing: 0.06em; font-variant-numeric: tabular-nums; }
+.clock-date { font-size: 0.78rem; color: #8a9fc1; margin-top: 4px; }
+.clock-day  { font-size: 0.85rem; color: #8a9fc1; margin-top: 2px; text-transform: capitalize; }
+
+/* Mini Calendar */
+.cal-box {
+  background: #1a3a7a; border: 1px solid #3b5a9d; border-radius: 12px;
+  padding: 10px;
+}
+.cal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 6px;
+}
+.cal-month { font-size: 0.85rem; font-weight: 700; color: #ffffff; text-transform: capitalize; }
+.cal-nav { background: none; border: none; color: #8a9fc1; cursor: pointer; font-size: 1rem; padding: 2px 6px; border-radius: 4px; }
+.cal-nav:hover { color: #ffffff; background: #1e5095; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.cal-wd { font-size: 0.60rem; color: #334155; text-align: center; padding: 1px 0; font-weight: 700; }
+.cal-day {
+  font-size: 0.68rem; text-align: center; padding: 2px 1px;
+  border-radius: 4px; cursor: default; color: #8a9fc1;
+}
+.cal-day.today { background: #1d4ed8; color: #fff; font-weight: 700; border-radius: 50%; }
+.cal-day.other-month { color: #3b5a9d; }
+
+/* Sponsor box */
+.sponsor-box {
+  background: #1a3a7a; border: 1px solid #3b5a9d; border-radius: 12px;
+  overflow: hidden; flex: 1; min-height: 180px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; position: relative;
+  cursor: pointer; transition: border-color 0.2s;
+}
+.sponsor-box:hover { border-color: #fbbf24; }
+.sponsor-box img { width: 100%; height: 100%; object-fit: contain; border-radius: 12px; display: block; }
+.sponsor-placeholder {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  color: #8a9fc1; font-size: 0.75rem; text-align: center; padding: 16px;
+}
+.sponsor-label {
+  position: absolute; top: 6px; right: 6px;
+  background: rgba(0,0,0,0.6); color: #fbbf24; font-size: 0.65rem;
+  padding: 2px 6px; border-radius: 4px; font-weight: 700;
+}
+
+/* ── FOOTER ── */
+footer { text-align: center; padding: 16px; color: #3b5a9d; font-size: 0.72rem; border-top: 1px solid #1a3a7a; }
+
+/* Scroll orizzontale su schermi piccoli invece di collassare */
+body { overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <img id="team-logo" class="header-logo" style="display:none" alt="Logo">
+  <div>
+    <div class="header-title" id="team-name">Bacheca Squadra</div>
+    <div class="header-sub">Comunicati ufficiali</div>
+  </div>
+  <div class="header-ticker">
+    <span class="ticker-inner" id="ticker-text">📢 Benvenuti nella bacheca ufficiale della squadra &nbsp;·&nbsp; Seguici per tutti gli aggiornamenti!</span>
+  </div>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="page">
+
+  <!-- ── SINISTRA: 3 box sponsor/locandina ── -->
+  <div class="sidebar-left">
+    <div class="ad-box" id="ad-box-1" onclick="openAdLink(1)">
+      <span class="ad-label">Sponsor 1</span>
+      <div class="ad-box-placeholder">
+        <div class="ad-icon">🏷️</div>
+        <div>Spazio pubblicitario</div>
+      </div>
+    </div>
+    <div class="ad-box" id="ad-box-2" onclick="openAdLink(2)">
+      <span class="ad-label">Sponsor 2</span>
+      <div class="ad-box-placeholder">
+        <div class="ad-icon">🏷️</div>
+        <div>Spazio pubblicitario</div>
+      </div>
+    </div>
+    <div class="ad-box" id="ad-box-3" onclick="openAdLink(3)">
+      <span class="ad-label">Locandina 1</span>
+      <div class="ad-box-placeholder">
+        <div class="ad-icon">📄</div>
+        <div>Locandina evento</div>
+      </div>
+    </div>
+    <div class="ad-box" id="ad-box-4" onclick="openAdLink(4)">
+      <span class="ad-label">Locandina 2</span>
+      <div class="ad-box-placeholder">
+        <div class="ad-icon">📄</div>
+        <div>Locandina evento</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CENTRO: comunicati ── -->
+  <div class="center">
+    <div class="section-title">📋 Comunicati</div>
+    <div id="posts-container">
+      <div class="empty">
+        <div class="spinner"></div>
+        <div style="margin-top:12px;font-size:0.85rem;">Caricamento...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── DESTRA: orologio + calendario + sponsor ── -->
+  <div class="sidebar-right">
+
+    <!-- Orologio -->
+    <div class="clock-box">
+      <div class="clock-time" id="clock-time">00:00:00</div>
+      <div class="clock-date" id="clock-date"></div>
+      <div class="clock-day"  id="clock-day"></div>
+    </div>
+
+    <!-- Calendario -->
+    <div class="cal-box">
+      <div class="cal-header">
+        <button class="cal-nav" onclick="calNav(-1)">&#8249;</button>
+        <span class="cal-month" id="cal-month-label"></span>
+        <button class="cal-nav" onclick="calNav(1)">&#8250;</button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+
+    <!-- Sponsor / Locandina -->
+    <div class="sponsor-box" id="sponsor-box" onclick="openAdLink(0)">
+      <span class="sponsor-label">⭐ SPONSOR</span>
+      <div class="sponsor-placeholder">
+        <div style="font-size:2rem;opacity:0.3;">🌟</div>
+        <div>Spazio sponsor principale</div>
+        <div style="font-size:0.65rem;color:#334155;">220×140px</div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<footer>© 2025 Edy Franzoso — Sport Monitoring &nbsp;|&nbsp; Tutti i diritti riservati</footer>
+
+<script>
+// ── Sponsor: caricati da Redis via API ───────────────────────────────────
+var adConfig = {};
+
+function openAdLink(n) {
+  var slot = adConfig[String(n)] || adConfig[n];
+  if (slot && slot.link) window.open(slot.link, '_blank');
+}
+
+function applyAdConfig(cfg) {
+  if (!cfg) return;
+  adConfig = cfg;
+  console.log('[Sponsor] applyAdConfig:', JSON.stringify(cfg));
+  var labels = {1:'Sponsor 1',2:'Sponsor 2',3:'Locandina 1',4:'Locandina 2'};
+
+  // Aggiorna ogni box sinistra (1-4)
+  [1,2,3,4].forEach(function(n) {
+    var slot = cfg[String(n)] || cfg[n] || {};
+    var box  = document.getElementById('ad-box-'+n);
+    if (!box) return;
+    var placeholder = box.querySelector('.ad-box-placeholder');
+    var existingImg = box.querySelector('img');
+    if (slot.img) {
+      if (placeholder) placeholder.style.display = 'none';
+      if (existingImg) {
+        existingImg.src = slot.img;
+      } else {
+        var img = document.createElement('img');
+        img.src = slot.img;
+        img.alt = labels[n] || 'Sponsor';
+        img.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;border-radius:11px;';
+        box.appendChild(img);
+      }
+    } else {
+      if (placeholder) placeholder.style.display = '';
+      if (existingImg) existingImg.remove();
+    }
+  });
+
+  // Sponsor principale destra (chiave "0")
+  var slot0 = cfg['0'] || cfg[0] || {};
+  var sb = document.getElementById('sponsor-box');
+  if (!sb) return;
+  var sbPlaceholder = sb.querySelector('.sponsor-placeholder');
+  var sbImg = sb.querySelector('img');
+  if (slot0.img) {
+    if (sbPlaceholder) sbPlaceholder.style.display = 'none';
+    if (sbImg) {
+      sbImg.src = slot0.img;
+    } else {
+      var img0 = document.createElement('img');
+      img0.src = slot0.img;
+      img0.alt = 'Sponsor';
+      sb.appendChild(img0);
+    }
+  } else {
+    if (sbPlaceholder) sbPlaceholder.style.display = '';
+    if (sbImg) sbImg.remove();
+  }
+}
+
+// ── Orologio ─────────────────────────────────────────────────────────────
+var days   = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+var months = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+
+function updateClock() {
+  var now = new Date();
+  var hh = String(now.getHours()).padStart(2,'0');
+  var mm = String(now.getMinutes()).padStart(2,'0');
+  var ss = String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('clock-time').textContent = hh + ':' + mm + ':' + ss;
+  document.getElementById('clock-date').textContent = now.getDate() + ' ' + months[now.getMonth()] + ' ' + now.getFullYear();
+  document.getElementById('clock-day').textContent  = days[now.getDay()];
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ── Calendario ───────────────────────────────────────────────────────────
+var _calDate = new Date();
+
+function renderCal() {
+  var y = _calDate.getFullYear(), m = _calDate.getMonth();
+  document.getElementById('cal-month-label').textContent = months[m] + ' ' + y;
+  var today = new Date(); today.setHours(0,0,0,0);
+  var first = new Date(y, m, 1);
+  var startDay = (first.getDay() + 6) % 7; // Lun=0
+  var daysInMonth = new Date(y, m+1, 0).getDate();
+  var wdays = ['L','M','M','G','V','S','D'];
+  var h = wdays.map(function(d){ return '<div class="cal-wd">'+d+'</div>'; }).join('');
+  for (var i=0; i<startDay; i++) h += '<div class="cal-day other-month"></div>';
+  for (var d=1; d<=daysInMonth; d++) {
+    var dt = new Date(y,m,d); dt.setHours(0,0,0,0);
+    var cls = 'cal-day' + (dt.getTime()===today.getTime()?' today':'');
+    h += '<div class="'+cls+'">'+d+'</div>';
+  }
+  document.getElementById('cal-grid').innerHTML = h;
+}
+function calNav(dir) { _calDate.setMonth(_calDate.getMonth()+dir); renderCal(); }
+renderCal();
+
+// ── Ticker dinamico dai post ─────────────────────────────────────────────
+function updateTicker(posts) {
+  if (!posts.length) return;
+  var text = posts.map(function(p){ return '📢 ' + p.title; }).join('  ·  ');
+  document.getElementById('ticker-text').textContent = text;
+}
+
+// ── Caricamento post ─────────────────────────────────────────────────────
+(async function() {
+  try {
+    var res  = await fetch('/api/data', { cache: 'no-store' });
+    var data = await res.json();
+
+    if (data.teamName) {
+      document.getElementById('team-name').textContent = data.teamName + ' — Bacheca';
+      document.title = data.teamName + ' — Bacheca';
+    }
+    // Applica configurazione sponsor
+    if (data.bachecaConfig) applyAdConfig(data.bachecaConfig);
+
+    var posts  = (data.globalPosts || []).concat(data.posts || []);
+    var images = data.postImages || {};
+
+    posts.sort(function(a, b) {
+      if ((b.pinned?1:0) !== (a.pinned?1:0)) return (b.pinned?1:0) - (a.pinned?1:0);
+      return new Date(b.date||0) - new Date(a.date||0);
+    });
+
+    updateTicker(posts);
+
+    var box = document.getElementById('posts-container');
+    if (!posts.length) {
+      box.innerHTML = '<div class="empty"><div style="font-size:3rem;opacity:0.3;margin-bottom:12px;">📢</div><p>Nessun comunicato pubblicato.</p></div>';
+      return;
+    }
+
+    var h = '';
+    posts.forEach(function(p) {
+      var img = images[p.id] || '';
+      var dt  = p.date ? new Date(p.date).toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'}) : '';
+      h += '<div class="post-card' + (p.pinned?' pinned':'') + '">';
+      if (img) h += '<img class="post-img" src="'+img+'" alt="" onclick="this.classList.toggle(\'expanded\')">';
+      h += '<div class="post-body">';
+      if (p.pinned) h += '<div class="pin-badge">📌 In evidenza</div>';
+      h += '<div class="post-title">' + (p.title||'') + '</div>';
+      if (p.text) h += '<div class="post-text">' + p.text + '</div>';
+      h += '<div class="post-date">' + dt + '</div>';
+      h += '</div></div>';
+    });
+    box.innerHTML = h;
+
+  } catch(e) {
+    document.getElementById('posts-container').innerHTML = '<div class="empty"><p>Errore caricamento.</p></div>';
+  }
+})();
+</script>
+</body>
+</html>

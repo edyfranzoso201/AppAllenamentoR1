@@ -1,6 +1,4 @@
-<!DOC
-
-TYPE html>
+<!DOCTYPE html>
 <html lang="it" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
@@ -10,14 +8,14 @@ TYPE html>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
         :root {
-            --bg-main:    #0d1b2a;
-            --bg-card:    #1a3a5f;
-            --bg-row-a:   #1a3a5f;
-            --bg-row-b:   #1a3a5f;
-            --bg-header:  #0d1b2a;
+            --bg-main:    #0a2463;
+            --bg-card:    #1a3a7a;
+            --bg-row-a:   #1a3a7a;
+            --bg-row-b:   #142f6a;
+            --bg-header:  #0a2463;
             --border:     #3b5a9d;
             --text:       #ffffff;
-            --text-muted: #60a5fa;
+            --text-muted: #8a9fc1;
             --accent:     #d90429;
             --accent2:    #ffffff;
             --red:        #d90429;
@@ -99,10 +97,10 @@ TYPE html>
         }
         .btn-cal:hover { filter: brightness(1.15); }
         .btn-new      { background: var(--red);     color: white; }
-        .btn-gen      { background: #f59e0b;         color: white; }
-        .btn-import   { background: #0ea5e9;         color: white; }
+        .btn-gen      { background: #b45309;         color: white; }
+        .btn-import   { background: #0e7490;         color: white; }
         .btn-resp     { background: #d90429;         color: white; }
-        .btn-delete   { background: #64748b;         color: #e2e8f0; }
+        .btn-delete   { background: #374151;         color: #d1d5db; }
 
         /* ── Card wrapper ── */
         .cal-card {
@@ -118,12 +116,12 @@ TYPE html>
             overflow-y: auto;
             max-height: calc(100vh - 150px);
             scrollbar-width: thin;
-            scrollbar-color: #3b5a9d var(--bg-main);
+            scrollbar-color: #4a6fa5 var(--bg-main);
         }
         .table-responsive::-webkit-scrollbar { width: 8px; height: 8px; }
         .table-responsive::-webkit-scrollbar-track { background: var(--bg-main); }
-        .table-responsive::-webkit-scrollbar-thumb { background: #3b5a9d; border-radius: 4px; }
-        .table-responsive::-webkit-scrollbar-thumb:hover { background: #60a5fa; }
+        .table-responsive::-webkit-scrollbar-thumb { background: #4a6fa5; border-radius: 4px; }
+        .table-responsive::-webkit-scrollbar-thumb:hover { background: #8a9fc1; }
 
         .table { 
             color: var(--text) !important; 
@@ -191,8 +189,8 @@ TYPE html>
         .table-dark { --bs-table-bg: transparent; --bs-table-border-color: var(--border); }
 
         /* ── Presence badges ── */
-        .badge-present { background: #16a34a; color: #16a34a; border: 1px solid #16a34a; border-radius: 5px; padding: 2px 7px; font-size: 0.72rem; }
-        .badge-absent  { background: #d90429; color: #d90429; border: 1px solid #d90429; border-radius: 5px; padding: 2px 7px; font-size: 0.72rem; }
+        .badge-present { background: #166534; color: #4ade80; border: 1px solid #16a34a; border-radius: 5px; padding: 2px 7px; font-size: 0.72rem; }
+        .badge-absent  { background: #7f1d1d; color: #f87171; border: 1px solid #dc2626; border-radius: 5px; padding: 2px 7px; font-size: 0.72rem; }
         .badge-none    { color: var(--text-muted); }
 
         /* ── Event header ── */
@@ -215,69 +213,69 @@ TYPE html>
             align-items: center;
             gap: 4px;
         }
-        .btn-link-presenze:hover { background: #3b82f6; }
+        .btn-link-presenze:hover { background: #2563eb; }
 
         /* ── Footer ── */
         /* ── BACHECA ── */
         .section-toggle-btn {
-            background: none; border: 1px solid #3b5a9d; color: #60a5fa;
+            background: none; border: 1px solid #3b5a9d; color: #90b8f0;
             border-radius: 6px; padding: 5px 12px; font-size: 0.78rem;
             cursor: pointer; display: flex; align-items: center; gap: 6px;
             transition: background 0.2s;
         }
-        .section-toggle-btn:hover { background: #1a3a5f; }
+        .section-toggle-btn:hover { background: #1a3a7a; }
         .section-toggle-btn .arrow { transition: transform 0.3s; display: inline-block; }
         .section-toggle-btn.collapsed .arrow { transform: rotate(-90deg); }
         .collapsible-section { overflow: hidden; transition: max-height 0.4s ease; }
         .collapsible-section.collapsed { max-height: 0 !important; }
         .bacheca-card {
-            background: #1a3a5f; border: 1px solid #3b5a9d; border-radius: 12px;
+            background: #1a3a7a; border: 1px solid #3b5a9d; border-radius: 12px;
             padding: 20px; margin-bottom: 16px;
         }
-        .bacheca-title { color: #60a5fa; font-size: 1.1rem; font-weight: 700; margin-bottom: 16px;
+        .bacheca-title { color: #90b8f0; font-size: 1.1rem; font-weight: 700; margin-bottom: 16px;
             display: flex; align-items: center; gap: 8px; }
         .post-form { display: flex; flex-direction: column; gap: 10px; }
         .post-form input, .post-form textarea, .post-form select {
-            background: #0d1b2a; border: 1px solid #3b5a9d; color: #ffffff;
+            background: #0a2463; border: 1px solid #3b5a9d; color: #ffffff;
             border-radius: 6px; padding: 8px 12px; font-size: 0.9rem; width: 100%;
         }
         .post-form textarea { resize: vertical; min-height: 80px; }
         .post-img-preview { max-height: 120px; border-radius: 6px; border: 1px solid #3b5a9d; display: none; margin-top: 4px; }
         .post-list { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
         .post-item {
-            background: #0d1b2a; border: 1px solid #3b5a9d; border-radius: 8px;
+            background: #0a2463; border: 1px solid #3b5a9d; border-radius: 8px;
             padding: 14px; display: flex; gap: 12px; align-items: flex-start;
         }
         .post-item-img { width: 70px; height: 70px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
         .post-item-body { flex: 1; min-width: 0; }
         .post-item-title { color: #ffffff; font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
-        .post-item-text  { color: #60a5fa; font-size: 0.85rem; white-space: pre-wrap; word-break: break-word; }
-        .post-item-meta  { color: #60a5fa; font-size: 0.75rem; margin-top: 6px; display: flex; gap: 10px; }
+        .post-item-text  { color: #b8cce8; font-size: 0.85rem; white-space: pre-wrap; word-break: break-word; }
+        .post-item-meta  { color: #7a9cc4; font-size: 0.75rem; margin-top: 6px; display: flex; gap: 10px; }
         .post-visibility-badge {
             font-size: 0.7rem; padding: 2px 8px; border-radius: 12px; font-weight: 600;
         }
-        .badge-annata  { background: #3b5a9d; color: #60a5fa; }
-        .badge-global  { background: #16a34a; color: #16a34a; }
+        .badge-annata  { background: #3b5a9d; color: #90b8f0; }
+        .badge-global  { background: #14532d; color: #4ade80; }
         .post-actions  { display: flex; gap: 6px; flex-shrink: 0; }
         .post-actions button {
-            background: none; border: 1px solid #3b5a9d; color: #60a5fa;
+            background: none; border: 1px solid #3b5a9d; color: #b8cce8;
             border-radius: 5px; padding: 4px 8px; cursor: pointer; font-size: 0.75rem;
         }
-        .post-actions button:hover { border-color: #3b82f6; color: #60a5fa; }
-        .post-actions .del-btn:hover { border-color: #d90429; color: #d90429; }
+        .post-actions button:hover { border-color: #3b82f6; color: #90b8f0; }
+        .post-actions .del-btn:hover { border-color: #ef4444; color: #f87171; }
         .btn-bacheca-save {
-            background: #16a34a; color: white; border: none; border-radius: 6px;
+            background: #10b981; color: white; border: none; border-radius: 6px;
             padding: 9px 20px; font-weight: 700; cursor: pointer; font-size: 0.85rem;
             align-self: flex-end;
         }
-        .btn-bacheca-save:hover { background: #16a34a; }
+        .btn-bacheca-save:hover { background: #059669; }
         .rte-toolbar { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:6px; }
-        .rte-btn { background:#0d1b2a; border:1px solid #3b5a9d; color:#60a5fa;
+        .rte-btn { background:#0a2463; border:1px solid #3b5a9d; color:#b8cce8;
             border-radius:4px; padding:3px 8px; cursor:pointer; font-size:0.78rem;
             font-weight:600; transition:background 0.15s; }
         .rte-btn:hover { background:#3b5a9d; color:#ffffff; }
-        .rte-btn.active { background:#3b5a9d; color:#60a5fa; }
-        .rte-editor { background:#0d1b2a; border:1px solid #3b5a9d; color:#ffffff;
+        .rte-btn.active { background:#3b5a9d; color:#90b8f0; }
+        .rte-editor { background:#0a2463; border:1px solid #3b5a9d; color:#ffffff;
             border-radius:6px; padding:10px 12px; font-size:0.9rem; min-height:90px;
             outline:none; line-height:1.6; }
         .rte-editor:focus { border-color:#d90429; }
@@ -287,7 +285,7 @@ TYPE html>
             display: flex; align-items: center; justify-content: space-between;
             margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #3b5a9d;
         }
-        .cal-section-label { color: #60a5fa; font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; }
+        .cal-section-label { color: #90b8f0; font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; }
         /* ── TAB NAVIGATION ── */
         .page-tabs {
             display: flex; gap: 0; margin-bottom: 14px;
@@ -311,15 +309,15 @@ TYPE html>
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         /* ── PANNELLO SPONSOR ── */
-        .sponsor-panel { background:#1a3a5f; border:1px solid #3b5a9d; border-radius:12px; padding:18px; margin-top:12px; }
-        .sponsor-panel h6 { color:#f59e0b; font-size:0.95rem; font-weight:700; margin-bottom:14px; }
+        .sponsor-panel { background:#1a3a7a; border:1px solid #3b5a9d; border-radius:12px; padding:18px; margin-top:12px; }
+        .sponsor-panel h6 { color:#fbbf24; font-size:0.95rem; font-weight:700; margin-bottom:14px; }
         .sponsor-row { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; padding-bottom:14px; border-bottom:1px solid #3b5a9d; }
         .sponsor-row:last-child { border-bottom:none; margin-bottom:0; padding-bottom:0; }
-        .sponsor-row label { color:#60a5fa; font-size:0.8rem; font-weight:600; }
-        .sponsor-row input { background:#0d1b2a; border:1px solid #3b5a9d; color:#ffffff; border-radius:6px; padding:7px 10px; font-size:0.85rem; width:100%; }
+        .sponsor-row label { color:#b8cce8; font-size:0.8rem; font-weight:600; }
+        .sponsor-row input { background:#0a2463; border:1px solid #3b5a9d; color:#ffffff; border-radius:6px; padding:7px 10px; font-size:0.85rem; width:100%; }
         .sponsor-row input:focus { border-color:#d90429; outline:none; }
         .sponsor-img-preview { height:48px; border-radius:6px; border:1px solid #3b5a9d; margin-top:4px; display:none; }
-        .btn-save-sponsor { background:#f59e0b; color:#000; border:none; border-radius:6px; padding:9px 20px; font-weight:700; cursor:pointer; font-size:0.85rem; margin-top:4px; }
+        .btn-save-sponsor { background:#fbbf24; color:#000; border:none; border-radius:6px; padding:9px 20px; font-weight:700; cursor:pointer; font-size:0.85rem; margin-top:4px; }
         .btn-save-sponsor:hover { background:#f59e0b; }
         footer {
             text-align: center;
@@ -331,80 +329,66 @@ TYPE html>
         }
 
         /* ── GARE DA DISPUTARE ── */
-        .gare-week-header{background:#1a3a5f;color:#ffffff;font-weight:700;text-align:center;padding:8px 12px;font-size:0.88rem;border-radius:6px 6px 0 0;text-transform:uppercase;border-bottom:2px solid #0f172a;}
-        .gare-day-header{background:#f59e0b;color:#000000;font-weight:700;text-align:center;padding:5px 8px;font-size:0.8rem;border-top:1px solid #f59e0b;border-bottom:1px solid #f59e0b;text-transform:uppercase;}
-        .gare-day-header.domenica{background:#f59e0b;color:#000000;}
-        .gare-row-time{background:#16a34a;color:#000000;font-weight:700;padding:5px 10px;font-size:0.78rem;display:flex;align-items:center;gap:8px;border-bottom:1px solid #16a34a;}
-        .gare-row-time .gare-ora{color:#000000;font-weight:800;font-size:0.82rem;}
-        .gare-row-match{background:#60a5fa;color:#000000;font-weight:700;text-align:center;padding:7px 10px;font-size:0.84rem;text-transform:uppercase;}
-        .gare-block{margin-bottom:5px;border-radius:6px;overflow:hidden;border:1px solid #1e293b;transition:border-color 0.15s;}
-        .gare-block:hover{border-color:#3b5a9d;}
-        .gare-block.selected{border-color:#60a5fa;box-shadow:0 0 0 2px rgba(74,158,255,0.25);}
+        .gare-week-header{background:#1e3a5f;color:#90b8f0;font-weight:700;text-align:center;padding:8px 12px;font-size:0.88rem;border-radius:6px 6px 0 0;text-transform:uppercase;border-bottom:2px solid #2d5a8e;}
+        .gare-day-header{background:#162d4a;color:#7aacda;font-weight:600;text-align:center;padding:5px 8px;font-size:0.8rem;border-top:1px solid #2d5a8e;border-bottom:1px solid #2d5a8e;text-transform:uppercase;}
+        .gare-row-time{background:#1c3352;color:#a8c8e8;font-weight:600;padding:5px 10px;font-size:0.78rem;display:flex;align-items:center;gap:8px;border-bottom:1px solid #243f60;}
+        .gare-row-time .gare-ora{color:#f0a040;font-weight:700;font-size:0.82rem;}
+        .gare-row-match{background:#0f2540;color:#c8dff0;font-weight:700;text-align:center;padding:7px 10px;font-size:0.84rem;text-transform:uppercase;}
+        .gare-block{margin-bottom:5px;border-radius:6px;overflow:hidden;border:1px solid #2a4a6e;transition:border-color 0.15s;}
+        .gare-block:hover{border-color:#4a7aae;}
+        .gare-block.selected{border-color:#4a9eff;box-shadow:0 0 0 2px rgba(74,158,255,0.25);}
         .gare-spacer{height:6px;}
         .gare-columns{display:flex;gap:12px;}
         .gare-col{flex:1;min-width:0;}
         .gare-col-title{font-weight:700;font-size:0.82rem;text-align:center;padding:7px;border-radius:6px;margin-bottom:8px;text-transform:uppercase;}
-        .gare-col-title.casa{background:#1a3a5f;color:#ffffff;border:1px solid #0f172a;}
-        .gare-col-title.fuori{background:#d90429;color:#ffffff;border:1px solid #d90429;}
+        .gare-col-title.casa{background:#0f3020;color:#5aaa80;border:1px solid #1a5035;}
+        .gare-col-title.fuori{background:#2d1515;color:#c07070;border:1px solid #5a2020;}
         .gare-empty{color:var(--text-muted);text-align:center;padding:20px;font-size:0.82rem;}
         .gare-nav{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
-        .gare-nav-btn{background:#1e293b;border:1px solid #2d4a8a;color:#60a5fa;border-radius:6px;padding:5px 14px;font-size:0.8rem;cursor:pointer;font-weight:600;}
-        .gare-nav-btn:hover{background:#1a3a5f;}
-        .gare-week-label{flex:1;text-align:center;font-weight:600;font-size:0.85rem;color:#60a5fa;}
-        .gare-check-wrap{display:flex;align-items:center;gap:6px;padding:3px 8px;background:#0d1b2a;border-top:1px solid #1a3a5f;cursor:pointer;}
-        .gare-check-wrap input[type=checkbox]{accent-color:#60a5fa;cursor:pointer;}
-        .gare-check-wrap label{color:#60a5fa;font-size:0.72rem;cursor:pointer;margin:0;}
-        .gare-form-card{background:#0d1b2a;border:1px solid #1e293b;border-radius:10px;padding:16px;margin-bottom:14px;}
-        .gare-form-title{color:#60a5fa;font-weight:700;font-size:0.9rem;margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+        .gare-nav-btn{background:#12244a;border:1px solid #2d4a7a;color:#90b8f0;border-radius:6px;padding:5px 14px;font-size:0.8rem;cursor:pointer;font-weight:600;}
+        .gare-nav-btn:hover{background:#1a3a6a;}
+        .gare-week-label{flex:1;text-align:center;font-weight:600;font-size:0.85rem;color:#90b8f0;}
+        .gare-check-wrap{display:flex;align-items:center;gap:6px;padding:3px 8px;background:#0a1e3a;border-top:1px solid #1e3a5f;cursor:pointer;}
+        .gare-check-wrap input[type=checkbox]{accent-color:#4a9eff;cursor:pointer;}
+        .gare-check-wrap label{color:#6a9ac0;font-size:0.72rem;cursor:pointer;margin:0;}
+        .gare-form-card{background:#101e38;border:1px solid #2a4a6e;border-radius:10px;padding:16px;margin-bottom:14px;}
+        .gare-form-title{color:#7aacda;font-weight:700;font-size:0.9rem;margin-bottom:14px;display:flex;align-items:center;gap:7px;}
         .gare-form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px;}
         .gare-form-group{display:flex;flex-direction:column;gap:4px;}
-        .gare-form-group label{color:#60a5fa;font-size:0.78rem;font-weight:600;}
-        .gare-form-group input,.gare-form-group select,.gare-form-group textarea{background:#0d1b2a;border:1px solid #1e293b;color:#60a5fa;border-radius:6px;padding:7px 10px;font-size:0.85rem;}
-        .gare-form-group input:focus,.gare-form-group select:focus{border-color:#3b5a9d;outline:none;}
-        .gare-form-group select option{background:#0d1b2a;}
+        .gare-form-group label{color:#6a8caa;font-size:0.78rem;font-weight:600;}
+        .gare-form-group input,.gare-form-group select,.gare-form-group textarea{background:#0a1e38;border:1px solid #2a4a6e;color:#c8dff0;border-radius:6px;padding:7px 10px;font-size:0.85rem;}
+        .gare-form-group input:focus,.gare-form-group select:focus{border-color:#4a7aae;outline:none;}
+        .gare-form-group select option{background:#0a1e38;}
         .gare-form-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;}
-        .btn-gara-save{background:#16a34a;color:#16a34a;border:1px solid #16a34a;border-radius:6px;padding:8px 20px;font-weight:700;cursor:pointer;font-size:0.85rem;}
-        .btn-gara-save:hover{background:#16a34a;}
-        .btn-gara-cancel{background:#1e293b;color:#60a5fa;border:1px solid #1a3a5f;border-radius:6px;padding:8px 16px;font-weight:600;cursor:pointer;font-size:0.85rem;}
-        .btn-gara-del{background:none;border:none;color:#000000;border-radius:5px;padding:3px 9px;cursor:pointer;font-size:0.72rem;}
-        .btn-gara-del:hover{color:#d90429;}
-        .btn-gara-edit{background:none;border:none;color:#000000;border-radius:5px;padding:3px 9px;cursor:pointer;font-size:0.72rem;margin-right:4px;}
-        .btn-gara-edit:hover{color:#1a3a5f;}
-        .squadre-panel{background:#0d1b2a;border:1px solid #1e293b;border-radius:8px;padding:12px;margin-top:12px;}
-        .squadre-panel-title{color:#f59e0b;font-size:0.82rem;font-weight:700;margin-bottom:10px;}
+        .btn-gara-save{background:#1a4a2a;color:#7acc9a;border:1px solid #2a7a4a;border-radius:6px;padding:8px 20px;font-weight:700;cursor:pointer;font-size:0.85rem;}
+        .btn-gara-save:hover{background:#224a30;}
+        .btn-gara-cancel{background:#1e2a3a;color:#8a9fc1;border:1px solid #2a3a5a;border-radius:6px;padding:8px 16px;font-weight:600;cursor:pointer;font-size:0.85rem;}
+        .btn-gara-del{background:none;border:1px solid #5a2020;color:#c07070;border-radius:5px;padding:3px 9px;cursor:pointer;font-size:0.72rem;}
+        .btn-gara-del:hover{background:#2d1515;}
+        .btn-gara-edit{background:none;border:1px solid #2a4a6e;color:#6a9ac0;border-radius:5px;padding:3px 9px;cursor:pointer;font-size:0.72rem;margin-right:4px;}
+        .btn-gara-edit:hover{background:#12244a;}
+        .squadre-panel{background:#0c1e38;border:1px solid #2a4a6e;border-radius:8px;padding:12px;margin-top:12px;}
+        .squadre-panel-title{color:#c8a040;font-size:0.82rem;font-weight:700;margin-bottom:10px;}
         .squadre-list{display:flex;flex-wrap:wrap;gap:6px;max-height:160px;overflow-y:auto;margin-bottom:10px;}
-        .squadra-tag{background:#0f172a;border:1px solid #1a3a5f;border-radius:20px;padding:3px 10px;font-size:0.75rem;color:#60a5fa;display:flex;align-items:center;gap:6px;}
-        .squadra-tag .del-sq{background:none;border:none;color:#d90429;cursor:pointer;padding:0;font-size:0.8rem;line-height:1;}
+        .squadra-tag{background:#122040;border:1px solid #2a4060;border-radius:20px;padding:3px 10px;font-size:0.75rem;color:#8aaccc;display:flex;align-items:center;gap:6px;}
+        .squadra-tag .del-sq{background:none;border:none;color:#c07070;cursor:pointer;padding:0;font-size:0.8rem;line-height:1;}
         .gare-action-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
-        .btn-gare-new{background:#16a34a;color:#16a34a;border:1px solid #16a34a;border-radius:8px;padding:7px 16px;font-size:0.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
-        .btn-gare-new:hover{background:#16a34a;}
-        .btn-gare-import{background:#0d1b2a;color:#60a5fa;border:1px solid #1a3a5f;border-radius:8px;padding:7px 16px;font-size:0.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
-        .btn-gare-import:hover{background:#0f172a;}
-        .btn-gare-squadre{background:#1e1b4b;color:#a855f7;border:1px solid #1e1b4b;border-radius:8px;padding:7px 16px;font-size:0.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
-        .btn-gare-squadre:hover{background:#1e1b4b;}
-        .btn-gare-export{background:#422006;color:#f59e0b;border:1px solid #422006;border-radius:8px;padding:7px 16px;font-size:0.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
-        .btn-gare-export:hover{background:#422006;}
-        .gare-export-panel{background:#0d1b2a;border:1px solid #1e293b;border-radius:10px;padding:16px;margin-top:12px;}
-        .gare-export-title{color:#f59e0b;font-weight:700;font-size:0.88rem;margin-bottom:12px;display:flex;align-items:center;gap:7px;}
-        .gare-sel-count{font-size:0.78rem;color:#60a5fa;margin-bottom:8px;}
-        .btn-gare-dl-img{background:#1a3a5f;color:#60a5fa;border:1px solid #2d4a8a;border-radius:6px;padding:7px 18px;font-weight:700;cursor:pointer;font-size:0.82rem;margin-right:8px;}
-        .btn-gare-dl-img:hover{background:#2d4a8a;}
-        .btn-gare-dl-pdf{background:#450a0a;color:#d90429;border:1px solid #d90429;border-radius:6px;padding:7px 18px;font-weight:700;cursor:pointer;font-size:0.82rem;}
-        .btn-gare-dl-pdf:hover{background:#450a0a;}
+        .btn-gare-new{background:#1a3a28;color:#6acc8a;border:1px solid #2a5a40;border-radius:8px;padding:7px 16px;font-size:0.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
+        .btn-gare-new:hover{background:#204830;}
+        .btn-gare-import{background:#0c2a38;color:#5aaac8;border:1px solid #1a4a5a;border-radius:8px;padding:7px 16px;font-size:0.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
+        .btn-gare-import:hover{background:#123040;}
+        .btn-gare-squadre{background:#201538;color:#9a7acc;border:1px solid #382858;border-radius:8px;padding:7px 16px;font-size:0.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
+        .btn-gare-squadre:hover{background:#281a48;}
+        .btn-gare-export{background:#2a1f0a;color:#c8a040;border:1px solid #5a4010;border-radius:8px;padding:7px 16px;font-size:0.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
+        .btn-gare-export:hover{background:#382a10;}
+        .gare-export-panel{background:#0c1a30;border:1px solid #2a4a6e;border-radius:10px;padding:16px;margin-top:12px;}
+        .gare-export-title{color:#c8a040;font-weight:700;font-size:0.88rem;margin-bottom:12px;display:flex;align-items:center;gap:7px;}
+        .gare-sel-count{font-size:0.78rem;color:#6a9ac0;margin-bottom:8px;}
+        .btn-gare-dl-img{background:#1a3a5a;color:#7aaad0;border:1px solid #2a5a8a;border-radius:6px;padding:7px 18px;font-weight:700;cursor:pointer;font-size:0.82rem;margin-right:8px;}
+        .btn-gare-dl-img:hover{background:#224880;}
+        .btn-gare-dl-pdf{background:#2a1a1a;color:#c07070;border:1px solid #5a2a2a;border-radius:6px;padding:7px 18px;font-weight:700;cursor:pointer;font-size:0.82rem;}
+        .btn-gare-dl-pdf:hover{background:#381a1a;}
         @media(max-width:768px){.gare-columns{flex-direction:column;}.gare-form-grid{grid-template-columns:1fr;}}
-        /* Torneo */
-        .torneo-match-row{display:grid;grid-template-columns:80px 1fr 40px 1fr 36px;gap:6px;align-items:center;margin-bottom:6px;background:#0d1b2a;border:1px solid #1e293b;border-radius:6px;padding:6px 8px;}
-        .torneo-match-row input,.torneo-match-row select{background:#0d1b2a;border:1px solid #1e293b;color:#60a5fa;border-radius:5px;padding:5px 7px;font-size:0.8rem;width:100%;}
-        .torneo-match-row .vs{color:#60a5fa;font-weight:700;text-align:center;font-size:0.85rem;}
-        .torneo-match-row .btn-del-match{background:none;border:none;color:#d90429;cursor:pointer;font-size:1rem;padding:0 4px;}
-        .torneo-match-row .btn-del-match:hover{color:#d90429;}
-        .torneo-section{border:1px solid #1e293b;border-radius:8px;padding:12px;margin-top:10px;background:#060f1e;}
-        .torneo-section-title{color:#f59e0b;font-size:0.82rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
-        .torneo-note-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
-        .torneo-note-row label{color:#60a5fa;font-size:0.78rem;white-space:nowrap;}
-        .torneo-note-row input{background:#0d1b2a;border:1px solid #1e293b;color:#60a5fa;border-radius:5px;padding:5px 7px;font-size:0.8rem;flex:1;}
-        .btn-add-match{background:#16a34a;color:#16a34a;border:1px solid #16a34a;border-radius:6px;padding:6px 12px;font-size:0.8rem;font-weight:700;cursor:pointer;margin-top:4px;}
-        .btn-add-match:hover{background:#16a34a;}
         @media (max-width: 768px) {
             .calendar-table { font-size: 0.7rem; }
             .btn-cal { padding: 6px 12px; font-size: 0.78rem; }
@@ -428,9 +412,6 @@ TYPE html>
             </button>
             <button class="page-tab" id="tab-gare" style="display:none;" onclick="switchTab('gare')">
                 <i class="bi bi-trophy-fill"></i> Gare da Disputare
-            </button>
-            <button class="page-tab" id="tab-documenti" style="display:none;" onclick="switchTab('documenti')">
-                <i class="bi bi-folder-fill"></i> Documenti Società
             </button>
         </div>
 
@@ -492,10 +473,10 @@ TYPE html>
                         <button class="rte-btn" onclick="rteCmd('justifyCenter')" title="Centro">&#8652;</button>
                         <button class="rte-btn" onclick="rteCmd('justifyRight')" title="Destra">&#8677;</button>
                         <span style="width:1px;background:#3b5a9d;margin:0 2px;"></span>
-                        <button class="rte-color-btn" style="background:#d90429;" onclick="rteColor('#d90429')" title="Rosso"></button>
-                        <button class="rte-color-btn" style="background:#f59e0b;" onclick="rteColor('#f59e0b')" title="Arancione"></button>
-                        <button class="rte-color-btn" style="background:#f59e0b;" onclick="rteColor('#f59e0b')" title="Giallo"></button>
-                        <button class="rte-color-btn" style="background:#16a34a;" onclick="rteColor('#16a34a')" title="Verde"></button>
+                        <button class="rte-color-btn" style="background:#ef4444;" onclick="rteColor('#ef4444')" title="Rosso"></button>
+                        <button class="rte-color-btn" style="background:#f97316;" onclick="rteColor('#f97316')" title="Arancione"></button>
+                        <button class="rte-color-btn" style="background:#eab308;" onclick="rteColor('#eab308')" title="Giallo"></button>
+                        <button class="rte-color-btn" style="background:#22c55e;" onclick="rteColor('#22c55e')" title="Verde"></button>
                         <button class="rte-color-btn" style="background:#3b82f6;" onclick="rteColor('#3b82f6')" title="Blu"></button>
                         <button class="rte-color-btn" style="background:#a855f7;" onclick="rteColor('#a855f7')" title="Viola"></button>
                         <button class="rte-color-btn" style="background:#ffffff;" onclick="rteColor('#ffffff')" title="Bianco"></button>
@@ -506,17 +487,17 @@ TYPE html>
                          oninput="rteSync()" style="word-break:break-word;"></div>
                     <input type="hidden" id="post-text">
                     <div>
-                        <label style="color:#60a5fa;font-size:0.82rem;margin-bottom:4px;display:block;">
+                        <label style="color:#b8cce8;font-size:0.82rem;margin-bottom:4px;display:block;">
                             <i class="bi bi-image"></i> Immagine / Locandina (opzionale)
                         </label>
                         <input type="file" id="post-img-input" accept="image/*,application/pdf"
-                               onchange="previewPostImg(this)" style="color:#60a5fa;">
+                               onchange="previewPostImg(this)" style="color:#b8cce8;">
                         <img id="post-img-preview" class="post-img-preview" alt="Preview">
                         <input type="hidden" id="post-img-data">
                     </div>
                     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
                         <div style="flex:1;min-width:180px;">
-                            <label style="color:#60a5fa;font-size:0.82rem;margin-bottom:4px;display:block;">
+                            <label style="color:#b8cce8;font-size:0.82rem;margin-bottom:4px;display:block;">
                                 <i class="bi bi-eye"></i> Visibilità
                             </label>
                             <select id="post-visibility">
@@ -533,27 +514,13 @@ TYPE html>
 
             <!-- Lista post -->
             <div class="post-list" id="post-list">
-                <div class="text-center p-4" style="color:#60a5fa;">
+                <div class="text-center p-4" style="color:#7a9cc4;">
                     <div class="spinner-border spinner-border-sm"></div> Caricamento...
                 </div>
             </div>
         </div>
 
-        <!-- fine bacheca-section -->
-
-
-
-        <!-- ── Pannello Impostazioni Sponsor Bacheca Pubblica ── -->
-        <div id="sponsor-admin-panel" class="sponsor-panel" style="display:none;">
-            <h6>⭐ Impostazioni Bacheca Pubblica — Sponsor & Locandine</h6>
-            <p style="color:#60a5fa;font-size:0.8rem;margin-bottom:14px;">
-                Inserisci URL immagine (da internet o Google Drive) e link di destinazione per ogni slot.
-                <br>Google Drive: apri il file → Condividi → "Chiunque" → copia link → sostituisci <code style="color:#60a5fa;">/view</code> con <code style="color:#60a5fa;">/preview</code> per immagini usa <code style="color:#60a5fa;">https://drive.google.com/uc?id=ID</code>
-            </p>
-            <div id="sponsor-slots-container"></div>
-            <button class="btn-save-sponsor" onclick="saveSponsorConfig()">💾 Salva Configurazione</button>
-            <span id="sponsor-save-msg" style="margin-left:12px;font-size:0.82rem;color:#16a34a;display:none;">✅ Salvato!</span>
-        </div>
+        </div><!-- fine bacheca-section -->
         </div><!-- fine tab-content bacheca -->
 
         <!-- ── TAB: Gare da Disputare ── -->
@@ -600,16 +567,7 @@ TYPE html>
                     <input type="text" id="gare-categoria" placeholder="es. JUNIORES UNDER 19">
                 </div>
                 <div class="gare-form-group">
-                    <label>Tipo competizione *</label>
-                    <select id="gare-tipo-comp" onchange="gareTipoCompChange()">
-                        <option value="campionato">🏆 Campionato</option>
-                        <option value="torneo">⚽ Torneo / Coppa</option>
-                        <option value="amichevole">🤝 Amichevole</option>
-                        <option value="altro">📋 Altro</option>
-                    </select>
-                </div>
-                <div class="gare-form-group" id="gf-competizione-wrap">
-                    <label>Nome competizione</label>
+                    <label>Competizione *</label>
                     <input type="text" id="gare-competizione" placeholder="es. CAMPIONATO">
                 </div>
                 <div class="gare-form-group" id="gf-squadra-avv-wrap">
@@ -627,33 +585,6 @@ TYPE html>
                     <input type="text" id="gare-note" placeholder="Opzionale">
                 </div>
             </div>
-            <!-- Sezione torneo (visibile solo se tipo = torneo) -->
-            <div id="gare-torneo-section" class="torneo-section" style="display:none;">
-                <div class="torneo-section-title"><i class="bi bi-trophy"></i> Partite del Torneo</div>
-                <div class="torneo-note-row">
-                    <label>Info torneo (es. "2 tempi da 12 min"):</label>
-                    <input type="text" id="gare-torneo-info" placeholder="es. grugliasco cup 2 tempi da 12 min">
-                </div>
-                <div style="display:grid;grid-template-columns:80px 1fr 40px 1fr 36px;gap:6px;margin-bottom:4px;padding:0 8px;">
-                    <span style="color:#60a5fa;font-size:0.72rem;">Orario</span>
-                    <span style="color:#60a5fa;font-size:0.72rem;">Squadra Casa</span>
-                    <span></span>
-                    <span style="color:#60a5fa;font-size:0.72rem;">Squadra Ospite</span>
-                    <span></span>
-                </div>
-                <div id="torneo-matches-list"></div>
-                <button class="btn-add-match" onclick="torneoAddMatch()">
-                    <i class="bi bi-plus-circle"></i> Aggiungi Partita
-                </button>
-                <div style="margin-top:10px;padding:6px 8px;background:#0d1b2a;border-radius:6px;border:1px solid #1e293b;">
-                    <div style="color:#60a5fa;font-size:0.72rem;margin-bottom:4px;">Premiazione finale (opzionale):</div>
-                    <div style="display:flex;gap:8px;align-items:center;">
-                        <input type="time" id="gare-torneo-premiazione-ora" style="background:#0d1b2a;border:1px solid #1e293b;color:#60a5fa;border-radius:5px;padding:5px 7px;font-size:0.8rem;width:100px;">
-                        <input type="text" id="gare-torneo-premiazione-label" placeholder="es. PREMIAZIONE FINALE" style="background:#0d1b2a;border:1px solid #1e293b;color:#60a5fa;border-radius:5px;padding:5px 7px;font-size:0.8rem;flex:1;">
-                    </div>
-                </div>
-            </div>
-
             <div class="gare-form-actions">
                 <button class="btn-gara-save" onclick="gareSalva()"><i class="bi bi-check-circle"></i> Salva Gara</button>
                 <button class="btn-gara-cancel" onclick="gareCloseForm()">Annulla</button>
@@ -665,11 +596,11 @@ TYPE html>
         <div class="squadre-panel" id="gare-squadre-panel" style="display:none;">
             <div class="squadre-panel-title"><i class="bi bi-people-fill"></i> Squadre Avversarie Memorizzate</div>
             <div class="squadre-list" id="gare-squadre-list">
-                <span style="color:#60a5fa;font-size:0.8rem;">Nessuna squadra. Importa l'Excel o aggiungi manualmente.</span>
+                <span style="color:#7a9cc4;font-size:0.8rem;">Nessuna squadra. Importa l'Excel o aggiungi manualmente.</span>
             </div>
             <div style="display:flex;gap:8px;margin-top:6px;">
-                <input type="text" id="gare-nuova-squadra" placeholder="Nome squadra..." style="background:#0d1b2a;border:1px solid #3b5a9d;color:#fff;border-radius:6px;padding:6px 10px;font-size:0.82rem;flex:1;">
-                <button onclick="gareAddSquadraManuale()" style="background:#8b5cf6;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-weight:700;cursor:pointer;font-size:0.82rem;">+ Aggiungi</button>
+                <input type="text" id="gare-nuova-squadra" placeholder="Nome squadra..." style="background:#0a2463;border:1px solid #3b5a9d;color:#fff;border-radius:6px;padding:6px 10px;font-size:0.82rem;flex:1;">
+                <button onclick="gareAddSquadraManuale()" style="background:#7c3aed;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-weight:700;cursor:pointer;font-size:0.82rem;">+ Aggiungi</button>
             </div>
         </div>
 
@@ -695,29 +626,29 @@ TYPE html>
 
         <div class="gare-export-panel" id="gare-export-panel" style="display:none;margin-top:14px;">
             <div class="gare-export-title"><i class="bi bi-image-fill"></i> Crea Locandina Gare</div>
-            <p style="color:#60a5fa;font-size:0.8rem;margin-bottom:10px;">Spunta le gare, scegli formato e scarica.</p>
+            <p style="color:#6a8caa;font-size:0.8rem;margin-bottom:10px;">Spunta le gare, scegli formato e scarica.</p>
             <div class="gare-sel-count" id="gare-sel-count">0 gare selezionate</div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
-                <span style="color:#60a5fa;font-size:0.8rem;">Mostra gare da:</span>
-                <select id="gare-export-sett" onchange="gareExportChangeSett()" style="background:#0d1b2a;border:1px solid #1e293b;color:#60a5fa;border-radius:6px;padding:5px 10px;font-size:0.8rem;">
+                <span style="color:#6a8caa;font-size:0.8rem;">Mostra gare da:</span>
+                <select id="gare-export-sett" onchange="gareExportChangeSett()" style="background:#0a1e38;border:1px solid #2a4a6e;color:#c8dff0;border-radius:6px;padding:5px 10px;font-size:0.8rem;">
                     <option value="0">Settimana corrente</option>
                     <option value="1">Settimana corrente + prossima</option>
                     <option value="2">Prossime 3 settimane</option>
                 </select>
-                <button onclick="gareSelectAll()" style="background:#0f172a;border:1px solid #1a3a5f;color:#60a5fa;border-radius:6px;padding:5px 12px;font-size:0.78rem;cursor:pointer;">Seleziona tutto</button>
-                <button onclick="gareDeselectAll()" style="background:#0f172a;border:1px solid #1a3a5f;color:#60a5fa;border-radius:6px;padding:5px 12px;font-size:0.78rem;cursor:pointer;">Deseleziona tutto</button>
+                <button onclick="gareSelectAll()" style="background:#122040;border:1px solid #2a4060;color:#8aaccc;border-radius:6px;padding:5px 12px;font-size:0.78rem;cursor:pointer;">Seleziona tutto</button>
+                <button onclick="gareDeselectAll()" style="background:#122040;border:1px solid #2a4060;color:#8aaccc;border-radius:6px;padding:5px 12px;font-size:0.78rem;cursor:pointer;">Deseleziona tutto</button>
             </div>
-            <div id="gare-export-list" style="max-height:240px;overflow-y:auto;border:1px solid #1e293b;border-radius:8px;padding:8px;background:#060f1e;margin-bottom:14px;">
-                <div style="color:#60a5fa;font-size:0.8rem;">Caricamento...</div>
+            <div id="gare-export-list" style="max-height:240px;overflow-y:auto;border:1px solid #1a3050;border-radius:8px;padding:8px;background:#050f20;margin-bottom:14px;">
+                <div style="color:#6a8caa;font-size:0.8rem;">Caricamento...</div>
             </div>
             <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
-                <span style="color:#60a5fa;font-size:0.8rem;">Tipo:</span>
-                <label style="display:flex;align-items:center;gap:4px;color:#60a5fa;font-size:0.8rem;cursor:pointer;"><input type="radio" name="gare-export-tipo" value="separato" checked style="accent-color:#60a5fa;"> Casa/Fuori separati</label>
-                <label style="display:flex;align-items:center;gap:4px;color:#60a5fa;font-size:0.8rem;cursor:pointer;"><input type="radio" name="gare-export-tipo" value="unico"> Unico cronologico</label>
+                <span style="color:#6a8caa;font-size:0.8rem;">Tipo:</span>
+                <label style="display:flex;align-items:center;gap:4px;color:#8aaccc;font-size:0.8rem;cursor:pointer;"><input type="radio" name="gare-export-tipo" value="separato" checked style="accent-color:#4a9eff;"> Casa/Fuori separati</label>
+                <label style="display:flex;align-items:center;gap:4px;color:#8aaccc;font-size:0.8rem;cursor:pointer;"><input type="radio" name="gare-export-tipo" value="unico"> Unico cronologico</label>
             </div>
             <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
-                <span style="color:#60a5fa;font-size:0.8rem;white-space:nowrap;">Titolo:</span>
-                <input type="text" id="gare-export-titolo" value="GO SPORT GRUGLIASCO ASD" style="background:#0d1b2a;border:1px solid #1e293b;color:#60a5fa;border-radius:6px;padding:6px 10px;font-size:0.82rem;flex:1;min-width:180px;">
+                <span style="color:#6a8caa;font-size:0.8rem;white-space:nowrap;">Titolo:</span>
+                <input type="text" id="gare-export-titolo" value="GO SPORT GRUGLIASCO ASD" style="background:#0a1e38;border:1px solid #2a4a6e;color:#c8dff0;border-radius:6px;padding:6px 10px;font-size:0.82rem;flex:1;min-width:180px;">
             </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
                 <button class="btn-gare-dl-img" onclick="gareDownloadPNG()"><i class="bi bi-download"></i> Scarica PNG</button>
@@ -726,66 +657,22 @@ TYPE html>
             <canvas id="gare-canvas" style="display:none;"></canvas>
         </div>
 
+        </div><!-- fine tab-content gare -->
+
+        <!-- ── Pannello Impostazioni Sponsor Bacheca Pubblica ── -->
+        <div id="sponsor-admin-panel" class="sponsor-panel" style="display:none;">
+            <h6>⭐ Impostazioni Bacheca Pubblica — Sponsor & Locandine</h6>
+            <p style="color:#8a9fc1;font-size:0.8rem;margin-bottom:14px;">
+                Inserisci URL immagine (da internet o Google Drive) e link di destinazione per ogni slot.
+                <br>Google Drive: apri il file → Condividi → "Chiunque" → copia link → sostituisci <code style="color:#90b8f0;">/view</code> con <code style="color:#90b8f0;">/preview</code> per immagini usa <code style="color:#90b8f0;">https://drive.google.com/uc?id=ID</code>
+            </p>
+            <div id="sponsor-slots-container"></div>
+            <button class="btn-save-sponsor" onclick="saveSponsorConfig()">💾 Salva Configurazione</button>
+            <span id="sponsor-save-msg" style="margin-left:12px;font-size:0.82rem;color:#4ade80;display:none;">✅ Salvato!</span>
         </div>
-
-        <!-- ══ TAB DOCUMENTI SOCIETÀ ══════════════════════════════════════ -->
-        <div class="tab-content" id="tab-content-documenti">
-            <div style="max-width:860px;margin:0 auto;padding:20px 10px;">
-
-                <!-- Form aggiungi documento (solo admin/coach) -->
-                <div id="doc-admin-panel" style="background:#1a3a5f;border:1px solid #2d4a8a;border-radius:10px;padding:18px;margin-bottom:20px;">
-                    <h6 style="color:#60a5fa;margin-bottom:14px;"><i class="bi bi-plus-circle-fill"></i> Aggiungi Documento</h6>
-                    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
-                        <div style="flex:1;min-width:200px;">
-                            <label style="color:#60a5fa;font-size:0.8rem;display:block;margin-bottom:4px;">Nome Documento *</label>
-                            <input type="text" id="doc-name" placeholder="es. Modulo Iscrizione 2026" style="width:100%;padding:8px 12px;border-radius:6px;border:1px solid #2d4a8a;background:#0d1b2a;color:#e2e8f0;font-size:0.85rem;box-sizing:border-box;">
-                        </div>
-                        <div style="flex:1;min-width:200px;">
-                            <label style="color:#60a5fa;font-size:0.8rem;display:block;margin-bottom:4px;">Link Google Drive *</label>
-                            <input type="url" id="doc-url" placeholder="https://drive.google.com/..." style="width:100%;padding:8px 12px;border-radius:6px;border:1px solid #2d4a8a;background:#0d1b2a;color:#e2e8f0;font-size:0.85rem;box-sizing:border-box;">
-                        </div>
-                        <div style="flex:1;min-width:200px;">
-                            <label style="color:#60a5fa;font-size:0.8rem;display:block;margin-bottom:4px;">Descrizione (opzionale)</label>
-                            <input type="text" id="doc-desc" placeholder="es. Da compilare entro marzo" style="width:100%;padding:8px 12px;border-radius:6px;border:1px solid #2d4a8a;background:#0d1b2a;color:#e2e8f0;font-size:0.85rem;box-sizing:border-box;">
-                        </div>
-                    </div>
-                    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:16px;margin-bottom:12px;">
-                        <label style="color:#e2e8f0;font-size:0.85rem;cursor:pointer;">
-                            <input type="checkbox" id="doc-vis-bacheca" checked style="margin-right:5px;">
-                            📢 Bacheca Privata (atleti)
-                        </label>
-                        <label style="color:#e2e8f0;font-size:0.85rem;cursor:pointer;">
-                            <input type="checkbox" id="doc-vis-pubblica" style="margin-right:5px;">
-                            🌍 Bacheca Pubblica (genitori)
-                        </label>
-                        <button onclick="docSave()" style="background:#16a34a;color:#000;border:none;border-radius:6px;padding:8px 20px;font-weight:600;cursor:pointer;font-size:0.85rem;">
-                            <i class="bi bi-plus-circle"></i> Aggiungi
-                        </button>
-                    </div>
-                    <p style="color:#64748b;font-size:0.75rem;margin:0;">
-                        💡 File su Google Drive con condivisione "Chiunque con il link". Per immagini: <code style="color:#60a5fa;">https://drive.google.com/uc?id=ID_FILE</code>
-                    </p>
-                </div>
-
-                <!-- Lista documenti -->
-                <div id="doc-list">
-                    <div style="color:#64748b;text-align:center;padding:30px;">
-                        <i class="bi bi-folder2-open" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
-                        Caricamento...
-                    </div>
-                </div>
-
-            </div>
-        </div>
-        <!-- fine tab-content-documenti --><!-- fine tab-content gare -->
-
 
         <!-- Bacheca Genitori - FUORI dal calendario collassabile -->
-        <div id="bacheca-genitori-container" style="display:none;ma
-
-
-
-rgin-top:0;"></div>
+        <div id="bacheca-genitori-container" style="display:none;margin-top:0;"></div>
 
         <footer>
             © 2025 Edy Franzoso — Sport Monitoring.<br>
@@ -793,23 +680,6 @@ rgin-top:0;"></div>
         </footer>
     </div>
 
-<script>
-// Pre-definizioni minime: solo variabili, le funzioni sono definite più avanti
-var _bachecaTabReady=false;
-var _gareTabReady=false;
-var _gareCanEdit=false;
-var _documentiTabReady=false;
-
-// switchTab definita più avanti da calendario-standalone.js
-window.toggleCalendario=function(){
-    var sec=document.getElementById('cal-collapsible');
-    var btn=document.getElementById('cal-toggle-btn');
-    if(!sec||!btn)return;
-    var collapsed=sec.classList.contains('collapsed');
-    if(collapsed){sec.classList.remove('collapsed');btn.classList.remove('collapsed');sec.style.maxHeight='9999px';btn.innerHTML='<span class="arrow">▼</span> Comprimi';}
-    else{sec.style.maxHeight=sec.scrollHeight+'px';requestAnimationFrame(function(){sec.classList.add('collapsed');btn.classList.add('collapsed');btn.innerHTML='<span class="arrow">▼</span> Espandi';});}
-};
-</script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="/auth-multi-annata.js"></script>
@@ -855,24 +725,13 @@ window.toggleCalendario = function() {
 
 window.switchTab = function(tab) {
     document.querySelectorAll('.page-tab').forEach(function(btn){btn.classList.remove('active');});
-    var tabEl = document.getElementById('tab-'+tab);
-    if(tabEl) tabEl.classList.add('active');
-    // Rimuove classe active E stile inline da tutti i tab-content
-    document.querySelectorAll('.tab-content').forEach(function(d){
-        d.classList.remove('active');
-        d.style.display = ''; // rimuove inline style residuo
-    });
-    var contentEl = document.getElementById('tab-content-'+tab);
-    if(contentEl) contentEl.classList.add('active');
+    document.getElementById('tab-'+tab).classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(function(d){d.classList.remove('active');});
+    document.getElementById('tab-content-'+tab).classList.add('active');
     var ca=document.getElementById('cal-actions');
     if(ca)ca.style.display=(tab==='calendario')?'':'none';
-    if(tab==='bacheca'){if(!_bLoaded)_bLoad();else _bRender();if(typeof _loadSponsorConfig==='function')_loadSponsorConfig();}
-    if(tab==='gare'){var row=document.getElementById('gare-action-row');if(row)row.style.display=_gareCanEdit?'':'none';if(typeof _gareLoad==='function')_gareLoad();}
-    if(tab==='documenti'){
-        window._docCanEdit = true;
-        _docsLoaded = false;
-        if(typeof docLoad==='function')docLoad();
-    }
+    if(tab==='bacheca'){if(!_bLoaded)_bLoad();else _bRender();_loadSponsorConfig();}
+    if(tab==='gare'){var row=document.getElementById('gare-action-row');if(row)row.style.display=_gareCanEdit?'':'none';_gareLoad();}
 };
 // Mantieni compatibilità con vecchio toggleBacheca
 window.toggleBacheca = function() { switchTab('bacheca'); };
@@ -882,36 +741,15 @@ async function _bLoad() {
     var aid = _bAnnataId();
     console.log('[Bacheca] 📥 Load annataId:', aid);
     try {
-        // Carica post senza immagini (payload leggero)
         var res = await fetch('/api/data', { cache:'no-store', headers:{'x-annata-id':aid} });
         var d = await res.json();
         _bPosts       = (d && d.posts)       || [];
         _bGlobalPosts = (d && d.globalPosts) || [];
-        _bPostImages  = {}; // vuoto inizialmente
-        console.log('[Bacheca] 📦 posts:', _bPosts.length, 'global:', _bGlobalPosts.length);
+        _bPostImages  = (d && d.postImages)  || {};
+        console.log('[Bacheca] 📦 posts:', _bPosts.length, 'global:', _bGlobalPosts.length, 'images:', Object.keys(_bPostImages).length);
         _bLoaded = true;
     } catch(e) { console.warn('[Bacheca] load err:', e); }
     _bRender();
-    // Carica le immagini in background solo se ci sono post con immagini
-    _bLoadImages();
-}
-
-// Carica immagini post in modo lazy (non blocca il render iniziale)
-async function _bLoadImages() {
-    var aid = _bAnnataId();
-    if (!_bPosts.length && !_bGlobalPosts.length) return;
-    try {
-        var res = await fetch('/api/data?action=postImages', {
-            cache: 'no-store',
-            headers: { 'x-annata-id': aid }
-        });
-        var d = await res.json();
-        if (d && d.postImages && Object.keys(d.postImages).length > 0) {
-            _bPostImages = d.postImages;
-            console.log('[Bacheca] 🖼️ Immagini caricate:', Object.keys(_bPostImages).length);
-            _bRender(); // Ri-renderizza solo se ci sono immagini
-        }
-    } catch(e) { console.warn('[Bacheca] immagini err:', e); }
 }
 
 // Salva con mutex (evita race condition su delete multipli)
@@ -1091,7 +929,7 @@ function _bRender() {
     });
     var all = gs.concat(as2);
     if (!all.length) {
-        box.innerHTML = '<div class="text-center p-4" style="color:#60a5fa;"><p class="mt-2">Nessun comunicato pubblicato.</p></div>';
+        box.innerHTML = '<div class="text-center p-4" style="color:#7a9cc4;"><p class="mt-2">Nessun comunicato pubblicato.</p></div>';
         return;
     }
     var h = '';
@@ -1177,10 +1015,7 @@ async function _loadSponsorConfig() {
         console.log('[Sponsor] 📦 bachecaConfig:', JSON.stringify(d && d.bachecaConfig));
         _sponsorConfig = (d && d.bachecaConfig) || {};
         _renderSponsorSlots();
-        var __sp = document.getElementById('sponsor-admin-panel');
-        // Mostra solo se il tab bacheca è ancora attivo (la XHR è async)
-        var __bachecaActive = document.getElementById('tab-content-bacheca');
-        if (__sp && __bachecaActive && __bachecaActive.classList.contains('active')) __sp.style.display = '';
+        var __sp = document.getElementById('sponsor-admin-panel'); if (__sp) __sp.style.display = '';
     } catch(e) { console.warn('[Sponsor] ❌ load error:', e); }
 }
 
@@ -1192,14 +1027,14 @@ function _renderSponsorSlots() {
         var cfg = _sponsorConfig[s.key] || { img: '', link: '' };
         h += '<div class="sponsor-row">';
         h += '<label>' + s.label + '</label>';
-        h += '<label style="color:#60a5fa;font-size:0.75rem;margin-top:4px;">URL Immagine</label>';
+        h += '<label style="color:#8a9fc1;font-size:0.75rem;margin-top:4px;">URL Immagine</label>';
         h += '<input type="text" id="sp-img-' + s.key + '" placeholder="https://... oppure https://drive.google.com/uc?id=..." value="' + (cfg.img||'') + '" onchange="previewSponsorImg(' + s.key + ')">';
         if (cfg.img) {
             h += '<img src="' + cfg.img + '" class="sponsor-img-preview" id="sp-prev-' + s.key + '" style="display:block;">';
         } else {
             h += '<img class="sponsor-img-preview" id="sp-prev-' + s.key + '">';
         }
-        h += '<label style="color:#60a5fa;font-size:0.75rem;margin-top:6px;">Link (clic sul box)</label>';
+        h += '<label style="color:#8a9fc1;font-size:0.75rem;margin-top:6px;">Link (clic sul box)</label>';
         h += '<input type="url" id="sp-link-' + s.key + '" placeholder="https://www.sito-sponsor.it" value="' + (cfg.link||'') + '">';
         h += '</div>';
     });
@@ -1308,25 +1143,6 @@ function showGareTab(canEdit) {
     var btn=document.getElementById('gare-export-btn');if(btn)btn.style.display='';
 }
 
-// ── Mostra tab Documenti ────────────────────────────────────────────
-var _documentiTabReady = false;
-function showDocumentiTab(canEdit) {
-    console.log('[Documenti] 🎯 showDocumentiTab chiamata con canEdit:', canEdit);
-    if (_documentiTabReady) {
-        console.log('[Documenti] Tab già pronto, skip');
-        return;
-    }
-    _documentiTabReady = true;
-    window._docCanEdit = !!canEdit;
-    var tab = document.getElementById('tab-documenti');
-    if (tab) {
-        tab.style.display = '';
-        console.log('[Documenti] ✅ Tab bottone visibile');
-    } else {
-        console.warn('[Documenti] ❌ Bottone tab-documenti non trovato');
-    }
-}
-
 // ── switchTab hook: carica gare se necessario ────────────────────
 
 // ── Calcola lunedì della settimana corrente + offset ────────────────
@@ -1388,7 +1204,7 @@ async function _gareLoad() {
         sid = _gareSocId();
     }
     try {
-        var r = await fetch('/api/data?action=gare&societyId=' + encodeURIComponent(sid), { cache:'no-store' });
+        var r = await fetch('/api/gare?societyId=' + encodeURIComponent(sid), { cache:'no-store' });
         if (r.ok) {
             var d = await r.json();
             _gare    = d.gare    || [];
@@ -1405,7 +1221,7 @@ async function _gareLoad() {
 async function _gareSaveGare() {
     var sid = _gareSocId();
     try {
-        await fetch('/api/data?action=gare', {
+        await fetch('/api/gare', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ societyId: sid, gare: _gare })
@@ -1417,7 +1233,7 @@ async function _gareSaveGare() {
 async function _gareSaveSquadre() {
     var sid = _gareSocId();
     try {
-        await fetch('/api/data?action=gare', {
+        await fetch('/api/gare', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ societyId: sid, squadre: _squadre })
@@ -1439,10 +1255,9 @@ function _gareRender() {
         else lbl.textContent = 'Settimana ' + lun.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}) + ' – ' + dom.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'});
     }
 
-    // Filtra gare nella settimana — escludi date già passate (già giocate)
-    var oggi = _gareDateStr(new Date());
+    // Filtra gare nella settimana
     var gareSett = _gare.filter(function(g) {
-        return g.data >= lunStr && g.data <= domStr && g.data >= oggi;
+        return g.data >= lunStr && g.data <= domStr;
     });
 
     var casa  = gareSett.filter(function(g){ return g.tipo === 'casa'; });
@@ -1457,6 +1272,7 @@ function _gareRenderColonna(lista, tipo) {
         var msg = tipo === 'casa' ? 'Nessuna gara in casa questa settimana.' : 'Nessuna gara fuori casa questa settimana.';
         return '<div class="gare-empty">' + msg + '</div>';
     }
+    // Raggruppa per giorno
     var gruppi = {};
     lista.forEach(function(g) {
         if (!gruppi[g.data]) gruppi[g.data] = [];
@@ -1466,60 +1282,34 @@ function _gareRenderColonna(lista, tipo) {
     var html = '';
     giorni.forEach(function(data) {
         var gList = gruppi[data].sort(function(a,b){ return a.ora.localeCompare(b.ora); });
-        var _dayOfWeek = _gareParseDate(data).getDay();
-        var _dayClass = (_dayOfWeek === 0) ? 'gare-day-header domenica' : 'gare-day-header';
-        html += '<div class="' + _dayClass + '">GARE ' + _gareGiornoLabel(data).toUpperCase() + '</div>';
+        html += '<div class="gare-day-header">GARE ' + _gareGiornoLabel(data).toUpperCase() + '</div>';
         gList.forEach(function(g) {
+            var squadraCasa   = tipo === 'casa'  ? 'GO SPORT GRUGLIASCO ASD' : g.avversaria;
+            var squadraOspite = tipo === 'fuori' ? 'GO SPORT GRUGLIASCO ASD' : g.avversaria;
+            var match = (tipo === 'casa')
+                ? 'GO SPORT GRUGLIASCO ASD VS ' + (g.avversaria || '?')
+                : (g.avversaria || '?') + ' VS GO SPORT GRUGLIASCO ASD';
             var editBtn = _gareCanEdit
                 ? '<button class="btn-gara-edit" onclick="gareEdit(\'' + g.id + '\')"><i class="bi bi-pencil"></i></button>'
                   + '<button class="btn-gara-del" onclick="gareDel(\'' + g.id + '\')"><i class="bi bi-trash"></i></button>'
                 : '';
-            var isSel = _gareSelected.indexOf(g.id) >= 0;
-
-            if (g.tipoComp === 'torneo' && g.torneo) {
-                // ── Render TORNEO ──
-                html += '<div class="gare-block' + (isSel ? ' selected' : '') + '" id="gb-' + g.id + '">';
-                html += '<div class="gare-row-time"><span class="gare-ora">ORE: ' + g.ora + '</span>';
-                html += '<span style="flex:1;margin-left:6px;">' + (g.categoria||'') + ' — ' + (g.competizione||'TORNEO') + '</span>' + editBtn + '</div>';
-                if (g.torneo.info) {
-                    html += '<div style="background:#1a3a5f;color:#60a5fa;text-align:center;padding:5px 10px;font-size:0.8rem;font-style:italic;">' + g.torneo.info + '</div>';
-                }
-                (g.torneo.partite || []).forEach(function(p) {
-                    html += '<div style="display:flex;align-items:center;background:#60a5fa;color:#000;padding:5px 10px;gap:8px;font-weight:700;font-size:0.82rem;text-transform:uppercase;">';
-                    html += '<span style="min-width:52px;color:#1a3a5f;">' + (p.ora||'') + '</span>';
-                    html += '<span style="flex:1;text-align:right;">' + (p.casa||'') + '</span>';
-                    html += '<span style="padding:0 8px;color:#1a3a5f;">VS</span>';
-                    html += '<span style="flex:1;">' + (p.ospite||'') + '</span>';
-                    html += '</div>';
-                });
-                if (g.torneo.premiazione) {
-                    html += '<div style="background:#16a34a;color:#fff;text-align:center;padding:6px 10px;font-weight:700;font-size:0.82rem;">';
-                    html += 'ORE ' + g.torneo.premiazione.ora + ' — ' + (g.torneo.premiazione.label||'PREMIAZIONE FINALE');
-                    html += '</div>';
-                }
-                html += '<div class="gare-check-wrap" onclick="gareToggleSel(\'' + g.id + '\')">';
-                html += '<input type="checkbox" ' + (isSel ? 'checked' : '') + ' onclick="event.stopPropagation();gareToggleSel(\'' + g.id + '\')">';
-                html += '<label>Includi nella locandina</label></div>';
-                html += '</div>';
-            } else {
-                // ── Render GARA NORMALE ──
-                var match = (tipo === 'casa')
-                    ? 'GO SPORT GRUGLIASCO ASD VS ' + (g.avversaria || '?')
-                    : (g.avversaria || '?') + ' VS GO SPORT GRUGLIASCO ASD';
-                html += '<div class="gare-block' + (isSel ? ' selected' : '') + '" id="gb-' + g.id + '">';
-                html += '<div class="gare-row-time"><span class="gare-ora">ORE: ' + g.ora + '</span>';
-                html += '<span style="flex:1;margin-left:6px;">' + (g.categoria||'') + (g.competizione ? ' (' + g.competizione + ')' : '') + '</span>' + editBtn + '</div>';
-                html += '<div class="gare-row-match">' + match + '</div>';
-                if (g.note) {
-                    html += '<div style="background:#060f1e;padding:4px 10px;font-size:0.72rem;color:#60a5fa;">';
-                    html += '<i class="bi bi-info-circle"></i> ' + g.note;
-                    html += '</div>';
-                }
-                html += '<div class="gare-check-wrap" onclick="gareToggleSel(\'' + g.id + '\')">';
-                html += '<input type="checkbox" ' + (isSel ? 'checked' : '') + ' onclick="event.stopPropagation();gareToggleSel(\'' + g.id + '\')">';
-                html += '<label>Includi nella locandina</label></div>';
-                html += '</div>';
+            var isSel=_gareSelected.indexOf(g.id)>=0;
+            html+='<div class="gare-block'+(isSel?' selected':'')+' " id="gb-'+g.id+'">';
+            html+='<div class="gare-row-time"><span class="gare-ora">ORE: '+g.ora+'</span>';
+            html+='<span style="flex:1;margin-left:6px;">'+(g.categoria||'')+(g.competizione?' ('+g.competizione+')':'')+'</span>'+editBtn+'</div>';
+            html+='<div class="gare-row-match">'+match+'</div>';
+            if(g.campo||g.note){
+                html+='<div style="background:#060f1e;padding:4px 10px;font-size:0.72rem;color:#6a8caa;">';
+                if(g.campo)html+='<i class="bi bi-geo-alt"></i> '+g.campo+'  ';
+                if(g.note)html+='<i class="bi bi-info-circle"></i> '+g.note;
+                html+='</div>';
             }
+            html+='<div class="gare-check-wrap" onclick="gareToggleSel(\''+g.id+'\')">';
+            html+='<input type="checkbox" '+(isSel?'checked':'')+' onclick="event.stopPropagation();gareToggleSel(\''+g.id+'\')">';
+            html+='<label>Includi nella locandina</label></div>';
+            html+='</div>';
+            }
+            html += '</div>';
         });
     });
     return html;
@@ -1531,25 +1321,17 @@ window.gareOpenForm = function() {
     document.getElementById('gare-data').value = _gareDateStr(new Date());
     document.getElementById('gare-ora').value = '14:30';
     document.getElementById('gare-tipo').value = 'casa';
-    document.getElementById('gare-tipo-comp').value = 'campionato';
     document.getElementById('gare-categoria').value = '';
     document.getElementById('gare-competizione').value = '';
     document.getElementById('gare-squadra-avv').value = '';
     document.getElementById('gare-campo').value = '';
     document.getElementById('gare-note').value = '';
     document.getElementById('gare-edit-id').value = '';
-    // Reset sezione torneo
-    document.getElementById('gare-torneo-section').style.display = 'none';
-    document.getElementById('gf-squadra-avv-wrap').style.display = '';
-    document.getElementById('torneo-matches-list').innerHTML = '';
-    document.getElementById('gare-torneo-info').value = '';
-    document.getElementById('gare-torneo-premiazione-ora').value = '';
-    document.getElementById('gare-torneo-premiazione-label').value = '';
-    _torneoMatchCount = 0;
     document.getElementById('gare-form-card').style.display = '';
     gareAggiornaCampi();
     document.getElementById('gare-form-card').scrollIntoView({ behavior:'smooth' });
-};window.gareCloseForm = function() {
+};
+window.gareCloseForm = function() {
     document.getElementById('gare-form-card').style.display = 'none';
 };
 window.gareAggiornaCampi = function() {
@@ -1565,68 +1347,30 @@ window.gareAggiornaCampi = function() {
 
 // ── SALVA gara dal form ─────────────────────────────────────────────
 window.gareSalva = async function() {
-    var data     = document.getElementById('gare-data').value;
-    var ora      = document.getElementById('gare-ora').value;
-    var tipoLuogo= document.getElementById('gare-tipo').value;
-    var tipoComp = document.getElementById('gare-tipo-comp').value;
-    var cat      = document.getElementById('gare-categoria').value.trim().toUpperCase();
-    var comp     = document.getElementById('gare-competizione').value.trim().toUpperCase() || tipoComp.toUpperCase();
-    var campo    = document.getElementById('gare-campo').value.trim();
-    var note     = document.getElementById('gare-note').value.trim();
-    var editId   = document.getElementById('gare-edit-id').value;
+    var data   = document.getElementById('gare-data').value;
+    var ora    = document.getElementById('gare-ora').value;
+    var tipo   = document.getElementById('gare-tipo').value;
+    var cat    = document.getElementById('gare-categoria').value.trim().toUpperCase();
+    var comp   = document.getElementById('gare-competizione').value.trim().toUpperCase();
+    var avv    = document.getElementById('gare-squadra-avv').value;
+    var campo  = document.getElementById('gare-campo').value.trim();
+    var note   = document.getElementById('gare-note').value.trim();
+    var editId = document.getElementById('gare-edit-id').value;
 
-    if (!data || !cat) {
-        alert('Compila i campi obbligatori: Data e Categoria.');
+    if (!data || !ora || !avv || !cat) {
+        alert('Compila i campi obbligatori: Data, Ora, Categoria, Squadra Avversaria.');
         return;
     }
 
-    if (tipoComp === 'torneo') {
-        // Salva come torneo (una gara speciale con array di partite)
-        var matches    = torneoGetMatches();
-        var torneoInfo = document.getElementById('gare-torneo-info').value.trim();
-        var premOra    = document.getElementById('gare-torneo-premiazione-ora').value;
-        var premLabel  = document.getElementById('gare-torneo-premiazione-label').value.trim().toUpperCase();
-
-        if (!matches.length) { alert('Aggiungi almeno una partita al torneo.'); return; }
-
-        var gara = {
-            id:         editId || ('gara_'+Date.now()),
-            data:       data,
-            ora:        ora,
-            tipo:       tipoLuogo,
-            tipoComp:   'torneo',
-            categoria:  cat,
-            competizione: comp || 'TORNEO',
-            campo:      campo,
-            note:       note,
-            torneo: {
-                info:        torneoInfo,
-                partite:     matches,
-                premiazione: premOra ? { ora: premOra, label: premLabel || 'PREMIAZIONE FINALE' } : null
-            }
-        };
-
-        if (editId) {
-            var idx = _gare.findIndex(function(g){ return g.id === editId; });
-            if (idx >= 0) _gare[idx] = gara;
-        } else {
-            _gare.push(gara);
+    if (editId) {
+        // Modifica
+        var idx = _gare.findIndex(function(g){ return g.id === editId; });
+        if (idx >= 0) {
+            _gare[idx] = { id:editId, data:data, ora:ora, tipo:tipo, categoria:cat, competizione:comp, avversaria:avv, campo:campo, note:note };
         }
     } else {
-        // Gara normale
-        var avv = document.getElementById('gare-squadra-avv').value;
-        if (!avv) { alert('Seleziona la squadra avversaria.'); return; }
-
-        var gara = { id: editId || ('gara_'+Date.now()), data:data, ora:ora, tipo:tipoLuogo,
-                     tipoComp: tipoComp, categoria:cat, competizione:comp,
-                     avversaria:avv, campo:campo, note:note };
-
-        if (editId) {
-            var idx = _gare.findIndex(function(g){ return g.id === editId; });
-            if (idx >= 0) _gare[idx] = gara;
-        } else {
-            _gare.push(gara);
-        }
+        // Nuova
+        _gare.push({ id:'gara_'+Date.now(), data:data, ora:ora, tipo:tipo, categoria:cat, competizione:comp, avversaria:avv, campo:campo, note:note });
     }
 
     await _gareSaveGare();
@@ -1642,28 +1386,16 @@ window.gareEdit = function(id) {
     document.getElementById('gare-data').value = g.data;
     document.getElementById('gare-ora').value  = g.ora;
     document.getElementById('gare-tipo').value = g.tipo;
-    document.getElementById('gare-tipo-comp').value = g.tipoComp || 'campionato';
-    document.getElementById('gare-categoria').value  = g.categoria || '';
+    document.getElementById('gare-categoria').value = g.categoria || '';
     document.getElementById('gare-competizione').value = g.competizione || '';
+    document.getElementById('gare-squadra-avv').value  = g.avversaria || '';
     document.getElementById('gare-campo').value = g.campo || '';
     document.getElementById('gare-note').value  = g.note  || '';
     document.getElementById('gare-edit-id').value = id;
-
-    if (g.tipoComp === 'torneo' && g.torneo) {
-        document.getElementById('gare-torneo-section').style.display = '';
-        document.getElementById('gf-squadra-avv-wrap').style.display = 'none';
-        document.getElementById('gare-torneo-info').value = g.torneo.info || '';
-        document.getElementById('gare-torneo-premiazione-ora').value = (g.torneo.premiazione && g.torneo.premiazione.ora) || '';
-        document.getElementById('gare-torneo-premiazione-label').value = (g.torneo.premiazione && g.torneo.premiazione.label) || '';
-        torneoSetMatches(g.torneo.partite || []);
-    } else {
-        document.getElementById('gare-torneo-section').style.display = 'none';
-        document.getElementById('gf-squadra-avv-wrap').style.display = '';
-        document.getElementById('gare-squadra-avv').value = g.avversaria || '';
-    }
     document.getElementById('gare-form-card').style.display = '';
     document.getElementById('gare-form-card').scrollIntoView({ behavior:'smooth' });
 };
+
 // ── ELIMINA gara ─────────────────────────────────────────────────────
 window.gareDel = async function(id) {
     if (!confirm('Eliminare questa gara?')) return;
@@ -1684,7 +1416,7 @@ function _gareRenderSquadre() {
     var box = document.getElementById('gare-squadre-list');
     if (!box) return;
     if (!_squadre.length) {
-        box.innerHTML = '<span style="color:#60a5fa;font-size:0.8rem;">Nessuna squadra. Importa l\'Excel o aggiungi manualmente.</span>';
+        box.innerHTML = '<span style="color:#7a9cc4;font-size:0.8rem;">Nessuna squadra. Importa l\'Excel o aggiungi manualmente.</span>';
         return;
     }
     var sorted = _squadre.slice().sort();
@@ -1842,89 +1574,6 @@ window.gareImportExcel = function(input) {
     reader.readAsArrayBuffer(file);
 };
 
-// ── Torneo ───────────────────────────────────────────────────────────
-var _torneoMatchCount = 0;
-
-window.gareTipoCompChange = function() {
-    var tipo = document.getElementById('gare-tipo-comp').value;
-    var sec  = document.getElementById('gare-torneo-section');
-    var avvW = document.getElementById('gf-squadra-avv-wrap');
-    if (tipo === 'torneo') {
-        sec.style.display = '';
-        avvW.style.display = 'none'; // Nel torneo non ha senso "avversaria"
-        if (document.getElementById('torneo-matches-list').children.length === 0) {
-            torneoAddMatch(); // Aggiungi una riga di default
-        }
-    } else {
-        sec.style.display = 'none';
-        avvW.style.display = '';
-    }
-};
-
-window.torneoAddMatch = function() {
-    var list = document.getElementById('torneo-matches-list');
-    var id   = 'tm-' + (++_torneoMatchCount);
-    var row  = document.createElement('div');
-    row.className = 'torneo-match-row';
-    row.id = id;
-    // Opzioni squadre
-    var opts = '<option value="">— Squadra —</option>';
-    opts = '<option value="GO SPORT GRUGLIASCO ASD">GO SPORT GRUGLIASCO ASD</option>' + opts;
-    (_squadre||[]).slice().sort().forEach(function(s){
-        opts += '<option value="'+s+'">'+s+'</option>';
-    });
-    // Costruisci riga con DOM per evitare problemi di escape
-    var oraEl = document.createElement('input');
-    oraEl.type='time'; oraEl.value='11:00'; oraEl.className='tm-ora';
-    var casaEl = document.createElement('select');
-    casaEl.className='tm-casa'; casaEl.innerHTML=opts;
-    var vsEl = document.createElement('span');
-    vsEl.className='vs'; vsEl.textContent='VS';
-    var ospEl = document.createElement('select');
-    ospEl.className='tm-ospite'; ospEl.innerHTML=opts;
-    var delEl = document.createElement('button');
-    delEl.className='btn-del-match'; delEl.title='Rimuovi';
-    delEl.innerHTML='<i class="bi bi-x-circle"></i>';
-    delEl.onclick = function(){ document.getElementById(id) && document.getElementById(id).remove(); };
-    row.appendChild(oraEl);
-    row.appendChild(casaEl);
-    row.appendChild(vsEl);
-    row.appendChild(ospEl);
-    row.appendChild(delEl);
-    list.appendChild(row);
-};
-
-window.torneoDelMatch = function(id) {
-    var el = document.getElementById(id);
-    if (el) el.remove();
-};
-
-function torneoGetMatches() {
-    var rows = document.querySelectorAll('#torneo-matches-list .torneo-match-row');
-    var matches = [];
-    rows.forEach(function(row) {
-        var ora   = row.querySelector('.tm-ora').value;
-        var casa  = row.querySelector('.tm-casa').value;
-        var ospite= row.querySelector('.tm-ospite').value;
-        if (casa || ospite) matches.push({ ora:ora, casa:casa, ospite:ospite });
-    });
-    return matches;
-}
-
-function torneoSetMatches(matches) {
-    var list = document.getElementById('torneo-matches-list');
-    list.innerHTML = '';
-    _torneoMatchCount = 0;
-    matches.forEach(function(m) {
-        torneoAddMatch();
-        var rows = list.querySelectorAll('.torneo-match-row');
-        var row  = rows[rows.length-1];
-        row.querySelector('.tm-ora').value   = m.ora   || '11:00';
-        row.querySelector('.tm-casa').value  = m.casa  || '';
-        row.querySelector('.tm-ospite').value= m.ospite|| '';
-    });
-}
-
 // -- Locandina gare
 window.gareToggleSel = function(id) {
     var i=_gareSelected.indexOf(id);
@@ -1962,17 +1611,17 @@ function _gareRenderExportList(){
     var lun=_gareLunedi(_gareWeekOffset),endD=_gareDomenica(_gareWeekOffset+_gareExportWeeks);
     var lista=_gare.filter(function(g){return g.data>=_gareDateStr(lun)&&g.data<=_gareDateStr(endD);})
                    .sort(function(a,b){return (a.data+a.ora).localeCompare(b.data+b.ora);});
-    if(!lista.length){box.innerHTML='<div style="color:#60a5fa;font-size:0.8rem;padding:8px;">Nessuna gara nel periodo.</div>';_gareUpdateSelCount();return;}
+    if(!lista.length){box.innerHTML='<div style="color:#6a8caa;font-size:0.8rem;padding:8px;">Nessuna gara nel periodo.</div>';_gareUpdateSelCount();return;}
     var h='',lastDay='';
     lista.forEach(function(g){
-        if(g.data!==lastDay){lastDay=g.data;h+='<div style="color:#60a5fa;font-size:0.75rem;font-weight:700;padding:6px 4px 3px;border-top:1px solid #1e293b;margin-top:4px;text-transform:uppercase;">'+_gareGiornoLabel(g.data)+'</div>';}
+        if(g.data!==lastDay){lastDay=g.data;h+='<div style="color:#7aacda;font-size:0.75rem;font-weight:700;padding:6px 4px 3px;border-top:1px solid #1a3050;margin-top:4px;text-transform:uppercase;">'+_gareGiornoLabel(g.data)+'</div>';}
         var sel=_gareSelected.indexOf(g.id)>=0,tipo=g.tipo==='casa'?'Casa':'Fuori';
-        h+='<div data-gid="'+g.id+'" onclick="gareToggleSel(\''+g.id+'\')" style="display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:5px;cursor:pointer;background:'+(sel?'#0d1b2a':'transparent')+';margin-bottom:2px;">';
-        h+='<input type="checkbox" '+(sel?'checked':'')+' style="accent-color:#60a5fa;cursor:pointer;" onclick="event.stopPropagation();gareToggleSel(\''+g.id+'\')">';
-        h+='<span style="color:#f59e0b;font-size:0.75rem;min-width:44px;">'+g.ora+'</span>';
+        h+='<div data-gid="'+g.id+'" onclick="gareToggleSel(\''+g.id+'\')" style="display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:5px;cursor:pointer;background:'+(sel?'#0e2a4a':'transparent')+';margin-bottom:2px;">';
+        h+='<input type="checkbox" '+(sel?'checked':'')+' style="accent-color:#4a9eff;cursor:pointer;" onclick="event.stopPropagation();gareToggleSel(\''+g.id+'\')">';
+        h+='<span style="color:#c8a040;font-size:0.75rem;min-width:44px;">'+g.ora+'</span>';
         h+='<span style="font-size:0.75rem;min-width:44px;">['+tipo+']</span>';
-        h+='<span style="color:#60a5fa;font-size:0.78rem;flex:1;">'+(g.categoria||'')+'</span>';
-        h+='<span style="color:#60a5fa;font-size:0.76rem;">'+(g.avversaria||'')+'</span></div>';
+        h+='<span style="color:#a8c8e8;font-size:0.78rem;flex:1;">'+(g.categoria||'')+'</span>';
+        h+='<span style="color:#8aaccc;font-size:0.76rem;">'+(g.avversaria||'')+'</span></div>';
     });
     box.innerHTML=h;_gareUpdateSelCount();
 }
@@ -1988,38 +1637,38 @@ function _gareDrawLocandina(tipo){
     var totH=tipo==='separato'?HH+PAD+Math.max(casa.length?sh(casa):40,fuori.length?sh(fuori):40)+PAD:HH+PAD+sh(sel)+PAD;
     var cv=document.getElementById('gare-canvas');cv.width=W;cv.height=Math.max(totH,200);
     var ctx=cv.getContext('2d');
-    ctx.fillStyle='#060f1e';ctx.fillRect(0,0,W,cv.height);
-    ctx.fillStyle='#0f172a';ctx.fillRect(0,0,W,HH);
-    ctx.strokeStyle='#2d4a8a';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,HH);ctx.lineTo(W,HH);ctx.stroke();
-    ctx.fillStyle='#60a5fa';ctx.font='bold 20px Arial,sans-serif';ctx.textAlign='center';ctx.fillText(titolo,W/2,30);
-    ctx.fillStyle='#60a5fa';ctx.font='13px Arial,sans-serif';
+    ctx.fillStyle='#0a1828';ctx.fillRect(0,0,W,cv.height);
+    ctx.fillStyle='#0f2240';ctx.fillRect(0,0,W,HH);
+    ctx.strokeStyle='#2d5a8e';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,HH);ctx.lineTo(W,HH);ctx.stroke();
+    ctx.fillStyle='#90b8f0';ctx.font='bold 20px Arial,sans-serif';ctx.textAlign='center';ctx.fillText(titolo,W/2,30);
+    ctx.fillStyle='#6a9ac0';ctx.font='13px Arial,sans-serif';
     ctx.fillText(tipo==='separato'?'GARE IN PROGRAMMA':'CALENDARIO GARE',W/2,54);
     function drawS(l,x,w,sY,sT,cT,cM){
         var y=sY;ctx.fillStyle=cT;ctx.fillRect(x,y,w,CTH);
         ctx.fillStyle='#fff';ctx.font='bold 13px Arial,sans-serif';ctx.textAlign='center';ctx.fillText(sT,x+w/2,y+21);y+=CTH+8;
-        if(!l.length){ctx.fillStyle='#64748b';ctx.font='11px Arial,sans-serif';ctx.fillText('Nessuna gara',x+w/2,y+18);return;}
+        if(!l.length){ctx.fillStyle='#5a7a9a';ctx.font='11px Arial,sans-serif';ctx.fillText('Nessuna gara',x+w/2,y+18);return;}
         var gg=grp(l);
         Object.keys(gg).sort().forEach(function(d){
             var gl=gg[d].sort(function(a,b){return a.ora.localeCompare(b.ora);});
-            ctx.fillStyle='#1e293b';ctx.fillRect(x,y,w,DH);
-            ctx.strokeStyle='#2d4a8a';ctx.lineWidth=1;ctx.strokeRect(x,y,w,DH);
-            ctx.fillStyle='#60a5fa';ctx.font='bold 11px Arial,sans-serif';ctx.textAlign='center';
+            ctx.fillStyle='#162d4a';ctx.fillRect(x,y,w,DH);
+            ctx.strokeStyle='#2d5a8e';ctx.lineWidth=1;ctx.strokeRect(x,y,w,DH);
+            ctx.fillStyle='#7aacda';ctx.font='bold 11px Arial,sans-serif';ctx.textAlign='center';
             ctx.fillText(('GARE '+_gareGiornoLabel(d)).toUpperCase(),x+w/2,y+19);y+=DH;
             gl.forEach(function(g){
                 var m=g.tipo==='casa'?'GO SPORT GRUGLIASCO ASD vs '+(g.avversaria||'?'):(g.avversaria||'?')+' vs GO SPORT GRUGLIASCO ASD';
-                ctx.fillStyle='#1e293b';ctx.fillRect(x,y,w,TH);
-                ctx.fillStyle='#000000';ctx.font='bold 11px Arial,sans-serif';ctx.textAlign='left';
+                ctx.fillStyle='#1c3352';ctx.fillRect(x,y,w,TH);
+                ctx.fillStyle='#f0a040';ctx.font='bold 11px Arial,sans-serif';ctx.textAlign='left';
                 ctx.fillText('ORE: '+g.ora,x+6,y+17);
-                ctx.fillStyle='#0d1b2a';ctx.font='10px Arial,sans-serif';
+                ctx.fillStyle='#a8c8e8';ctx.font='10px Arial,sans-serif';
                 ctx.fillText((g.categoria||'')+(g.competizione?' ('+g.competizione+')':''),x+74,y+17);y+=TH;
                 ctx.fillStyle=cM;ctx.fillRect(x,y,w,MH);
-                ctx.fillStyle='#ffffff';ctx.font='bold 12px Arial,sans-serif';ctx.textAlign='center';
+                ctx.fillStyle='#ddeeff';ctx.font='bold 12px Arial,sans-serif';ctx.textAlign='center';
                 var mW=w-12,txt=m.toUpperCase();
                 while(ctx.measureText(txt).width>mW&&txt.length>6)txt=txt.slice(0,-1);
                 if(txt!==m.toUpperCase())txt+='...';ctx.fillText(txt,x+w/2,y+20);y+=MH;
-                if(g.note){
+                if(g.campo||g.note){
                     ctx.fillStyle='#060f1e';ctx.fillRect(x,y,w,IH);
-                    ctx.fillStyle='#64748b';ctx.font='9px Arial,sans-serif';ctx.textAlign='left';
+                    ctx.fillStyle='#5a8aaa';ctx.font='9px Arial,sans-serif';ctx.textAlign='left';
                     ctx.fillText((g.campo?'Loc: '+g.campo:'')+(g.note?' - '+g.note:''),x+6,y+13);y+=IH;
                 }
                 y+=GAP;
@@ -2029,12 +1678,12 @@ function _gareDrawLocandina(tipo){
     var sY=HH+PAD;
     if(tipo==='separato'){
         var cW=(W-PAD*3)/2;
-        drawS(casa,PAD,cW,sY,'GARE IN CASA','#1a3a5f','#60a5fa');
-        drawS(fuori,PAD*2+cW,cW,sY,'GARE FUORI CASA','#d90429','#60a5fa');
+        drawS(casa,PAD,cW,sY,'GARE IN CASA','#0f3020','#0e2535');
+        drawS(fuori,PAD*2+cW,cW,sY,'GARE FUORI CASA','#2d1515','#1a1020');
     } else {
-        drawS(sel,PAD,W-PAD*2,sY,'CALENDARIO GARE','#1a3a5f','#60a5fa');
+        drawS(sel,PAD,W-PAD*2,sY,'CALENDARIO GARE','#0f2240','#0e2535');
     }
-    ctx.fillStyle='#3b5a9d';ctx.font='9px Arial,sans-serif';ctx.textAlign='center';
+    ctx.fillStyle='#3a6a9a';ctx.font='9px Arial,sans-serif';ctx.textAlign='center';
     ctx.fillText('(c) '+new Date().getFullYear()+' Sport Monitoring',W/2,cv.height-5);
     return cv;
 }
@@ -2059,186 +1708,6 @@ window.gareDownloadPDF=function(){
 };
 
 // ═══ FINE GARE DA DISPUTARE ════════════════════════════════════════
-
-// ═══════════════════════════════════════════════════════════════════
-// ████  DOCUMENTI SOCIETÀ  ████
-// ═══════════════════════════════════════════════════════════════════
-
-var _docs = [];
-var _docsLoaded = false;
-
-// Resetta stato documenti al cambio tab (forza ricarica)
-function _docReset() { _docsLoaded = false; _docs = []; }
-
-function _docAnnataId() {
-    return sessionStorage.getItem('gosport_current_annata') || '';
-}
-
-async function docLoad() {
-    console.log('[Documenti] 📥 docLoad chiamata, _docsLoaded:', _docsLoaded);
-    if (_docsLoaded) { docRender(); return; }
-    var aid = _docAnnataId();
-    console.log('[Documenti] annataId:', aid);
-    try {
-        var res = await fetch('/api/data', { cache:'no-store', headers:{'x-annata-id': aid} });
-        var d = await res.json();
-        _docs = (d && d.documents) || [];
-        _docsLoaded = true;
-        console.log('[Documenti] ✅ Caricati documenti:', _docs.length);
-    } catch(e) { console.warn('[Documenti] load err:', e); }
-    docRender();
-}
-
-async function docSave() {
-    var name = (document.getElementById('doc-name')||{}).value || '';
-    var url  = (document.getElementById('doc-url')||{}).value || '';
-    var desc = (document.getElementById('doc-desc')||{}).value || '';
-    var visBacheca  = (document.getElementById('doc-vis-bacheca')||{}).checked;
-    var visPubblica = (document.getElementById('doc-vis-pubblica')||{}).checked;
-
-    if (!name.trim()) { alert('Inserisci il nome del documento.'); return; }
-    if (!url.trim() || !url.startsWith('http')) { alert('Inserisci un link Google Drive valido.'); return; }
-
-    var visibility = [];
-    if (visBacheca)  visibility.push('bacheca');
-    if (visPubblica) visibility.push('pubblica');
-    if (!visibility.length) visibility.push('bacheca');
-
-    var doc = {
-        id: Date.now().toString(),
-        name: name.trim(),
-        url: url.trim(),
-        desc: desc.trim(),
-        visibility: visibility,
-        date: new Date().toISOString().split('T')[0]
-    };
-    if (window._docEditId) {
-        // Modifica documento esistente
-        var idx = _docs.findIndex(function(d){ return d.id === window._docEditId; });
-        if (idx !== -1) _docs[idx] = doc;
-        window._docEditId = null;
-        var addBtn = document.querySelector('#doc-admin-panel button');
-        if (addBtn) { addBtn.innerHTML = '<i class="bi bi-plus-circle"></i> Aggiungi'; addBtn.style.background = '#16a34a'; }
-    } else {
-        _docs.push(doc);
-    }
-    await docPersist();
-    // Reset form
-    ['doc-name','doc-url','doc-desc'].forEach(function(id){
-        var el = document.getElementById(id); if(el) el.value='';
-    });
-    var cb = document.getElementById('doc-vis-bacheca'); if(cb) cb.checked=true;
-    var cp = document.getElementById('doc-vis-pubblica'); if(cp) cp.checked=false;
-    docRender();
-}
-
-function docEdit(id) {
-    var doc = _docs.find(function(d){ return d.id === id; });
-    if (!doc) return;
-    // Popola il form con i dati del documento
-    var nameEl = document.getElementById('doc-name');
-    var urlEl  = document.getElementById('doc-url');
-    var descEl = document.getElementById('doc-desc');
-    var visBEl = document.getElementById('doc-vis-bacheca');
-    var visPEl = document.getElementById('doc-vis-pubblica');
-    if (nameEl) nameEl.value = doc.name || '';
-    if (urlEl)  urlEl.value  = doc.url  || '';
-    if (descEl) descEl.value = doc.desc || '';
-    if (visBEl) visBEl.checked = (doc.visibility||[]).includes('bacheca');
-    if (visPEl) visPEl.checked = (doc.visibility||[]).includes('pubblica');
-    // Segna il documento in modifica
-    window._docEditId = id;
-    // Aggiorna il pulsante Aggiungi
-    var addBtn = document.querySelector('#doc-admin-panel button[onclick="docSave()"]');
-    if (addBtn) {
-        addBtn.innerHTML = '<i class="bi bi-check-circle"></i> Salva Modifica';
-        addBtn.style.background = '#f59e0b';
-    }
-    // Scroll al form
-    var panel = document.getElementById('doc-admin-panel');
-    if (panel) panel.scrollIntoView({ behavior: 'smooth' });
-}
-
-async function docDelete(id) {
-    if (!confirm('Eliminare questo documento?')) return;
-    _docs = _docs.filter(function(d){ return d.id !== id; });
-    await docPersist();
-    docRender();
-}
-
-async function docPersist() {
-    var aid = _docAnnataId();
-    try {
-        await fetch('/api/data', {
-            method: 'POST',
-            headers: { 'Content-Type':'application/json', 'x-annata-id': aid },
-            body: JSON.stringify({ documents: _docs })
-        });
-    } catch(e) { console.warn('[Documenti] save err:', e); }
-}
-
-function docRender() {
-    console.log('[Documenti] 🖼️ docRender chiamata');
-    var container = document.getElementById('doc-list');
-    if (!container) {
-        console.warn('[Documenti] ❌ doc-list non trovato nel DOM');
-        return;
-    }
-    console.log('[Documenti] ✅ doc-list trovato, procedo al rendering');
-
-    // Mostra pannello admin — visibile a admin/coach, nascosto agli altri
-    var role = sessionStorage.getItem('gosport_user_role') || '';
-    var noEditRoles = ['coach_l3','coach_readonly','societa_l2','societa_l3','dirigente_l2','dirigente_l3','dirigente_l4'];
-    var canEdit = !noEditRoles.includes(role) || window._docCanEdit;
-    var adminPanel = document.getElementById('doc-admin-panel');
-    if (adminPanel) adminPanel.style.display = canEdit ? '' : 'none';
-
-    if (!_docs.length) {
-        container.innerHTML = '<div style="color:#64748b;text-align:center;padding:30px;">'
-            + '<i class="bi bi-folder2-open" style="font-size:2rem;display:block;margin-bottom:8px;"></i>'
-            + 'Nessun documento presente. Aggiungi il primo documento!</div>';
-        return;
-    }
-
-    var h = '';
-    _docs.forEach(function(doc) {
-        var visLabels = (doc.visibility||[]).map(function(v){
-            return v==='pubblica'
-                ? '<span style="background:#1a3a5f;color:#60a5fa;border-radius:4px;padding:1px 7px;font-size:0.72rem;margin-right:4px;">🌍 Pubblica</span>'
-                : '<span style="background:#16a34a;color:#16a34a;border-radius:4px;padding:1px 7px;font-size:0.72rem;margin-right:4px;">🔒 Privata</span>';
-        }).join('');
-        h += '<div style="background:#0f172a;border:1px solid #1a3a5f;border-radius:8px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;">';
-        h += '<i class="bi bi-file-earmark-text-fill" style="font-size:1.6rem;color:#60a5fa;flex-shrink:0;"></i>';
-        h += '<div style="flex:1;min-width:0;">';
-        h += '<div style="font-weight:600;color:#e2e8f0;margin-bottom:2px;">' + doc.name + '</div>';
-        if (doc.desc) h += '<div style="color:#64748b;font-size:0.8rem;margin-bottom:4px;">' + doc.desc + '</div>';
-        h += '<div>' + visLabels + '<span style="color:#64748b;font-size:0.72rem;">' + (doc.date||'') + '</span></div>';
-        h += '</div>';
-        h += '<div style="display:flex;gap:6px;flex-shrink:0;">';
-        h += '<a href="' + doc.url + '" target="_blank" style="background:#1a3a5f;color:#60a5fa;border:none;border-radius:5px;padding:5px 12px;font-size:0.8rem;cursor:pointer;text-decoration:none;"><i class="bi bi-box-arrow-up-right"></i> Apri</a>';
-        if (canEdit) {
-            h += '<button data-docid="' + doc.id + '" class="doc-edit-btn" style="background:#1a3a5f;color:#f59e0b;border:none;border-radius:5px;padding:5px 10px;font-size:0.8rem;cursor:pointer;"><i class="bi bi-pencil-fill"></i></button>';
-            h += '<button data-docid="' + doc.id + '" class="doc-delete-btn" style="background:#450a0a;color:#d90429;border:none;border-radius:5px;padding:5px 10px;font-size:0.8rem;cursor:pointer;"><i class="bi bi-trash-fill"></i></button>';
-        }
-        h += '</div></div>';
-    });
-    container.innerHTML = h;
-    // Event delegation per pulsanti elimina e modifica
-    container.querySelectorAll('.doc-delete-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            docDelete(this.getAttribute('data-docid'));
-        });
-    });
-    container.querySelectorAll('.doc-edit-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            docEdit(this.getAttribute('data-docid'));
-        });
-    });
-}
-
-// Mostra tab Documenti (chiamato da showBachecaTab/showGareTab pattern)
-window.showDocumentiTab = showDocumentiTab;
-
 </script>
 </body>
 </html>
