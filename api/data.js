@@ -116,7 +116,7 @@ export default async function handler(req, res) {
       const [
         athletes, evaluations, gpsData, awards, trainingSessions,
         formationData, matchResults, calendarEvents, calendarResponses,
-        materiale, pagamenti, convocazioni, convSettings,
+        materiale, pagamenti, pagVoci, pagLabels, convocazioni, convSettings,
         convBg, convBg2, posts, globalPosts, teamName, individualPassword,
         ratingSheets,
         documents
@@ -132,6 +132,8 @@ export default async function handler(req, res) {
         kv.get(`${prefix}:calendarResponses`),
         kv.get(`${prefix}:materiale`),
         kv.get(`${prefix}:pagamenti`),
+        kv.get(`${prefix}:pagVoci`),
+        kv.get(`${prefix}:pagLabels`),
         kv.get(`${prefix}:convocazioni`),
         kv.get(`${prefix}:convSettings`),
         kv.get(`${prefix}:convBg`),
@@ -161,6 +163,8 @@ export default async function handler(req, res) {
         calendarResponses: calendarResponses || {},
         materiale:         materiale         || { items: [], assignments: {} },
         pagamenti:         pagamenti         || {},
+        pagVoci:           pagVoci           || null,
+        pagLabels:         pagLabels         || null,
         convocazioni:      convocazioni      || [],
         convSettings:      convSettings      || {},
         convBg:            convBg            || null,
@@ -206,6 +210,8 @@ export default async function handler(req, res) {
       if (body.materiale !== undefined) await kv.set(`${prefix}:materiale`, body.materiale);
       if (body.individualPassword !== undefined) await kv.set(`${prefix}:individualPassword`, body.individualPassword);
       if (body.pagamenti !== undefined) await kv.set(`${prefix}:pagamenti`, body.pagamenti);
+      if (body.pagVoci !== undefined)  await kv.set(`${prefix}:pagVoci`, body.pagVoci);
+      if (body.pagLabels !== undefined) await kv.set(`${prefix}:pagLabels`, body.pagLabels);
       if (body.ratingSheets !== undefined) await kv.set(`${prefix}:ratingSheets`, body.ratingSheets);
       if (body.documents  !== undefined) await kv.set(`${prefix}:documents`,   body.documents);
       if (body.convocazioni !== undefined) await kv.set(`${prefix}:convocazioni`, body.convocazioni);
