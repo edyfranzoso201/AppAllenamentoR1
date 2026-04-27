@@ -365,6 +365,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.athletes = athletes;
     let formationData = { starters: [], bench: [], tokens: [] };
     let chartInstances = {};
+    window.chartInstances = chartInstances; // esposto per applyChartTheme
     let comparisonChartPeriod = 'annual';
     let attendanceChartPeriod = 'annual';
     let weeklyAttendancePeriod = 'year';
@@ -1454,6 +1455,8 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.matchOpponentFilter.innerHTML += `<option value="${opp}" ${selected}>${opp}</option>`;
         });
     };
+    // Ri-espone chartInstances su window dopo ogni update (per applyChartTheme)
+    const _syncChartInstances = () => { window.chartInstances = chartInstances; };
     const updateEvaluationCharts = () => {
         const date = elements.evaluationDatePicker.value;
         if (!date) return;
@@ -1557,7 +1560,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 plugins: { legend: { labels: { color: _chartTickColor() } } }
             }
         });
+        _syncChartInstances();
     };
+    window.updateEvaluationCharts = updateEvaluationCharts;
     const updateAttendanceChart = () => {
         // Usa il picker della sezione presenze se disponibile, altrimenti quello principale
         const presenzePicker = document.getElementById('presenze-date-picker');
@@ -2042,7 +2047,8 @@ document.addEventListener('DOMContentLoaded', () => {
             labels: validSelections.map((selection) => {
                 const session = findSessionById(selection.sessionId);
                 const athlete = athletes.find(a => a.id.toString() === selection.athleteId.toString());
-                return `${athlete?.name || 'N/A'} (${new Date(session.date).toLocaleDateString('it-IT')})`;
+                const dateStr = session ? new Date(session.date).toLocaleDateString('it-IT') : '?';
+                return `${athlete?.name || 'N/A'} (${dateStr})`;
             }),
             datasets: [{
                 label: gpsFieldsForDisplay[selectedMetric] || selectedMetric,
@@ -2255,16 +2261,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     r: {
                         beginAtZero: true,
                         max: 100,
-                        ticks: { stepSize: 20, color: _chartTickColor(), backdropColor: 'rgba(0,0,0,0.5)' },
+                        ticks: { stepSize: 20, color: _chartTickColor(), backdropColor: 'transparent' },
                         pointLabels: { color: _chartTickColor(), font: {size: 10} },
                         grid: { color: _chartGridColor() },
-                        angleLines: { color: 'rgba(241, 241, 241, 0.2)' }
+                        angleLines: { color: _chartGridColor() }
                     }
                 },
                 plugins: { legend: { labels: { color: _chartTickColor() } } }
             }
         });
     };
+    window.updateAthleteRadarChart = updateAthleteRadarChart;
+    window.updatePerformanceChart = updatePerformanceChart;
+    window.updateAthleteTrendChart = updateAthleteTrendChart;
     const updateMultiAthleteChart = () => {
         const metric = elements.multiAthleteMetricSelector.value;
         const periodBtn = document.querySelector('#multi-athlete-chart-container .btn-group[role="group"] .btn.active');
@@ -2347,6 +2356,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     };
+    window.updateMultiAthleteChart = updateMultiAthleteChart;
     const checkDeadlinesAndAlert = () => {
         const today = new Date();
         today.setHours(0,0,0,0);
@@ -3739,62 +3749,161 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
         document.removeEventListener('touchcancel', onPointerUp);
     };
     const formSection = document.getElementById('formazione-section');
-    formSection.addEventListener('mousedown', onPointerDown);
-    formSection.addEventListener('touchstart', onPointerDown, { passive: false });
+    if (formSection) {
+        formSection.addEventListener('mousedown', onPointerDown);
+        formSection.addEventListener('touchstart', onPointerDown, { passive: false });
+    }
+    // ==========================================
+    // SISTEMA DI STAMPA OTTIMIZZATO (DEFINITIVO)
+    // ==========================================
+    const PRINT_CHART_WRAPPERS = [
+        'trend-chart-wrapper', 'radar-chart-wrapper',
+        'performance-chart-wrapper', 'multi-athlete-chart-wrapper'
+    ];
+
+    function applyPrintColorsToChart(chart) {
+        if (!chart || !chart.options) return;
+        if (chart.options.scales) {
+            Object.values(chart.options.scales).forEach(scale => {
+                if (scale.ticks) scale.ticks.color = '#000000';
+                if (scale.pointLabels) scale.pointLabels.color = '#000000';
+                if (scale.grid) scale.grid.color = '#888888';
+                if (scale.angleLines) scale.angleLines.color = '#888888';
+                if (scale.title) scale.title.color = '#000000';
+            });
+        }
+        if (chart.options.plugins?.legend?.labels) chart.options.plugins.legend.labels.color = '#000000';
+        if (chart.options.plugins?.title) chart.options.plugins.title.color = '#000000';
+        chart.update('none');
+    }
+
+    function convertAllPrintingCharts() {
+        const sections = document.querySelectorAll('.printing-now');
+        sections.forEach(section => {
+            // padding-top via @page margin in CSS, non più via JS
+            // (per evitare spazio fantasma sulle pagine successive)
+            const canvases = section.querySelectorAll('canvas');
+            canvases.forEach(canvas => {
+                const chartKey = canvas.id.replace(/Chart$/, '');
+                const chart = window.chartInstances && window.chartInstances[chartKey];
+                if (chart) {
+                    applyPrintColorsToChart(chart);
+                    if (typeof chart.render === 'function') chart.render();
+                }
+                // Forza dimensioni del wrapper e overflow per non uscire dal foglio
+                let wrapper = canvas.parentElement;
+                while (wrapper && wrapper !== section) {
+                    if (!wrapper.dataset.origCss) {
+                        wrapper.dataset.origCss = wrapper.style.cssText || '';
+                    }
+                    wrapper.style.setProperty('overflow', 'visible', 'important');
+                    wrapper.style.setProperty('min-width', '0', 'important');
+                    wrapper.style.setProperty('max-width', '100%', 'important');
+                    wrapper.style.setProperty('width', '100%', 'important');
+                    wrapper = wrapper.parentElement;
+                }
+                // Forza canvas a max-width 100%
+                if (!canvas.dataset.origStyle) canvas.dataset.origStyle = canvas.style.cssText || '';
+                canvas.style.setProperty('max-width', '100%', 'important');
+                canvas.style.setProperty('width', '100%', 'important');
+                canvas.style.setProperty('height', 'auto', 'important');
+                console.log('[STAMPA] preparato:', canvas.id);
+            });
+        });
+    }
+
+    function restoreAfterPrint() {
+        // Ripristina stili originali wrapper e canvas
+        document.querySelectorAll('[data-orig-css]').forEach(el => {
+            el.style.cssText = el.dataset.origCss || '';
+            delete el.dataset.origCss;
+        });
+        document.querySelectorAll('canvas[data-orig-style]').forEach(c => {
+            c.style.cssText = c.dataset.origStyle || '';
+            delete c.dataset.origStyle;
+        });
+        // Rimuovi classi e stili di stampa
+        document.querySelectorAll('.tab-section').forEach(el => {
+            el.classList.remove('printing-now');
+            el.style.removeProperty('padding-top');
+        });
+        // Gestisci confronto-squadra-section in base al tab attivo
+        const confronto = document.getElementById('confronto-squadra-section');
+        if (confronto) {
+            confronto.classList.remove('printing-now');
+            const currentTab = document.querySelector('.tab-section.tab-active');
+            const isGpsActive = currentTab && currentTab.id === 'monitoraggio-gps-section';
+            if (isGpsActive && window.innerWidth >= 992) {
+                confronto.style.setProperty('display', 'block', 'important');
+            } else {
+                confronto.style.setProperty('display', 'none', 'important');
+            }
+        }
+        // Ripristina i colori originali ai chart (non distrutti, solo modificati)
+        setTimeout(() => {
+            try {
+                if (window.updateAthleteTrendChart) window.updateAthleteTrendChart();
+                if (window.updateAthleteRadarChart) window.updateAthleteRadarChart();
+                if (window.updatePerformanceChart) window.updatePerformanceChart();
+                if (window.updateMultiAthleteChart) window.updateMultiAthleteChart();
+            } catch (e) { console.warn('[STAMPA] re-render err:', e); }
+        }, 150);
+    }
+
+    // Listener click pulsante Stampa (gestione unificata)
     document.body.addEventListener('click', (e) => {
         const printBtn = e.target.closest('.print-section-btn');
-        if (printBtn) {
-            const sectionToPrint = printBtn.closest('.printable-area');
-            if (sectionToPrint) {
-                sectionToPrint.classList.add('printing-now');
-                window.print();
-            }
+        if (!printBtn) return;
+        const sectionToPrint = printBtn.closest('.printable-area') || printBtn.closest('.tab-section');
+        if (!sectionToPrint) return;
+
+        // Reset stato precedente
+        document.querySelectorAll('.printing-now').forEach(el => el.classList.remove('printing-now'));
+        document.querySelectorAll('.tab-section').forEach(el => el.style.removeProperty('display'));
+
+        const gps = document.getElementById('monitoraggio-gps-section');
+        const confronto = document.getElementById('confronto-squadra-section');
+        // Se stampo da GPS o Confronto, stampo ENTRAMBI
+        const isGpsContext = (sectionToPrint === gps || sectionToPrint === confronto ||
+                              printBtn.closest('#monitoraggio-gps-section, #confronto-squadra-section'));
+
+        if (isGpsContext && gps && confronto) {
+            gps.classList.add('printing-now');
+            confronto.classList.add('printing-now');
+            confronto.style.setProperty('display', 'block', 'important');
+        } else {
+            sectionToPrint.classList.add('printing-now');
         }
+
+        // Converti TUTTI i canvas trovati nelle sezioni printing-now
+        // Aspetta 2 frame per dare tempo a Chart.js di renderizzare prima della cattura
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                convertAllPrintingCharts();
+                setTimeout(() => {
+                    window.dispatchEvent(new Event('resize'));
+                    window.print();
+                }, 100);
+            });
+        });
     });
+
+    // beforeprint VUOTO per evitare conflitti con il click handler
+    // Se la stampa parte da Ctrl+P, gestiamo qui anche se senza pulsante
     window.addEventListener('beforeprint', () => {
-        for (const key in chartInstances) {
-            const chart = chartInstances[key];
-            if (chart.options.scales) {
-                Object.values(chart.options.scales).forEach(scale => {
-                    if (scale.ticks) scale.ticks.color = '#000';
-                    if (scale.pointLabels) scale.pointLabels.color = '#000';
-                    if (scale.grid) scale.grid.color = '#64748b';
-                    if (scale.angleLines) scale.angleLines.color = '#64748b';
-                });
-            }
-            if (chart.options.plugins?.legend) {
-                chart.options.plugins.legend.labels.color = '#000';
-            }
-            if (chart.options.plugins?.title) {
-                chart.options.plugins.title.color = '#000';
-            }
-            chart.update('none');
+        // Se nessuna sezione ha printing-now (Ctrl+P), marca quella attiva e converti
+        const alreadyPrinting = document.querySelector('.printing-now');
+        if (alreadyPrinting) return; // Click handler ha già preparato tutto
+        const activeTab = document.querySelector('.tab-section.tab-active');
+        if (activeTab) {
+            activeTab.classList.add('printing-now');
+            convertAllPrintingCharts();
         }
     });
-    window.addEventListener('afterprint', () => {
-        const printedSection = document.querySelector('.printing-now');
-        if (printedSection) {
-            printedSection.classList.remove('printing-now');
-        }
-        for (const key in chartInstances) {
-            const chart = chartInstances[key];
-            if (chart.options.scales) {
-                Object.values(chart.options.scales).forEach(scale => {
-                    if (scale.ticks) scale.ticks.color = _chartTickColor();
-                    if (scale.pointLabels) scale.pointLabels.color = _chartTickColor();
-                    if (scale.grid) scale.grid.color = _chartGridColor();
-                    if (scale.angleLines) scale.angleLines.color = _chartGridColor();
-                });
-            }
-            if (chart.options.plugins?.legend) {
-                chart.options.plugins.legend.labels.color = _chartTickColor();
-            }
-            if (chart.options.plugins?.title) {
-                chart.options.plugins.title.color = _chartTickColor();
-            }
-            chart.update('none');
-        }
-    });
+
+    window.addEventListener('afterprint', restoreAfterPrint);
+
+
     const openMatchResultModal = (matchId = null) => {
         elements.matchResultForm.reset();
         document.getElementById('scorers-container').innerHTML = '';
@@ -4031,8 +4140,8 @@ function updateHeaderUI(annataName, currentUser, userRole, currentAnnataId) {
         <div style="position:relative;display:inline-block;">
             <button type="button" id="admin-dd-btn"
                 onclick="toggleAdminMenu(this)"
-                style="background:linear-gradient(135deg,var(--bg-panel) 0%,var(--bg-primary) 100%);color:white;
-                       border:1px solid rgba(255,255,255,0.2);padding:6px 14px;border-radius:8px;
+                style="background:${document.documentElement.classList.contains('theme-light') ? 'rgba(255,255,255,0.9)' : 'linear-gradient(135deg,var(--bg-panel) 0%,var(--bg-primary) 100%)'};color:${document.documentElement.classList.contains('theme-light') ? '#000103' : 'white'};
+                       border:${document.documentElement.classList.contains('theme-light') ? '1px solid rgba(0,0,0,0.2)' : '1px solid rgba(255,255,255,0.2)'};padding:6px 14px;border-radius:8px;
                        font-weight:600;font-size:14px;cursor:pointer;display:flex;align-items:center;
                        gap:8px;white-space:nowrap;">
                 ${roleIcon} ${currentUser || 'Utente'} &#9662;
@@ -4046,10 +4155,16 @@ function updateHeaderUI(annataName, currentUser, userRole, currentAnnataId) {
 
     var menu = document.createElement('div');
     menu.id = 'admin-dd-menu';
-    menu.style.cssText = 'display:none;position:fixed;z-index:9999;background:var(--bg-panel);border:1px solid rgba(255,255,255,0.15);border-radius:10px;min-width:200px;padding:10px;box-shadow:0 8px 24px rgba(0,0,0,0.6);';
+    var isLightTheme = document.documentElement.classList.contains('theme-light');
+    var menuBg = isLightTheme ? '#ffffff' : 'var(--bg-panel)';
+    var menuBorder = isLightTheme ? '1px solid rgba(0,0,0,0.15)' : '1px solid rgba(255,255,255,0.15)';
+    var menuText = isLightTheme ? '#000103' : '#64748b';
+    var menuStrong = isLightTheme ? '#000103' : 'white';
+    var menuDivider = isLightTheme ? '1px solid rgba(0,0,0,0.1)' : '1px solid rgba(255,255,255,0.1)';
+    menu.style.cssText = `display:none;position:fixed;z-index:9999;background:${menuBg};border:${menuBorder};border-radius:10px;min-width:200px;padding:10px;box-shadow:0 8px 24px rgba(0,0,0,0.3);`;
     menu.innerHTML = `
-        <div style="font-size:12px;color:#64748b;padding:4px 8px 8px;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:8px;">
-            &#16a34a; Annata: <strong style="color:white;">${annataName}</strong>
+        <div style="font-size:12px;color:${menuText};padding:4px 8px 8px;border-bottom:${menuDivider};margin-bottom:8px;">
+            📅 Annata: <strong style="color:${menuStrong};">${annataName}</strong>
         </div>
         ${canChangeAnnata ? `<button type="button" onclick="window.handleQuickChangeAnnata();closeAdminMenu();"
             style="width:100%;background:linear-gradient(135deg,#8b5cf6,#8b5cf6);color:white;border:none;
