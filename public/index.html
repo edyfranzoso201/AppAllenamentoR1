@@ -50,10 +50,7 @@
     html.theme-light .tab-nav-btn, body.theme-light .tab-nav-btn {
       color: #000103 !important;
     }
-    html.theme-light .tab-nav-btn.active, body.theme-light .tab-nav-btn.active {
-      color: #d90429 !important;
-      border-color: #d90429 !important;
-    }
+    /* active tab: usa gradient definito sopra */
     /* B — Sfondo calendario in tema chiaro: grigio scuro */
     html.theme-light .calendar-grid td,
     html.theme-light .calendar-grid th,
@@ -87,6 +84,18 @@
       background: #e5e7eb !important;
     }
 
+
+    /* Home - tema scuro: testi leggibili in Staff e Statistiche */
+    .summary-card small, .summary-card p.small,
+    .summary-card .text-muted {
+        color: #e2e8f0 !important;
+    }
+    .stat-item h6 {
+        color: #e2e8f0 !important;
+    }
+    .stat-item p {
+        color: #ffffff !important;
+    }
     /* n1 — Home: testo "Nessuna sessione pianificata" e card text → nero */
     html.theme-light #home-next-session .text-muted,
     body.theme-light #home-next-session .text-muted,
@@ -99,6 +108,13 @@
     html.theme-light .summary-card h6,
     body.theme-light .summary-card h6 {
       color: #000103 !important;
+    }
+    /* Home tema chiaro: stat-item (Partite Giocate, V-P-S, Gol Fatti, ecc.) testo nero */
+    html.theme-light .stat-item h6,
+    body.theme-light .stat-item h6,
+    html.theme-light .stat-item p,
+    body.theme-light .stat-item p {
+        color: #000103 !important;
     }
     /* n2a — Risultati: date nei box gare → #1d4ed8 */
     html.theme-light .match-result-item .text-muted,
@@ -242,6 +258,24 @@
     body.theme-light #hall-of-fame-container .card * {
       color: #ffffff !important;
     }
+
+    /* n2 — Squadra: numeri badge valutazione/presenze → neri in tema chiaro */
+    html.theme-light .athlete-score,
+    body.theme-light .athlete-score,
+    html.theme-light .presence-count,
+    body.theme-light .presence-count,
+    html.theme-light .stat-number,
+    body.theme-light .stat-number,
+    html.theme-light #squadra-section .badge,
+    body.theme-light #squadra-section .badge,
+    html.theme-light #squadra-section .fw-bold,
+    body.theme-light #squadra-section .fw-bold,
+    html.theme-light #squadra-section td,
+    body.theme-light #squadra-section td,
+    html.theme-light #squadra-section .table td,
+    body.theme-light #squadra-section .table td {
+      color: #000103 !important;
+    }
     /* Nav bar: classe reale bg-dark-blue → #f0f1f2 */
     html.theme-light .bg-dark-blue,
     body.theme-light .bg-dark-blue {
@@ -308,13 +342,15 @@
     }
     html.theme-light .table-dark td,
     html.theme-light .table-dark th,
-    html.theme-light .table-dark tr,
     body.theme-light .table-dark td,
-    body.theme-light .table-dark th,
-    body.theme-light .table-dark tr {
+    body.theme-light .table-dark th {
       background: #f0f1f2 !important;
       color: #000103 !important;
-      border-color: #f0f1f2 !important;
+      border-color: #9aa5b0 !important;
+    }
+    html.theme-light .table-dark tr,
+    body.theme-light .table-dark tr {
+      border-color: #9aa5b0 !important;
     }
     html.theme-light .bg-dark-blue .tab-nav-btn,
     body.theme-light .bg-dark-blue .tab-nav-btn,
@@ -378,7 +414,7 @@
         html.authenticated body::before {
             display: none !important;
         }
-    </style>
+        /* @media print spostato in 
     <style>
     /* ===== MODAL VALUTAZIONE MOBILE-FRIENDLY ===== */
     /* Su smartphone: fullscreen, footer sempre visibile */
@@ -449,38 +485,86 @@
 
     .tab-nav-btn {
         display: inline-flex;
+        flex-direction: column;
         align-items: center;
+        justify-content: center;
         gap: 5px;
-        padding: 0 13px;
-        height: 48px;
-        font-size: 0.78rem;
-        font-weight: 500;
+        padding: 7px 14px;
+        height: 74px;
+        min-width: 78px;
+        font-size: 0.89rem;
+        font-weight: 600;
         color: #64748b !important;
-        background: none;
-        border: none;
-        border-bottom: 3px solid transparent;
+        background: rgba(30,41,59,0.5);
+        border: 1px solid rgba(96,165,250,0.15);
+        border-radius: 8px;
         cursor: pointer;
         white-space: nowrap;
         text-decoration: none !important;
         flex-shrink: 0;
-        transition: color 0.15s;
+        transition: all 0.18s;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.25);
     }
     .tab-nav-btn i {
-        font-size: 1rem;
+        font-size: 1.66rem;
         color: #64748b !important;
+        transition: color 0.18s;
     }
-    .tab-nav-btn:hover { color: var(--text-primary) !important; }
-    .tab-nav-btn:hover i { color: var(--text-primary) !important; }
-    .tab-nav-btn.active { color: #60a5fa !important; border-bottom-color: #60a5fa; font-weight: 600; }
-    .tab-nav-btn.active i { color: #60a5fa !important; }
-    .tab-nav-btn.tab-external { color: #16a34a !important; }
+    .tab-nav-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+        border-color: rgba(96,165,250,0.4);
+        color: #e2e8f0 !important;
+    }
+    .tab-nav-btn:hover i { color: #e2e8f0 !important; }
+    .tab-nav-btn.active {
+        color: #ffffff !important;
+        border-color: transparent;
+        font-weight: 700;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .tab-nav-btn.active i { color: #ffffff !important; }
+    .tab-nav-btn.tab-external { background: rgba(22,163,74,0.15); border-color: rgba(22,163,74,0.35); }
     .tab-nav-btn.tab-external i { color: #16a34a !important; }
+    .tab-nav-btn.tab-external:hover { background: rgba(22,163,74,0.25); }
+    /* Colori per-tab */
+    .tab-nav-btn[data-tab="home-section"].active{background:linear-gradient(135deg,#3b82f6,#1d4ed8) !important;}
+    .tab-nav-btn[data-tab="formazione-section"].active{background:linear-gradient(135deg,#a855f7,#7c3aed) !important;}
+    .tab-nav-btn[data-tab="calendario-section"].active{background:linear-gradient(135deg,#06b6d4,#0891b2) !important;}
+    .tab-nav-btn[data-tab="squadra-section"].active{background:linear-gradient(135deg,#10b981,#059669) !important;}
+    .tab-nav-btn[data-tab="match-results-section"].active{background:linear-gradient(135deg,#f59e0b,#d97706) !important;}
+    .tab-nav-btn[data-tab="report-valutazioni-section"].active{background:linear-gradient(135deg,#ec4899,#db2777) !important;}
+    .tab-nav-btn[data-tab="report-presenze-section"].active{background:linear-gradient(135deg,#14b8a6,#0d9488) !important;}
+    .tab-nav-btn[data-tab="hall-of-fame-section"].active{background:linear-gradient(135deg,#f97316,#ea580c) !important;}
+    .tab-nav-btn[data-tab="monitoraggio-gps-section"].active{background:linear-gradient(135deg,#84cc16,#65a30d) !important;}
+    .tab-nav-btn[data-tab="analisi-singolo-section"].active{background:linear-gradient(135deg,#38bdf8,#0369a1) !important;}
+    .tab-nav-btn[data-tab="materiale-section"].active{background:linear-gradient(135deg,#fb923c,#c2410c) !important;}
+    .tab-nav-btn[data-tab="pagamenti-section"].active{background:linear-gradient(135deg,#4ade80,#16a34a) !important;}
+    .tab-nav-btn[data-tab="convocazioni-section"].active{background:linear-gradient(135deg,#f87171,#dc2626) !important;}
+    .tab-nav-btn[data-tab="accessi-section"].active{background:linear-gradient(135deg,#94a3b8,#475569) !important;}
+    /* Tema chiaro */
+    html.theme-light .tab-nav-btn, body.theme-light .tab-nav-btn {
+        background: rgba(255,255,255,0.8);
+        border-color: rgba(0,0,0,0.12);
+        color: #374151 !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    html.theme-light .tab-nav-btn i, body.theme-light .tab-nav-btn i { color: #374151 !important; }
+    html.theme-light .tab-nav-btn:hover, body.theme-light .tab-nav-btn:hover {
+        background: #ffffff;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        border-color: rgba(0,0,0,0.2);
+        color: #000103 !important;
+    }
+    html.theme-light .tab-nav-btn:hover i, body.theme-light .tab-nav-btn:hover i { color: #000103 !important; }
+    html.theme-light .tab-nav-btn.active *, body.theme-light .tab-nav-btn.active * { color: #ffffff !important; }
 
     /* Bottone account compatto */
     .tab-account-btn {
         display: inline-flex;
         align-items: center;
-        gap: 4px;
+        gap: 5px;
         padding: 5px 9px;
         background: rgba(30,58,95,0.7);
         border: 1px solid rgba(96,165,250,0.3);
@@ -496,13 +580,15 @@
     /* Mobile: nasconde testo, mostra solo icone nella barra desktop */
     @media (max-width: 991px) {
         .tab-nav-btn .tab-label { display: none; }
-        .tab-nav-btn i { font-size: 1.2rem !important; }
+        .tab-nav-btn i { font-size: 1.4rem !important; }
+        .tab-nav-btn { height: 52px !important; min-width: 52px !important; }
         .tab-account-btn .tab-acc-label { display: none; }
     }
+    /* Navbar: altezza adeguata per i nuovi tab */
 
     /* ===== SECTION VISIBILITY ===== */
     /* Desktop: navbar(56) + tabbar(46) = 102px */
-    main.container-fluid { margin-top: 102px !important; padding-top: 8px !important; }
+    main.container-fluid { margin-top: 120px !important; padding-top: 8px !important; }
     /* Mobile: solo navbar(56), menu si apre sopra il contenuto senza spostarlo */
     @media (max-width: 991px) {
         main.container-fluid { margin-top: 56px !important; padding-top: 0 !important; }
@@ -513,8 +599,7 @@
     .tab-section.tab-active.row { display: flex !important; }
     main > hr { display: none !important; }
     .mobile-tab-warning { display: none !important; }
-    /* Confronto squadra: sempre nascosto, mostrato solo via JS quando tab GPS è attivo */
-    #confronto-squadra-section { display: none !important; }
+    /* Confronto squadra: gestito dal sistema tab-section, mostrato via JS quando tab GPS è attivo */
     /* GPS e Analisi: nascondi grafici su mobile, mostra solo avviso */
     @media (max-width: 991px) {
         #monitoraggio-gps-section > *:not(.d-lg-none),
@@ -690,6 +775,13 @@
                 chart.update();
             });
         }
+        // Ri-crea grafici valutazione e radar (colori hardcoded in creazione)
+        if (window.updateEvaluationCharts) {
+            try { window.updateEvaluationCharts(); } catch(e) {}
+        }
+        if (window.updateAthleteRadarChart) {
+            try { window.updateAthleteRadarChart(); } catch(e) {}
+        }
         // Aggiorna _indChart (presenze individual)
         if (window._indChart) {
             var sc = _indChart.options.scales || {};
@@ -728,7 +820,78 @@
             }
         });
     });
-    </script>
+    </script> 
+
+<style>
+@media print {
+    /* 1. Nasconde navbar, footer e pulsanti */
+    .navbar, .fixed-top, header, footer, .no-print, 
+    #app-header-info, .sidebar, .top-bar, button, .btn {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+    }
+    
+    /* 2. Reset margini body */
+    body {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+    
+    /* 3. Setup sezione principale */
+    main, .tab-section, .printable-area {
+        margin-top: 0 !important;
+        padding-top: 5mm !important;
+        padding-bottom: 0 !important;
+        display: block !important;
+        visibility: visible !important;
+    }
+
+    /* 4. REGOLE ANTI-PAGINA-BIANCA */
+    .chart-container, canvas, .table, .card, .row {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    .tab-section.active, .printing-now {
+        page-break-before: auto !important;
+    }
+
+    /* IMPORTANTE: Sezione Risultati - tieni unito titolo e contenuto */
+    #risultati-section {
+        page-break-before: avoid !important;
+    }
+    #risultati-section .card-title,
+    #risultati-section h5 {
+        margin-bottom: 8px !important;
+        page-break-after: avoid !important;
+    }
+    
+    /* Riduci margini Bootstrap in stampa */
+    .mb-3, .mb-4, .mt-3, .mt-4, .mb-2, .mt-2 {
+        margin-bottom: 4px !important;
+        margin-top: 4px !important;
+    }
+    
+    /* Layout compatto */
+    .row {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+    
+    /* Grafici: dimensioni compatte */
+    .chart-container, canvas {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+    
+    /* Spazio in fondo al contenuto */
+    .tab-section.printing-now { 
+        padding-bottom: 0 !important; 
+    }
+}
+</style>
 </head>
 <body>
     <!-- NAVBAR: brand + admin (desktop) + hamburger (mobile) -->
@@ -743,7 +906,7 @@
         <button class="navbar-toggler d-lg-none ms-auto" type="button"
             onclick="(function(){var m=document.getElementById('navbarNav');m.classList.toggle('show');})()"
             style="border-color:rgba(255,255,255,0.4); padding:4px 8px; flex-shrink:0;">
-            <span class="navbar-toggler-icon"></span>
+            <span class="navbar-toggler-icon" id="hamburger-icon"></span>
         </button>
         <button id="logout-btn" style="display:none !important; width:0 !important; height:0 !important; padding:0 !important; margin:0 !important; border:none !important; position:absolute !important; overflow:hidden !important; pointer-events:none !important;"></button>
     </nav>
@@ -752,7 +915,7 @@
     <div id="navbarNav" class="no-print"
          style="position:fixed; top:56px; left:0; right:0; background:var(--bg-card); z-index:1029;">
         <div class="tab-nav-inner"
-             style="display:flex; align-items:center; overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; scrollbar-width:none; white-space:nowrap; height:46px; min-height:46px;">
+             style="display:flex; align-items:center; overflow-x:auto; overflow-y:visible; -webkit-overflow-scrolling:touch; scrollbar-width:none; white-space:nowrap; height:auto; min-height:88px; padding:7px 0;">
             <button class="tab-nav-btn active" data-tab="home-section" onclick="switchTab('home-section')"><i class="bi bi-house-fill"></i><span class="tab-label"> Home</span></button>
             <button class="tab-nav-btn" data-tab="formazione-section" onclick="switchTab('formazione-section')"><i class="bi bi-grid-3x3-gap-fill"></i><span class="tab-label"> Formazione</span></button>
             <button class="tab-nav-btn" data-tab="calendario-section" onclick="switchTab('calendario-section')"><i class="bi bi-calendar3"></i><span class="tab-label"> Calendario</span></button>
@@ -949,7 +1112,7 @@
         <div id="squadra-section" class="tab-section printable-area">
              <div class="row align-items-center my-4">
                  <div class="col-md-4 d-flex align-items-center gap-2">
-                     <h2 class="main-title mb-0">Gestione Squadra</h2>
+                     <h2 class="main-title mb-0">Gestione Squadra e Gruppi</h2>
                      <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
                     <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
                 </div>
@@ -1232,7 +1395,7 @@
         </div>
     </div>
 </div>
-<div id="confronto-squadra-section" class="printable-area" style="display:none !important;">
+<div id="confronto-squadra-section" class="tab-section printable-area">
              <div class="row my-4" id="multi-athlete-chart-container">
                 <div class="col-12 d-flex align-items-center gap-2 mb-3">
                      <h2 class="main-title mb-0">Confronto Performance Squadra</h2>
@@ -1442,6 +1605,7 @@
                 <h2 class="main-title mb-0">💳 Gestione Pagamenti</h2>
                 <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa"><i class="bi bi-printer-fill"></i></button>
                 <button class="btn btn-sm btn-danger ms-auto no-print admin-only" onclick="window.pagResetAll()" title="Elimina tutti i pagamenti della stagione"><i class="bi bi-trash3-fill"></i> Reset Stagione</button>
+                <button class="btn btn-sm btn-outline-info no-print admin-only" onclick="window.pagGestisciVoci()" title="Aggiungi o rimuovi voci di pagamento"><i class="bi bi-tags-fill"></i> Gestisci Voci</button>
                 <div class="d-flex gap-2 flex-wrap no-print admin-only" id="pag-default-btns" style="display:none!important;">
                     <button class="btn btn-sm btn-outline-info" onclick="window.pagOpenDefaults('atleti')"><i class="bi bi-people-fill"></i> Default Atleti</button>
                     <button class="btn btn-sm btn-outline-warning" onclick="window.pagOpenDefaults('dirigenti')"><i class="bi bi-person-badge-fill"></i> Default Dirigenti</button>
@@ -1467,6 +1631,31 @@
                 </div>
             </div>
 
+            <!-- Modal Gestione Voci Pagamento -->
+            <div class="modal fade" id="pagVociModal" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title"><i class="bi bi-tags-fill"></i> Gestisci Voci di Pagamento</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="text-muted small">Aggiungi o rimuovi le colonne di pagamento per atleti e staff.</p>
+                            <div id="pag-voci-list" class="mb-3"></div>
+                            <div class="input-group mt-2">
+                                <input type="text" id="pag-nuova-voce" class="form-control" placeholder="Nome nuova voce (es. Trasferte)" maxlength="30">
+                                <button class="btn btn-success" onclick="window.pagAddVoce()"><i class="bi bi-plus-circle"></i> Aggiungi</button>
+                            </div>
+                            <small class="text-muted">Le voci di default (Tessera, Iscrizione, Vestiario) non possono essere eliminate.</small>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                            <button type="button" class="btn btn-primary-custom" onclick="window.pagSalvaVoci()">💾 Salva Voci</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Alert scadenze -->
             <div class="col-12 mb-3" id="pag-alerts-box"></div>
 
@@ -1481,7 +1670,7 @@
 
             <!-- ATLETI -->
             <div class="col-12 mb-4">
-                <div class="d-flex align-items-center gap-2 mb-2" style="cursor:pointer;" onclick="pagToggleSection('atleti')">
+                <div class="d-flex align-items-center gap-2 mb-2" style="cursor:pointer;" onclick="window.pagToggleSection&&window.pagToggleSection('atleti')">
                     <h5 class="mb-0" style="color:#60a5fa;"><i class="bi bi-people-fill"></i> Atleti</h5>
                     <i id="pag-chevron-atleti" class="bi bi-chevron-up" style="color:#60a5fa;font-size:1rem;transition:transform 0.2s;"></i>
                     <span id="pag-count-atleti" style="color:#64748b;font-size:0.8rem;"></span>
@@ -1497,7 +1686,7 @@
 
             <!-- STAFF -->
             <div class="col-12 mb-4">
-                <div class="d-flex align-items-center gap-2 mb-2" style="cursor:pointer;" onclick="pagToggleSection('staff')">
+                <div class="d-flex align-items-center gap-2 mb-2" style="cursor:pointer;" onclick="window.pagToggleSection&&window.pagToggleSection('staff')">
                     <h5 class="mb-0" style="color:#f59e0b;"><i class="bi bi-person-badge-fill"></i> Staff</h5>
                     <i id="pag-chevron-staff" class="bi bi-chevron-up" style="color:#f59e0b;font-size:1rem;transition:transform 0.2s;"></i>
                     <span id="pag-count-staff" style="color:#64748b;font-size:0.8rem;"></span>
@@ -2792,8 +2981,10 @@ document.addEventListener('DOMContentLoaded', function() {
     var _pagEditId = null;
     var _pagEditVoce = null;
     var _pagCollapsed = {atleti:false, staff:false};
-    var PAG_VOCI = ['tessera','iscrizione','vestiario'];
-    var PAG_LABELS = {tessera:'Tessera', iscrizione:'Iscrizione Annua', vestiario:'Vestiario'};
+    var PAG_VOCI_DEFAULT = ['tessera','iscrizione','vestiario'];
+    var PAG_LABELS_DEFAULT = {tessera:'Tessera', iscrizione:'Iscrizione Annua', vestiario:'Vestiario'};
+    var PAG_VOCI = PAG_VOCI_DEFAULT.slice();
+    var PAG_LABELS = Object.assign({}, PAG_LABELS_DEFAULT);
 
     function _pagAnnataId() { return sessionStorage.getItem('gosport_current_annata') || ''; }
 
@@ -2802,6 +2993,15 @@ document.addEventListener('DOMContentLoaded', function() {
             var res = await fetch('/api/data', {headers:{'x-annata-id':_pagAnnataId()}});
             var d = await res.json();
             if (d && d.pagamenti) { _pagData = d.pagamenti; window._pagData = _pagData; }
+            // Carica voci personalizzate
+            if (d && d.pagVoci && Array.isArray(d.pagVoci)) {
+                PAG_VOCI = d.pagVoci;
+                PAG_LABELS = d.pagLabels || {};
+                // Assicura che le voci di default abbiano un label
+                PAG_VOCI_DEFAULT.forEach(function(v){
+                    if (!PAG_LABELS[v]) PAG_LABELS[v] = PAG_LABELS_DEFAULT[v] || v;
+                });
+            }
         } catch(e) { console.warn('Pagamenti load:',e); }
         _pagLoaded = true;
         _pagRender();
@@ -2812,7 +3012,7 @@ document.addEventListener('DOMContentLoaded', function() {
             await fetch('/api/data', {
                 method:'POST',
                 headers:{'Content-Type':'application/json','x-annata-id':_pagAnnataId()},
-                body:JSON.stringify({pagamenti:_pagData})
+                body:JSON.stringify({pagamenti:_pagData, pagVoci:PAG_VOCI, pagLabels:PAG_LABELS})
             });
         } catch(e) { console.warn('Pagamenti save:',e); }
     }
@@ -2952,6 +3152,56 @@ document.addEventListener('DOMContentLoaded', function() {
         _pagRenderAlerts(all);
     }
 
+
+    // ── Gestione Voci Pagamento ──────────────────────────────────────
+    window.pagGestisciVoci = function() {
+        var list = document.getElementById('pag-voci-list');
+        var h = '';
+        PAG_VOCI.forEach(function(v) {
+            var isDefault = PAG_VOCI_DEFAULT.indexOf(v) !== -1;
+            h += '<div class="d-flex align-items-center gap-2 mb-2 p-2" style="background:var(--bg-panel);border-radius:6px;">';
+            h += '<span class="flex-grow-1 fw-600">' + (PAG_LABELS[v] || v) + '</span>';
+            h += '<span class="text-muted small">' + v + '</span>';
+            if (!isDefault) {
+                h += '<button class="btn btn-sm btn-outline-danger" onclick="window.pagRemoveVoce(\'' + v + '\')">';
+                h += '<i class="bi bi-trash-fill"></i></button>';
+            } else {
+                h += '<span class="badge bg-secondary">default</span>';
+            }
+            h += '</div>';
+        });
+        list.innerHTML = h;
+        new bootstrap.Modal(document.getElementById('pagVociModal')).show();
+    };
+
+    window.pagRemoveVoce = function(voce) {
+        if (PAG_VOCI_DEFAULT.indexOf(voce) !== -1) { alert('Non puoi eliminare le voci di default.'); return; }
+        if (!confirm('Eliminare la voce "' + (PAG_LABELS[voce]||voce) + '"? I dati esistenti non verranno cancellati.')) return;
+        PAG_VOCI = PAG_VOCI.filter(function(v){ return v !== voce; });
+        delete PAG_LABELS[voce];
+        window.pagGestisciVoci(); // aggiorna lista
+    };
+
+    window.pagAddVoce = function() {
+        var input = document.getElementById('pag-nuova-voce');
+        var nome = (input.value || '').trim();
+        if (!nome) { alert('Inserisci un nome per la voce.'); return; }
+        // Crea chiave slug
+        var key = nome.toLowerCase().replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'');
+        if (!key) { alert('Nome non valido.'); return; }
+        if (PAG_VOCI.indexOf(key) !== -1) { alert('Voce già esistente.'); return; }
+        PAG_VOCI.push(key);
+        PAG_LABELS[key] = nome;
+        input.value = '';
+        window.pagGestisciVoci(); // aggiorna lista
+    };
+
+    window.pagSalvaVoci = async function() {
+        await _pagSave();
+        bootstrap.Modal.getInstance(document.getElementById('pagVociModal'))?.hide();
+        _pagLoaded = false;
+        await _pagLoad();
+    };
     window.pagToggleSection = function(section) {
         _pagCollapsed[section] = !_pagCollapsed[section];
         var body=document.getElementById('pag-body-'+section);
@@ -3792,5 +4042,470 @@ document.addEventListener('DOMContentLoaded', function() {
 })();
 </script>
 
+
+
+
+
+<style media="print">
+/* === CSS stampa minimale === */
+@page { size: A4 portrait; margin: 5mm 10mm; }
+
+body { background: #fff !important; color: #000 !important; }
+/* La traslazione di 1cm si applica SOLO al primo elemento della sezione (titolo)
+   così non crea spazio fantasma sulle pagine successive */
+.tab-section.printing-now {
+    padding-top: 0 !important;
+}
+.tab-section.printing-now > *:first-child,
+.tab-section.printing-now > .row:first-child,
+.tab-section.printing-now > .col-12:first-child {
+    margin-top: 0 !important;
+}
+/* Per Home, Formazione, Calendario, Squadra, Risultati, GPS, Analisi:
+   margine extra solo sul PRIMO elemento, non sulla sezione (così non si ripete su ogni pagina) */
+#home-section.printing-now > *:first-child,
+#formazione-section.printing-now > *:first-child,
+#calendario-section.printing-now > *:first-child,
+#squadra-section.printing-now > *:first-child,
+#match-results-section.printing-now > *:first-child,
+#monitoraggio-gps-section.printing-now > *:first-child,
+#analisi-singolo-section.printing-now > *:first-child {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+.navbar, nav.navbar, nav.navbar-dark, nav.fixed-top, nav.bg-dark-blue,
+body > nav, body > nav.navbar, body > nav.fixed-top,
+.no-print, .print-section-btn, .modal, .modal-backdrop,
+#navbarNav, .navbar-brand { display: none !important; visibility: hidden !important; }
+
+/* CRITICO: rimuovi margin-top: 120px di main.container-fluid che lascia
+   uno spazio fantasma in alto per la navbar fixed (non visibile in stampa).
+   Niente padding-top: la navbar è gia' nascosta in stampa, e @page fornisce
+   gia' il margine di 5mm. Aggiungere padding qui creava una barra bianca in cima. */
+main, main.container-fluid, body > main {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+body { padding-top: 0 !important; margin-top: 0 !important; }
+/* Nasconde footer copyright in stampa */
+footer, body > footer { display: none !important; visibility: hidden !important; }
+.tab-section { display: none !important; }
+.tab-section.printing-now { display: block !important; }
+/* Nascondi banner mobile in stampa */
+.tab-section.printing-now .d-lg-none,
+#analisi-singolo-section.printing-now .d-lg-none,
+#monitoraggio-gps-section.printing-now .d-lg-none {
+    display: none !important;
+}
+
+/* GPS: mostra anche #confronto-squadra-section quando ha printing-now */
+#confronto-squadra-section.printing-now,
+.tab-section#confronto-squadra-section.printing-now {
+    display: block !important;
+    visibility: visible !important;
+    height: auto !important;
+    overflow: visible !important;
+}
+/* Page break tra le due sezioni GPS - rimosso per evitare pagine vuote */
+/* Quando confronto-squadra è in printing-now, anche i suoi figli sono visibili */
+#confronto-squadra-section.printing-now * {
+    visibility: visible !important;
+}
+
+
+
+/* FORMAZIONE: scala il campo per adattarsi al foglio A4 in stampa.
+   Usato zoom invece di transform:scale perche' transform riduce il visuale
+   ma lascia in piedi lo spazio originale (che creava la grande area bianca
+   sotto il campo, spingendo panchina e disponibili al secondo foglio).
+   zoom invece comprime anche il box di layout. */
+#formazione-section.printing-now #pitch-wrapper {
+    zoom: 0.75 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+}
+#formazione-section.printing-now #field-container,
+#formazione-section.printing-now #field-bench-area {
+    max-width: 100% !important;
+}
+/* Avvicina la colonna degli Atleti Disponibili al campo */
+#formazione-section.printing-now .col-lg-9.mb-4 {
+    margin-bottom: 0 !important;
+}
+#formazione-section.printing-now .col-lg-3 .card {
+    margin-top: 0 !important;
+}
+
+/* FOOTER COPYRIGHT: nascosto completamente in stampa - tutti i selettori */
+@media print {
+    footer,
+    body > footer,
+    footer.text-center,
+    footer.bg-dark-blue,
+    footer.no-print,
+    main + footer,
+    .container-fluid + footer,
+    body > footer.text-center {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        overflow: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+    }
+}
+
+/* Forza canvas dei chart a stare dentro il foglio A4 */
+.tab-section.printing-now canvas {
+    max-width: 100% !important;
+    width: 100% !important;
+    height: auto !important;
+}
+.tab-section.printing-now [style*="overflow-x"],
+.tab-section.printing-now [id$="-chart-wrapper"],
+.tab-section.printing-now #performance-chart-wrapper,
+.tab-section.printing-now #multi-athlete-chart-wrapper,
+.tab-section.printing-now #trend-chart-wrapper,
+.tab-section.printing-now #radar-chart-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+}
+
+/* GPS Confronto Squadra - regole DEDICATE per il PRIMO grafico "Confronto Performance Squadra" */
+#confronto-squadra-section.printing-now {
+    display: block !important;
+    visibility: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+    height: auto !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+#confronto-squadra-section.printing-now .row,
+#confronto-squadra-section.printing-now .row.my-4 {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    display: block !important;
+}
+#monitoraggio-gps-section.printing-now .row,
+#monitoraggio-gps-section.printing-now .row.my-4 {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    display: block !important;
+}
+#confronto-squadra-section.printing-now .col-12:not(.d-lg-none),
+#confronto-squadra-section.printing-now .col-lg-7:not(.d-lg-none),
+#confronto-squadra-section.printing-now .col-lg-5:not(.d-lg-none),
+#confronto-squadra-section.printing-now [class*="col-"]:not(.d-lg-none) {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 0 0 100% !important;
+    padding: 0 !important;
+}
+#confronto-squadra-section.printing-now .card,
+#confronto-squadra-section.printing-now .card-body,
+#confronto-squadra-section.printing-now .chart-card {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+    height: auto !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+}
+#confronto-squadra-section.printing-now #multi-athlete-chart-wrapper {
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+}
+#confronto-squadra-section.printing-now #multiAthleteChart {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+}
+#confronto-squadra-section.printing-now [style*="overflow-x"] {
+    overflow: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+/* GPS - regole DEDICATE per il secondo grafico "Monitoraggio Performance (GPS)" */
+/* Replica esatta del comportamento stabile di Presenze */
+#monitoraggio-gps-section.printing-now {
+    display: block !important;
+    visibility: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+    height: auto !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+}
+#monitoraggio-gps-section.printing-now .col-12:not(.d-lg-none),
+#monitoraggio-gps-section.printing-now .col-lg-7:not(.d-lg-none),
+#monitoraggio-gps-section.printing-now .col-lg-5:not(.d-lg-none),
+#monitoraggio-gps-section.printing-now [class*="col-"]:not(.d-lg-none) {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 0 0 100% !important;
+    padding: 0 !important;
+}
+#monitoraggio-gps-section.printing-now .card,
+#monitoraggio-gps-section.printing-now .card-body,
+#monitoraggio-gps-section.printing-now .chart-card {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+    height: auto !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+}
+#monitoraggio-gps-section.printing-now #performance-chart-wrapper {
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+}
+#monitoraggio-gps-section.printing-now #performanceChart {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+}
+/* Wrapper esterno overflow-x:auto deve diventare visible in stampa */
+#monitoraggio-gps-section.printing-now [style*="overflow-x"] {
+    overflow: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+/* Img sostitutive dei canvas in stampa */
+.print-canvas-img {
+    display: block !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 auto !important;
+    page-break-inside: avoid !important;
+}
+.tab-section.printing-now [style*="overflow-x"] {
+    overflow: visible !important;
+}
+
+/* === FIX SOVRAPPOSIZIONE GPS ===
+   Le regole dedicate sopra (.card, .chart-card, .row, [class*="col-"])
+   hanno specificity (1,2,0) e vincono contro .no-print (0,1,0),
+   quindi mostravano in stampa i form di filtro che dovrebbero essere nascosti.
+   Ripristiniamo il rispetto di .no-print con specificity adeguata. */
+#confronto-squadra-section.printing-now .no-print,
+#confronto-squadra-section.printing-now .card.no-print,
+#confronto-squadra-section.printing-now .chart-card.no-print,
+#confronto-squadra-section.printing-now .row.no-print,
+#confronto-squadra-section.printing-now [class*="col-"].no-print,
+#monitoraggio-gps-section.printing-now .no-print,
+#monitoraggio-gps-section.printing-now .card.no-print,
+#monitoraggio-gps-section.printing-now .chart-card.no-print,
+#monitoraggio-gps-section.printing-now .row.no-print,
+#monitoraggio-gps-section.printing-now [class*="col-"].no-print {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+/* Page break tra le due sezioni GPS: gestito in fondo al file con position:static */
+/* Spaziatura aggiuntiva tra titolo e contenuto in stampa */
+#confronto-squadra-section.printing-now .main-title,
+#monitoraggio-gps-section.printing-now .main-title {
+    margin-bottom: 8mm !important;
+}
+
+/* ANALISI - fix completo per stampa */
+#analisi-singolo-section.printing-now {
+    display: block !important;
+    visibility: visible !important;
+    overflow: visible !important;
+    height: auto !important;
+}
+#analisi-singolo-section.printing-now #trend-chart-wrapper,
+#analisi-singolo-section.printing-now #radar-chart-wrapper {
+    position: static !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+}
+#analisi-singolo-section.printing-now .col-lg-7:not(.d-lg-none),
+#analisi-singolo-section.printing-now .col-lg-5:not(.d-lg-none),
+#analisi-singolo-section.printing-now .col-12:not(.d-lg-none) {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 0 0 100% !important;
+    display: block !important;
+}
+#analisi-singolo-section.printing-now .card,
+#analisi-singolo-section.printing-now .card-body {
+    overflow: visible !important;
+    height: auto !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+}
+
+
+
+/* TITOLO: forza una sola riga, visibile */
+.tab-section.printing-now h2.main-title,
+.tab-section.printing-now .main-title {
+    display: block !important;
+    width: 100% !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+    font-size: 16pt !important;
+    color: #1e3a5f !important;
+    margin: 0 0 5mm 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    page-break-after: avoid !important;
+}
+/* Replica i parametri di Valutazioni/Presenze (le pagine che funzionano) */
+/* La riga del titolo: col-12 d-flex, va lasciata come flex con i suoi parametri */
+.tab-section.printing-now .col-12.d-flex {
+    margin-bottom: 12px !important; /* equiv. mb-3 di Bootstrap */
+}
+/* Wrapper .row.my-4 INTERNO (presente in Home/Squadra/Risultati ma non in Valutazioni):
+   azzera margini per non far sparire il titolo */
+.tab-section.printing-now > .row.my-4 {
+    margin-top: 0 !important;
+    margin-bottom: 8px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+.tab-section.printing-now > .row.my-4 > [class*="col-"] {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+canvas { max-width: 100% !important; height: auto !important; }
+table { font-size: 8pt !important; }
+[style*="overflow"] { overflow: visible !important; }
+#confronto-squadra-section:not(.printing-now) { display: none !important; }
+
+/* FOOTER: nascosto SEMPRE in stampa (era position:fixed e copriva il contenuto sulle pagine successive) */
+footer {
+    display: none !important;
+    visibility: hidden !important;
+}
+/* Spazio in fondo al contenuto (non serve piu' lo spazio per il footer) */
+.tab-section.printing-now { padding-bottom: 0 !important; }
+
+/* === ANTI PAGINA VUOTA RESIDUA (Home, Valutazioni, ecc.) ===
+   Quando il contenuto sfora di pochi pixel l'altezza A4, Chrome
+   crea un secondo foglio quasi vuoto. Eliminiamo i margini residui
+   in fondo alla sezione e ai suoi ultimi figli.
+   NB: NON applichiamo break-after: avoid alla sezione stessa,
+   perche' creerebbe conflitti col page break tra confronto e monitoraggio GPS. */
+.tab-section.printing-now > *:last-child,
+.tab-section.printing-now > .row:last-child,
+.tab-section.printing-now > .row:last-child > [class*="col-"]:last-child,
+.tab-section.printing-now > .row:last-child .card:last-child,
+.tab-section.printing-now > .row:last-child .mb-4 {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+.tab-section.printing-now {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+/* Comprimi il margine my-4 (24px sopra+sotto) della sezione e prima riga,
+   non normalizzato dalla regola .mb-*/.mt-* esistente */
+.tab-section.printing-now.my-4,
+.tab-section.printing-now > .row.my-4 {
+    margin-top: 0 !important;
+    margin-bottom: 4px !important;
+}
+/* Nascondi alerts-container in stampa: e' un sibling fuori dalla sezione */
+#alerts-container { display: none !important; }
+
+/* === GPS: rinforzo del page break tra le due sezioni ===
+   page-break-before su monitoraggio + page-break-after su confronto = doppio rinforzo
+   + position: static come nel vecchio codice funzionante (chiave per evitare overlap) */
+
+/* Reset position su tutta la catena di stampa GPS */
+main,
+main.container-fluid,
+body > main,
+#confronto-squadra-section,
+#confronto-squadra-section.printing-now,
+#monitoraggio-gps-section,
+#monitoraggio-gps-section.printing-now,
+#confronto-squadra-section.printing-now > *,
+#monitoraggio-gps-section.printing-now > * {
+    position: static !important;
+}
+
+/* Sezioni GPS: spaziatura come vecchio codice + page break esplicito */
+#confronto-squadra-section.printing-now {
+    page-break-after: always !important;
+    break-after: page !important;
+    padding: 10mm !important;
+    margin: 0 !important;
+    display: block !important;
+    clear: both !important;
+}
+#monitoraggio-gps-section.printing-now {
+    padding: 10mm !important;
+    margin: 0 !important;
+    display: block !important;
+    clear: both !important;
+    page-break-before: always !important;
+    break-before: page !important;
+}
+
+/* Forza dimensioni reali sul canvas del primo grafico (multiAthleteChart)
+   cosi' non collassa con height:auto. */
+#confronto-squadra-section.printing-now #multi-athlete-chart-wrapper {
+    height: 80mm !important;
+    min-height: 80mm !important;
+    position: static !important;
+}
+#confronto-squadra-section.printing-now #multiAthleteChart {
+    height: 80mm !important;
+    max-height: 80mm !important;
+}
+
+/* Forza dimensioni reali anche sul secondo grafico (performanceChart) */
+#monitoraggio-gps-section.printing-now #performance-chart-wrapper {
+    height: 80mm !important;
+    min-height: 80mm !important;
+    position: static !important;
+}
+#monitoraggio-gps-section.printing-now #performanceChart {
+    height: 80mm !important;
+    max-height: 80mm !important;
+}
+</style>
 </body>
 </html>

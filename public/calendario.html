@@ -1,6 +1,4 @@
-<!DOC
-
-TYPE html>
+<!DOCTYPE html>
 <html lang="it" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
@@ -10,9 +8,9 @@ TYPE html>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
         :root {
-            --bg-main:    #0d1b2a;
-            --bg-card:    #1a3a5f;
-            --bg-row-a:   #1a3a5f;
+            --bg-main:    #060f1e;
+            --bg-card:    #0d1b2a;
+            --bg-row-a:   #0f172a;
             --bg-row-b:   #1a3a5f;
             --bg-header:  #0d1b2a;
             --border:     #3b5a9d;
@@ -100,7 +98,7 @@ TYPE html>
         .btn-cal:hover { filter: brightness(1.15); }
         .btn-new      { background: var(--red);     color: white; }
         .btn-gen      { background: #f59e0b;         color: white; }
-        .btn-import   { background: #0ea5e9;         color: white; }
+        .btn-import   { background: #3b82f6;         color: white; }
         .btn-resp     { background: #d90429;         color: white; }
         .btn-delete   { background: #64748b;         color: #e2e8f0; }
 
@@ -161,17 +159,19 @@ TYPE html>
         .calendar-table .sticky-col-1 {
             position: sticky; left: 0; z-index: 3;
             background: var(--bg-header) !important;
-            min-width: 40px;
+            min-width: 25px; max-width: 25px; width: 25px;
         }
         .calendar-table .sticky-col-2 {
-            position: sticky; left: 40px; z-index: 3;
+            position: sticky; left: 25px; z-index: 3;
             background: var(--bg-header) !important;
-            min-width: 150px;
+            min-width: 136px; max-width: 136px; width: 136px;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
         .calendar-table .sticky-col-3 {
-            position: sticky; left: 190px; z-index: 3;
+            position: sticky; left: 161px; z-index: 3;
             background: var(--bg-header) !important;
-            min-width: 130px;
+            min-width: 118px; max-width: 118px; width: 118px;
+            overflow: hidden;
             box-shadow: 3px 0 8px rgba(0,0,0,0.4);
         }
         .calendar-table thead .sticky-col-1,
@@ -179,9 +179,10 @@ TYPE html>
         .calendar-table thead .sticky-col-3 { z-index: 30 !important; }
 
         /* Tbody rows */
-        .calendar-table tbody tr:nth-child(odd)  td { background: var(--bg-row-a); }
-        .calendar-table tbody tr:nth-child(even) td { background: var(--bg-row-b); }
+        .calendar-table tbody tr:nth-child(odd)  td { background: var(--bg-row-a); border-bottom: 1px solid #2d4a8a; }
+        .calendar-table tbody tr:nth-child(even) td { background: var(--bg-row-b); border-bottom: 1px solid #2d4a8a; }
         .calendar-table tbody tr:hover td { background: #3b5a9d !important; }
+        .calendar-table tbody td { border-right: 1px solid #1e293b; }
 
         .calendar-table tbody .sticky-col-1,
         .calendar-table tbody .sticky-col-2,
@@ -257,7 +258,7 @@ TYPE html>
             font-size: 0.7rem; padding: 2px 8px; border-radius: 12px; font-weight: 600;
         }
         .badge-annata  { background: #3b5a9d; color: #60a5fa; }
-        .badge-global  { background: #16a34a; color: #16a34a; }
+        .badge-global  { background: #16a34a; color: #000103; }
         .post-actions  { display: flex; gap: 6px; flex-shrink: 0; }
         .post-actions button {
             background: none; border: 1px solid #3b5a9d; color: #60a5fa;
@@ -332,28 +333,43 @@ TYPE html>
 
         /* ── GARE DA DISPUTARE ── */
         .gare-week-header{background:#1a3a5f;color:#ffffff;font-weight:700;text-align:center;padding:8px 12px;font-size:0.88rem;border-radius:6px 6px 0 0;text-transform:uppercase;border-bottom:2px solid #0f172a;}
-        .gare-day-header{background:#f59e0b;color:#000000;font-weight:700;text-align:center;padding:5px 8px;font-size:0.8rem;border-top:1px solid #f59e0b;border-bottom:1px solid #f59e0b;text-transform:uppercase;}
+        .gare-day-header{background:#f59e0b;color:#000000;font-weight:700;text-align:center;padding:6px 12px;font-size:1.07rem;border-radius:6px;margin:8px 0 4px;text-transform:uppercase;letter-spacing:0.04em;}
         .gare-day-header.domenica{background:#f59e0b;color:#000000;}
-        .gare-row-time{background:#16a34a;color:#000000;font-weight:700;padding:5px 10px;font-size:0.78rem;display:flex;align-items:center;gap:8px;border-bottom:1px solid #16a34a;}
+        .gare-block{margin-bottom:8px;border-radius:10px;overflow:hidden;border:1px solid #a0aab4;background:#f0f1f2;transition:border-color 0.2s,box-shadow 0.2s;}
+        .gare-block:hover{border-color:#3b5a9d;box-shadow:0 2px 12px rgba(59,130,246,0.15);}
+        .gare-block.selected{border-color:#60a5fa;box-shadow:0 0 0 2px rgba(96,165,250,0.3);}
+        /* Riga tempo e competizione */
+        .gare-row-time{background:#1e293b;color:#e2e8f0;font-weight:600;padding:8px 12px;font-size:1.01rem;display:flex;align-items:center;gap:8px;border-bottom:1px solid #2d4a8a;}
+        .gare-ora{background:#16a34a;color:#fff;font-weight:800;font-size:1.29rem;padding:3px 10px;border-radius:4px;white-space:nowrap;}
+        .gare-comp{flex:1;color:#60a5fa;font-size:1.29rem;font-weight:500;}
+        /* Riga squadre */
+        .gare-match-row{display:flex;align-items:center;padding:10px 12px;gap:10px;background:#f0f1f2;}
+        .gare-team{display:flex;flex-direction:row;align-items:center;gap:8px;flex:1;min-width:0;}
+        .gare-team.fuori{flex-direction:row-reverse;}
+        .gare-team-logo{width:36px;height:36px;border-radius:50%;background:#ffffff;border:2px solid #2d4a8a;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}
+        .gare-team-logo img{width:28px;height:28px;border-radius:50%;object-fit:contain;}
+        .gare-team-name{font-size:1.24rem;font-weight:700;color:#1e3a5f;line-height:1.2;word-break:break-word;}
+        .gare-team.fuori .gare-team-name{text-align:right;}
+        .gare-vs{font-size:1.3rem;font-weight:900;color:#60a5fa;flex-shrink:0;padding:0 8px;}
+        /* Note */
+        .gare-row-note{background:#e0e4e8;padding:4px 12px;font-size:0.94rem;color:#1e3a5f;border-top:1px solid #a0aab4;}
         .gare-row-time .gare-ora{color:#000000;font-weight:800;font-size:0.82rem;}
         .gare-row-match{background:#60a5fa;color:#000000;font-weight:700;text-align:center;padding:7px 10px;font-size:0.84rem;text-transform:uppercase;}
-        .gare-block{margin-bottom:5px;border-radius:6px;overflow:hidden;border:1px solid #1e293b;transition:border-color 0.15s;}
-        .gare-block:hover{border-color:#3b5a9d;}
-        .gare-block.selected{border-color:#60a5fa;box-shadow:0 0 0 2px rgba(74,158,255,0.25);}
         .gare-spacer{height:6px;}
         .gare-columns{display:flex;gap:12px;}
-        .gare-col{flex:1;min-width:0;}
-        .gare-col-title{font-weight:700;font-size:0.82rem;text-align:center;padding:7px;border-radius:6px;margin-bottom:8px;text-transform:uppercase;}
+        .gare-col{flex:1;min-width:0;background:#ccd3db;border-radius:8px;padding:8px;}
+        .gare-col-title{font-weight:700;font-size:1.64rem;text-align:center;padding:14px;border-radius:8px;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.04em;}
         .gare-col-title.casa{background:#1a3a5f;color:#ffffff;border:1px solid #0f172a;}
         .gare-col-title.fuori{background:#d90429;color:#ffffff;border:1px solid #d90429;}
+        .gare-col-title i{font-size:1.64rem;vertical-align:middle;margin-right:6px;}
         .gare-empty{color:var(--text-muted);text-align:center;padding:20px;font-size:0.82rem;}
         .gare-nav{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
         .gare-nav-btn{background:#1e293b;border:1px solid #2d4a8a;color:#60a5fa;border-radius:6px;padding:5px 14px;font-size:0.8rem;cursor:pointer;font-weight:600;}
         .gare-nav-btn:hover{background:#1a3a5f;}
-        .gare-week-label{flex:1;text-align:center;font-weight:600;font-size:0.85rem;color:#60a5fa;}
-        .gare-check-wrap{display:flex;align-items:center;gap:6px;padding:3px 8px;background:#0d1b2a;border-top:1px solid #1a3a5f;cursor:pointer;}
-        .gare-check-wrap input[type=checkbox]{accent-color:#60a5fa;cursor:pointer;}
-        .gare-check-wrap label{color:#60a5fa;font-size:0.72rem;cursor:pointer;margin:0;}
+        .gare-week-label{flex:1;text-align:center;font-weight:700;font-size:1.7rem;color:#60a5fa;}
+        .gare-check-wrap{display:flex;align-items:center;gap:6px;padding:5px 8px;background:#e8edf2;border-top:1px solid #a0aab4;cursor:pointer;}
+        .gare-check-wrap input[type=checkbox]{accent-color:#1e3a5f;cursor:pointer;}
+        .gare-check-wrap label{color:#1e3a5f;font-size:0.94rem;cursor:pointer;margin:0;font-weight:600;}
         .gare-form-card{background:#0d1b2a;border:1px solid #1e293b;border-radius:10px;padding:16px;margin-bottom:14px;}
         .gare-form-title{color:#60a5fa;font-weight:700;font-size:0.9rem;margin-bottom:14px;display:flex;align-items:center;gap:7px;}
         .gare-form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px;}
@@ -363,25 +379,25 @@ TYPE html>
         .gare-form-group input:focus,.gare-form-group select:focus{border-color:#3b5a9d;outline:none;}
         .gare-form-group select option{background:#0d1b2a;}
         .gare-form-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;}
-        .btn-gara-save{background:#16a34a;color:#16a34a;border:1px solid #16a34a;border-radius:6px;padding:8px 20px;font-weight:700;cursor:pointer;font-size:0.85rem;}
+        .btn-gara-save{background:#16a34a;color:#000000;border:1px solid #16a34a;border-radius:6px;padding:8px 20px;font-weight:700;cursor:pointer;font-size:0.85rem;}
         .btn-gara-save:hover{background:#16a34a;}
         .btn-gara-cancel{background:#1e293b;color:#60a5fa;border:1px solid #1a3a5f;border-radius:6px;padding:8px 16px;font-weight:600;cursor:pointer;font-size:0.85rem;}
-        .btn-gara-del{background:none;border:none;color:#000000;border-radius:5px;padding:3px 9px;cursor:pointer;font-size:0.72rem;}
-        .btn-gara-del:hover{color:#d90429;}
-        .btn-gara-edit{background:none;border:none;color:#000000;border-radius:5px;padding:3px 9px;cursor:pointer;font-size:0.72rem;margin-right:4px;}
-        .btn-gara-edit:hover{color:#1a3a5f;}
+        .btn-gara-del{background:none;border:none;color:#e2e8f0;border-radius:5px;padding:3px 9px;cursor:pointer;font-size:0.72rem;}
+        .btn-gara-del:hover{color:#ff6b6b;}
+        .btn-gara-edit{background:none;border:none;color:#e2e8f0;border-radius:5px;padding:3px 9px;cursor:pointer;font-size:0.72rem;margin-right:4px;}
+        .btn-gara-edit:hover{color:#60a5fa;}
         .squadre-panel{background:#0d1b2a;border:1px solid #1e293b;border-radius:8px;padding:12px;margin-top:12px;}
         .squadre-panel-title{color:#f59e0b;font-size:0.82rem;font-weight:700;margin-bottom:10px;}
         .squadre-list{display:flex;flex-wrap:wrap;gap:6px;max-height:160px;overflow-y:auto;margin-bottom:10px;}
         .squadra-tag{background:#0f172a;border:1px solid #1a3a5f;border-radius:20px;padding:3px 10px;font-size:0.75rem;color:#60a5fa;display:flex;align-items:center;gap:6px;}
         .squadra-tag .del-sq{background:none;border:none;color:#d90429;cursor:pointer;padding:0;font-size:0.8rem;line-height:1;}
         .gare-action-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
-        .btn-gare-new{background:#16a34a;color:#16a34a;border:1px solid #16a34a;border-radius:8px;padding:7px 16px;font-size:0.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
+        .btn-gare-new{background:#16a34a;color:#000000;border:1px solid #16a34a;border-radius:8px;padding:7px 16px;font-size:0.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
         .btn-gare-new:hover{background:#16a34a;}
         .btn-gare-import{background:#0d1b2a;color:#60a5fa;border:1px solid #1a3a5f;border-radius:8px;padding:7px 16px;font-size:0.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
         .btn-gare-import:hover{background:#0f172a;}
-        .btn-gare-squadre{background:#1e1b4b;color:#a855f7;border:1px solid #1e1b4b;border-radius:8px;padding:7px 16px;font-size:0.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
-        .btn-gare-squadre:hover{background:#1e1b4b;}
+        .btn-gare-squadre{background:#1a3a5f;color:#a855f7;border:1px solid #1a3a5f;border-radius:8px;padding:7px 16px;font-size:0.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
+        .btn-gare-squadre:hover{background:#1a3a5f;}
         .btn-gare-export{background:#422006;color:#f59e0b;border:1px solid #422006;border-radius:8px;padding:7px 16px;font-size:0.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
         .btn-gare-export:hover{background:#422006;}
         .gare-export-panel{background:#0d1b2a;border:1px solid #1e293b;border-radius:10px;padding:16px;margin-top:12px;}
@@ -405,11 +421,323 @@ TYPE html>
         .torneo-note-row input{background:#0d1b2a;border:1px solid #1e293b;color:#60a5fa;border-radius:5px;padding:5px 7px;font-size:0.8rem;flex:1;}
         .btn-add-match{background:#16a34a;color:#16a34a;border:1px solid #16a34a;border-radius:6px;padding:6px 12px;font-size:0.8rem;font-weight:700;cursor:pointer;margin-top:4px;}
         .btn-add-match:hover{background:#16a34a;}
+
+        /* ── TEMA CHIARO ─────────────────────────────────────── */
+        html.theme-light, body.theme-light {
+            --bg-main: #e6e9ed;
+            --bg-card: #f0f1f2;
+            --text:    #000103;
+            --border:  #9aa5b0;
+        }
+        html.theme-light body, body.theme-light {
+            background: var(--bg-main) !important;
+            color: var(--text) !important;
+        }
+        html.theme-light .top-bar,
+        body.theme-light .top-bar {
+            background: #b6babf !important;
+            border-color: #9aa5b0 !important;
+        }
+        html.theme-light .top-bar *,
+        body.theme-light .top-bar * { color: #000103 !important; }
+        html.theme-light .page-tabs,
+        body.theme-light .page-tabs { background: #b6babf !important; border-color: #9aa5b0 !important; }
+        html.theme-light .page-tab,
+        body.theme-light .page-tab { color: #000103 !important; background: transparent; }
+        html.theme-light .page-tab.active,
+        body.theme-light .page-tab.active { color: #d90429 !important; border-color: #d90429 !important; }
+        /* ── Regola base: testo nero su sfondi chiari, bianco su sfondi scuri ── */
+        html.theme-light body, body.theme-light { color: #000103; }
+        /* Forza bianco esplicito su rte-btn e figli */
+        html.theme-light .rte-btn, body.theme-light .rte-btn { color: #ffffff !important; }
+        html.theme-light .rte-btn *, body.theme-light .rte-btn * { color: #ffffff !important; }
+        /* Forza bianco su thead th e figli */
+        html.theme-light .calendar-table thead th,
+        body.theme-light .calendar-table thead th { color: #ffffff !important; }
+        html.theme-light .calendar-table thead th *,
+        body.theme-light .calendar-table thead th * { color: #ffffff !important; }
+
+        /* Elementi con sfondo scuro o colorato → testo bianco */
+        html.theme-light .calendar-session,
+        body.theme-light .calendar-session { color: #ffffff !important; }
+        html.theme-light .btn-cal,
+        body.theme-light .btn-cal { color: #ffffff !important; }
+        html.theme-light .gare-col-title,
+        body.theme-light .gare-col-title { color: #ffffff !important; }
+        html.theme-light .gare-row-time,
+        body.theme-light .gare-row-time { color: #e2e8f0 !important; }
+        html.theme-light .gare-comp,
+        body.theme-light .gare-comp { color: #60a5fa !important; }
+        html.theme-light .gare-ora,
+        body.theme-light .gare-ora { color: #ffffff !important; }
+        html.theme-light .page-tab.active,
+        body.theme-light .page-tab.active { color: #d90429 !important; }
+        html.theme-light .back-btn,
+        body.theme-light .back-btn { color: #000103 !important; }
+
+        /* Sfondi elementi strutturali */
+        html.theme-light .cal-card,
+        body.theme-light .cal-card { background: #ffffff !important; border-color: #9aa5b0 !important; }
+        html.theme-light .calendar-table th,
+        body.theme-light .calendar-table th { background: #b6babf !important; color: #000103 !important; border-color: #9aa5b0 !important; }
+        html.theme-light .calendar-table td,
+        body.theme-light .calendar-table td { background: #ffffff !important; color: #000103 !important; border-color: #9aa5b0 !important; }
+        html.theme-light .cal-section-header,
+        body.theme-light .cal-section-header { background: #b6babf !important; color: #000103 !important; }
+        html.theme-light .section-toggle-btn,
+        body.theme-light .section-toggle-btn { color: #000103 !important; }
+        html.theme-light .post-item,
+        body.theme-light .post-item { background: #ffffff !important; border-color: #9aa5b0 !important; }
+        html.theme-light .post-item *,
+        body.theme-light .post-item * { color: #000103 !important; }
+        html.theme-light .gare-nav-btn,
+        body.theme-light .gare-nav-btn { background: #b6babf !important; color: #000103 !important; border-color: #9aa5b0 !important; }
+        html.theme-light .gare-week-label,
+        body.theme-light .gare-week-label { color: #000103 !important; }
+        html.theme-light footer,
+        body.theme-light footer { background: #b6babf !important; }
+        html.theme-light footer *,
+        body.theme-light footer * { color: #000103 !important; }
+        html.theme-light .main-title,
+        body.theme-light .main-title { color: #000103 !important; }
+
+
+        /* n1 — Documenti: icone Apri/Modifica/Elimina → colori visibili */
+        html.theme-light #doc-list a[href],
+        body.theme-light #doc-list a[href] { color: #ffffff !important; }
+        html.theme-light .doc-edit-btn,
+        body.theme-light .doc-edit-btn { color: #ffffff !important; background: #1a3a5f !important; }
+        html.theme-light .doc-delete-btn,
+        body.theme-light .doc-delete-btn { color: #ffffff !important; background: #d90429 !important; }
+
+        /* n2 — Bacheca: titolo e icone post-actions → bianco */
+        html.theme-light .bacheca-title,
+        body.theme-light .bacheca-title { color: #ffffff !important; background: #1a3a5f !important; border-radius: 6px; padding: 8px 12px; }
+        html.theme-light .bacheca-title *,
+        body.theme-light .bacheca-title * { color: #ffffff !important; }
+        html.theme-light .post-actions button,
+        body.theme-light .post-actions button {
+            background: #1a3a5f !important; border-color: #2d4a8a !important; color: #ffffff !important;
+        }
+        html.theme-light .post-actions .del-btn:hover,
+        body.theme-light .post-actions .del-btn:hover { background: #d90429 !important; border-color: #d90429 !important; }
+
+
+        /* n2 — Bacheca: G/C/S/B testo bianco (browser override) */
+        html.theme-light .rte-btn b,
+        html.theme-light .rte-btn i,
+        html.theme-light .rte-btn u,
+        html.theme-light .rte-btn s,
+        body.theme-light .rte-btn b,
+        body.theme-light .rte-btn i,
+        body.theme-light .rte-btn u,
+        body.theme-light .rte-btn s { color: #ffffff !important; }
+        
+        /* n1 — Calendario: celle header (th) sempre bianche su sfondo scuro */
+        html.theme-light .calendar-table thead th *,
+        body.theme-light .calendar-table thead th * { color: #ffffff !important; }
+        /* n3 — Gare: matita e cestino nei box gara → bianco */
+        html.theme-light .btn-gara-edit,
+        body.theme-light .btn-gara-edit { color: #ffffff !important; background: #1a3a5f !important; border-radius: 4px; padding: 3px 7px; }
+        html.theme-light .btn-gara-del,
+        body.theme-light .btn-gara-del { color: #ffffff !important; background: #d90429 !important; border-radius: 4px; padding: 3px 7px; }
+
+        /* n4 — Calendario: testo header eventi (Allenamento/Gara/Individual) → bianco */
+        html.theme-light .calendar-table thead th,
+        body.theme-light .calendar-table thead th { color: #ffffff !important; }
+        /* n1 — Documenti: card documento #ccd3db */
+        html.theme-light #doc-list > div,
+        body.theme-light #doc-list > div {
+            background: #ccd3db !important;
+            border-color: #9aa5b0 !important;
+            color: #000103 !important;
+        }
+        html.theme-light #doc-list > div *,
+        body.theme-light #doc-list > div * { color: #000103 !important; }
+
+        /* n2 — Bacheca: toolbar RTE e pulsanti → sfondo scuro, testo bianco */
+        html.theme-light .rte-toolbar,
+        body.theme-light .rte-toolbar { background: #1e293b !important; border-radius:6px; padding:4px; }
+        html.theme-light .rte-btn,
+        body.theme-light .rte-btn { background: #1a3a5f !important; color: #ffffff !important; border-color: #2d4a8a !important; }
+        html.theme-light .rte-btn:hover,
+        body.theme-light .rte-btn:hover { background: #2d4a8a !important; color: #ffffff !important; }
+        html.theme-light .rte-btn.active,
+        body.theme-light .rte-btn.active { background: #3b82f6 !important; color: #ffffff !important; }
+        html.theme-light .color-btn,
+        body.theme-light .color-btn { border-color: #9aa5b0 !important; }
+
+        /* n3 — Gare: pulsanti azione → testo bianco */
+        html.theme-light .btn-gare-new,
+        body.theme-light .btn-gare-new { color: #ffffff !important; }
+        html.theme-light .btn-gare-import,
+        body.theme-light .btn-gare-import { color: #ffffff !important; }
+        html.theme-light .btn-gare-squadre,
+        body.theme-light .btn-gare-squadre { color: #ffffff !important; }
+        html.theme-light .btn-gare-export,
+        body.theme-light .btn-gare-export { color: #ffffff !important; }
+        /* Pannello Crea Locandina in tema chiaro */
+        html.theme-light .gare-export-panel,
+        body.theme-light .gare-export-panel {
+            background: #f0f1f2 !important;
+            border-color: #9aa5b0 !important;
+        }
+        html.theme-light .gare-export-title,
+        body.theme-light .gare-export-title { color: #1e3a5f !important; }
+        html.theme-light #gare-export-list,
+        body.theme-light #gare-export-list {
+            background: #ffffff !important;
+            border-color: #9aa5b0 !important;
+        }
+        html.theme-light #gare-export-list *,
+        body.theme-light #gare-export-list * { color: #1e3a5f !important; }
+        html.theme-light .gare-export-panel label,
+        body.theme-light .gare-export-panel label { color: #1e3a5f !important; }
+        html.theme-light .gare-export-panel small,
+        body.theme-light .gare-export-panel small { color: #374151 !important; }
+        html.theme-light .gare-action-row button,
+        body.theme-light .gare-action-row button { color: #ffffff !important; }
+
+        /* n4 — Calendario: header tabella (sfondo scuro) → testo bianco */
+        html.theme-light .calendar-table thead th,
+        body.theme-light .calendar-table thead th {
+            background: #1a3a5f !important;
+            color: #ffffff !important;
+            border-color: #2d4a8a !important;
+        }
+        html.theme-light .calendar-table .sticky-col-1,
+        html.theme-light .calendar-table .sticky-col-2,
+        html.theme-light .calendar-table .sticky-col-3,
+        body.theme-light .calendar-table .sticky-col-1,
+        body.theme-light .calendar-table .sticky-col-2,
+        body.theme-light .calendar-table .sticky-col-3 {
+            background: #1a3a5f !important;
+            color: #ffffff !important;
+        }
+        html.theme-light .calendar-table tbody .sticky-col-1,
+        html.theme-light .calendar-table tbody .sticky-col-2,
+        html.theme-light .calendar-table tbody .sticky-col-3,
+        body.theme-light .calendar-table tbody .sticky-col-1,
+        body.theme-light .calendar-table tbody .sticky-col-2,
+        body.theme-light .calendar-table tbody .sticky-col-3 {
+            background: #f0f1f2 !important;
+            color: #000103 !important;
+        }
+        /* Aggiunge --bg-header chiaro per tema chiaro */
+        html.theme-light {
+          --bg-header: #1a3a5f;
+          --bg-row-a:  #ffffff;
+          --bg-row-b:  #e8edf2;
+        }
+        html.theme-light .calendar-table tbody tr:nth-child(odd)  td { border-bottom: 1px solid #9aa5b0 !important; }
+        html.theme-light .calendar-table tbody tr:nth-child(even) td { border-bottom: 1px solid #9aa5b0 !important; }
+        html.theme-light .calendar-table tbody td { border-right: 1px solid #cbd5e1 !important; }
+        html.theme-light .cal-section-label,
+        body.theme-light .cal-section-label { color: #000103 !important; }
+        html.theme-light .sponsor-row input,
+        body.theme-light .sponsor-row input { background: #f0f1f2 !important; color: #000103 !important; border-color: #9aa5b0 !important; }
+        html.theme-light .rte-editor,
+        body.theme-light .rte-editor { background: #ffffff !important; color: #000103 !important; border-color: #9aa5b0 !important; }
+        html.theme-light .post-list,
+        body.theme-light .post-list { color: #000103 !important; }
+        html.theme-light .text-muted,
+        body.theme-light .text-muted { color: #374151 !important; }
+        html.theme-light label,
+        body.theme-light label { color: #000103 !important; }
+        html.theme-light input, html.theme-light select, html.theme-light textarea,
+        body.theme-light input, body.theme-light select, body.theme-light textarea {
+            background: #f0f1f2 !important; color: #000103 !important; border-color: #9aa5b0 !important;
+        }
+        html.theme-light .form-control, html.theme-light .form-select,
+        body.theme-light .form-control, body.theme-light .form-select {
+            background: #f0f1f2 !important; color: #000103 !important; border-color: #9aa5b0 !important;
+        }
+        /* Documenti */
+        html.theme-light #doc-admin-panel,
+        body.theme-light #doc-admin-panel { background: #dbeafe !important; border-color: #93c5fd !important; }
+        html.theme-light #doc-list .card,
+        body.theme-light #doc-list .card { background: #ffffff !important; border-color: #9aa5b0 !important; }
         @media (max-width: 768px) {
             .calendar-table { font-size: 0.7rem; }
             .btn-cal { padding: 6px 12px; font-size: 0.78rem; }
         }
     </style>
+
+    <script>
+    // ── Tema Scuro/Chiaro Calendario ──────────────────────────
+    (function() {
+        var saved = localStorage.getItem('gosport_theme') || 'dark';
+        if (saved === 'light') {
+            document.documentElement.classList.add('theme-light');
+            document.documentElement.setAttribute('data-bs-theme', 'light');
+            document.documentElement.style.colorScheme = 'light';
+        }
+    })();
+    function applyCalThemeColors(isLight) {
+        if (!isLight) return;
+        // n1: Testo bianco in header tabella calendario (su sfondo scuro)
+        document.querySelectorAll('.calendar-table thead th').forEach(function(th) {
+            th.style.color = '#ffffff';
+            th.querySelectorAll('*').forEach(function(el) { el.style.color = '#ffffff'; });
+        });
+        // n2: Testo bianco nei pulsanti rte-btn (G/C/S/B)
+        // Pannello Crea Locandina: input e select
+        var isLt = document.documentElement.classList.contains('theme-light');
+        document.querySelectorAll('#gare-export-sett, #gare-export-titolo').forEach(function(el) {
+            el.style.background = isLt ? '#f0f1f2' : '#0d1b2a';
+            el.style.color = isLt ? '#1e3a5f' : '#60a5fa';
+            el.style.borderColor = isLt ? '#9aa5b0' : '#1e293b';
+        });
+        document.querySelectorAll('.rte-btn').forEach(function(btn) {
+            btn.style.color = '#ffffff';
+            btn.querySelectorAll('b,i,u,s,span').forEach(function(el) {
+                el.style.setProperty('color', '#ffffff', 'important');
+            });
+        });
+    }
+    // Riapplica ogni volta che la tabella viene (re)renderizzata
+    var _calThemeObserver = new MutationObserver(function() {
+        if (document.documentElement.classList.contains('theme-light')) {
+            applyCalThemeColors(true);
+        }
+    });
+
+    function calToggleTheme() {
+        var isLight = document.documentElement.classList.toggle('theme-light');
+        document.body.classList.toggle('theme-light', isLight);
+        document.documentElement.setAttribute('data-bs-theme', isLight ? 'light' : 'dark');
+        document.documentElement.style.colorScheme = isLight ? 'light' : 'dark';
+        localStorage.setItem('gosport_theme', isLight ? 'light' : 'dark');
+        var icon  = document.getElementById('cal-theme-icon');
+        var label = document.getElementById('cal-theme-label');
+        if (icon)  icon.textContent  = isLight ? '🌙' : '☀️';
+        if (label) label.textContent = isLight ? 'Tema Scuro' : 'Tema Chiaro';
+        applyCalThemeColors(isLight);
+        // Re-renderizza documenti con nuovi colori tema
+        if (typeof docRender === 'function') {
+            _docsLoaded = false;
+            docRender();
+        }
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        var isLight = document.documentElement.classList.contains('theme-light');
+        document.body.classList.toggle('theme-light', isLight);
+        var icon  = document.getElementById('cal-theme-icon');
+        var label = document.getElementById('cal-theme-label');
+        if (icon)  icon.textContent  = isLight ? '🌙' : '☀️';
+        if (label) label.textContent = isLight ? 'Tema Scuro' : 'Tema Chiaro';
+        // Osserva i container per riapplicare i colori dopo ogni render
+        var containers = ['cal-presence-table', 'post-list', 'rte-toolbar'];
+        containers.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) _calThemeObserver.observe(el, { childList: true, subtree: true });
+        });
+        // Applica subito se tema chiaro
+        if (isLight) {
+            setTimeout(function() { applyCalThemeColors(true); }, 400);
+        }
+    });
+    </script>
 </head>
 <body>
     <div class="container-fluid">
@@ -435,13 +763,18 @@ TYPE html>
         </div>
 
         <!-- ── Azioni Calendario ── -->
-        <div id="cal-actions" class="action-row">
+        <div id="cal-actions" class="action-row" style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
             <button class="btn-cal btn-new"    id="add-btn"       onclick="addEvent()"><i class="bi bi-plus-circle"></i> Nuovo</button>
             <button class="btn-cal btn-gen"    id="generate-btn"  onclick="genTraining()"><i class="bi bi-magic"></i> Genera</button>
             <button class="btn-cal btn-import" id="import-btn"    onclick="importData()"><i class="bi bi-upload"></i> Importa</button>
             <input type="file" id="file-input" accept=".json" style="display:none">
             <button class="btn-cal btn-resp"   id="responses-btn" onclick="showResponses()"><i class="bi bi-eye"></i> Risposte</button>
             <button class="btn-cal btn-delete" id="delete-btn"    onclick="deleteOldEvents()"><i class="bi bi-trash"></i> Elimina Vecchi</button>
+            <button onclick="calToggleTheme()" id="cal-theme-btn"
+                style="background:var(--bg-card);border:1px solid var(--border);border-radius:50px;padding:5px 14px;cursor:pointer;display:flex;align-items:center;gap:7px;color:var(--text);font-size:0.82rem;font-weight:600;margin-left:auto;">
+                <span id="cal-theme-icon">☀️</span>
+                <span id="cal-theme-label">Tema Chiaro</span>
+            </button>
         </div>
 
         <!-- ── TAB: Calendario ── -->
@@ -512,6 +845,7 @@ TYPE html>
                         <input type="file" id="post-img-input" accept="image/*,application/pdf"
                                onchange="previewPostImg(this)" style="color:#60a5fa;">
                         <img id="post-img-preview" class="post-img-preview" alt="Preview">
+                        <button type="button" id="post-img-remove" onclick="window.removePostImg()" style="display:none;background:#450a0a;color:#d90429;border:1px solid #d90429;border-radius:4px;padding:2px 8px;font-size:0.75rem;cursor:pointer;margin-top:4px;">✕ Rimuovi immagine</button>
                         <input type="hidden" id="post-img-data">
                     </div>
                     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
@@ -520,8 +854,9 @@ TYPE html>
                                 <i class="bi bi-eye"></i> Visibilità
                             </label>
                             <select id="post-visibility">
-                                <option value="annata">👥 Solo questa annata (genitori)</option>
-                                <option value="global">🌐 Tutte le annate + link pubblico</option>
+                                <option value="annata">👥 Solo questa Annata e Gruppi</option>
+                                <option value="global">🌐 Tutte le Annate e Gruppi + link pubblico</option>
+
                             </select>
                         </div>
                         <button class="btn-bacheca-save" onclick="savePost()">
@@ -563,6 +898,9 @@ TYPE html>
         <div class="gare-action-row" id="gare-action-row" style="display:none;">
             <button class="btn-gare-new" onclick="gareOpenForm()">
                 <i class="bi bi-plus-circle"></i> Nuova Gara
+            </button>
+            <button onclick="window.gareAzzeraAll&&gareAzzeraAll()" style="background:#d90429;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:0.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;">
+                <i class="bi bi-trash3-fill"></i> Azzera Gare
             </button>
             <button class="btn-gare-import" onclick="document.getElementById('gare-excel-input').click()">
                 <i class="bi bi-file-earmark-excel"></i> Importa Excel Federale
@@ -669,7 +1007,7 @@ TYPE html>
             </div>
             <div style="display:flex;gap:8px;margin-top:6px;">
                 <input type="text" id="gare-nuova-squadra" placeholder="Nome squadra..." style="background:#0d1b2a;border:1px solid #3b5a9d;color:#fff;border-radius:6px;padding:6px 10px;font-size:0.82rem;flex:1;">
-                <button onclick="gareAddSquadraManuale()" style="background:#8b5cf6;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-weight:700;cursor:pointer;font-size:0.82rem;">+ Aggiungi</button>
+                <button onclick="gareAddSquadraManuale()" style="background:#a855f7;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-weight:700;cursor:pointer;font-size:0.82rem;">+ Aggiungi</button>
             </div>
         </div>
 
@@ -722,6 +1060,7 @@ TYPE html>
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
                 <button class="btn-gare-dl-img" onclick="gareDownloadPNG()"><i class="bi bi-download"></i> Scarica PNG</button>
                 <button class="btn-gare-dl-pdf" onclick="gareDownloadPDF()"><i class="bi bi-file-pdf"></i> Scarica PDF</button>
+                <button class="btn-gare-dl-img" onclick="gareInviaBacheca()" style="background:#3b82f6;border-color:#3b82f6;"><i class="bi bi-megaphone-fill"></i> Invia in Bacheca</button>
             </div>
             <canvas id="gare-canvas" style="display:none;"></canvas>
         </div>
@@ -826,6 +1165,7 @@ var _bPostImages  = {};
 var _bLoaded      = false;
 var _bVisible     = false;
 var _bSaving      = false;  // mutex anti race-condition
+var _bPrivatePosts = []; // disabilitato
 var _calCollapsed = false;
 
 function _bAnnataId() {
@@ -884,13 +1224,16 @@ async function _bLoad() {
     try {
         // Carica post senza immagini (payload leggero)
         var res = await fetch('/api/data', { cache:'no-store', headers:{'x-annata-id':aid} });
+        if (!res.ok) throw new Error('HTTP '+res.status);
         var d = await res.json();
         _bPosts       = (d && d.posts)       || [];
         _bGlobalPosts = (d && d.globalPosts) || [];
-        _bPostImages  = {}; // vuoto inizialmente
+        // NON svuotiamo _bPostImages: manteniamo in cache le immagini già caricate
         console.log('[Bacheca] 📦 posts:', _bPosts.length, 'global:', _bGlobalPosts.length);
         _bLoaded = true;
     } catch(e) { console.warn('[Bacheca] load err:', e); }
+    // Post privati staff disabilitati
+    _bPrivatePosts = [];
     _bRender();
     // Carica le immagini in background solo se ci sono post con immagini
     _bLoadImages();
@@ -905,11 +1248,22 @@ async function _bLoadImages() {
             cache: 'no-store',
             headers: { 'x-annata-id': aid }
         });
+        if (!res.ok) throw new Error('HTTP '+res.status);
         var d = await res.json();
-        if (d && d.postImages && Object.keys(d.postImages).length > 0) {
-            _bPostImages = d.postImages;
+        var changed = false;
+        if (d && d.postImages) {
+            Object.assign(_bPostImages, d.postImages);
+            changed = true;
+        }
+        // Carica anche immagini global (post con visibility=global)
+        var resG = await fetch('/api/data?action=postImages', { cache: 'no-store' });
+        if (resG.ok) {
+            var dG = await resG.json();
+            if (dG && dG.postImages) { Object.assign(_bPostImages, dG.postImages); changed = true; }
+        }
+        if (changed) {
             console.log('[Bacheca] 🖼️ Immagini caricate:', Object.keys(_bPostImages).length);
-            _bRender(); // Ri-renderizza solo se ci sono immagini
+            _bRender();
         }
     } catch(e) { console.warn('[Bacheca] immagini err:', e); }
 }
@@ -932,11 +1286,15 @@ async function _bSave() {
         console.log('[Bacheca] 💾 Posts', r1.ok ? '✅ OK' : '❌ '+r1.status, '('+_bPosts.length+' annata, '+_bGlobalPosts.length+' global)');
         if (!r1.ok) { _bSaving = false; return; }
     } catch(e) { console.error('[Bacheca] ❌ net:', e); _bSaving = false; return; }
+
     // 2. Salva immagini singole per ogni post
-    var annaPids = _bPosts.map(function(p){ return p.id; });
+    var annaPids = _bPosts.map(function(p){ return p.id; })
+        .concat(_bPrivatePosts.map(function(p){ return p.id; }));
+    var globalPids = _bGlobalPosts.map(function(p){ return p.id; });
     for (var pid in _bPostImages) {
         if (!_bPostImages.hasOwnProperty(pid) || !_bPostImages[pid]) continue;
-        var isGlobalPost = annaPids.indexOf(pid) === -1; // non è nell'annata → è globale
+        // Global solo se è esplicitamente in _bGlobalPosts
+        var isGlobalPost = globalPids.indexOf(pid) !== -1;
         try {
             var imgPay = {}; imgPay['postImg_'+pid] = _bPostImages[pid];
             // Post globali: salvati senza annataId (chiave global:postImg_xxx)
@@ -953,44 +1311,83 @@ async function _bSave() {
 }
 
 // Pubblica nuovo post
-window.savePost = async function() {
-    var title  = (document.getElementById('post-title').value  || '').trim();
-    var text   = (document.getElementById('post-text').value   || '').trim();
-    var vis    = document.getElementById('post-visibility').value;
-    var imgData= document.getElementById('post-img-data').value || '';
-    if (!title) { alert('Inserisci un titolo'); return; }
-    var post = { id:'post_'+Date.now(), title:title, text:text, visibility:vis,
-                 date:new Date().toISOString(), pinned:false };
-    if (imgData) _bPostImages[post.id] = imgData;
-    if (vis === 'global') _bGlobalPosts.unshift(post);
-    else _bPosts.unshift(post);
-    await _bSave();
-    // Ricarica da Redis per conferma (fonte di verità)
-    _bLoaded = false;
-    await _bLoad();
-    document.getElementById('post-title').value = '';
-    rteClear();
-    document.getElementById('post-img-data').value = '';
-    document.getElementById('post-img-input').value = '';
-    document.getElementById('post-img-preview').style.display = 'none';
-};
-
 // Elimina post (await salvataggio, poi ricarica da Redis)
-window.editPost = function(id, isGlobal) {
-    var arr = isGlobal ? _bGlobalPosts : _bPosts;
+
+window.removePostImg = function() {
+    var prev = document.getElementById('post-img-preview');
+    var inp  = document.getElementById('post-img-input');
+    var data = document.getElementById('post-img-data');
+    var btn  = document.getElementById('post-img-remove');
+    if (prev) { prev.src = ''; prev.style.display = 'none'; }
+    if (inp)  { inp.value = ''; inp.setAttribute('data-cleared', '1'); }
+    if (data) { data.value = ''; }
+    if (btn)  { btn.style.display = 'none'; }
+};
+window.editPost = async function(id, isGlobal) {
+    // Cerca il post nell'array corretto in base al tipo
+    var arr;
+    if (isGlobal === 'privato' || isGlobal === true && false) {
+        arr = _bPrivatePosts;
+    } else if (isGlobal === true || isGlobal === 'true') {
+        arr = _bGlobalPosts;
+    } else {
+        arr = _bPosts;
+    }
+    // Fallback: cerca in tutti gli array
     var p = arr.find(function(x){ return x.id === id; });
+    if (!p) {
+        p = _bPrivatePosts.find(function(x){ return x.id === id; })
+         || _bGlobalPosts.find(function(x){ return x.id === id; })
+         || _bPosts.find(function(x){ return x.id === id; });
+    }
     if (!p) return;
+
+    // Assicura che l'immagine sia in memoria prima di aprire il form
+    try {
+        var aid = _bAnnataId();
+        // Carica immagini annata
+        var r = await fetch('/api/data?action=postImages', {
+            cache: 'no-store',
+            headers: { 'Content-Type': 'application/json', 'x-annata-id': aid }
+        });
+        if (r.ok) {
+            var d = await r.json();
+            if (d && d.postImages) Object.assign(_bPostImages, d.postImages);
+        }
+        // Carica anche immagini global (per post globali o ex-privati)
+        if (!_bPostImages[id]) {
+            var rg = await fetch('/api/data?action=postImages', {
+                cache: 'no-store',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if (rg.ok) {
+                var dg = await rg.json();
+                if (dg && dg.postImages) Object.assign(_bPostImages, dg.postImages);
+            }
+        }
+    } catch(e) { console.warn('[editPost] img fetch err:', e); }
+
     // Riempi il form con i dati del post
     document.getElementById('post-title').value = p.title || '';
     rteSet(p.text || '');
     document.getElementById('post-visibility').value = p.visibility || 'annata';
-    document.getElementById('post-img-data').value = _bPostImages[p.id] || '';
+    document.getElementById('post-img-data').value = _bPostImages[id] || '';
     var prev = document.getElementById('post-img-preview');
-    if (_bPostImages[p.id]) { prev.src = _bPostImages[p.id]; prev.style.display = 'block'; }
-    else { prev.src = ''; prev.style.display = 'none'; }
+    var removeBtn = document.getElementById('post-img-remove');
+    if (_bPostImages[id]) {
+        prev.src = _bPostImages[id]; prev.style.display = 'block';
+        if (removeBtn) removeBtn.style.display = 'inline-block';
+    } else {
+        prev.src = ''; prev.style.display = 'none';
+        if (removeBtn) removeBtn.style.display = 'none';
+    }
     // Cambia pulsante pubblica in "Aggiorna"
     var btn = document.querySelector('.btn-bacheca-save');
-    if (btn) { btn.textContent = 'Aggiorna'; btn.setAttribute('data-edit-id', id); btn.setAttribute('data-edit-global', isGlobal); }
+    if (btn) {
+        btn.textContent = 'Aggiorna';
+        btn.setAttribute('data-edit-id', id);
+        btn.setAttribute('data-edit-global', isGlobal);
+    }
     // Scroll verso il form
     var form = document.getElementById('bacheca-form-wrapper');
     if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1004,16 +1401,37 @@ window.savePost = async function() {
     var title  = (document.getElementById('post-title').value  || '').trim();
     var text   = (document.getElementById('post-text').value   || '').trim();
     var vis    = document.getElementById('post-visibility').value;
+
     var imgData= document.getElementById('post-img-data').value || '';
     if (!title) { alert('Inserisci un titolo'); return; }
 
     if (editId) {
-        // MODIFICA post esistente
-        var arr = editGlobal ? _bGlobalPosts : _bPosts;
-        var p = arr.find(function(x){ return x.id === editId; });
-        if (p) { p.title = title; p.text = text; }
-        if (imgData) _bPostImages[editId] = imgData;
-        else delete _bPostImages[editId];
+        // Rimuove il post da TUTTI gli array (gestisce cambio visibilità)
+        var oldPost = null;
+        [_bPrivatePosts, _bGlobalPosts, _bPosts].forEach(function(arr) {
+            var idx = arr.findIndex(function(x){ return x.id === editId; });
+            if (idx !== -1) { oldPost = arr[idx]; arr.splice(idx, 1); }
+        });
+        // Crea il post aggiornato con la nuova visibilità
+        var updPost = Object.assign({}, oldPost || {}, {
+            id: editId, title: title, text: text, visibility: vis,
+            isPrivate: (vis === 'privato')
+        });
+        // Inserisce nell'array corretto in base alla NUOVA visibilità
+        if (vis === 'global') _bGlobalPosts.unshift(updPost);
+        else _bPosts.unshift(updPost);
+        // Gestione immagine
+        if (imgData) {
+            _bPostImages[editId] = imgData;
+        } else {
+            var imgInput = document.getElementById('post-img-input');
+            var userRemovedImg = imgInput && imgInput.getAttribute('data-cleared') === '1';
+            if (userRemovedImg) {
+                delete _bPostImages[editId];
+                imgInput.removeAttribute('data-cleared');
+            }
+            // Altrimenti mantiene l'immagine originale
+        }
         // Reset pulsante
         if (btn) { btn.textContent = 'Pubblica'; btn.removeAttribute('data-edit-id'); btn.removeAttribute('data-edit-global'); }
     } else {
@@ -1033,12 +1451,16 @@ window.savePost = async function() {
     document.getElementById('post-img-data').value = '';
     document.getElementById('post-img-input').value = '';
     document.getElementById('post-img-preview').style.display = 'none';
+    var rmBtn = document.getElementById('post-img-remove');
+    if (rmBtn) rmBtn.style.display = 'none';
+    var imgInp = document.getElementById('post-img-input');
+    if (imgInp) imgInp.removeAttribute('data-cleared');
 };
 
 window.deletePost = async function(id, isGlobal) {
     if (!confirm('Eliminare questo post?')) return;
-    if (isGlobal) _bGlobalPosts = _bGlobalPosts.filter(function(p){ return p.id !== id; });
-    else          _bPosts = _bPosts.filter(function(p){ return p.id !== id; });
+    _bGlobalPosts = _bGlobalPosts.filter(function(p){ return p.id !== id; });
+    _bPosts       = _bPosts.filter(function(p){ return p.id !== id; });
     delete _bPostImages[id];
     await _bSave();
     _bLoaded = false;
@@ -1097,22 +1519,27 @@ function _bRender() {
     var h = '';
     all.forEach(function(p) {
         var glob = (p.visibility === 'global');
+        var priv2 = false; // staff posts disabilitati
         var img  = _bPostImages[p.id] || '';
         var dt   = p.date ? new Date(p.date).toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'}) : '';
-        var badge= glob
-            ? '<span class="post-visibility-badge badge-global">Tutte le annate</span>'
-            : '<span class="post-visibility-badge badge-annata">Questa annata</span>';
+        var badge= priv2
+            ? '<span class="post-visibility-badge badge-privato">🔐 Solo Staff</span>'
+            : glob
+            ? '<span class="post-visibility-badge badge-global">Tutte le Annate e Gruppi</span>'
+            : '<span class="post-visibility-badge badge-annata">Questa Annata e Gruppi</span>';
         var pid  = p.id;
-        h += '<div class="post-item">';
+        h += '<div class="post-item' + (priv2 ? ' post-privato' : '') + '">';
         if (img) h += '<img class="post-item-img" src="'+img+'" alt="">';
         h += '<div class="post-item-body">';
         h += '<div class="post-item-title">'+(p.pinned?'[PIN] ':'')+p.title+'</div>';
         if (p.text) h += '<div class="post-item-text">'+p.text+'</div>';
         h += '<div class="post-item-meta">'+badge+'<span>'+dt+'</span></div>';
         h += '</div><div class="post-actions">';
-        h += '<button onclick="editPost(\'' + pid + '\',' + glob + ')">MOD</button>';
+        var editType = priv2 ? "'privato'" : glob;
+        h += '<button onclick="editPost(\'' + pid + '\',' + editType + ')">MOD</button>';
         h += '<button onclick="pinPost(\'' + pid + '\',' + glob + ')">' + (p.pinned ? 'UNPIN' : 'PIN') + '</button>';
-        h += '<button class="del-btn" onclick="deletePost(\'' + pid + '\',' + glob + ')">DEL</button>';
+        var isPriv3 = priv2 ? "'privato'" : glob;
+        h += '<button class="del-btn" onclick="deletePost(\'' + pid + '\',' + isPriv3 + ')">DEL</button>';
         h += '</div></div>';
     });
     box.innerHTML = h;
@@ -1369,7 +1796,6 @@ function _gareGiornoLabel(dateStr) {
 // ── Navigazione settimane ────────────────────────────────────────────
 window.gareNavSett = function(dir) {
     _gareWeekOffset += dir;
-    if (_gareWeekOffset < 0) _gareWeekOffset = 0; // non si va nel passato
     _gareRender();
 };
 window.gareGoToday = function() {
@@ -1464,62 +1890,86 @@ function _gareRenderColonna(lista, tipo) {
     });
     var giorni = Object.keys(gruppi).sort();
     var html = '';
+
+    // Recupera nome squadra di casa dalle impostazioni
+    var nomeSoc = (window._appData && window._appData.societyName) ? window._appData.societyName : 'GO SPORT';
+
     giorni.forEach(function(data) {
         var gList = gruppi[data].sort(function(a,b){ return a.ora.localeCompare(b.ora); });
         var _dayOfWeek = _gareParseDate(data).getDay();
-        var _dayClass = (_dayOfWeek === 0) ? 'gare-day-header domenica' : 'gare-day-header';
-        html += '<div class="' + _dayClass + '">GARE ' + _gareGiornoLabel(data).toUpperCase() + '</div>';
+        var _dayColors = {0:'#ea580c',1:'#13ea0c',2:'#0ce3ea',3:'#dc6ded',4:'#5f93ed',5:'#ebed5f',6:'#f59e0b'};
+        var _dayTexts  = {0:'#ffffff',1:'#000000',2:'#000000',3:'#ffffff',4:'#ffffff',5:'#000000',6:'#000000'};
+        var _dayBg = _dayColors[_dayOfWeek] || '#f59e0b';
+        var _dayTx = _dayTexts[_dayOfWeek] || '#000000';
+        html += '<div style="background:'+_dayBg+';color:'+_dayTx+';font-weight:700;text-align:center;padding:6px 12px;font-size:1.07rem;border-radius:6px;margin:8px 0 4px;text-transform:uppercase;letter-spacing:0.04em;">⚽ Gare ' + _gareGiornoLabel(data) + '</div>';
+
         gList.forEach(function(g) {
             var editBtn = _gareCanEdit
-                ? '<button class="btn-gara-edit" onclick="gareEdit(\'' + g.id + '\')"><i class="bi bi-pencil"></i></button>'
-                  + '<button class="btn-gara-del" onclick="gareDel(\'' + g.id + '\')"><i class="bi bi-trash"></i></button>'
+                ? '<button class="btn-gara-edit" onclick="gareEdit(\'' + g.id + '\')" title="Modifica"><i class="bi bi-pencil-fill"></i></button>'
+                  + '<button class="btn-gara-del" onclick="gareDel(\'' + g.id + '\')" title="Elimina"><i class="bi bi-trash-fill"></i></button>'
                 : '';
             var isSel = _gareSelected.indexOf(g.id) >= 0;
+            var compLabel = (g.categoria||'') + (g.competizione ? ' ' + g.competizione : '');
 
             if (g.tipoComp === 'torneo' && g.torneo) {
                 // ── Render TORNEO ──
                 html += '<div class="gare-block' + (isSel ? ' selected' : '') + '" id="gb-' + g.id + '">';
-                html += '<div class="gare-row-time"><span class="gare-ora">ORE: ' + g.ora + '</span>';
-                html += '<span style="flex:1;margin-left:6px;">' + (g.categoria||'') + ' — ' + (g.competizione||'TORNEO') + '</span>' + editBtn + '</div>';
+                html += '<div class="gare-row-time">';
+                html += '<span class="gare-ora">' + g.ora + '</span>';
+                html += '<span class="gare-comp">' + compLabel + ' — TORNEO</span>' + editBtn;
+                html += '</div>';
                 if (g.torneo.info) {
-                    html += '<div style="background:#1a3a5f;color:#60a5fa;text-align:center;padding:5px 10px;font-size:0.8rem;font-style:italic;">' + g.torneo.info + '</div>';
+                    html += '<div style="background:#1a3a5f;color:#60a5fa;text-align:center;padding:6px 12px;font-size:0.78rem;font-style:italic;border-bottom:1px solid #2d4a8a;">' + g.torneo.info + '</div>';
                 }
                 (g.torneo.partite || []).forEach(function(p) {
-                    html += '<div style="display:flex;align-items:center;background:#60a5fa;color:#000;padding:5px 10px;gap:8px;font-weight:700;font-size:0.82rem;text-transform:uppercase;">';
-                    html += '<span style="min-width:52px;color:#1a3a5f;">' + (p.ora||'') + '</span>';
-                    html += '<span style="flex:1;text-align:right;">' + (p.casa||'') + '</span>';
-                    html += '<span style="padding:0 8px;color:#1a3a5f;">VS</span>';
-                    html += '<span style="flex:1;">' + (p.ospite||'') + '</span>';
+                    html += '<div class="gare-match-row">';
+                    html += '<div class="gare-team">';
+                    html += '<div class="gare-team-logo">🏠</div>';
+                    html += '<div class="gare-team-name">' + (p.casa||'—') + '</div></div>';
+                    if (p.ora) html += '<div style="font-size:0.7rem;color:#64748b;flex-shrink:0;">' + p.ora + '</div>';
+                    html += '<div class="gare-vs">VS</div>';
+                    html += '<div class="gare-team fuori">';
+                    html += '<div class="gare-team-logo">🚌</div>';
+                    html += '<div class="gare-team-name">' + (p.ospite||'—') + '</div></div>';
                     html += '</div>';
                 });
                 if (g.torneo.premiazione) {
-                    html += '<div style="background:#16a34a;color:#fff;text-align:center;padding:6px 10px;font-weight:700;font-size:0.82rem;">';
-                    html += 'ORE ' + g.torneo.premiazione.ora + ' — ' + (g.torneo.premiazione.label||'PREMIAZIONE FINALE');
+                    html += '<div style="background:#16a34a;color:#fff;text-align:center;padding:6px 12px;font-weight:700;font-size:0.78rem;">';
+                    html += '🏆 Ore ' + g.torneo.premiazione.ora + ' — ' + (g.torneo.premiazione.label||'PREMIAZIONE FINALE');
                     html += '</div>';
                 }
-                html += '<div class="gare-check-wrap" onclick="gareToggleSel(\'' + g.id + '\')">';
-                html += '<input type="checkbox" ' + (isSel ? 'checked' : '') + ' onclick="event.stopPropagation();gareToggleSel(\'' + g.id + '\')">';
-                html += '<label>Includi nella locandina</label></div>';
-                html += '</div>';
             } else {
                 // ── Render GARA NORMALE ──
-                var match = (tipo === 'casa')
-                    ? 'GO SPORT GRUGLIASCO ASD VS ' + (g.avversaria || '?')
-                    : (g.avversaria || '?') + ' VS GO SPORT GRUGLIASCO ASD';
+                var teamCasa   = tipo === 'casa' ? nomeSoc : (g.avversaria || '?');
+                var teamFuori  = tipo === 'casa' ? (g.avversaria || '?') : nomeSoc;
+                var logoCasa   = tipo === 'casa' ? '🏠' : '🚌';
+                var logoFuori  = tipo === 'casa' ? '🚌' : '🏠';
+
                 html += '<div class="gare-block' + (isSel ? ' selected' : '') + '" id="gb-' + g.id + '">';
-                html += '<div class="gare-row-time"><span class="gare-ora">ORE: ' + g.ora + '</span>';
-                html += '<span style="flex:1;margin-left:6px;">' + (g.categoria||'') + (g.competizione ? ' (' + g.competizione + ')' : '') + '</span>' + editBtn + '</div>';
-                html += '<div class="gare-row-match">' + match + '</div>';
-                if (g.note) {
-                    html += '<div style="background:#060f1e;padding:4px 10px;font-size:0.72rem;color:#60a5fa;">';
-                    html += '<i class="bi bi-info-circle"></i> ' + g.note;
-                    html += '</div>';
-                }
-                html += '<div class="gare-check-wrap" onclick="gareToggleSel(\'' + g.id + '\')">';
-                html += '<input type="checkbox" ' + (isSel ? 'checked' : '') + ' onclick="event.stopPropagation();gareToggleSel(\'' + g.id + '\')">';
-                html += '<label>Includi nella locandina</label></div>';
+                html += '<div class="gare-row-time">';
+                html += '<span class="gare-ora">' + g.ora + '</span>';
+                html += '<span class="gare-comp">' + compLabel + '</span>' + editBtn;
                 html += '</div>';
+                // Squadre affiancate
+                html += '<div class="gare-match-row">';
+                html += '<div class="gare-team">';
+                html += '<div class="gare-team-logo">' + logoCasa + '</div>';
+                html += '<div class="gare-team-name">' + teamCasa + '</div>';
+                html += '</div>';
+                html += '<div class="gare-vs">VS</div>';
+                html += '<div class="gare-team fuori">';
+                html += '<div class="gare-team-logo">' + logoFuori + '</div>';
+                html += '<div class="gare-team-name">' + teamFuori + '</div>';
+                html += '</div></div>';
+                if (g.note) {
+                    html += '<div class="gare-row-note"><i class="bi bi-info-circle-fill"></i> ' + g.note + '</div>';
+                }
             }
+            // Checkbox e footer card
+            html += '<div class="gare-check-wrap" onclick="gareToggleSel(\'' + g.id + '\')">';
+            html += '<input type="checkbox" ' + (isSel ? 'checked' : '') + ' onclick="event.stopPropagation();gareToggleSel(\'' + g.id + '\')">';
+            html += '<label>Includi nella locandina</label></div>';
+            html += '</div>';
         });
     });
     return html;
@@ -1741,7 +2191,19 @@ window.gareDelSquadra = async function(nome) {
     _gareRenderSquadre();
 };
 
-// ── IMPORT EXCEL FEDERALE ────────────────────────────────────────────
+// ── AZZERA TUTTE LE GARE ────────────────────────────────────────────────
+window.gareAzzeraAll = async function() {
+    var pwd = prompt('Inserisci la password per azzerare tutte le gare:');
+    if (pwd === null) return;
+    if (pwd !== '1234') { alert('Password errata.'); return; }
+    if (!confirm('Sei sicuro di voler eliminare TUTTE le gare? Operazione irreversibile.')) return;
+    _gare = [];
+    await _gareSaveGare();
+    _gareRender();
+    alert('✅ Tutte le gare sono state eliminate.');
+};
+
+// ── IMPORT EXCEL FEDERALE / CALENDARI SOCIETARI ─────────────────────────
 window.gareImportExcel = function(input) {
     var file = input.files[0];
     if (!file) return;
@@ -1751,98 +2213,233 @@ window.gareImportExcel = function(input) {
             var XLSX = window.XLSX;
             if (!XLSX) { alert('Libreria Excel non caricata. Ricarica la pagina.'); return; }
             var wb = XLSX.read(e.target.result, { type:'array' });
-            var ws = wb.Sheets[wb.SheetNames[0]];
-            var rows = XLSX.utils.sheet_to_json(ws, { header:1 });
 
-            if (!rows.length) { alert('File vuoto.'); return; }
+            // Rileva tipo file: Federale (1 foglio, header nella riga 0)
+            // o Societario (più fogli con annate, struttura a coppie di righe)
+            var isSocietario = _gareIsSocietario(wb);
 
-            // Riga 0 = header. Trova indici colonne per nome
-            var headers = rows[0].map(function(h){ return (h||'').toString().trim(); });
-            var iSocCasa  = headers.indexOf('Descrizione societa');
-            var iSocOsp   = headers.indexOf('Descrizione societa ospite');
-            var iCamp     = headers.indexOf('Descrizione campionato');
-            var iData     = headers.indexOf('Data');
-            var iOra      = headers.indexOf('Ora');
-            var iAR       = headers.indexOf('Andata/Ritorno');
-            var iCampo    = headers.indexOf('Descrizione campo');
-            var iComune   = headers.indexOf('Comune campo');
+            var nuoveGare = [];
+            var nuoveSquadre = [];
 
-            if (iSocCasa < 0 || iSocOsp < 0 || iData < 0) {
-                alert('Formato Excel non riconosciuto. Assicurati di usare il file esportato dalla piattaforma federale.');
-                return;
+            if (isSocietario) {
+                _gareImportSocietario(wb, XLSX, nuoveGare, nuoveSquadre);
+            } else {
+                _gareImportFederale(wb, XLSX, nuoveGare, nuoveSquadre);
             }
 
-            var nuoveSquadre = [];
-            var nuoveGare    = [];
-            var nostraSoc    = '';
+            if (!nuoveGare.length) { alert('Nessuna gara trovata nel file.'); return; }
 
-            rows.slice(1).forEach(function(row) {
-                if (!row || !row[iData]) return;
-                var socCasa  = (row[iSocCasa]  || '').toString().trim().toUpperCase();
-                var socOsp   = (row[iSocOsp]   || '').toString().trim().toUpperCase();
-                var camp     = (row[iCamp]      || '').toString().trim().toUpperCase();
-                var dataRaw  = (row[iData]      || '').toString().trim();
-                var oraRaw   = (row[iOra]       || '14:00').toString().trim();
-                var ar       = (row[iAR]        || '').toString().trim().toUpperCase();
-                var campoN   = iCampo >= 0 ? (row[iCampo]  || '').toString().trim() : '';
-                var comune   = iComune >= 0 ? (row[iComune] || '').toString().trim() : '';
-
-                // Converti data dd/mm/yyyy → yyyy-mm-dd
-                var dataISO = dataRaw;
-                if (dataRaw.includes('/')) {
-                    var p = dataRaw.split('/');
-                    if (p.length === 3) dataISO = p[2] + '-' + p[1].padStart(2,'0') + '-' + p[0].padStart(2,'0');
+            // Aggiungi le squadre nuove
+            if (nuoveSquadre.length) {
+                if (confirm('Trovate ' + nuoveSquadre.length + ' nuove squadre. Aggiungerle alla lista?')) {
+                    nuoveSquadre.forEach(function(s){ if (_squadre.indexOf(s) < 0) _squadre.push(s); });
+                    await _gareSaveSquadre();
+                    _gareRenderSquadre();
                 }
+            }
 
-                // Tipo: A=Andata (in casa), R=Ritorno (fuori)
-                var tipo = (ar === 'A') ? 'casa' : 'fuori';
-                var avversaria = (ar === 'A') ? socOsp : socCasa;
-
-                // Raccogli squadra avversaria
-                if (avversaria && nuoveSquadre.indexOf(avversaria) < 0 && _squadre.indexOf(avversaria) < 0) {
-                    nuoveSquadre.push(avversaria);
+            // Chiedi se sovrascrivere o aggiungere
+            var existing = _gare.length;
+            var msg = 'Importate ' + nuoveGare.length + ' gare.';
+            if (existing > 0) {
+                if (confirm(msg + '\nSovrascrivere le ' + existing + ' gare esistenti?\nOK = Sostituisci tutto | Annulla = Aggiungi')) {
+                    _gare = nuoveGare;
+                } else {
+                    _gare = _gare.concat(nuoveGare);
                 }
+            } else {
+                _gare = nuoveGare;
+                alert(msg);
+            }
 
-                // Crea gara (evita duplicati per stesso id federale se presente)
-                var campoDisplay = campoN + (comune ? ' – ' + comune : '');
-                nuoveGare.push({
-                    id: 'gara_' + Date.now() + '_' + Math.random().toString(36).substr(2,5),
-                    data: dataISO,
-                    ora: oraRaw.substring(0,5),
-                    tipo: tipo,
-                    categoria: camp,
-                    competizione: 'CAMPIONATO',
-                    avversaria: avversaria,
-                    campo: campoDisplay,
-                    note: ''
-                });
-            });
-
-            // Mergia squadre senza duplicati
-            nuoveSquadre.forEach(function(s){ if (_squadre.indexOf(s) < 0) _squadre.push(s); });
-
-            // Mergia gare: aggiungi solo quelle con data+ora+avversaria non già presenti
-            var esistenti = _gare.map(function(g){ return g.data+'|'+g.ora+'|'+g.avversaria; });
-            nuoveGare = nuoveGare.filter(function(g){ return esistenti.indexOf(g.data+'|'+g.ora+'|'+g.avversaria) < 0; });
-            _gare = _gare.concat(nuoveGare);
-
-            await _gareSaveSquadre();
             await _gareSaveGare();
-
             _gareRender();
-            _gareRenderSquadre();
-            input.value = '';
-
-            alert('✅ Import completato!\n' + nuoveGare.length + ' gare importate\n' + nuoveSquadre.length + ' nuove squadre aggiunte');
         } catch(err) {
-            console.error('[Gare] Import errore:', err);
+            console.error('Import err:', err);
             alert('❌ Errore import: ' + err.message);
         }
     };
     reader.readAsArrayBuffer(file);
 };
 
-// ── Torneo ───────────────────────────────────────────────────────────
+// Rileva se è un file societario (più fogli con struttura a coppie di righe)
+function _gareIsSocietario(wb) {
+    // Societario: ha più fogli NON vuoti OPPURE riga2 = "Giornata/Andata/Ritorno"
+    var nonEmptySheets = wb.SheetNames.filter(function(n){
+        var ws = wb.Sheets[n];
+        return ws['A1'] && ws['A1'].v;
+    });
+    if (nonEmptySheets.length > 1) return true;
+    // Controlla se riga 2 ha header "Giornata"
+    var ws = wb.Sheets[wb.SheetNames[0]];
+    var a2 = ws['A2'] ? (ws['A2'].v || '').toString().trim().toLowerCase() : '';
+    if (a2 === 'giornata') return true;
+    // Anno formato YYYY/YYYY in A1
+    var a1 = ws['A1'] ? (ws['A1'].v || '').toString().trim() : '';
+    return /\d{4}[\/\-]\d{4}/.test(a1);
+}
+
+// Import file federale (struttura originale con header)
+function _gareImportFederale(wb, XLSX, nuoveGare, nuoveSquadre) {
+    var ws = wb.Sheets[wb.SheetNames[0]];
+    var rows = XLSX.utils.sheet_to_json(ws, { header:1 });
+    if (!rows.length) return;
+
+    var headers = rows[0].map(function(h){ return (h||'').toString().trim(); });
+    var iSocCasa  = 2;   // Colonna C = Squadra Ospitante (casa)
+    var iSocOsp   = 4;   // Colonna E = Squadra Ospite (avversaria)
+    var iNote     = 27;  // Colonna AB = Note
+    var iCamp     = headers.findIndex(function(h){ return h.toLowerCase().includes('campionato'); });
+    var iData     = headers.findIndex(function(h){ return h.toLowerCase().includes('data'); });
+    var iOra      = headers.findIndex(function(h){ return h.toLowerCase().includes('ora'); });
+    var iCampo    = headers.findIndex(function(h){ return h.toLowerCase().includes('campo'); });
+    var iComune   = headers.findIndex(function(h){ return h.toLowerCase().includes('comune'); });
+
+    var OUR_SOC = 'GO SPORT GRUGLIASCO';
+
+    for (var i = 1; i < rows.length; i++) {
+        var row = rows[i];
+        if (!row || !row[iSocCasa]) continue;
+        var socCasa  = (row[iSocCasa] || '').toString().trim();
+        var socOsp   = (row[iSocOsp]  || '').toString().trim();
+        var camp     = iCamp >= 0 ? (row[iCamp] || '').toString().trim() : '';
+        var dataRaw  = iData >= 0 ? (row[iData] || '').toString().trim() : '';
+        var oraRaw   = iOra  >= 0 ? (row[iOra]  || '14:00').toString().trim() : '14:00';
+        var campoN   = iCampo  >= 0 ? (row[iCampo]  || '').toString().trim() : '';
+        var comune   = iComune >= 0 ? (row[iComune] || '').toString().trim() : '';
+        var notaAB   = (row[iNote] || '').toString().trim();
+
+        var dataISO = dataRaw;
+        if (dataRaw.includes('/')) {
+            var p = dataRaw.split('/');
+            if (p.length === 3) dataISO = p[2] + '-' + p[1].padStart(2,'0') + '-' + p[0].padStart(2,'0');
+        }
+
+        var tipo, avversaria;
+        if (socCasa.includes(OUR_SOC)) {
+            tipo = 'casa'; avversaria = socOsp;
+        } else if (socOsp.includes(OUR_SOC)) {
+            tipo = 'fuori'; avversaria = socCasa;
+        } else { continue; }
+
+        if (avversaria && nuoveSquadre.indexOf(avversaria) < 0 && _squadre.indexOf(avversaria) < 0)
+            nuoveSquadre.push(avversaria);
+
+        nuoveGare.push({
+            id: 'gara_' + Date.now() + '_' + Math.random().toString(36).substr(2,5),
+            data: dataISO,
+            ora: oraRaw.substring(0,5),
+            tipo: tipo,
+            avversaria: avversaria,
+            competizione: camp,
+            categoria: '',
+            campo: campoN + (comune ? ' – ' + comune : ''),
+            note: notaAB,
+            tipoComp: 'campionato'
+        });
+    }
+}
+
+// Import file societario (fogli per annata)
+function _gareImportSocietario(wb, XLSX, nuoveGare, nuoveSquadre) {
+    var OUR_SOC = 'GO SPORT GRUGLIASCO';
+
+    wb.SheetNames.forEach(function(sheetName) {
+        var ws = wb.Sheets[sheetName];
+        var rows = XLSX.utils.sheet_to_json(ws, { header:1, raw:false });
+        if (!rows || rows.length < 3) return;
+        // Salta fogli vuoti
+        var hasContent = rows.some(function(r){ return r && r[0]; });
+        if (!hasContent) return;
+
+        // Riga 1 (indice 0) = nome competizione in A1
+        var competizione = (rows[0] && rows[0][0]) ? rows[0][0].toString().replace(/\xa0/g,' ').trim() : sheetName;
+
+        // Scansione: le righe con colonna A numerica = riga SQUADRE
+        // Le righe con colonna A null e B contiene data = riga DATE
+        // Strategia: per ogni riga con numero giornata in A, prendo B e C come squadre
+        // poi cerco la riga successiva con date (A=null, B contiene data)
+        var squadreBuffer = null; // { b: squadreAndata, c: squadreRitorno, riga: i }
+
+        for (var i = 2; i < rows.length; i++) {
+            var row = rows[i];
+            if (!row) continue;
+            var colA = (row[0] || '').toString().trim();
+            var colB = (row[1] || '').toString().replace(/\xa0/g,' ').trim();
+            var colC = (row[2] || '').toString().replace(/\xa0/g,' ').trim();
+
+            // Riga con numero giornata in A (numerico o vuoto con squadre in B)
+            var isGiornata = !isNaN(parseFloat(colA)) && colB && colB.includes(' - ');
+            var isDate     = !isNaN(parseFloat(colA)) === false && colB && /\d{2}\/\d{2}\/\d{4}/.test(colB);
+
+            if (isGiornata || (colB && colB.includes(' - ') && !isDate)) {
+                // È una riga con squadre
+                squadreBuffer = { b: colB, c: colC };
+            } else if (squadreBuffer && /\d{2}\/\d{2}\/\d{4}/.test(colB)) {
+                // È una riga con date, associata al buffer precedente
+                var dataA = colB, dataR = colC;
+                var sqA = squadreBuffer.b, sqR = squadreBuffer.c;
+
+                if (sqA && sqA.includes(' - ')) {
+                    var g = _gareParseGiocoSocietario(sqA, dataA, '', competizione, sheetName, OUR_SOC, nuoveSquadre);
+                    if (g) nuoveGare.push(g);
+                }
+                if (sqR && sqR.includes(' - ')) {
+                    var g2 = _gareParseGiocoSocietario(sqR, dataR, '', competizione, sheetName, OUR_SOC, nuoveSquadre);
+                    if (g2) nuoveGare.push(g2);
+                }
+                squadreBuffer = null;
+            }
+        }
+    });
+}
+
+// Parsifica una singola gara societaria
+function _gareParseGiocoSocietario(squadre, dataOra, nota, competizione, annata, ourSoc, nuoveSquadre) {
+    // squadre = "Squadra Casa - Squadra Ospite"
+    squadre = squadre.replace(/\xa0/g, ' ').replace(/\s+/g,' ').trim();
+    var sep = squadre.lastIndexOf(' - ');
+    if (sep < 0) return null;
+    var casa  = squadre.substring(0, sep).trim();
+    var ospite = squadre.substring(sep + 3).trim();
+
+    var tipo, avversaria;
+    if (casa.includes(ourSoc)) {
+        tipo = 'casa'; avversaria = ospite;
+    } else if (ospite.includes(ourSoc)) {
+        tipo = 'fuori'; avversaria = casa;
+    } else { return null; } // gara che non ci riguarda
+
+    if (avversaria && nuoveSquadre.indexOf(avversaria) < 0 && _squadre.indexOf(avversaria) < 0)
+        nuoveSquadre.push(avversaria);
+
+    // dataOra = "02/11/2025 ore:17:00" oppure "02/11/2025 ore: 17:00"
+    var dataISO = '';
+    var ora = '00:00';
+    if (dataOra) {
+        var dtMatch = dataOra.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+        if (dtMatch) {
+            dataISO = dtMatch[3] + '-' + dtMatch[2].padStart(2,'0') + '-' + dtMatch[1].padStart(2,'0');
+        }
+        var orMatch = dataOra.match(/(\d{1,2}):(\d{2})/);
+        if (orMatch) {
+            ora = orMatch[1].padStart(2,'0') + ':' + orMatch[2];
+        }
+    }
+
+    return {
+        id: 'gara_' + Date.now() + '_' + Math.random().toString(36).substr(2,5),
+        data: dataISO,
+        ora: ora,
+        tipo: tipo,
+        avversaria: avversaria,
+        competizione: competizione,
+        categoria: annata,
+        campo: '',
+        note: nota,
+        tipoComp: 'campionato'
+    };
+}// ── Torneo ───────────────────────────────────────────────────────────
 var _torneoMatchCount = 0;
 
 window.gareTipoCompChange = function() {
@@ -1980,46 +2577,64 @@ function _gareDrawLocandina(tipo){
     var sel=_gare.filter(function(g){return _gareSelected.indexOf(g.id)>=0;}).sort(function(a,b){return (a.data+a.ora).localeCompare(b.data+b.ora);});
     var titolo=(document.getElementById('gare-export-titolo')||{}).value||'GO SPORT GRUGLIASCO ASD';
     if(!sel.length){alert('Seleziona almeno una gara.');return null;}
-    var W=800,HH=70,DH=30,TH=26,MH=30,IH=18,GAP=5,PAD=14,CTH=32;
+    var W=1100,HH=70,DH=32,TH=28,MH=34,IH=18,GAP=5,PAD=14,CTH=36;
     function grp(l){var g={};l.forEach(function(x){if(!g[x.data])g[x.data]=[];g[x.data].push(x);});return g;}
     function bh(g){return TH+MH+(g.campo||g.note?IH:0)+GAP;}
     function sh(l){var h=CTH+8,gg=grp(l);Object.keys(gg).sort().forEach(function(d){h+=DH;gg[d].forEach(function(g){h+=bh(g);});h+=GAP;});return h+8;}
     var casa=sel.filter(function(g){return g.tipo==='casa';}),fuori=sel.filter(function(g){return g.tipo==='fuori';});
-    var totH=tipo==='separato'?HH+PAD+Math.max(casa.length?sh(casa):40,fuori.length?sh(fuori):40)+PAD:HH+PAD+sh(sel)+PAD;
+    var totH=tipo==='separato'
+        ?HH+PAD+(casa.length?sh(casa)+PAD:0)+(fuori.length?sh(fuori)+PAD:0)+20
+        :HH+PAD+sh(sel)+PAD;
     var cv=document.getElementById('gare-canvas');cv.width=W;cv.height=Math.max(totH,200);
     var ctx=cv.getContext('2d');
-    ctx.fillStyle='#060f1e';ctx.fillRect(0,0,W,cv.height);
-    ctx.fillStyle='#0f172a';ctx.fillRect(0,0,W,HH);
+    ctx.fillStyle='#ccd3db';ctx.fillRect(0,0,W,cv.height);
+    ctx.fillStyle='#1a3a5f';ctx.fillRect(0,0,W,HH);
     ctx.strokeStyle='#2d4a8a';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,HH);ctx.lineTo(W,HH);ctx.stroke();
     ctx.fillStyle='#60a5fa';ctx.font='bold 20px Arial,sans-serif';ctx.textAlign='center';ctx.fillText(titolo,W/2,30);
     ctx.fillStyle='#60a5fa';ctx.font='13px Arial,sans-serif';
     ctx.fillText(tipo==='separato'?'GARE IN PROGRAMMA':'CALENDARIO GARE',W/2,54);
     function drawS(l,x,w,sY,sT,cT,cM){
-        var y=sY;ctx.fillStyle=cT;ctx.fillRect(x,y,w,CTH);
-        ctx.fillStyle='#fff';ctx.font='bold 13px Arial,sans-serif';ctx.textAlign='center';ctx.fillText(sT,x+w/2,y+21);y+=CTH+8;
+        var y=sY;
+        // Sfondo colonna #ccd3db
+        ctx.fillStyle='#ccd3db';ctx.fillRect(x,sY,w,cv.height-sY-PAD);
+        ctx.fillStyle=cT;ctx.fillRect(x,y,w,CTH);
+        ctx.fillStyle='#fff';ctx.font='bold 16px Arial,sans-serif';ctx.textAlign='center';ctx.fillText(sT,x+w/2,y+24);y+=CTH+8;
         if(!l.length){ctx.fillStyle='#64748b';ctx.font='11px Arial,sans-serif';ctx.fillText('Nessuna gara',x+w/2,y+18);return;}
         var gg=grp(l);
         Object.keys(gg).sort().forEach(function(d){
             var gl=gg[d].sort(function(a,b){return a.ora.localeCompare(b.ora);});
-            ctx.fillStyle='#1e293b';ctx.fillRect(x,y,w,DH);
-            ctx.strokeStyle='#2d4a8a';ctx.lineWidth=1;ctx.strokeRect(x,y,w,DH);
-            ctx.fillStyle='#60a5fa';ctx.font='bold 11px Arial,sans-serif';ctx.textAlign='center';
+            var _dcMap={0:'#ea580c',1:'#13ea0c',2:'#0ce3ea',3:'#dc6ded',4:'#5f93ed',5:'#ebed5f',6:'#f59e0b'};
+            var _dtMap={0:'#ffffff',1:'#000000',2:'#000000',3:'#ffffff',4:'#ffffff',5:'#000000',6:'#000000'};
+            var _dw=_gareParseDate(d).getDay();
+            ctx.fillStyle=_dcMap[_dw]||'#f59e0b';ctx.fillRect(x,y,w,DH);
+            ctx.strokeStyle='rgba(0,0,0,0.15)';ctx.lineWidth=1;ctx.strokeRect(x,y,w,DH);
+            ctx.fillStyle=_dtMap[_dw]||'#000000';ctx.font='bold 11px Arial,sans-serif';ctx.textAlign='center';
             ctx.fillText(('GARE '+_gareGiornoLabel(d)).toUpperCase(),x+w/2,y+19);y+=DH;
             gl.forEach(function(g){
                 var m=g.tipo==='casa'?'GO SPORT GRUGLIASCO ASD vs '+(g.avversaria||'?'):(g.avversaria||'?')+' vs GO SPORT GRUGLIASCO ASD';
                 ctx.fillStyle='#1e293b';ctx.fillRect(x,y,w,TH);
-                ctx.fillStyle='#000000';ctx.font='bold 11px Arial,sans-serif';ctx.textAlign='left';
-                ctx.fillText('ORE: '+g.ora,x+6,y+17);
-                ctx.fillStyle='#0d1b2a';ctx.font='10px Arial,sans-serif';
-                ctx.fillText((g.categoria||'')+(g.competizione?' ('+g.competizione+')':''),x+74,y+17);y+=TH;
-                ctx.fillStyle=cM;ctx.fillRect(x,y,w,MH);
-                ctx.fillStyle='#ffffff';ctx.font='bold 12px Arial,sans-serif';ctx.textAlign='center';
-                var mW=w-12,txt=m.toUpperCase();
-                while(ctx.measureText(txt).width>mW&&txt.length>6)txt=txt.slice(0,-1);
-                if(txt!==m.toUpperCase())txt+='...';ctx.fillText(txt,x+w/2,y+20);y+=MH;
+                ctx.fillStyle='#ffffff';ctx.font='bold 11px Arial,sans-serif';ctx.textAlign='left';
+                ctx.fillText(g.ora,x+6,y+19);
+                ctx.fillStyle='#60a5fa';ctx.font='11px Arial,sans-serif';
+                ctx.fillText((g.categoria||'')+(g.competizione?' ('+g.competizione+')':''),x+72,y+19);y+=TH;
+                ctx.fillStyle='#f0f1f2';ctx.fillRect(x,y,w,MH);
+                // Render squadre con VS blu al centro
+                var teamA = g.tipo==='casa' ? (window._appData&&window._appData.societyName?window._appData.societyName:'GO SPORT') : (g.avversaria||'?');
+                var teamB = g.tipo==='casa' ? (g.avversaria||'?') : (window._appData&&window._appData.societyName?window._appData.societyName:'GO SPORT');
+                var vsW = ctx.measureText(' VS ').width + 20;
+                var teamW = (w - vsW - 20) / 2;
+                ctx.font='bold 13px Arial,sans-serif';
+                // Team A - tronca se necessario
+                var tA=teamA.toUpperCase(); while(ctx.measureText(tA).width>teamW&&tA.length>4)tA=tA.slice(0,-1); if(tA!==teamA.toUpperCase())tA+='..';
+                // Team B
+                var tB=teamB.toUpperCase(); while(ctx.measureText(tB).width>teamW&&tB.length>4)tB=tB.slice(0,-1); if(tB!==teamB.toUpperCase())tB+='..';
+                ctx.fillStyle='#1e3a5f'; ctx.textAlign='right';  ctx.fillText(tA, x+10+teamW, y+22);
+                ctx.fillStyle='#3b82f6'; ctx.textAlign='center'; ctx.fillText('VS', x+w/2, y+22);
+                ctx.fillStyle='#1e3a5f'; ctx.textAlign='left';   ctx.fillText(tB, x+w-10-teamW, y+22);
+                y+=MH;
                 if(g.note){
-                    ctx.fillStyle='#060f1e';ctx.fillRect(x,y,w,IH);
-                    ctx.fillStyle='#64748b';ctx.font='9px Arial,sans-serif';ctx.textAlign='left';
+                    ctx.fillStyle='#e0e4e8';ctx.fillRect(x,y,w,IH);
+                    ctx.fillStyle='#1e3a5f';ctx.font='9px Arial,sans-serif';ctx.textAlign='left';
                     ctx.fillText((g.campo?'Loc: '+g.campo:'')+(g.note?' - '+g.note:''),x+6,y+13);y+=IH;
                 }
                 y+=GAP;
@@ -2028,16 +2643,79 @@ function _gareDrawLocandina(tipo){
     }
     var sY=HH+PAD;
     if(tipo==='separato'){
-        var cW=(W-PAD*3)/2;
-        drawS(casa,PAD,cW,sY,'GARE IN CASA','#1a3a5f','#60a5fa');
-        drawS(fuori,PAD*2+cW,cW,sY,'GARE FUORI CASA','#d90429','#60a5fa');
+        // Layout verticale: prima casa poi fuori casa
+        var fullW=W-PAD*2;
+        var sYcasa=sY;
+        var casaH=casa.length?sh(casa):0;
+        var fuoriH=fuori.length?sh(fuori):0;
+        // Ricolloca l'altezza canvas per layout verticale
+        var neededH=HH+PAD+(casa.length?casaH+PAD:0)+(fuori.length?fuoriH+PAD:0)+20;
+        cv.height=Math.max(neededH,200);
+        // Ridisegna sfondo dopo resize
+        ctx.fillStyle='#ccd3db';ctx.fillRect(0,0,W,cv.height);
+        ctx.fillStyle='#1a3a5f';ctx.fillRect(0,0,W,HH);
+        ctx.strokeStyle='#2d4a8a';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,HH);ctx.lineTo(W,HH);ctx.stroke();
+        ctx.fillStyle='#60a5fa';ctx.font='bold 20px Arial,sans-serif';ctx.textAlign='center';ctx.fillText(titolo,W/2,30);
+        ctx.fillStyle='#60a5fa';ctx.font='13px Arial,sans-serif';ctx.fillText('GARE IN PROGRAMMA',W/2,54);
+        if(casa.length){
+            drawS(casa,PAD,fullW,sY,'🏠 GARE IN CASA','#1a3a5f','#f0f1f2');
+            sY+=casaH+PAD;
+        }
+        if(fuori.length){
+            drawS(fuori,PAD,fullW,sY,'🚌 GARE FUORI CASA','#d90429','#f0f1f2');
+            sY+=fuoriH+PAD;
+        }
     } else {
-        drawS(sel,PAD,W-PAD*2,sY,'CALENDARIO GARE','#1a3a5f','#60a5fa');
+        drawS(sel,PAD,W-PAD*2,sY,'CALENDARIO GARE','#1a3a5f','#f0f1f2');
     }
     ctx.fillStyle='#3b5a9d';ctx.font='9px Arial,sans-serif';ctx.textAlign='center';
     ctx.fillText('(c) '+new Date().getFullYear()+' Sport Monitoring',W/2,cv.height-5);
     return cv;
 }
+window.gareInviaBacheca = async function() {
+    var tipo = document.querySelector('.gare-export-tipo:checked')?.value || 'separato';
+    var cv = _gareDrawLocandina(tipo);
+    if (!cv) { alert('Nessuna gara selezionata.'); return; }
+
+    // Converti canvas in base64 jpeg
+    var imgData = cv.toDataURL('image/jpeg', 0.75);
+
+    // Crea il post in bacheca con l'immagine
+    var titolo = 'Locandina Gare – ' + document.getElementById('gare-week-label')?.textContent || 'Gare in Programma';
+    var vis = 'annata'; // visibilità di default: questa annata
+
+    // Genera ID post
+    var pid = 'post_' + Date.now();
+
+    // Costruisce il post
+    var post = {
+        id: pid,
+        title: titolo,
+        text: '<p>📅 Gare in programma della settimana.</p>',
+        visibility: vis,
+        date: new Date().toISOString(),
+        pinned: false
+    };
+
+    // Aggiunge l'immagine
+    if (typeof _bPostImages !== 'undefined') {
+        _bPostImages[pid] = imgData;
+    }
+
+    // Aggiunge il post all'array bacheca
+    if (typeof _bPosts !== 'undefined') {
+        _bPosts.unshift(post);
+        if (typeof _bSave === 'function') await _bSave();
+        else if (typeof _bLoaded !== 'undefined') {
+            _bLoaded = false;
+            if (typeof _bLoad === 'function') await _bLoad();
+        }
+        alert('✅ Locandina inviata in Bacheca!');
+    } else {
+        alert('❌ Bacheca non disponibile in questa pagina. Usa i pulsanti Scarica per salvare la locandina, poi caricala manualmente in Bacheca.');
+    }
+};
+
 window.gareDownloadPNG=function(){
     var tipo=(document.querySelector('input[name="gare-export-tipo"]:checked')||{}).value||'separato';
     var cv=_gareDrawLocandina(tipo);if(!cv)return;
@@ -2081,6 +2759,7 @@ async function docLoad() {
     console.log('[Documenti] annataId:', aid);
     try {
         var res = await fetch('/api/data', { cache:'no-store', headers:{'x-annata-id': aid} });
+        if (!res.ok) throw new Error('HTTP '+res.status);
         var d = await res.json();
         _docs = (d && d.documents) || [];
         _docsLoaded = true;
@@ -2200,25 +2879,39 @@ function docRender() {
         return;
     }
 
+    var isLight = document.documentElement.classList.contains('theme-light');
+    var docBoxBg    = isLight ? '#f0f1f2'  : '#0f172a';
+    var docBoxBord  = isLight ? '#9aa5b0'  : '#1a3a5f';
+    var docNameCol  = isLight ? '#000103'  : '#e2e8f0';
+    var docDescCol  = isLight ? '#374151'  : '#64748b';
+    var docDateCol  = isLight ? '#374151'  : '#64748b';
+    var docIconCol  = isLight ? '#1a3a5f'  : '#60a5fa';
+    var apriIconCol = isLight ? '#ffffff'  : '#60a5fa';
+    var apriBg      = isLight ? '#1a3a5f'  : '#1a3a5f';
+    var pubBg       = isLight ? '#1a3a5f'  : '#1a3a5f';
+    var pubCol      = isLight ? '#ffffff'  : '#60a5fa';
+    var privBg      = isLight ? '#16a34a'  : '#16a34a';
+    var privCol     = isLight ? '#ffffff'  : '#ffffff';
+
     var h = '';
     _docs.forEach(function(doc) {
         var visLabels = (doc.visibility||[]).map(function(v){
             return v==='pubblica'
-                ? '<span style="background:#1a3a5f;color:#60a5fa;border-radius:4px;padding:1px 7px;font-size:0.72rem;margin-right:4px;">🌍 Pubblica</span>'
-                : '<span style="background:#16a34a;color:#16a34a;border-radius:4px;padding:1px 7px;font-size:0.72rem;margin-right:4px;">🔒 Privata</span>';
+                ? '<span style="background:' + pubBg + ';color:' + pubCol + ';border-radius:4px;padding:1px 7px;font-size:0.72rem;margin-right:4px;">🌍 Pubblica</span>'
+                : '<span style="background:' + privBg + ';color:' + privCol + ';border-radius:4px;padding:1px 7px;font-size:0.72rem;margin-right:4px;">🔒 Privata</span>';
         }).join('');
-        h += '<div style="background:#0f172a;border:1px solid #1a3a5f;border-radius:8px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;">';
-        h += '<i class="bi bi-file-earmark-text-fill" style="font-size:1.6rem;color:#60a5fa;flex-shrink:0;"></i>';
+        h += '<div style="background:' + docBoxBg + ';border:1px solid ' + docBoxBord + ';border-radius:8px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;">';
+        h += '<i class="bi bi-file-earmark-text-fill" style="font-size:1.6rem;color:' + docIconCol + ';flex-shrink:0;"></i>';
         h += '<div style="flex:1;min-width:0;">';
-        h += '<div style="font-weight:600;color:#e2e8f0;margin-bottom:2px;">' + doc.name + '</div>';
-        if (doc.desc) h += '<div style="color:#64748b;font-size:0.8rem;margin-bottom:4px;">' + doc.desc + '</div>';
-        h += '<div>' + visLabels + '<span style="color:#64748b;font-size:0.72rem;">' + (doc.date||'') + '</span></div>';
+        h += '<div style="font-weight:600;color:' + docNameCol + ';margin-bottom:2px;">' + doc.name + '</div>';
+        if (doc.desc) h += '<div style="color:' + docDescCol + ';font-size:0.8rem;margin-bottom:4px;">' + doc.desc + '</div>';
+        h += '<div>' + visLabels + '<span style="color:' + docDateCol + ';font-size:0.72rem;">' + (doc.date||'') + '</span></div>';
         h += '</div>';
         h += '<div style="display:flex;gap:6px;flex-shrink:0;">';
-        h += '<a href="' + doc.url + '" target="_blank" style="background:#1a3a5f;color:#60a5fa;border:none;border-radius:5px;padding:5px 12px;font-size:0.8rem;cursor:pointer;text-decoration:none;"><i class="bi bi-box-arrow-up-right"></i> Apri</a>';
+        h += '<a href="' + doc.url + '" target="_blank" style="background:' + apriBg + ';color:' + apriIconCol + ';border:none;border-radius:5px;padding:5px 12px;font-size:0.8rem;cursor:pointer;text-decoration:none;"><i class="bi bi-box-arrow-up-right"></i> Apri</a>';
         if (canEdit) {
-            h += '<button data-docid="' + doc.id + '" class="doc-edit-btn" style="background:#1a3a5f;color:#f59e0b;border:none;border-radius:5px;padding:5px 10px;font-size:0.8rem;cursor:pointer;"><i class="bi bi-pencil-fill"></i></button>';
-            h += '<button data-docid="' + doc.id + '" class="doc-delete-btn" style="background:#450a0a;color:#d90429;border:none;border-radius:5px;padding:5px 10px;font-size:0.8rem;cursor:pointer;"><i class="bi bi-trash-fill"></i></button>';
+            h += '<button data-docid="' + doc.id + '" class="doc-edit-btn" style="background:#1a3a5f;color:#ffffff;border:none;border-radius:5px;padding:5px 10px;font-size:0.8rem;cursor:pointer;"><i class="bi bi-pencil-fill"></i></button>';
+            h += '<button data-docid="' + doc.id + '" class="doc-delete-btn" style="background:#d90429;color:#ffffff;border:none;border-radius:5px;padding:5px 10px;font-size:0.8rem;cursor:pointer;"><i class="bi bi-trash-fill"></i></button>';
         }
         h += '</div></div>';
     });

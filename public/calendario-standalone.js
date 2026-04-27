@@ -570,7 +570,7 @@ async function render(loadedData) {
     console.log('[PRESENZA] 🔓 Modalità Genitore:', athleteIdParam);
     
     // NASCONDI tutti i pulsanti del coach in modalità genitore
-    const coachButtons = document.querySelectorAll('#60a5fa-btn, #generate-btn, #import-btn, #responses-btn, #delete-btn');
+    const coachButtons = document.querySelectorAll('#add-btn, #generate-btn, #import-btn, #responses-btn, #delete-btn');
     coachButtons.forEach(btn => {
       if (btn && btn.parentElement) {
         btn.parentElement.style.display = 'none';
@@ -670,16 +670,17 @@ async function render(loadedData) {
         : '';
     
     const editBtn = !isParentView ?
-      `<button onclick="editEvent('${d}')" class="btn btn-sm btn-warning ms-1" style="padding:0.1rem 0.3rem;font-size:0.6rem" title="Modifica evento">
+      `<button onclick="editEvent('${d}')" class="btn btn-sm btn-warning ms-1" style="padding:0.1rem 0.3rem;font-size:0.6rem;color:#ffffff;" title="Modifica evento">
         <i class="bi bi-pencil"></i>
       </button>` : '';
 
     const deleteBtn = !isParentView ? 
-      `<button onclick="deleteEvent('${d}')" class="btn btn-sm btn-danger ms-1" style="padding:0.1rem 0.3rem;font-size:0.6rem" title="Elimina evento">
+      `<button onclick="deleteEvent('${d}')" class="btn btn-sm btn-danger ms-1" style="padding:0.1rem 0.3rem;font-size:0.6rem;color:#ffffff;" title="Elimina evento">
         <i class="bi bi-trash"></i>
       </button>` : '';
     
-    h += `<th class="text-center" style="color:#000;${e.type==='Individual'?'background:#1e1b4b;':''}">
+    var _thColor = '#ffffff'; // sempre bianco: sfondo header è sempre scuro
+    h += `<th class="text-center" style="color:${_thColor};${e.type==='Individual'?'background:#1e1b4b;':''}">
       <small>${eventIcon} ${e.type}${athleteLine}<br>${e.time}${editBtn}${deleteBtn}</small>
     </th>`;
   });
