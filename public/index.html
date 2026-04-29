@@ -1,8 +1,32 @@
 <!DOCTYPE html>
+<!-- =====================================================
+     Coach Dashboard - index.html
+     Revisione: v1.5.13  (2026-04-28)
+     Modifiche dell'ultima revisione:
+       - Risultati > Riepilogo Cartellini: aggregato per atleta
+         con TOTALE gialli + rossi (prima era una riga per cartellino)
+       - colonna Data mostra il cartellino piu' recente per atleta
+       - pulsante elimina cancella TUTTI i cartellini dell'atleta
+         (con conferma) dalla stagione corrente
+     Cronologia:
+       v1.5.12 - stampa Materiali con finestra dedicata
+       v1.5.11 - stampa Pagamenti con finestra dedicata
+       v1.5.5 - mobile: pulsanti Cambia Annata + Esci nella tendina hamburger
+                + massimizzato spazio Calendario su smartphone
+       v1.5.4 - pulsante Stampa Pagella nel modale Pagelle
+       v1.5.2 - footer assistenza con email cliccabile
+       v1.5.1 - applyChartTheme: colori tema chiaro davvero neri
+       v1.5.0 - hamburger nera in tema chiaro, tab Valutazioni
+                nascosto su smartphone, fix tema chiaro grafici (parz.)
+       v1.4.0 - fix stampa GPS (position:static, page-break)
+       v1.3.0 - fix stampa Formazione (zoom invece di transform)
+       v1.2.0 - fix stampa barra bianca + bordo rosso
+     ===================================================== -->
 <html lang="it" data-bs-theme="dark" style="color-scheme: dark;">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="version" content="1.5.13">
     <title>Coach Dashboard</title>
     
     <!-- CRITICAL CSS: Nasconde contenuto ma permette login dinamico -->
@@ -600,16 +624,259 @@
     main > hr { display: none !important; }
     .mobile-tab-warning { display: none !important; }
     /* Confronto squadra: gestito dal sistema tab-section, mostrato via JS quando tab GPS è attivo */
-    /* GPS e Analisi: nascondi grafici su mobile, mostra solo avviso */
+    /* GPS, Analisi e Valutazioni: nascondi grafici su mobile, mostra solo avviso */
     @media (max-width: 991px) {
         #monitoraggio-gps-section > *:not(.d-lg-none),
-        #analisi-singolo-section > *:not(.d-lg-none) {
+        #analisi-singolo-section > *:not(.d-lg-none),
+        #report-valutazioni-section > *:not(.d-lg-none) {
             display: none !important;
         }
         /* Confronto performance: nascosto su mobile (è fuori da GPS section) */
         #confronto-squadra-section {
             display: none !important;
         }
+    }
+
+    /* ============================================================
+       FIX TEMA CHIARO (v1.5.0)
+       ============================================================ */
+    /* N°1 - Icona hamburger nera nel tema chiaro */
+    html.theme-light .navbar-toggler,
+    body.theme-light .navbar-toggler {
+        border-color: rgba(0,0,0,0.4) !important;
+    }
+    html.theme-light .navbar-toggler-icon,
+    body.theme-light .navbar-toggler-icon {
+        background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath stroke='rgba(0,0,0,0.85)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E") !important;
+    }
+
+    /* N°3 - Tema chiaro: scritte di card-title e griglie più scure nei grafici */
+    html.theme-light .chart-card .card-title,
+    body.theme-light .chart-card .card-title,
+    html.theme-light .card.chart-card h5,
+    body.theme-light .card.chart-card h5,
+    html.theme-light .card.chart-card h4,
+    body.theme-light .card.chart-card h4 {
+        color: #000000 !important;
+        font-weight: 600 !important;
+    }
+    /* Scritte all'interno dei card-body (label, "Parametro", ecc.) */
+    html.theme-light .chart-card .form-label,
+    body.theme-light .chart-card .form-label,
+    html.theme-light .chart-card label,
+    body.theme-light .chart-card label,
+    html.theme-light .chart-card small,
+    body.theme-light .chart-card small {
+        color: #1a1a1a !important;
+    }
+    /* Sezione Valutazioni / Presenze / GPS / Analisi - testi generali */
+    html.theme-light #report-valutazioni-section,
+    body.theme-light #report-valutazioni-section,
+    html.theme-light #report-presenze-section,
+    body.theme-light #report-presenze-section,
+    html.theme-light #monitoraggio-gps-section,
+    body.theme-light #monitoraggio-gps-section,
+    html.theme-light #confronto-squadra-section,
+    body.theme-light #confronto-squadra-section,
+    html.theme-light #analisi-singolo-section,
+    body.theme-light #analisi-singolo-section {
+        color: #0a0a0a !important;
+    }
+    html.theme-light #report-valutazioni-section .main-title,
+    body.theme-light #report-valutazioni-section .main-title,
+    html.theme-light #report-presenze-section .main-title,
+    body.theme-light #report-presenze-section .main-title,
+    html.theme-light #monitoraggio-gps-section .main-title,
+    body.theme-light #monitoraggio-gps-section .main-title,
+    html.theme-light #confronto-squadra-section .main-title,
+    body.theme-light #confronto-squadra-section .main-title,
+    html.theme-light #analisi-singolo-section .main-title,
+    body.theme-light #analisi-singolo-section .main-title {
+        color: #000000 !important;
+    }
+    /* ============================================================ */
+
+    /* Footer assistenza: nero in tema chiaro, bianco in tema scuro */
+    .footer-assistance {
+        color: #ffffff !important;
+    }
+    .footer-assistance-link {
+        color: #ffffff !important;
+        text-decoration: underline !important;
+    }
+    html.theme-light .footer-assistance,
+    body.theme-light .footer-assistance,
+    html.theme-light .footer-assistance-link,
+    body.theme-light .footer-assistance-link {
+        color: #000000 !important;
+    }
+    html.theme-light footer.bg-dark-blue,
+    body.theme-light footer.bg-dark-blue {
+        background: #f0f1f2 !important;
+    }
+
+    /* ============================================================
+       STILI STORICO PAGELLE (v1.5.6)
+       Le classi rating-card-mini ecc. non avevano stile definito,
+       quindi in tema chiaro il testo bianco scompariva sullo sfondo bianco.
+       ============================================================ */
+    .rating-card-mini {
+        background: var(--bg-panel, #1e293b);
+        border: 1px solid var(--border, #2d4a8a);
+        border-radius: 10px;
+        padding: 14px;
+        cursor: pointer;
+        transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+        height: 100%;
+        color: var(--text-primary, #e2e8f0);
+    }
+    .rating-card-mini:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        border-color: #d90429;
+    }
+    .rating-card-mini .rating-date {
+        font-weight: 700;
+        font-size: 1rem;
+        margin-bottom: 4px;
+    }
+    .rating-card-mini .rating-coach {
+        font-size: 0.85rem;
+        opacity: 0.75;
+        margin-bottom: 10px;
+    }
+    .rating-card-mini .rating-scores {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-bottom: 10px;
+        font-size: 0.85rem;
+    }
+    .rating-card-mini .rating-score-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .rating-card-mini .score-stars {
+        color: #ffc107;
+        letter-spacing: 1px;
+    }
+    .rating-card-mini .rating-average-badge {
+        background: linear-gradient(135deg, #1e3a5f, #0f172a);
+        color: #fff;
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-weight: 700;
+        text-align: center;
+        font-size: 0.9rem;
+    }
+    .rating-card-mini .rating-average-badge .bi { color: #ffc107; margin-right: 4px; }
+
+    .rating-empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-primary, #e2e8f0);
+    }
+    .rating-empty-state .bi { font-size: 3rem; opacity: 0.4; }
+    .rating-empty-state h5 { margin-top: 15px; font-weight: 700; }
+
+    /* === TEMA CHIARO: card grigio chiaro, scritte nere === */
+    html.theme-light .rating-card-mini,
+    body.theme-light .rating-card-mini {
+        background: #f0f1f2 !important;
+        border-color: #9aa5b0 !important;
+        color: #000000 !important;
+    }
+    html.theme-light .rating-card-mini:hover,
+    body.theme-light .rating-card-mini:hover {
+        background: #e6e8ea !important;
+        border-color: #d90429 !important;
+    }
+    html.theme-light .rating-card-mini .rating-date,
+    body.theme-light .rating-card-mini .rating-date,
+    html.theme-light .rating-card-mini .rating-coach,
+    body.theme-light .rating-card-mini .rating-coach,
+    html.theme-light .rating-card-mini .rating-scores,
+    body.theme-light .rating-card-mini .rating-scores,
+    html.theme-light .rating-card-mini .rating-score-item,
+    body.theme-light .rating-card-mini .rating-score-item {
+        color: #000000 !important;
+    }
+    html.theme-light .rating-card-mini .rating-coach,
+    body.theme-light .rating-card-mini .rating-coach {
+        opacity: 0.7;
+    }
+    html.theme-light .rating-empty-state,
+    body.theme-light .rating-empty-state {
+        color: #000000 !important;
+    }
+    /* La modale stessa in tema chiaro */
+    html.theme-light #ratingListModal .modal-content,
+    body.theme-light #ratingListModal .modal-content,
+    html.theme-light #ratingSheetModal .modal-content,
+    body.theme-light #ratingSheetModal .modal-content {
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+    html.theme-light #ratingListModal .modal-title,
+    body.theme-light #ratingListModal .modal-title,
+    html.theme-light #ratingSheetModal .modal-title,
+    body.theme-light #ratingSheetModal .modal-title {
+        color: #000000 !important;
+    }
+    /* v1.5.7: input/textarea/date del form pagella in bianco su tema chiaro */
+    html.theme-light #ratingSheetModal .form-control,
+    body.theme-light #ratingSheetModal .form-control,
+    html.theme-light #ratingSheetModal input.form-control,
+    body.theme-light #ratingSheetModal input.form-control,
+    html.theme-light #ratingSheetModal textarea.form-control,
+    body.theme-light #ratingSheetModal textarea.form-control,
+    html.theme-light #ratingSheetModal input[type="date"],
+    body.theme-light #ratingSheetModal input[type="date"],
+    html.theme-light #ratingSheetModal input[type="text"],
+    body.theme-light #ratingSheetModal input[type="text"] {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border: 1px solid #9aa5b0 !important;
+    }
+    html.theme-light #ratingSheetModal .form-control:focus,
+    body.theme-light #ratingSheetModal .form-control:focus {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border-color: #d90429 !important;
+        box-shadow: 0 0 0 0.2rem rgba(217,4,41,0.15) !important;
+    }
+    html.theme-light #ratingSheetModal .form-control[readonly],
+    body.theme-light #ratingSheetModal .form-control[readonly] {
+        background-color: #f0f1f2 !important;
+        color: #000000 !important;
+    }
+    html.theme-light #ratingSheetModal .form-label,
+    body.theme-light #ratingSheetModal .form-label {
+        color: #000000 !important;
+    }
+    /* La card valutazioni interna al modale */
+    html.theme-light #ratingSheetModal .card,
+    body.theme-light #ratingSheetModal .card {
+        background-color: #f0f1f2 !important;
+        border-color: #9aa5b0 !important;
+        color: #000000 !important;
+    }
+    html.theme-light #ratingSheetModal .card-header,
+    body.theme-light #ratingSheetModal .card-header {
+        background-color: #e6e8ea !important;
+        color: #000000 !important;
+        border-bottom-color: #9aa5b0 !important;
+    }
+    html.theme-light #ratingSheetModal .card-body,
+    body.theme-light #ratingSheetModal .card-body {
+        color: #000000 !important;
+    }
+    html.theme-light #ratingSheetModal .rating-label,
+    body.theme-light #ratingSheetModal .rating-label,
+    html.theme-light #ratingSheetModal h6,
+    body.theme-light #ratingSheetModal h6 {
+        color: #000000 !important;
     }
 
     /* ===== MENU NAVIGAZIONE ===== */
@@ -654,6 +921,8 @@
             overflow-y: auto !important;
             overflow-x: hidden !important;
         }
+        /* v1.5.5: nascondi app-header-mobile quando il menu hamburger e' chiuso */
+        #app-header-mobile { display: none; }
         #navbarNav.show #app-header-mobile {
             display: flex !important;
         }
@@ -746,9 +1015,10 @@
     }
 
     function applyChartTheme(isLight) {
-        var tickColor  = isLight ? '#000103' : '#e2e8f0';
-        var gridColor  = isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.1)';
-        var titleColor = isLight ? '#000103' : '#e2e8f0';
+        // v1.5.1 - colori tema chiaro resi più visibili (nero pieno + griglia 35%)
+        var tickColor  = isLight ? '#000000' : '#e2e8f0';
+        var gridColor  = isLight ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.1)';
+        var titleColor = isLight ? '#000000' : '#e2e8f0';
         if (window.Chart) {
             Chart.defaults.color = tickColor;
             Chart.defaults.scale = Chart.defaults.scale || {};
@@ -766,6 +1036,9 @@
                     if (scale.ticks) scale.ticks.color = tickColor;
                     if (scale.grid)  scale.grid.color  = gridColor;
                     if (scale.title) scale.title.color = titleColor;
+                    // Radar chart: pointLabels e angleLines
+                    if (scale.pointLabels) scale.pointLabels.color = tickColor;
+                    if (scale.angleLines) scale.angleLines.color = gridColor;
                 });
                 if (chart.options.plugins) {
                     if (!chart.options.plugins.legend) chart.options.plugins.legend = {};
@@ -904,7 +1177,7 @@
         <div id="app-header-info" class="d-none d-lg-flex" style="flex-shrink:0; margin-left:auto; margin-right:8px; position:relative; align-items:center;"></div>
         <!-- Hamburger: solo su mobile -->
         <button class="navbar-toggler d-lg-none ms-auto" type="button"
-            onclick="(function(){var m=document.getElementById('navbarNav');m.classList.toggle('show');})()"
+            onclick="window.toggleHamburgerMenu()"
             style="border-color:rgba(255,255,255,0.4); padding:4px 8px; flex-shrink:0;">
             <span class="navbar-toggler-icon" id="hamburger-icon"></span>
         </button>
@@ -932,9 +1205,9 @@
             <button class="tab-nav-btn" data-tab="convocazioni-section" onclick="switchTab('convocazioni-section')"><i class="bi bi-megaphone-fill"></i><span class="tab-label"> Convocazioni</span></button>
             <button class="tab-nav-btn admin-only" data-tab="accessi-section" onclick="switchTab('accessi-section')" style="display:none;"><i class="bi bi-clock-history"></i><span class="tab-label"> Accessi</span></button>
         </div>
-        <!-- Riga admin mobile: in fondo alla tendina, solo su mobile -->
+        <!-- Riga admin mobile: in fondo alla tendina, solo su mobile (v1.5.5) -->
         <div id="app-header-mobile" class="d-lg-none"
-             style="display:none; border-top:1px solid rgba(255,255,255,0.1); padding:10px 16px; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; background:var(--bg-card);">
+             style="border-top:1px solid rgba(255,255,255,0.1); padding:10px 16px; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; background:var(--bg-card);">
         </div>
     </div>
 
@@ -1201,6 +1474,15 @@
         </div>
         <hr class="my-5 no-print">
         <div id="report-valutazioni-section" class="tab-section row my-4 printable-area">
+              <!-- Avviso mobile: visibile solo su smartphone (escluso dalla regola @media tramite :not(.d-lg-none)) -->
+              <div class="col-12 d-lg-none mb-3">
+                  <div class="card" style="background:var(--bg-panel); border:1px solid var(--border-2);">
+                      <div class="card-body text-center py-4">
+                          <i class="bi bi-display" style="font-size:2rem; color:#60a5fa;"></i>
+                          <p class="mt-2 mb-0" style="color:#64748b;">📊 <strong style="color:var(--text-primary);">Grafici Valutazione</strong><br><small>Disponibili solo su tablet e desktop</small></p>
+                      </div>
+                  </div>
+              </div>
               <div class="col-12 d-flex justify-content-between align-items-center gap-2 mb-3">
                 <div class="d-flex align-items-center gap-2">
                     <h2 class="main-title mb-0">Report Valutazioni Comportamentali</h2>
@@ -1925,7 +2207,11 @@
     </main>
     <footer class="bg-dark-blue py-3 mt-5 no-print">
         <div class="container text-center">
-            <p class="text-muted mb-0">By Edy Franzoso</p>
+            <p class="footer-assistance mb-0">
+                Per assistenza scrivi all'email
+                <a href="mailto:info.mondo2026@gmail.com" class="footer-assistance-link">info.mondo2026@gmail.com</a>
+                <span class="ms-2" style="opacity:0.85;font-size:0.9em;">— v1.5.13</span>
+            </p>
         </div>
     </footer>
     <div id="modals-container"></div>
@@ -2022,6 +2308,81 @@
     
     <!-- Script personalizzato -->
     <script src="script.js"></script>
+    <script>
+    // === HAMBURGER MOBILE - Toggle robusto + pulsanti annata/uscita (v1.5.5) ===
+    window.toggleHamburgerMenu = function() {
+        var nav = document.getElementById('navbarNav');
+        if (!nav) return;
+        nav.classList.toggle('show');
+        // Quando si apre il menu, popola/aggiorna i pulsanti annata + esci
+        if (nav.classList.contains('show')) {
+            renderMobileAdminBox();
+        }
+    };
+
+    window.renderMobileAdminBox = function() {
+        var box = document.getElementById('app-header-mobile');
+        if (!box) return;
+
+        // Verifica autenticazione (stesso check di updateAppHeader)
+        var isAuth = sessionStorage.getItem('gosport_auth_session') === 'true';
+        var hasAnnata = !!sessionStorage.getItem('gosport_current_annata');
+        if (!isAuth || !hasAnnata) {
+            box.innerHTML = '';
+            box.style.display = 'none';
+            return;
+        }
+
+        var currentUser = (window.getCurrentUser ? window.getCurrentUser() : sessionStorage.getItem('gosport_auth_user')) || 'Utente';
+        var userRole    = (window.getUserRole    ? window.getUserRole()    : sessionStorage.getItem('gosport_user_role'));
+        var canChangeAnnata = userRole === 'admin';
+        var roleIcon = userRole === 'admin' ? '👑' : (userRole && userRole.startsWith('dirigente')) ? '🏅' : '👨‍🏫';
+
+        // Recupera nome annata dalla cache (se disponibile via fetch precedente)
+        var annataId = sessionStorage.getItem('gosport_current_annata') || '';
+        var annataName = sessionStorage.getItem('gosport_current_annata_name') || annataId.substring(0, 8) + '…';
+
+        box.innerHTML =
+            '<div style="display:flex;flex-direction:column;gap:8px;width:100%;">' +
+                '<div style="font-size:13px;color:rgba(255,255,255,0.95);padding:4px 0;">' +
+                    roleIcon + ' <strong>' + currentUser + '</strong>' +
+                    '<span style="opacity:0.75;font-size:11px;display:block;margin-top:2px;">📅 Annata: ' + annataName + '</span>' +
+                '</div>' +
+                '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+                    (canChangeAnnata ?
+                        '<button type="button" onclick="window.handleQuickChangeAnnata && window.handleQuickChangeAnnata();" ' +
+                            'style="flex:1;min-width:120px;background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:#fff;border:none;' +
+                            'padding:10px 12px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;">' +
+                            '🔄 Cambia Annata' +
+                        '</button>'
+                    : '') +
+                    '<button type="button" onclick="window.handleQuickLogout && window.handleQuickLogout();" ' +
+                        'style="flex:1;min-width:90px;background:#d90429;color:#fff;border:none;' +
+                        'padding:10px 12px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;">' +
+                        '🚪 Esci' +
+                    '</button>' +
+                '</div>' +
+            '</div>';
+        box.style.display = 'flex';
+
+        // Aggiorna nome annata se non e' in cache (fetch /api/annate/list)
+        if (!sessionStorage.getItem('gosport_current_annata_name') && annataId) {
+            fetch('/api/annate/list').then(function(r){return r.json();}).then(function(data){
+                if (data && data.annate) {
+                    var found = data.annate.find(function(a){ return a.id === annataId; });
+                    if (found && found.nome) {
+                        sessionStorage.setItem('gosport_current_annata_name', found.nome);
+                        // Re-render se il box e' ancora aperto
+                        if (document.getElementById('navbarNav') &&
+                            document.getElementById('navbarNav').classList.contains('show')) {
+                            renderMobileAdminBox();
+                        }
+                    }
+                }
+            }).catch(function(){});
+        }
+    };
+    </script>
     <script>
 
     // ========================================================================
@@ -2232,6 +2593,10 @@
                 </button>
                 <button type="button" class="btn btn-danger" id="delete-rating-btn" style="display: none;">
                     <i class="bi bi-trash-fill"></i> Elimina
+                </button>
+                <!-- v1.5.4: pulsante Stampa Pagella -->
+                <button type="button" class="btn btn-info" id="print-rating-btn" onclick="window.printRatingSheet()">
+                    <i class="bi bi-printer-fill"></i> Stampa
                 </button>
                 <button type="button" class="btn btn-primary" id="save-rating-btn">
                     <i class="bi bi-save-fill"></i> Salva
@@ -4505,6 +4870,154 @@ body > main,
 #monitoraggio-gps-section.printing-now #performanceChart {
     height: 80mm !important;
     max-height: 80mm !important;
+}
+
+/* ============================================================
+   STAMPA LANDSCAPE per Materiali/Pagamenti (v1.5.9)
+   Approccio mirato:
+   - @page applicata solo a body (non ai discendenti, evita fogli vuoti)
+   - per Materiali: select/input dentro le celle convertiti in testo plain
+     cosi' le colonne si comprimono e stanno tutte in una pagina
+   ============================================================ */
+@page print-landscape-page { size: A4 landscape; margin: 4mm 6mm; }
+
+@media print {
+    /* Page applicata SOLO al body: il browser eredita per default sui figli
+       senza creare pagine fantasma */
+    body.print-landscape {
+        page: print-landscape-page;
+    }
+    /* Override min-width inline sulle tabelle */
+    body.print-landscape #materiale-section.printing-now table[style],
+    body.print-landscape #pagamenti-section.printing-now table[style],
+    body.print-landscape #materiale-section.printing-now table,
+    body.print-landscape #pagamenti-section.printing-now table {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        table-layout: fixed !important;
+        font-size: var(--print-table-fs, 8pt) !important;
+        page-break-inside: auto !important;
+    }
+    /* Celle compatte */
+    body.print-landscape #materiale-section.printing-now th,
+    body.print-landscape #materiale-section.printing-now td,
+    body.print-landscape #pagamenti-section.printing-now th,
+    body.print-landscape #pagamenti-section.printing-now td {
+        padding: 1px 3px !important;
+        word-break: break-word !important;
+        white-space: normal !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        font-size: var(--print-table-fs, 8pt) !important;
+        line-height: 1.15 !important;
+    }
+    /* Wrapper: tolgo overflow ma NON forzo width:100% (causa pagine vuote) */
+    body.print-landscape #materiale-section.printing-now [style*="overflow-x"],
+    body.print-landscape #materiale-section.printing-now .table-responsive,
+    body.print-landscape #materiale-section.printing-now .card-body,
+    body.print-landscape #pagamenti-section.printing-now [style*="overflow-x"],
+    body.print-landscape #pagamenti-section.printing-now .table-responsive,
+    body.print-landscape #pagamenti-section.printing-now .card-body {
+        overflow: visible !important;
+        max-width: 100% !important;
+    }
+    /* === MATERIALI: input/select diventano testo plain in stampa ===
+       Le celle contengono <input type="number"> e <select> che non si comprimono.
+       Nascondiamo i widget e mostriamo solo il valore via attributo data-print-text
+       (popolato via JS prima della stampa). Fallback: rendiamo i widget piccoli. */
+    body.print-landscape #materiale-section.printing-now select,
+    body.print-landscape #materiale-section.printing-now input[type="number"],
+    body.print-landscape #materiale-section.printing-now input[type="text"] {
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        font-size: inherit !important;
+        color: #000 !important;
+        box-shadow: none !important;
+        height: auto !important;
+        text-align: center !important;
+    }
+    /* Nascondi le frecce dei select e i bottoni di check (Consegnato) */
+    body.print-landscape #materiale-section.printing-now button.btn-success,
+    body.print-landscape #materiale-section.printing-now button.btn-outline-success,
+    body.print-landscape #materiale-section.printing-now button[onclick*="Consegnato"],
+    body.print-landscape #materiale-section.printing-now button[onclick*="materialeColMove"],
+    body.print-landscape #materiale-section.printing-now button[onclick*="materialeColRemove"],
+    body.print-landscape #materiale-section.printing-now .no-print {
+        display: none !important;
+    }
+    /* Etichette piccole "Qtà:" "Taglia:" via */
+    body.print-landscape #materiale-section.printing-now label,
+    body.print-landscape #materiale-section.printing-now small {
+        display: none !important;
+    }
+    /* Sezione Materiali: la tabella DEVE stare su pochi fogli, non 22 */
+    body.print-landscape #materiale-section.printing-now {
+        display: block !important;
+        visibility: visible !important;
+    }
+
+    /* === FIX PAGINA VUOTA FINALE (v1.5.10) ===
+       Le modali Bootstrap dentro #pagamenti-section (pagDefaultModal, pagVociModal,
+       pagModal, pagDocsModal) erano "display:none" ma in stampa i wrapper esterni
+       contavano comunque, generando un foglio vuoto in coda. Inoltre i .mb-4
+       cumulati spingevano oltre l'A4. Risolviamo nascondendo del tutto e azzerando
+       i margini residui */
+    body.print-landscape #pagamenti-section.printing-now .modal,
+    body.print-landscape #pagamenti-section.printing-now .modal-backdrop,
+    body.print-landscape #pagamenti-section.printing-now .modal-dialog {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        max-height: 0 !important;
+        overflow: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    /* Azzera margini ed eventuali padding-bottom su sezione e ultimi figli
+       cosi' non sforano di pochi pixel l'altezza della pagina */
+    body.print-landscape #pagamenti-section.printing-now,
+    body.print-landscape #pagamenti-section.printing-now > *:last-child,
+    body.print-landscape #pagamenti-section.printing-now .col-12:last-child,
+    body.print-landscape #pagamenti-section.printing-now .mb-4:last-child,
+    body.print-landscape #pagamenti-section.printing-now .card:last-child {
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+    }
+    /* Comprimi anche i .mb-4 intermedi (24px troppi tra Atleti e Staff) */
+    body.print-landscape #pagamenti-section.printing-now .col-12.mb-4 {
+        margin-bottom: 6px !important;
+    }
+    /* Stessa cosa per Materiali (preventivo, anche se gia' a 2 pagine) */
+    body.print-landscape #materiale-section.printing-now .modal,
+    body.print-landscape #materiale-section.printing-now .modal-backdrop,
+    body.print-landscape #materiale-section.printing-now .modal-dialog {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    body.print-landscape #materiale-section.printing-now,
+    body.print-landscape #materiale-section.printing-now > *:last-child,
+    body.print-landscape #materiale-section.printing-now .col-12:last-child {
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+    }
+    body.print-landscape #materiale-section.printing-now .col-12.mb-4 {
+        margin-bottom: 6px !important;
+    }
 }
 </style>
 </body>
