@@ -1,14 +1,18 @@
 <!DOCTYPE html>
 <!-- =====================================================
      Coach Dashboard - index.html
-     Revisione: v1.5.13  (2026-04-28)
+     Revisione: v1.5.14  (2026-04-29)
      Modifiche dell'ultima revisione:
-       - Risultati > Riepilogo Cartellini: aggregato per atleta
-         con TOTALE gialli + rossi (prima era una riga per cartellino)
-       - colonna Data mostra il cartellino piu' recente per atleta
-       - pulsante elimina cancella TUTTI i cartellini dell'atleta
-         (con conferma) dalla stagione corrente
+       - Formazione tema chiaro: badge Capitano (C) e Vice Capitano (VC)
+         con sfondo bianco e testo nero (prima ereditavano blu scuro)
+       - Risultati tema chiaro: modale "Modifica/Inserisci Risultato Partita"
+         con sfondo bianco, input bianchi e testo nero
+       - Mobile: pulsanti Cambia Annata e Esci ora sono nascosti di default,
+         compaiono solo aprendo il menu hamburger (prima restavano sempre
+         visibili in alto perche' renderMobileAdminBox forzava display:flex
+         inline che batteva la regola CSS)
      Cronologia:
+       v1.5.13 - Riepilogo Cartellini aggregato per atleta
        v1.5.12 - stampa Materiali con finestra dedicata
        v1.5.11 - stampa Pagamenti con finestra dedicata
        v1.5.5 - mobile: pulsanti Cambia Annata + Esci nella tendina hamburger
@@ -26,7 +30,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="version" content="1.5.13">
+    <meta name="version" content="1.5.14">
     <title>Coach Dashboard</title>
     
     <!-- CRITICAL CSS: Nasconde contenuto ma permette login dinamico -->
@@ -694,6 +698,86 @@
     body.theme-light #analisi-singolo-section .main-title {
         color: #000000 !important;
     }
+
+    /* v1.5.14: Fix N°2 - badge Capitano (C) e Vice Capitano (VC) tema chiaro
+       I tool-item nel pannello Formazione ereditavano sfondo blu scuro
+       della pagina e in tema chiaro restavano scuri illeggibili */
+    html.theme-light .tool-item[data-item-type="captain-c"],
+    body.theme-light .tool-item[data-item-type="captain-c"],
+    html.theme-light .tool-item[data-item-type="captain-vc"],
+    body.theme-light .tool-item[data-item-type="captain-vc"] {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border: 1px solid #9aa5b0 !important;
+    }
+    html.theme-light .tool-item[data-item-type="captain-c"]:hover,
+    body.theme-light .tool-item[data-item-type="captain-c"]:hover,
+    html.theme-light .tool-item[data-item-type="captain-vc"]:hover,
+    body.theme-light .tool-item[data-item-type="captain-vc"]:hover {
+        background-color: #f0f1f2 !important;
+        border-color: #d90429 !important;
+    }
+
+    /* v1.5.14: Fix N°3 - modale "Modifica/Inserisci Risultato Partita" tema chiaro
+       Il modale matchResultModal e' iniettato dinamicamente da JS senza CSS
+       custom, quindi in tema chiaro restava su sfondo blu scuro */
+    html.theme-light #matchResultModal .modal-content,
+    body.theme-light #matchResultModal .modal-content {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+    }
+    html.theme-light #matchResultModal .modal-header,
+    body.theme-light #matchResultModal .modal-header,
+    html.theme-light #matchResultModal .modal-footer,
+    body.theme-light #matchResultModal .modal-footer {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border-color: #d6dadf !important;
+    }
+    html.theme-light #matchResultModal .modal-title,
+    body.theme-light #matchResultModal .modal-title,
+    html.theme-light #matchResultModal h5,
+    body.theme-light #matchResultModal h5,
+    html.theme-light #matchResultModal label,
+    body.theme-light #matchResultModal label,
+    html.theme-light #matchResultModal .form-label,
+    body.theme-light #matchResultModal .form-label {
+        color: #000000 !important;
+    }
+    html.theme-light #matchResultModal .form-control,
+    body.theme-light #matchResultModal .form-control,
+    html.theme-light #matchResultModal .form-select,
+    body.theme-light #matchResultModal .form-select,
+    html.theme-light #matchResultModal input[type="date"],
+    body.theme-light #matchResultModal input[type="date"],
+    html.theme-light #matchResultModal input[type="time"],
+    body.theme-light #matchResultModal input[type="time"],
+    html.theme-light #matchResultModal input[type="text"],
+    body.theme-light #matchResultModal input[type="text"],
+    html.theme-light #matchResultModal input[type="number"],
+    body.theme-light #matchResultModal input[type="number"] {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border: 1px solid #9aa5b0 !important;
+    }
+    html.theme-light #matchResultModal .form-control:focus,
+    body.theme-light #matchResultModal .form-control:focus,
+    html.theme-light #matchResultModal .form-select:focus,
+    body.theme-light #matchResultModal .form-select:focus {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border-color: #d90429 !important;
+        box-shadow: 0 0 0 0.2rem rgba(217,4,41,0.15) !important;
+    }
+    html.theme-light #matchResultModal hr,
+    body.theme-light #matchResultModal hr {
+        border-color: #d6dadf !important;
+        opacity: 1 !important;
+    }
+    html.theme-light #matchResultModal .text-muted,
+    body.theme-light #matchResultModal .text-muted {
+        color: #555555 !important;
+    }
     /* ============================================================ */
 
     /* Footer assistenza: nero in tema chiaro, bianco in tema scuro */
@@ -909,7 +993,10 @@
             height: 0 !important;
             min-height: 0 !important;
         }
-        #app-header-mobile { display: none; }
+        /* v1.5.14: nascondi app-header-mobile quando il menu hamburger e' chiuso
+           - !important perche' renderMobileAdminBox poteva forzarlo a flex inline
+           - regola unica al posto delle due duplicate v1.5.5 */
+        #app-header-mobile { display: none !important; }
         /* Menu aperto */
         #navbarNav.show { border-bottom: 2px solid var(--bg-blue) !important; box-shadow: 0 8px 20px rgba(0,0,0,0.6); }
         #navbarNav.show .tab-nav-inner {
@@ -921,8 +1008,6 @@
             overflow-y: auto !important;
             overflow-x: hidden !important;
         }
-        /* v1.5.5: nascondi app-header-mobile quando il menu hamburger e' chiuso */
-        #app-header-mobile { display: none; }
         #navbarNav.show #app-header-mobile {
             display: flex !important;
         }
@@ -2210,7 +2295,7 @@
             <p class="footer-assistance mb-0">
                 Per assistenza scrivi all'email
                 <a href="mailto:info.mondo2026@gmail.com" class="footer-assistance-link">info.mondo2026@gmail.com</a>
-                <span class="ms-2" style="opacity:0.85;font-size:0.9em;">— v1.5.13</span>
+                <span class="ms-2" style="opacity:0.85;font-size:0.9em;">— v1.5.14</span>
             </p>
         </div>
     </footer>
@@ -2329,7 +2414,8 @@
         var hasAnnata = !!sessionStorage.getItem('gosport_current_annata');
         if (!isAuth || !hasAnnata) {
             box.innerHTML = '';
-            box.style.display = 'none';
+            // v1.5.14: rimuovo display:none inline cosi' la regola CSS torna autoritativa
+            box.style.removeProperty('display');
             return;
         }
 
@@ -2363,7 +2449,11 @@
                     '</button>' +
                 '</div>' +
             '</div>';
-        box.style.display = 'flex';
+        // v1.5.14: NON forzo piu' display:flex inline.
+        // La regola CSS controlla la visibilita':
+        //   - nascosto di default (#app-header-mobile { display:none })
+        //   - visibile dentro hamburger aperto (#navbarNav.show #app-header-mobile { display:flex !important })
+        box.style.removeProperty('display');
 
         // Aggiorna nome annata se non e' in cache (fetch /api/annate/list)
         if (!sessionStorage.getItem('gosport_current_annata_name') && annataId) {
