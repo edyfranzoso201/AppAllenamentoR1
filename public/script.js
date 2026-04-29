@@ -3,9 +3,9 @@ function _chartParityColor() {
     return document.documentElement.classList.contains('theme-light') ? '#f0f1f2' : '#3b82f6';
 }
 
-// ── Colori grafici tema-aware ─────────────────────────────────────
-function _chartTickColor() { return document.documentElement.classList.contains('theme-light') ? '#000103' : '#e2e8f0'; }
-function _chartGridColor() { return document.documentElement.classList.contains('theme-light') ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.1)'; }
+// ── Colori grafici tema-aware (v1.5.0: tema chiaro reso più visibile) ─────────────────────────────────────
+function _chartTickColor() { return document.documentElement.classList.contains('theme-light') ? '#000000' : '#e2e8f0'; }
+function _chartGridColor() { return document.documentElement.classList.contains('theme-light') ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.1)'; }
 
 // ✅ Funzione per evitare lo slittamento di data
 function toLocalDateISO(dateInput) {
@@ -1316,13 +1316,47 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const renderCardsSummary = () => {
         elements.cardsSummaryTbody.innerHTML = '';
-        const allCards = Object.values(matchResults).flatMap((match) => match.cards.map((card, cardIndex) => ({ ...card, date: match.date, uniqueId: `${match.id}-${cardIndex}` }))).sort((a, b) => new Date(b.date) - new Date(a.date));
-        let renderedRows = 0;
+        // v1.5.13: aggregazione per atleta - somma TOTALE cartellini fino a reset annata
+        // Raccoglie tutti i cartellini con id univoco (per matching con visuallyDeletedCards)
+        const allCards = Object.values(matchResults).flatMap((match) =>
+            match.cards.map((card, cardIndex) => ({
+                ...card,
+                date: match.date,
+                uniqueId: `${match.id}-${cardIndex}`
+            }))
+        );
+        // Raggruppa per atleta, escludendo i cartellini "cancellati visivamente"
+        const byAthlete = {};
         allCards.forEach(card => {
-            if (visuallyDeletedCards.includes(card.uniqueId)) { return; }
-            const athlete = athletes.find(a => String(a.id) === String(card.athleteId));
+            if (visuallyDeletedCards.includes(card.uniqueId)) return;
+            const aid = String(card.athleteId);
+            if (!byAthlete[aid]) {
+                byAthlete[aid] = { yellow: 0, red: 0, lastDate: card.date, athleteId: aid };
+            }
+            if (card.type === 'yellow') byAthlete[aid].yellow++;
+            else if (card.type === 'red') byAthlete[aid].red++;
+            // Tieni la data piu' recente
+            if (new Date(card.date) > new Date(byAthlete[aid].lastDate)) {
+                byAthlete[aid].lastDate = card.date;
+            }
+        });
+        // Ordina per: rossi DESC, poi gialli DESC, poi data piu' recente DESC
+        const aggregati = Object.values(byAthlete).sort((a, b) => {
+            if (b.red !== a.red) return b.red - a.red;
+            if (b.yellow !== a.yellow) return b.yellow - a.yellow;
+            return new Date(b.lastDate) - new Date(a.lastDate);
+        });
+        let renderedRows = 0;
+        aggregati.forEach(agg => {
+            const athlete = athletes.find(a => String(a.id) === agg.athleteId);
             const row = document.createElement('tr');
-            row.innerHTML = `<td>${athlete ? athlete.name : 'N/D'}</td><td>${card.type === 'yellow' ? '1' : '0'}</td><td>${card.type === 'red' ? '1' : '0'}</td><td>${new Date(card.date).toLocaleDateString('it-IT', {day: '2-digit', month: 'short'})}</td><td class="no-print"><button class="btn btn-sm btn-outline-danger py-0 px-1 remove-card-summary-row-btn" data-card-id="${card.uniqueId}"><i class="bi bi-x-lg"></i></button></td>`;
+            row.innerHTML = `<td>${athlete ? athlete.name : 'N/D'}</td>`
+                + `<td><strong>${agg.yellow}</strong></td>`
+                + `<td><strong>${agg.red}</strong></td>`
+                + `<td>${new Date(agg.lastDate).toLocaleDateString('it-IT', {day: '2-digit', month: 'short'})}</td>`
+                + `<td class="no-print"><button class="btn btn-sm btn-outline-danger py-0 px-1 remove-card-summary-row-btn" `
+                +   `data-athlete-id="${agg.athleteId}" title="Cancella tutti i cartellini di ${athlete ? athlete.name : 'questo atleta'}">`
+                +   `<i class="bi bi-x-lg"></i></button></td>`;
             elements.cardsSummaryTbody.appendChild(row);
             renderedRows++;
         });
@@ -2466,18 +2500,28 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.logoutBtn.addEventListener('click', logout);
     elements.cardsSummaryTbody.addEventListener('click', e => {
         const removeBtn = e.target.closest('.remove-card-summary-row-btn');
-        if (removeBtn) {
-            const cardId = removeBtn.dataset.cardId;
-            const [matchId, cardIndexStr] = cardId.split('-');
-            const cardIndex = parseInt(cardIndexStr, 10);
-            if (matchResults[matchId] && matchResults[matchId].cards[cardIndex]) {
-                matchResults[matchId].cards.splice(cardIndex, 1);
-                saveData();
-            }
-            removeBtn.closest('tr').remove();
-            if (elements.cardsSummaryTbody.children.length === 0 || elements.cardsSummaryTbody.querySelector('tr td[colspan]')) {
-                elements.cardsSummaryTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nessun cartellino da mostrare.</td></tr>';
-            }
+        if (!removeBtn) return;
+        // v1.5.13: ora il pulsante cancella TUTTI i cartellini di un atleta
+        const athleteId = removeBtn.dataset.athleteId;
+        if (!athleteId) return;
+        const athlete = athletes.find(a => String(a.id) === athleteId);
+        const nome = athlete ? athlete.name : 'questo atleta';
+        if (!confirm(`Cancellare TUTTI i cartellini di ${nome} dalla stagione corrente?`)) return;
+        // Itera su tutte le partite e rimuove i cartellini di quell'atleta
+        let totRemossi = 0;
+        Object.keys(matchResults).forEach(matchId => {
+            const match = matchResults[matchId];
+            if (!match || !match.cards) return;
+            const before = match.cards.length;
+            match.cards = match.cards.filter(c => String(c.athleteId) !== String(athleteId));
+            totRemossi += (before - match.cards.length);
+        });
+        if (totRemossi > 0) {
+            saveData();
+            renderCardsSummary();
+        } else {
+            // Nessun cartellino trovato (caso teorico: visuallyDeletedCards)
+            renderCardsSummary();
         }
     });
     document.querySelector('main').addEventListener('click', e => {
@@ -3813,6 +3857,10 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
     }
 
     function restoreAfterPrint() {
+        // v1.5.7: rimuovi classi landscape per Materiali/Pagamenti
+        document.body.classList.remove('print-landscape', 'print-landscape-mat', 'print-landscape-pag');
+        document.documentElement.style.removeProperty('--print-table-fs');
+
         // Ripristina stili originali wrapper e canvas
         document.querySelectorAll('[data-orig-css]').forEach(el => {
             el.style.cssText = el.dataset.origCss || '';
@@ -3857,6 +3905,21 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
         const sectionToPrint = printBtn.closest('.printable-area') || printBtn.closest('.tab-section');
         if (!sectionToPrint) return;
 
+        // v1.5.11: Pagamenti -> finestra di stampa dedicata (sempre landscape, niente bug @page)
+        if (sectionToPrint.id === 'pagamenti-section') {
+            if (typeof window.printPagamentiDedicato === 'function') {
+                window.printPagamentiDedicato();
+                return;
+            }
+        }
+        // v1.5.12: Materiali -> finestra di stampa dedicata (stesso pattern)
+        if (sectionToPrint.id === 'materiale-section') {
+            if (typeof window.printMaterialiDedicato === 'function') {
+                window.printMaterialiDedicato();
+                return;
+            }
+        }
+
         // Reset stato precedente
         document.querySelectorAll('.printing-now').forEach(el => el.classList.remove('printing-now'));
         document.querySelectorAll('.tab-section').forEach(el => el.style.removeProperty('display'));
@@ -3873,6 +3936,38 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
             confronto.style.setProperty('display', 'block', 'important');
         } else {
             sectionToPrint.classList.add('printing-now');
+        }
+
+        // v1.5.9: Materiali/Pagamenti -> A4 landscape per non tagliare colonne
+        // Approccio: classe sul <body> + CSS statico in fondo al file
+        var sectId = sectionToPrint.id || (sectionToPrint.closest('[id]') || {}).id || '';
+        document.body.classList.remove('print-landscape', 'print-landscape-mat', 'print-landscape-pag');
+        if (sectId === 'materiale-section') {
+            document.body.classList.add('print-landscape', 'print-landscape-mat');
+        } else if (sectId === 'pagamenti-section') {
+            document.body.classList.add('print-landscape', 'print-landscape-pag');
+        }
+        // Scaling font in base al numero di colonne (per Materiali serve piu'
+        // aggressivo: ogni colonna contiene 2 widget impilati, e le scritte
+        // sono lunghe come "Pantaloncino Riscaldamento")
+        if (document.body.classList.contains('print-landscape')) {
+            var allTables = sectionToPrint.querySelectorAll('table');
+            var maxCols = 4;
+            allTables.forEach(function(t) {
+                var hr = t.querySelector('thead tr');
+                if (hr) maxCols = Math.max(maxCols, hr.children.length);
+            });
+            // Scaling piu' aggressivo per Materiali (sectId === 'materiale-section')
+            var fontPt;
+            if (sectId === 'materiale-section') {
+                // Materiali: header lunghi + 2 widget per cella = serve font piccolo
+                fontPt = maxCols <= 5 ? 8 : (maxCols <= 7 ? 7 : (maxCols <= 9 ? 6 : (maxCols <= 11 ? 5.5 : 5)));
+            } else {
+                // Pagamenti: testo corto, fitting facile
+                fontPt = maxCols <= 6 ? 9 : (maxCols <= 10 ? 8 : (maxCols <= 14 ? 7 : 6));
+            }
+            document.documentElement.style.setProperty('--print-table-fs', fontPt + 'pt');
+            console.log('[STAMPA] landscape attivo, sezione=' + sectId + ', ' + maxCols + ' colonne max, font ' + fontPt + 'pt');
         }
 
         // Converti TUTTI i canvas trovati nelle sezioni printing-now
@@ -4352,3 +4447,227 @@ function showMobileEvalPanel(athleteName, athleteId, date) {
         closePanel();
     };
 }
+
+// ============================================================
+// STAMPA DEDICATA PAGAMENTI (v1.5.11)
+// Apre una finestra dedicata con HTML pulito + @page A4 landscape.
+// Risolve il bug del browser sull'orientamento misto delle pagine
+// con @page nominate (la 2a pagina tornava portrait).
+// ============================================================
+window.printPagamentiDedicato = function() {
+    var tA = document.getElementById('pag-table-atleti');
+    var tS = document.getElementById('pag-table-staff');
+    if (!tA || !tS) { alert('Tabelle pagamenti non trovate.'); return; }
+
+    var teamName = (window._appData && window._appData.teamName) || 'GO SPORT';
+    var dataStampa = new Date().toLocaleDateString('it-IT');
+
+    // Funzione per estrarre HTML "pulito" da una tabella (rimuove pulsanti, sticky, colori scuri)
+    function cleanTable(tableEl, titoloSezione, count) {
+        if (!tableEl || !tableEl.innerHTML.trim()) return '';
+        // Clone profondo per non toccare il DOM live
+        var clone = tableEl.cloneNode(true);
+        // Rimuove pulsanti "Modifica" e elementi .no-print
+        clone.querySelectorAll('button, .no-print').forEach(function(el){ el.remove(); });
+        // Rimuove TUTTI gli stili inline (rendono il dark-theme nei colori, sticky pos ecc.)
+        clone.querySelectorAll('[style]').forEach(function(el){ el.removeAttribute('style'); });
+        // Rimuove le classi che danno background scuri
+        clone.querySelectorAll('tr,td,th').forEach(function(el){
+            el.removeAttribute('class');
+        });
+        return ''
+            + '<h2 class="section-title">' + titoloSezione + (count ? ' <span class="count">(' + count + ')</span>' : '') + '</h2>'
+            + '<div class="table-wrap">' + clone.outerHTML + '</div>';
+    }
+
+    var nAtleti = (tA.querySelectorAll('tbody tr')||[]).length;
+    var nStaff  = (tS.querySelectorAll('tbody tr')||[]).length;
+    // Conta colonne max per scaling font
+    var maxCols = 4;
+    [tA, tS].forEach(function(t) {
+        var hr = t.querySelector('thead tr');
+        if (hr) maxCols = Math.max(maxCols, hr.children.length);
+    });
+    var fontPt = maxCols <= 6 ? 9 : (maxCols <= 10 ? 8 : (maxCols <= 14 ? 7 : 6));
+
+    var html = ''
+        + '<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8">'
+        + '<title>Pagamenti — ' + teamName + ' — ' + dataStampa + '</title>'
+        + '<style>'
+        + '@page { size: A4 landscape; margin: 8mm 10mm; }'
+        + '* { box-sizing: border-box; }'
+        + 'body { font-family: "Segoe UI", system-ui, Arial, sans-serif; color:#000; margin:0; padding:0; background:#fff; font-size: ' + fontPt + 'pt; }'
+        + 'h1 { font-size: 16pt; margin: 0 0 2mm 0; color:#1e3a5f; border-bottom: 2px solid #d90429; padding-bottom: 2mm; }'
+        + 'h2.section-title { font-size: 11pt; margin: 4mm 0 2mm 0; color:#1e3a5f; }'
+        + 'h2.section-title .count { color:#666; font-weight: 400; font-size: 9pt; }'
+        + '.header-info { display:flex; justify-content:space-between; align-items:center; font-size: 9pt; color:#444; margin-bottom: 3mm; }'
+        + '.table-wrap { width: 100%; }'
+        + 'table { width: 100%; border-collapse: collapse; margin-bottom: 3mm; page-break-inside: auto; }'
+        + 'thead { display: table-header-group; }'  // ripete header su ogni pagina
+        + 'tbody tr { page-break-inside: avoid; }'
+        + 'th { background: #1e3a5f; color: #fff; padding: 5px 6px; text-align: center; font-weight: 600; border: 1px solid #1e3a5f; font-size: ' + (fontPt + 0.5) + 'pt; }'
+        + 'th:first-child { text-align: left; }'
+        + 'td { padding: 4px 6px; border: 1px solid #ccc; vertical-align: middle; text-align: center; }'
+        + 'td:first-child { text-align: left; font-weight: 600; }'
+        + 'td:last-child { font-weight: 700; color: #16a34a; }'
+        + 'tbody tr:nth-child(even) td { background: #f7f7f7; }'
+        + '.print-bar { position: fixed; top: 8px; right: 8px; }'
+        + '.print-bar button { padding: 6px 14px; font-size: 12px; cursor: pointer; margin-left: 4px; }'
+        + '@media print { .print-bar { display: none !important; } }'
+        + '</style></head><body>'
+        + '<div class="print-bar">'
+        +   '<button onclick="window.print()">🖨 Stampa</button>'
+        +   '<button onclick="window.close()">✖ Chiudi</button>'
+        + '</div>'
+        + '<h1>💳 Gestione Pagamenti</h1>'
+        + '<div class="header-info"><span>' + teamName + '</span><span>Stampato il ' + dataStampa + '</span></div>'
+        + cleanTable(tA, '👥 Atleti', nAtleti)
+        + cleanTable(tS, '🎓 Staff', nStaff)
+        + '</body></html>';
+
+    var w = window.open('', '_blank', 'width=1100,height=800');
+    if (!w) { alert('Sblocca i popup del browser per stampare i Pagamenti.'); return; }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    w.onload = function() {
+        setTimeout(function(){ try { w.focus(); w.print(); } catch(e){ console.error(e); } }, 300);
+    };
+};
+
+// ============================================================
+// STAMPA DEDICATA MATERIALI (v1.5.12)
+// Apre una finestra dedicata con HTML pulito + @page A4 landscape.
+// Per Materiali ogni cella contiene un input (qta) + select (taglia):
+// estraiamo i valori e li renderizziamo come testo plain.
+// ============================================================
+window.printMaterialiDedicato = function() {
+    var tA = document.getElementById('materiale-table-atleti');
+    var tS = document.getElementById('materiale-table-staff');
+    if (!tA || !tS) { alert('Tabelle materiali non trovate.'); return; }
+
+    var teamName = (window._appData && window._appData.teamName) || 'GO SPORT';
+    var dataStampa = new Date().toLocaleDateString('it-IT');
+
+    // Trasforma una tabella DOM in HTML pulito per stampa.
+    // - rimuove pulsanti / .no-print
+    // - per ogni input/select estrae il valore e lo sostituisce con testo
+    // - rimuove tutti gli style inline e classi (per evitare dark theme)
+    function cleanTable(tableEl, titoloSezione, count) {
+        if (!tableEl || !tableEl.innerHTML.trim()) return '';
+        var clone = tableEl.cloneNode(true);
+        // Rimuove pulsanti e .no-print
+        clone.querySelectorAll('button, .no-print').forEach(function(el){ el.remove(); });
+        // Sostituisce input/select con il loro valore corrente
+        clone.querySelectorAll('input, select').forEach(function(el) {
+            var val = '';
+            if (el.tagName === 'SELECT') {
+                var opt = el.options[el.selectedIndex];
+                val = opt ? (opt.text || opt.value || '') : '';
+                // Se la taglia non e' selezionata, mostra "—"
+                if (!val || val === '— Taglia —' || val === '— Taglia—') val = '—';
+            } else {
+                val = el.value || '';
+                if (el.type === 'number' && (!val || val === '0')) val = el.placeholder || '—';
+                if (!val) val = '—';
+            }
+            var span = document.createElement('span');
+            span.className = 'cell-value';
+            span.textContent = val;
+            el.parentNode.replaceChild(span, el);
+        });
+        // Rimuove etichette ridondanti tipo "Qtà:" "Taglia:"
+        clone.querySelectorAll('label, small').forEach(function(el){
+            var txt = (el.textContent || '').trim().toLowerCase();
+            if (txt === 'qtà:' || txt === 'qta:' || txt === 'taglia:' || txt === 'qtà' || txt === 'taglia') {
+                el.remove();
+            }
+        });
+        // Rimuove tutti gli style inline e classi
+        clone.querySelectorAll('[style]').forEach(function(el){ el.removeAttribute('style'); });
+        clone.querySelectorAll('tr,td,th,div,span').forEach(function(el){
+            // Conserva solo classi che usiamo a stampa
+            var keep = ['cell-value','riepilogo','consegnato-mark','restituito-mark'];
+            var cur = (el.className || '').split(/\s+/).filter(function(c){ return keep.indexOf(c) !== -1; });
+            if (cur.length) el.className = cur.join(' '); else el.removeAttribute('class');
+        });
+        return ''
+            + '<h2 class="section-title">' + titoloSezione + (count ? ' <span class="count">(' + count + ')</span>' : '') + '</h2>'
+            + '<div class="table-wrap">' + clone.outerHTML + '</div>';
+    }
+
+    // Conta righe (escludendo eventuale riepilogo) e colonne max
+    var nAtleti = 0;
+    (tA.querySelectorAll('tbody tr')||[]).forEach(function(tr){
+        // Esclude righe riepilogo (di solito hanno una cella che dice "Riepilogo")
+        var firstTd = tr.querySelector('td');
+        if (firstTd && /riepilogo/i.test(firstTd.textContent)) return;
+        nAtleti++;
+    });
+    var nStaff = 0;
+    (tS.querySelectorAll('tbody tr')||[]).forEach(function(tr){
+        var firstTd = tr.querySelector('td');
+        if (firstTd && /riepilogo/i.test(firstTd.textContent)) return;
+        nStaff++;
+    });
+    var maxCols = 4;
+    [tA, tS].forEach(function(t) {
+        var hr = t.querySelector('thead tr');
+        if (hr) maxCols = Math.max(maxCols, hr.children.length);
+    });
+    // Materiali ha 2 valori per cella (qta + taglia): scaling piu' aggressivo
+    var fontPt;
+    if (maxCols <= 5)       fontPt = 9;
+    else if (maxCols <= 7)  fontPt = 8;
+    else if (maxCols <= 9)  fontPt = 7;
+    else if (maxCols <= 11) fontPt = 6.5;
+    else                    fontPt = 6;
+
+    var html = ''
+        + '<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8">'
+        + '<title>Materiali — ' + teamName + ' — ' + dataStampa + '</title>'
+        + '<style>'
+        + '@page { size: A4 landscape; margin: 8mm 10mm; }'
+        + '* { box-sizing: border-box; }'
+        + 'body { font-family: "Segoe UI", system-ui, Arial, sans-serif; color:#000; margin:0; padding:0; background:#fff; font-size: ' + fontPt + 'pt; }'
+        + 'h1 { font-size: 16pt; margin: 0 0 2mm 0; color:#1e3a5f; border-bottom: 2px solid #d90429; padding-bottom: 2mm; }'
+        + 'h2.section-title { font-size: 11pt; margin: 4mm 0 2mm 0; color:#1e3a5f; }'
+        + 'h2.section-title .count { color:#666; font-weight: 400; font-size: 9pt; }'
+        + '.header-info { display:flex; justify-content:space-between; align-items:center; font-size: 9pt; color:#444; margin-bottom: 3mm; }'
+        + '.table-wrap { width: 100%; }'
+        + 'table { width: 100%; border-collapse: collapse; margin-bottom: 3mm; page-break-inside: auto; table-layout: auto; }'
+        + 'thead { display: table-header-group; }'
+        + 'tbody tr { page-break-inside: avoid; }'
+        + 'th { background: #1e3a5f; color: #fff; padding: 5px 4px; text-align: center; font-weight: 600; border: 1px solid #1e3a5f; font-size: ' + (fontPt + 0.5) + 'pt; word-break: break-word; }'
+        + 'th:first-child { text-align: left; }'
+        + 'td { padding: 3px 4px; border: 1px solid #ccc; vertical-align: middle; text-align: center; word-break: break-word; }'
+        + 'td:first-child { text-align: left; font-weight: 600; }'
+        + 'tbody tr:nth-child(even) td { background: #f7f7f7; }'
+        + '/* Cella materiale: qta + taglia uno sotto l\'altro */'
+        + '.cell-value { display: block; line-height: 1.3; }'
+        + '.cell-value + .cell-value { margin-top: 1px; color: #555; font-size: 0.92em; }'
+        + '/* Riga riepilogo in evidenza */'
+        + 'tbody tr:last-child td { background: #e6f0ff !important; font-weight: 700; border-top: 2px solid #1e3a5f; }'
+        + '.print-bar { position: fixed; top: 8px; right: 8px; }'
+        + '.print-bar button { padding: 6px 14px; font-size: 12px; cursor: pointer; margin-left: 4px; }'
+        + '@media print { .print-bar { display: none !important; } }'
+        + '</style></head><body>'
+        + '<div class="print-bar">'
+        +   '<button onclick="window.print()">🖨 Stampa</button>'
+        +   '<button onclick="window.close()">✖ Chiudi</button>'
+        + '</div>'
+        + '<h1>📦 Gestione Materiale</h1>'
+        + '<div class="header-info"><span>' + teamName + '</span><span>Stampato il ' + dataStampa + '</span></div>'
+        + cleanTable(tA, '👥 Atleti', nAtleti)
+        + cleanTable(tS, '🎓 Staff', nStaff)
+        + '</body></html>';
+
+    var w = window.open('', '_blank', 'width=1100,height=800');
+    if (!w) { alert('Sblocca i popup del browser per stampare i Materiali.'); return; }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    w.onload = function() {
+        setTimeout(function(){ try { w.focus(); w.print(); } catch(e){ console.error(e); } }, 300);
+    };
+};

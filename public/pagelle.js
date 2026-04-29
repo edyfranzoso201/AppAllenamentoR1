@@ -451,5 +451,115 @@
         }
         return null;
     }
-    
+
+    // ============================================
+    // STAMPA PAGELLA (v1.5.4)
+    // Apre una finestra dedicata con la pagella formattata
+    // e lancia automaticamente la stampa.
+    // ============================================
+    window.printRatingSheet = function() {
+        var athleteId = document.getElementById('rating-athlete-id').value;
+        var sheetId   = document.getElementById('rating-sheet-id').value;
+        var athlete   = getAthleteById(athleteId);
+        if (!athlete) { alert('Atleta non trovato!'); return; }
+
+        // Cerca la pagella corrente (dal form o, se nuova, costruisci on-the-fly)
+        var sheets = ratingSheets[athleteId] || [];
+        var sheet = sheets.find(function(s) { return s.id === sheetId; });
+        // Se la pagella non e' ancora salvata, ricostruiscila dal form
+        if (!sheet) {
+            sheet = {
+                date: document.getElementById('rating-date').value || new Date().toISOString().slice(0,10),
+                coachName: document.getElementById('rating-coach-name').value || '',
+                ratings: {
+                    tecnica:        parseInt(document.getElementById('rating-tecnica').value)        || 0,
+                    tattica:        parseInt(document.getElementById('rating-tattica').value)        || 0,
+                    fisico:         parseInt(document.getElementById('rating-fisico').value)         || 0,
+                    comportamentale: parseInt(document.getElementById('rating-comportamentale').value) || 0
+                },
+                notes: document.getElementById('rating-notes').value || ''
+            };
+        }
+
+        var avg = calculateAverageRating(sheet.ratings);
+        var teamName = (window._appData && window._appData.teamName) || 'GO SPORT';
+
+        // Genera HTML stelle in formato unicode (★ piene + ☆ vuote)
+        function starsText(n) {
+            n = Math.max(0, Math.min(5, parseInt(n) || 0));
+            return '★'.repeat(n) + '☆'.repeat(5 - n);
+        }
+
+        var html = ''
+            + '<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8">'
+            + '<title>Pagella - ' + athlete.name + ' - ' + formatDate(sheet.date) + '</title>'
+            + '<style>'
+            + '@page { size: A4 portrait; margin: 15mm; }'
+            + 'body { font-family: "Segoe UI", system-ui, sans-serif; color:#000; margin:0; padding:0; }'
+            + 'h1 { font-size: 22pt; margin: 0 0 4mm 0; color:#1e3a5f; border-bottom: 3px solid #d90429; padding-bottom: 4mm; }'
+            + 'h2 { font-size: 14pt; margin: 8mm 0 3mm 0; color:#1e3a5f; }'
+            + '.header-info { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom: 6mm; }'
+            + '.team-name { font-size: 10pt; color:#666; }'
+            + '.info-table { width:100%; border-collapse:collapse; margin-bottom: 6mm; font-size: 11pt; }'
+            + '.info-table td { padding: 4px 8px; border:1px solid #ccc; }'
+            + '.info-table td:first-child { font-weight: 700; background:#f0f1f2; width: 30%; }'
+            + '.ratings-table { width:100%; border-collapse:collapse; margin-bottom: 6mm; }'
+            + '.ratings-table th { background:#1e3a5f; color:#fff; padding: 8px 10px; text-align:left; font-size: 11pt; }'
+            + '.ratings-table td { padding: 10px; border-bottom: 1px solid #ddd; font-size: 12pt; }'
+            + '.ratings-table tr:nth-child(even) td { background:#fafafa; }'
+            + '.stars { font-size: 16pt; color:#ffc107; letter-spacing: 2px; }'
+            + '.value-num { font-weight: 700; color:#1e3a5f; }'
+            + '.average-box { background: linear-gradient(135deg,#1e3a5f,#0f172a); color:#fff; padding: 8mm; border-radius: 6px; text-align:center; margin: 6mm 0; }'
+            + '.average-box .label { font-size: 11pt; opacity:0.8; }'
+            + '.average-box .value { font-size: 28pt; font-weight: 700; margin-top: 2mm; }'
+            + '.notes-box { border:1px solid #ccc; border-radius: 4px; padding: 4mm; min-height: 25mm; background:#fafafa; font-size: 11pt; line-height: 1.5; }'
+            + '.signature { margin-top: 12mm; display:flex; justify-content:space-between; font-size: 10pt; color:#444; }'
+            + '.signature-line { border-top:1px solid #999; padding-top: 1mm; min-width: 60mm; text-align:center; }'
+            + '@media print { .no-print { display:none !important; } }'
+            + '.print-bar { position:fixed; top:10px; right:10px; }'
+            + '.print-bar button { padding:8px 16px; font-size:14px; cursor:pointer; }'
+            + '</style></head><body>'
+            + '<div class="print-bar no-print">'
+            + '<button onclick="window.print()">🖨 Stampa</button> '
+            + '<button onclick="window.close()">✖ Chiudi</button>'
+            + '</div>'
+            + '<h1>📋 Pagella Valutazione</h1>'
+            + '<div class="header-info"><div class="team-name">' + teamName + '</div>'
+            + '<div class="team-name">Stampata il: ' + new Date().toLocaleDateString('it-IT') + '</div></div>'
+            + '<table class="info-table">'
+            + '<tr><td>Atleta</td><td>' + athlete.name + '</td></tr>'
+            + (athlete.numero ? '<tr><td>Numero</td><td>' + athlete.numero + '</td></tr>' : '')
+            + (athlete.ruolo ? '<tr><td>Ruolo</td><td>' + athlete.ruolo + '</td></tr>' : '')
+            + '<tr><td>Coach</td><td>' + (sheet.coachName || '—') + '</td></tr>'
+            + '<tr><td>Data Valutazione</td><td>' + formatDate(sheet.date) + '</td></tr>'
+            + '</table>'
+            + '<h2>Valutazioni</h2>'
+            + '<table class="ratings-table">'
+            + '<thead><tr><th>Categoria</th><th style="width:30%">Punteggio</th><th style="width:18%;text-align:center;">Voto</th></tr></thead>'
+            + '<tbody>'
+            + '<tr><td>⚙️ Tecnica</td><td><span class="stars">' + starsText(sheet.ratings.tecnica) + '</span></td><td style="text-align:center;"><span class="value-num">' + (sheet.ratings.tecnica||0) + ' / 5</span></td></tr>'
+            + '<tr><td>🎯 Tattica</td><td><span class="stars">' + starsText(sheet.ratings.tattica) + '</span></td><td style="text-align:center;"><span class="value-num">' + (sheet.ratings.tattica||0) + ' / 5</span></td></tr>'
+            + '<tr><td>💪 Fisico</td><td><span class="stars">' + starsText(sheet.ratings.fisico) + '</span></td><td style="text-align:center;"><span class="value-num">' + (sheet.ratings.fisico||0) + ' / 5</span></td></tr>'
+            + '<tr><td>🤝 Comportamento</td><td><span class="stars">' + starsText(sheet.ratings.comportamentale) + '</span></td><td style="text-align:center;"><span class="value-num">' + (sheet.ratings.comportamentale||0) + ' / 5</span></td></tr>'
+            + '</tbody></table>'
+            + '<div class="average-box">'
+            + '<div class="label">⭐ Valutazione Media</div>'
+            + '<div class="value">' + avg.toFixed(2) + ' / 5</div>'
+            + '</div>'
+            + '<h2>Note del Coach</h2>'
+            + '<div class="notes-box">' + ((sheet.notes||'').replace(/</g,'&lt;').replace(/\n/g,'<br>') || '<em style="color:#999;">— Nessuna nota —</em>') + '</div>'
+            + '<div class="signature">'
+            + '<div class="signature-line">Firma Coach</div>'
+            + '<div class="signature-line">Firma Atleta / Genitore</div>'
+            + '</div>'
+            + '<\/body><\/html>';
+
+        // Apri finestra dedicata e lancia stampa dopo caricamento
+        var w = window.open('', '_blank', 'width=900,height=1100');
+        if (!w) { alert('Sblocca i popup per stampare la pagella.'); return; }
+        w.document.open(); w.document.write(html); w.document.close();
+        // Lascia tempo al rendering, poi apri dialog stampa
+        w.onload = function() { setTimeout(function(){ try { w.focus(); w.print(); } catch(e){} }, 250); };
+    };
+
 })();
