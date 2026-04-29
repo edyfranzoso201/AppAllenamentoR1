@@ -1,17 +1,15 @@
 <!DOCTYPE html>
 <!-- =====================================================
      Coach Dashboard - index.html
-     Revisione: v1.5.14  (2026-04-29)
+     Revisione: v1.5.15  (2026-04-29)
      Modifiche dell'ultima revisione:
-       - Formazione tema chiaro: badge Capitano (C) e Vice Capitano (VC)
-         con sfondo bianco e testo nero (prima ereditavano blu scuro)
-       - Risultati tema chiaro: modale "Modifica/Inserisci Risultato Partita"
-         con sfondo bianco, input bianchi e testo nero
-       - Mobile: pulsanti Cambia Annata e Esci ora sono nascosti di default,
-         compaiono solo aprendo il menu hamburger (prima restavano sempre
-         visibili in alto perche' renderMobileAdminBox forzava display:flex
-         inline che batteva la regola CSS)
+       - Tab Squadra tema chiaro: tutti i modali (Dati Performance,
+         Anagrafica Genitori, Modifica Atleta, Valutazione, Pianifica Sessione,
+         Accesso Richiesto) ora hanno sfondo bianco e testo nero.
+         Regola generica per #modals-container .modal applicata.
      Cronologia:
+       v1.5.14 - Calendario mobile a tutta larghezza + footer versione
+                + tema chiaro Formazione/Risultati + fix admin box mobile
        v1.5.13 - Riepilogo Cartellini aggregato per atleta
        v1.5.12 - stampa Materiali con finestra dedicata
        v1.5.11 - stampa Pagamenti con finestra dedicata
@@ -30,7 +28,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="version" content="1.5.14">
+    <meta name="version" content="1.5.15">
     <title>Coach Dashboard</title>
     
     <!-- CRITICAL CSS: Nasconde contenuto ma permette login dinamico -->
@@ -716,6 +714,114 @@
     body.theme-light .tool-item[data-item-type="captain-vc"]:hover {
         background-color: #f0f1f2 !important;
         border-color: #d90429 !important;
+    }
+
+    /* v1.5.15: Fix tema chiaro per TUTTI i modali Bootstrap iniettati in #modals-container
+       Copre: evaluationModal, athleteModal (Modifica Atleta),
+       parentModal (Anagrafica Genitori), gpsModal (Dati Performance),
+       sessionModal, passwordModal e qualunque altro modale futuro.
+       matchResultModal, ratingListModal e ratingSheetModal hanno gia' regole
+       dedicate piu' specifiche per casi particolari. */
+    html.theme-light #modals-container .modal-content,
+    body.theme-light #modals-container .modal-content {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+    }
+    html.theme-light #modals-container .modal-header,
+    body.theme-light #modals-container .modal-header,
+    html.theme-light #modals-container .modal-footer,
+    body.theme-light #modals-container .modal-footer {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border-color: #d6dadf !important;
+    }
+    html.theme-light #modals-container .modal-title,
+    body.theme-light #modals-container .modal-title,
+    html.theme-light #modals-container .modal-body h5,
+    body.theme-light #modals-container .modal-body h5,
+    html.theme-light #modals-container .modal-body h6,
+    body.theme-light #modals-container .modal-body h6,
+    html.theme-light #modals-container label,
+    body.theme-light #modals-container label,
+    html.theme-light #modals-container .form-label,
+    body.theme-light #modals-container .form-label,
+    html.theme-light #modals-container .form-check-label,
+    body.theme-light #modals-container .form-check-label,
+    html.theme-light #modals-container p,
+    body.theme-light #modals-container p {
+        color: #000000 !important;
+    }
+    html.theme-light #modals-container .form-control,
+    body.theme-light #modals-container .form-control,
+    html.theme-light #modals-container .form-select,
+    body.theme-light #modals-container .form-select,
+    html.theme-light #modals-container input[type="date"],
+    body.theme-light #modals-container input[type="date"],
+    html.theme-light #modals-container input[type="time"],
+    body.theme-light #modals-container input[type="time"],
+    html.theme-light #modals-container input[type="text"],
+    body.theme-light #modals-container input[type="text"],
+    html.theme-light #modals-container input[type="number"],
+    body.theme-light #modals-container input[type="number"],
+    html.theme-light #modals-container input[type="email"],
+    body.theme-light #modals-container input[type="email"],
+    html.theme-light #modals-container input[type="tel"],
+    body.theme-light #modals-container input[type="tel"],
+    html.theme-light #modals-container input[type="password"],
+    body.theme-light #modals-container input[type="password"],
+    html.theme-light #modals-container textarea,
+    body.theme-light #modals-container textarea {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border: 1px solid #9aa5b0 !important;
+    }
+    html.theme-light #modals-container .form-control[readonly],
+    body.theme-light #modals-container .form-control[readonly] {
+        background-color: #f0f1f2 !important;
+        color: #000000 !important;
+    }
+    html.theme-light #modals-container .form-control:focus,
+    body.theme-light #modals-container .form-control:focus,
+    html.theme-light #modals-container .form-select:focus,
+    body.theme-light #modals-container .form-select:focus,
+    html.theme-light #modals-container textarea:focus,
+    body.theme-light #modals-container textarea:focus {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border-color: #d90429 !important;
+        box-shadow: 0 0 0 0.2rem rgba(217,4,41,0.15) !important;
+    }
+    html.theme-light #modals-container .form-check-input,
+    body.theme-light #modals-container .form-check-input {
+        background-color: #ffffff !important;
+        border-color: #9aa5b0 !important;
+    }
+    html.theme-light #modals-container .form-check-input:checked,
+    body.theme-light #modals-container .form-check-input:checked {
+        background-color: #d90429 !important;
+        border-color: #d90429 !important;
+    }
+    html.theme-light #modals-container hr,
+    body.theme-light #modals-container hr {
+        border-color: #d6dadf !important;
+        opacity: 1 !important;
+    }
+    html.theme-light #modals-container .text-muted,
+    body.theme-light #modals-container .text-muted {
+        color: #555555 !important;
+    }
+    html.theme-light #modals-container .input-group-text,
+    body.theme-light #modals-container .input-group-text {
+        background-color: #f0f1f2 !important;
+        color: #000000 !important;
+        border: 1px solid #9aa5b0 !important;
+    }
+    /* Sotto-card dentro i modali (se presenti) */
+    html.theme-light #modals-container .card,
+    body.theme-light #modals-container .card {
+        background-color: #f0f1f2 !important;
+        border-color: #9aa5b0 !important;
+        color: #000000 !important;
     }
 
     /* v1.5.14: Fix N°3 - modale "Modifica/Inserisci Risultato Partita" tema chiaro
@@ -2295,7 +2401,7 @@
             <p class="footer-assistance mb-0">
                 Per assistenza scrivi all'email
                 <a href="mailto:info.mondo2026@gmail.com" class="footer-assistance-link">info.mondo2026@gmail.com</a>
-                <span class="ms-2" style="opacity:0.85;font-size:0.9em;">— v1.5.14</span>
+                <span class="ms-2" style="opacity:0.85;font-size:0.9em;">— v1.5.15</span>
             </p>
         </div>
     </footer>
