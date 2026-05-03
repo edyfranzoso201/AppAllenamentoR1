@@ -76,6 +76,13 @@
 
     window.loadData = async function(key) {
         try {
+            const annataId = await getAnnataForRequest();
+
+            if (!annataId) {
+                console.warn(`⚠️ loadData(${key}): Nessuna annata disponibile`);
+                return null;
+            }
+
             const response = await fetch(`/api/data`, {
   method: 'GET',
   headers: {
