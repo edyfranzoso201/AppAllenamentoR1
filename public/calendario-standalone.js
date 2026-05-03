@@ -109,12 +109,25 @@ async function load() {
     console.log(`[CALENDARIO] 🔥 Caricamento per annata: ${annataId}`);
     
     // Chiamata API diretta con header (modalità genitore = dati ridotti)
+    // FIX: mando ANCHE gli header di auth se l'utente è loggato.
+    // Cosi' funziona sia per coach (che autenticano via session) sia per
+    // genitori (che usano parentMode=1). Sul mobile lo strict equality
+    // su parentMode='1' falliva e dava 401: con gli header di auth, il
+    // backend autentica via sessione e bypassa il check parentMode.
+    const _authHeaders = {};
+    try {
+      _authHeaders['x-auth-session'] = sessionStorage.getItem('gosport_auth_session') || '';
+      _authHeaders['x-auth-user']    = sessionStorage.getItem('gosport_auth_user')    || '';
+      _authHeaders['x-user-role']    = sessionStorage.getItem('gosport_user_role')    || '';
+      _authHeaders['x-society-id']   = sessionStorage.getItem('gosport_society_id')   || '';
+    } catch (e) { /* sessionStorage non disponibile (es. iframe sandbox) */ }
+
   const response = await fetch('/api/data?parentMode=1', {
     cache: 'no-store',
-    headers: {
+    headers: Object.assign({
     'Content-Type': 'application/json',
     'X-Annata-Id': annataId
-    }
+    }, _authHeaders)
   });
     
     if (!response.ok) {
@@ -648,7 +661,7 @@ if (themeBtn) {
     if (!isParentView) {
       h += `<th style="${stickyStyle}" class="sticky-col sticky-col-3">Azioni</th>`;
     } else {
-      h += `<th class="sticky-col sticky-col-3" style="background:${stickyBg}; border-color:${stickyBorder};">Azioni</th>`;
+      h += `<th class="sticky-col sticky-col-3" style="background:${stickyBg}; border-color:${stickyBorder};"></th>`;
     }
 
     dates.forEach(d => {
@@ -1479,13 +1492,10 @@ function renderBachecaGenitori(posts, images) {
       ? new Date(p.date).toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'})
       : '';
     const isGlobal = p.visibility === 'global';
-    // FIX v1.5.21: badge bacheca con colori vivaci, ben visibili in entrambi i temi
-    // - "Comunicato societa'": verde brillante con scritta bianca
-    // - "Questa stagione": viola brillante con scritta bianca
     const badge = isGlobal
-      ? `<span style="font-size:0.7rem;padding:2px 8px;background:#16a34a;color:#ffffff;
+      ? `<span style="font-size:0.7rem;padding:2px 8px;background:#16a34a;color:#16a34a;
                       border-radius:10px;font-weight:600;">🌐 Comunicato società</span>`
-      : `<span style="font-size:0.7rem;padding:2px 8px;background:#7c3aed;color:#ffffff;
+      : `<span style="font-size:0.7rem;padding:2px 8px;background:#0d1b2a;color:#60a5fa;
                       border-radius:10px;font-weight:600;">👥 Questa stagione</span>`;
 
     h += `<div style="background:#0d1b2a;border:1px solid #3b5a9d;border-radius:10px;
