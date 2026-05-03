@@ -108,14 +108,14 @@ async function load() {
     
     console.log(`[CALENDARIO] 🔥 Caricamento per annata: ${annataId}`);
     
-    // Chiamata API diretta con header
-    const response = await fetch('/api/data', {
-      cache: 'no-store',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Annata-Id': annataId
-      }
-    });
+    // Chiamata API diretta con header (modalità genitore = dati ridotti)
+  const response = await fetch('/api/data?parentMode=1', {
+    cache: 'no-store',
+    headers: {
+    'Content-Type': 'application/json',
+    'X-Annata-Id': annataId
+    }
+  });
     
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
@@ -492,24 +492,11 @@ function getAttendanceStatus(athleteId, date, data) {
 }
 
 async function render(loadedData) {
+  // Disabilita presenza-calendar-mode.js per evitare conflitti
+  window._CALENDARIO_STANDALONE_ACTIVE = true;
+  
   const el = document.getElementById('calendar');
   const dates = Object.keys(events).sort();
-
-  // Mostra sempre Bacheca e Gare se non siamo in modalità genitore
-  const _renderUrlParams = new URLSearchParams(window.location.search);
-  if (!_renderUrlParams.get('athleteId')) {
-    if (typeof showBachecaTab === 'function') showBachecaTab();
-    if (typeof showGareTab === 'function') {
-      var _gareRole = sessionStorage.getItem('gosport_user_role') || '';
-      var _gareEdit = ['admin','coach_l1','coach_l2'].indexOf(_gareRole) >= 0;
-      showGareTab(_gareEdit);
-    }
-    if (typeof showDocumentiTab === 'function') {
-      var _docRole = sessionStorage.getItem('gosport_user_role') || '';
-      var _docEdit = ['admin','coach_l1','coach_l2'].indexOf(_docRole) >= 0;
-      showDocumentiTab(_docEdit);
-    }
-  }
 
   // Guard: se l'elemento calendar non esiste, esce senza crashare (i tab sono già visibili)
   if (!el) {
@@ -576,7 +563,20 @@ async function render(loadedData) {
         btn.parentElement.style.display = 'none';
       }
     });
-    
+
+    // ✅ Mostra bottone tema anche per genitori
+const themeBtn = document.getElementById('cal-theme-btn');
+if (themeBtn) {
+  const calActions = document.getElementById('cal-actions') || themeBtn.parentElement;
+  if (calActions) {
+    calActions.style.display = 'flex';
+    calActions.style.justifyContent = 'flex-end';
+    calActions.style.padding = '4px 0';
+  }
+  themeBtn.style.display = 'flex';
+  themeBtn.style.marginLeft = 'auto';
+}
+
     // Nascondi anche il pulsante Dashboard
     const dashboardBtn = document.querySelector('.btn-outline-primary[href="/"]');
     if (dashboardBtn) {
@@ -588,20 +588,11 @@ async function render(loadedData) {
     });
     
     if (visibleAthletes.length === 0) {
-      el.innerHTML = `
-        <div class="alert alert-danger mt-3">
-          <h4>❌ Atleta Non Trovato</h4>
-          <p>L'atleta con ID <code>${athleteIdParam}</code> non è presente nel calendario.</p>
-          <hr>
-          <p><strong>IDs disponibili nel database:</strong></p>
-          <ul>
-            ${athletes.filter(a => !a.isGuest && !a.guest).map(a => `<li><code>${a.id}</code> - ${a.name}</li>`).join('')}
-          </ul>
-          <p class="mb-0">Contatta l'allenatore per un nuovo link.</p>
-        </div>
-      `;
-      return;
-    }
+  // Non mostrare errore, ma continua a caricare la bacheca
+  console.warn('[CALENDARIO] ⚠️ Atleta', athleteIdParam, 'non trovato negli eventi, ma carico comunque la bacheca');
+  el.innerHTML = `<div class="alert alert-info">Nessun evento nel calendario.</div>`;
+  // NON fare return, continua a caricare la bacheca
+}
     
     console.log('[PRESENZA] ✅ Atleta trovato:', visibleAthletes[0].name);
   } else {
@@ -631,75 +622,96 @@ async function render(loadedData) {
   }
 
   let attendanceData = loadedData || {};
+    const isLightNow = document.documentElement.classList.contains('theme-light')
+                || document.body.classList.contains('theme-light');
+      let h = '';
+    h += `<div class="table-responsive">`;
+    h += `<table class="table table-bordered calendar-table">`;
 
-  let h = '';
-  h += `<div class="table-responsive">`;
-  h += `<table class="table table-bordered calendar-table">`;
-  h += `<thead>`;
-  h += `<tr>`;
-  h += `<th style="color:#60a5fa;background:#060f1e;" class="sticky-col sticky-col-1">#</th>`;
-  h += `<th style="color:#60a5fa;background:#060f1e;" class="sticky-col sticky-col-2">Atleta</th>`;
-  
-  if (!isParentView) {
-    h += `<th style="color:#60a5fa;background:#060f1e;" class="sticky-col sticky-col-3">Azioni</th>`;
-  }
-  
-  dates.forEach(d => {
-    const dt = new Date(d);
-    h += `<th class="text-center" style="color:#e2e8f0;">
-      ${dt.toLocaleDateString('it-IT', { weekday: 'short' })}<br>
-      ${dt.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}
-    </th>`;
-  });
-  h += `</tr>`;
-  h += `<tr>`;
-  h += `<th style="color:#60a5fa;background:#060f1e;" class="sticky-col sticky-col-1"></th>`;
-  h += `<th style="color:#60a5fa;background:#060f1e;" class="sticky-col sticky-col-2">Nome</th>`;
-  
-  if (!isParentView) {
-    h += `<th style="color:#60a5fa;background:#060f1e;" class="sticky-col sticky-col-3">Evento</th>`;
-  } else {
-    h += `<th style="color:#e2e8f0;">Evento</th>`;
-  }
-  
-  dates.forEach(d => {
-    const e = events[d];
-    const eventIcon = e.type === 'Partita' ? '⚽' : e.type === 'Individual' ? '🏋️' : '🏃';
-    const athleteLine = (e.type === 'Individual' && e.athleteName)
+    // ✅ COLORI PER LE COLONNE FISSE (Sinistra: #, Atleta, Azioni, Nome, Evento)
+    const stickyBg     = isLightNow ? '#e5e7eb' : '#0d1b2a'; // ← era #1d4ed8
+    const stickyText   = isLightNow ? '#000000' : '#60a5fa'; // ← stesso colore del testo header
+    const stickyBorder = isLightNow ? '#cccccc' : '#3b5a9d'; // ← stesso bordo del tema
+    const stickyStyle = `color:${stickyText} !important; background:${stickyBg} !important; border-color:${stickyBorder} !important;`;
+    console.log('[TEMA] isLightNow:', isLightNow);
+    console.log('[TEMA] stickyStyle:', stickyStyle);
+    console.log('[TEMA] stickyText:', stickyText);
+    console.log('[TEMA] stickyBg:', stickyBg);
+
+    h += `<thead>`;
+    
+    // === RIGA 1: DATE ===
+    h += `<tr>`;
+    h += `<th style="${stickyStyle}" class="sticky-col sticky-col-1">#</th>`;
+    h += `<th style="${stickyStyle}" class="sticky-col sticky-col-2">Atleta</th>`;
+    
+    if (!isParentView) {
+      h += `<th style="${stickyStyle}" class="sticky-col sticky-col-3">Azioni</th>`;
+    } else {
+      h += `<th class="sticky-col sticky-col-3" style="background:${stickyBg}; border-color:${stickyBorder};"></th>`;
+    }
+
+    dates.forEach(d => {
+      const dt = new Date(d);
+      const dateStyle = isLightNow 
+      ? 'color:#000000 !important; background:#d1d5db !important; border-color:#9ca3af !important;'
+      : 'color:#60a5fa !important; background:#0d1b2a !important; border-color:#3b5a9d !important;';
+      h += `<th class="text-center" style="${dateStyle}">
+        ${dt.toLocaleDateString('it-IT', { weekday: 'short' })}<br>
+        ${dt.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}
+      </th>`;
+    });
+    h += `</tr>`;
+
+    // === RIGA 2: EVENTI ===
+    h += `<tr>`;
+    h += `<th style="${stickyStyle}" class="sticky-col sticky-col-1"></th>`;
+    h += `<th style="${stickyStyle}" class="sticky-col sticky-col-2">Nome</th>`;
+    h += `<th class="sticky-col sticky-col-3" style="${stickyStyle}">Evento</th>`;
+
+    dates.forEach(d => {
+      const e = events[d];
+      const eventIcon = e.type === 'Partita' ? '⚽' : e.type === 'Individual' ? '🏋️' : '🏃';
+      const athleteLine = (e.type === 'Individual' && e.athleteName)
         ? `<br><span style="color:#a855f7;font-size:0.7rem;font-weight:600">${e.athleteName}</span>`
         : '';
-    
-    const editBtn = !isParentView ?
-      `<button onclick="editEvent('${d}')" class="btn btn-sm btn-warning ms-1" style="padding:0.1rem 0.3rem;font-size:0.6rem;color:#ffffff;" title="Modifica evento">
-        <i class="bi bi-pencil"></i>
-      </button>` : '';
+      
+      const editBtn = !isParentView ? `<button onclick="editEvent('${d}')" class="btn btn-sm btn-warning ms-1" style="padding:0.1rem 0.3rem;font-size:0.6rem;color:#ffffff;" title="Modifica evento"><i class="bi bi-pencil"></i></button>` : '';
+      const deleteBtn = !isParentView ? `<button onclick="deleteEvent('${d}')" class="btn btn-sm btn-danger ms-1" style="padding:0.1rem 0.3rem;font-size:0.6rem;color:#ffffff;" title="Elimina evento"><i class="bi bi-trash"></i></button>` : '';
 
-    const deleteBtn = !isParentView ? 
-      `<button onclick="deleteEvent('${d}')" class="btn btn-sm btn-danger ms-1" style="padding:0.1rem 0.3rem;font-size:0.6rem;color:#ffffff;" title="Elimina evento">
-        <i class="bi bi-trash"></i>
-      </button>` : '';
+      const thColor = isLightNow ? '#000000 !important' : '#ffffff !important';
+      let thBg = '';
+      if (e.type === 'Individual') {
+        thBg = isLightNow ? '; background:#ddd6fe' : '; background:#1e1b4b';
+      } else {
+        thBg = isLightNow ? '; background:#f0f1f2 !important' : '';
+      }
+      
+      h += `<th class="text-center" style="color:${thColor}${thBg}">
+        <small>${eventIcon} ${e.type}${athleteLine}<br>${e.time}${editBtn}${deleteBtn}</small>
+      </th>`;
+    });
+    h += `</tr>`;
     
-    var _thColor = '#ffffff'; // sempre bianco: sfondo header è sempre scuro
-    h += `<th class="text-center" style="color:${_thColor};${e.type==='Individual'?'background:#1e1b4b;':''}">
-      <small>${eventIcon} ${e.type}${athleteLine}<br>${e.time}${editBtn}${deleteBtn}</small>
-    </th>`;
-  });
-  h += `</tr>`;
-  h += `</thead>`;
-  h += `<tbody>`;
+    h += `</thead>`;
+    h += `<tbody>`;
 
-  visibleAthletes.forEach((a, i) => {
-  h += `<tr>`;
-  h += `<td style="color:#60a5fa;background:#060f1e;" class="sticky-col sticky-col-1">${i + 1}</td>`;
-  h += `<td style="color:#60a5fa;background:#060f1e;" class="sticky-col sticky-col-2">${a.name}</td>`;
+visibleAthletes.forEach((a, i) => {
+  h += `<tr data-athlete-id="${a.id}">`;
+  
+  // ✅ Colonne sticky con colori adattivi
+  h += `<td style="color:${stickyText};background:${stickyBg};border-color:${stickyBorder};" class="sticky-col sticky-col-1">${i + 1}</td>`;
+  h += `<td style="color:${stickyText};background:${stickyBg};border-color:${stickyBorder};" class="sticky-col sticky-col-2">${a.name}</td>`;
   
   if (!isParentView) {
     h += `<td class="text-center sticky-col sticky-col-3">`;
-    h += `<button class="btn btn-sm btn-primary link-presenze-btn" data-athlete-id="${a.id}" data-athlete-name="${a.name.replace(/"/g, '&quot;')}">`;
-    h += `<i class="bi bi-link-45deg"></i> Link Presenze`;
-    h += `</button>`;
-    h += `</td>`;
+    h += `<button class="btn btn-sm btn-primary link-presenze-btn" ...>`;
+    // ...
+  } else {
+    // ✅ Cella "Evento" con colori adattivi
+    h += `<td class="sticky-col sticky-col-3" style="background:${stickyBg}; color:${stickyText}; border-color:${stickyBorder}; text-align:center;">Evento</td>`;
   }
+  
   
   dates.forEach(date => {
     console.log('[RENDER] 📅 Data:', date, 'Atleta:', a.id, a.name);
@@ -717,7 +729,8 @@ async function render(loadedData) {
     
     if (isParentView) {
       // ===== MODALITÀ GENITORE =====
-      h += `<td class="text-center" style="position:relative;color:#e2e8f0;">`;
+      const cellTextColor = isLightNow ? '#000000' : '#e2e8f0';
+      h += `<td class="text-center" style="position:relative;color:${cellTextColor};">`;
       
       if (isBlocked) {
         h += `
@@ -801,15 +814,43 @@ async function render(loadedData) {
 }); // ← CHIUSURA forEach ATLETI
 
   if (isParentView) {
-    h += `<div style="margin-top:12px;padding:14px;background:#1e293b;border:1px solid #1a3a5f;border-radius:8px;color:#60a5fa;font-size:0.85rem;">`;
+    h += `<div style="margin-top:12px;padding:14px;background:${isLightNow ? '#e8eef5' : '#0d1b2a'};border:1px solid ${isLightNow ? '#9aa5b0' : '#3b5a9d'};border-radius:8px;color:${isLightNow ? '#1a3a5f' : '#60a5fa'};font-size:0.85rem;">`;
     h += `<strong>ℹ️ Istruzioni:</strong> Usa i pulsanti per segnalare assenze. Predefinito: "Presente".`;
     h += `</div>`;
 
   }
   
-      el.innerHTML = h;
-  
-  console.log('[RENDER] ✅ HTML generato, riattacco event listener...');
+      el.innerHTML = h; // ← dopo questa riga
+
+// ✅ METTI IL SETTIMEOUT QUI
+setTimeout(() => {
+    const isLightNow = document.documentElement.classList.contains('theme-light')
+                    || document.body.classList.contains('theme-light');
+
+    const stickyBg     = isLightNow ? '#e5e7eb' : '#0d1b2a'; // ← era #1e293b, ora #060f1e
+    const stickyText   = isLightNow ? '#000000' : '#60a5fa';
+    const stickyBorder = isLightNow ? '#cccccc' : '#3b5a9d';  // ← e il bordo un tono 
+
+    // ✅ Forza sticky-col sia in chiaro che in scuro
+    el.querySelectorAll('thead th.sticky-col, tbody td.sticky-col').forEach(cell => {
+        cell.style.setProperty('background', stickyBg, 'important');
+        cell.style.setProperty('color', stickyText, 'important');
+        cell.style.setProperty('border-color', stickyBorder, 'important');
+        cell.querySelectorAll('*').forEach(c =>
+            c.style.setProperty('color', stickyText, 'important')
+        );
+    });
+
+    // ✅ Celle normali tbody — solo tema chiaro ha bisogno di pulizia
+    if (isLightNow) {
+        el.querySelectorAll('tbody td:not(.sticky-col)').forEach(td => {
+            td.style.removeProperty('background');
+            td.style.removeProperty('color');
+        });
+    }
+
+    console.log('[TEMA] Colori applicati!', isLightNow ? 'CHIARO' : 'SCURO');
+}, 200); // 200ms per essere sicuri che il tema sia già applicato
   
   // Aggiungi event listener per i pulsanti Link Presenze (solo per coach)
   if (!isParentView) {
@@ -1331,10 +1372,14 @@ async function loadBachecaGenitori(cachedData) {
     // Fetch identica al calendario iniziale (stesse opzioni che funzionano per atleti/eventi)
     const annataId = await getAnnataId();
     console.log('[Bacheca Genitori] 🔄 annataId:', annataId);
-    const response = await fetch('/api/data', {
-      cache: 'no-store',
-      headers: { 'Content-Type': 'application/json', 'X-Annata-Id': annataId }
-    });
+    // ✅ FIX 1 — fetch principale
+const response = await fetch(`/api/data?parentMode=1`, {
+  cache: 'no-store',
+  headers: { 'Content-Type': 'application/json', 'X-Annata-Id': annataId }
+});
+
+// ✅ FIX 2 — fetch lazy postImages (già ha ?action=postImages, aggiungi &parentMode=1)
+
     const result = await response.json();
     const d = result.data || result;
 
@@ -1358,10 +1403,27 @@ async function loadBachecaGenitori(cachedData) {
     });
     if (pubDocs.length > 0) renderDocumentiGenitori(pubDocs);
 
+        // Abbigliamento atleta
+const mat = (d && d.materiale) || { items: [], assignments: {} };
+if (currentAthleteId && mat.items && mat.assignments) {
+    window._lastMateriale = mat;
+    window._lastAthleteId = String(currentAthleteId);
+    renderMaterialeGenitore(mat, String(currentAthleteId));  // ← CHIAMA la funzione
+}
+
+    // ── BANNER SPONSOR (v1.5.16): legge bachecaConfig inclusa nella risposta parentMode ──
+    try {
+      var spCfg = (d && d.bachecaConfig) || {};
+      var spSlots = [0,1,2,3,4]
+        .map(function(k){ return spCfg[k] || {}; })
+        .filter(function(s){ return s.img && s.img.trim(); });
+      if (spSlots.length > 0) showSponsorBannerOverlay(spSlots);
+    } catch(e) { console.warn('[Banner] err:', e); }
+
     // Carica immagini in background (lazy)
     if (all.length > 0) {
       try {
-        const imgRes = await fetch('/api/data?action=postImages', {
+        const imgRes = await fetch('/api/data?action=postImages&parentMode=1', {
           cache: 'no-store',
           headers: { 'Content-Type': 'application/json', 'X-Annata-Id': annataId }
         });
@@ -1449,4 +1511,202 @@ function renderBachecaGenitori(posts, images) {
   h += '</div>';
   list.innerHTML = h;
 }
+function renderMaterialeGenitore(materiale, athleteId) {
+// Salva per re-render al cambio tema
+  const box = document.getElementById('bacheca-genitori-container');
+  if (!box) return;
+
+  const athId = String(athleteId);
+  const assignments = (materiale.assignments || {})[athId] || {};
+  const items = materiale.items || [];
+
+  const assegnati = items.filter(itemName => {
+    if (itemName === '_numero') return false;
+    const val = assignments[itemName];
+    return val !== undefined && val !== null && val !== '';
+  });
+
+  const numeroMaglia = assignments._numero || '';
+  if (!assegnati.length && !numeroMaglia) return;
+
+  // Rileva tema
+  const isLight = document.documentElement.classList.contains('theme-light')
+               || document.body.classList.contains('theme-light')
+               || document.documentElement.getAttribute('data-bs-theme') === 'light';
+
+  // ── Tema CHIARO: tutto nero su bianco/grigio chiarissimo ──────────────
+  // ── Tema SCURO:  tutto bianco/azzurro su blu scuro ────────────────────
+  const C = isLight ? {
+    cardBg:         '#f5f5f5',
+    cardBorder:     '#cccccc',
+    title:          '#000000',
+    rowBg:          '#ffffff',
+    rowBorder:      '#cccccc',
+    label:          '#000000',
+    value:          '#1a3a5f',
+    icon:           '#1a3a5f',
+    // ✅ consegnato - verde PASTELLO chiaro
+    okBg:           '#bbf7d0',
+    okBorder:       '#4caf50',
+    okLabel:        '#14532d',
+    okValue:        '#166534',
+    okIcon:         '#16a34a',
+    // 🟠 restituito - arancione chiaro
+    retBg:          '#ffedd5',   // ← arancione pastello
+    retBorder:      '#f97316',   // ← bordo arancione
+    retLabel:       '#7f1d1d',   // invariato
+    retValue:       '#991b1b',   // invariato
+    retIcon:        '#dc2626',   // invariato
+    // 🔵 neutro - blu PASTELLO chiaro
+    neutralBg:      '#dbeafe',
+    neutralBorder:  '#93c5fd',
+    neutralLabel:   '#1e3a5f',
+    neutralValue:   '#1d4ed8',
+    neutralIcon:    '#2563eb',
+} : {
+    // ── TEMA SCURO — colori ORIGINALI scuri intensi ──
+    cardBg:         '#1a3a5f',
+    cardBorder:     '#3b5a9d',
+    title:          '#ffffff',
+    rowBg:          '#0f172a',
+    rowBorder:      '#1a3a5f',
+    label:          '#e2e8f0',
+    value:          '#60a5fa',
+    icon:           '#60a5fa',
+    // ✅ consegnato - verde SCURO intenso originale
+    okBg:           '#123a28',
+    okBorder:       '#16a34a',
+    okLabel:        '#e2e8f0',
+    okValue:        '#60a5fa',
+    okIcon:         '#60a5fa',
+    // 🟠 restituito - arancione scuro intenso
+    retBg:          '#b44b05',   // ← arancione scuro
+    retBorder:      '#ea580c',   // ← bordo arancione
+    retLabel:       '#fecaca',   // invariato
+    retValue:       '#fca5a5',   // invariato
+    retIcon:        '#ef4444',   // invariato
+    // ⚪ neutro - blu-nero originale
+    neutralBg:      '#0f172a',
+    neutralBorder:  '#1a3a5f',
+    neutralLabel:   '#e2e8f0',
+    neutralValue:   '#60a5fa',
+    neutralIcon:    '#60a5fa',
+};
+
+  let h = `<div data-materiale="true" style="background:${C.cardBg};border:1px solid ${C.cardBorder};border-radius:12px;padding:20px;margin-top:12px;">`;
+  h += `<div style="color:${C.title};font-size:1rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+          <span>👕</span> Materiale Atleta
+        </div>`;
+
+  if (numeroMaglia) {
+    h += `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:${C.rowBg};border-radius:8px;margin-bottom:10px;border:1px solid ${C.rowBorder};">
+            <i class="bi bi-hash" style="color:${C.icon};font-size:1rem;flex-shrink:0;"></i>
+            <div style="flex:1;">
+              <div style="color:${C.label};font-weight:600;font-size:0.9rem;">Numero maglia</div>
+              <div style="color:${C.value};font-size:0.82rem;"><strong>${numeroMaglia}</strong></div>
+            </div>
+          </div>`;
+  }
+
+  h += `<div style="display:flex;flex-direction:column;gap:8px;">`;
+
+  assegnati.forEach(itemName => {
+    const val = assignments[itemName];
+    let detail = '';
+    let statoRaw = '';
+    let isOk = false;
+
+    if (typeof val === 'object' && val !== null) {
+      const stato = val.status || val.stato || '';
+      const qty   = val.qty || val.quantita || val.qta || '';
+      const taglia = val.taglia || val.size || '';
+      statoRaw = String(stato).toLowerCase().trim();
+      isOk = statoRaw === 'consegnato';
+      detail = [
+        stato  ? `Stato: <strong>${stato}</strong>`   : '',
+        qty    ? `Qtà: <strong>${qty}</strong>`        : '',
+        taglia ? `Taglia: <strong>${taglia}</strong>`  : ''
+      ].filter(Boolean).join(' · ');
+    } else {
+      detail = `<strong>${val}</strong>`;
+    }
+const isRet = statoRaw === 'restituito';
+
+const bg     = isOk ? C.okBg           : isRet ? C.retBg      : C.neutralBg;
+const border = isOk ? C.okBorder       : isRet ? C.retBorder   : C.neutralBorder;
+const lbl    = isOk ? C.okLabel        : isRet ? C.retLabel    : C.neutralLabel;
+const val2   = isOk ? C.okValue        : isRet ? C.retValue    : C.neutralValue;
+const ico    = isOk ? C.okIcon         : isRet ? C.retIcon     : C.neutralIcon;
+
+    h += `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;
+                      background:${bg};border-radius:8px;border:1px solid ${border};">
+            <i class="bi bi-tag-fill" style="color:${ico};font-size:1rem;flex-shrink:0;"></i>
+            <div style="flex:1;">
+              <div style="color:${lbl};font-weight:600;font-size:0.9rem;">${itemName}</div>
+              <div style="color:${val2};font-size:0.82rem;">${detail || 'Assegnato'}</div>
+            </div>
+          </div>`;
+  });
+
+  h += `</div></div>`;
+  box.insertAdjacentHTML('beforeend', h);
+}
+
 // ═══ FINE BACHECA GENITORI ═══════════════════════════════════════════
+
+
+// ═══════════════════════════════════════════════════════════════════
+// ████  BANNER SPONSOR OVERLAY  (aggiunto v1.5.16)
+// ═══════════════════════════════════════════════════════════════════
+window.showSponsorBannerOverlay = function(slots) {
+  if (!slots || !slots.length) return;
+  if (window._bannerShown) return;
+  window._bannerShown = true;
+
+  var existing = document.getElementById('sponsor-overlay-container');
+  if (existing) existing.remove();
+
+  var container = document.createElement('div');
+  container.id = 'sponsor-overlay-container';
+  container.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:10px;pointer-events:none;max-width:min(340px,calc(100vw - 32px));';
+  document.body.appendChild(container);
+
+  slots.forEach(function(slot, idx) {
+    setTimeout(function() {
+      var card = document.createElement('div');
+      card.style.cssText = 'background:rgba(13,27,42,0.97);border:1px solid #3b5a9d;border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.5);pointer-events:auto;opacity:0;transform:translateY(20px);transition:opacity 0.4s ease,transform 0.4s ease;cursor:'+(slot.link?'pointer':'default')+';';
+
+      var img = document.createElement('img');
+      img.src = slot.img; img.alt = 'Sponsor';
+      img.style.cssText = 'width:100%;max-height:160px;object-fit:cover;display:block;';
+      img.onerror = function(){ card.remove(); };
+      card.appendChild(img);
+
+      var bar = document.createElement('div');
+      bar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(26,58,95,0.95);';
+      var lbl = document.createElement('span');
+      lbl.style.cssText = 'color:#f59e0b;font-size:0.72rem;font-weight:700;letter-spacing:0.04em;';
+      lbl.textContent = '⭐ SPONSOR';
+      var closeBtn = document.createElement('button');
+      closeBtn.textContent = '✕';
+      closeBtn.style.cssText = 'background:none;border:none;color:#60a5fa;cursor:pointer;font-size:0.85rem;padding:2px 6px;line-height:1;';
+      closeBtn.onclick = function(e){ e.stopPropagation(); fadeOutCard(card); };
+      bar.appendChild(lbl); bar.appendChild(closeBtn);
+      card.appendChild(bar);
+
+      if (slot.link) card.onclick = function(){ window.open(slot.link,'_blank','noopener'); };
+      container.appendChild(card);
+
+      requestAnimationFrame(function(){ requestAnimationFrame(function(){
+        card.style.opacity='1'; card.style.transform='translateY(0)';
+      }); });
+      setTimeout(function(){ fadeOutCard(card); }, 6000);
+    }, idx * 800);
+  });
+
+  function fadeOutCard(card){
+    card.style.opacity='0'; card.style.transform='translateY(20px)';
+    setTimeout(function(){ if(card.parentNode) card.parentNode.removeChild(card); }, 400);
+  }
+};
+// ═══ FINE BANNER SPONSOR OVERLAY ═════════════════════════════════════════

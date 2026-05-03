@@ -76,23 +76,17 @@
 
     window.loadData = async function(key) {
         try {
-            const annataId = await getAnnataForRequest();
-            
-            if (!annataId) {
-                console.warn(`⚠️ loadData(${key}): Nessuna annata disponibile`);
-                return null;
-            }
-            
-            console.log(`📥 loadData(${key}) per annata: ${annataId}`);
-
-            // Chiamata API - USANDO HEADER x-annata-id
             const response = await fetch(`/api/data`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-annata-id': annataId
-                }
-            });
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+    'x-annata-id': annataId,
+    'x-auth-session': sessionStorage.getItem('gosport_auth_session') || '',
+    'x-auth-user': sessionStorage.getItem('gosport_auth_user') || '',
+    'x-user-role': sessionStorage.getItem('gosport_user_role') || '',
+    'x-society-id': sessionStorage.getItem('gosport_society_id') || ''
+  }
+});
 
             if (!response.ok) {
                 if (response.status === 404) {
@@ -133,13 +127,17 @@
 
             // Chiamata API - USANDO HEADER x-annata-id
             const response = await fetch(`/api/data`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-annata-id': annataId
-                },
-                body: JSON.stringify({ key: key, data: value })
-            });
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'x-annata-id': annataId,
+    'x-auth-session': sessionStorage.getItem('gosport_auth_session') || '',
+    'x-auth-user': sessionStorage.getItem('gosport_auth_user') || '',
+    'x-user-role': sessionStorage.getItem('gosport_user_role') || '',
+    'x-society-id': sessionStorage.getItem('gosport_society_id') || ''
+  },
+  body: JSON.stringify({ key: key, data: value })
+});
 
             if (!response.ok) {
                 console.error(`❌ saveData(${key}): HTTP ${response.status}`);

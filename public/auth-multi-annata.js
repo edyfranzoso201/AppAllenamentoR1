@@ -24,27 +24,18 @@
     // ==========================================
     
     function isParentMode() {
-        const path = window.location.pathname;
-        const search = window.location.search;
-        
-        // Verifica se siamo in una pagina che non richiede autenticazione
-        // 1. Path esplicito /presenza/
-        if (path.includes('/presenza/')) {
-            return true;
-        }
-        
-        // 2. Qualsiasi pagina con parametro athleteId (link genitore)
-        if (search.includes('athleteId=')) {
-            return true;
-        }
-        
-        // 3. calendario.html con parametro (modalità genitore)
-        if (path.includes('calendario.html') && search.length > 0) {
-            return true;
-        }
-        
-        return false;
-    }
+    const path = window.location.pathname;
+    const params = new URLSearchParams(window.location.search);
+
+    const athleteId = params.get('athleteId');
+    const token = params.get('token');
+    const annata = params.get('annata');
+
+    if (path.includes('presenza') && athleteId && token) return true;
+    if (path.includes('calendario.html') && athleteId && annata) return true;
+
+    return false;
+}
 
     // ==========================================
     // BLOCCO RENDERING PREVENTIVO
@@ -118,193 +109,6 @@
             sessionStorage.removeItem(SESSION_ANNATA);
             sessionStorage.removeItem(SESSION_USER_ROLE);
             sessionStorage.removeItem(SESSION_SOCIETY);
-        }
-
-        // ==========================================
-        // LICENZA - FUNZIONI
-        // ==========================================
-
-        function getLicenseData() {
-            try {
-                const data = localStorage.getItem(LICENSE_DATA);
-                return data ? JSON.parse(data) : null;
-            } catch(e) { return null; }
-        }
-
-        function isLicenseVerified() {
-            // Controlla se la verifica è ancora valida (cache 24h)
-            const verified = localStorage.getItem(LICENSE_VERIFIED);
-            const expiry = localStorage.getItem(LICENSE_VERIFIED_EXPIRY);
-            if (verified !== 'true' || !expiry) return false;
-            return Date.now() < parseInt(expiry);
-        }
-
-        function saveLicenseVerified(licenseData) {
-            localStorage.setItem(LICENSE_VERIFIED, 'true');
-            // Cache verifica per 24 ore
-            localStorage.setItem(LICENSE_VERIFIED_EXPIRY, (Date.now() + 24 * 60 * 60 * 1000).toString());
-            localStorage.setItem(LICENSE_DATA, JSON.stringify(licenseData));
-        }
-
-        function clearLicense() {
-            localStorage.removeItem(LICENSE_KEY);
-            localStorage.removeItem(LICENSE_EMAIL);
-            localStorage.removeItem(LICENSE_DATA);
-            localStorage.removeItem(LICENSE_VERIFIED);
-            localStorage.removeItem(LICENSE_VERIFIED_EXPIRY);
-        }
-
-        async function verifyLicense(email, licenseKey) {
-            const response = await fetch('/api/licenze?action=verify', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, licenseKey })
-            });
-            return await response.json();
-        }
-
-        // ==========================================
-        // LICENZA - SCHERMATA ATTIVAZIONE
-        // ==========================================
-
-        function showLicenseScreen(errorMessage) {
-            document.body.innerHTML = '';
-            document.body.style.cssText = 'margin:0;padding:0;font-family:system-ui,-apple-system,sans-serif;background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;';
-
-            const savedEmail = localStorage.getItem(LICENSE_EMAIL) || '';
-            const savedKey = localStorage.getItem(LICENSE_KEY) || '';
-
-            const card = document.createElement('div');
-            card.style.cssText = 'background:#1e293b;border:1px solid #64748b;border-radius:16px;padding:36px;width:100%;max-width:420px;box-shadow:0 25px 50px rgba(0,0,0,0.5);';
-            card.innerHTML = `
-                <div style="text-align:center;margin-bottom:28px">
-                    <div style="font-size:3rem;margin-bottom:8px">⚽</div>
-                    <h1 style="color:white;margin:0 0 4px 0;font-size:1.5rem;font-weight:700">Sport Monitoring</h1>
-                    <p style="color:#64748b;margin:0;font-size:0.85rem">Attivazione Licenza</p>
-                </div>
-
-                <div id="license-alert" style="padding:10px 14px;border-radius:8px;font-size:0.85rem;margin-bottom:16px;${errorMessage ? '' : 'display:none'}background:#450a0a;border:1px solid #d90429;color:#d90429">${errorMessage || ''}</div>
-
-                <div style="margin-bottom:14px">
-                    <label style="display:block;font-size:0.8rem;color:#64748b;font-weight:600;margin-bottom:6px">
-                        📧 Email Amministratore
-                    </label>
-                    <input type="email" id="license-email" value="${savedEmail}"
-                        placeholder="admin@società.com"
-                        style="width:100%;padding:11px 14px;border-radius:8px;border:1px solid #64748b;background:#0f172a;color:white;font-size:0.95rem;box-sizing:border-box;outline:none">
-                </div>
-
-                <div style="margin-bottom:20px">
-                    <label style="display:block;font-size:0.8rem;color:#64748b;font-weight:600;margin-bottom:6px">
-                        🔑 Chiave Licenza
-                    </label>
-                    <input type="text" id="license-key" value="${savedKey}"
-                        placeholder="GS-XXXXX-XXXXX-XXXXX-XXXXX-XXXXXXXX"
-                        style="width:100%;padding:11px 14px;border-radius:8px;border:1px solid #64748b;background:#0f172a;color:#60a5fa;font-family:monospace;font-size:0.88rem;box-sizing:border-box;outline:none;letter-spacing:0.5px">
-                </div>
-
-                <button id="license-btn"
-                    style="width:100%;padding:13px;background:linear-gradient(135deg,#3b82f6,#3b82f6);color:white;border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;transition:opacity 0.2s">
-                    🔓 Attiva Licenza
-                </button>
-
-                <p style="text-align:center;font-size:0.75rem;color:#64748b;margin-top:16px;margin-bottom:0">
-                    Non hai una licenza? Contatta Sport Monitoring per acquistarla.
-                </p>
-            `;
-
-            document.body.appendChild(card);
-
-            const alertEl = card.querySelector('#license-alert');
-            const btn = card.querySelector('#license-btn');
-            const emailInput = card.querySelector('#license-email');
-            const keyInput = card.querySelector('#license-key');
-
-            function showLicenseAlert(msg, type) {
-                alertEl.textContent = msg;
-                alertEl.style.display = 'block';
-                if (type === 'error') {
-                    alertEl.style.background = '#450a0a';
-                    alertEl.style.border = '1px solid #d90429';
-                    alertEl.style.color = '#d90429';
-                } else if (type === 'success') {
-                    alertEl.style.background = '#16a34a';
-                    alertEl.style.border = '1px solid #16a34a';
-                    alertEl.style.color = '#16a34a';
-                } else {
-                    alertEl.style.background = '#1a3a5f';
-                    alertEl.style.border = '1px solid #3b82f6';
-                    alertEl.style.color = '#60a5fa';
-                }
-            }
-
-            async function doActivate() {
-                const email = emailInput.value.trim();
-                const key = keyInput.value.trim();
-
-                if (!email || !key) {
-                    showLicenseAlert('⚠️ Inserisci email e chiave licenza', 'error');
-                    return;
-                }
-
-                btn.textContent = '⏳ Verifica in corso...';
-                btn.disabled = true;
-                showLicenseAlert('Connessione al server...', 'info');
-
-                try {
-                    const result = await verifyLicense(email, key);
-
-                    if (result.valid) {
-                        // Salva localmente
-                        localStorage.setItem(LICENSE_EMAIL, email);
-                        localStorage.setItem(LICENSE_KEY, key);
-                        saveLicenseVerified(result);
-                        // Salva piano licenza
-                        sessionStorage.setItem('gosport_license_plan', result.plan || 'platinum');
-
-                        const expiry = new Date(result.expiry + 'T00:00:00').toLocaleDateString('it-IT');
-                        showLicenseAlert(`✅ Benvenuto ${result.societyName}! Licenza valida fino al ${expiry}`, 'success');
-
-                        setTimeout(() => proceedAfterLogin(), 1200);
-                    } else if (result.expired) {
-                        showLicenseAlert(`❌ Licenza scaduta. Contatta Sport Monitoring per rinnovarla.`, 'error');
-                        btn.textContent = '🔓 Attiva Licenza';
-                        btn.disabled = false;
-                    } else {
-                        showLicenseAlert('❌ ' + (result.message || 'Licenza non valida'), 'error');
-                        btn.textContent = '🔓 Attiva Licenza';
-                        btn.disabled = false;
-                    }
-                } catch(e) {
-                    showLicenseAlert('❌ Errore di connessione. Riprova.', 'error');
-                    btn.textContent = '🔓 Attiva Licenza';
-                    btn.disabled = false;
-                }
-            }
-
-            btn.addEventListener('click', doActivate);
-            keyInput.addEventListener('keydown', e => { if (e.key === 'Enter') doActivate(); });
-        }
-
-        // ==========================================
-        // LICENZA - BANNER SCADENZA (avviso 30gg)
-        // ==========================================
-
-        function showLicenseBanner() {
-            const data = getLicenseData();
-            if (!data || !data.expiry) return;
-
-            const daysLeft = Math.ceil((new Date(data.expiry) - new Date()) / (1000 * 60 * 60 * 24));
-            if (daysLeft > 30) return; // Nessun banner se mancano più di 30 giorni
-
-            const banner = document.createElement('div');
-            const isExpired = daysLeft <= 0;
-            banner.style.cssText = `position:fixed;top:0;left:0;right:0;z-index:99999;padding:8px 16px;text-align:center;font-size:0.82rem;font-weight:600;${isExpired ? 'background:#450a0a;color:#d90429;border-bottom:2px solid #d90429' : 'background:#422006;color:#f59e0b;border-bottom:2px solid #f59e0b'}`;
-            banner.innerHTML = isExpired
-                ? `⚠️ Licenza Sport Monitoring <strong>SCADUTA</strong>. Contatta Sport Monitoring per rinnovarla. <button onclick="this.parentElement.remove()" style="background:none;border:none;color:inherit;cursor:pointer;margin-left:8px;font-size:1rem">✕</button>`
-                : `⏰ Licenza Sport Monitoring in scadenza tra <strong>${daysLeft} giorni</strong> (${new Date(data.expiry+'T00:00:00').toLocaleDateString('it-IT')}). <button onclick="this.parentElement.remove()" style="background:none;border:none;color:inherit;cursor:pointer;margin-left:8px;font-size:1rem">✕</button>`;
-
-            document.body.prepend(banner);
         }
 
         // ==========================================
@@ -2294,35 +2098,50 @@ window.deleteUser = async function(username) {
         // ==========================================
         
         function setupFetchInterceptor() {
-            const originalFetch = window.fetch;
-            
-            window.fetch = function(...args) {
-                const [url, options = {}] = args;
-                
-                if (url && url.includes('/api/')) {
-                    options.headers = options.headers || {};
-                    const isHeaders = options.headers instanceof Headers;
+    const originalFetch = window.fetch;
 
-                    // Aggiunge X-Annata-Id per /api/data
-                    if (url.includes('/api/data')) {
-                        const currentAnnata = getCurrentAnnata();
-                        if (currentAnnata) {
-                            if (isHeaders) options.headers.set('X-Annata-Id', currentAnnata);
-                            else options.headers['X-Annata-Id'] = currentAnnata;
-                        }
-                    }
+    window.fetch = async function(...args) {
+        let [url, options = {}] = args;
 
-                    // Aggiunge X-Society-Id per tutte le API (annate, auth, data)
-                    const societyId = sessionStorage.getItem('gosport_society_id');
-                    if (societyId) {
-                        if (isHeaders) options.headers.set('X-Society-Id', societyId);
-                        else options.headers['X-Society-Id'] = societyId;
-                    }
-                }
-                
-                return originalFetch.apply(this, [url, options]);
-            };
+        if (typeof url === 'string' && url.includes('/api/')) {
+            options.headers = options.headers || {};
+
+            const isHeaders = options.headers instanceof Headers;
+            const currentAnnata = getCurrentAnnata();
+            const societyId = sessionStorage.getItem(SESSION_SOCIETY);
+            const currentUser = getCurrentUser();
+            const currentRole = getUserRole();
+            const session = sessionStorage.getItem(SESSION_KEY);
+
+            if (currentAnnata) {
+                if (isHeaders) options.headers.set('X-Annata-Id', currentAnnata);
+                else options.headers['X-Annata-Id'] = currentAnnata;
+            }
+
+            if (societyId) {
+                if (isHeaders) options.headers.set('X-Society-Id', societyId);
+                else options.headers['X-Society-Id'] = societyId;
+            }
+
+            if (session) {
+                if (isHeaders) options.headers.set('X-Auth-Session', session);
+                else options.headers['X-Auth-Session'] = session;
+            }
+
+            if (currentUser) {
+                if (isHeaders) options.headers.set('X-Auth-User', currentUser);
+                else options.headers['X-Auth-User'] = currentUser;
+            }
+
+            if (currentRole) {
+                if (isHeaders) options.headers.set('X-User-Role', currentRole);
+                else options.headers['X-User-Role'] = currentRole;
+            }
         }
+
+        return originalFetch.apply(this, [url, options]);
+    };
+}
 
         // ==========================================
         // MAIN FLOW

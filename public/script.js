@@ -457,6 +457,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 _individualPassword = allData.individualPassword;
                 sessionStorage.setItem('gosport_individual_pwd', _individualPassword);
             }
+            // ── BANNER SPONSOR (aggiunto v1.5.16) ───────────────────────────
+            // bachecaConfig non è nel GET con annataId → fetch separata globale
+            if (!window._bannerShown) {
+                try {
+                    var xhrBanner = new XMLHttpRequest();
+                    xhrBanner.open('GET', '/api/data', true); // senza X-Annata-Id = risposta globale
+                    xhrBanner.onload = function() {
+                        try {
+                            var bd = JSON.parse(xhrBanner.responseText);
+                            var spCfg = (bd && bd.bachecaConfig) || {};
+                            var spSlots = [0,1,2,3,4]
+                                .map(function(k){ return spCfg[k] || {}; })
+                                .filter(function(s){ return s.img && s.img.trim(); });
+                            if (spSlots.length > 0) _showSponsorBannerOverlay(spSlots);
+                        } catch(e) { console.warn('[Banner] parse err:', e); }
+                    };
+                    xhrBanner.send();
+                } catch(e) { console.warn('[Banner] fetch err:', e); }
+            }
+            // ── FINE BANNER SPONSOR ──────────────────────────────────────────
+
             athletes.forEach(athlete => {
                 if (athlete.isViceCaptain === undefined) athlete.isViceCaptain = false;
                 // Migrazione dalla vecchia proprietà "guest" alla nuova "isGuest"
@@ -3186,45 +3207,54 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.exportAllDataBtn.addEventListener('click', async () => {
     const performDownload = async (includeIndividual) => {
         try {
-            // 1. RECUPERA ANNATA DA SESSIONSTORAGE (CON NOME CORRETTO!)
-            const annataId = sessionStorage.getItem('gosport_current_annata');
-            const username = sessionStorage.getItem('gosport_auth_user') || 'admin';
-            
-            if (!annataId) {
-                alert('⚠️ Errore: Nessuna annata selezionata.');
-                return;
-            }
-            
-            console.log('🔄 Backup - Annata:', annataId);
-            
-            // 2. CARICA DATI FRESCHI DA API
-            const response = await fetch('/api/data', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Annata-Id': annataId
-                }
-            });
-            
-            if (!response.ok) {
-                throw new Error(`Errore caricamento dati: ${response.status}`);
-            }
-            
-            const freshData = await response.json();
-            
-            console.log('📊 Dati caricati:', {
-                atleti: (freshData.athletes || []).length,
-                valutazioni: Object.keys(freshData.evaluations || {}).length,
-                gps: Object.keys(freshData.gpsData || {}).length,
-                partite: Object.keys(freshData.matchResults || {}).length
-            });
-            
-            if (!freshData.athletes || freshData.athletes.length === 0) {
-                alert('⚠️ Nessun atleta trovato per questa annata.');
-                return;
-            }
-            
-            // 3. PREPARA DATI DA ESPORTARE
+            // 1. RECUPERA ANNATA DA SESSIONSTORAGE
+const annataId = sessionStorage.getItem('gosportcurrentannata');
+const username = sessionStorage.getItem('gosportauthuser') || 'admin';
+const role = sessionStorage.getItem('gosportuserrole');
+const societyId = sessionStorage.getItem('gosportsocietyid');
+const authSession = sessionStorage.getItem('gosportauthsession');
+
+if (!annataId) {
+    alert('⚠️ Errore: Nessuna annata selezionata.');
+    return;
+}
+
+console.log('🔄 Backup - Annata:', annataId);
+
+// 2. CARICA DATI FRESCHI DA API
+const headers = {
+    'Content-Type': 'application/json',
+    'X-Annata-Id': annataId || '',
+    'X-Auth-Session': authSession || '',
+    'X-Auth-User': username || '',
+    'X-User-Role': role || '',
+    'X-Society-Id': societyId || ''
+};
+
+const response = await fetch('/api/data', {
+    method: 'GET',
+    headers
+});
+
+if (!response.ok) {
+    throw new Error(`Errore caricamento dati: ${response.status}`);
+}
+
+const freshData = await response.json();
+
+console.log('📊 Dati caricati:', {
+    atleti: (freshData.athletes || []).length,
+    valutazioni: Object.keys(freshData.evaluations || {}).length,
+    gps: Object.keys(freshData.gpsData || {}).length,
+    partite: Object.keys(freshData.matchResults || {}).length
+});
+
+if (!freshData.athletes || freshData.athletes.length === 0) {
+    alert('⚠️ Nessun atleta trovato per questa annata.');
+    return;
+}
+
+// 3. PREPARA DATI DA ESPORTARE
             let dataToExport = {
                 _backup_metadata: {
                     version: '1.0',
@@ -3492,7 +3522,28 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
                         trainingSessions = importedData.trainingSessions || {};
                         formationData = importedData.formationData || { starters: [], bench: [], tokens: [] };
                         matchResults = importedData.matchResults || {};
-                        athletes.forEach(athlete => {
+                        // ── BANNER SPONSOR (aggiunto v1.5.16) ───────────────────────────
+            // bachecaConfig non è nel GET con annataId → fetch separata globale
+            if (!window._bannerShown) {
+                try {
+                    var xhrBanner = new XMLHttpRequest();
+                    xhrBanner.open('GET', '/api/data', true); // senza X-Annata-Id = risposta globale
+                    xhrBanner.onload = function() {
+                        try {
+                            var bd = JSON.parse(xhrBanner.responseText);
+                            var spCfg = (bd && bd.bachecaConfig) || {};
+                            var spSlots = [0,1,2,3,4]
+                                .map(function(k){ return spCfg[k] || {}; })
+                                .filter(function(s){ return s.img && s.img.trim(); });
+                            if (spSlots.length > 0) _showSponsorBannerOverlay(spSlots);
+                        } catch(e) { console.warn('[Banner] parse err:', e); }
+                    };
+                    xhrBanner.send();
+                } catch(e) { console.warn('[Banner] fetch err:', e); }
+            }
+            // ── FINE BANNER SPONSOR ──────────────────────────────────────────
+
+            athletes.forEach(athlete => {
                             if (athlete.isViceCaptain === undefined) athlete.isViceCaptain = false;
                             if (athlete.isGuest === undefined) athlete.isGuest = false;
                         });
@@ -4671,3 +4722,60 @@ window.printMaterialiDedicato = function() {
         setTimeout(function(){ try { w.focus(); w.print(); } catch(e){ console.error(e); } }, 300);
     };
 };
+
+
+// ═══════════════════════════════════════════════════════════════════
+// ████  BANNER SPONSOR OVERLAY per index.html  (aggiunto v1.5.16)
+// ═══════════════════════════════════════════════════════════════════
+window._showSponsorBannerOverlay = function(slots) {
+    if (!slots || !slots.length) return;
+    if (window._bannerShown) return;
+    window._bannerShown = true;
+
+    var existing = document.getElementById('sponsor-overlay-container');
+    if (existing) existing.remove();
+
+    var container = document.createElement('div');
+    container.id = 'sponsor-overlay-container';
+    container.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:10px;pointer-events:none;max-width:min(340px,calc(100vw - 32px));';
+    document.body.appendChild(container);
+
+    slots.forEach(function(slot, idx) {
+        setTimeout(function() {
+            var card = document.createElement('div');
+            card.style.cssText = 'background:rgba(13,27,42,0.97);border:1px solid #3b5a9d;border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.5);pointer-events:auto;opacity:0;transform:translateY(20px);transition:opacity 0.4s ease,transform 0.4s ease;cursor:'+(slot.link?'pointer':'default')+';';
+
+            var img = document.createElement('img');
+            img.src = slot.img; img.alt = 'Sponsor';
+            img.style.cssText = 'width:100%;max-height:160px;object-fit:cover;display:block;';
+            img.onerror = function(){ card.remove(); };
+            card.appendChild(img);
+
+            var bar = document.createElement('div');
+            bar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(26,58,95,0.95);';
+            var lbl = document.createElement('span');
+            lbl.style.cssText = 'color:#f59e0b;font-size:0.72rem;font-weight:700;letter-spacing:0.04em;';
+            lbl.textContent = '⭐ SPONSOR';
+            var closeBtn = document.createElement('button');
+            closeBtn.textContent = '✕';
+            closeBtn.style.cssText = 'background:none;border:none;color:#60a5fa;cursor:pointer;font-size:0.85rem;padding:2px 6px;line-height:1;';
+            closeBtn.onclick = function(e){ e.stopPropagation(); fadeOut(card); };
+            bar.appendChild(lbl); bar.appendChild(closeBtn);
+            card.appendChild(bar);
+
+            if (slot.link) card.onclick = function(){ window.open(slot.link,'_blank','noopener'); };
+
+            container.appendChild(card);
+            requestAnimationFrame(function(){ requestAnimationFrame(function(){
+                card.style.opacity='1'; card.style.transform='translateY(0)';
+            }); });
+            setTimeout(function(){ fadeOut(card); }, 6000);
+        }, idx * 800);
+    });
+
+    function fadeOut(card){
+        card.style.opacity='0'; card.style.transform='translateY(20px)';
+        setTimeout(function(){ if(card.parentNode) card.parentNode.removeChild(card); }, 400);
+    }
+};
+// ═══ FINE BANNER SPONSOR OVERLAY ════════════════════════════════════════
