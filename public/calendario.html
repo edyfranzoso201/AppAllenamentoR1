@@ -1,24 +1,27 @@
 <!DOCTYPE html>
 <!-- =====================================================
      Calendario Squadra - calendario.html
-     Revisione: v1.5.15  (2026-04-29)
-     Modifiche dell'ultima revisione:
-       - Vista genitore (?athleteId=...): pannelli Bacheca/Documenti
-         in tema chiaro ora bianchi/grigio con testo nero (prima blu scuri
-         per stili inline hardcoded in calendario-standalone.js)
-       - Pulsante toggle tema chiaro/scuro gia' presente nella vista genitore
-         (era #cal-theme-btn, non era nascosto da presenza-calendar-mode.js)
+     Revisione: v1.5.20  (2026-05-03)
+     Modifiche dell'ultima revisione (in calendario-standalone.js):
+       - Vista genitore: cella sopra "Evento" ora mostra l'etichetta
+         "Evento" (prima era vuota)
+       - Bacheca: badge "Comunicato societa'" aveva refuso verde-su-verde
+         (invisibile), ora bianco su verde
+       - Bacheca: badge "Questa stagione" ora adattivo al tema chiaro/scuro
+         (prima sfondo navy fisso = nero su grigio in tema chiaro)
      Cronologia:
+       v1.5.19 - tema chiaro: scritte header tabella ora visibili al primo load
+       v1.5.18 - color+background+border con !important su <th>
+       v1.5.17 - toggle tema senza refresh
+       v1.5.15 - tema chiaro pannelli Bacheca/Documenti vista genitore
        v1.5.14 - footer assistenza + versione visibile
                 + mobile: tabella a tutta larghezza
-       v1.5.5 - tentativo (mai verificato per mancanza versione visibile)
-       v1.5.3 - mobile: scroll orizzontale tabella + hamburger menu tab
      ===================================================== -->
 <html lang="it" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="version" content="1.5.15">
+    <meta name="version" content="1.5.20">
     <title>Calendario Squadra - Sport Monitoring</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -901,6 +904,16 @@ body.theme-light #bacheca-genitori-container *:not(a):not(.bi):not([data-materia
     color: #000000 !important;
 }
 
+/* FIX v1.5.20: badge bacheca ("👥 Questa stagione" / "🌐 Comunicato società")
+   La regola sopra forzava nero su ogni span; questi badge invece hanno sfondo
+   scuro/colorato e testo bianco - lo manteniamo. */
+html.theme-light #bacheca-genitori-container span[style*="border-radius:10px"],
+body.theme-light #bacheca-genitori-container span[style*="border-radius:10px"],
+html.theme-light #bacheca-genitori-list span[style*="border-radius:10px"],
+body.theme-light #bacheca-genitori-list span[style*="border-radius:10px"] {
+    color: #ffffff !important;
+}
+
 /* Pulsanti "Apri" mantengono colore distintivo */
 html.theme-light #bacheca-genitori-container a[href],
 body.theme-light #bacheca-genitori-container a[href] {
@@ -968,29 +981,53 @@ body.theme-light #bacheca-genitori-container .cal-section-label {
 })();
 
 function applyCalThemeColors(isLight) {
-    if (!isLight) return;
-    document.querySelectorAll('.calendar-table thead th').forEach(function(th) {
-        th.style.color = '#ffffff';
-        th.querySelectorAll('*').forEach(function(el) { el.style.color = '#ffffff'; });
+    // FIX v1.5.21: applichiamo i colori SOLO alle celle delle DATE dell'header,
+    // NON alle sticky-col che sono gestite gia' bene dal rendering di
+    // calendario-standalone.js. Prima sovrascrivere TUTTE le th dell'header
+    // creava conflitti di sfondo (cella "Azioni" indistinguibile dalle date)
+    // e in alcuni casi il browser ricalcolava la larghezza delle sticky-col
+    // mostrando uno shift apparente.
+    var ths = document.querySelectorAll('.calendar-table thead th:not(.sticky-col)');
+    ths.forEach(function(th) {
+        if (isLight) {
+            th.style.setProperty('color',        '#000103', 'important');
+            th.style.setProperty('background',   '#d1d5db', 'important');
+            th.style.setProperty('border-color', '#9ca3af', 'important');
+            th.querySelectorAll('*').forEach(function(el) {
+                el.style.setProperty('color', '#000103', 'important');
+            });
+        } else {
+            th.style.setProperty('color',        '#60a5fa', 'important');
+            th.style.setProperty('background',   '#0d1b2a', 'important');
+            th.style.setProperty('border-color', '#3b5a9d', 'important');
+            th.querySelectorAll('*').forEach(function(el) {
+                el.style.setProperty('color', '#60a5fa', 'important');
+            });
+        }
     });
-    var isLt = document.documentElement.classList.contains('theme-light');
+
+    // Box export Gare/Settimana
     document.querySelectorAll('#gare-export-sett, #gare-export-titolo').forEach(function(el) {
-        el.style.background  = isLt ? '#f0f1f2' : '#0d1b2a';
-        el.style.color       = isLt ? '#1e3a5f' : '#60a5fa';
-        el.style.borderColor = isLt ? '#9aa5b0' : '#1e293b';
+        el.style.background  = isLight ? '#f0f1f2' : '#0d1b2a';
+        el.style.color       = isLight ? '#1e3a5f' : '#60a5fa';
+        el.style.borderColor = isLight ? '#9aa5b0' : '#1e293b';
     });
+
+    // RTE buttons (toolbar editor): tema chiaro nero, scuro bianco
     document.querySelectorAll('.rte-btn').forEach(function(btn) {
-        btn.style.color = '#ffffff';
+        var c = isLight ? '#000103' : '#ffffff';
+        btn.style.setProperty('color', c, 'important');
         btn.querySelectorAll('b,i,u,s,span').forEach(function(el) {
-            el.style.setProperty('color', '#ffffff', 'important');
+            el.style.setProperty('color', c, 'important');
         });
     });
 }
 
+// MutationObserver: rilancia applyCalThemeColors quando il DOM cambia
+// (es. dopo render dinamico) per assicurarsi che i colori restino corretti.
 var _calThemeObserver = new MutationObserver(function() {
-    if (document.documentElement.classList.contains('theme-light')) {
-        applyCalThemeColors(true);
-    }
+    var isL = document.documentElement.classList.contains('theme-light');
+    applyCalThemeColors(isL);
 });
 
 function calToggleTheme() {
@@ -1004,12 +1041,19 @@ function calToggleTheme() {
     var label = document.getElementById('cal-theme-label');
     if (icon)  icon.textContent  = isLight ? '🌙' : '☀️';
     if (label) label.textContent = isLight ? 'Tema Scuro' : 'Tema Chiaro';
-    applyCalThemeColors(isLight);
 
     // ✅ RE-RENDER COMPLETO — ricostruisce tutto l'HTML con i colori giusti
-    if (typeof render === 'function' && window.cachedCalData) {
-        render(window.cachedCalData);
+    // FIX v1.5.17: era "cachedCalData" ma in calendario-standalone.js
+    // viene salvato come "_cachedCalData" (con underscore). Senza fix la
+    // condizione era sempre falsa -> render() non veniva chiamato e
+    // serviva refresh manuale.
+    var _cached = window._cachedCalData || window.cachedCalData;
+    if (typeof render === 'function' && _cached) {
+        render(_cached);
     }
+
+    // Applica colori dopo il render (o invece del render se cache vuota)
+    applyCalThemeColors(isLight);
 
     if (typeof docRender === 'function') {
         _docsLoaded = false;
@@ -1032,14 +1076,24 @@ document.addEventListener('DOMContentLoaded', function() {
     var label = document.getElementById('cal-theme-label');
     if (icon)  icon.textContent  = isLight ? '🌙' : '☀️';
     if (label) label.textContent = isLight ? 'Tema Scuro' : 'Tema Chiaro';
-    var containers = ['cal-presence-table', 'post-list', 'rte-toolbar'];
+    var containers = ['calendar', 'cal-presence-table', 'post-list', 'rte-toolbar', 'bacheca-genitori-container'];
     containers.forEach(function(id) {
         var el = document.getElementById(id);
         if (el) _calThemeObserver.observe(el, { childList: true, subtree: true });
     });
-    if (isLight) {
-        setTimeout(function() { applyCalThemeColors(true); }, 400);
-    }
+
+    // FIX v1.5.19: applichiamo i colori al primo load PER ENTRAMBI i temi.
+    // Prima il fix partiva solo se il tema iniziale era chiaro.
+    // Inoltre, dato che il render della tabella e' asincrono (fetch dati),
+    // riproviamo a 50ms, 200ms, 500ms, 1000ms, 2000ms per coprire i casi
+    // di rete lenta. Una volta che un retry trova gli <th> e li colora,
+    // gli altri retry sono innocui (idempotenti).
+    [50, 200, 500, 1000, 2000].forEach(function(delay) {
+        setTimeout(function() {
+            var lt = document.documentElement.classList.contains('theme-light');
+            applyCalThemeColors(lt);
+        }, delay);
+    });
 });
 </script>
 </head>
@@ -3297,7 +3351,7 @@ window.showDocumentiTab = showDocumentiTab;
 <!-- v1.5.14: footer assistenza + versione (allineato a index.html) -->
 <footer class="cal-footer-info">
     <span>📧 Per assistenza scrivi all'email <a href="mailto:info.mondo2026@gmail.com">info.mondo2026@gmail.com</a></span>
-    <span class="cal-version-tag">— v1.5.15</span>
+    <span class="cal-version-tag">— v1.5.20</span>
 </footer>
 <style>
     .cal-footer-info {
