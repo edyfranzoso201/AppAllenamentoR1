@@ -77,7 +77,17 @@ return res.status(200).json({ success: true });
 return res.status(400).json({ success: false, message: 'Header X-Annata-Id obbligatorio' });
 }
 
-const isParentMode = req.query?.parentMode === '1' && req.method === 'GET';
+const isParentMode = (function() {
+    if (req.method !== 'GET') return false;
+    const q = req.query || {};
+    const v = q.parentMode ?? q.parentmode ?? q.PARENTMODE;
+    if (v === undefined || v === null) return false;
+    const s = String(v).toLowerCase().trim();
+    return s === '1' || s === 'true' || s === 'yes';
+})();
+
+// LOG DIAGNOSTICO (rimuovere dopo verifica): mostra cosa arriva
+console.log(`[/api/data] method=${req.method} annataId=${annataId} isAuth=${session.isAuthenticated} parentMode=${isParentMode} rawQuery=${JSON.stringify(req.query || {})}`);
 
 if (!session.isAuthenticated && !isParentMode) {
 return res.status(401).json({ success: false, message: 'Accesso non autorizzato. Effettua il login.' });
