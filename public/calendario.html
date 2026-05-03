@@ -504,6 +504,18 @@
         }
         html.theme-light .cal-hamburger-btn .bi,
         body.theme-light .cal-hamburger-btn .bi { color: #000000 !important; }
+        /* Selettore annata: mobile solo su smartphone, desktop solo da tablet su */
+        @media (max-width: 767px) { #cal-annata-desktop { display: none !important; } }
+        @media (min-width: 768px) { #cal-annata-mobile  { display: none !important; } }
+        /* Tema chiaro: adatta colori select annata */
+        html.theme-light #cal-annata-select-desktop,
+        html.theme-light #cal-annata-select-mobile,
+        body.theme-light  #cal-annata-select-desktop,
+        body.theme-light  #cal-annata-select-mobile {
+            background: #ffffff !important;
+            color: #000103 !important;
+            border-color: #9aa5b0 !important;
+        }
         /* ── PANNELLO SPONSOR ── */
         .sponsor-panel { background:#1a3a5f; border:1px solid #3b5a9d; border-radius:12px; padding:18px; margin-top:12px; }
         .sponsor-panel h6 { color:#f59e0b; font-size:0.95rem; font-weight:700; margin-bottom:14px; }
@@ -671,10 +683,10 @@
         /* Sfondi elementi strutturali */
         html.theme-light .cal-card,
         body.theme-light .cal-card { background: #ffffff !important; border-color: #9aa5b0 !important; }
-        html.theme-light .calendar-table th,
-        body.theme-light .calendar-table th { background: #b6babf !important; color: #000103 !important; border-color: #9aa5b0 !important; }
-        html.theme-light .calendar-table td,
-        body.theme-light .calendar-table td { background: #ffffff !important; color: #000103 !important; border-color: #9aa5b0 !important; }
+        html.theme-light .calendar-table thead th,
+        body.theme-light .calendar-table thead th { background: #1a3a5f !important; color: #ffffff !important; border-color: #2d4a8a !important; }
+        html.theme-light .calendar-table tbody td,
+        body.theme-light .calendar-table tbody td { background: #ffffff !important; color: #000103 !important; border-color: #9aa5b0 !important; }
         html.theme-light .cal-section-header,
         body.theme-light .cal-section-header { background: #b6babf !important; color: #000103 !important; }
         html.theme-light .section-toggle-btn,
@@ -791,31 +803,38 @@
         html.theme-light .gare-action-row button,
         body.theme-light .gare-action-row button { color: #ffffff !important; }
 
-        /* n4 — Calendario: header tabella (sfondo scuro) → testo bianco */
-        html.theme-light .calendar-table thead th,
-        body.theme-light .calendar-table thead th {
-            background: #1a3a5f !important;
-            color: #ffffff !important;
-            border-color: #2d4a8a !important;
-        }
-        html.theme-light .calendar-table .sticky-col-1,
-        html.theme-light .calendar-table .sticky-col-2,
-        html.theme-light .calendar-table .sticky-col-3,
-        body.theme-light .calendar-table .sticky-col-1,
-        body.theme-light .calendar-table .sticky-col-2,
-        body.theme-light .calendar-table .sticky-col-3 {
-            background: #1a3a5f !important;
-            color: #ffffff !important;
-        }
-        html.theme-light .calendar-table tbody .sticky-col-1,
-        html.theme-light .calendar-table tbody .sticky-col-2,
-        html.theme-light .calendar-table tbody .sticky-col-3,
-        body.theme-light .calendar-table tbody .sticky-col-1,
-        body.theme-light .calendar-table tbody .sticky-col-2,
-        body.theme-light .calendar-table tbody .sticky-col-3 {
-            background: #f0f1f2 !important;
-            color: #000103 !important;
-        }
+        /* Header sticky-col — sfondo scuro testo bianco */
+html.theme-light .calendar-table thead .sticky-col-1,
+html.theme-light .calendar-table thead .sticky-col-2,
+html.theme-light .calendar-table thead .sticky-col-3,
+body.theme-light .calendar-table thead .sticky-col-1,
+body.theme-light .calendar-table thead .sticky-col-2,
+body.theme-light .calendar-table thead .sticky-col-3 {
+    background: #1a3a5f !important;
+    color: #ffffff !important;
+}
+
+/* Tbody sticky-col — sfondo chiaro testo scuro */
+html.theme-light .calendar-table tbody .sticky-col-1,
+html.theme-light .calendar-table tbody .sticky-col-2,
+html.theme-light .calendar-table tbody .sticky-col-3,
+body.theme-light .calendar-table tbody .sticky-col-1,
+body.theme-light .calendar-table tbody .sticky-col-2,
+body.theme-light .calendar-table tbody .sticky-col-3 {
+    background: #f0f1f2 !important;
+    color: #000103 !important;
+    border-color: #cbd5e1 !important;
+}
+
+/* Figli delle tbody sticky-col — forza testo scuro */
+html.theme-light .calendar-table tbody .sticky-col-1 *,
+html.theme-light .calendar-table tbody .sticky-col-2 *,
+html.theme-light .calendar-table tbody .sticky-col-3 *,
+body.theme-light .calendar-table tbody .sticky-col-1 *,
+body.theme-light .calendar-table tbody .sticky-col-2 *,
+body.theme-light .calendar-table tbody .sticky-col-3 * {
+    color: #000103 !important;
+}
         /* Aggiunge --bg-header chiaro per tema chiaro */
         html.theme-light {
           --bg-header: #1a3a5f;
@@ -851,48 +870,79 @@
         html.theme-light #doc-list .card,
         body.theme-light #doc-list .card { background: #ffffff !important; border-color: #9aa5b0 !important; }
 
-        /* v1.5.15: TEMA CHIARO VISTA GENITORE (?athleteId=...)
-           I pannelli Bacheca/Documenti in vista genitore sono renderizzati
-           da calendario-standalone.js con stili INLINE blu scuri (#1a3a5f, #0f172a)
-           hardcoded. Senza !important e selettori specifici sui figli, gli inline
-           non si possono sovrascrivere.
-           Tutto sotto #bacheca-genitori-container (che contiene sia la sezione
-           Bacheca sia la sezione Documenti per il genitore). */
-        html.theme-light #bacheca-genitori-container,
-        body.theme-light #bacheca-genitori-container,
-        html.theme-light #bacheca-genitori-container > div,
-        body.theme-light #bacheca-genitori-container > div {
-            background: #ffffff !important;
-            border-color: #9aa5b0 !important;
-        }
-        /* Item interni (post bacheca, file documento) */
-        html.theme-light #bacheca-genitori-container > div > div,
-        body.theme-light #bacheca-genitori-container > div > div,
-        html.theme-light #bacheca-genitori-list > div,
-        body.theme-light #bacheca-genitori-list > div,
-        html.theme-light #bacheca-genitori-list > div > div,
-        body.theme-light #bacheca-genitori-list > div > div {
-            background: #f0f1f2 !important;
-            border-color: #9aa5b0 !important;
-        }
-        /* Testo: forza nero tranne per i link e icone azzurre */
-        html.theme-light #bacheca-genitori-container *:not(a):not(.bi),
-        body.theme-light #bacheca-genitori-container *:not(a):not(.bi),
-        html.theme-light #bacheca-genitori-list *:not(a):not(.bi),
-        body.theme-light #bacheca-genitori-list *:not(a):not(.bi) {
-            color: #000000 !important;
-        }
-        /* Pulsanti "Apri" mantengono colore distintivo ma su sfondo chiaro */
-        html.theme-light #bacheca-genitori-container a[href],
-        body.theme-light #bacheca-genitori-container a[href] {
-            background: #dbeafe !important;
-            color: #1d4ed8 !important;
-        }
-        /* Icone bi (Bootstrap Icons) restano colorate */
-        html.theme-light #bacheca-genitori-container .bi,
-        body.theme-light #bacheca-genitori-container .bi {
-            color: #1d4ed8 !important;
-        }
+/* v1.5.15: TEMA CHIARO VISTA GENITORE */
+html.theme-light #bacheca-genitori-container,
+body.theme-light #bacheca-genitori-container {
+    background: #ffffff !important;
+    border-color: #9aa5b0 !important;
+}
+
+/* Solo i div diretti NON materiale */
+html.theme-light #bacheca-genitori-container > div:not([data-materiale]),
+body.theme-light #bacheca-genitori-container > div:not([data-materiale]) {
+    background: #ffffff !important;
+    border-color: #9aa5b0 !important;
+}
+
+/* Item interni (post bacheca, file documento) - NON tocca [data-materiale] */
+html.theme-light #bacheca-genitori-container > div > div:not([data-materiale]):not([data-materiale] *),
+body.theme-light #bacheca-genitori-container > div > div:not([data-materiale]):not([data-materiale] *),
+html.theme-light #bacheca-genitori-list > div,
+body.theme-light #bacheca-genitori-list > div,
+html.theme-light #bacheca-genitori-list > div > div,
+body.theme-light #bacheca-genitori-list > div > div {
+    background: #f0f1f2 !important;
+    border-color: #9aa5b0 !important;
+}
+
+/* Testo: forza nero tranne link, icone e tutto ciò che è dentro [data-materiale] */
+html.theme-light #bacheca-genitori-container *:not(a):not(.bi):not([data-materiale] *):not([data-materiale]),
+body.theme-light #bacheca-genitori-container *:not(a):not(.bi):not([data-materiale] *):not([data-materiale]) {
+    color: #000000 !important;
+}
+
+/* Pulsanti "Apri" mantengono colore distintivo */
+html.theme-light #bacheca-genitori-container a[href],
+body.theme-light #bacheca-genitori-container a[href] {
+    background: #dbeafe !important;
+    color: #1d4ed8 !important;
+}
+
+/* Icone Bootstrap restano colorate */
+html.theme-light #bacheca-genitori-container .bi,
+body.theme-light #bacheca-genitori-container .bi {
+    color: #1d4ed8 !important;
+}
+
+/* Materiale atleta - card esterna: SOLO bordo e testo, sfondo gestito da JS */
+html.theme-light #bacheca-genitori-container [data-materiale],
+body.theme-light #bacheca-genitori-container [data-materiale] {
+    border-color: #cccccc !important;
+    color: #000103 !important;
+}
+
+/* Item materiale singoli - NON sovrascrivere background (lo gestisce calendario-standalone.js) */
+html.theme-light #bacheca-genitori-container [data-materiale] > div,
+body.theme-light #bacheca-genitori-container [data-materiale] > div {
+    border-color: #cccccc !important;
+    /* background: NO !important qui — lascia i pastelli di JS */
+}
+
+/* Numero maglia - primo div */
+html.theme-light #bacheca-genitori-container [data-materiale] > div:first-child,
+body.theme-light #bacheca-genitori-container [data-materiale] > div:first-child {
+    background: #dde1e6 !important;
+    color: #000103 !important;
+}
+
+/* Titolo sezione "Materiale Atleta" sopra il blocco */
+html.theme-light #bacheca-genitori-container [data-materiale-header],
+html.theme-light #bacheca-genitori-container .cal-section-label,
+body.theme-light #bacheca-genitori-container [data-materiale-header],
+body.theme-light #bacheca-genitori-container .cal-section-label {
+    background: #e6e9ed !important;
+    color: #000103 !important;
+}
         /* Banner azzurro iniettato da presenza-calendar-mode.js (saluto atleta)
            e' gia' azzurro chiaro su fondo bianco quindi e' OK in entrambi temi.
            Nessun override necessario. */
@@ -903,87 +953,113 @@
         }
     </style>
 
-    <script>
-    // ── Tema Scuro/Chiaro Calendario ──────────────────────────
-    (function() {
-        var saved = localStorage.getItem('gosport_theme') || 'dark';
-        if (saved === 'light') {
-            document.documentElement.classList.add('theme-light');
-            document.documentElement.setAttribute('data-bs-theme', 'light');
-            document.documentElement.style.colorScheme = 'light';
-        }
-    })();
-    function applyCalThemeColors(isLight) {
-        if (!isLight) return;
-        // n1: Testo bianco in header tabella calendario (su sfondo scuro)
-        document.querySelectorAll('.calendar-table thead th').forEach(function(th) {
-            th.style.color = '#ffffff';
-            th.querySelectorAll('*').forEach(function(el) { el.style.color = '#ffffff'; });
-        });
-        // n2: Testo bianco nei pulsanti rte-btn (G/C/S/B)
-        // Pannello Crea Locandina: input e select
-        var isLt = document.documentElement.classList.contains('theme-light');
-        document.querySelectorAll('#gare-export-sett, #gare-export-titolo').forEach(function(el) {
-            el.style.background = isLt ? '#f0f1f2' : '#0d1b2a';
-            el.style.color = isLt ? '#1e3a5f' : '#60a5fa';
-            el.style.borderColor = isLt ? '#9aa5b0' : '#1e293b';
-        });
-        document.querySelectorAll('.rte-btn').forEach(function(btn) {
-            btn.style.color = '#ffffff';
-            btn.querySelectorAll('b,i,u,s,span').forEach(function(el) {
-                el.style.setProperty('color', '#ffffff', 'important');
-            });
-        });
+<script>
+// ── Tema Scuro/Chiaro Calendario ──────────────────────────
+(function() {
+    // Legge entrambe le chiavi per compatibilità con vecchio codice
+    var saved = localStorage.getItem('gosport_theme') 
+             || localStorage.getItem('gosporttheme') 
+             || 'dark';
+    if (saved === 'light') {
+        document.documentElement.classList.add('theme-light');
+        document.documentElement.setAttribute('data-bs-theme', 'light');
+        document.documentElement.style.colorScheme = 'light';
     }
-    // Riapplica ogni volta che la tabella viene (re)renderizzata
-    var _calThemeObserver = new MutationObserver(function() {
-        if (document.documentElement.classList.contains('theme-light')) {
-            applyCalThemeColors(true);
-        }
-    });
+})();
 
-    function calToggleTheme() {
-        var isLight = document.documentElement.classList.toggle('theme-light');
-        document.body.classList.toggle('theme-light', isLight);
-        document.documentElement.setAttribute('data-bs-theme', isLight ? 'light' : 'dark');
-        document.documentElement.style.colorScheme = isLight ? 'light' : 'dark';
-        localStorage.setItem('gosport_theme', isLight ? 'light' : 'dark');
-        var icon  = document.getElementById('cal-theme-icon');
-        var label = document.getElementById('cal-theme-label');
-        if (icon)  icon.textContent  = isLight ? '🌙' : '☀️';
-        if (label) label.textContent = isLight ? 'Tema Scuro' : 'Tema Chiaro';
-        applyCalThemeColors(isLight);
-        // Re-renderizza documenti con nuovi colori tema
-        if (typeof docRender === 'function') {
-            _docsLoaded = false;
-            docRender();
+function applyCalThemeColors(isLight) {
+    if (!isLight) return;
+    document.querySelectorAll('.calendar-table thead th').forEach(function(th) {
+        th.style.color = '#ffffff';
+        th.querySelectorAll('*').forEach(function(el) { el.style.color = '#ffffff'; });
+    });
+    var isLt = document.documentElement.classList.contains('theme-light');
+    document.querySelectorAll('#gare-export-sett, #gare-export-titolo').forEach(function(el) {
+        el.style.background  = isLt ? '#f0f1f2' : '#0d1b2a';
+        el.style.color       = isLt ? '#1e3a5f' : '#60a5fa';
+        el.style.borderColor = isLt ? '#9aa5b0' : '#1e293b';
+    });
+    document.querySelectorAll('.rte-btn').forEach(function(btn) {
+        btn.style.color = '#ffffff';
+        btn.querySelectorAll('b,i,u,s,span').forEach(function(el) {
+            el.style.setProperty('color', '#ffffff', 'important');
+        });
+    });
+}
+
+var _calThemeObserver = new MutationObserver(function() {
+    if (document.documentElement.classList.contains('theme-light')) {
+        applyCalThemeColors(true);
+    }
+});
+
+function calToggleTheme() {
+    var isLight = document.documentElement.classList.toggle('theme-light');
+    document.body.classList.toggle('theme-light', isLight);
+    document.documentElement.setAttribute('data-bs-theme', isLight ? 'light' : 'dark');
+    document.documentElement.style.colorScheme = isLight ? 'light' : 'dark';
+    localStorage.setItem('gosport_theme', isLight ? 'light' : 'dark');
+    localStorage.setItem('gosporttheme',  isLight ? 'light' : 'dark');
+    var icon  = document.getElementById('cal-theme-icon');
+    var label = document.getElementById('cal-theme-label');
+    if (icon)  icon.textContent  = isLight ? '🌙' : '☀️';
+    if (label) label.textContent = isLight ? 'Tema Scuro' : 'Tema Chiaro';
+    applyCalThemeColors(isLight);
+
+    // ✅ RE-RENDER COMPLETO — ricostruisce tutto l'HTML con i colori giusti
+    if (typeof render === 'function' && window.cachedCalData) {
+        render(window.cachedCalData);
+    }
+
+    if (typeof docRender === 'function') {
+        _docsLoaded = false;
+        docRender();
+    }
+    var matBox = document.getElementById('bacheca-genitori-container');
+    if (matBox) {
+        var oldMat = matBox.querySelector('[data-materiale]');
+        if (oldMat && window._lastMateriale && window._lastAthleteId) {
+            oldMat.remove();
+            renderMaterialeGenitore(window._lastMateriale, window._lastAthleteId);
         }
     }
-    document.addEventListener('DOMContentLoaded', function() {
-        var isLight = document.documentElement.classList.contains('theme-light');
-        document.body.classList.toggle('theme-light', isLight);
-        var icon  = document.getElementById('cal-theme-icon');
-        var label = document.getElementById('cal-theme-label');
-        if (icon)  icon.textContent  = isLight ? '🌙' : '☀️';
-        if (label) label.textContent = isLight ? 'Tema Scuro' : 'Tema Chiaro';
-        // Osserva i container per riapplicare i colori dopo ogni render
-        var containers = ['cal-presence-table', 'post-list', 'rte-toolbar'];
-        containers.forEach(function(id) {
-            var el = document.getElementById(id);
-            if (el) _calThemeObserver.observe(el, { childList: true, subtree: true });
-        });
-        // Applica subito se tema chiaro
-        if (isLight) {
-            setTimeout(function() { applyCalThemeColors(true); }, 400);
-        }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var isLight = document.documentElement.classList.contains('theme-light');
+    document.body.classList.toggle('theme-light', isLight);
+    var icon  = document.getElementById('cal-theme-icon');
+    var label = document.getElementById('cal-theme-label');
+    if (icon)  icon.textContent  = isLight ? '🌙' : '☀️';
+    if (label) label.textContent = isLight ? 'Tema Scuro' : 'Tema Chiaro';
+    var containers = ['cal-presence-table', 'post-list', 'rte-toolbar'];
+    containers.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) _calThemeObserver.observe(el, { childList: true, subtree: true });
     });
-    </script>
+    if (isLight) {
+        setTimeout(function() { applyCalThemeColors(true); }, 400);
+    }
+});
+</script>
 </head>
 <body>
     <div class="container-fluid">
         <div class="top-bar">
             <a href="/" class="back-btn"><i class="bi bi-arrow-left"></i> Dashboard</a>
             <h1 class="main-title"><i class="bi bi-calendar-week"></i> Calendario Squadra</h1>
+            <!-- SELETTORE ANNATA DESKTOP (visibile solo da tablet in su, solo admin) -->
+            <div id="cal-annata-desktop" style="display:none; align-items:center; gap:6px; margin-left:auto; flex-shrink:0;">
+                <span style="color:var(--text-muted); font-size:0.78rem; font-weight:600; white-space:nowrap;">
+                    <i class="bi bi-calendar-event"></i> Annata:
+                </span>
+                <select id="cal-annata-select-desktop"
+                    onchange="window.handleCalChangeAnnata(this.value)"
+                    style="background:var(--bg-card); border:1px solid var(--border); color:var(--text);
+                           border-radius:6px; padding:4px 8px; font-size:0.82rem; cursor:pointer; min-width:130px;">
+                    <option value="">Caricamento...</option>
+                </select>
+            </div>
         </div>
 
         <!-- ── HAMBURGER mobile (v1.5.3) ── -->
@@ -991,6 +1067,21 @@
             <i class="bi bi-list"></i> <span id="cal-current-tab-label">Calendario Squadra</span>
             <span class="arrow">▶</span>
         </button>
+        <!-- SELETTORE ANNATA MOBILE (visibile solo su smartphone, solo admin) -->
+        <div id="cal-annata-mobile" style="display:none; padding:6px 4px 2px 4px;">
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:nowrap;">
+                <span style="color:var(--text-muted); font-size:0.78rem; font-weight:600; white-space:nowrap; flex-shrink:0;">
+                    <i class="bi bi-calendar-event"></i> Annata:
+                </span>
+                <select id="cal-annata-select-mobile"
+                    onchange="window.handleCalChangeAnnata(this.value)"
+                    style="flex:1; background:var(--bg-card); border:1px solid var(--border);
+                           color:var(--text); border-radius:6px; padding:5px 8px;
+                           font-size:0.82rem; cursor:pointer;">
+                    <option value="">Caricamento...</option>
+                </select>
+            </div>
+        </div>
 
         <!-- ── TAB NAVIGATION ── -->
         <div class="page-tabs" id="page-tabs">
@@ -1367,8 +1458,6 @@
 
         <!-- Bacheca Genitori - FUORI dal calendario collassabile -->
         <div id="bacheca-genitori-container" style="display:none;ma
-
-
 
 rgin-top:0;"></div>
 
@@ -1866,6 +1955,15 @@ async function _loadSponsorConfig() {
         console.log('[Sponsor] 📦 bachecaConfig:', JSON.stringify(d && d.bachecaConfig));
         _sponsorConfig = (d && d.bachecaConfig) || {};
         _renderSponsorSlots();
+        // Mostra banner overlay anche nell'app (vista admin)
+        var _spSlots = [0,1,2,3,4].map(function(k){ return _sponsorConfig[k]||{}; })
+            .filter(function(s){ return s.img && s.img.trim(); });
+        if (_spSlots.length > 0 && typeof window.showSponsorBannerOverlay === 'function') {
+            window.showSponsorBannerOverlay(_spSlots);
+        } else if (_spSlots.length > 0) {
+            // Fallback inline se standalone non è caricato
+            _showCalSponsorOverlay(_spSlots);
+        }
         var __sp = document.getElementById('sponsor-admin-panel');
         // Mostra solo se il tab bacheca è ancora attivo (la XHR è async)
         var __bachecaActive = document.getElementById('tab-content-bacheca');
@@ -3224,5 +3322,146 @@ window.showDocumentiTab = showDocumentiTab;
     html.theme-light .cal-footer-info a,
     body.theme-light .cal-footer-info a { color: #1d4ed8 !important; }
 </style>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// ████  SELETTORE ANNATA — Desktop + Mobile  (aggiunto v1.5.16)  ████
+// ═══════════════════════════════════════════════════════════════════
+
+window.handleCalChangeAnnata = function(newAnnataId) {
+    if (!newAnnataId) return;
+    // Aggiorna sessionStorage e localStorage
+    // IMPORTANTE: calendario.html usa 'gosport_current_annata' (underscore), non ':currentannata'
+    sessionStorage.setItem('gosport_current_annata', newAnnataId);
+    sessionStorage.setItem('gosport:currentannata', newAnnataId);  // compatibilità index.html
+    localStorage.setItem('currentAnnata', newAnnataId);
+    // Sincronizza entrambi i selettori
+    ['cal-annata-select-mobile', 'cal-annata-select-desktop'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el && el.value !== newAnnataId) el.value = newAnnataId;
+    });
+    // Ricarica la pagina con il parametro ?annata= nell'URL
+    // (calendario-standalone.js lo legge con priorità massima)
+    var url = new URL(window.location.href);
+    url.searchParams.set('annata', newAnnataId);
+    window.location.href = url.toString();
+};
+
+async function calLoadAnnateSelectors() {
+    try {
+        // Solo gli utenti admin possono cambiare annata (stessa regola di index.html)
+        var userRole = sessionStorage.getItem('gosport_user_role')
+            || sessionStorage.getItem('gosport:userrole') || '';
+        var canChange = (userRole === 'admin');
+        if (!canChange) return;
+
+        var res = await fetch('/api/annate/list');
+        if (!res.ok) return;
+        var data = await res.json();
+        var annate = (data && data.annate) ? data.annate : [];
+        if (annate.length < 2) return; // Con una sola annata il selettore è inutile
+
+        // Ordina per data inizio decrescente (più recente prima)
+        annate.sort(function(a, b) {
+            var dA = new Date(a.dataInizio || (a.year + '-01-01'));
+            var dB = new Date(b.dataInizio || (b.year + '-01-01'));
+            return dB - dA;
+        });
+
+        // Recupera annata corrente (stessa priorità di getAnnataId in calendario-standalone.js)
+        var urlParams = new URLSearchParams(window.location.search);
+        var currentId = urlParams.get('annata')
+            || sessionStorage.getItem('gosport_current_annata')
+            || sessionStorage.getItem('gosport:currentannata')
+            || localStorage.getItem('currentAnnata')
+            || (annate[0] && annate[0].id);
+
+        // Genera le <option>
+        var optHTML = annate.map(function(a) {
+            var sel = (String(a.id) === String(currentId)) ? ' selected' : '';
+            var label = a.nome || a.year || a.id;
+            return '<option value="' + a.id + '"' + sel + '>' + label + '</option>';
+        }).join('');
+
+        // Popola entrambi i selettori
+        ['cal-annata-select-mobile', 'cal-annata-select-desktop'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.innerHTML = optHTML;
+        });
+
+        // Mostra selettore desktop (il CSS lo nasconde automaticamente su mobile)
+        var deskDiv = document.getElementById('cal-annata-desktop');
+        if (deskDiv) deskDiv.style.display = 'flex';
+
+        // Mostra selettore mobile (il CSS lo nasconde automaticamente su desktop)
+        var mobDiv = document.getElementById('cal-annata-mobile');
+        if (mobDiv) mobDiv.style.display = 'block';
+
+    } catch(e) {
+        console.warn('[CalAnnata] Errore caricamento selettore annata:', e);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    calLoadAnnateSelectors();
+});
+
+// Fallback banner overlay per vista admin (replica di showSponsorBannerOverlay)
+function _showCalSponsorOverlay(slots) {
+    if (!slots || !slots.length) return;
+    if (window._bannerShown) return;
+    window._bannerShown = true;
+
+    var existing = document.getElementById('sponsor-overlay-container');
+    if (existing) existing.remove();
+
+    var container = document.createElement('div');
+    container.id = 'sponsor-overlay-container';
+    container.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:10px;pointer-events:none;max-width:min(340px,calc(100vw - 32px));';
+    document.body.appendChild(container);
+
+    slots.forEach(function(slot, idx) {
+        setTimeout(function() {
+            var card = document.createElement('div');
+            card.style.cssText = 'background:rgba(13,27,42,0.97);border:1px solid #3b5a9d;border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.5);pointer-events:auto;opacity:0;transform:translateY(20px);transition:opacity 0.4s ease,transform 0.4s ease;cursor:'+(slot.link?'pointer':'default')+';';
+            var img = document.createElement('img');
+            img.src = slot.img; img.alt = 'Sponsor';
+            img.style.cssText = 'width:100%;max-height:160px;object-fit:cover;display:block;';
+            img.onerror = function(){ card.remove(); };
+            card.appendChild(img);
+            var bar = document.createElement('div');
+            bar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(26,58,95,0.95);';
+            var lbl = document.createElement('span');
+            lbl.style.cssText = 'color:#f59e0b;font-size:0.72rem;font-weight:700;letter-spacing:0.04em;';
+            lbl.textContent = '⭐ SPONSOR';
+            var closeBtn = document.createElement('button');
+            closeBtn.textContent = '✕';
+            closeBtn.style.cssText = 'background:none;border:none;color:#60a5fa;cursor:pointer;font-size:0.85rem;padding:2px 6px;line-height:1;';
+            closeBtn.onclick = function(e){ e.stopPropagation(); fadeOut(card); };
+            bar.appendChild(lbl); bar.appendChild(closeBtn);
+            card.appendChild(bar);
+            if (slot.link) card.onclick = function(){ window.open(slot.link,'_blank','noopener'); };
+            container.appendChild(card);
+            requestAnimationFrame(function(){ requestAnimationFrame(function(){
+                card.style.opacity='1'; card.style.transform='translateY(0)';
+            }); });
+            setTimeout(function(){ fadeOut(card); }, 6000);
+        }, idx * 800);
+    });
+    function fadeOut(card){
+        card.style.opacity='0'; card.style.transform='translateY(20px)';
+        setTimeout(function(){ if(card.parentNode) card.parentNode.removeChild(card); }, 400);
+    }
+}
+// Re-render materiale con colori del nuovo tema
+var matBox = document.getElementById('bacheca-genitori-container');
+if (matBox) {
+    var oldMat = matBox.querySelector('[data-materiale]');
+    if (oldMat && window._lastMateriale && window._lastAthleteId) {
+        oldMat.remove();
+        renderMaterialeGenitore(window._lastMateriale, window._lastAthleteId);
+    }
+}
+</script>
 </body>
 </html>
