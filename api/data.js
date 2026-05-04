@@ -256,6 +256,16 @@ await kv.set('global:bachecaConfig', body.bachecaConfig);
 return res.status(200).json({ success: true });
 }
 
+// FIX v1.5.21: calendarResponses può essere salvato da genitori autenticati
+// (segnano la propria assenza). Richiede solo isAuthenticated, non canWrite.
+if (body.calendarResponses !== undefined && Object.keys(body).length === 1) {
+if (!session.isAuthenticated) {
+return res.status(401).json({ success: false, message: 'Non autorizzato' });
+}
+await kv.set(`${prefix}:calendarResponses`, body.calendarResponses);
+return res.status(200).json({ success: true });
+}
+
 if (!canWrite(session.role)) {
 return res.status(403).json({ success: false, message: 'Permesso negato' });
 }
