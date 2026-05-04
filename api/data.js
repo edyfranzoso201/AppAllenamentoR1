@@ -78,8 +78,12 @@ return res.status(400).json({ success: false, message: 'Header X-Annata-Id obbli
 }
 
 const isParentMode = req.query?.parentMode === '1' && req.method === 'GET';
+// FIX v1.5.21: POST con solo calendarResponses è permessa anche ai genitori non autenticati
+const isCalendarResponsePost = req.method === 'POST' &&
+  req.body && req.body.calendarResponses !== undefined &&
+  Object.keys(req.body).length === 1;
 
-if (!session.isAuthenticated && !isParentMode) {
+if (!session.isAuthenticated && !isParentMode && !isCalendarResponsePost) {
 return res.status(401).json({ success: false, message: 'Accesso non autorizzato. Effettua il login.' });
 }
 const prefix = `annate:${annataId}`;
@@ -256,12 +260,9 @@ await kv.set('global:bachecaConfig', body.bachecaConfig);
 return res.status(200).json({ success: true });
 }
 
-// FIX v1.5.21: calendarResponses può essere salvato da genitori autenticati
-// (segnano la propria assenza). Richiede solo isAuthenticated, non canWrite.
+// FIX v1.5.21: calendarResponses può essere salvato da genitori (anche non autenticati)
+// Il check isCalendarResponsePost è già stato fatto sopra
 if (body.calendarResponses !== undefined && Object.keys(body).length === 1) {
-if (!session.isAuthenticated) {
-return res.status(401).json({ success: false, message: 'Non autorizzato' });
-}
 await kv.set(`${prefix}:calendarResponses`, body.calendarResponses);
 return res.status(200).json({ success: true });
 }
