@@ -100,7 +100,7 @@ return res.status(200).json({ success: true, postImages });
 
 // ── Risposta ridotta per genitori ────────────────────────────────────────
 if (isParentMode) {
-const [calendarEvents, calendarResponses, teamName, convSettings, athletes, posts, globalPosts, documents, materiale, bachecaConfig] = await Promise.all([
+const [calendarEvents, calendarResponses, teamName, convSettings, athletes, posts, globalPosts, documents, materiale, bachecaConfig, convBg, convBg2] = await Promise.all([
 kv.get(`${prefix}:calendarEvents`),
 kv.get(`${prefix}:calendarResponses`),
 kv.get('global:teamName'),
@@ -110,7 +110,9 @@ kv.get(`${prefix}:posts`),
 kv.get('global:posts'),
 kv.get(`${prefix}:documents`),
 kv.get(`${prefix}:materiale`),
-kv.get('global:bachecaConfig')   // ← FIX: aggiunto per i banner sponsor
+kv.get('global:bachecaConfig'),   // ← FIX: aggiunto per i banner sponsor
+kv.get(`${prefix}:convBg`),       // ← FIX: sfondo convocazione per genitore
+kv.get(`${prefix}:convBg2`)       // ← FIX: sfondo pre-convocazione per genitore
 ]);
 
 return res.status(200).json({
@@ -118,6 +120,8 @@ calendarEvents: calendarEvents || {},
 calendarResponses: calendarResponses || {},
 teamName: teamName || 'GO SPORT',
 convSettings: convSettings || {},
+convBg:  convBg  || null,
+convBg2: convBg2 || null,
 athletes: (athletes || []).map(a => ({
 id: a.id,
 name: a.name,
