@@ -1,6 +1,7 @@
 
 function _chartParityColor() {
-    return document.documentElement.classList.contains('theme-light') ? '#f0f1f2' : '#3b82f6';
+    // FIX v1.5.21: colore pareggi verde, visibile in entrambi i temi
+    return '#22c55e';
 }
 
 // ── Colori grafici tema-aware (v1.5.0: tema chiaro reso più visibile) ─────────────────────────────────────
@@ -598,8 +599,8 @@ document.addEventListener('DOMContentLoaded', () => {
         token.dataset.itemType = type;
         if (id) token.dataset.tokenId = id;
         switch(type) {
-            case 'captain-c': token.innerHTML = '(C)'; token.classList.add('token-captain'); break;
-            case 'captain-vc': token.innerHTML = '(VC)'; token.classList.add('token-captain'); break;
+            case 'captain-c': token.innerHTML = '<span style="color:#ffffff !important;">(C)</span>'; token.classList.add('token-captain'); break;
+            case 'captain-vc': token.innerHTML = '<span style="color:#ffffff !important;">(VC)</span>'; token.classList.add('token-captain'); break;
             case 'ball': token.innerHTML = '⚽'; token.classList.add('token-ball'); break;
             case 'opponent': token.innerHTML = '●'; token.classList.add('token-opponent'); break;
         }
@@ -1407,7 +1408,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         let ol = '<ol class="list-group list-group-numbered">';
         sortedScorers.forEach(scorer => {
-            ol += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; border-color: var(--border-color);">${scorer.name}<span class="badge bg-danger rounded-pill">${scorer.goals}</span></li>`;
+            ol += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; border-color: var(--border-color);">${scorer.name}<span class="badge bg-danger rounded-pill" style="color:#ffffff !important;">${scorer.goals}</span></li>`;
         });
         ol += '</ol>';
         elements.topScorersContainer.innerHTML = ol;
@@ -1429,7 +1430,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         let ol = '<ol class="list-group list-group-numbered">';
         sortedAssists.forEach(assist => {
-            ol += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; border-color: var(--border-color);">${assist.name}<span class="badge bg-primary rounded-pill">${assist.assists}</span></li>`;
+            ol += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; border-color: var(--border-color);">${assist.name}<span class="badge bg-primary rounded-pill" style="color:#ffffff !important;">${assist.assists}</span></li>`;
         });
         ol += '</ol>';
         elements.topAssistsContainer.innerHTML = ol;
