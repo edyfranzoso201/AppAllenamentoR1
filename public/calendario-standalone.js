@@ -190,12 +190,20 @@ async function markAbsence(athleteId, date, currentStatus) {
     currentAnnataId = annataId;
     
     // Carica i dati correnti
+    const _authH = {};
+    try {
+      _authH['x-auth-session'] = sessionStorage.getItem('gosport_auth_session') || '';
+      _authH['x-auth-user']    = sessionStorage.getItem('gosport_auth_user')    || '';
+      _authH['x-user-role']    = sessionStorage.getItem('gosport_user_role')    || '';
+      _authH['x-society-id']   = sessionStorage.getItem('gosport_society_id')   || '';
+    } catch(e) {}
+
     const response = await fetch('/api/data', {
       cache: 'no-store',
-      headers: {
+      headers: Object.assign({
         'Content-Type': 'application/json',
         'X-Annata-Id': annataId
-      }
+      }, _authH)
     });
     
     if (!response.ok) {
@@ -273,10 +281,10 @@ async function markAbsence(athleteId, date, currentStatus) {
     // Salva con header
     const saveResponse = await fetch('/api/data', {
       method: 'POST',
-      headers: {
+      headers: Object.assign({
         'Content-Type': 'application/json',
         'X-Annata-Id': annataId
-      },
+      }, _authH),
       body: JSON.stringify(data)
     });
     
@@ -1516,9 +1524,22 @@ function renderBachecaGenitori(posts, images) {
 
     if (img) {
       h += `<img src="${img}" alt="" style="width:80px;height:80px;object-fit:cover;
-                  border-radius:8px;flex-shrink:0;cursor:pointer;"
-                  onclick="this.style.width=this.style.width==='80px'?'100%':'80px';
-                           this.style.height=this.style.height==='80px'?'auto':'80px';">`;
+                  border-radius:8px;flex-shrink:0;cursor:zoom-in;"
+                  onclick="event.stopPropagation();
+                  (function(s){
+                    var e=document.getElementById('_img_lightbox');if(e)e.remove();
+                    var o=document.createElement('div');
+                    o.id='_img_lightbox';
+                    o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;';
+                    o.onclick=function(){o.remove();};
+                    var i=document.createElement('img');
+                    i.src=s;i.style.cssText='max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,0.6);object-fit:contain;';
+                    i.onclick=function(e){e.stopPropagation();};
+                    var b=document.createElement('button');
+                    b.textContent='✕';b.style.cssText='position:fixed;top:16px;right:20px;background:none;border:none;color:#fff;font-size:2rem;cursor:pointer;z-index:100000;';
+                    b.onclick=function(){o.remove();};
+                    o.appendChild(i);o.appendChild(b);document.body.appendChild(o);
+                  })(this.src);">`; 
     }
 
     h += `<div style="flex:1;min-width:0;">`;
@@ -1526,6 +1547,16 @@ function renderBachecaGenitori(posts, images) {
     if (p.text) {
       h += `<div style="color:#60a5fa;font-size:0.85rem;white-space:pre-wrap;
                         word-break:break-word;margin-bottom:6px;">${p.text}</div>`;
+    }
+    // FIX v1.5.21: se il post ha convData, mostra pulsante per aprire il PDF
+    if (p.convData) {
+      const cdStr = encodeURIComponent(JSON.stringify(p.convData));
+      h += `<div style="margin-bottom:6px;">
+        <button class="_conv-pdf-btn" data-cd="${cdStr.replace(/"/g,'&quot;')}"
+        style="background:#16a34a;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:0.8rem;cursor:pointer;font-weight:600;">
+          📄 Salva PDF Convocazione
+        </button>
+      </div>`;
     }
     h += `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             ${badge}
@@ -1535,6 +1566,14 @@ function renderBachecaGenitori(posts, images) {
   });
   h += '</div>';
   list.innerHTML = h;
+
+  // FIX v1.5.21: event listener per pulsanti "Salva PDF Convocazione"
+  list.querySelectorAll('._conv-pdf-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var cd = btn.getAttribute('data-cd');
+      if (cd && window._openConvPdf) window._openConvPdf(cd);
+    });
+  });
 }
 function renderMaterialeGenitore(materiale, athleteId) {
 // Salva per re-render al cambio tema
@@ -1735,3 +1774,170 @@ window.showSponsorBannerOverlay = function(slots) {
   }
 };
 // ═══ FINE BANNER SPONSOR OVERLAY ═════════════════════════════════════════
+
+// FIX v1.5.21: apre la convocazione con layout originale (sfondo, loghi, colori societari)
+// Recupera i settings dal backend e ricostruisce l'HTML identico a convStampa in index.html
+window._openConvPdf = async function(cdEncoded) {
+  try {
+    var cd = JSON.parse(decodeURIComponent(cdEncoded));
+    var isPre = cd.isPre || false;
+
+    // Recupera settings convocazione (sfondo, logo, sponsor) dal backend
+    var annataId = '';
+    try { annataId = sessionStorage.getItem('gosport_current_annata') || ''; } catch(e){}
+    var urlParams = new URLSearchParams(window.location.search);
+    var annataFromUrl = urlParams.get('annata');
+    if (annataFromUrl) annataId = annataFromUrl;
+
+    var s = { textColor: '#ffffff', textColor2: '#000000', firma: 'Sport Monitoring' };
+
+    // Se il post ha già i settings salvati, usali direttamente (più veloci e annata corretta)
+    if (cd._settings) {
+      s.textColor = cd._settings.textColor || '#ffffff';
+      s.firma     = cd._settings.firma     || 'Sport Monitoring';
+      s.logo      = cd._settings.logo      || '';
+      s.sponsor   = cd._settings.sponsor   || '';
+      s._bg       = cd._settings._bg       || '';
+    } else {
+      // Fallback: fetch dal backend (vecchi post senza _settings)
+      try {
+        var res = await fetch('/api/data?parentMode=1', {
+          cache: 'no-store',
+          headers: { 'Content-Type': 'application/json', 'X-Annata-Id': annataId }
+        });
+        if (res.ok) {
+          var d = await res.json();
+          var cs = d.convSettings || {};
+          s.textColor = cs.textColor || '#ffffff';
+          s.firma     = cs.firma     || 'Sport Monitoring';
+          s.logo      = cs.logo      || '';
+          s.sponsor   = cs.sponsor   || '';
+          s._bg       = (cd.isPre ? d.convBg2 : d.convBg) || '';
+        }
+      } catch(e) { console.warn('[ConvPdf] settings err:', e); }
+    }
+
+    var bgImg    = s._bg || '';
+    var txtColor = s.textColor || '#ffffff';
+    var dataLabel = cd.data ? new Date(cd.data+'T00:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+    var mapsUrl = cd.luogo ? 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(cd.luogo) : '#';
+
+    // Atleti in 2 colonne
+    var atleti = cd.atletiIds || [];
+    var meta = Math.ceil(atleti.length/2);
+    var col1 = atleti.slice(0, meta), col2 = atleti.slice(meta);
+    var atletiRows = '';
+    for (var i=0; i<Math.max(col1.length,col2.length); i++) {
+      atletiRows += '<tr>'
+        +'<td>'+(col1[i]?col1[i]+'<span class="sig-line"></span>':'')+'</td>'
+        +'<td>'+(col2[i]?col2[i]+'<span class="sig-line"></span>':'')+'</td>'
+        +'</tr>';
+    }
+
+    // Staff in 2 colonne (allenatori / dirigenti)
+    var staff = cd.staffIds || [];
+    var allenatori = staff.filter(function(n){ return cd.staffRoles ? cd.staffRoles[n]==='allenatore' : true; });
+    var dirigenti  = staff.filter(function(n){ return allenatori.indexOf(n)<0; });
+    // Se non abbiamo distinzione ruoli, mettiamo tutti in allenatori
+    if (dirigenti.length === 0 && allenatori.length === staff.length) {
+      allenatori = staff; dirigenti = [];
+    }
+    var staffRows = '';
+    for (var si=0; si<Math.max(allenatori.length, dirigenti.length); si++) {
+      var bg = si%2===0 ? ('background:rgba('+(isPre?'0,0,0':'255,255,255')+',0.06);') : '';
+      staffRows += '<div class="staff-col-row" style="'+bg+'">'
+        +'<div class="staff-col">'+(allenatori[si]||'')+'</div>'
+        +'<div class="staff-col">'+(dirigenti[si]||'')+'</div>'
+        +'</div>';
+    }
+
+    var logoCenter = s.logo
+      ? '<img src="'+s.logo+'" style="height:100px;object-fit:contain;">'
+      : '<span style="font-size:2rem;font-weight:900;color:'+txtColor+';">SPORT<br>MONITORING</span>';
+    var logoSponsor = s.sponsor ? '<img src="'+s.sponsor+'" style="height:100px;object-fit:contain;">' : '';
+
+    var html = '<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8">'
+      +'<title>Convocazione '+cd.categoria+'</title>'
+      +'<style>'
+      +'*{margin:0;padding:0;box-sizing:border-box;}'
+      +'@page{size:A4 portrait;margin:0;height:297mm;}'
+      +'html,body{margin:0;padding:0;display:flex;justify-content:center;align-items:flex-start;height:297mm;max-height:297mm;overflow:hidden;}'
+      +'*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}'
+      +'.page{width:210mm;height:297mm;max-height:297mm;overflow:hidden;position:relative;flex-shrink:0;}'
+      +'.bg-img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:0;display:block;}'
+      +'.overlay{position:absolute;inset:0;background:'+(isPre?'rgba(240,240,240,0.55)':'rgba(0,0,0,0.40)')+';padding:0 20px 12px 20px;display:flex;flex-direction:column;gap:7px;overflow:hidden;z-index:1;}'
+      +'.top-logos{display:flex;justify-content:space-between;align-items:center;min-height:40mm;padding-top:1mm;}'
+      +'.top-logos div{flex:1;display:flex;justify-content:center;align-items:center;}'
+      +'.categoria{text-align:center;font-size:2.4rem;font-weight:900;text-transform:uppercase;letter-spacing:3px;text-shadow:2px 2px 6px rgba(0,0,0,0.7);}'
+      +'.conv-box{background:transparent;border-radius:10px;padding:10px 20px;text-align:center;}'
+      +'.conv-box .tipo{font-size:1.1rem;font-weight:800;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;}'
+      +'.conv-box .avv{font-size:1.6rem;font-weight:400;}'
+      +'.info-row{display:flex;gap:12px;}'
+      +'.info-box{flex:1;background:rgba('+(isPre?'0,0,0':'255,255,255')+',0.08);border:1px solid rgba('+(isPre?'0,0,0':'255,255,255')+',0.2);border-radius:8px;padding:9px;text-align:center;}'
+      +'.info-box .lbl{font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;color:'+txtColor+';}'
+      +'.info-box .val{font-size:1.2rem;font-weight:400;color:'+txtColor+';}'
+      +'.luogo-box{background:transparent;border-radius:8px;padding:12px 18px;text-align:center;}'
+      +'.luogo-box .lbl{font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;color:'+txtColor+';}'
+      +'.luogo-box a{color:#60a5fa;font-size:0.95rem;text-decoration:none;}'
+      +'.note-box{background:transparent;border-radius:8px;padding:10px 18px;}'
+      +'.note-box .lbl{font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:'+txtColor+';margin-bottom:4px;}'
+      +'.note-box .note-text{color:'+txtColor+';font-size:0.85rem;}'
+      +'.staff-section{padding:0 8px;}'
+      +'.col-title{font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:2px;border-bottom:1px solid '+txtColor+';padding-bottom:4px;margin-bottom:6px;}'
+      +'.staff-col-row{display:flex;gap:0;}'
+      +'.staff-col-header{flex:1;font-size:0.65rem;font-weight:800;text-transform:uppercase;color:'+txtColor+';letter-spacing:1px;padding:4px 8px;}'
+      +'.staff-col{flex:1;font-size:0.82rem;color:'+txtColor+';padding:3px 8px;}'
+      +'.atleti-full{padding:0 8px;}'
+      +'.atleti-full table{width:100%;border-collapse:collapse;}'
+      +'.atleti-full td{width:50%;padding:2px 6px;font-size:0.78rem;color:'+txtColor+';}'
+      +'.sig-line{display:inline-block;width:60px;height:1px;background:'+txtColor+';opacity:0.3;vertical-align:middle;margin-left:8px;}'
+      +'.footer{margin-top:auto;text-align:right;font-size:0.7rem;color:'+txtColor+';opacity:0.6;padding:0 8px 4px;}'
+      +'.conv-toolbar{position:fixed;top:10px;right:10px;z-index:9999;display:flex;gap:8px;}'
+      +'@media print{.conv-toolbar{display:none!important;} @page{size:A4 portrait;margin:0;} body,html{height:297mm;overflow:hidden;}}'
+      +'</style></head><body>'
+      +'<div class="conv-toolbar">'
+      +'<button onclick="window.print()" style="padding:8px 18px;background:#16a34a;color:white;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:700;">🖨️ Stampa / Salva PDF</button>'
+      +'<button onclick="window.close()" style="padding:8px 14px;background:#64748b;color:white;border:none;border-radius:6px;cursor:pointer;font-size:14px;">✕ Chiudi</button>'
+      +'</div>'
+      +'<div class="page">'
+      +(bgImg ? '<img class="bg-img" src="'+bgImg+'">' : '')
+      +'<div class="overlay">'
+      +'<div class="top-logos">'
+      +'<div>'+logoSponsor+'</div>'
+      +'<div>'+logoCenter+'</div>'
+      +'<div>'+logoSponsor+'</div>'
+      +'</div>'
+      +'<div class="categoria" style="color:'+txtColor+';">'+(cd.categoria||'')+'</div>'
+      +'<div class="conv-box"><div class="tipo" style="color:'+txtColor+';">'+(cd.tipo||'')+'</div><div class="avv" style="color:'+txtColor+';">vs '+(cd.avversario||'')+'</div></div>'
+      +'<div class="info-row">'
+      +'<div class="info-box"><div class="lbl">Data</div><div class="val">'+dataLabel+'</div></div>'
+      +'<div class="info-box"><div class="lbl">Ritrovo Ore</div><div class="val">'+(cd.ritrovo||'—')+'</div></div>'
+      +'<div class="info-box"><div class="lbl">Inizio Gara Ore</div><div class="val">'+(cd.inizio||'—')+'</div></div>'
+      +'</div>';
+
+    if (cd.luogo) html += '<div class="luogo-box"><div class="lbl">Luogo</div><a href="'+mapsUrl+'" target="_blank">'+cd.luogo+' — Google Maps</a></div>';
+    if (cd.note)  html += '<div class="note-box"><div class="lbl">Note</div><div class="note-text">'+cd.note+'</div></div>';
+
+    if (staff.length) {
+      html += '<div class="staff-section">'
+        +'<div class="col-title" style="color:'+txtColor+';">Staff</div>'
+        +'<div class="staff-col-row">'
+        +'<div class="staff-col-header">Allenatori</div>'
+        +'<div class="staff-col-header">Dirigenti</div>'
+        +'</div>'
+        +staffRows+'</div>';
+    }
+
+    html += '<div class="atleti-full">'
+      +'<div class="col-title" style="color:'+txtColor+';">Atleti Convocati</div>'
+      +'<table>'+atletiRows+'</table>'
+      +'</div>'
+      +'<div class="footer">By '+s.firma+'</div>'
+      +'</div></div></body></html>';
+
+    var w = window.open('', '_blank', 'width=820,height=1100');
+    if (!w) { alert('Abilita i popup per aprire la convocazione.'); return; }
+    w.document.write(html);
+    w.document.close();
+  } catch(e) { alert('Errore: '+e.message); }
+};

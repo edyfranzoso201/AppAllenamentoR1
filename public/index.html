@@ -4546,8 +4546,20 @@ footer {
 /* Spazio in fondo al contenuto (non serve piu' lo spazio per il footer) */
 .tab-section.printing-now { padding-bottom: 0 !important; }
 
-/* FIX v1.5.21: forza sfondo bianco su mobile in tema chiaro */
+/* FIX v1.5.21: forza sfondo corretto card su mobile (tema scuro e chiaro) */
 @media (max-width: 991px) {
+    :root body .card,
+    :root body .summary-card,
+    :root body .chart-card {
+        background-color: var(--bg-card, #0d1b2a) !important;
+        --bs-card-bg: var(--bg-card, #0d1b2a);
+    }
+    html.theme-light body .card,
+    html.theme-light body .summary-card,
+    html.theme-light body .chart-card {
+        background-color: #ffffff !important;
+        --bs-card-bg: #ffffff;
+    }
     html.theme-light body,
     html.theme-light .tab-section,
     html.theme-light main {
