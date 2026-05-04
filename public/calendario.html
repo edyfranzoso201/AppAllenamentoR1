@@ -1194,10 +1194,26 @@ document.addEventListener('DOMContentLoaded', function() {
                         <label style="color:#60a5fa;font-size:0.82rem;margin-bottom:4px;display:block;">
                             <i class="bi bi-image"></i> Immagine / Locandina (opzionale)
                         </label>
-                        <input type="file" id="post-img-input" accept="image/*,application/pdf"
-                               onchange="previewPostImg(this)" style="color:#60a5fa;">
-                        <img id="post-img-preview" class="post-img-preview" alt="Preview">
-                        <button type="button" id="post-img-remove" onclick="window.removePostImg()" style="display:none;background:#450a0a;color:#d90429;border:1px solid #d90429;border-radius:4px;padding:2px 8px;font-size:0.75rem;cursor:pointer;margin-top:4px;">✕ Rimuovi immagine</button>
+                        <!-- FIX v1.5.21: sostituito input file con URL Google Drive.
+                             Le immagini caricate da file vengono codificate in base64 e
+                             occupano molto spazio nel DB. Con Drive si usa solo il link. -->
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                            <input type="text" id="post-img-url" placeholder="https://drive.google.com/uc?id=... oppure altro URL immagine"
+                                   style="flex:1;min-width:200px;background:#0d1b2a;border:1px solid #3b5a9d;color:#fff;border-radius:6px;padding:7px 10px;font-size:0.85rem;"
+                                   oninput="previewPostImg(this)">
+                            <button type="button" onclick="window.removePostImg()"
+                                    style="background:#450a0a;color:#d90429;border:1px solid #d90429;border-radius:4px;padding:5px 10px;font-size:0.75rem;cursor:pointer;">
+                                ✕ Rimuovi
+                            </button>
+                        </div>
+                        <div style="color:#64748b;font-size:0.75rem;margin-top:4px;">
+                            💡 Google Drive: apri file → Condividi → "Chiunque con il link" → copia link → sostituisci
+                            <code style="color:#60a5fa;">/view?usp=sharing</code> con
+                            <code style="color:#60a5fa;">/preview</code> oppure usa
+                            <code style="color:#60a5fa;">https://drive.google.com/uc?id=ID_FILE</code>
+                        </div>
+                        <img id="post-img-preview" class="post-img-preview" alt="Preview" style="display:none;max-width:200px;max-height:160px;border-radius:6px;margin-top:6px;border:1px solid #3b5a9d;">
+                        <input type="hidden" id="post-img-remove-flag">
                         <input type="hidden" id="post-img-data">
                     </div>
                     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
@@ -1612,12 +1628,63 @@ async function _bLoad() {
         // NON svuotiamo _bPostImages: manteniamo in cache le immagini già caricate
         console.log('[Bacheca] 📦 posts:', _bPosts.length, 'global:', _bGlobalPosts.length);
         _bLoaded = true;
+        // FIX v1.5.21: auto-pulizia post e documenti scaduti (>90 giorni)
+        await _bAutoCleanExpired(aid, d);
     } catch(e) { console.warn('[Bacheca] load err:', e); }
     // Post privati staff disabilitati
     _bPrivatePosts = [];
     _bRender();
     // Carica le immagini in background solo se ci sono post con immagini
     _bLoadImages();
+}
+
+// FIX v1.5.21: elimina automaticamente post e documenti più vecchi di 90 giorni
+// I documenti in "Documenti Società" (senza campo date o con campo keepForever) NON vengono eliminati.
+async function _bAutoCleanExpired(aid, d) {
+    var cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 90);
+    var cutoffMs = cutoff.getTime();
+
+    // Filtra i post scaduti (sia annata che globali)
+    var postsOrig   = _bPosts.length;
+    var globalOrig  = _bGlobalPosts.length;
+    _bPosts       = _bPosts.filter(function(p)       { return !p.date || new Date(p.date).getTime() > cutoffMs; });
+    _bGlobalPosts = _bGlobalPosts.filter(function(p) { return !p.date || new Date(p.date).getTime() > cutoffMs; });
+    var postsRemoved  = postsOrig  - _bPosts.length;
+    var globalRemoved = globalOrig - _bGlobalPosts.length;
+
+    // Filtra i documenti scaduti (SOLO quelli con data, NON i documenti fissi)
+    var docs     = (d && d.documents) || [];
+    var docsOrig = docs.length;
+    // I documenti senza data o con keepForever=true non vengono eliminati
+    var docsClean = docs.filter(function(doc) {
+        if (!doc.date) return true;           // senza data: NON eliminare
+        if (doc.keepForever) return true;     // marcati come permanenti: NON eliminare
+        return new Date(doc.date).getTime() > cutoffMs;
+    });
+    var docsRemoved = docsOrig - docsClean.length;
+
+    if (postsRemoved === 0 && globalRemoved === 0 && docsRemoved === 0) return;
+
+    console.log('[AutoClean] 🗑️ Rimozione scaduti: posts=' + postsRemoved +
+                ' global=' + globalRemoved + ' docs=' + docsRemoved);
+
+    try {
+        var saves = [];
+        if (postsRemoved > 0)
+            saves.push(fetch('/api/data', { method:'POST', headers:{'Content-Type':'application/json','x-annata-id':aid},
+                body: JSON.stringify({ posts: _bPosts }) }));
+        if (globalRemoved > 0)
+            saves.push(fetch('/api/data', { method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({ globalPosts: _bGlobalPosts }) }));
+        if (docsRemoved > 0)
+            saves.push(fetch('/api/data', { method:'POST', headers:{'Content-Type':'application/json','x-annata-id':aid},
+                body: JSON.stringify({ documents: docsClean }) }));
+        await Promise.all(saves);
+        console.log('[AutoClean] ✅ Pulizia completata');
+    } catch(e) {
+        console.warn('[AutoClean] ❌ Errore pulizia:', e);
+    }
 }
 
 // Carica immagini post in modo lazy (non blocca il render iniziale)
@@ -1695,14 +1762,12 @@ async function _bSave() {
 // Elimina post (await salvataggio, poi ricarica da Redis)
 
 window.removePostImg = function() {
-    var prev = document.getElementById('post-img-preview');
-    var inp  = document.getElementById('post-img-input');
-    var data = document.getElementById('post-img-data');
-    var btn  = document.getElementById('post-img-remove');
-    if (prev) { prev.src = ''; prev.style.display = 'none'; }
-    if (inp)  { inp.value = ''; inp.setAttribute('data-cleared', '1'); }
-    if (data) { data.value = ''; }
-    if (btn)  { btn.style.display = 'none'; }
+    var prev   = document.getElementById('post-img-preview');
+    var urlInp = document.getElementById('post-img-url');
+    var data   = document.getElementById('post-img-data');
+    if (prev)   { prev.src = ''; prev.style.display = 'none'; }
+    if (urlInp) { urlInp.value = ''; }
+    if (data)   { data.value = ''; }
 };
 window.editPost = async function(id, isGlobal) {
     // Cerca il post nell'array corretto in base al tipo
@@ -1752,15 +1817,16 @@ window.editPost = async function(id, isGlobal) {
     document.getElementById('post-title').value = p.title || '';
     rteSet(p.text || '');
     document.getElementById('post-visibility').value = p.visibility || 'annata';
-    document.getElementById('post-img-data').value = _bPostImages[id] || '';
+    // FIX v1.5.21: usa URL invece di base64
+    var imgUrl = _bPostImages[id] || '';
+    document.getElementById('post-img-data').value = imgUrl;
+    var urlInput = document.getElementById('post-img-url');
+    if (urlInput) urlInput.value = imgUrl;
     var prev = document.getElementById('post-img-preview');
-    var removeBtn = document.getElementById('post-img-remove');
-    if (_bPostImages[id]) {
-        prev.src = _bPostImages[id]; prev.style.display = 'block';
-        if (removeBtn) removeBtn.style.display = 'inline-block';
+    if (imgUrl) {
+        prev.src = imgUrl; prev.style.display = 'block';
     } else {
         prev.src = ''; prev.style.display = 'none';
-        if (removeBtn) removeBtn.style.display = 'none';
     }
     // Cambia pulsante pubblica in "Aggiorna"
     var btn = document.querySelector('.btn-bacheca-save');
@@ -1830,12 +1896,10 @@ window.savePost = async function() {
     document.getElementById('post-title').value = '';
     document.getElementById('post-text').value  = '';
     document.getElementById('post-img-data').value = '';
-    document.getElementById('post-img-input').value = '';
+    // FIX v1.5.21: reset campo URL invece di file input
+    var urlInp = document.getElementById('post-img-url');
+    if (urlInp) urlInp.value = '';
     document.getElementById('post-img-preview').style.display = 'none';
-    var rmBtn = document.getElementById('post-img-remove');
-    if (rmBtn) rmBtn.style.display = 'none';
-    var imgInp = document.getElementById('post-img-input');
-    if (imgInp) imgInp.removeAttribute('data-cleared');
 };
 
 window.deletePost = async function(id, isGlobal) {
@@ -1858,28 +1922,24 @@ window.pinPost = async function(id, isGlobal) {
 };
 
 // Anteprima immagine con compressione canvas
+// FIX v1.5.21: previewPostImg ora gestisce URL Google Drive (non più file locale)
 window.previewPostImg = function(input) {
-    var file = input.files[0];
-    if (!file) return;
-    var reader = new FileReader();
-    reader.onload = function(e) {
-        var img = new Image();
-        img.onload = function() {
-            var maxW=500, maxH=700;
-            var scale = Math.min(1, maxW/img.width, maxH/img.height);
-            var w=Math.round(img.width*scale), h=Math.round(img.height*scale);
-            var canvas = document.createElement('canvas');
-            canvas.width=w; canvas.height=h;
-            canvas.getContext('2d').drawImage(img,0,0,w,h);
-            var data = canvas.toDataURL('image/jpeg',0.60);
-            document.getElementById('post-img-data').value = data;
-            var prev = document.getElementById('post-img-preview');
-            prev.src=data; prev.style.display='block';
-            console.log('[Bacheca] img:', Math.round(data.length/1024)+'KB');
-        };
-        img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+    var url = (typeof input === 'string') ? input : (input && input.value ? input.value.trim() : '');
+    var prev = document.getElementById('post-img-preview');
+    var data = document.getElementById('post-img-data');
+    if (!url) {
+        if (prev) { prev.src=''; prev.style.display='none'; }
+        if (data) data.value = '';
+        return;
+    }
+    // Converti automaticamente link Drive share → link diretto immagine
+    url = url.replace(/drive\.google\.com\/file\/d\/([^\/]+)\/view.*/, 'drive.google.com/uc?id=$1');
+    url = url.replace(/drive\.google\.com\/file\/d\/([^\/]+)\/preview.*/, 'drive.google.com/uc?id=$1');
+    if (prev) { prev.src = url; prev.style.display = 'block'; }
+    if (data) data.value = url;
+    // Aggiorna anche il campo input se chiamato dall'esterno (es. edit post)
+    var urlInput = document.getElementById('post-img-url');
+    if (urlInput && urlInput.value !== url) urlInput.value = url;
 };
 
 // Render lista post nella bacheca coach
@@ -1983,16 +2043,26 @@ async function _loadSponsorConfig() {
             xhr.send();
         });
         console.log('[Sponsor] 📦 bachecaConfig:', JSON.stringify(d && d.bachecaConfig));
+        console.log('[Sponsor] 🔔 bannersEnabled in config:', d && d.bachecaConfig && d.bachecaConfig.bannersEnabled);
+        // DEBUG TEMPORANEO: mostra cosa arriva dal backend
+        var _dbg = d && d.bachecaConfig;
+        console.warn('[Sponsor DEBUG] bannersEnabled letto da Redis:', _dbg ? _dbg.bannersEnabled : 'bachecaConfig null');
         _sponsorConfig = (d && d.bachecaConfig) || {};
         _renderSponsorSlots();
         // Mostra banner overlay anche nell'app (vista admin)
-        var _spSlots = [0,1,2,3,4].map(function(k){ return _sponsorConfig[k]||{}; })
-            .filter(function(s){ return s.img && s.img.trim(); });
-        if (_spSlots.length > 0 && typeof window.showSponsorBannerOverlay === 'function') {
-            window.showSponsorBannerOverlay(_spSlots);
-        } else if (_spSlots.length > 0) {
-            // Fallback inline se standalone non è caricato
-            _showCalSponsorOverlay(_spSlots);
+        // FIX v1.5.21: controlla bannersEnabled prima di mostrare i banner
+        var _bannersEnabled = _sponsorConfig.bannersEnabled !== false;
+        if (_bannersEnabled) {
+            var _spSlots = [0,1,2,3,4].map(function(k){ return _sponsorConfig[k]||{}; })
+                .filter(function(s){ return s.img && s.img.trim(); });
+            if (_spSlots.length > 0 && typeof window.showSponsorBannerOverlay === 'function') {
+                window.showSponsorBannerOverlay(_spSlots);
+            } else if (_spSlots.length > 0) {
+                // Fallback inline se standalone non è caricato
+                _showCalSponsorOverlay(_spSlots);
+            }
+        } else {
+            console.log('[Sponsor] Banner disabilitati dal coach.');
         }
         var __sp = document.getElementById('sponsor-admin-panel');
         // Mostra solo se il tab bacheca è ancora attivo (la XHR è async)
@@ -2049,16 +2119,16 @@ window.saveSponsorConfig = async function() {
     // FIX v1.5.21: include flag bannersEnabled
     var toggleEl = document.getElementById('sponsor-enabled-toggle');
     config.bannersEnabled = toggleEl ? toggleEl.checked : true;
+    console.log('[Sponsor] 💾 Salvo config con bannersEnabled:', config.bannersEnabled);
     try {
-        // NON inviare X-Annata-Id — questo salvataggio è globale
-        // Usa XMLHttpRequest per bypassare il data-adapter che aggiunge l'annataId automaticamente
-        var res = await new Promise(function(resolve, reject) {
-            var xhr = new XMLHttpRequest();
-            xhr.open('POST', '/api/data', true);
-            xhr.setRequestHeader('Content-Type', 'application/json');
-            xhr.onload = function() { resolve({ ok: xhr.status === 200, status: xhr.status }); };
-            xhr.onerror = function() { reject(new Error('Errore rete')); };
-            xhr.send(JSON.stringify({ bachecaConfig: config }));
+        // FIX v1.5.21: usa fetch SENZA X-Annata-Id (salvataggio globale).
+        // auth-multi-annata.js intercetta window.fetch e aggiunge automaticamente
+        // gli header di autenticazione (X-Auth-Session, X-User-Role, ecc.)
+        // a tutte le chiamate /api/ → backend autenticato senza annataId.
+        var res = await fetch('/api/data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bachecaConfig: config })
         });
         console.log('[Sponsor] 💾 Save response:', res.status, res.ok);
         if (res.ok) {
@@ -2066,9 +2136,9 @@ window.saveSponsorConfig = async function() {
             _sponsorConfig = config;
             var msg = document.getElementById('sponsor-save-msg'); if (!document.getElementById('sponsor-admin-panel')) return;
             if (msg) { msg.style.display = ''; setTimeout(function(){ msg.style.display='none'; }, 3000); }
-            alert('✅ Sponsor salvati! Ricarica la bacheca pubblica per vederli.');
+            alert('✅ Configurazione salvata!');
         } else {
-            alert('❌ Errore salvataggio sponsor: status ' + res.status);
+            alert('❌ Errore salvataggio: status ' + res.status);
         }
     } catch(e) { alert('❌ Errore salvataggio: ' + e.message); }
 };
