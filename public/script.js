@@ -467,6 +467,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         try {
                             var bd = JSON.parse(xhrBanner.responseText);
                             var spCfg = (bd && bd.bachecaConfig) || {};
+                            // FIX v1.5.21: controlla bannersEnabled
+                            if (spCfg.bannersEnabled === false) {
+                                console.log("[Banner] Banner disabilitati dal coach.");
+                                return;
+                            }
                             var spSlots = [0,1,2,3,4]
                                 .map(function(k){ return spCfg[k] || {}; })
                                 .filter(function(s){ return s.img && s.img.trim(); });
@@ -3532,6 +3537,11 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
                         try {
                             var bd = JSON.parse(xhrBanner.responseText);
                             var spCfg = (bd && bd.bachecaConfig) || {};
+                            // FIX v1.5.21: controlla bannersEnabled
+                            if (spCfg.bannersEnabled === false) {
+                                console.log("[Banner] Banner disabilitati dal coach.");
+                                return;
+                            }
                             var spSlots = [0,1,2,3,4]
                                 .map(function(k){ return spCfg[k] || {}; })
                                 .filter(function(s){ return s.img && s.img.trim(); });
