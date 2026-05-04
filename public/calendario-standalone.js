@@ -720,7 +720,7 @@ visibleAthletes.forEach((a, i) => {
   
   if (!isParentView) {
     h += `<td class="text-center sticky-col sticky-col-3">`;
-    h += `<button class="btn btn-sm btn-primary link-presenze-btn" ...>`;
+    h += `<button class="btn btn-sm btn-primary link-presenze-btn" data-athlete-id="${a.id}" data-athlete-name="${a.name.replace(/"/g,'&quot;')}"><i class="bi bi-link-45deg"></i> Link Presenze</button>`;
     // ...
   } else {
     // ✅ Cella "Evento" con colori adattivi
