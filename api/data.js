@@ -77,17 +77,7 @@ return res.status(200).json({ success: true });
 return res.status(400).json({ success: false, message: 'Header X-Annata-Id obbligatorio' });
 }
 
-const isParentMode = (function() {
-    if (req.method !== 'GET') return false;
-    const q = req.query || {};
-    const v = q.parentMode ?? q.parentmode ?? q.PARENTMODE;
-    if (v === undefined || v === null) return false;
-    const s = String(v).toLowerCase().trim();
-    return s === '1' || s === 'true' || s === 'yes';
-})();
-
-// LOG DIAGNOSTICO (rimuovere dopo verifica): mostra cosa arriva
-console.log(`[/api/data] method=${req.method} annataId=${annataId} isAuth=${session.isAuthenticated} parentMode=${isParentMode} rawQuery=${JSON.stringify(req.query || {})}`);
+const isParentMode = req.query?.parentMode === '1' && req.method === 'GET';
 
 if (!session.isAuthenticated && !isParentMode) {
 return res.status(401).json({ success: false, message: 'Accesso non autorizzato. Effettua il login.' });
@@ -249,11 +239,22 @@ return res.status(200).json(data);
 
 // ── POST salvataggio ──────────────────────────────────────────────────────
 if (req.method === 'POST') {
+const body = req.body || {};
+
+// FIX v1.5.21: bachecaConfig è un salvataggio globale che richiede solo
+// autenticazione (non canWrite), gestito PRIMA del check canWrite.
+// Salviamo anche quando arriva con annataId (perché l'interceptor lo aggiunge sempre).
+if (body.bachecaConfig !== undefined) {
+if (!session.isAuthenticated) {
+return res.status(401).json({ success: false, message: 'Non autorizzato' });
+}
+await kv.set('global:bachecaConfig', body.bachecaConfig);
+return res.status(200).json({ success: true });
+}
+
 if (!canWrite(session.role)) {
 return res.status(403).json({ success: false, message: 'Permesso negato' });
 }
-
-const body = req.body || {};
 
 if (body.athletes !== undefined) await kv.set(`${prefix}:athletes`, body.athletes);
 if (body.evaluations !== undefined) await kv.set(`${prefix}:evaluations`, body.evaluations);
