@@ -1494,10 +1494,14 @@ function renderBachecaGenitori(posts, images) {
       ? new Date(p.date).toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'})
       : '';
     const isGlobal = p.visibility === 'global';
+    // FIX v1.5.21: badge bacheca con testo bianco
+    // Bug 1: "Comunicato societa'" aveva color:#16a34a su #16a34a (verde su verde = invisibile, refuso)
+    // Bug 2: "Questa stagione" aveva color:#60a5fa su #0d1b2a, in tema chiaro era scuro su scuro
+    // Ora: testo bianco su sfondo verde brillante / viola brillante, leggibile in entrambi i temi
     const badge = isGlobal
-      ? `<span style="font-size:0.7rem;padding:2px 8px;background:#16a34a;color:#16a34a;
+      ? `<span style="font-size:0.7rem;padding:2px 8px;background:#16a34a;color:#ffffff;
                       border-radius:10px;font-weight:600;">🌐 Comunicato società</span>`
-      : `<span style="font-size:0.7rem;padding:2px 8px;background:#0d1b2a;color:#60a5fa;
+      : `<span style="font-size:0.7rem;padding:2px 8px;background:#7c3aed;color:#ffffff;
                       border-radius:10px;font-weight:600;">👥 Questa stagione</span>`;
 
     h += `<div style="background:#0d1b2a;border:1px solid #3b5a9d;border-radius:10px;
