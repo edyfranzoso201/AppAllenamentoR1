@@ -1427,12 +1427,18 @@ if (currentAthleteId && mat.items && mat.assignments) {
 }
 
     // ── BANNER SPONSOR (v1.5.16): legge bachecaConfig inclusa nella risposta parentMode ──
+    // FIX v1.5.21: controlla flag bannersEnabled (default true se non definito)
     try {
       var spCfg = (d && d.bachecaConfig) || {};
-      var spSlots = [0,1,2,3,4]
-        .map(function(k){ return spCfg[k] || {}; })
-        .filter(function(s){ return s.img && s.img.trim(); });
-      if (spSlots.length > 0) showSponsorBannerOverlay(spSlots);
+      var bannersEnabled = spCfg.bannersEnabled !== false; // default true
+      if (bannersEnabled) {
+        var spSlots = [0,1,2,3,4]
+          .map(function(k){ return spCfg[k] || {}; })
+          .filter(function(s){ return s.img && s.img.trim(); });
+        if (spSlots.length > 0) showSponsorBannerOverlay(spSlots);
+      } else {
+        console.log('[Banner] Banner sponsor disabilitati dal coach.');
+      }
     } catch(e) { console.warn('[Banner] err:', e); }
 
     // Carica immagini in background (lazy)
