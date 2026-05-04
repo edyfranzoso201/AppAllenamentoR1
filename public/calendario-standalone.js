@@ -278,14 +278,15 @@ async function markAbsence(athleteId, date, currentStatus) {
     console.log(`[PRESENZA] ✅ Aggiornato: ${record.status} per ${athleteIdStr}`);
     console.log('[PRESENZA] 📜 Storico:', record.history.length, 'modifiche');
     
-    // Salva con header
+    // Salva SOLO calendarResponses (il backend ha un ramo speciale per questo
+    // che richiede solo isAuthenticated, non canWrite — permette ai genitori di salvare)
     const saveResponse = await fetch('/api/data', {
       method: 'POST',
       headers: Object.assign({
         'Content-Type': 'application/json',
         'X-Annata-Id': annataId
       }, _authH),
-      body: JSON.stringify(data)
+      body: JSON.stringify({ calendarResponses: data.calendarResponses })
     });
     
     if (!saveResponse.ok) {
