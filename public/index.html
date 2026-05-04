@@ -600,10 +600,11 @@
     main > hr { display: none !important; }
     .mobile-tab-warning { display: none !important; }
     /* Confronto squadra: gestito dal sistema tab-section, mostrato via JS quando tab GPS è attivo */
-    /* GPS e Analisi: nascondi grafici su mobile, mostra solo avviso */
+    /* GPS, Analisi e Valutazioni: nascondi grafici su mobile, mostra solo avviso */
     @media (max-width: 991px) {
         #monitoraggio-gps-section > *:not(.d-lg-none),
-        #analisi-singolo-section > *:not(.d-lg-none) {
+        #analisi-singolo-section > *:not(.d-lg-none),
+        #report-valutazioni-section > *:not(.d-lg-none) {
             display: none !important;
         }
         /* Confronto performance: nascosto su mobile (è fuori da GPS section) */
@@ -1936,7 +1937,7 @@
     <footer class="bg-dark-blue py-3 mt-5 no-print">
         <div class="container text-center">
             <p class="mb-1" style="font-size:0.85rem;">📧 Per assistenza scrivi all'email <a href="mailto:info.mondo2026@gmail.com" style="color:#60a5fa;">info.mondo2026@gmail.com</a> <span style="color:#64748b;">— v1.5.21</span></p>
-            <p class="text-muted mb-0" style="font-size:0.75rem;">© 2025 Edy Franzoso. Codice sorgente protetto ai sensi della L. 633/1941.</p>
+            <p class="mb-0" style="font-size:0.75rem;color:var(--text-secondary,#64748b);">© 2025 Edy Franzoso. Codice sorgente protetto ai sensi della L. 633/1941.</p>
         </div>
     </footer>
     <div id="modals-container"></div>
@@ -4544,6 +4545,15 @@ footer {
 }
 /* Spazio in fondo al contenuto (non serve piu' lo spazio per il footer) */
 .tab-section.printing-now { padding-bottom: 0 !important; }
+
+/* FIX v1.5.21: forza sfondo bianco su mobile in tema chiaro */
+@media (max-width: 991px) {
+    html.theme-light body,
+    html.theme-light .tab-section,
+    html.theme-light main {
+        background-color: #ffffff !important;
+    }
+}
 
 /* FIX v1.5.21: simboli (C) e (VC) nella formazione - testo bianco in tema chiaro */
 html.theme-light .token-captain { color: #ffffff !important; }
