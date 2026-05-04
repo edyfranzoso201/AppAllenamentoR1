@@ -198,7 +198,7 @@ async function markAbsence(athleteId, date, currentStatus) {
       _authH['x-society-id']   = sessionStorage.getItem('gosport_society_id')   || '';
     } catch(e) {}
 
-    const response = await fetch('/api/data', {
+    const response = await fetch('/api/data?parentMode=1', {
       cache: 'no-store',
       headers: Object.assign({
         'Content-Type': 'application/json',
