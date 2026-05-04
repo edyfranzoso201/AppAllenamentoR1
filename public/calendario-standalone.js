@@ -111,9 +111,9 @@ async function load() {
     // Chiamata API diretta con header (modalità genitore = dati ridotti)
     // FIX: mando ANCHE gli header di auth se l'utente è loggato.
     // Cosi' funziona sia per coach (che autenticano via session) sia per
-    // genitori (che usano parentMode=1). Sul mobile lo strict equality
-    // su parentMode='1' falliva e dava 401: con gli header di auth, il
-    // backend autentica via sessione e bypassa il check parentMode.
+    // genitori (che usano parentMode=1). Su browser non-Chrome (es. Samsung
+    // Internet) gli header custom potrebbero essere gestiti diversamente
+    // ma il pattern e' lo stesso usato da data-adapter-multi-annata.js.
     const _authHeaders = {};
     try {
       _authHeaders['x-auth-session'] = sessionStorage.getItem('gosport_auth_session') || '';
@@ -605,9 +605,11 @@ if (themeBtn) {
   console.warn('[CALENDARIO] ⚠️ Atleta', athleteIdParam, 'non trovato negli eventi, ma carico comunque la bacheca');
   el.innerHTML = `<div class="alert alert-info">Nessun evento nel calendario.</div>`;
   // NON fare return, continua a caricare la bacheca
+} else {
+  // FIX: log atleta solo se trovato (prima si tentava sempre [0].name
+  // anche con array vuoto -> TypeError "Cannot read properties of undefined")
+  console.log('[PRESENZA] ✅ Atleta trovato:', visibleAthletes[0].name);
 }
-    
-    console.log('[PRESENZA] ✅ Atleta trovato:', visibleAthletes[0].name);
   } else {
     isParentView = false;
     // Mostra tab Bacheca per coach/admin
