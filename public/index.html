@@ -1201,6 +1201,15 @@
         </div>
         <hr class="my-5 no-print">
         <div id="report-valutazioni-section" class="tab-section row my-4 printable-area">
+            <!-- Avviso mobile: visibile solo su smartphone -->
+            <div class="col-12 d-lg-none mb-3">
+                <div class="card" style="background:var(--bg-panel); border:1px solid var(--border-2);">
+                    <div class="card-body text-center py-4">
+                        <i class="bi bi-display" style="font-size:2rem; color:#60a5fa;"></i>
+                        <p class="mt-2 mb-0" style="color:#64748b;">📊 <strong style="color:var(--text-primary);">Report Valutazioni Comportamentali</strong><br><small>Dati disponibili solo su PC</small></p>
+                    </div>
+                </div>
+            </div>
               <div class="col-12 d-flex justify-content-between align-items-center gap-2 mb-3">
                 <div class="d-flex align-items-center gap-2">
                     <h2 class="main-title mb-0">Report Valutazioni Comportamentali</h2>
@@ -1926,7 +1935,8 @@
     </main>
     <footer class="bg-dark-blue py-3 mt-5 no-print">
         <div class="container text-center">
-            <p class="text-muted mb-0">By Edy Franzoso</p>
+            <p class="mb-1" style="font-size:0.85rem;">📧 Per assistenza scrivi all'email <a href="mailto:info.mondo2026@gmail.com" style="color:#60a5fa;">info.mondo2026@gmail.com</a> <span style="color:#64748b;">— v1.5.21</span></p>
+            <p class="text-muted mb-0" style="font-size:0.75rem;">© 2025 Edy Franzoso. Codice sorgente protetto ai sensi della L. 633/1941.</p>
         </div>
     </footer>
     <div id="modals-container"></div>
@@ -2116,19 +2126,6 @@
         e.target.value = '';
     });
     </script>
-       <!-- Copyright Footer -->
-    <footer class="text-center no-print" style="...">
-        © 2025 Edy Franzoso.<br>
-        Codice sorgente e contenuti protetti ai sensi della 
-        Legge sul Diritto d'Autore (L. 633/1941).<br>
-        Riproduzione, distribuzione o modifica vietati 
-        senza autorizzazione scritta.
-    </footer>
-    <!-- v1.5.14: footer assistenza + versione (allineato a calendario.html) -->
-    <footer class="text-center no-print" style="padding:8px;font-size:0.82rem;color:#64748b;">
-        📧 Per assistenza scrivi all'email <a href="mailto:info.mondo2026@gmail.com" style="color:#60a5fa;">info.mondo2026@gmail.com</a>
-        <span style="margin-left:8px;">— v1.5.21</span>
-    </footer>
     <!-- ========================================== -->
 <!-- MODAL PAGELLA VALUTAZIONE -->
 <!-- ========================================== -->
@@ -4550,6 +4547,30 @@ footer {
 
 /* FIX v1.5.21: simboli (C) e (VC) nella formazione - testo bianco in tema chiaro */
 html.theme-light .token-captain { color: #ffffff !important; }
+
+/* FIX v1.5.21: modal Pianifica Sessione - sfondo bianco in tema chiaro */
+html.theme-light #sessionModal .modal-content,
+html.theme-light #sessionModal .modal-header,
+html.theme-light #sessionModal .modal-body,
+html.theme-light #sessionModal .modal-footer {
+    background-color: #ffffff !important;
+    --bs-modal-bg: #ffffff;
+    --bs-body-bg: #ffffff;
+    color: #1a202c !important;
+    border-color: #e2e8f0 !important;
+}
+html.theme-light #sessionModal .form-control,
+html.theme-light #sessionModal .form-select,
+html.theme-light #sessionModal textarea {
+    background-color: #f8fafc !important;
+    --bs-body-bg: #f8fafc;
+    color: #1a202c !important;
+    border-color: #cbd5e0 !important;
+}
+html.theme-light #sessionModal label,
+html.theme-light #sessionModal .form-label { color: #374151 !important; }
+html.theme-light #sessionModal .modal-title { color: #1a202c !important; }
+html.theme-light #sessionModal .btn-close { filter: invert(1); }
 </style>
 </body>
 </html>

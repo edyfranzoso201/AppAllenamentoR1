@@ -1970,7 +1970,7 @@ function _bRender() {
             : '<span class="post-visibility-badge badge-annata">Questa Annata e Gruppi</span>';
         var pid  = p.id;
         h += '<div class="post-item' + (priv2 ? ' post-privato' : '') + '">';
-        if (img) h += '<img class="post-item-img" src="'+img+'" alt="">';
+        if (img) h += `<img class="post-item-img" src="${img}" alt="" style="cursor:zoom-in;" title="Clicca per ingrandire" onclick="event.stopPropagation();(function(s){var e=document.getElementById('_img_lightbox');if(e)e.remove();var o=document.createElement('div');o.id='_img_lightbox';o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;';o.onclick=function(){o.remove();};var i=document.createElement('img');i.src=s;i.style.cssText='max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,0.6);object-fit:contain;';i.onclick=function(e){e.stopPropagation();};var b=document.createElement('button');b.textContent='\\u2715';b.style.cssText='position:fixed;top:16px;right:20px;background:none;border:none;color:#fff;font-size:2rem;cursor:pointer;z-index:100000;';b.onclick=function(){o.remove();};o.appendChild(i);o.appendChild(b);document.body.appendChild(o);})(this.src);">`;
         h += '<div class="post-item-body">';
         h += '<div class="post-item-title">'+(p.pinned?'[PIN] ':'')+p.title+'</div>';
         if (p.text) h += '<div class="post-item-text">'+p.text+'</div>';
@@ -2031,20 +2031,12 @@ var _sponsorSlots = [
 
 async function _loadSponsorConfig() {
     try {
-        // XHR per evitare che l'adapter aggiunga X-Annata-Id alla chiamata globale
-        var d = await new Promise(function(resolve, reject) {
-            var xhr = new XMLHttpRequest();
-            xhr.open('GET', '/api/data', true);
-            xhr.onload = function() {
-                console.log('[Sponsor] 📥 XHR status:', xhr.status);
-                try { resolve(JSON.parse(xhr.responseText)); } catch(e) { reject(e); }
-            };
-            xhr.onerror = function() { reject(new Error('Errore rete')); };
-            xhr.send();
-        });
+        // FIX v1.5.21: usa fetch (non XHR) così auth-multi-annata.js aggiunge gli header
+        // La XHR bypassava l'interceptor → bachecaConfig arrivava vuoto → banner sempre visibili
+        var res = await fetch('/api/data', { cache: 'no-store' });
+        console.log('[Sponsor] 📥 status:', res.status);
+        var d = await res.json();
         console.log('[Sponsor] 📦 bachecaConfig:', JSON.stringify(d && d.bachecaConfig));
-        console.log('[Sponsor] 🔔 bannersEnabled in config:', d && d.bachecaConfig && d.bachecaConfig.bannersEnabled);
-        // DEBUG TEMPORANEO: mostra cosa arriva dal backend
         var _dbg = d && d.bachecaConfig;
         console.warn('[Sponsor DEBUG] bannersEnabled letto da Redis:', _dbg ? _dbg.bannersEnabled : 'bachecaConfig null');
         _sponsorConfig = (d && d.bachecaConfig) || {};
@@ -3633,7 +3625,26 @@ if (matBox) {
         oldMat.remove();
         renderMaterialeGenitore(window._lastMateriale, window._lastAthleteId);
     }
-}
+// FIX v1.5.21: lightbox immagini bacheca — apre overlay invece di navigare
+window._showImgLightbox = function(src) {
+    var existing = document.getElementById('_img_lightbox');
+    if (existing) existing.remove();
+    var overlay = document.createElement('div');
+    overlay.id = '_img_lightbox';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;';
+    overlay.onclick = function() { overlay.remove(); };
+    var img = document.createElement('img');
+    img.src = src;
+    img.style.cssText = 'max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,0.6);object-fit:contain;';
+    img.onclick = function(e) { e.stopPropagation(); };
+    var closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕';
+    closeBtn.style.cssText = 'position:fixed;top:16px;right:20px;background:none;border:none;color:#fff;font-size:2rem;cursor:pointer;line-height:1;z-index:100000;';
+    closeBtn.onclick = function() { overlay.remove(); };
+    overlay.appendChild(img);
+    overlay.appendChild(closeBtn);
+    document.body.appendChild(overlay);
+};
 </script>
 </body>
 </html>
