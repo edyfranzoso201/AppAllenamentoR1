@@ -1237,6 +1237,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 Inserisci URL immagine (da internet o Google Drive) e link di destinazione per ogni slot.
                 <br>Google Drive: apri il file → Condividi → "Chiunque" → copia link → sostituisci <code style="color:#60a5fa;">/view</code> con <code style="color:#60a5fa;">/preview</code> per immagini usa <code style="color:#60a5fa;">https://drive.google.com/uc?id=ID</code>
             </p>
+            <!-- FIX v1.5.21: switch on/off banner pubblicitari -->
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:10px 14px;background:rgba(0,0,0,0.2);border-radius:8px;border:1px solid #3b5a9d;">
+                <label style="color:#f59e0b;font-weight:700;font-size:0.85rem;flex:1;cursor:pointer;" for="sponsor-enabled-toggle">
+                    📢 Banner pubblicitari nella vista genitore
+                </label>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span id="sponsor-enabled-label" style="color:#60a5fa;font-size:0.8rem;">Abilitati</span>
+                    <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;">
+                        <input type="checkbox" id="sponsor-enabled-toggle" checked style="opacity:0;width:0;height:0;position:absolute;"
+                               onchange="window.toggleSponsorEnabled(this.checked)">
+                        <span id="sponsor-toggle-track" style="position:absolute;inset:0;background:#16a34a;border-radius:24px;transition:background 0.2s;"></span>
+                        <span id="sponsor-toggle-thumb" style="position:absolute;left:3px;top:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform 0.2s;transform:translateX(0px);"></span>
+                    </label>
+                </div>
+            </div>
             <div id="sponsor-slots-container"></div>
             <button class="btn-save-sponsor" onclick="saveSponsorConfig()">💾 Salva Configurazione</button>
             <span id="sponsor-save-msg" style="margin-left:12px;font-size:0.82rem;color:#16a34a;display:none;">✅ Salvato!</span>
@@ -1989,6 +2004,13 @@ async function _loadSponsorConfig() {
 function _renderSponsorSlots() {
     var box = document.getElementById('sponsor-slots-container'); if (!document.getElementById('sponsor-admin-panel')) return;
     if (!box) return;
+    // FIX v1.5.21: ripristina stato switch da bachecaConfig
+    var enabled = _sponsorConfig.bannersEnabled !== false; // default true se non definito
+    var toggleEl = document.getElementById('sponsor-enabled-toggle');
+    if (toggleEl) {
+        toggleEl.checked = enabled;
+        window.toggleSponsorEnabled(enabled);
+    }
     var h = '';
     _sponsorSlots.forEach(function(s) {
         var cfg = _sponsorConfig[s.key] || { img: '', link: '' };
@@ -2024,6 +2046,9 @@ window.saveSponsorConfig = async function() {
             link: (document.getElementById('sp-link-' + s.key)?.value || '').trim(),
         };
     });
+    // FIX v1.5.21: include flag bannersEnabled
+    var toggleEl = document.getElementById('sponsor-enabled-toggle');
+    config.bannersEnabled = toggleEl ? toggleEl.checked : true;
     try {
         // NON inviare X-Annata-Id — questo salvataggio è globale
         // Usa XMLHttpRequest per bypassare il data-adapter che aggiunge l'annataId automaticamente
@@ -2048,6 +2073,16 @@ window.saveSponsorConfig = async function() {
     } catch(e) { alert('❌ Errore salvataggio: ' + e.message); }
 };
 // ── FINE PANNELLO SPONSOR ─────────────────────────────────────────────────
+
+// FIX v1.5.21: toggle banner sponsor ON/OFF
+window.toggleSponsorEnabled = function(enabled) {
+    var label = document.getElementById('sponsor-enabled-label');
+    var track = document.getElementById('sponsor-toggle-track');
+    var thumb = document.getElementById('sponsor-toggle-thumb');
+    if (label) label.textContent = enabled ? 'Abilitati' : 'Disabilitati';
+    if (track) track.style.background = enabled ? '#16a34a' : '#64748b';
+    if (thumb) thumb.style.transform = enabled ? 'translateX(20px)' : 'translateX(0px)';
+};
 
 window.copyBachecaLink = function() {
     var link = window.location.origin + '/bacheca.html';
@@ -3349,6 +3384,16 @@ window.showDocumentiTab = showDocumentiTab;
     body.theme-light #bacheca-genitori-list span[style*="border-radius:10px"],
     html.theme-light #bacheca-genitori-container span[style*="border-radius:10px"],
     body.theme-light #bacheca-genitori-container span[style*="border-radius:10px"] {
+        color: #ffffff !important;
+    }
+
+    /* FIX v1.5.21: badge "Privata"/"Pubblica" nei documenti e
+       badge "Questa Annata" nella bacheca coach: sfondo scuro con
+       testo bianco, eccezionalmente esclusi dal "tutto nero". */
+    html.theme-light #doc-list span[style*="border-radius:4px"],
+    body.theme-light #doc-list span[style*="border-radius:4px"],
+    html.theme-light .post-visibility-badge,
+    body.theme-light .post-visibility-badge {
         color: #ffffff !important;
     }
 
