@@ -1227,11 +1227,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 const innerCard = card.querySelector('.card');
                 if (innerCard) {
                     if (isDirigente) {
-                        innerCard.style.setProperty('background', isLight ? '#bbf7d0' : '#14532d', 'important');
+                        innerCard.style.setProperty('background', isLight ? '#d1fae5' : '#14532d', 'important');
                         innerCard.style.setProperty('border-left', '4px solid #166534', 'important');
                     } else {
-                        innerCard.style.setProperty('background', isLight ? '#dcfce7' : '#1e293b', 'important');
+                        innerCard.style.setProperty('background', isLight ? '#dbeafe' : '#1e293b', 'important');
                         innerCard.style.setProperty('border-left', '4px solid #16a34a', 'important');
+                    }
+                    // In tema chiaro forza testo scuro su tutti gli elementi della card
+                    if (isLight) {
+                        innerCard.querySelectorAll('h5, p, .card-title, .card-text, .text-muted, .shirt-number').forEach(function(el) {
+                            el.style.setProperty('color', '#1a202c', 'important');
+                        });
+                        innerCard.querySelectorAll('.btn-outline-light').forEach(function(btn) {
+                            btn.style.setProperty('color', '#374151', 'important');
+                            btn.style.setProperty('border-color', '#374151', 'important');
+                        });
                     }
                 }
             }
