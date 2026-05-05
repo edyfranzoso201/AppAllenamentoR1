@@ -2747,6 +2747,8 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (e.target.closest('.edit-btn')) {
             document.getElementById('athleteModalLabel').textContent = 'Modifica Atleta';
             document.getElementById('modal-athlete-id').value = athlete.id;
+            // FIX v1.5.21: ripristina isStaff dal dato esistente (era sempre false in modifica)
+            document.getElementById('modal-athlete-id').dataset.isStaff = athlete.isStaff ? 'true' : '';
             document.getElementById('athlete-name').value = athlete.name;
             document.getElementById('athlete-role').value = athlete.role;
             document.getElementById('athlete-number').value = athlete.number;
