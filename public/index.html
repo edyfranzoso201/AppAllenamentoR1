@@ -743,6 +743,45 @@
         applySelectTheme(isLight);
     };
 
+    // Popola il menu admin mobile con bottoni Cambia Annata / Esci
+    window.populateMobileAdminMenu = function() {
+        var dst = document.getElementById('app-header-mobile');
+        if (!dst) return;
+        var role = window.getUserRole ? window.getUserRole() : sessionStorage.getItem('gosport_user_role');
+        var user = window.getCurrentUser ? window.getCurrentUser() : sessionStorage.getItem('gosport_auth_user');
+        var canChange = (role === 'admin');
+        var icon = (role === 'admin') ? '\u{1F451}' : '\u{1F464}';
+
+        var lbl = document.createElement('div');
+        lbl.style.cssText = 'display:flex;align-items:center;gap:8px;color:#e2e8f0;font-size:0.9rem;font-weight:600;';
+        lbl.textContent = icon + ' ' + (user || 'Utente');
+
+        dst.innerHTML = '';
+        dst.appendChild(lbl);
+
+        if (canChange) {
+            var btnCambia = document.createElement('button');
+            btnCambia.type = 'button';
+            btnCambia.textContent = '\u{1F4C5} Cambia Annata';
+            btnCambia.style.cssText = 'background:#8b5cf6;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;';
+            btnCambia.onclick = function() {
+                if (window.handleQuickChangeAnnata) window.handleQuickChangeAnnata();
+            };
+            dst.appendChild(btnCambia);
+        }
+
+        var btnEsci = document.createElement('button');
+        btnEsci.type = 'button';
+        btnEsci.textContent = '\u{1F6AA} Esci';
+        btnEsci.style.cssText = 'background:#d90429;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;';
+        btnEsci.onclick = function() {
+            if (window.handleQuickLogout) window.handleQuickLogout();
+        };
+        dst.appendChild(btnEsci);
+
+        dst.style.display = 'flex';
+    };
+
     function applySelectTheme(isLight) {
         var bg = isLight ? '#ccd3db' : '';
         var color = isLight ? '#000103' : '';
@@ -936,7 +975,7 @@
         <div id="app-header-info" class="d-none d-lg-flex" style="flex-shrink:0; margin-left:auto; margin-right:8px; position:relative; align-items:center;"></div>
         <!-- Hamburger: solo su mobile -->
         <button class="navbar-toggler d-lg-none ms-auto" type="button"
-            onclick="(function(){var m=document.getElementById('navbarNav');m.classList.toggle('show');if(m.classList.contains('show')){var dst=document.getElementById('app-header-mobile');if(dst){var role=window.getUserRole?window.getUserRole():sessionStorage.getItem('gosport_user_role');var user=window.getCurrentUser?window.getCurrentUser():sessionStorage.getItem('gosport_auth_user');var canChange=(role==='admin');var html='<div style=\"display:flex;align-items:center;gap:8px;color:#e2e8f0;font-size:0.9rem;font-weight:600;\">'+(role==='admin'?'👑':'👤')+' '+(user||'Utente')+'</div>';if(canChange){html+='<button type=\"button\" onclick=\"if(window.handleQuickChangeAnnata){window.handleQuickChangeAnnata();}\" style=\"background:#8b5cf6;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;\">📅 Cambia Annata</button>';}html+='<button type=\"button\" onclick=\"if(window.handleQuickLogout){window.handleQuickLogout();}\" style=\"background:#d90429;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;\">🚪 Esci</button>';dst.innerHTML=html;dst.style.display='flex';}}})()"
+            onclick="(function(){var m=document.getElementById('navbarNav');m.classList.toggle('show');if(m.classList.contains('show')&&window.populateMobileAdminMenu)window.populateMobileAdminMenu();})()"
             id="hamburger-btn"
             style="border:1.5px solid rgba(255,255,255,0.6); padding:4px 10px; flex-shrink:0; background:transparent; color:#ffffff; font-size:1.4rem; line-height:1;">
             <i class="bi bi-list" id="hamburger-icon" style="color:inherit;"></i>
