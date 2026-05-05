@@ -2695,7 +2695,7 @@ document.addEventListener('DOMContentLoaded', () => {
             var btn = document.getElementById('tipo-' + t + '-btn');
             if (!btn) return;
             if (t === tipo) {
-                btn.style.background = t === 'atleta' ? '#3b82f6' : t === 'allenatore' ? '#16a34a' : '#f59e0b';
+                btn.style.background = t === 'atleta' ? '#3b82f6' : t === 'allenatore' ? '#16a34a' : '#166534';
                 btn.style.color = '#fff';
             } else {
                 btn.style.background = '#374151';

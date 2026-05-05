@@ -4571,6 +4571,33 @@ footer {
     }
 }
 
+/* FIX v1.5.21: modal Atleta/Staff - sfondo bianco in tema chiaro */
+html.theme-light #athleteModal .modal-content,
+html.theme-light #athleteModal .modal-header,
+html.theme-light #athleteModal .modal-body,
+html.theme-light #athleteModal .modal-footer {
+    background-color: #ffffff !important;
+    --bs-modal-bg: #ffffff;
+    color: #1a202c !important;
+    border-color: #e2e8f0 !important;
+}
+html.theme-light #athleteModal .form-control,
+html.theme-light #athleteModal .form-select,
+html.theme-light #athleteModal textarea {
+    background-color: #f8fafc !important;
+    color: #1a202c !important;
+    border-color: #cbd5e0 !important;
+}
+html.theme-light #athleteModal label,
+html.theme-light #athleteModal .form-label { color: #374151 !important; }
+html.theme-light #athleteModal .modal-title { color: #1a202c !important; }
+html.theme-light #athleteModal .btn-close { filter: invert(1); }
+html.theme-light #athleteModal small.text-muted { color: #64748b !important; }
+/* Bottoni tipo persona: in tema chiaro testo sempre bianco (sfondo colorato) */
+html.theme-light #tipo-atleta-btn,
+html.theme-light #tipo-allenatore-btn,
+html.theme-light #tipo-dirigente-btn { color: #ffffff !important; }
+
 /* FIX v1.5.21: simboli (C) e (VC) nella formazione - testo bianco in tema chiaro */
 html.theme-light .token-captain { color: #ffffff !important; }
 
