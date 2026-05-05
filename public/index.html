@@ -4688,6 +4688,16 @@ html.theme-light #sessionModal .form-label { color: #374151 !important; }
 html.theme-light #sessionModal .modal-title { color: #1a202c !important; }
 html.theme-light #sessionModal .btn-close { filter: invert(1); }
 
+/* FIX: pulsante hamburger ☰ - icona nera visibile in tema chiaro */
+html.theme-light .navbar-toggler,
+body.theme-light .navbar-toggler {
+    border-color: rgba(0, 0, 0, 0.4) !important;
+}
+html.theme-light .navbar-toggler-icon,
+body.theme-light .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%280, 0, 0, 0.85%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") !important;
+}
+
 /* FIX: bottone switch tema chiaro - visibile su sfondo chiaro */
 html.theme-light #theme-toggle-btn,
 body.theme-light #theme-toggle-btn {
