@@ -698,11 +698,24 @@
         var isLight = document.documentElement.classList.contains('theme-light');
         if (icon) icon.textContent = isLight ? '🌙' : '☀️';
         if (label) label.textContent = isLight ? 'Tema Scuro' : 'Tema Chiaro';
-        // FIX: forza stili inline per visibilità in entrambi i temi
-        btn.style.color      = isLight ? '#111111' : '#e2e8f0';
-        btn.style.background = isLight ? '#d1d5db' : 'var(--bg-panel)';
-        btn.style.border     = isLight ? '1.5px solid #6b7280' : '1px solid var(--border)';
-        if (label) label.style.color = isLight ? '#111111' : '#e2e8f0';
+        // Colori hardcoded ad alto contrasto, non dipendono da variabili CSS
+        if (isLight) {
+            btn.style.cssText = btn.style.cssText
+                .replace(/background:[^;]+;/, 'background:#374151;')
+                .replace(/border:[^;]+;/, 'border:1.5px solid #111827;')
+                .replace(/color:[^;]+;/, 'color:#ffffff;');
+            btn.style.background = '#374151';
+            btn.style.border     = '1.5px solid #111827';
+            btn.style.color      = '#ffffff';
+            if (label) label.style.setProperty('color', '#ffffff', 'important');
+            if (icon)  icon.style.setProperty('color', '#ffffff', 'important');
+        } else {
+            btn.style.background = '#1e3a5f';
+            btn.style.border     = '1px solid #3b82f6';
+            btn.style.color      = '#e2e8f0';
+            if (label) label.style.setProperty('color', '#e2e8f0', 'important');
+            if (icon)  icon.style.setProperty('color', '#e2e8f0', 'important');
+        }
     }
 
     window.toggleTheme = function() {
@@ -1005,7 +1018,7 @@
                                 <input type="file" id="restore-file" accept=".json" style="display:none">
                                 <!-- Switch Tema -->
                                 <button id="theme-toggle-btn" onclick="window.toggleTheme()" 
-                                    style="background:var(--bg-panel);border:1px solid var(--border);border-radius:50px;padding:8px 14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;color:var(--text-primary);font-size:0.82rem;font-weight:500;width:100%;margin-top:2px;">
+                                    style="background:#1e3a5f;border:1px solid #3b82f6;border-radius:50px;padding:8px 14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;color:#e2e8f0;font-size:0.82rem;font-weight:500;width:100%;margin-top:2px;">
                                     <span id="theme-icon">☀️</span>
                                     <span id="theme-label">Tema Chiaro</span>
                                 </button>
