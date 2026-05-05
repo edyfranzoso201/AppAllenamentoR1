@@ -698,6 +698,11 @@
         var isLight = document.documentElement.classList.contains('theme-light');
         if (icon) icon.textContent = isLight ? '🌙' : '☀️';
         if (label) label.textContent = isLight ? 'Tema Scuro' : 'Tema Chiaro';
+        // FIX: forza stili inline per visibilità in entrambi i temi
+        btn.style.color      = isLight ? '#111111' : '#e2e8f0';
+        btn.style.background = isLight ? '#d1d5db' : 'var(--bg-panel)';
+        btn.style.border     = isLight ? '1.5px solid #6b7280' : '1px solid var(--border)';
+        if (label) label.style.color = isLight ? '#111111' : '#e2e8f0';
     }
 
     window.toggleTheme = function() {
