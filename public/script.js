@@ -1157,7 +1157,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const card = document.createElement('div');
             card.className = 'col-xl-3 col-lg-4 col-md-6 mb-4';
             // ✅ Classe condizionale per atleti ospiti
-            const cardClass = athlete.isStaff ? 'athlete-card staff-athlete' : (athlete.isGuest ? 'athlete-card guest-athlete' : 'athlete-card');
+            const isDirigente = athlete.isStaff && athlete.role && athlete.role.toLowerCase().includes('dirigente');
+            const cardClass = athlete.isStaff
+                ? (isDirigente ? 'athlete-card staff-athlete dirigente-card' : 'athlete-card staff-athlete allenatore-card')
+                : (athlete.isGuest ? 'athlete-card guest-athlete' : 'athlete-card');
             const vcIcon = athlete.isViceCaptain ? '<i class="bi bi-star-half text-warning is-vice-captain"></i>' : '';
             const indStatus = getIndividualStatus(athlete);
             const indBadge = indStatus ? `<div style="display:inline-flex;align-items:center;gap:4px;font-size:0.68rem;padding:2px 8px;border-radius:100px;background:${indStatus.color}22;color:${indStatus.color};border:1px solid ${indStatus.color};margin-top:4px;max-width:50%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${indStatus.text}">🏋️ ${indStatus.used}/${indStatus.total}${indStatus.status==='orange'?' ⏳':indStatus.status==='red'?' ✗':''}</div>` : '';
@@ -1165,7 +1168,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (squadView === 'list') {
                 // ── Vista Lista ──────────────────────────────────────────
                 card.className = 'list-group-item list-group-item-action p-0 mb-1';
-                card.style.background = athlete.isStaff ? '#1e293b' : '#0f172a';
+                card.style.background = athlete.isStaff ? (isDirigente ? '#14532d' : '#1e293b') : '#0f172a';
                 card.style.border = '1px solid rgba(96,165,250,0.15)';
                 card.style.borderRadius = '8px';
                 card.innerHTML = `

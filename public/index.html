@@ -4571,6 +4571,12 @@ footer {
     }
 }
 
+/* FIX v1.5.21: colori diversi per Allenatore e Dirigente nella vista box */
+.allenatore-card { background: #1e293b !important; border-left: 3px solid #16a34a !important; }
+.dirigente-card  { background: #14532d !important; border-left: 3px solid #166534 !important; }
+html.theme-light .allenatore-card { background: #dcfce7 !important; border-left: 3px solid #16a34a !important; }
+html.theme-light .dirigente-card  { background: #bbf7d0 !important; border-left: 3px solid #166534 !important; }
+
 /* FIX v1.5.21: modal Atleta/Staff - sfondo bianco in tema chiaro */
 html.theme-light #athleteModal .modal-content,
 html.theme-light #athleteModal .modal-header,
