@@ -1221,6 +1221,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.innerHTML = `<div class="card ${cardClass}" style="${indBorder}${cardBg}"><div class="card-body athlete-card-clickable" data-athlete-id="${athlete.id}"><img src="${athlete.avatar || defaultAvatar}" onerror="this.src='${defaultAvatar}'" alt="${athlete.name}" class="athlete-avatar me-3"><div><h5 class="card-title">${athlete.name} ${athlete.isCaptain ? '<i class="bi bi-star-fill is-captain"></i>' : ''} ${vcIcon}</h5><p class="card-text text-muted">${athlete.role}</p>${indBadge}</div><div class="shirt-number">${athlete.number}</div>${statusIcon}</div><div class="card-actions no-print"><button class="btn btn-sm btn-outline-light rating-btn" title="Pagelle" data-athlete-id="${athlete.id}"><i class="bi bi-clipboard-check"></i></button><button class="btn btn-sm btn-outline-light gps-btn" title="Dati Performance" data-athlete-id="${athlete.id}"><i class="bi bi-person-fill-gear"></i></button><button class="btn btn-sm btn-outline-light parent-btn" title="Anagrafica Genitori" data-athlete-id="${athlete.id}"><i class="bi bi-people-fill"></i></button>${athlete.certLink ? `<button class="btn btn-sm btn-outline-light cert-btn" title="Apri Certificato Medico" onclick="window.open('${athlete.certLink}','_blank')"><i class="bi bi-file-earmark-medical-fill" style="color:#16a34a;"></i></button>` : ""}<button class="btn btn-sm btn-outline-light edit-btn" title="Modifica Atleta" data-athlete-id="${athlete.id}"><i class="bi bi-pencil-fill"></i></button><button class="btn btn-sm btn-outline-light delete-btn" title="Elimina Atleta" data-athlete-id="${athlete.id}"><i class="bi bi-trash-fill"></i></button></div></div>`;
             }
             elements.athleteGrid.appendChild(card);
+            // FIX v1.5.21: applica colore background dopo appendChild (override Bootstrap vars)
+            if (athlete.isStaff) {
+                const isLight = document.documentElement.classList.contains('theme-light');
+                const innerCard = card.querySelector('.card');
+                if (innerCard) {
+                    if (isDirigente) {
+                        innerCard.style.setProperty('background', isLight ? '#bbf7d0' : '#14532d', 'important');
+                        innerCard.style.setProperty('border-left', '4px solid #166534', 'important');
+                    } else {
+                        innerCard.style.setProperty('background', isLight ? '#dcfce7' : '#1e293b', 'important');
+                        innerCard.style.setProperty('border-left', '4px solid #16a34a', 'important');
+                    }
+                }
+            }
         });
     };
     const renderCalendar = () => {
