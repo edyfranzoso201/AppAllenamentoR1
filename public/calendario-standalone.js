@@ -695,10 +695,11 @@ if (themeBtn) {
 
     dates.forEach(d => {
       const e = events[d];
-      const eventIcon = e.type === 'Partita' ? '⚽' : e.type === 'Individual' ? '🏋️' : '🏃';
+      const eventIcon = e.type === 'Partita' ? '⚽' : e.type === 'Individual' ? '🏋️' : e.type === 'Torneo' ? '🏆' : e.type === 'Campionato' ? '🏅' : e.type === 'Finale' ? '🥇' : e.type === 'Semifinale' ? '🥈' : e.type === 'Evento' ? '📅' : e.type === 'Visita' ? '🏥' : '🏃';
       const athleteLine = (e.type === 'Individual' && e.athleteName)
         ? `<br><span style="color:#a855f7;font-size:0.7rem;font-weight:600">${e.athleteName}</span>`
         : '';
+      const noteLine = e.note ? `<br><span style="font-style:italic;font-size:0.68rem;opacity:0.85;">${e.note}</span>` : '';
       
       const editBtn = !isParentView ? `<button onclick="editEvent('${d}')" class="btn btn-sm btn-warning ms-1" style="padding:0.1rem 0.3rem;font-size:0.6rem;color:#ffffff;" title="Modifica evento"><i class="bi bi-pencil"></i></button>` : '';
       const deleteBtn = !isParentView ? `<button onclick="deleteEvent('${d}')" class="btn btn-sm btn-danger ms-1" style="padding:0.1rem 0.3rem;font-size:0.6rem;color:#ffffff;" title="Elimina evento"><i class="bi bi-trash"></i></button>` : '';
@@ -712,7 +713,7 @@ if (themeBtn) {
       }
       
       h += `<th class="text-center" style="color:${thColor}${thBg}">
-        <small>${eventIcon} ${e.type}${athleteLine}<br>${e.time}${editBtn}${deleteBtn}</small>
+        <small>${eventIcon} ${e.type}${athleteLine}${noteLine}<br>${e.time}${editBtn}${deleteBtn}</small>
       </th>`;
     });
     h += `</tr>`;
@@ -993,10 +994,22 @@ window.editEvent = function(date) {
         <select id="edit-event-type" style="width:100%;padding:10px;border:1px solid #1a3a5f;border-radius:8px;font-size:1rem;color:#e2e8f0;background:#060f1e;">
           <option value="Allenamento" ${event.type === 'Allenamento' ? 'selected' : ''}>🏃 Allenamento</option>
           <option value="Partita" ${event.type === 'Partita' ? 'selected' : ''}>⚽ Partita</option>
+          <option value="Torneo" ${event.type === 'Torneo' ? 'selected' : ''}>🏆 Torneo</option>
+          <option value="Campionato" ${event.type === 'Campionato' ? 'selected' : ''}>🏅 Campionato</option>
+          <option value="Finale" ${event.type === 'Finale' ? 'selected' : ''}>🥇 Finale</option>
+          <option value="Semifinale" ${event.type === 'Semifinale' ? 'selected' : ''}>🥈 Semifinale</option>
           <option value="Individual" ${event.type === 'Individual' ? 'selected' : ''}>🏋️ Individual</option>
+          <option value="Evento" ${event.type === 'Evento' ? 'selected' : ''}>📅 Evento</option>
+          <option value="Visita" ${event.type === 'Visita' ? 'selected' : ''}>🏥 Visita</option>
         </select>
       </div>
       
+      <div style="margin-bottom:15px;">
+        <label style="display:block;font-weight:600;color:#60a5fa;margin-bottom:6px;">Nota breve <span style="font-weight:400;font-size:0.85rem;">(opzionale)</span></label>
+        <input id="edit-event-note" type="text" value="${event.note || ''}" placeholder="Es. Campo Paradiso" maxlength="120"
+          style="width:100%;padding:10px;border:1px solid #1a3a5f;border-radius:8px;font-size:1rem;color:#e2e8f0;background:#060f1e;box-sizing:border-box;" />
+      </div>
+
       <div style="margin-bottom:20px;">
         <label style="display:block;font-weight:600;color:#60a5fa;margin-bottom:6px;">Orario (es. 18:00-19:30):</label>
         <input id="edit-event-time" type="text" value="${event.time}" 
@@ -1027,6 +1040,7 @@ window.editEvent = function(date) {
     const newDate = document.getElementById('edit-event-date').value;
     const newType = document.getElementById('edit-event-type').value;
     const newTime = document.getElementById('edit-event-time').value.trim();
+    const newNote = (document.getElementById('edit-event-note') || {value:''}).value.trim();
     
     if (!newDate) {
       alert('⚠️ Inserisci una data!');
@@ -1071,7 +1085,7 @@ window.editEvent = function(date) {
       }
       const newAthleteEl = document.getElementById('new-event-athlete');
       const newAthleteName = (newType === 'Individual' && newAthleteEl) ? newAthleteEl.value : '';
-      data.calendarEvents[newDate] = { type: newType, time: newTime, ...(newAthleteName ? { athleteName: newAthleteName } : {}) };
+      data.calendarEvents[newDate] = { type: newType, time: newTime, ...(newAthleteName ? { athleteName: newAthleteName } : {}), ...(newNote ? { note: newNote } : {}) };
       console.log('[EDIT EVENT] ✅ Aggiunto nuovo evento:', newDate, newType, newTime);
       
       const saveResponse = await fetch('/api/data', {
@@ -1187,8 +1201,20 @@ window.addEvent = function() {
         <select id="new-event-type" style="width:100%;padding:10px;border:1px solid #1a3a5f;border-radius:8px;font-size:1rem;color:#e2e8f0;background:#060f1e;">
           <option value="Allenamento">🏃 Allenamento</option>
           <option value="Partita">⚽ Partita</option>
+          <option value="Torneo">🏆 Torneo</option>
+          <option value="Campionato">🏅 Campionato</option>
+          <option value="Finale">🥇 Finale</option>
+          <option value="Semifinale">🥈 Semifinale</option>
           <option value="Individual">🏋️ Individual</option>
+          <option value="Evento">📅 Evento</option>
+          <option value="Visita">🏥 Visita</option>
         </select>
+      </div>
+
+      <div style="margin-bottom:15px;">
+        <label style="display:block;font-weight:600;color:#60a5fa;margin-bottom:6px;">Nota breve <span style="font-weight:400;font-size:0.85rem;">(opzionale, max 15 parole)</span></label>
+        <input id="new-event-note" type="text" placeholder="Es. Campo Paradiso, San Michele..." maxlength="120"
+          style="width:100%;padding:10px;border:1px solid #1a3a5f;border-radius:8px;font-size:1rem;color:#e2e8f0;background:#060f1e;box-sizing:border-box;" />
       </div>
       
       <div style="margin-bottom:20px;">
@@ -1230,6 +1256,7 @@ window.addEvent = function() {
     const newDate = document.getElementById('new-event-date').value;
     const newType = document.getElementById('new-event-type').value;
     const newTime = document.getElementById('new-event-time').value.trim();
+    const newNote = (document.getElementById('new-event-note') || {value:''}).value.trim();
     
     if (!newDate) { alert('⚠️ Inserisci una data!'); return; }
     if (!newTime) { alert('⚠️ Inserisci un orario!'); return; }
@@ -1247,7 +1274,7 @@ window.addEvent = function() {
       const rawData = await response.json();
       const data = rawData.data || rawData;
       data.calendarEvents = data.calendarEvents || {};
-      data.calendarEvents[newDate] = { type: newType, time: newTime };
+      data.calendarEvents[newDate] = { type: newType, time: newTime, ...(newNote ? { note: newNote } : {}) };
       
       console.log('[ADD EVENT] ✅ Aggiunto:', newDate, newType, newTime);
       
