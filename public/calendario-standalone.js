@@ -1411,8 +1411,13 @@ async function loadBachecaGenitori(cachedData) {
     <div style="background:#1a3a5f;border:1px solid #3b5a9d;border-radius:12px;
                 padding:20px;margin-top:12px;">
       <div style="color:#ffffff;font-size:1rem;font-weight:700;margin-bottom:14px;
-                  display:flex;align-items:center;gap:8px;">
+                  display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
         <span>📋</span> Bacheca Comunicazioni
+        <button id="doc-upload-btn"
+          style="margin-left:auto;background:#16a34a;color:#fff;border:none;border-radius:8px;
+                 padding:7px 14px;font-size:0.82rem;font-weight:700;cursor:pointer;">
+          📎 Carica Documenti
+        </button>
       </div>
       <div id="bacheca-genitori-list" style="color:#64748b;font-size:0.85rem;">
         Caricamento comunicati...
@@ -1446,6 +1451,30 @@ const response = await fetch(`/api/data?parentMode=1`, {
 
     // Render iniziale senza immagini
     renderBachecaGenitori(all, {});
+
+    // Collega pulsante upload documenti — ricarica sempre dati freschi al click
+    const athleteIdParam = new URLSearchParams(window.location.search).get('athleteId');
+    const uploadBtn = document.getElementById('doc-upload-btn');
+    if (uploadBtn && athleteIdParam) {
+      uploadBtn.addEventListener('click', async function() {
+        // Ricarica dati freschi per avere stato aggiornato
+        try {
+          const freshRes = await fetch('/api/data?parentMode=1', {
+            cache: 'no-store',
+            headers: { 'Content-Type': 'application/json', 'X-Annata-Id': annataId }
+          });
+          const freshData = freshRes.ok ? (await freshRes.json()) : {};
+          window._showDocUploadPanel(athleteIdParam, annataId, freshData.athleteDocs || {});
+        } catch(e) {
+          window._showDocUploadPanel(athleteIdParam, annataId, {});
+        }
+      });
+    }
+
+    // Mostra sezione documenti nella pagina genitore (sempre visibile)
+    if (athleteIdParam) {
+      window._renderParentDocsSection(athleteIdParam, annataId, d.athleteDocs || {});
+    }
 
     // Mostra documenti pubblici
     const docs = (d && d.documents) || [];
@@ -1801,7 +1830,95 @@ window.showSponsorBannerOverlay = function(slots) {
     setTimeout(function(){ if(card.parentNode) card.parentNode.removeChild(card); }, 400);
   }
 };
-// ═══ FINE BANNER SPONSOR OVERLAY ═════════════════════════════════════════
+// Elimina un singolo documento
+window._deleteAthleteDoc = async function(athleteId, annataId, docKey) {
+  if (!confirm('Eliminare questo documento?')) return;
+  try {
+    var res = await fetch('/api/data?parentMode=1', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Annata-Id': annataId },
+      body: JSON.stringify({ athleteDocs: { [String(athleteId)]: { [docKey]: null } } })
+    });
+    if (res.ok) {
+      alert('✅ Documento eliminato.');
+      document.getElementById('_doc_upload_overlay')?.remove();
+      // Ricarica sezione documenti
+      const freshRes = await fetch('/api/data?parentMode=1', {
+        cache: 'no-store', headers: { 'Content-Type': 'application/json', 'X-Annata-Id': annataId }
+      });
+      if (freshRes.ok) {
+        const fd = await freshRes.json();
+        window._renderParentDocsSection(athleteId, annataId, fd.athleteDocs || {});
+      }
+    } else { alert('❌ Errore: HTTP ' + res.status); }
+  } catch(e) { alert('❌ Errore: ' + e.message); }
+};
+
+// Renderizza la sezione documenti nella pagina genitore (sempre visibile)
+window._renderParentDocsSection = function(athleteId, annataId, allDocs) {
+  var myDocs = (allDocs && allDocs[String(athleteId)]) || {};
+  var container = document.getElementById('parent-docs-section');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'parent-docs-section';
+    container.style.cssText = 'margin-top:12px;';
+    var bachecaBox = document.getElementById('bacheca-genitori-container');
+    if (bachecaBox && bachecaBox.parentNode) {
+      bachecaBox.parentNode.insertBefore(container, bachecaBox.nextSibling);
+    }
+  }
+
+  var annataEncoded = encodeURIComponent(annataId);
+  var html = '<div style="background:#1a3a5f;border:1px solid #3b5a9d;border-radius:12px;padding:20px;">'
+    + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">'
+    + '<span style="color:#ffffff;font-size:1rem;font-weight:700;">📎 I miei Documenti</span>'
+    + '<button id="manage-docs-btn" data-aid="' + athleteId + '" data-annata="' + annataId + '" '
+    + 'style="margin-left:auto;background:#16a34a;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:0.82rem;font-weight:700;cursor:pointer;">✏️ Gestisci / Aggiungi</button>'
+    + '</div>';
+
+  var hasAny = false;
+  _DOC_TYPES.forEach(function(dt) {
+    var doc = myDocs[dt.key];
+    if (doc && doc.url) {
+      hasAny = true;
+      var date = doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString('it-IT') : '';
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(59,90,157,0.4);flex-wrap:wrap;">'
+        + '<div style="flex:1;min-width:0;">'
+        + '<div style="color:#e2e8f0;font-size:0.88rem;font-weight:600;">' + dt.label + '</div>'
+        + '<div style="color:#64748b;font-size:0.75rem;">Caricato il ' + date + '</div>'
+        + '</div>'
+        + '<a href="' + doc.url + '" target="_blank" '
+        + 'style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:0.8rem;text-decoration:none;white-space:nowrap;">🔗 Apri</a>'
+        + '<button data-del-aid="' + athleteId + '" data-del-annata="' + annataId + '" data-del-key="' + dt.key + '" '
+        + 'style="background:#450a0a;color:#d90429;border:1px solid #d90429;border-radius:6px;padding:6px 10px;font-size:0.8rem;cursor:pointer;white-space:nowrap;">🗑️</button>'
+        + '</div>';
+    }
+  });
+
+  if (!hasAny) {
+    html += '<p style="color:#64748b;font-size:0.85rem;margin:0;">Nessun documento caricato. Clicca "Gestisci / Aggiungi" per aggiungerne.</p>';
+  }
+  html += '</div>';
+  container.innerHTML = html;
+
+  // Event listeners sicuri (no inline onclick)
+  var manageBtn = container.querySelector('#manage-docs-btn');
+  if (manageBtn) {
+    manageBtn.addEventListener('click', async function() {
+      var aid = this.dataset.aid, ann = this.dataset.annata;
+      try {
+        var r = await fetch('/api/data?parentMode=1', { cache: 'no-store', headers: { 'Content-Type': 'application/json', 'X-Annata-Id': ann } });
+        var fd = r.ok ? await r.json() : {};
+        window._showDocUploadPanel(aid, ann, fd.athleteDocs || {});
+      } catch(e) { window._showDocUploadPanel(aid, ann, {}); }
+    });
+  }
+  container.querySelectorAll('[data-del-aid]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      window._deleteAthleteDoc(btn.dataset.delAid, btn.dataset.delAnnata, btn.dataset.delKey);
+    });
+  });
+};
 
 // FIX v1.5.21: apre la convocazione con layout originale (sfondo, loghi, colori societari)
 // Recupera i settings dal backend e ricostruisce l'HTML identico a convStampa in index.html
@@ -1968,4 +2085,130 @@ window._openConvPdf = async function(cdEncoded) {
     w.document.write(html);
     w.document.close();
   } catch(e) { alert('Errore: '+e.message); }
+};
+
+// ═══ UPLOAD DOCUMENTI GENITORI (v1.5.21) ═════════════════════════════════
+
+// Tipi di documento supportati
+const _DOC_TYPES = [
+  { key: 'certificato',  label: '🏥 Certificato Medico' },
+  { key: 'iscrizione',   label: '📝 Modulo Iscrizione' },
+  { key: 'scarico',      label: '⚠️ Scarico Responsabilità' },
+  { key: 'generico',     label: '📎 Documento Generico' }
+];
+
+// Mostra il pannello upload documenti nella vista genitore
+window._showDocUploadPanel = function(athleteId, annataId, existingDocs) {
+  var existing = (existingDocs && existingDocs[String(athleteId)]) || {};
+  var overlay = document.createElement('div');
+  overlay.id = '_doc_upload_overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  
+  var panel = document.createElement('div');
+  panel.style.cssText = 'background:#0d1b2a;border:1px solid #3b5a9d;border-radius:12px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:24px;';
+  
+  var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">'
+    + '<h3 style="color:#60a5fa;margin:0;font-size:1.1rem;">📎 Carica Documenti</h3>'
+    + '<button onclick="document.getElementById(\'_doc_upload_overlay\').remove()" '
+    + 'style="background:none;border:none;color:#94a3b8;font-size:1.5rem;cursor:pointer;line-height:1;">✕</button>'
+    + '</div>';
+
+  // Istruzioni Google Drive
+  html += '<div style="background:#1e293b;border:1px solid #3b5a9d;border-radius:8px;padding:12px;margin-bottom:16px;">'
+    + '<p style="color:#60a5fa;font-weight:700;margin:0 0 8px 0;font-size:0.9rem;">ℹ️ Come ottenere il link Google Drive:</p>'
+    + '<ol style="color:#94a3b8;margin:0;padding-left:18px;font-size:0.82rem;line-height:1.8;">'
+    + '<li>Vai su <strong style="color:#e2e8f0;">Google Drive</strong> e carica il file</li>'
+    + '<li>Clicca con tasto destro sul file → <strong style="color:#e2e8f0;">Condividi</strong></li>'
+    + '<li>Imposta accesso: <strong style="color:#e2e8f0;">"Chiunque abbia il link"</strong> → Visualizzatore</li>'
+    + '<li>Clicca <strong style="color:#e2e8f0;">Copia link</strong></li>'
+    + '<li>Incolla il link qui sotto nel campo corretto</li>'
+    + '</ol>'
+    + '<p style="color:#64748b;font-size:0.75rem;margin:8px 0 0 0;">💡 Il file rimane su Google Drive, qui salviamo solo il link.</p>'
+    + '</div>';
+
+  // Riepilogo documenti già caricati
+  var hasExisting = Object.keys(existing).some(function(k){ return existing[k] && existing[k].url; });
+  if (hasExisting) {
+    html += '<div style="background:#1e293b;border:1px solid #22c55e;border-radius:8px;padding:12px;margin-bottom:16px;">'
+      + '<p style="color:#22c55e;font-weight:700;margin:0 0 10px 0;font-size:0.88rem;">📋 Documenti già caricati:</p>';
+    _DOC_TYPES.forEach(function(dt) {
+      var doc = existing[dt.key];
+      if (doc && doc.url) {
+        var date = doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString('it-IT') : '';
+        html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">'
+          + '<span style="color:#e2e8f0;font-size:0.82rem;flex:1;">' + dt.label + '</span>'
+          + '<a href="' + doc.url + '" target="_blank" style="color:#60a5fa;font-size:0.78rem;text-decoration:none;">🔗 Apri</a>'
+          + '<span style="color:#64748b;font-size:0.72rem;">' + date + '</span>'
+          + '<button onclick="window._deleteAthleteDoc(\'' + athleteId + '\',\'' + annataId + '\',\'' + dt.key + '\')" '
+          + 'style="background:#450a0a;color:#d90429;border:1px solid #d90429;border-radius:4px;padding:2px 8px;font-size:0.72rem;cursor:pointer;">🗑️ Elimina</button>'
+          + '</div>';
+      }
+    });
+    html += '</div>';
+  }
+
+  // Campi per ogni tipo documento
+  _DOC_TYPES.forEach(function(dt) {
+    var val = (existing[dt.key] && existing[dt.key].url) ? existing[dt.key].url : '';
+    var uploadedAt = (existing[dt.key] && existing[dt.key].uploadedAt) ? existing[dt.key].uploadedAt : '';
+    var dateLabel = uploadedAt ? ' <span style="font-size:0.7rem;color:#22c55e;">✅ Caricato: ' + new Date(uploadedAt).toLocaleDateString('it-IT') + '</span>' : '';
+    html += '<div style="margin-bottom:14px;">'
+      + '<label style="display:block;color:#e2e8f0;font-size:0.85rem;font-weight:600;margin-bottom:6px;">'
+      + dt.label + dateLabel + '</label>'
+      + '<input type="text" id="doc-url-' + dt.key + '" value="' + (val || '') + '" '
+      + 'placeholder="Incolla il link Google Drive..." '
+      + 'style="width:100%;padding:9px 12px;background:#060f1e;border:1px solid #3b5a9d;border-radius:6px;color:#e2e8f0;font-size:0.82rem;box-sizing:border-box;">'
+      + '</div>';
+  });
+
+  html += '<div style="display:flex;gap:10px;margin-top:8px;">'
+    + '<button onclick="window._saveAthleteDoc(\'' + athleteId + '\',\'' + annataId + '\')" '
+    + 'style="flex:1;background:#16a34a;color:#fff;border:none;border-radius:8px;padding:11px;font-size:0.9rem;font-weight:700;cursor:pointer;">💾 Salva Documenti</button>'
+    + '<button onclick="document.getElementById(\'_doc_upload_overlay\').remove()" '
+    + 'style="background:#374151;color:#9ca3af;border:none;border-radius:8px;padding:11px;font-size:0.9rem;cursor:pointer;">Annulla</button>'
+    + '</div>';
+
+  panel.innerHTML = html;
+  overlay.appendChild(panel);
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+  document.body.appendChild(overlay);
+};
+
+// Salva i documenti su Redis tramite POST
+window._saveAthleteDoc = async function(athleteId, annataId) {
+  var docs = {};
+  var hasAny = false;
+  _DOC_TYPES.forEach(function(dt) {
+    var input = document.getElementById('doc-url-' + dt.key);
+    var url = input ? input.value.trim() : '';
+    // Converti link Drive share → link diretto
+    url = url.replace(/drive\.google\.com\/file\/d\/([^\/]+)\/view[^"']*/g, 'drive.google.com/uc?id=$1');
+    if (url) {
+      docs[dt.key] = { url: url, uploadedAt: new Date().toISOString(), uploadedBy: 'genitore' };
+      hasAny = true;
+    }
+  });
+
+  if (!hasAny) {
+    alert('Inserisci almeno un link documento.');
+    return;
+  }
+
+  try {
+    var payload = {};
+    payload[String(athleteId)] = docs;
+    var res = await fetch('/api/data?parentMode=1', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Annata-Id': annataId },
+      body: JSON.stringify({ athleteDocs: payload })
+    });
+    if (res.ok) {
+      alert('✅ Documenti salvati con successo!');
+      document.getElementById('_doc_upload_overlay')?.remove();
+    } else {
+      alert('❌ Errore nel salvataggio: HTTP ' + res.status);
+    }
+  } catch(e) {
+    alert('❌ Errore: ' + e.message);
+  }
 };

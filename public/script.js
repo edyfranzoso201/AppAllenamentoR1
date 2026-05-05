@@ -4278,6 +4278,8 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
         if (window.restorePresenzeChartsState) {
             setTimeout(window.restorePresenzeChartsState, 400);
         }
+        // FIX v1.5.21: controlla documenti caricati dai genitori
+        setTimeout(window._checkPendingAthleteDocs, 2000);
     });
 });
 
@@ -4860,3 +4862,48 @@ window._showSponsorBannerOverlay = function(slots) {
     }
 };
 // ═══ FINE BANNER SPONSOR OVERLAY ════════════════════════════════════════
+
+// ═══ ALERT DOCUMENTI ATLETI IN ATTESA (v1.5.21) ═════════════════════════
+window._checkPendingAthleteDocs = async function() {
+    try {
+        var d = window._appData || {};
+        var docs = d.athleteDocs || {};
+        if (!Object.keys(docs).length) return;
+
+        var athletes = (d.athletes || []).filter(function(a){ return !a.isGuest && !a.isStaff; });
+
+        // Conta atleti con documenti NON ancora scaricati (senza downloadLog su almeno un doc)
+        var withUndownloaded = athletes.filter(function(a) {
+            var aDocs = docs[String(a.id)] || {};
+            return Object.keys(aDocs).some(function(k) {
+                return aDocs[k] && aDocs[k].url && !aDocs[k].downloadLog;
+            });
+        });
+        if (!withUndownloaded.length) return;
+
+        var existing = document.getElementById('_athlete-docs-alert');
+        if (existing) return;
+
+        var names = withUndownloaded.slice(0, 3).map(function(a){ return a.name.split(' ')[0]; }).join(', ');
+        if (withUndownloaded.length > 3) names += ' e altri ' + (withUndownloaded.length - 3);
+
+        var alertEl = document.createElement('div');
+        alertEl.id = '_athlete-docs-alert';
+        alertEl.style.cssText = 'background:#1e3a5f;border:1px solid #3b82f6;border-radius:8px;padding:12px 16px;margin:0 0 16px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;';
+        alertEl.innerHTML = '<span style="font-size:1.2rem;">📎</span>'
+            + '<span style="color:#e2e8f0;font-size:0.88rem;flex:1;">'
+            + '<strong style="color:#60a5fa;">' + withUndownloaded.length + ' atleti</strong> hanno caricato documenti da scaricare: '
+            + names + '. '
+            + '<a href="/calendario.html" style="color:#22c55e;font-weight:700;">Vai a Documenti Atleti →</a>'
+            + '</span>'
+            + '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:1.1rem;">✕</button>';
+
+        var homeSection = document.getElementById('home-section');
+        if (homeSection) {
+            var firstRow = homeSection.querySelector('.row');
+            homeSection.insertBefore(alertEl, firstRow || homeSection.firstChild);
+        }
+    } catch(e) {
+        console.warn('[AthleteDocsAlert]', e);
+    }
+};

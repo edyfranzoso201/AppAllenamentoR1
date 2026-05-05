@@ -4573,11 +4573,37 @@ footer {
 
 /* FIX v1.5.21: testo annata/utente nella navbar visibile in tema chiaro */
 html.theme-light #app-header-info,
-html.theme-light #app-header-info * {
+html.theme-light #app-header-info *,
+html.theme-light #app-header-info button,
+html.theme-light #app-header-info span,
+html.theme-light #app-header-info div,
+html.theme-light #app-header-info a {
     color: #1a202c !important;
 }
-html.theme-light #app-header-info button {
+/* Override stili inline generati da auth-multi-annata.js */
+html.theme-light #app-header-info > div > button:first-child {
+    background: #e2e8f0 !important;
     color: #1a202c !important;
+}
+html.theme-light #app-header-info > div > button:last-child {
+    background: #fee2e2 !important;
+    color: #d90429 !important;
+    border-color: #d90429 !important;
+}
+/* Dropdown annata che appare al click (position:fixed, z-index alto) */
+html.theme-light [style*="position:fixed"][style*="background:#0d1b2a"],
+html.theme-light [style*="position:fixed"][style*="background:#0f172a"],
+html.theme-light [style*="position:fixed"][style*="background:#1e293b"] {
+    background: #ffffff !important;
+}
+html.theme-light [style*="position:fixed"][style*="background:#0d1b2a"] *,
+html.theme-light [style*="position:fixed"][style*="background:#0f172a"] *,
+html.theme-light [style*="position:fixed"][style*="background:#1e293b"] * {
+    color: #1a202c !important;
+}
+html.theme-light [style*="position:fixed"][style*="background:#0d1b2a"] button,
+html.theme-light [style*="position:fixed"][style*="background:#0f172a"] button,
+html.theme-light [style*="position:fixed"][style*="background:#1e293b"] button {
     border-color: #cbd5e0 !important;
 }
 
