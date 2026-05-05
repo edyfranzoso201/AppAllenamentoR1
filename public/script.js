@@ -1158,6 +1158,7 @@ document.addEventListener('DOMContentLoaded', () => {
             card.className = 'col-xl-3 col-lg-4 col-md-6 mb-4';
             // ✅ Classe condizionale per atleti ospiti
             const isDirigente = athlete.isStaff && athlete.role && athlete.role.toLowerCase().includes('dirigente');
+            console.log('[Squadra DEBUG]', athlete.name, 'isStaff:', athlete.isStaff, 'role:', athlete.role, 'isDirigente:', isDirigente);
             const cardClass = athlete.isStaff
                 ? (isDirigente ? 'athlete-card staff-athlete dirigente-card' : 'athlete-card staff-athlete allenatore-card')
                 : (athlete.isGuest ? 'athlete-card guest-athlete' : 'athlete-card');
