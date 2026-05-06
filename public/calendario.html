@@ -1580,6 +1580,12 @@ function _bAnnataId() {
     return sessionStorage.getItem('gosport_current_annata') || '';
 }
 
+// Identificativo società corrente: usato per filtrare i globalPosts
+// in modo che ogni società veda solo i propri post globali.
+function _bSocietyId() {
+    return sessionStorage.getItem('gosport_society_id') || '';
+}
+
 window.toggleCalendario = function() {
     _calCollapsed = !_calCollapsed;
     var sec = document.getElementById('cal-collapsible');
@@ -1781,6 +1787,14 @@ async function _bLoad() {
         var d = await res.json();
         _bPosts       = (d && d.posts)       || [];
         _bGlobalPosts = (d && d.globalPosts) || [];
+        // FIX multi-società: mostra solo i post globali della società corrente.
+        // I post senza societyId (legacy) restano visibili per compatibilità.
+        var __sid = _bSocietyId();
+        if (__sid) {
+            _bGlobalPosts = _bGlobalPosts.filter(function(p) {
+                return !p.societyId || p.societyId === __sid;
+            });
+        }
         // NON svuotiamo _bPostImages: manteniamo in cache le immagini già caricate
         console.log('[Bacheca] 📦 posts:', _bPosts.length, 'global:', _bGlobalPosts.length);
         _bLoaded = true;
@@ -1830,9 +1844,24 @@ async function _bAutoCleanExpired(aid, d) {
         if (postsRemoved > 0)
             saves.push(fetch('/api/data', { method:'POST', headers:{'Content-Type':'application/json','x-annata-id':aid},
                 body: JSON.stringify({ posts: _bPosts }) }));
-        if (globalRemoved > 0)
+        if (globalRemoved > 0) {
+            // FIX multi-società: unisci con post di altre società prima di salvare
+            var __sid2 = _bSocietyId();
+            var globalsToSave = _bGlobalPosts;
+            if (__sid2) {
+                try {
+                    var rAll2 = await fetch('/api/data', { cache:'no-store', headers:{'x-annata-id':aid} });
+                    if (rAll2.ok) {
+                        var dAll2 = await rAll2.json();
+                        var allG = (dAll2 && dAll2.globalPosts) || [];
+                        var others2 = allG.filter(function(p) { return p.societyId && p.societyId !== __sid2; });
+                        globalsToSave = _bGlobalPosts.concat(others2);
+                    }
+                } catch(e) { console.warn('[AutoClean] preload err:', e); }
+            }
             saves.push(fetch('/api/data', { method:'POST', headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({ globalPosts: _bGlobalPosts }) }));
+                body: JSON.stringify({ globalPosts: globalsToSave }) }));
+        }
         if (docsRemoved > 0)
             saves.push(fetch('/api/data', { method:'POST', headers:{'Content-Type':'application/json','x-annata-id':aid},
                 body: JSON.stringify({ documents: docsClean }) }));
@@ -1880,14 +1909,33 @@ async function _bSave() {
     }
     _bSaving = true;
     var aid = _bAnnataId();
+    // FIX multi-società: prima del save, recupero TUTTI i globalPosts dal server
+    // e mantengo quelli di altre società, sostituendo solo i miei.
+    var __sid = _bSocietyId();
+    var globalPostsToSave = _bGlobalPosts;
+    if (__sid) {
+        try {
+            var rAll = await fetch('/api/data', { cache:'no-store', headers:{'x-annata-id':aid} });
+            if (rAll.ok) {
+                var dAll = await rAll.json();
+                var allGlobals = (dAll && dAll.globalPosts) || [];
+                // Tieni i post di altre società (societyId diverso e presente)
+                var others = allGlobals.filter(function(p) {
+                    return p.societyId && p.societyId !== __sid;
+                });
+                // Combina: miei post correnti + post di altre società
+                globalPostsToSave = _bGlobalPosts.concat(others);
+            }
+        } catch(e) { console.warn('[Bacheca] preload globals err:', e); }
+    }
     // 1. Salva posts (senza immagini, ~2KB)
     try {
         var r1 = await fetch('/api/data', {
             method:'POST',
             headers:{'Content-Type':'application/json','x-annata-id':aid},
-            body: JSON.stringify({ posts:_bPosts, globalPosts:_bGlobalPosts })
+            body: JSON.stringify({ posts:_bPosts, globalPosts:globalPostsToSave })
         });
-        console.log('[Bacheca] 💾 Posts', r1.ok ? '✅ OK' : '❌ '+r1.status, '('+_bPosts.length+' annata, '+_bGlobalPosts.length+' global)');
+        console.log('[Bacheca] 💾 Posts', r1.ok ? '✅ OK' : '❌ '+r1.status, '('+_bPosts.length+' annata, '+_bGlobalPosts.length+' global mio, '+globalPostsToSave.length+' global tot)');
         if (!r1.ok) { _bSaving = false; return; }
     } catch(e) { console.error('[Bacheca] ❌ net:', e); _bSaving = false; return; }
 
@@ -2020,6 +2068,8 @@ window.savePost = async function() {
             id: editId, title: title, text: text, visibility: vis,
             isPrivate: (vis === 'privato')
         });
+        // FIX multi-società: marca i post globali con la società corrente
+        if (vis === 'global') updPost.societyId = _bSocietyId();
         // Inserisce nell'array corretto in base alla NUOVA visibilità
         if (vis === 'global') _bGlobalPosts.unshift(updPost);
         else _bPosts.unshift(updPost);
@@ -2041,6 +2091,8 @@ window.savePost = async function() {
         // NUOVO post
         var post = { id:'post_'+Date.now(), title:title, text:text, visibility:vis,
                      date:new Date().toISOString(), pinned:false };
+        // FIX multi-società: marca i post globali con la società corrente
+        if (vis === 'global') post.societyId = _bSocietyId();
         if (imgData) _bPostImages[post.id] = imgData;
         if (vis === 'global') _bGlobalPosts.unshift(post);
         else _bPosts.unshift(post);
