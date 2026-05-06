@@ -1790,10 +1790,24 @@ async function _bLoad() {
         // FIX multi-società: mostra solo i post globali della società corrente.
         // I post senza societyId (legacy) restano visibili per compatibilità.
         var __sid = _bSocietyId();
+        console.log('[Bacheca][FilterDebug] societyId corrente:', __sid || '(VUOTO!)');
+        console.log('[Bacheca][FilterDebug] globalPosts totali ricevuti:', _bGlobalPosts.length);
+        if (_bGlobalPosts.length > 0) {
+            var withSid = _bGlobalPosts.filter(function(p){return p.societyId;}).length;
+            var withoutSid = _bGlobalPosts.length - withSid;
+            console.log('[Bacheca][FilterDebug] - con societyId:', withSid, '| senza societyId (legacy):', withoutSid);
+            var sidsTrovati = {};
+            _bGlobalPosts.forEach(function(p){ var k = p.societyId || '(legacy)'; sidsTrovati[k] = (sidsTrovati[k]||0)+1; });
+            console.log('[Bacheca][FilterDebug] - distribuzione societyId:', sidsTrovati);
+        }
         if (__sid) {
+            var prima = _bGlobalPosts.length;
             _bGlobalPosts = _bGlobalPosts.filter(function(p) {
                 return !p.societyId || p.societyId === __sid;
             });
+            console.log('[Bacheca][FilterDebug] dopo filtro:', _bGlobalPosts.length, '(rimossi', prima - _bGlobalPosts.length + ')');
+        } else {
+            console.warn('[Bacheca][FilterDebug] ⚠️ societyId VUOTO: nessun filtro applicato');
         }
         // NON svuotiamo _bPostImages: manteniamo in cache le immagini già caricate
         console.log('[Bacheca] 📦 posts:', _bPosts.length, 'global:', _bGlobalPosts.length);
