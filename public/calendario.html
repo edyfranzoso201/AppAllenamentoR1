@@ -1803,9 +1803,9 @@ async function _bLoad() {
         if (__sid) {
             var prima = _bGlobalPosts.length;
             _bGlobalPosts = _bGlobalPosts.filter(function(p) {
-                return !p.societyId || p.societyId === __sid;
+                return p.societyId === __sid;
             });
-            console.log('[Bacheca][FilterDebug] dopo filtro:', _bGlobalPosts.length, '(rimossi', prima - _bGlobalPosts.length + ')');
+            console.log('[Bacheca][FilterDebug] dopo filtro rigoroso:', _bGlobalPosts.length, '(rimossi', prima - _bGlobalPosts.length + ')');
         } else {
             console.warn('[Bacheca][FilterDebug] ⚠️ societyId VUOTO: nessun filtro applicato');
         }
