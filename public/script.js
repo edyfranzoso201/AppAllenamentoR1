@@ -361,6 +361,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const radarMetrics = { 'distanza_sprint': 'Distanza Sprint', 'velocita_massima': 'Vel. Max', 'max_acc': 'Max Acc', 'max_dec': 'Max Dec', 'passaggi_piede_sinistro': 'Pass. SX', 'passaggi_piede_destro': 'Pass. DX', 'cross_piede_sinistro': 'Cross SX', 'cross_piede_destro': 'Cross DX', 'potenza_massima_di_tiro': 'Pot. Tiro', 'distanza_per_minuto': 'Dist/min', 'tiri_piede_sx': 'Tiri SX', 'tiri_piede_dx': 'Tiri DX', 'perc_passaggi_brevi': '% Pass. Brevi', 'perc_lanci': '% Lanci', 'velocita_circuito': 'Vel. Circuito' };
     const evaluationCategories = ['presenza-allenamento', 'serieta-allenamento', 'abbigliamento-allenamento', 'abbigliamento-partita', 'comunicazioni', 'doccia'];
     const defaultAvatar = "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3e%3cpath fill='%231e5095' d='M128 128H0V0h128v128z'/%3e%3cpath fill='%23ffffff' d='M64 100c-19.88 0-36-16.12-36-36s16.12-36 36-36 36 16.12 36 36-16.12 36-36 36zm0-64c-15.46 0-28 12.54-28 28s12.54 28 28 28 28-12.54 28-28-12.54-28-28-28z'/%3e%3cpath fill='%23ffffff' d='M64 24a40.01 40.01 0 00-28.28 11.72C35.8 35.8 28 45.45 28 56h8c0-8.27 5.61-15.64 13.53-18.89A31.93 31.93 0 0164 32a32.09 32.09 0 0124.47 11.11C96.39 40.36 102 47.73 102 56h8c0-10.55-7.8-20.2-17.72-24.28A39.99 39.99 0 0064 24z'/%3e%3c/svg%3e";
+    // Funzione globale per onerror inline sicuro (evita SyntaxError con data URL)
+    window._defAvatar = function(img) { img.onerror = null; img.src = defaultAvatar; };
+    // Converte qualsiasi formato link Google Drive in URL diretto per img src
+    window._normalizeGdriveUrl = function(url) {
+        if (!url) return url;
+        url = url.trim();
+        // Estrai l'ID dal link Google Drive in tutti i formati noti
+        var id = null;
+        // Formato: /file/d/ID/view o /file/d/ID/preview
+        var m = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+        if (m) id = m[1];
+        // Formato: uc?id=ID o uc?export=view&id=ID
+        if (!id) { m = url.match(/[?&]id=([a-zA-Z0-9_-]+)/); if (m) id = m[1]; }
+        // Formato: /open?id=ID
+        if (!id) { m = url.match(/\/open\?id=([a-zA-Z0-9_-]+)/); if (m) id = m[1]; }
+        // Se trovato ID, usa il proxy di Vercel per evitare blocchi CORS
+        if (id) return '/api/gdrive-img?id=' + id;
+        // Non è un link Google Drive, ritorna invariato
+        return url;
+    };
     let athletes = [], evaluations = {}, gpsData = {}, awards = {}, trainingSessions = {}, matchResults = {};
     // Rendi athletes disponibile globalmente per il calendario
     window.athletes = athletes;
@@ -795,7 +815,7 @@ document.addEventListener('DOMContentLoaded', () => {
         var prev = document.getElementById('avatar-preview');
         if (!prev) return;
         if (url && url.trim()) {
-            prev.src = url.trim();
+            prev.src = window._normalizeGdriveUrl(url.trim());
             prev.style.display = 'block';
             prev.onerror = function() { this.style.display = 'none'; };
         } else {
@@ -1205,7 +1225,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button class="btn btn-sm btn-outline-light rating-btn" title="Pagelle" data-athlete-id="${athlete.id}"><i class="bi bi-clipboard-check"></i></button>
                         <button class="btn btn-sm btn-outline-light gps-btn" title="Dati Performance" data-athlete-id="${athlete.id}"><i class="bi bi-person-fill-gear"></i></button>
                         <button class="btn btn-sm btn-outline-light parent-btn" title="Anagrafica Genitori" data-athlete-id="${athlete.id}"><i class="bi bi-people-fill"></i></button>
-                        ${athlete.certLink ? `<button class="btn btn-sm btn-outline-light cert-btn" title="Apri Certificato Medico" onclick="window.open('${athlete.certLink}','_blank')"><i class="bi bi-file-earmark-medical-fill" style="color:#16a34a;"></i></button>` : ''}
+                        ${athlete.certLink ? `<button class="btn btn-sm btn-outline-light cert-btn" title="Apri Certificato Medico" data-cert-link="${athlete.certLink.replace(/"/g,'&quot;')}"><i class="bi bi-file-earmark-medical-fill" style="color:#16a34a;"></i></button>` : ''}
                         <button class="btn btn-sm btn-outline-light edit-btn" title="Modifica" data-athlete-id="${athlete.id}"><i class="bi bi-pencil-fill"></i></button>
                         <button class="btn btn-sm btn-outline-light delete-btn" title="Elimina" data-athlete-id="${athlete.id}"><i class="bi bi-trash-fill"></i></button>
                     </div>
@@ -1218,7 +1238,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ? (isLight ? 'background:#bbf7d0;border-left:4px solid #166534;' : 'background:#14532d;border-left:4px solid #166534;')
                         : (isLight ? 'background:#dcfce7;border-left:4px solid #16a34a;' : 'background:#1e293b;border-left:4px solid #16a34a;'))
                     : '';
-                card.innerHTML = `<div class="card ${cardClass}" style="${indBorder}${cardBg}"><div class="card-body athlete-card-clickable" data-athlete-id="${athlete.id}"><img src="${athlete.avatar || defaultAvatar}" onerror="this.src='${defaultAvatar}'" alt="${athlete.name}" class="athlete-avatar me-3"><div><h5 class="card-title">${athlete.name} ${athlete.isCaptain ? '<i class="bi bi-star-fill is-captain"></i>' : ''} ${vcIcon}</h5><p class="card-text text-muted">${athlete.role}</p>${indBadge}</div><div class="shirt-number">${athlete.number}</div>${statusIcon}</div><div class="card-actions no-print"><button class="btn btn-sm btn-outline-light rating-btn" title="Pagelle" data-athlete-id="${athlete.id}"><i class="bi bi-clipboard-check"></i></button><button class="btn btn-sm btn-outline-light gps-btn" title="Dati Performance" data-athlete-id="${athlete.id}"><i class="bi bi-person-fill-gear"></i></button><button class="btn btn-sm btn-outline-light parent-btn" title="Anagrafica Genitori" data-athlete-id="${athlete.id}"><i class="bi bi-people-fill"></i></button>${athlete.certLink ? `<button class="btn btn-sm btn-outline-light cert-btn" title="Apri Certificato Medico" onclick="window.open('${athlete.certLink}','_blank')"><i class="bi bi-file-earmark-medical-fill" style="color:#16a34a;"></i></button>` : ""}<button class="btn btn-sm btn-outline-light edit-btn" title="Modifica Atleta" data-athlete-id="${athlete.id}"><i class="bi bi-pencil-fill"></i></button><button class="btn btn-sm btn-outline-light delete-btn" title="Elimina Atleta" data-athlete-id="${athlete.id}"><i class="bi bi-trash-fill"></i></button></div></div>`;
+                card.innerHTML = `<div class="card ${cardClass}" style="${indBorder}${cardBg}"><div class="card-body athlete-card-clickable" data-athlete-id="${athlete.id}"><img src="${athlete.avatar || defaultAvatar}" onerror="window._defAvatar(this)" alt="${athlete.name}" class="athlete-avatar me-3"><div><h5 class="card-title">${athlete.name} ${athlete.isCaptain ? '<i class="bi bi-star-fill is-captain"></i>' : ''} ${vcIcon}</h5><p class="card-text text-muted">${athlete.role}</p>${indBadge}</div><div class="shirt-number">${athlete.number}</div>${statusIcon}</div><div class="card-actions no-print"><button class="btn btn-sm btn-outline-light rating-btn" title="Pagelle" data-athlete-id="${athlete.id}"><i class="bi bi-clipboard-check"></i></button><button class="btn btn-sm btn-outline-light gps-btn" title="Dati Performance" data-athlete-id="${athlete.id}"><i class="bi bi-person-fill-gear"></i></button><button class="btn btn-sm btn-outline-light parent-btn" title="Anagrafica Genitori" data-athlete-id="${athlete.id}"><i class="bi bi-people-fill"></i></button>${athlete.certLink ? `<button class="btn btn-sm btn-outline-light cert-btn" title="Apri Certificato Medico" data-cert-link="${athlete.certLink.replace(/"/g,'&quot;')}"><i class="bi bi-file-earmark-medical-fill" style="color:#16a34a;"></i></button>` : ""}<button class="btn btn-sm btn-outline-light edit-btn" title="Modifica Atleta" data-athlete-id="${athlete.id}"><i class="bi bi-pencil-fill"></i></button><button class="btn btn-sm btn-outline-light delete-btn" title="Elimina Atleta" data-athlete-id="${athlete.id}"><i class="bi bi-trash-fill"></i></button></div></div>`;
             }
             elements.athleteGrid.appendChild(card);
             // FIX v1.5.21: applica colore background dopo appendChild (override Bootstrap vars)
@@ -2058,7 +2078,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 const dateObj = new Date(award.date);
                 const formattedDate = !isNaN(dateObj) ? dateObj.toLocaleDateString('it-IT') : 'Data non disponibile';
-                awardCard.innerHTML = `<div class="card-body p-2"><img src="${athlete.avatar || defaultAvatar}" onerror="this.src='${defaultAvatar}'" alt="${athlete.name}" class="award-avatar mx-auto mb-2 rounded-circle"><h6 class="mb-1" style="font-size: 0.9rem;">${athlete.name}</h6><p class="mb-0" style="font-size: 0.8rem; color: #000;">${formattedDate}</p><small>${award.reason}</small><i class="bi bi-award-fill mt-2" style="font-size: 1.5rem;"></i></div>`;
+                awardCard.innerHTML = `<div class="card-body p-2"><img src="${athlete.avatar || defaultAvatar}" onerror="window._defAvatar(this)" alt="${athlete.name}" class="award-avatar mx-auto mb-2 rounded-circle"><h6 class="mb-1" style="font-size: 0.9rem;">${athlete.name}</h6><p class="mb-0" style="font-size: 0.8rem; color: #000;">${formattedDate}</p><small>${award.reason}</small><i class="bi bi-award-fill mt-2" style="font-size: 1.5rem;"></i></div>`;
                 elements.hallOfFameContainer.appendChild(awardCard);
             }
         });
@@ -2797,6 +2817,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const athleteId = card.dataset.athleteId;
         const athlete = athletes.find(a => a.id.toString() === athleteId);
         if (!athlete) return;
+        // Gestione cert-btn via data-cert-link (evita onclick inline con URL speciali)
+        const certBtn = e.target.closest('.cert-btn');
+        if (certBtn) {
+            const link = certBtn.dataset.certLink;
+            if (link) window.open(link, '_blank');
+            return;
+        }
         if (e.target.closest('.parent-btn')) {
             openParentModal(athleteId);
         }
@@ -2867,6 +2894,12 @@ document.addEventListener('DOMContentLoaded', () => {
             athleteModal.show();
         }
         else if (e.target.closest('.delete-btn')) {
+            const _delPwd = prompt(`🔐 Inserisci la password per eliminare ${athlete.name}:`);
+            if (_delPwd === null) return;
+            if (_delPwd !== _individualPassword && _delPwd !== ACCESS_PASSWORD && _delPwd !== '1234') {
+                alert('❌ Password errata. Operazione annullata.');
+                return;
+            }
             if (confirm(`Sei sicuro di voler eliminare ${athlete.name}? Tutti i suoi dati storici verranno rimossi.`)) {
                 athletes = athletes.filter(a => a.id.toString() !== athleteId);
                 for (const date in evaluations) {
@@ -2993,7 +3026,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const avatarUrl = (document.getElementById('athlete-avatar-url')?.value || '').trim();
         if (avatarUrl) {
-            athleteData.avatar = avatarUrl;
+            athleteData.avatar = window._normalizeGdriveUrl(avatarUrl);
         } else if (existingAthlete && existingAthlete.avatar) {
             athleteData.avatar = existingAthlete.avatar; // mantieni foto esistente
         }

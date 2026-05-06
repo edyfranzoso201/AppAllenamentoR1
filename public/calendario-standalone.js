@@ -527,7 +527,20 @@ async function render(loadedData) {
   }
 
   if (dates.length === 0) {
-    // Anche senza eventi: mostra la tabella dei nomi con i link presenze
+    // Anche senza eventi: mostra subito i tab per coach/admin
+    const _urlP0 = new URLSearchParams(window.location.search);
+    if (!_urlP0.get('athleteId')) {
+      if (typeof showBachecaTab === 'function') showBachecaTab();
+      if (typeof showDocumentiTab === 'function') {
+        var _dRole0 = sessionStorage.getItem('gosport_user_role') || '';
+        showDocumentiTab(['admin','coach_l1','coach_l2'].indexOf(_dRole0) >= 0);
+      }
+      if (typeof showGareTab === 'function') {
+        var _gRole0 = sessionStorage.getItem('gosport_user_role') || '';
+        showGareTab(['admin','coach_l1','coach_l2'].indexOf(_gRole0) >= 0);
+      }
+    }
+    // Mostra la tabella dei nomi con i link presenze
     const _noEvAtleti = athletes.filter(a => !a.isGuest && !a.guest);
     if (_noEvAtleti.length === 0) {
       el.innerHTML = `<div class="alert alert-info">Nessun evento e nessun atleta in rosa.</div>`;
@@ -1123,10 +1136,12 @@ window.generatePresenceLink = function(athleteId, athleteName) {
                         localStorage.getItem('currentAnnata') || 
                         sessionStorage.getItem('gosport:currentannata');
   
-  // Link con athleteId E annata
+  // Link con athleteId E annata E societyId
+  const _socId = sessionStorage.getItem('gosport_society_id') || '';
+  const _sidParam = _socId ? '&sid=' + encodeURIComponent(_socId) : '';
   const link = currentAnnata 
-    ? `${window.location.origin}/calendario.html?athleteId=${athleteId}&annata=${currentAnnata}`
-    : `${window.location.origin}/calendario.html?athleteId=${athleteId}`;
+    ? `${window.location.origin}/calendario.html?athleteId=${athleteId}&annata=${currentAnnata}${_sidParam}`
+    : `${window.location.origin}/calendario.html?athleteId=${athleteId}${_sidParam}`;
   
   console.log('[CALENDARIO] 🔗 Link generato:', {
     athleteId,
@@ -1441,8 +1456,14 @@ const response = await fetch(`/api/data?parentMode=1`, {
 
     // LOG COMPLETO per diagnosi
 
-    const globalPosts = (d && d.globalPosts) || [];
-    const annaPosts   = (d && d.posts)       || [];
+    const allGlobalRaw = (d && d.globalPosts) || [];
+    const annaPosts    = (d && d.posts)       || [];
+
+    // FIX multi-società: filtra i post globali per societyId dall'URL (?sid=)
+    const _urlSid2 = new URLSearchParams(window.location.search).get('sid') || '';
+    const globalPosts = _urlSid2
+      ? allGlobalRaw.filter(function(p) { return p.societyId === _urlSid2; })
+      : allGlobalRaw.filter(function(p) { return !p.societyId; });
 
     const all = [...globalPosts, ...annaPosts].sort(function(a, b) {
       if (b.pinned !== a.pinned) return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
@@ -1563,6 +1584,7 @@ function renderBachecaGenitori(posts, images) {
     const pinned = p.pinned ? '📌 ' : '';
     const dateStr = p.date
       ? new Date(p.date).toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'})
+        + ' ' + new Date(p.date).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})
       : '';
     const isGlobal = p.visibility === 'global';
     // FIX v1.5.21: badge bacheca con testo bianco

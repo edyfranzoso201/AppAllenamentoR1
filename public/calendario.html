@@ -627,8 +627,8 @@
         .torneo-note-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
         .torneo-note-row label{color:#60a5fa;font-size:0.78rem;white-space:nowrap;}
         .torneo-note-row input{background:#0d1b2a;border:1px solid #1e293b;color:#60a5fa;border-radius:5px;padding:5px 7px;font-size:0.8rem;flex:1;}
-        .btn-add-match{background:#16a34a;color:#16a34a;border:1px solid #16a34a;border-radius:6px;padding:6px 12px;font-size:0.8rem;font-weight:700;cursor:pointer;margin-top:4px;}
-        .btn-add-match:hover{background:#16a34a;}
+        .btn-add-match{background:#16a34a;color:#000000;border:1px solid #16a34a;border-radius:6px;padding:6px 12px;font-size:0.8rem;font-weight:700;cursor:pointer;margin-top:4px;}
+        .btn-add-match:hover{background:#15803d;}
 
         /* ── TEMA CHIARO ─────────────────────────────────────── */
         html.theme-light, body.theme-light {
@@ -1557,10 +1557,10 @@ window.toggleCalendario=function(){
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-<script src="/auth-multi-annata.js"></script>
-<script src="/data-adapter-multi-annata.js"></script>
-<script src="/presenza-calendar-mode.js"></script>
-<script src="/calendario-standalone.js"></script>
+<script src="/auth-multi-annata.js?v=1778065000"></script>
+<script src="/data-adapter-multi-annata.js?v=1778065000"></script>
+<script src="/presenza-calendar-mode.js?v=1778065000"></script>
+<script src="/calendario-standalone.js?v=1778065000"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════
 // ████  BACHECA  ████
@@ -1790,25 +1790,18 @@ async function _bLoad() {
         // FIX multi-società: mostra solo i post globali della società corrente.
         // I post senza societyId (legacy) restano visibili per compatibilità.
         var __sid = _bSocietyId();
-        console.log('[Bacheca][FilterDebug] societyId corrente:', __sid || '(VUOTO!)');
-        console.log('[Bacheca][FilterDebug] globalPosts totali ricevuti:', _bGlobalPosts.length);
-        if (_bGlobalPosts.length > 0) {
-            var withSid = _bGlobalPosts.filter(function(p){return p.societyId;}).length;
-            var withoutSid = _bGlobalPosts.length - withSid;
-            console.log('[Bacheca][FilterDebug] - con societyId:', withSid, '| senza societyId (legacy):', withoutSid);
-            var sidsTrovati = {};
-            _bGlobalPosts.forEach(function(p){ var k = p.societyId || '(legacy)'; sidsTrovati[k] = (sidsTrovati[k]||0)+1; });
-            console.log('[Bacheca][FilterDebug] - distribuzione societyId:', sidsTrovati);
-        }
+        // Filtro rigoroso: mostra solo i post della propria società
+        // Se societyId è vuoto (sessione incompleta), non mostrare nessun post globale
+        var prima = _bGlobalPosts.length;
         if (__sid) {
-            var prima = _bGlobalPosts.length;
             _bGlobalPosts = _bGlobalPosts.filter(function(p) {
                 return p.societyId === __sid;
             });
-            console.log('[Bacheca][FilterDebug] dopo filtro rigoroso:', _bGlobalPosts.length, '(rimossi', prima - _bGlobalPosts.length + ')');
         } else {
-            console.warn('[Bacheca][FilterDebug] ⚠️ societyId VUOTO: nessun filtro applicato');
+            // societyId non disponibile: nascondi tutti i post globali per sicurezza
+            _bGlobalPosts = [];
         }
+        console.log('[Bacheca][FilterDebug] societyId:', __sid || '(VUOTO - nessun post globale mostrato)', '| prima:', prima, '| dopo:', _bGlobalPosts.length);
         // NON svuotiamo _bPostImages: manteniamo in cache le immagini già caricate
         console.log('[Bacheca] 📦 posts:', _bPosts.length, 'global:', _bGlobalPosts.length);
         _bLoaded = true;
@@ -2184,7 +2177,7 @@ function _bRender() {
         var glob = (p.visibility === 'global');
         var priv2 = false; // staff posts disabilitati
         var img  = _bPostImages[p.id] || '';
-        var dt   = p.date ? new Date(p.date).toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'}) : '';
+        var dt   = p.date ? new Date(p.date).toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'}) + ' ' + new Date(p.date).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}) : '';
         var badge= priv2
             ? '<span class="post-visibility-badge badge-privato">🔐 Solo Staff</span>'
             : glob
@@ -2369,7 +2362,8 @@ window.toggleSponsorEnabled = function(enabled) {
 };
 
 window.copyBachecaLink = function() {
-    var link = window.location.origin + '/bacheca.html';
+    var sid = sessionStorage.getItem('gosport_society_id') || '';
+    var link = window.location.origin + '/bacheca.html' + (sid ? '?sid=' + encodeURIComponent(sid) : '');
     if (navigator.clipboard) {
         navigator.clipboard.writeText(link).then(function() {
             alert('✅ Link copiato!\n\n' + link + '\n\nCondividi questo link su WhatsApp, Instagram o Facebook.');
