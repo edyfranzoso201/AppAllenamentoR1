@@ -600,10 +600,11 @@
     main > hr { display: none !important; }
     .mobile-tab-warning { display: none !important; }
     /* Confronto squadra: gestito dal sistema tab-section, mostrato via JS quando tab GPS è attivo */
-    /* GPS e Analisi: nascondi grafici su mobile, mostra solo avviso */
+    /* GPS, Analisi e Valutazioni: nascondi grafici su mobile, mostra solo avviso */
     @media (max-width: 991px) {
         #monitoraggio-gps-section > *:not(.d-lg-none),
-        #analisi-singolo-section > *:not(.d-lg-none) {
+        #analisi-singolo-section > *:not(.d-lg-none),
+        #report-valutazioni-section > *:not(.d-lg-none) {
             display: none !important;
         }
         /* Confronto performance: nascosto su mobile (è fuori da GPS section) */
@@ -683,6 +684,9 @@
             document.documentElement.classList.add('theme-light');
             document.documentElement.setAttribute('data-bs-theme', 'light');
             document.documentElement.style.colorScheme = 'light';
+            document.addEventListener('DOMContentLoaded', function() {
+                document.body.classList.add('theme-light');
+            });
         } else {
             document.documentElement.setAttribute('data-bs-theme', 'dark');
             document.documentElement.style.colorScheme = 'dark';
@@ -693,10 +697,38 @@
         var btn = document.getElementById('theme-toggle-btn');
         var icon = document.getElementById('theme-icon');
         var label = document.getElementById('theme-label');
-        if (!btn) return;
+        var hamb = document.getElementById('hamburger-btn');
+        var hambIcon = document.getElementById('hamburger-icon');
         var isLight = document.documentElement.classList.contains('theme-light');
+        // Hamburger: nero in tema chiaro, bianco in tema scuro
+        if (hamb) {
+            hamb.style.setProperty('color', isLight ? '#000000' : '#ffffff', 'important');
+            hamb.style.setProperty('border-color', isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.6)', 'important');
+        }
+        if (hambIcon) {
+            hambIcon.style.setProperty('color', isLight ? '#000000' : '#ffffff', 'important');
+        }
+        if (!btn) return;
         if (icon) icon.textContent = isLight ? '🌙' : '☀️';
         if (label) label.textContent = isLight ? 'Tema Scuro' : 'Tema Chiaro';
+        // Colori hardcoded ad alto contrasto, non dipendono da variabili CSS
+        if (isLight) {
+            btn.style.cssText = btn.style.cssText
+                .replace(/background:[^;]+;/, 'background:#374151;')
+                .replace(/border:[^;]+;/, 'border:1.5px solid #111827;')
+                .replace(/color:[^;]+;/, 'color:#ffffff;');
+            btn.style.background = '#374151';
+            btn.style.border     = '1.5px solid #111827';
+            btn.style.color      = '#ffffff';
+            if (label) label.style.setProperty('color', '#ffffff', 'important');
+            if (icon)  icon.style.setProperty('color', '#ffffff', 'important');
+        } else {
+            btn.style.background = '#1e3a5f';
+            btn.style.border     = '2px solid #60a5fa';
+            btn.style.color      = '#ffffff';
+            if (label) label.style.setProperty('color', '#ffffff', 'important');
+            if (icon)  icon.style.setProperty('color', '#ffffff', 'important');
+        }
     }
 
     window.toggleTheme = function() {
@@ -709,6 +741,45 @@
         updateThemeBtn();
         applyChartTheme(isLight);
         applySelectTheme(isLight);
+    };
+
+    // Popola il menu admin mobile con bottoni Cambia Annata / Esci
+    window.populateMobileAdminMenu = function() {
+        var dst = document.getElementById('app-header-mobile');
+        if (!dst) return;
+        var role = window.getUserRole ? window.getUserRole() : sessionStorage.getItem('gosport_user_role');
+        var user = window.getCurrentUser ? window.getCurrentUser() : sessionStorage.getItem('gosport_auth_user');
+        var canChange = (role === 'admin');
+        var icon = (role === 'admin') ? '\u{1F451}' : '\u{1F464}';
+
+        var lbl = document.createElement('div');
+        lbl.style.cssText = 'display:flex;align-items:center;gap:8px;color:#e2e8f0;font-size:0.9rem;font-weight:600;';
+        lbl.textContent = icon + ' ' + (user || 'Utente');
+
+        dst.innerHTML = '';
+        dst.appendChild(lbl);
+
+        if (canChange) {
+            var btnCambia = document.createElement('button');
+            btnCambia.type = 'button';
+            btnCambia.textContent = '\u{1F4C5} Cambia Annata';
+            btnCambia.style.cssText = 'background:#8b5cf6;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;';
+            btnCambia.onclick = function() {
+                if (window.handleQuickChangeAnnata) window.handleQuickChangeAnnata();
+            };
+            dst.appendChild(btnCambia);
+        }
+
+        var btnEsci = document.createElement('button');
+        btnEsci.type = 'button';
+        btnEsci.textContent = '\u{1F6AA} Esci';
+        btnEsci.style.cssText = 'background:#d90429;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;';
+        btnEsci.onclick = function() {
+            if (window.handleQuickLogout) window.handleQuickLogout();
+        };
+        dst.appendChild(btnEsci);
+
+        dst.style.display = 'flex';
     };
 
     function applySelectTheme(isLight) {
@@ -824,72 +895,192 @@
 
 <style>
 @media print {
-    /* 1. Nasconde navbar, footer e pulsanti */
-    .navbar, .fixed-top, header, footer, .no-print, 
-    #app-header-info, .sidebar, .top-bar, button, .btn {
+    /* ── NASCONDI ELEMENTI NON STAMPABILI ── */
+    .navbar, .fixed-top, header, footer, .no-print,
+    #app-header-info, .sidebar, .top-bar, button, .btn,
+    .tab-nav-container, .card-actions, .action-btns,
+    .edit-btn, .delete-btn, .gps-btn, .rating-btn, .parent-btn,
+    .cert-btn, select, input[type="date"], input[type="time"],
+    #field-type-switch, .view-switch, .print-section-btn {
         display: none !important;
         visibility: hidden !important;
         height: 0 !important;
-    }
-    
-    /* 2. Reset margini body */
-    body {
-        padding-top: 0 !important;
-        margin-top: 0 !important;
-        padding-bottom: 0 !important;
-    }
-    
-    /* 3. Setup sezione principale */
-    main, .tab-section, .printable-area {
-        margin-top: 0 !important;
-        padding-top: 5mm !important;
-        padding-bottom: 0 !important;
-        display: block !important;
-        visibility: visible !important;
+        overflow: hidden !important;
     }
 
-    /* 4. REGOLE ANTI-PAGINA-BIANCA */
+    /* ── RESET BODY E LAYOUT ── */
+    body, html {
+        padding: 0 !important;
+        margin: 0 !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        font-size: 11pt !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    main, .tab-section, .printable-area, .container, .container-fluid {
+        margin: 0 !important;
+        padding: 4mm 6mm !important;
+        display: block !important;
+        visibility: visible !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+
+    /* ── FORZA SFONDO BIANCO E TESTO NERO SU TUTTO ──
+       Approccio universale: sovrascrive qualsiasi colore inline o da classe */
+    * {
+        color: #000000 !important;
+        border-color: #cccccc !important;
+        text-shadow: none !important;
+        box-shadow: none !important;
+    }
+
+    /* Background: bianco per contenitori, grigio chiarissimo per box/card */
+    div, section, article, aside, main, header, footer, span, p, li, td, th,
+    [style*="background"], [class*="bg-"], [class*="card"], [class*="box"],
+    [class*="stat"], [class*="section"] {
+        background: #ffffff !important;
+    }
+
+    /* ── ECCEZIONE MAGLIETTE GIOCATORI SUL CAMPO ──
+       Le magliette hanno background-color inline — non azzerare */
+    .player-jersey, .player-jersey *,
+    .jersey-body, .jersey-number, .player-name,
+    .token, .token * {
+        background-color: revert !important;
+        color: revert !important;
+        border-color: revert !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    /* Forza visibilità nome e numero */
+    .jersey-number {
+        color: #ffffff !important;
+        font-weight: bold !important;
+    }
+    .player-name {
+        color: #ffffff !important;
+        font-size: 0.6rem !important;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.8) !important;
+    }
+
+    /* ── ECCEZIONE CAMPO DI FORMAZIONE ──
+       Il campo usa background-image (calcio.jpg) — non azzerare */
+    #field-container, #pitch-wrapper,
+    #field-container.field-calcio,
+    #field-container * {
+        background-color: transparent !important;
+    }
+    #field-container {
+        background-image: inherit !important;
+        background-size: 100% 100% !important;
+        background-repeat: no-repeat !important;
+        color: #ffffff !important;
+        border: none !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    #field-container * {
+        color: #ffffff !important;
+        border-color: rgba(255,255,255,0.8) !important;
+    }
+    /* Forza stampa delle immagini di sfondo */
+    #pitch-wrapper {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        background: transparent !important;
+    }
+
+    /* Box/card con bordo visibile */
+    .card, .stat-card, .home-stat-box, .home-card, .info-card,
+    .athlete-card, .staff-card, .match-card, .result-card,
+    [class*="card"], [class*="-box"], [class*="panel"],
+    .chart-container {
+        background: #f5f5f5 !important;
+        border: 1px solid #cccccc !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }
+
+    /* Titoli */
+    h1, h2, h3, h4, h5, h6,
+    .card-title, .section-title, .stat-label, .stat-value,
+    strong, b {
+        color: #000000 !important;
+        font-weight: bold !important;
+    }
+
+    /* Tabelle */
+    .table, table {
+        background: #ffffff !important;
+        border-collapse: collapse !important;
+        width: 100% !important;
+    }
+    .table th, table th {
+        background: #e5e7eb !important;
+        color: #000000 !important;
+        font-weight: bold !important;
+        border: 1px solid #999999 !important;
+        padding: 4px 8px !important;
+    }
+    .table td, table td {
+        background: #ffffff !important;
+        color: #000000 !important;
+        border: 1px solid #cccccc !important;
+        padding: 3px 8px !important;
+    }
+    .table tr:nth-child(even) td, table tr:nth-child(even) td {
+        background: #f9f9f9 !important;
+    }
+
+    /* Badge */
+    .badge, [class*="badge"], span[style*="background"] {
+        background: #e5e7eb !important;
+        color: #000000 !important;
+        border: 1px solid #999999 !important;
+        font-size: 9pt !important;
+    }
+
+    /* ── FIX LAYOUT SQUADRA VISTA BOX ── */
+    #athlete-grid, #squadra-section .row {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 4px !important;
+    }
+    #athlete-grid .col-xl-3, #athlete-grid .col-lg-4,
+    #athlete-grid .col-md-6, #athlete-grid > div {
+        flex: 0 0 23% !important;
+        max-width: 23% !important;
+        box-sizing: border-box !important;
+    }
+    .athlete-avatar, .staff-avatar {
+        width: 40px !important;
+        height: 40px !important;
+    }
+
+    /* ── ANTI PAGINA BIANCA ── */
     .chart-container, canvas, .table, .card, .row {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
     }
-
     .tab-section.active, .printing-now {
         page-break-before: auto !important;
     }
+    #risultati-section { page-break-before: avoid !important; }
 
-    /* IMPORTANTE: Sezione Risultati - tieni unito titolo e contenuto */
-    #risultati-section {
-        page-break-before: avoid !important;
-    }
-    #risultati-section .card-title,
-    #risultati-section h5 {
-        margin-bottom: 8px !important;
-        page-break-after: avoid !important;
-    }
-    
-    /* Riduci margini Bootstrap in stampa */
+    /* Layout compatto */
     .mb-3, .mb-4, .mt-3, .mt-4, .mb-2, .mt-2 {
         margin-bottom: 4px !important;
         margin-top: 4px !important;
     }
-    
-    /* Layout compatto */
     .row {
         margin-left: 0 !important;
         margin-right: 0 !important;
     }
-    
-    /* Grafici: dimensioni compatte */
-    .chart-container, canvas {
-        max-width: 100% !important;
-        height: auto !important;
-    }
-    
-    /* Spazio in fondo al contenuto */
-    .tab-section.printing-now { 
-        padding-bottom: 0 !important; 
-    }
+    canvas { max-width: 100% !important; height: auto !important; }
+    .tab-section.printing-now { padding-bottom: 0 !important; }
 }
 </style>
 </head>
@@ -904,9 +1095,10 @@
         <div id="app-header-info" class="d-none d-lg-flex" style="flex-shrink:0; margin-left:auto; margin-right:8px; position:relative; align-items:center;"></div>
         <!-- Hamburger: solo su mobile -->
         <button class="navbar-toggler d-lg-none ms-auto" type="button"
-            onclick="(function(){var m=document.getElementById('navbarNav');m.classList.toggle('show');})()"
-            style="border-color:rgba(255,255,255,0.4); padding:4px 8px; flex-shrink:0;">
-            <span class="navbar-toggler-icon" id="hamburger-icon"></span>
+            onclick="(function(){var m=document.getElementById('navbarNav');m.classList.toggle('show');if(m.classList.contains('show')&&window.populateMobileAdminMenu)window.populateMobileAdminMenu();})()"
+            id="hamburger-btn"
+            style="border:1.5px solid rgba(255,255,255,0.6); padding:4px 10px; flex-shrink:0; background:transparent; color:#ffffff; font-size:1.4rem; line-height:1;">
+            <i class="bi bi-list" id="hamburger-icon" style="color:inherit;"></i>
         </button>
         <button id="logout-btn" style="display:none !important; width:0 !important; height:0 !important; padding:0 !important; margin:0 !important; border:none !important; position:absolute !important; overflow:hidden !important; pointer-events:none !important;"></button>
     </nav>
@@ -999,7 +1191,7 @@
                                 <input type="file" id="restore-file" accept=".json" style="display:none">
                                 <!-- Switch Tema -->
                                 <button id="theme-toggle-btn" onclick="window.toggleTheme()" 
-                                    style="background:var(--bg-panel);border:1px solid var(--border);border-radius:50px;padding:8px 14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;color:var(--text-primary);font-size:0.82rem;font-weight:500;width:100%;margin-top:2px;">
+                                    style="background:#1e3a5f;border:2px solid #60a5fa;border-radius:50px;padding:8px 14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;color:#ffffff;font-size:0.82rem;font-weight:500;width:100%;margin-top:2px;">
                                     <span id="theme-icon">☀️</span>
                                     <span id="theme-label">Tema Chiaro</span>
                                 </button>
@@ -1201,6 +1393,15 @@
         </div>
         <hr class="my-5 no-print">
         <div id="report-valutazioni-section" class="tab-section row my-4 printable-area">
+            <!-- Avviso mobile: visibile solo su smartphone -->
+            <div class="col-12 d-lg-none mb-3">
+                <div class="card" style="background:var(--bg-panel); border:1px solid var(--border-2);">
+                    <div class="card-body text-center py-4">
+                        <i class="bi bi-display" style="font-size:2rem; color:#60a5fa;"></i>
+                        <p class="mt-2 mb-0" style="color:#64748b;">📊 <strong style="color:var(--text-primary);">Report Valutazioni Comportamentali</strong><br><small>Dati disponibili solo su PC</small></p>
+                    </div>
+                </div>
+            </div>
               <div class="col-12 d-flex justify-content-between align-items-center gap-2 mb-3">
                 <div class="d-flex align-items-center gap-2">
                     <h2 class="main-title mb-0">Report Valutazioni Comportamentali</h2>
@@ -1926,7 +2127,8 @@
     </main>
     <footer class="bg-dark-blue py-3 mt-5 no-print">
         <div class="container text-center">
-            <p class="text-muted mb-0">By Edy Franzoso</p>
+            <p class="mb-1" style="font-size:0.85rem;">📧 Per assistenza scrivi all'email <a href="mailto:info.mondo2026@gmail.com" style="color:#60a5fa;">info.mondo2026@gmail.com</a> <span style="color:#64748b;">— v1.5.21</span></p>
+            <p class="mb-0" style="font-size:0.75rem;color:var(--text-secondary,#64748b);">© 2025 Edy Franzoso. Codice sorgente protetto ai sensi della L. 633/1941.</p>
         </div>
     </footer>
     <div id="modals-container"></div>
@@ -1952,6 +2154,10 @@
                                 <option value="">-- Seleziona --</option>
                                 <option value="Allenamento">Allenamento</option>
                                 <option value="Partita">Partita</option>
+                                <option value="Torneo">🏆 Torneo</option>
+                                <option value="Campionato">🏅 Campionato</option>
+                                <option value="Finale">🥇 Finale</option>
+                                <option value="Semifinale">🥈 Semifinale</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -2018,11 +2224,11 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     
     <!-- Multi-annata system - ORDINE IMPORTANTE! -->
-    <script src="data-adapter-multi-annata.js"></script>
-    <script src="auth-multi-annata.js"></script>
+    <script src="data-adapter-multi-annata.js?v=1778056923"></script>
+    <script src="auth-multi-annata.js?v=1778056923"></script>
     
     <!-- Script personalizzato -->
-    <script src="script.js"></script>
+    <script src="script.js?v=1778065000"></script>
     <script>
 
     // ========================================================================
@@ -2116,14 +2322,6 @@
         e.target.value = '';
     });
     </script>
-       <!-- Copyright Footer -->
-    <footer class="text-center no-print" style="...">
-        © 2025 Edy Franzoso.<br>
-        Codice sorgente e contenuti protetti ai sensi della 
-        Legge sul Diritto d'Autore (L. 633/1941).<br>
-        Riproduzione, distribuzione o modifica vietati 
-        senza autorizzazione scritta.
-    </footer>
     <!-- ========================================== -->
 <!-- MODAL PAGELLA VALUTAZIONE -->
 <!-- ========================================== -->
@@ -2258,7 +2456,7 @@
         </div>
     </div>
 </div>
-<script src="pagelle.js"></script>
+<script src="pagelle.js?v=1778056923"></script>
 <script>
 (function() {
     function handleWeeklyVisibility() {
@@ -3030,7 +3228,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function _pagStyle(st) {
-        if (st==='paid')    return {bg:'#16a34a',color:'#16a34a',border:'#16a34a',icon:'✅'};
+        if (st==='paid')    return {bg:'#16a34a',color:'#000000',border:'#16a34a',icon:'✅'};
         if (st==='overdue') return {bg:'#450a0a',color:'#d90429',border:'#450a0a',icon:'🔴'};
         if (st==='warning') return {bg:'#422006',color:'#f59e0b',border:'#713f12',icon:'🟡'};
         if (st==='ok')      return {bg:'#1a3a5f',color:'#60a5fa',border:'#3b82f6',icon:'🔵'};
@@ -4542,6 +4740,144 @@ footer {
 }
 /* Spazio in fondo al contenuto (non serve piu' lo spazio per il footer) */
 .tab-section.printing-now { padding-bottom: 0 !important; }
+
+/* FIX v1.5.21: forza sfondo corretto card su mobile (tema scuro e chiaro) */
+@media (max-width: 991px) {
+    :root body .card,
+    :root body .summary-card,
+    :root body .chart-card {
+        background-color: var(--bg-card, #0d1b2a) !important;
+        --bs-card-bg: var(--bg-card, #0d1b2a);
+    }
+    html.theme-light body .card,
+    html.theme-light body .summary-card,
+    html.theme-light body .chart-card {
+        background-color: #ffffff !important;
+        --bs-card-bg: #ffffff;
+    }
+    html.theme-light body,
+    html.theme-light .tab-section,
+    html.theme-light main {
+        background-color: #ffffff !important;
+    }
+}
+
+/* FIX v1.5.21: testo annata/utente nella navbar visibile in tema chiaro */
+html.theme-light #app-header-info,
+html.theme-light #app-header-info *,
+html.theme-light #app-header-info button,
+html.theme-light #app-header-info span,
+html.theme-light #app-header-info div,
+html.theme-light #app-header-info a {
+    color: #1a202c !important;
+}
+/* Override stili inline generati da auth-multi-annata.js */
+html.theme-light #app-header-info > div > button:first-child {
+    background: #e2e8f0 !important;
+    color: #1a202c !important;
+}
+html.theme-light #app-header-info > div > button:last-child {
+    background: #fee2e2 !important;
+    color: #d90429 !important;
+    border-color: #d90429 !important;
+}
+/* Dropdown annata che appare al click (position:fixed, z-index alto) */
+html.theme-light [style*="position:fixed"][style*="background:#0d1b2a"],
+html.theme-light [style*="position:fixed"][style*="background:#0f172a"],
+html.theme-light [style*="position:fixed"][style*="background:#1e293b"] {
+    background: #ffffff !important;
+}
+html.theme-light [style*="position:fixed"][style*="background:#0d1b2a"] *,
+html.theme-light [style*="position:fixed"][style*="background:#0f172a"] *,
+html.theme-light [style*="position:fixed"][style*="background:#1e293b"] * {
+    color: #1a202c !important;
+}
+html.theme-light [style*="position:fixed"][style*="background:#0d1b2a"] button,
+html.theme-light [style*="position:fixed"][style*="background:#0f172a"] button,
+html.theme-light [style*="position:fixed"][style*="background:#1e293b"] button {
+    border-color: #cbd5e0 !important;
+}
+
+/* FIX v1.5.21: colori diversi per Allenatore e Dirigente nella vista box */
+.allenatore-card { background: #1e293b !important; border-left: 3px solid #16a34a !important; }
+.dirigente-card  { background: #14532d !important; border-left: 3px solid #166534 !important; }
+html.theme-light .allenatore-card { background: #dcfce7 !important; border-left: 3px solid #16a34a !important; }
+html.theme-light .dirigente-card  { background: #bbf7d0 !important; border-left: 3px solid #166534 !important; }
+
+/* FIX v1.5.21: modal Atleta/Staff - sfondo bianco in tema chiaro */
+html.theme-light #athleteModal .modal-content,
+html.theme-light #athleteModal .modal-header,
+html.theme-light #athleteModal .modal-body,
+html.theme-light #athleteModal .modal-footer {
+    background-color: #ffffff !important;
+    --bs-modal-bg: #ffffff;
+    color: #1a202c !important;
+    border-color: #e2e8f0 !important;
+}
+html.theme-light #athleteModal .form-control,
+html.theme-light #athleteModal .form-select,
+html.theme-light #athleteModal textarea {
+    background-color: #f8fafc !important;
+    color: #1a202c !important;
+    border-color: #cbd5e0 !important;
+}
+html.theme-light #athleteModal label,
+html.theme-light #athleteModal .form-label { color: #374151 !important; }
+html.theme-light #athleteModal .modal-title { color: #1a202c !important; }
+html.theme-light #athleteModal .btn-close { filter: invert(1); }
+html.theme-light #athleteModal small.text-muted { color: #64748b !important; }
+/* Bottoni tipo persona: in tema chiaro testo sempre bianco (sfondo colorato) */
+html.theme-light #tipo-atleta-btn,
+html.theme-light #tipo-allenatore-btn,
+html.theme-light #tipo-dirigente-btn { color: #ffffff !important; }
+
+/* FIX v1.5.21: simboli (C) e (VC) nella formazione - testo bianco in tema chiaro */
+html.theme-light .token-captain { color: #ffffff !important; }
+
+/* FIX v1.5.21: modal Pianifica Sessione - sfondo bianco in tema chiaro */
+html.theme-light #sessionModal .modal-content,
+html.theme-light #sessionModal .modal-header,
+html.theme-light #sessionModal .modal-body,
+html.theme-light #sessionModal .modal-footer {
+    background-color: #ffffff !important;
+    --bs-modal-bg: #ffffff;
+    --bs-body-bg: #ffffff;
+    color: #1a202c !important;
+    border-color: #e2e8f0 !important;
+}
+html.theme-light #sessionModal .form-control,
+html.theme-light #sessionModal .form-select,
+html.theme-light #sessionModal textarea {
+    background-color: #f8fafc !important;
+    --bs-body-bg: #f8fafc;
+    color: #1a202c !important;
+    border-color: #cbd5e0 !important;
+}
+html.theme-light #sessionModal label,
+html.theme-light #sessionModal .form-label { color: #374151 !important; }
+html.theme-light #sessionModal .modal-title { color: #1a202c !important; }
+html.theme-light #sessionModal .btn-close { filter: invert(1); }
+
+/* FIX: pulsante hamburger ☰ - nero visibile in tema chiaro */
+html.theme-light #hamburger-btn,
+body.theme-light #hamburger-btn {
+    color: #000000 !important;
+    border-color: rgba(0, 0, 0, 0.5) !important;
+}
+html.theme-light #hamburger-btn i,
+body.theme-light #hamburger-btn i,
+html.theme-light #hamburger-icon,
+body.theme-light #hamburger-icon {
+    color: #000000 !important;
+}
+
+/* FIX: bottone switch tema chiaro - visibile su sfondo chiaro */
+html.theme-light #theme-toggle-btn,
+body.theme-light #theme-toggle-btn {
+    color: #111111 !important;
+    background: #d1d5db !important;
+    border: 1.5px solid #6b7280 !important;
+}
 </style>
 </body>
 </html>

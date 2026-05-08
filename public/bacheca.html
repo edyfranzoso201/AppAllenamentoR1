@@ -252,6 +252,9 @@ body { overflow-x: auto; }
 <footer>© 2025 Edy Franzoso — Sport Monitoring &nbsp;|&nbsp; Tutti i diritti riservati</footer>
 
 <script>
+// ── societyId dall'URL (passato dal coach quando copia il link) ───────────
+var _urlSid = new URLSearchParams(location.search).get('sid') || '';
+
 // ── Sponsor: caricati da Redis via API ───────────────────────────────────
 var adConfig = {};
 
@@ -263,10 +266,7 @@ function openAdLink(n) {
 function applyAdConfig(cfg) {
   if (!cfg) return;
   adConfig = cfg;
-  console.log('[Sponsor] applyAdConfig:', JSON.stringify(cfg));
   var labels = {1:'Sponsor 1',2:'Sponsor 2',3:'Locandina 1',4:'Locandina 2'};
-
-  // Aggiorna ogni box sinistra (1-4)
   [1,2,3,4].forEach(function(n) {
     var slot = cfg[String(n)] || cfg[n] || {};
     var box  = document.getElementById('ad-box-'+n);
@@ -289,8 +289,6 @@ function applyAdConfig(cfg) {
       if (existingImg) existingImg.remove();
     }
   });
-
-  // Sponsor principale destra (chiave "0")
   var slot0 = cfg['0'] || cfg[0] || {};
   var sb = document.getElementById('sponsor-box');
   if (!sb) return;
@@ -336,7 +334,7 @@ function renderCal() {
   document.getElementById('cal-month-label').textContent = months[m] + ' ' + y;
   var today = new Date(); today.setHours(0,0,0,0);
   var first = new Date(y, m, 1);
-  var startDay = (first.getDay() + 6) % 7; // Lun=0
+  var startDay = (first.getDay() + 6) % 7;
   var daysInMonth = new Date(y, m+1, 0).getDate();
   var wdays = ['L','M','M','G','V','S','D'];
   var h = wdays.map(function(d){ return '<div class="cal-wd">'+d+'</div>'; }).join('');
@@ -358,6 +356,14 @@ function updateTicker(posts) {
   document.getElementById('ticker-text').textContent = text;
 }
 
+// ── Formatta data + ora ──────────────────────────────────────────────────
+function formatDateTime(dateStr) {
+  if (!dateStr) return '';
+  var d = new Date(dateStr);
+  return d.toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'})
+       + ' ' + d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+}
+
 // ── Caricamento post ─────────────────────────────────────────────────────
 (async function() {
   try {
@@ -368,10 +374,24 @@ function updateTicker(posts) {
       document.getElementById('team-name').textContent = data.teamName + ' — Bacheca';
       document.title = data.teamName + ' — Bacheca';
     }
-    // Applica configurazione sponsor
     if (data.bachecaConfig) applyAdConfig(data.bachecaConfig);
 
-    var posts  = (data.globalPosts || []).concat(data.posts || []);
+    var allGlobal = data.globalPosts || [];
+
+    // FIX multi-società: filtra i post globali per societyId
+    // Se nell'URL c'è ?sid=XXX mostra solo i post di quella società
+    // Se non c'è sid, mostra solo i post senza societyId (legacy)
+    var globalFiltered;
+    if (_urlSid) {
+      globalFiltered = allGlobal.filter(function(p) {
+        return p.societyId === _urlSid;
+      });
+    } else {
+      // Nessun sid nell'URL: mostra solo post legacy (senza societyId)
+      globalFiltered = allGlobal.filter(function(p) { return !p.societyId; });
+    }
+
+    var posts = globalFiltered.concat(data.posts || []);
     var images = data.postImages || {};
 
     posts.sort(function(a, b) {
@@ -390,7 +410,7 @@ function updateTicker(posts) {
     var h = '';
     posts.forEach(function(p) {
       var img = images[p.id] || '';
-      var dt  = p.date ? new Date(p.date).toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'}) : '';
+      var dt  = formatDateTime(p.date);
       h += '<div class="post-card' + (p.pinned?' pinned':'') + '">';
       if (img) h += '<img class="post-img" src="'+img+'" alt="" onclick="this.classList.toggle(\'expanded\')">';
       h += '<div class="post-body">';

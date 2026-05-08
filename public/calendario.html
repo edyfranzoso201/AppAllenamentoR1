@@ -22,7 +22,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="version" content="1.5.21">
-    <title>Calendario Squadra - Sport Monitoring</title>
+    <title>SPORT MONITORING Comunicazioni</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
@@ -1062,7 +1062,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class="container-fluid">
         <div class="top-bar">
             <a href="/" class="back-btn"><i class="bi bi-arrow-left"></i> Dashboard</a>
-            <h1 class="main-title"><i class="bi bi-calendar-week"></i> Calendario Squadra</h1>
+            <h1 class="main-title"><i class="bi bi-megaphone-fill"></i> SPORT MONITORING Comunicazioni</h1>
             <!-- SELETTORE ANNATA DESKTOP (visibile solo da tablet in su, solo admin) -->
             <div id="cal-annata-desktop" style="display:none; align-items:center; gap:6px; margin-left:auto; flex-shrink:0;">
                 <span style="color:var(--text-muted); font-size:0.78rem; font-weight:600; white-space:nowrap;">
@@ -1075,14 +1075,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     <option value="">Caricamento...</option>
                 </select>
             </div>
+            <!-- FIX v1.5.21: pulsante annata/esci identico a index.html (iniettato da auth-multi-annata.js) -->
+            <div id="app-header-info" style="flex-shrink:0; margin-left:8px; position:relative; display:flex; align-items:center;"></div>
         </div>
 
         <!-- ── HAMBURGER mobile (v1.5.3) ── -->
         <button class="cal-hamburger-btn" id="cal-hamburger-btn" onclick="calToggleMenu()">
-            <i class="bi bi-list"></i> <span id="cal-current-tab-label">Calendario Squadra</span>
+            <i class="bi bi-megaphone-fill"></i> <span id="cal-current-tab-label">SPORT MONITORING Comunicazioni</span>
             <span class="arrow">▶</span>
         </button>
-        <!-- SELETTORE ANNATA MOBILE (visibile solo su smartphone, solo admin) -->
+        <!-- SELETTORE ANNATA MOBILE + PULSANTE ESCI -->
         <div id="cal-annata-mobile" style="display:none; padding:6px 4px 2px 4px;">
             <div style="display:flex; align-items:center; gap:8px; flex-wrap:nowrap;">
                 <span style="color:var(--text-muted); font-size:0.78rem; font-weight:600; white-space:nowrap; flex-shrink:0;">
@@ -1095,6 +1097,8 @@ document.addEventListener('DOMContentLoaded', function() {
                            font-size:0.82rem; cursor:pointer;">
                     <option value="">Caricamento...</option>
                 </select>
+                <!-- FIX v1.5.21: pulsante Esci mobile -->
+                <div id="app-header-info-mobile" style="flex-shrink:0;"></div>
             </div>
         </div>
 
@@ -1111,6 +1115,9 @@ document.addEventListener('DOMContentLoaded', function() {
             </button>
             <button class="page-tab" id="tab-documenti" style="display:none;" onclick="switchTab('documenti')">
                 <i class="bi bi-folder-fill"></i> Documenti Società
+            </button>
+            <button class="page-tab" id="tab-athlete-docs" style="display:none;" onclick="switchTab('athlete-docs')">
+                <i class="bi bi-file-earmark-check-fill"></i> Documenti Atleti
             </button>
         </div>
 
@@ -1501,6 +1508,24 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
         <!-- fine tab-content-documenti --><!-- fine tab-content gare -->
 
+        <!-- TAB: Documenti Atleti (caricati dai genitori) -->
+        <div class="tab-content" id="tab-content-athlete-docs" style="display:none;">
+            <div style="padding:8px 0;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+                    <h3 style="color:var(--text-primary);margin:0;font-size:1rem;font-weight:700;">
+                        <i class="bi bi-file-earmark-check-fill" style="color:#16a34a;"></i>
+                        Documenti Caricati dai Genitori
+                    </h3>
+                    <button onclick="window._loadAthleteDocsTab()" style="margin-left:auto;background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:0.8rem;cursor:pointer;">
+                        🔄 Aggiorna
+                    </button>
+                </div>
+                <div id="athlete-docs-table-container">
+                    <p style="color:#64748b;font-size:0.85rem;">Caricamento...</p>
+                </div>
+            </div>
+        </div>
+
 
         <!-- Bacheca Genitori - FUORI dal calendario collassabile -->
         <div id="bacheca-genitori-container" style="display:none;ma
@@ -1594,8 +1619,9 @@ window.switchTab = function(tab) {
         _docsLoaded = false;
         if(typeof docLoad==='function')docLoad();
     }
+    if(tab==='athlete-docs'){ window._loadAthleteDocsTab(); }
     // ── HAMBURGER mobile (v1.5.3): aggiorna label e chiudi menu ──
-    var labelMap = { calendario: 'Calendario Squadra', bacheca: 'Bacheca Comunicazioni', gare: 'Gare da Disputare', documenti: 'Documenti Società' };
+    var labelMap = { calendario: 'Calendario Squadra', bacheca: 'Bacheca Comunicazioni', gare: 'Gare da Disputare', documenti: 'Documenti Società', 'athlete-docs': 'Documenti Atleti' };
     var lblEl = document.getElementById('cal-current-tab-label');
     if (lblEl && labelMap[tab]) lblEl.textContent = labelMap[tab];
     var pageTabs = document.getElementById('page-tabs');
@@ -1613,6 +1639,144 @@ window.calToggleMenu = function() {
 };
 // Mantieni compatibilità con vecchio toggleBacheca
 window.toggleBacheca = function() { switchTab('bacheca'); };
+
+// FIX v1.5.21: replica il pulsante annata/esci nel mobile dopo che auth-multi-annata.js lo ha iniettato
+(function() {
+    var attempts = 0;
+    var timer = setInterval(function() {
+        attempts++;
+        var desktop = document.getElementById('app-header-info');
+        var mobile  = document.getElementById('app-header-info-mobile');
+        if (desktop && mobile && desktop.innerHTML && desktop.innerHTML.trim()) {
+            mobile.innerHTML = desktop.innerHTML;
+            // Reattach event listeners sui cloni (i button clonati non hanno listeners)
+            mobile.querySelectorAll('button').forEach(function(btn, i) {
+                var origBtn = desktop.querySelectorAll('button')[i];
+                if (origBtn) btn.onclick = origBtn.onclick;
+            });
+            clearInterval(timer);
+        }
+        if (attempts > 20) clearInterval(timer); // max 4 secondi
+    }, 200);
+})();
+
+// ── Documenti Atleti: tabella riepilogo per il coach ─────────────────────
+var _DOC_TYPES_COACH = [
+    { key: 'certificato', label: '🏥 Cert. Medico' },
+    { key: 'iscrizione',  label: '📝 Iscrizione' },
+    { key: 'scarico',     label: '⚠️ Scarico Resp.' },
+    { key: 'liberatoria', label: '🎥 Liberatoria F/V' },
+    { key: 'generico1',   label: '📎 Generico 1' },
+    { key: 'generico2',   label: '📎 Generico 2' },
+    { key: 'generico3',   label: '📎 Generico 3' },
+    { key: 'generico4',   label: '📎 Generico 4' },
+    { key: 'generico5',   label: '📎 Generico 5' },
+    { key: 'generico6',   label: '📎 Generico 6' }
+];
+
+window._loadAthleteDocsTab = async function() {
+    var container = document.getElementById('athlete-docs-table-container');
+    if (!container) return;
+    container.innerHTML = '<p style="color:#64748b;">Caricamento...</p>';
+    try {
+        var aid = _bAnnataId();
+        var res = await fetch('/api/data', { cache: 'no-store', headers: { 'x-annata-id': aid } });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var d = await res.json();
+        var athletes = (d.athletes || []).filter(function(a){ return !a.isGuest && !a.isStaff; });
+        var docs = d.athleteDocs || {};
+
+        if (!athletes.length) {
+            container.innerHTML = '<p style="color:#64748b;">Nessun atleta trovato.</p>';
+            return;
+        }
+
+        var html = '<div style="overflow-x:auto;">'
+            + '<table style="width:100%;border-collapse:collapse;font-size:0.82rem;">'
+            + '<thead><tr style="background:var(--bg-blue);">'
+            + '<th style="padding:10px 12px;text-align:left;color:#e2e8f0;white-space:nowrap;border-bottom:2px solid #3b5a9d;">Atleta</th>';
+        _DOC_TYPES_COACH.forEach(function(dt) {
+            html += '<th style="padding:10px 12px;text-align:center;color:#e2e8f0;white-space:nowrap;border-bottom:2px solid #3b5a9d;">' + dt.label + '</th>';
+        });
+        html += '</tr></thead><tbody>';
+
+        athletes.forEach(function(a, idx) {
+            var aDocs = docs[String(a.id)] || {};
+            var rowBg = idx % 2 === 0 ? 'background:rgba(255,255,255,0.02);' : '';
+            html += '<tr style="' + rowBg + '">'
+                + '<td style="padding:9px 12px;color:#e2e8f0;border-bottom:1px solid rgba(59,90,157,0.3);font-weight:600;">' + a.name + '</td>';
+            _DOC_TYPES_COACH.forEach(function(dt) {
+                var doc = aDocs[dt.key];
+                if (doc && doc.url) {
+                    var uploadDate = doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString('it-IT') : '';
+                    var dlLog = doc.downloadLog;
+                    var dlInfo = dlLog
+                        ? '<div style="font-size:0.68rem;color:#22c55e;margin-top:2px;">↓ ' + dlLog.user + ' ' + new Date(dlLog.at).toLocaleDateString('it-IT') + ' ' + new Date(dlLog.at).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}) + '</div>'
+                        : '<div style="font-size:0.68rem;color:#64748b;margin-top:2px;">Non scaricato</div>';
+                    var notaInfo = doc.nota ? '<div style="font-size:0.68rem;color:#94a3b8;margin-top:1px;">📝 ' + doc.nota + '</div>' : '';
+                    html += '<td style="padding:9px 12px;text-align:center;border-bottom:1px solid rgba(59,90,157,0.3);">'
+                        + '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">'
+                        + '<div style="display:flex;gap:4px;align-items:center;">'
+                        + '<a href="' + doc.url + '" target="_blank" '
+                        + 'onclick="window._logDocDownload(\'' + String(a.id) + '\',\'' + dt.key + '\',\'' + aid + '\')" '
+                        + 'style="color:#22c55e;font-size:0.82rem;text-decoration:none;padding:3px 8px;border:1px solid #22c55e;border-radius:4px;" title="Caricato il ' + uploadDate + '">⬇️ Scarica</a>'
+                        + '<button onclick="window._coachDeleteDoc(\'' + String(a.id) + '\',\'' + dt.key + '\',\'' + aid + '\')" '
+                        + 'style="background:#450a0a;color:#d90429;border:1px solid #d90429;border-radius:4px;padding:3px 7px;font-size:0.75rem;cursor:pointer;" title="Elimina">🗑️</button>'
+                        + '</div>'
+                        + '<div style="font-size:0.68rem;color:#64748b;">Caric. ' + uploadDate + '</div>'
+                        + notaInfo
+                        + dlInfo
+                        + '</div></td>';
+                } else {
+                    html += '<td style="padding:9px 12px;text-align:center;color:#64748b;border-bottom:1px solid rgba(59,90,157,0.3);">—</td>';
+                }
+            });
+            html += '</tr>';
+        });
+
+        html += '</tbody></table></div>';
+
+        var total = athletes.length;
+        var withAny = athletes.filter(function(a) { return Object.keys(docs[String(a.id)] || {}).length > 0; }).length;
+        html = '<p style="color:#64748b;font-size:0.8rem;margin-bottom:8px;">Atleti con almeno un documento: '
+            + '<strong style="color:#22c55e;">' + withAny + '</strong> / ' + total + '</p>' + html;
+
+        container.innerHTML = html;
+    } catch(e) {
+        container.innerHTML = '<p style="color:#d90429;">Errore: ' + e.message + '</p>';
+    }
+};
+
+// Log scaricamento documento (coach)
+window._logDocDownload = async function(athleteId, docKey, annataId) {
+    try {
+        var user = sessionStorage.getItem('gosport_auth_user') || 'coach';
+        var payload = {};
+        payload[String(athleteId)] = {};
+        // Leggi doc corrente e aggiorna solo downloadLog
+        payload[String(athleteId)][docKey + '__downloadLog'] = { user: user, at: new Date().toISOString() };
+        // Usiamo un campo speciale che il backend gestirà
+        await fetch('/api/data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-annata-id': annataId },
+            body: JSON.stringify({ athleteDocDownload: { athleteId: String(athleteId), docKey: docKey, user: user } })
+        });
+    } catch(e) { console.warn('[DocDownload]', e); }
+};
+
+// Elimina documento (coach)
+window._coachDeleteDoc = async function(athleteId, docKey, annataId) {
+    if (!confirm('Eliminare questo documento?')) return;
+    try {
+        var res = await fetch('/api/data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-annata-id': annataId },
+            body: JSON.stringify({ athleteDocs: { [String(athleteId)]: { [docKey]: null } } })
+        });
+        if (res.ok) { alert('✅ Documento eliminato.'); window._loadAthleteDocsTab(); }
+        else alert('❌ Errore: HTTP ' + res.status);
+    } catch(e) { alert('❌ Errore: ' + e.message); }
+};
 
 // Carica da Redis (fonte di verità)
 async function _bLoad() {
@@ -2031,20 +2195,12 @@ var _sponsorSlots = [
 
 async function _loadSponsorConfig() {
     try {
-        // XHR per evitare che l'adapter aggiunga X-Annata-Id alla chiamata globale
-        var d = await new Promise(function(resolve, reject) {
-            var xhr = new XMLHttpRequest();
-            xhr.open('GET', '/api/data', true);
-            xhr.onload = function() {
-                console.log('[Sponsor] 📥 XHR status:', xhr.status);
-                try { resolve(JSON.parse(xhr.responseText)); } catch(e) { reject(e); }
-            };
-            xhr.onerror = function() { reject(new Error('Errore rete')); };
-            xhr.send();
-        });
+        // FIX v1.5.21: usa fetch (non XHR) così auth-multi-annata.js aggiunge gli header
+        // La XHR bypassava l'interceptor → bachecaConfig arrivava vuoto → banner sempre visibili
+        var res = await fetch('/api/data', { cache: 'no-store' });
+        console.log('[Sponsor] 📥 status:', res.status);
+        var d = await res.json();
         console.log('[Sponsor] 📦 bachecaConfig:', JSON.stringify(d && d.bachecaConfig));
-        console.log('[Sponsor] 🔔 bannersEnabled in config:', d && d.bachecaConfig && d.bachecaConfig.bannersEnabled);
-        // DEBUG TEMPORANEO: mostra cosa arriva dal backend
         var _dbg = d && d.bachecaConfig;
         console.warn('[Sponsor DEBUG] bannersEnabled letto da Redis:', _dbg ? _dbg.bannersEnabled : 'bachecaConfig null');
         _sponsorConfig = (d && d.bachecaConfig) || {};
@@ -2231,6 +2387,11 @@ function showDocumentiTab(canEdit) {
         console.log('[Documenti] ✅ Tab bottone visibile');
     } else {
         console.warn('[Documenti] ❌ Bottone tab-documenti non trovato');
+    }
+    // Mostra anche tab Documenti Atleti (solo per coach, non genitore)
+    var tabAd = document.getElementById('tab-athlete-docs');
+    if (tabAd && !new URLSearchParams(location.search).get('athleteId')) {
+        tabAd.style.display = '';
     }
 }
 
@@ -3493,7 +3654,37 @@ window.showDocumentiTab = showDocumentiTab;
     body.theme-light .calendar-table thead th .btn-danger * {
         color: #ffffff !important;
     }
-</style>
+
+/* FIX v1.5.21: testo annata/utente nella navbar visibile in tema chiaro */
+html.theme-light #app-header-info,
+html.theme-light #app-header-info *,
+html.theme-light #app-header-info-mobile,
+html.theme-light #app-header-info-mobile * { color: #1a202c !important; }
+html.theme-light #app-header-info button,
+html.theme-light #app-header-info-mobile button { color: #1a202c !important; border-color: #cbd5e0 !important; }
+
+/* FIX v1.5.21: Documenti Atleti — testo visibile in tema chiaro */
+html.theme-light #tab-content-athlete-docs,
+html.theme-light #tab-content-athlete-docs * {
+    color: #1a202c !important;
+}
+html.theme-light #tab-content-athlete-docs table thead tr {
+    background: #e2e8f0 !important;
+}
+html.theme-light #tab-content-athlete-docs table th {
+    background: #e2e8f0 !important;
+    color: #1a202c !important;
+}
+html.theme-light #tab-content-athlete-docs table td {
+    border-color: #cbd5e0 !important;
+}
+html.theme-light #tab-content-athlete-docs a[style*="color:#22c55e"] {
+    color: #16a34a !important;
+    border-color: #16a34a !important;
+}
+html.theme-light #athlete-docs-table-container {
+    background: #ffffff;
+}</style>
 
 <script>
 // ═══════════════════════════════════════════════════════════════════
@@ -3633,6 +3824,7 @@ if (matBox) {
         oldMat.remove();
         renderMaterialeGenitore(window._lastMateriale, window._lastAthleteId);
     }
+}
 // FIX v1.5.21: lightbox immagini bacheca — apre overlay invece di navigare
 window._showImgLightbox = function(src) {
     var existing = document.getElementById('_img_lightbox');

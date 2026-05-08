@@ -78,8 +78,12 @@ return res.status(400).json({ success: false, message: 'Header X-Annata-Id obbli
 }
 
 const isParentMode = req.query?.parentMode === '1' && req.method === 'GET';
+// FIX v1.5.21: POST con solo calendarResponses o athleteDocs è permessa anche ai genitori non autenticati
+const isCalendarResponsePost = req.method === 'POST' &&
+  req.body && (req.body.calendarResponses !== undefined || req.body.athleteDocs !== undefined) &&
+  Object.keys(req.body).length === 1;
 
-if (!session.isAuthenticated && !isParentMode) {
+if (!session.isAuthenticated && !isParentMode && !isCalendarResponsePost) {
 return res.status(401).json({ success: false, message: 'Accesso non autorizzato. Effettua il login.' });
 }
 const prefix = `annate:${annataId}`;
@@ -100,7 +104,7 @@ return res.status(200).json({ success: true, postImages });
 
 // ── Risposta ridotta per genitori ────────────────────────────────────────
 if (isParentMode) {
-const [calendarEvents, calendarResponses, teamName, convSettings, athletes, posts, globalPosts, documents, materiale, bachecaConfig, convBg, convBg2] = await Promise.all([
+const [calendarEvents, calendarResponses, teamName, convSettings, athletes, posts, globalPosts, documents, materiale, bachecaConfig, convBg, convBg2, athleteDocs] = await Promise.all([
 kv.get(`${prefix}:calendarEvents`),
 kv.get(`${prefix}:calendarResponses`),
 kv.get('global:teamName'),
@@ -110,9 +114,10 @@ kv.get(`${prefix}:posts`),
 kv.get('global:posts'),
 kv.get(`${prefix}:documents`),
 kv.get(`${prefix}:materiale`),
-kv.get('global:bachecaConfig'),   // ← FIX: aggiunto per i banner sponsor
-kv.get(`${prefix}:convBg`),       // ← FIX: sfondo convocazione per genitore
-kv.get(`${prefix}:convBg2`)       // ← FIX: sfondo pre-convocazione per genitore
+kv.get('global:bachecaConfig'),
+kv.get(`${prefix}:convBg`),
+kv.get(`${prefix}:convBg2`),
+kv.get(`${prefix}:athleteDocs`)  // ← documenti caricati dai genitori
 ]);
 
 return res.status(200).json({
@@ -131,7 +136,8 @@ posts: posts || [],
 globalPosts: globalPosts || [],
 documents: (documents || []).filter(d => (d.visibility || []).includes('pubblica')),
 materiale: materiale || { items: [], assignments: {} },
-bachecaConfig: bachecaConfig || {}   // ← FIX: incluso nella risposta
+bachecaConfig: bachecaConfig || {},
+athleteDocs: athleteDocs || {}  // ← incluso nella risposta
 });
 }
 
@@ -173,7 +179,7 @@ athletes, evaluations, gpsData, awards, trainingSessions,
 formationData, matchResults, calendarEvents, calendarResponses,
 materiale, pagamenti, pagVoci, pagLabels, convocazioni, convSettings,
 convBg, convBg2, posts, globalPosts, teamName, individualPassword,
-ratingSheets, documents
+ratingSheets, documents, athleteDocs
 ] = await Promise.all([
 kv.get(`${prefix}:athletes`),
 kv.get(`${prefix}:evaluations`),
@@ -197,7 +203,8 @@ kv.get('global:posts'),
 kv.get('global:teamName'),
 kv.get(`${prefix}:individualPassword`),
 kv.get(`${prefix}:ratingSheets`),
-kv.get(`${prefix}:documents`)
+kv.get(`${prefix}:documents`),
+kv.get(`${prefix}:athleteDocs`)  // ← documenti genitori
 ]);
 
 const data = {
@@ -224,7 +231,8 @@ postImages: {},
 teamName: teamName || 'GO SPORT',
 individualPassword: individualPassword || '1234',
 ratingSheets: ratingSheets || {},
-documents: documents || []
+documents: documents || [],
+athleteDocs: athleteDocs || {}  // ← documenti caricati dai genitori
 };
 
 console.log(`GET /api/data - annata=${annataId} user=${session.username} role=${session.role} atleti=${Array.isArray(data.athletes) ? data.athletes.length : 0} tempo=${Date.now() - t0}ms`);
@@ -256,6 +264,40 @@ await kv.set('global:bachecaConfig', body.bachecaConfig);
 return res.status(200).json({ success: true });
 }
 
+// FIX v1.5.21: calendarResponses può essere salvato da genitori (anche non autenticati)
+// Il check isCalendarResponsePost è già stato fatto sopra
+if (body.calendarResponses !== undefined && Object.keys(body).length === 1) {
+await kv.set(`${prefix}:calendarResponses`, body.calendarResponses);
+return res.status(200).json({ success: true });
+}
+
+// athleteDocs: documenti caricati dai genitori (link Google Drive)
+// Accessibile senza canWrite — il genitore carica il proprio documento
+if (body.athleteDocs !== undefined && Object.keys(body).length === 1) {
+// Leggi i docs esistenti e fai merge (non sovrascrivere tutto)
+const existing = await kv.get(`${prefix}:athleteDocs`) || {};
+// Merge profondo: per ogni atleta, merge dei tipi documento
+// Se un valore è null → elimina quella chiave
+for (const athleteId of Object.keys(body.athleteDocs)) {
+  const incoming = body.athleteDocs[athleteId] || {};
+  const current = existing[athleteId] || {};
+  for (const docKey of Object.keys(incoming)) {
+    if (incoming[docKey] === null) {
+      delete current[docKey]; // elimina documento
+    } else {
+      current[docKey] = incoming[docKey]; // aggiorna/aggiungi
+    }
+  }
+  if (Object.keys(current).length === 0) {
+    delete existing[athleteId]; // rimuovi atleta se non ha più documenti
+  } else {
+    existing[athleteId] = current;
+  }
+}
+await kv.set(`${prefix}:athleteDocs`, existing);
+return res.status(200).json({ success: true });
+}
+
 if (!canWrite(session.role)) {
 return res.status(403).json({ success: false, message: 'Permesso negato' });
 }
@@ -276,6 +318,19 @@ if (body.pagVoci !== undefined) await kv.set(`${prefix}:pagVoci`, body.pagVoci);
 if (body.pagLabels !== undefined) await kv.set(`${prefix}:pagLabels`, body.pagLabels);
 if (body.ratingSheets !== undefined) await kv.set(`${prefix}:ratingSheets`, body.ratingSheets);
 if (body.documents !== undefined) await kv.set(`${prefix}:documents`, body.documents);
+if (body.athleteDocs !== undefined) await kv.set(`${prefix}:athleteDocs`, body.athleteDocs);
+
+// Log scaricamento documento (aggiorna solo il campo downloadLog)
+if (body.athleteDocDownload !== undefined) {
+  const { athleteId, docKey, user } = body.athleteDocDownload;
+  if (athleteId && docKey) {
+    const existing = await kv.get(`${prefix}:athleteDocs`) || {};
+    if (existing[athleteId] && existing[athleteId][docKey]) {
+      existing[athleteId][docKey].downloadLog = { user: user || 'coach', at: new Date().toISOString() };
+      await kv.set(`${prefix}:athleteDocs`, existing);
+    }
+  }
+}
 if (body.convocazioni !== undefined) await kv.set(`${prefix}:convocazioni`, body.convocazioni);
 if (body.convSettings !== undefined) await kv.set(`${prefix}:convSettings`, body.convSettings);
 
