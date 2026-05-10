@@ -12,7 +12,7 @@ const kv = createClient({
 // ==========================================
 
 function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+  return _crypto.randomUUID();
 }
 
 const _crypto = await import('crypto');

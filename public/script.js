@@ -19,7 +19,7 @@ function toLocalDateISO(dateInput) {
     return localDate.toISOString().split('T')[0];
 }
 function generateId() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    return crypto.randomUUID();
 }
 // ==========================================
 // GUARD: Verifica annata selezionata

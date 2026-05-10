@@ -203,7 +203,7 @@ export default async function handler(req, res) {
       }
 
       // Genera ID univoco per la società
-      const societyId = Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
+      const societyId = crypto.randomUUID().replace(/-/g, '').substring(0, 20);
       
       // Genera payload e firma
       const ts = Date.now();
