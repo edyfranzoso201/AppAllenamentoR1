@@ -23,11 +23,11 @@ function setCors(req, res) {
   res.setHeader('Vary', 'Origin');
 }
 
-// Chiave segreta per firmare le licenze - CAMBIA QUESTO VALORE!
-const SECRET_KEY = process.env.LICENSE_SECRET_KEY || 'GOSPORT_SECRET_2026_CAMBIA_QUESTO';
+const SECRET_KEY = process.env.LICENSE_SECRET_KEY;
+const SUPER_ADMIN_PASSWORD = process.env.SUPER_ADMIN_PASSWORD;
 
-// Password Super Admin - CAMBIA QUESTO VALORE!
-const SUPER_ADMIN_PASSWORD = process.env.SUPER_ADMIN_PASSWORD || 'superadmin_gosport_2026';
+if (!SECRET_KEY) throw new Error('Env var LICENSE_SECRET_KEY mancante');
+if (!SUPER_ADMIN_PASSWORD) throw new Error('Env var SUPER_ADMIN_PASSWORD mancante');
 
 // ==========================================
 // UTILITY: Genera firma HMAC

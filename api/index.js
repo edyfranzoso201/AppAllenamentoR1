@@ -553,7 +553,8 @@ export default async function handler(req, res) {
     }
 
     // Endpoint admin — richiedono X-Super-Admin-Password
-    const ADMIN_PWD = process.env.SUPER_ADMIN_PASSWORD || 'superadmin_gosport_2026';
+    const ADMIN_PWD = process.env.SUPER_ADMIN_PASSWORD;
+    if (!ADMIN_PWD) return res.status(500).json({ success: false, message: 'Configurazione server incompleta' });
     const adminPwd  = req.headers['x-super-admin-password'] || req.body?.adminPassword;
     const isAdminReq = adminPwd === ADMIN_PWD;
 

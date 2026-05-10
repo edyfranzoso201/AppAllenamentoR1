@@ -1,4 +1,6 @@
 .vercel
-
-.vercel
 .env*.local
+.graphify_python
+graphify-out/
+CLAUDE.md
+.claude/
