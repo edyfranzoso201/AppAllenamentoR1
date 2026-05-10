@@ -43,7 +43,8 @@ export default async function handler(req, res) {
 
   // Il superadmin può passare societyId esplicitamente nel body
   const superAdminPwd = req.headers['x-super-admin-password'] || null;
-  const SUPER_PWD = process.env.SUPER_ADMIN_PASSWORD || 'superadmin_gosport_2026';
+  const SUPER_PWD = process.env.SUPER_ADMIN_PASSWORD;
+  if (!SUPER_PWD) return res.status(500).json({ success: false, message: 'Configurazione server incompleta' });
   const isSuperAdmin = superAdminPwd === SUPER_PWD;
   const societyId = req.headers['x-society-id'] || (req.body && req.body.societyId) || null;
 
