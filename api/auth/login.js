@@ -176,38 +176,30 @@ export default async function handler(req, res) {
     let licenseStatus = null;
 
     if (user.role === 'admin' && user.societyId) {
-      // Trova tutte le licenze per questo societyId
-      const licenseKeys = await kv.keys('licenze:*');
+      // Lookup diretto tramite indice societyId (2 query invece di N)
+      const licenseKey = await kv.get(`licenze_society:${user.societyId}`);
       let validLicense = null;
 
-      for (const key of licenseKeys) {
-        const license = await kv.get(key);
+      if (licenseKey) {
+        const license = await kv.get(`licenze:${licenseKey}`);
         if (license && license.societyId === user.societyId) {
           const today = new Date().toISOString().split('T')[0];
-          
+
           if (!license.active) {
             licenseStatus = { valid: false, reason: 'revoked', message: 'Licenza disattivata' };
-            break;
-          }
-          
-          if (license.expiry < today) {
+          } else if (license.expiry < today) {
             licenseStatus = { valid: false, reason: 'expired', message: 'Licenza scaduta', expiry: license.expiry };
-            break;
+          } else {
+            validLicense = license;
+            licenseStatus = {
+              valid: true,
+              societyName: license.societyName,
+              expiry: license.expiry,
+              daysLeft: Math.ceil((new Date(license.expiry) - new Date()) / (1000 * 60 * 60 * 24))
+            };
+            license.lastAccess = new Date().toISOString();
+            await kv.set(`licenze:${licenseKey}`, license);
           }
-
-          // Licenza valida trovata
-          validLicense = license;
-          licenseStatus = { 
-            valid: true, 
-            societyName: license.societyName,
-            expiry: license.expiry,
-            daysLeft: Math.ceil((new Date(license.expiry) - new Date()) / (1000 * 60 * 60 * 24))
-          };
-
-          // Aggiorna lastAccess
-          license.lastAccess = new Date().toISOString();
-          await kv.set(key, license);
-          break;
         }
       }
 

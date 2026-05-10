@@ -155,25 +155,19 @@ export default async function handler(req, res) {
     // ACTION: list - Lista tutte le licenze
     // ==========================================
     if (action === 'list' && req.method === 'GET') {
-      const keys = await kv.keys('licenze:*');
-      const licenze = [];
-      
-      for (const key of keys) {
-        const data = await kv.get(key);
-        if (data) {
-          const today = new Date().toISOString().split('T')[0];
-          licenze.push({
-            ...data,
-            licenseKey: key.replace('licenze:', ''),
-            isExpired: data.expiry < today,
-            daysLeft: Math.ceil((new Date(data.expiry) - new Date()) / (1000 * 60 * 60 * 24))
-          });
-        }
-      }
+      const keys = await kv.smembers('licenze:index');
+      const today = new Date().toISOString().split('T')[0];
+      const results = await Promise.all(keys.map(k => kv.get(`licenze:${k}`)));
+      const licenze = results
+        .filter(Boolean)
+        .map((data, i) => ({
+          ...data,
+          licenseKey: keys[i],
+          isExpired: data.expiry < today,
+          daysLeft: Math.ceil((new Date(data.expiry) - new Date()) / (1000 * 60 * 60 * 24))
+        }));
 
-      // Ordina per data creazione (più recenti prima)
       licenze.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
       return res.status(200).json({ success: true, licenze });
     }
 
@@ -190,14 +184,14 @@ export default async function handler(req, res) {
         });
       }
 
-      // Controlla se esiste già una licenza attiva per questa email
-      const existingKeys = await kv.keys('licenze:*');
-      for (const key of existingKeys) {
-        const existing = await kv.get(key);
-        if (existing && existing.email.toLowerCase() === email.toLowerCase() && existing.active) {
-          return res.status(400).json({ 
-            success: false, 
-            message: `Esiste già una licenza attiva per ${email}` 
+      // Controlla se esiste già una licenza attiva per questa email (usa indice)
+      const existingKey = await kv.get(`licenze_email:${email.toLowerCase()}`);
+      if (existingKey) {
+        const existing = await kv.get(`licenze:${existingKey}`);
+        if (existing && existing.active) {
+          return res.status(400).json({
+            success: false,
+            message: `Esiste già una licenza attiva per ${email}`
           });
         }
       }
@@ -226,10 +220,12 @@ export default async function handler(req, res) {
         lastAccess: null
       };
 
-      await kv.set(`licenze:${licenseKey}`, licenseData);
-      
-      // Salva anche indice per trovare licenza da email
-      await kv.set(`licenze_email:${email.toLowerCase()}`, licenseKey);
+      await Promise.all([
+        kv.set(`licenze:${licenseKey}`, licenseData),
+        kv.set(`licenze_email:${email.toLowerCase()}`, licenseKey),
+        kv.set(`licenze_society:${societyId}`, licenseKey),
+        kv.sadd('licenze:index', licenseKey),
+      ]);
 
       console.log(`✅ Nuova licenza creata: ${licenseKey} per ${email} (${societyName})`);
 
@@ -280,10 +276,33 @@ export default async function handler(req, res) {
         return res.status(404).json({ success: false, message: 'Licenza non trovata' });
       }
 
-      await kv.del(`licenze:${licenseKey}`);
-      await kv.del(`licenze_email:${stored.email}`);
+      await Promise.all([
+        kv.del(`licenze:${licenseKey}`),
+        kv.del(`licenze_email:${stored.email}`),
+        kv.del(`licenze_society:${stored.societyId}`),
+        kv.srem('licenze:index', licenseKey),
+      ]);
 
       return res.status(200).json({ success: true, message: 'Licenza eliminata' });
+    }
+
+    // ==========================================
+    // ACTION: migrate - Costruisce indici da licenze esistenti (una tantum)
+    // ==========================================
+    if (action === 'migrate' && req.method === 'POST') {
+      const keys = await kv.keys('licenze:*');
+      const licenseKeys = keys.filter(k => !k.includes(':index') && !k.includes('_email:') && !k.includes('_society:'));
+      const ops = [];
+      for (const key of licenseKeys) {
+        const data = await kv.get(key);
+        if (!data) continue;
+        const lk = key.replace('licenze:', '');
+        ops.push(kv.sadd('licenze:index', lk));
+        if (data.societyId) ops.push(kv.set(`licenze_society:${data.societyId}`, lk));
+        if (data.email) ops.push(kv.set(`licenze_email:${data.email.toLowerCase()}`, lk));
+      }
+      await Promise.all(ops);
+      return res.status(200).json({ success: true, migrated: licenseKeys.length });
     }
 
     return res.status(405).json({ message: 'Metodo o azione non consentiti' });
