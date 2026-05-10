@@ -57,6 +57,22 @@ export default async function handler(req, res) {
         return res.status(401).json({ success: false, message: 'Non autorizzato' });
       }
 
+      // TEMP diagnose: confronta sistemi utenti (rimuovere dopo migrazione)
+      const { action: getAction } = req.query || {};
+      if (getAction === 'diagnose' && isSuperAdmin) {
+        const authUsers = (await kv.get('auth:users')) || [];
+        const legacyHash = (await kv.hgetall('users')) || {};
+        const legacyList = Object.values(legacyHash).map(u => ({ username: u.username, role: u.role }));
+        const activeSet = new Set(authUsers.map(u => u.username));
+        const legacySet = new Set(legacyList.map(u => u.username));
+        return res.status(200).json({
+          attivo: { totale: authUsers.length, utenti: authUsers.map(u => ({ username: u.username, role: u.role })) },
+          legacy: { totale: legacyList.length, utenti: legacyList },
+          soloInLegacy: legacyList.filter(u => !activeSet.has(u.username)),
+          soloInAttivo: authUsers.filter(u => !legacySet.has(u.username)).map(u => ({ username: u.username, role: u.role }))
+        });
+      }
+
       const users = (await kv.get('auth:users')) || [];
 
       // Superadmin vede tutti gli utenti; altrimenti filtra per societyId
