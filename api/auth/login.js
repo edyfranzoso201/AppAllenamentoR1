@@ -106,8 +106,13 @@ export default async function handler(req, res) {
 
     console.log(`🔐 Tentativo login: ${username}`);
 
-    const users = (await kv.get('auth:users')) || [];
-    const user = users.find(u => u.username === username);
+    // Lookup O(1) per chiave individuale, fallback a scansione array
+    let user = await kv.get(`auth:user:${username.toLowerCase()}`);
+    if (user && user.username !== username) user = null; // case-sensitive check
+    if (!user) {
+      const users = (await kv.get('auth:users')) || [];
+      user = users.find(u => u.username === username) || null;
+    }
 
     if (!user) {
       console.log(`   ❌ Utente "${username}" non trovato`);

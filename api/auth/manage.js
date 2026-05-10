@@ -57,22 +57,6 @@ export default async function handler(req, res) {
         return res.status(401).json({ success: false, message: 'Non autorizzato' });
       }
 
-      // TEMP diagnose: confronta sistemi utenti (rimuovere dopo migrazione)
-      const { action: getAction } = req.query || {};
-      if (getAction === 'diagnose' && isSuperAdmin) {
-        const authUsers = (await kv.get('auth:users')) || [];
-        const legacyHash = (await kv.hgetall('users')) || {};
-        const legacyList = Object.values(legacyHash).map(u => ({ username: u.username, role: u.role }));
-        const activeSet = new Set(authUsers.map(u => u.username));
-        const legacySet = new Set(legacyList.map(u => u.username));
-        return res.status(200).json({
-          attivo: { totale: authUsers.length, utenti: authUsers.map(u => ({ username: u.username, role: u.role })) },
-          legacy: { totale: legacyList.length, utenti: legacyList },
-          soloInLegacy: legacyList.filter(u => !activeSet.has(u.username)),
-          soloInAttivo: authUsers.filter(u => !legacySet.has(u.username)).map(u => ({ username: u.username, role: u.role }))
-        });
-      }
-
       const users = (await kv.get('auth:users')) || [];
 
       // Superadmin vede tutti gli utenti; altrimenti filtra per societyId
@@ -140,7 +124,10 @@ export default async function handler(req, res) {
         };
 
         users.push(newUser);
-        await kv.set('auth:users', users);
+        await Promise.all([
+          kv.set('auth:users', users),
+          kv.set(`auth:user:${username.toLowerCase()}`, newUser),
+        ]);
 
         console.log(`✅ Utente creato: ${username} (${newUser.role}) societyId=${societyId}`);
         return res.status(200).json({ success: true, message: 'Utente creato con successo' });
@@ -181,7 +168,10 @@ export default async function handler(req, res) {
         updated.updatedAt = new Date().toISOString();
 
         users[idx] = updated;
-        await kv.set('auth:users', users);
+        await Promise.all([
+          kv.set('auth:users', users),
+          kv.set(`auth:user:${username.toLowerCase()}`, updated),
+        ]);
 
         console.log(`✅ Utente aggiornato: ${username} (${updated.role})`);
         return res.status(200).json({ success: true, message: 'Utente aggiornato con successo' });
@@ -208,10 +198,23 @@ export default async function handler(req, res) {
         }
 
         const updated = users.filter(u => u.username !== username);
-        await kv.set('auth:users', updated);
+        await Promise.all([
+          kv.set('auth:users', updated),
+          kv.del(`auth:user:${username.toLowerCase()}`),
+        ]);
 
         console.log(`✅ Utente eliminato: ${username}`);
         return res.status(200).json({ success: true, message: 'Utente eliminato con successo' });
+      }
+
+      // ── MIGRATE ───────────────────────────────
+      if (action === 'migrate' && isSuperAdmin) {
+        const allUsers = (await kv.get('auth:users')) || [];
+        await Promise.all(
+          allUsers.map(u => kv.set(`auth:user:${u.username.toLowerCase()}`, u))
+        );
+        console.log(`✅ Migrazione: ${allUsers.length} chiavi individuali create`);
+        return res.status(200).json({ success: true, migrated: allUsers.length });
       }
 
       return res.status(400).json({ success: false, message: 'Azione non valida. Usa: create, update, delete' });
