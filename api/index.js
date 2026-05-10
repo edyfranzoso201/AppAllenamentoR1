@@ -574,30 +574,6 @@ export default async function handler(req, res) {
       return await handleAccessLog(req, res);
     }
 
-    // Route di test per verificare KV (rimuovere dopo test)
-    if (path === '/api/test-kv') {
-      try {
-        if (req.method === 'POST') {
-          const entry = { ts: new Date().toISOString(), username: 'kv-test', role: 'test' };
-          const ex = await kv.get('access_log');
-          const arr = Array.isArray(ex) ? ex : [];
-          await kv.set('access_log', [entry, ...arr].slice(0, 500));
-          return res.status(200).json({ ok: true, written: entry, prev_count: arr.length });
-        } else {
-          const logs = await kv.get('access_log');
-          return res.status(200).json({ 
-            ok: true, 
-            count: Array.isArray(logs) ? logs.length : 0,
-            type: typeof logs,
-            first: Array.isArray(logs) ? logs[0] : logs,
-            kvUrl: process.env.UPSTASH_KV_REST_API_URL ? 'upstash' : (process.env.KV_REST_API_URL ? 'kv' : 'MISSING')
-          });
-        }
-      } catch(e) {
-        return res.status(500).json({ ok: false, error: e.message });
-      }
-    }
-
     // ============================================
     // Annate routes
     // ============================================
