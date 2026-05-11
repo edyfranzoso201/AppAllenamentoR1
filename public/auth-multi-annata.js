@@ -7,6 +7,7 @@
     // ==========================================
     
     const SESSION_KEY = 'gosport_auth_session';
+    const SESSION_TOKEN = 'gosport_session_token';
     const SESSION_USER = 'gosport_auth_user';
     const SESSION_ANNATA = 'gosport_current_annata';
     const SESSION_USER_ROLE = 'gosport_user_role';
@@ -103,6 +104,15 @@
         }
 
         function logout() {
+            const token = sessionStorage.getItem(SESSION_TOKEN);
+            if (token) {
+                fetch('/api/auth/session?action=revoke', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                }).catch(() => {});
+            }
+            sessionStorage.removeItem(SESSION_TOKEN);
             sessionStorage.removeItem(SESSION_KEY);
             sessionStorage.removeItem(SESSION_KEY + '_expiry');
             sessionStorage.removeItem(SESSION_USER);
@@ -332,6 +342,16 @@
         // API CALLS
         // ==========================================
         
+        async function verifySessionToken(token) {
+            const response = await fetch('/api/auth/session?action=verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token })
+            });
+            if (!response.ok) throw new Error('verify ' + response.status);
+            return await response.json();
+        }
+
         async function loginUser(username, password) {
             try {
                 const response = await fetch('/api/auth/login', {
@@ -491,6 +511,9 @@
                     
                     if (result.success) {
                         sessionStorage.setItem(SESSION_KEY, 'true');
+                        if (result.sessionToken) {
+                            sessionStorage.setItem(SESSION_TOKEN, result.sessionToken);
+                        }
                         sessionStorage.setItem(SESSION_USER, username);
                         sessionStorage.setItem(SESSION_USER_ROLE, result.role);
                         // Salva permissions per controllo lato client
@@ -2213,49 +2236,80 @@ window.deleteUser = async function(username) {
 
         if (!isAuthenticated()) {
             showLoginScreen();
-        } else if (!hasSelectedAnnata()) {
-            // Già autenticato ma no annata → controlla licenza se admin
-            proceedAfterLogin();
         } else {
-            // Già autenticato e annata selezionata → dashboard
-            if (originalBodyHTML) {
-                document.body.innerHTML = originalBodyHTML;
-            }
-            document.documentElement.classList.add('authenticated');
-            setupFetchInterceptor();
-            addLogoutButton();
-            // Ripristina piano licenza da localStorage o licenseStatus se non già in sessione
-            if (!sessionStorage.getItem('gosport_license_plan')) {
+            // ── Verifica sessione lato server (async) ────────────────
+            (async () => {
+                const token = sessionStorage.getItem(SESSION_TOKEN);
+
+                if (!token) {
+                    // Sessione senza token (pre-Fix#2 o manipolata) → ri-login
+                    logout();
+                    showLoginScreen();
+                    return;
+                }
+
+                let serverOk = false;
                 try {
-                    // Prima prova da licenseStatus (login con societyId)
-                    const ls = sessionStorage.getItem('gosport_license_status');
-                    if (ls) {
-                        const parsed = JSON.parse(ls);
-                        if (parsed.plan) {
-                            sessionStorage.setItem('gosport_license_plan', parsed.plan);
-                        }
+                    const result = await verifySessionToken(token);
+                    serverOk = result.valid === true;
+                } catch(e) {
+                    // Fallback: se il server non risponde (rete/timeout) accettiamo la cache
+                    console.warn('⚠️ Verifica sessione non disponibile, uso sessione cache:', e.message);
+                    serverOk = true;
+                }
+
+                if (!serverOk) {
+                    logout();
+                    showLoginScreen();
+                    return;
+                }
+
+                // Token valido → procedi normalmente
+                if (!hasSelectedAnnata()) {
+                    // Già autenticato ma no annata → controlla licenza se admin
+                    proceedAfterLogin();
+                } else {
+                    // Già autenticato e annata selezionata → dashboard
+                    if (originalBodyHTML) {
+                        document.body.innerHTML = originalBodyHTML;
                     }
-                    // Poi prova da localStorage (attivazione manuale)
+                    document.documentElement.classList.add('authenticated');
+                    setupFetchInterceptor();
+                    addLogoutButton();
+                    // Ripristina piano licenza da localStorage o licenseStatus se non già in sessione
                     if (!sessionStorage.getItem('gosport_license_plan')) {
-                        const ld = localStorage.getItem('gosport_license_data');
-                        if (ld) {
-                            const parsed = JSON.parse(ld);
-                            sessionStorage.setItem('gosport_license_plan', parsed.plan || 'platinum');
-                        }
+                        try {
+                            // Prima prova da licenseStatus (login con societyId)
+                            const ls = sessionStorage.getItem('gosport_license_status');
+                            if (ls) {
+                                const parsed = JSON.parse(ls);
+                                if (parsed.plan) {
+                                    sessionStorage.setItem('gosport_license_plan', parsed.plan);
+                                }
+                            }
+                            // Poi prova da localStorage (attivazione manuale)
+                            if (!sessionStorage.getItem('gosport_license_plan')) {
+                                const ld = localStorage.getItem('gosport_license_data');
+                                if (ld) {
+                                    const parsed = JSON.parse(ld);
+                                    sessionStorage.setItem('gosport_license_plan', parsed.plan || 'platinum');
+                                }
+                            }
+                        } catch(e) {}
                     }
-                } catch(e) {}
-            }
-            setTimeout(() => applyRoleNavigation(), 150);
+                    setTimeout(() => applyRoleNavigation(), 150);
 
-            // Banner scadenza solo per admin
-            if (isAdmin()) {
-                setTimeout(() => showLicenseBanner(), 1000);
-            }
+                    // Banner scadenza solo per admin
+                    if (isAdmin()) {
+                        setTimeout(() => showLicenseBanner(), 1000);
+                    }
 
-            window.getCurrentAnnata = getCurrentAnnata;
-            window.getCurrentUser = getCurrentUser;
-            window.getUserRole = getUserRole;
-            window.isAdmin = isAdmin;
+                    window.getCurrentAnnata = getCurrentAnnata;
+                    window.getCurrentUser = getCurrentUser;
+                    window.getUserRole = getUserRole;
+                    window.isAdmin = isAdmin;
+                }
+            })();
         }
     }
 

@@ -170,6 +170,15 @@ export default async function handler(req, res) {
     await kv.del(`ratelimit:${username.toLowerCase()}`);
     console.log(`   ✅ Login OK: ${username} (${user.role}) societyId=${user.societyId || 'legacy'}`);
 
+    // ── Genera token di sessione lato server (TTL 8 ore) ─────────
+    const sessionToken = crypto.randomUUID();
+    await kv.set(`session:${sessionToken}`, {
+      username: user.username,
+      role: user.role,
+      societyId: user.societyId || null
+    });
+    await kv.expire(`session:${sessionToken}`, 8 * 60 * 60);
+
     // ==========================================
     // VERIFICA LICENZA AUTOMATICA (solo admin)
     // ==========================================
@@ -215,6 +224,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       message: 'Login effettuato con successo',
+      sessionToken,
       role: user.role,
       societyId: user.societyId || null,
       licenseStatus,  // ← il client usa questo per decidere se mostrare la schermata licenza
