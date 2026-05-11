@@ -589,8 +589,8 @@ document.addEventListener('DOMContentLoaded', () => {
         jersey.className = 'player-jersey';
         jersey.dataset.athleteId = athlete.id;
         jersey.dataset.role = athlete.role;
-        const jerseyColor = athlete.role.toLowerCase().includes('portiere') ? 'var(--gk-color)' : 'var(--secondary-blue)';
-        jersey.innerHTML = `<div class="jersey-body" style="background-color: ${jerseyColor};"><span class="jersey-number">${athlete.number}</span></div><span class="player-name">${athlete.name}</span>`;
+        const jerseyColor = athlete.role.toLowerCase().includes('portiere') ? '#E8C135' : '#1e5095';
+        jersey.innerHTML = `<div class="jersey-body" style="--jersey-color: ${jerseyColor}; background-color: ${jerseyColor};"><span class="jersey-number">${athlete.number}</span></div><span class="player-name">${athlete.name}</span>`;
         return jersey;
     };
     const createTokenElement = (type, id) => {

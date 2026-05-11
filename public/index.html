@@ -946,25 +946,28 @@
     }
 
     /* ── ECCEZIONE MAGLIETTE GIOCATORI SUL CAMPO ──
-       Le magliette hanno background-color inline — non azzerare */
-    .player-jersey, .player-jersey *,
-    .jersey-body, .jersey-number, .player-name,
-    .token, .token * {
-        background-color: revert !important;
-        color: revert !important;
-        border-color: revert !important;
+       Il colore è passato via --jersey-color (custom property nell'inline style).
+       Serve anche #field-container .jersey-body per battere #field-container * */
+    .jersey-body,
+    #field-container .jersey-body {
+        background-color: var(--jersey-color) !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
-    /* Forza visibilità nome e numero */
+    .jersey-number, .player-name, .token-captain {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
     .jersey-number {
         color: #ffffff !important;
         font-weight: bold !important;
+        background: transparent !important;
     }
     .player-name {
         color: #ffffff !important;
         font-size: 0.6rem !important;
         text-shadow: 1px 1px 2px rgba(0,0,0,0.8) !important;
+        background: transparent !important;
     }
 
     /* ── ECCEZIONE CAMPO DI FORMAZIONE ──
@@ -1082,6 +1085,47 @@
     }
     canvas { max-width: 100% !important; height: auto !important; }
     .tab-section.printing-now { padding-bottom: 0 !important; }
+
+    /* ── FIX VALUTAZIONI: override regola mobile che nasconde il contenuto ──
+       @media (max-width:991px) imposta display:none sui figli — ripristina in stampa */
+    #report-valutazioni-section > *:not(.d-lg-none) {
+        display: block !important;
+        visibility: visible !important;
+    }
+    #report-valutazioni-section .d-lg-none {
+        display: none !important;
+    }
+
+    /* ── FIX CALENDARIO: rimuovi scroll orizzontale e vincola celle ── */
+    [style*="overflow-x:auto"], [style*="overflow-x: auto"] {
+        overflow: visible !important;
+    }
+    [style*="min-width:560px"], [style*="min-width: 560px"] {
+        min-width: 0 !important;
+        width: 100% !important;
+    }
+    .calendar-day {
+        min-height: 0 !important;
+        overflow: hidden !important;
+        font-size: 8pt !important;
+        padding: 3px !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }
+    .calendar-grid-header.calendar-grid > div {
+        font-size: 8pt !important;
+        padding: 2px !important;
+    }
+    .calendar-session {
+        font-size: 7pt !important;
+        padding: 1px 2px !important;
+        overflow: hidden !important;
+        white-space: nowrap !important;
+        text-overflow: ellipsis !important;
+    }
+    .calendar-grid {
+        gap: 1px !important;
+    }
 }
 </style>
 </head>
@@ -4458,7 +4502,16 @@ footer, body > footer { display: none !important; visibility: hidden !important;
     display: none !important;
 }
 
-/* GPS: mostra anche #confronto-squadra-section quando ha printing-now */
+/* GPS: mostra anche #confronto-squadra-section quando ha printing-now.
+   ENTRAMBE le sezioni GPS usano position:relative per evitare overlap
+   (style.css .printing-now dà position:absolute che le sovrappone a top:0) */
+#confronto-squadra-section.printing-now,
+.tab-section#confronto-squadra-section.printing-now,
+#monitoraggio-gps-section.printing-now {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+}
 #confronto-squadra-section.printing-now,
 .tab-section#confronto-squadra-section.printing-now {
     display: block !important;
@@ -4476,8 +4529,7 @@ footer, body > footer { display: none !important; visibility: hidden !important;
 
 /* FORMAZIONE: scala il campo per adattarsi al foglio A4 in stampa */
 #formazione-section.printing-now #pitch-wrapper {
-    transform: scale(0.75) !important;
-    transform-origin: top center !important;
+    transform: none !important;
     width: 100% !important;
     max-width: 100% !important;
     margin-left: auto !important;

@@ -668,41 +668,69 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 
 /* STAMPA - Mantieni il campo ruotato anche in stampa */
 @media print {
+    /* Scale 1.1: campo visivo 715px × 440px — entra in A4 senza wrapper scale */
     .printing-now #field-container {
         width: 400px !important;
         height: 650px !important;
-        transform: rotate(90deg) scale(1.5) !important;
+        transform: rotate(90deg) scale(1.1) !important;
         page-break-inside: avoid;
         margin: 20px auto -85px !important;
     }
-    
+
+    /* Panchina: riga orizzontale semplice senza rotazione */
     .printing-now #field-bench-area {
-        width: 130px !important;
-        height: 650px !important;
-        transform: rotate(90deg) scale(1.5) !important;
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 10px !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 60px !important;
+        transform: none !important;
+        margin: 12px auto 0 !important;
+        padding: 6px 10px !important;
+        border: 1px dashed #999 !important;
+        border-radius: 4px !important;
+        background-color: transparent !important;
         page-break-inside: avoid;
-        margin: -85px auto -160px !important;
     }
-    
-    .printing-now .player-jersey {
+
+    /* Magliette sul campo: counter-rotate + translate per posizionamento assoluto */
+    .printing-now #field-container .player-jersey {
         transform: translate(-50%, -50%) rotate(-90deg) !important;
+        font-size: 10px !important;
     }
-    
+
+    /* Magliette in panchina: flusso statico, nessuna rotazione */
+    .printing-now #field-bench-area .player-jersey {
+        position: static !important;
+        transform: none !important;
+        font-size: 10px !important;
+        left: auto !important;
+        top: auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        width: auto !important;
+    }
+
     .printing-now .token {
         transform: translate(-50%, -50%) rotate(-90deg) !important;
     }
-    
+
     .printing-now #pitch-wrapper {
         flex-direction: column;
         gap: 0;
         margin: 0 auto;
     }
-    
+
     .printing-now #formazione-section {
         padding: 0;
         margin-top: -20px;
     }
-    
+
     .printing-now #calendario-section {
         margin-top: 50px !important;
     }
