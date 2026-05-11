@@ -2236,80 +2236,64 @@ window.deleteUser = async function(username) {
 
         if (!isAuthenticated()) {
             showLoginScreen();
-        } else {
-            // ── Interceptor subito (sincrono): script.js fa fetch prima che l'await finisca
-            setupFetchInterceptor();
-
-            // ── Verifica sessione lato server (async) ────────────────
+        } else if (!hasSelectedAnnata()) {
+            // ── Già autenticato, nessuna annata → verifica token prima di procedere ──
             (async () => {
                 const token = sessionStorage.getItem(SESSION_TOKEN);
-
-                if (!token) {
-                    // Sessione senza token (pre-Fix#2 o manipolata) → ri-login
-                    logout();
-                    showLoginScreen();
-                    return;
-                }
-
+                if (!token) { logout(); showLoginScreen(); return; }
                 let serverOk = false;
                 try {
                     const result = await verifySessionToken(token);
                     serverOk = result.valid === true;
                 } catch(e) {
-                    // Fallback: se il server non risponde (rete/timeout) accettiamo la cache
                     console.warn('⚠️ Verifica sessione non disponibile, uso sessione cache:', e.message);
                     serverOk = true;
                 }
-
-                if (!serverOk) {
-                    logout();
-                    showLoginScreen();
-                    return;
-                }
-
-                // Token valido → procedi normalmente
-                if (!hasSelectedAnnata()) {
-                    // Già autenticato ma no annata → controlla licenza se admin
-                    proceedAfterLogin();
-                } else {
-                    // Già autenticato e annata selezionata → dashboard
-                    if (originalBodyHTML) {
-                        document.body.innerHTML = originalBodyHTML;
+                if (!serverOk) { logout(); showLoginScreen(); return; }
+                proceedAfterLogin();
+            })();
+        } else {
+            // ── Già autenticato + annata selezionata → dashboard ─────────────────────
+            // Ripristina body e interceptor in modo SINCRONO (prima che script.js carichi i dati)
+            if (originalBodyHTML) {
+                document.body.innerHTML = originalBodyHTML;
+            }
+            document.documentElement.classList.add('authenticated');
+            setupFetchInterceptor();
+            addLogoutButton();
+            // Ripristina piano licenza da localStorage o licenseStatus se non già in sessione
+            if (!sessionStorage.getItem('gosport_license_plan')) {
+                try {
+                    const ls = sessionStorage.getItem('gosport_license_status');
+                    if (ls) {
+                        const parsed = JSON.parse(ls);
+                        if (parsed.plan) sessionStorage.setItem('gosport_license_plan', parsed.plan);
                     }
-                    document.documentElement.classList.add('authenticated');
-                    addLogoutButton();
-                    // Ripristina piano licenza da localStorage o licenseStatus se non già in sessione
                     if (!sessionStorage.getItem('gosport_license_plan')) {
-                        try {
-                            // Prima prova da licenseStatus (login con societyId)
-                            const ls = sessionStorage.getItem('gosport_license_status');
-                            if (ls) {
-                                const parsed = JSON.parse(ls);
-                                if (parsed.plan) {
-                                    sessionStorage.setItem('gosport_license_plan', parsed.plan);
-                                }
-                            }
-                            // Poi prova da localStorage (attivazione manuale)
-                            if (!sessionStorage.getItem('gosport_license_plan')) {
-                                const ld = localStorage.getItem('gosport_license_data');
-                                if (ld) {
-                                    const parsed = JSON.parse(ld);
-                                    sessionStorage.setItem('gosport_license_plan', parsed.plan || 'platinum');
-                                }
-                            }
-                        } catch(e) {}
+                        const ld = localStorage.getItem('gosport_license_data');
+                        if (ld) {
+                            const parsed = JSON.parse(ld);
+                            sessionStorage.setItem('gosport_license_plan', parsed.plan || 'platinum');
+                        }
                     }
-                    setTimeout(() => applyRoleNavigation(), 150);
+                } catch(e) {}
+            }
+            setTimeout(() => applyRoleNavigation(), 150);
+            if (isAdmin()) setTimeout(() => showLicenseBanner(), 1000);
+            window.getCurrentAnnata = getCurrentAnnata;
+            window.getCurrentUser = getCurrentUser;
+            window.getUserRole = getUserRole;
+            window.isAdmin = isAdmin;
 
-                    // Banner scadenza solo per admin
-                    if (isAdmin()) {
-                        setTimeout(() => showLicenseBanner(), 1000);
-                    }
-
-                    window.getCurrentAnnata = getCurrentAnnata;
-                    window.getCurrentUser = getCurrentUser;
-                    window.getUserRole = getUserRole;
-                    window.isAdmin = isAdmin;
+            // ── Verifica token in background: se invalido forza logout al prossimo reload ─
+            (async () => {
+                const token = sessionStorage.getItem(SESSION_TOKEN);
+                if (!token) { logout(); window.location.reload(); return; }
+                try {
+                    const result = await verifySessionToken(token);
+                    if (!result.valid) { logout(); window.location.reload(); }
+                } catch(e) {
+                    console.warn('⚠️ Verifica sessione non disponibile, uso sessione cache:', e.message);
                 }
             })();
         }
