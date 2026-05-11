@@ -3044,6 +3044,12 @@ document.addEventListener('DOMContentLoaded', function() {
     function showAccessTabIfAdmin() {
         if (getUserRole() === 'admin') {
             document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
+            // Accessi (admin): solo Platinum — riapplica piano dopo aver mostrato admin-only
+            var _plan = sessionStorage.getItem('gosport_license_plan') || 'platinum';
+            if (_plan !== 'platinum') {
+                var acBtn = document.querySelector('[data-tab="accessi-section"]');
+                if (acBtn) acBtn.style.display = 'none';
+            }
         }
     }
 

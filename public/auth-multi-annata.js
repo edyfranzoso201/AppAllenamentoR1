@@ -2060,7 +2060,7 @@ window.deleteUser = async function(username) {
             // Tab inclusi per piano (cumulativi: gold include silver, platinum include tutto)
             var PLAN_TABS = {
                 silver:   ['home-section', 'squadra-section', 'materiale-section',
-                           'pagamenti-section', 'convocazioni-section'],
+                           'convocazioni-section'],
                 gold:     ['home-section', 'squadra-section', 'materiale-section',
                            'calendario-section', 'pagamenti-section', 'convocazioni-section',
                            'monitoraggio-gps-section', 'analisi-singolo-section',
@@ -2088,6 +2088,17 @@ window.deleteUser = async function(username) {
                 document.querySelectorAll('.tab-external').forEach(function(el) {
                     el.style.display = 'none';
                 });
+            }
+
+            // Pagelle (.rating-btn): solo Platinum — nasconde anche quelli aggiunti dinamicamente
+            if (licensePlan !== 'platinum') {
+                var _hidePagelle = function() {
+                    document.querySelectorAll('.rating-btn').forEach(function(el) {
+                        el.style.display = 'none';
+                    });
+                };
+                _hidePagelle();
+                new MutationObserver(_hidePagelle).observe(document.body, { childList: true, subtree: true });
             }
 
             console.log('🎫 Piano licenza: ' + licensePlan + ' | Tab consentiti: ' + allowedByPlan.length);

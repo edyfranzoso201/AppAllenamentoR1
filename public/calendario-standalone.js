@@ -623,7 +623,9 @@ if (themeBtn) {
     isParentView = false;
     // Mostra tab Bacheca per coach/admin
     if (typeof showBachecaTab === 'function') showBachecaTab();
-    if (typeof showDocumentiTab === 'function') {
+    // Documenti Società + Atleti: solo Platinum
+    var _calPlan = sessionStorage.getItem('gosport_license_plan') || 'platinum';
+    if (_calPlan === 'platinum' && typeof showDocumentiTab === 'function') {
       var _dRole = sessionStorage.getItem('gosport_user_role') || '';
       showDocumentiTab(['admin','coach_l1','coach_l2'].indexOf(_dRole) >= 0);
     }
