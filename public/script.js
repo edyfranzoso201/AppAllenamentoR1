@@ -1476,7 +1476,8 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.topAssistsContainer.innerHTML = ol;
     };
     const updateMatchAnalysisChart = () => {
-        const opponentFilter = elements.matchOpponentFilter.value;
+        if (!document.getElementById('matchResultsChart')) return;
+        const opponentFilter = elements.matchOpponentFilter ? elements.matchOpponentFilter.value : 'all';
         const period = elements.matchPeriodToggle.querySelector('.active').dataset.period;
         
         // Filtro solo le partite con risultato effettivo (esclude partite future senza risultato)
