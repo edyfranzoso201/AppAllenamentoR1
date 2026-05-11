@@ -2237,6 +2237,9 @@ window.deleteUser = async function(username) {
         if (!isAuthenticated()) {
             showLoginScreen();
         } else {
+            // ── Interceptor subito (sincrono): script.js fa fetch prima che l'await finisca
+            setupFetchInterceptor();
+
             // ── Verifica sessione lato server (async) ────────────────
             (async () => {
                 const token = sessionStorage.getItem(SESSION_TOKEN);
@@ -2274,7 +2277,6 @@ window.deleteUser = async function(username) {
                         document.body.innerHTML = originalBodyHTML;
                     }
                     document.documentElement.classList.add('authenticated');
-                    setupFetchInterceptor();
                     addLogoutButton();
                     // Ripristina piano licenza da localStorage o licenseStatus se non già in sessione
                     if (!sessionStorage.getItem('gosport_license_plan')) {
