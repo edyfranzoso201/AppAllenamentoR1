@@ -1103,7 +1103,12 @@
         return true;
       });
 
-      const sessionDates = Object.keys(evaluations).sort();
+      // Sessioni reali = date con almeno 1 atleta presente (presenza-allenamento > 0)
+      const sessionDates = Object.keys(evaluations).filter(date =>
+        Object.values(evaluations[date]).some(ev =>
+          ev && parseInt(ev['presenza-allenamento'], 10) > 0
+        )
+      ).sort();
       const totalSessions = sessionDates.length;
 
       const stats = filtered.map(a => {
