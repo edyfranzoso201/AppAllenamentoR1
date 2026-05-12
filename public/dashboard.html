@@ -604,9 +604,9 @@
                   <th>Atleta / Staff</th>
                   <th style="text-align:center">Sessioni</th>
                   <th style="text-align:center;color:#22c55e">Presenti</th>
-                  <th style="text-align:center;color:#ef4444">Assenti</th>
                   <th style="text-align:center;color:#f59e0b">Giustif.</th>
-                  <th style="min-width:140px">% Presenze</th>
+                  <th style="text-align:center;color:#ef4444">Assenti</th>
+                  <th style="min-width:140px">% (P+G / Tot)</th>
                 </tr>
               </thead>
               <tbody id="presenze-tbody"></tbody>
@@ -1108,19 +1108,20 @@
 
       const stats = filtered.map(a => {
         const id = String(a.id);
-        let present = 0, absent = 0, justified = 0;
+        let present = 0, justified = 0;
         sessionDates.forEach(date => {
           const ev = (evaluations[date] || {})[id];
           if (!ev) return;
           const val = parseInt(ev['presenza-allenamento'], 10);
           if (val > 0) present++;
-          else if (val === 0) absent++;
           else if (val === -1) justified++;
         });
-        const sessions = present + absent + justified;
-        const pct = sessions > 0 ? Math.round(present / sessions * 100) : null;
-        return { ...a, present, absent, justified, sessions, pct };
-      }).sort((a, b) => (b.present || 0) - (a.present || 0));
+        // Assenti = tutte le sessioni non presenti e non giustificate
+        const absent = totalSessions - present - justified;
+        // % include le giustificate (infortuni in partita = presenza valida)
+        const pct = totalSessions > 0 ? Math.round((present + justified) / totalSessions * 100) : null;
+        return { ...a, present, absent: Math.max(0, absent), justified, sessions: totalSessions, pct };
+      }).sort((a, b) => (b.pct ?? -1) - (a.pct ?? -1));
 
       const withPct = stats.filter(s => s.pct !== null);
       const avgPct = withPct.length > 0 ? Math.round(withPct.reduce((s, x) => s + x.pct, 0) / withPct.length) : 0;
@@ -1149,8 +1150,8 @@
               <td><strong>${s.name || '—'}</strong>${nameExtra}</td>
               <td style="text-align:center">${s.sessions}</td>
               <td style="text-align:center;color:#22c55e">${s.present}</td>
-              <td style="text-align:center;color:#ef4444">${s.absent}</td>
               <td style="text-align:center;color:#f59e0b">${s.justified}</td>
+              <td style="text-align:center;color:#ef4444">${s.absent}</td>
               <td style="min-width:130px">
                 <div style="display:flex;align-items:center;gap:8px">
                   <div style="flex:1;background:var(--bg-panel);border-radius:4px;height:8px">
