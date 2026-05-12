@@ -1234,6 +1234,11 @@ async function showUserModal(userData = null) {
                         <option value="coach_readonly" ${userData?.role === 'coach_readonly' ? 'selected' : ''}>👁️ Coach Read-only</option><option value=\"dirigente_l2\" ${userData?.role === 'dirigente_l2' ? 'selected' : ''}>📂 Dirigente L2 (Edit+Materiale)</option><option value="dirigente_l3" ${userData?.role === 'dirigente_l3' ? 'selected' : ''}>📋 Dirigente L3 (Squadra)</option><option value="dirigente_l1" ${userData?.role === 'dirigente_l1' ? 'selected' : ''}>🏅 Dirigente L1 (Edit+Materiale Completo)</option><option value=\"dirigente_l4\" ${userData?.role === 'dirigente_l4' ? 'selected' : ''}>📋 Dirigente L4 (Solo Materiale)</option>
                         <option value="societa_l1" ${userData?.role === 'societa_l1' ? 'selected' : ''}>🏛️ Società L1 (Dirigenti Società)</option>
                         <option value="societa_l3" ${userData?.role === 'societa_l3' ? 'selected' : ''}>🏢 Società L3 (Segreteria + Visione Base)</option>
+                        <optgroup label="── Dashboard Direttivo (solo Platinum) ──">
+                        <option value="direttivo" ${userData?.role === 'direttivo' ? 'selected' : ''}>🏛️ Direttivo (A1)</option>
+                        <option value="dirigente" ${userData?.role === 'dirigente' ? 'selected' : ''}>📋 Dirigente (A2)</option>
+                        <option value="staff" ${userData?.role === 'staff' ? 'selected' : ''}>👥 Staff (A3)</option>
+                        </optgroup>
                     </select>
                 </div>
                 <div id="annate-container" style="display:${userData?.role !== 'admin' || !userData ? 'block' : 'none'};">
@@ -1866,6 +1871,11 @@ async function showUserModal(userData = null) {
                         <option value="coach_readonly" ${userData?.role === 'coach_readonly' ? 'selected' : ''}>👁️ Coach Read-only</option><option value=\"dirigente_l2\" ${userData?.role === 'dirigente_l2' ? 'selected' : ''}>📂 Dirigente L2 (Edit+Materiale)</option><option value="dirigente_l3" ${userData?.role === 'dirigente_l3' ? 'selected' : ''}>📋 Dirigente L3 (Squadra)</option><option value="dirigente_l1" ${userData?.role === 'dirigente_l1' ? 'selected' : ''}>🏅 Dirigente L1 (Edit+Materiale Completo)</option><option value=\"dirigente_l4\" ${userData?.role === 'dirigente_l4' ? 'selected' : ''}>📋 Dirigente L4 (Solo Materiale)</option>
                         <option value="societa_l1" ${userData?.role === 'societa_l1' ? 'selected' : ''}>🏛️ Società L1 (Dirigenti Società)</option>
                         <option value="societa_l3" ${userData?.role === 'societa_l3' ? 'selected' : ''}>🏢 Società L3 (Segreteria + Visione Base)</option>
+                        <optgroup label="── Dashboard Direttivo (solo Platinum) ──">
+                        <option value="direttivo" ${userData?.role === 'direttivo' ? 'selected' : ''}>🏛️ Direttivo (A1)</option>
+                        <option value="dirigente" ${userData?.role === 'dirigente' ? 'selected' : ''}>📋 Dirigente (A2)</option>
+                        <option value="staff" ${userData?.role === 'staff' ? 'selected' : ''}>👥 Staff (A3)</option>
+                        </optgroup>
                     </select>
                 </div>
                 <div id="annate-container" style="display:${userData?.role !== 'admin' || !userData ? 'block' : 'none'};">
