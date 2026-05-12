@@ -613,6 +613,11 @@
                 <option value="dirigente_l4">📋 Dirigente L4</option>
                 <option value="societa_l1">🏛️ Società L1</option>
                 <option value="societa_l3">🏢 Società L3</option>
+                <optgroup label="── Dashboard (solo Platinum) ──">
+                <option value="direttivo">🏛️ Direttivo (A1)</option>
+                <option value="dirigente">📋 Dirigente (A2)</option>
+                <option value="staff">👥 Staff (A3)</option>
+                </optgroup>
             </select>
         </div>
         <div class="modal-footer">
@@ -1193,7 +1198,8 @@ function renderUsers(users) {
         const roleLabels = {
             admin:'👑 Admin', coach_l1:'🥇 C-L1', coach_l2:'🥈 C-L2', coach_l3:'🥉 C-L3',
             coach_readonly:'👁️ Read-only', dirigente_l1:'🏅 D-L1', dirigente_l2:'📂 D-L2',
-            dirigente_l3:'📋 D-L3', dirigente_l4:'📋 D-L4', societa_l1:'🏛️ Soc-L1', societa_l3:'🏢 Soc-L3'
+            dirigente_l3:'📋 D-L3', dirigente_l4:'📋 D-L4', societa_l1:'🏛️ Soc-L1', societa_l3:'🏢 Soc-L3',
+            direttivo:'🏛️ Direttivo (A1)', dirigente:'📋 Dirigente (A2)', staff:'👥 Staff (A3)'
         };
         const roleLabel = roleLabels[u.role] || u.role;
         const society = u.societyId ? `<span style="font-size:0.72rem;color:#64748b">${u.societyId.substring(0,8)}...</span>` : '<span style="font-size:0.72rem;color:#ef4444">no societyId</span>';

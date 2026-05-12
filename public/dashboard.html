@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="it" data-bs-theme="dark" style="color-scheme:dark;">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Dashboard Direttivo — GO Sport</title>
+  <style>
+  /* ══ Variabili Tema ══════════════════════════════════════════════ */
+  :root {
+    --bg-body:      #060f1e;
+    --bg-card:      #0d1b2a;
+    --bg-primary:   #0f172a;
+    --bg-panel:     #1e293b;
+    --border:       #2d4a8a;
+    --border-soft:  #1e3a5f;
+    --text-primary: #e2e8f0;
+    --text-muted:   #64748b;
+    --accent:       #3b82f6;
+    --accent-hover: #2563eb;
+    --sidebar-w:    220px;
+  }
+  html.theme-light {
+    --bg-body:      #f1f5f9;
+    --bg-card:      #ffffff;
+    --bg-primary:   #ffffff;
+    --bg-panel:     #e2e8f0;
+    --border:       #cbd5e1;
+    --border-soft:  #e2e8f0;
+    --text-primary: #0f172a;
+    --text-muted:   #64748b;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: var(--bg-body);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ══ HEADER ════════════════════════════════════════════════════ */
+  .dash-header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 56px;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-soft);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+    z-index: 100;
+  }
+  .dash-header .logo {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  .dash-header .title {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    flex: 1;
+  }
+  .dash-header .header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .dash-header .user-badge {
+    font-size: 0.78rem;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-soft);
+    border-radius: 20px;
+    padding: 4px 12px;
+    color: var(--text-primary);
+    white-space: nowrap;
+  }
+  .dash-header .role-badge {
+    font-size: 0.72rem;
+    background: #1e3a5f;
+    border: 1px solid var(--accent);
+    border-radius: 20px;
+    padding: 3px 10px;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  .btn-icon {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 6px 10px;
+    transition: background 0.15s;
+  }
+  .btn-icon:hover { background: var(--border); }
+
+  /* ══ LAYOUT ════════════════════════════════════════════════════ */
+  .dash-layout {
+    display: flex;
+    margin-top: 56px;
+    min-height: calc(100vh - 56px);
+  }
+
+  /* ══ SIDEBAR ═══════════════════════════════════════════════════ */
+  .dash-sidebar {
+    width: var(--sidebar-w);
+    background: var(--bg-primary);
+    border-right: 1px solid var(--border-soft);
+    position: fixed;
+    top: 56px;
+    bottom: 0;
+    left: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 8px;
+    gap: 4px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    transition: all 0.15s;
+    border: 1px solid transparent;
+    user-select: none;
+  }
+  .nav-item:hover {
+    background: var(--bg-panel);
+    color: var(--text-primary);
+  }
+  .nav-item.active {
+    background: #1e3a5f;
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .nav-item .nav-icon { font-size: 1.1rem; width: 22px; text-align: center; }
+  .nav-section-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    padding: 12px 14px 4px;
+  }
+  .sidebar-footer {
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-soft);
+  }
+
+  /* ══ STAT CARDS ════════════════════════════════════════════════ */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    padding: 18px 16px;
+    text-align: center;
+  }
+  .stat-card .stat-num {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .stat-card .stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+  .stat-card .stat-sub {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 6px;
+  }
+  .stat-card.green  .stat-num { color: #22c55e; }
+  .stat-card.yellow .stat-num { color: #f59e0b; }
+  .stat-card.red    .stat-num { color: #ef4444; }
+
+  /* Tabella annate */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .data-table th {
+    text-align: left; padding: 10px 12px;
+    background: var(--bg-panel);
+    color: var(--text-muted);
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .data-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-soft);
+    color: var(--text-primary);
+  }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: var(--bg-panel); }
+  .badge-pill {
+    display: inline-block; padding: 2px 10px;
+    border-radius: 20px; font-size: 0.72rem; font-weight: 600;
+  }
+  .badge-blue   { background: #1e3a5f; color: #60a5fa; }
+  .badge-green  { background: #14532d; color: #4ade80; }
+  .badge-yellow { background: #422006; color: #fbbf24; }
+
+  /* Spinner */
+  .loading-spinner {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; padding: 40px; color: var(--text-muted);
+  }
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid var(--border-soft);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ══ MAIN CONTENT ══════════════════════════════════════════════ */
+  .dash-main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    padding: 24px;
+    max-width: 100%;
+  }
+
+  /* ══ SECTION PANELS ════════════════════════════════════════════ */
+  .section-panel {
+    display: none;
+    animation: fadeIn 0.2s ease;
+  }
+  .section-panel.active { display: block; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .section-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+  .section-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+  }
+
+  /* ══ CARD ══════════════════════════════════════════════════════ */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* ══ PLACEHOLDER ═══════════════════════════════════════════════ */
+  .placeholder-box {
+    background: var(--bg-panel);
+    border: 2px dashed var(--border-soft);
+    border-radius: 12px;
+    padding: 48px 24px;
+    text-align: center;
+    color: var(--text-muted);
+  }
+  .placeholder-box .ph-icon { font-size: 2.5rem; margin-bottom: 12px; }
+  .placeholder-box .ph-title { font-size: 1rem; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); }
+  .placeholder-box .ph-sub { font-size: 0.82rem; }
+
+  /* ══ PLATINUM GATE ═════════════════════════════════════════════ */
+  #platinum-gate {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+  }
+  #platinum-gate.show { display: flex; }
+  .gate-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 40px;
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+  }
+
+  /* ══ MOBILE OVERLAY ════════════════════════════════════════════ */
+  #sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 90;
+  }
+  #sidebar-overlay.show { display: block; }
+
+  /* ══ RESPONSIVE ════════════════════════════════════════════════ */
+  @media (max-width: 768px) {
+    :root { --sidebar-w: 240px; }
+
+    /* Header: nascondi titolo e role badge, mostra hamburger */
+    .dash-header .title    { display: none; }
+    .dash-header .role-badge { display: none; }
+    #hamburger-btn         { display: flex !important; }
+
+    /* Sidebar: nascosta off-screen, slide in quando .open */
+    .dash-sidebar {
+      transform: translateX(-100%);
+      transition: transform 0.25s ease;
+      z-index: 95;
+      width: var(--sidebar-w);
+    }
+    .dash-sidebar.open {
+      transform: translateX(0);
+    }
+
+    /* Main: niente margine laterale su mobile */
+    .dash-main {
+      margin-left: 0;
+      padding: 12px;
+    }
+
+    /* Stat cards: 2 colonne su mobile */
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    /* Header user badge più compatto */
+    .dash-header .user-badge {
+      font-size: 0.72rem;
+      padding: 3px 8px;
+      max-width: 100px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ── Sticky prima colonna su tutte le tabelle ── */
+    .data-table td:first-child,
+    .data-table th:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      background: var(--bg-card);
+      box-shadow: 2px 0 6px rgba(0,0,0,0.25);
+    }
+    .data-table th:first-child {
+      background: var(--bg-panel);
+      z-index: 2;
+    }
+
+    /* ── Squadra: N° ristretto + Nome (2a col.) sticky a fianco ── */
+    #squadra-table th:first-child,
+    #squadra-table td:first-child {
+      min-width: 30px;
+      width: 30px;
+      padding: 10px 4px;
+    }
+    #squadra-table th:nth-child(2),
+    #squadra-table td:nth-child(2) {
+      position: sticky;
+      left: 30px;
+      z-index: 1;
+      background: var(--bg-card);
+      box-shadow: 2px 0 6px rgba(0,0,0,0.25);
+    }
+    #squadra-table th:nth-child(2) {
+      background: var(--bg-panel);
+      z-index: 2;
+    }
+
+    /* Sezione filtri: colonna unica su mobile */
+    .card > div[style*="display:flex"] {
+      flex-direction: column;
+      align-items: flex-start !important;
+    }
+  }
+  </style>
+</head>
+<body>
+
+<!-- ══ OVERLAY MOBILE SIDEBAR ══════════════════════════════════ -->
+<div id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
+
+<!-- ══ GATE PLATINUM (mostrato se licenza non è Platinum) ══════ -->
+<div id="platinum-gate">
+  <div class="gate-card">
+    <div style="font-size:3rem;margin-bottom:16px">💎</div>
+    <h2 style="color:#e2e8f0;margin-bottom:8px">Dashboard Direttivo</h2>
+    <p style="color:#64748b;margin-bottom:24px;font-size:0.9rem">
+      Questa funzione è disponibile esclusivamente con la licenza <strong style="color:#f59e0b">Platinum</strong>.
+    </p>
+    <p style="color:#64748b;font-size:0.8rem">Contatta GO Sport per aggiornare la tua licenza.</p>
+    <button onclick="doLogout()" style="margin-top:24px;padding:10px 24px;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.9rem;">
+      Torna al login
+    </button>
+  </div>
+</div>
+
+<!-- ══ HEADER ══════════════════════════════════════════════════ -->
+<header class="dash-header">
+  <button class="btn-icon" id="hamburger-btn" onclick="toggleMobileSidebar()" style="display:none;align-items:center;justify-content:center;font-size:1.2rem;min-width:36px">☰</button>
+  <div class="logo">⚽ GO Sport</div>
+  <div class="title">Dashboard Direttivo</div>
+  <div class="header-right">
+    <span class="role-badge" id="header-role-badge">—</span>
+    <span class="user-badge" id="header-user-badge">—</span>
+    <button class="btn-icon" onclick="toggleTheme()" title="Cambia tema" id="theme-btn">🌙</button>
+    <button class="btn-icon" onclick="doLogout()" title="Esci" style="color:#ef4444;border-color:#450a0a;">🚪</button>
+  </div>
+</header>
+
+<!-- ══ LAYOUT ══════════════════════════════════════════════════ -->
+<div class="dash-layout">
+
+  <!-- SIDEBAR -->
+  <nav class="dash-sidebar">
+    <div class="nav-section-label">Panoramica</div>
+    <div class="nav-item active" data-section="home" onclick="showSection('home', this)">
+      <span class="nav-icon">🏠</span> Home
+    </div>
+
+    <div class="nav-section-label">Gestione</div>
+    <div class="nav-item" data-section="squadra" onclick="showSection('squadra', this)">
+      <span class="nav-icon">👥</span> Squadra
+    </div>
+    <div class="nav-item" data-section="presenze" onclick="showSection('presenze', this)">
+      <span class="nav-icon">📅</span> Presenze
+    </div>
+    <div class="nav-item" data-section="materiale" onclick="showSection('materiale', this)">
+      <span class="nav-icon">🎽</span> Materiale
+    </div>
+    <div class="nav-item" data-section="pagamenti" onclick="showSection('pagamenti', this)">
+      <span class="nav-icon">💰</span> Pagamenti
+    </div>
+
+    <div class="nav-section-label">Comunicazione</div>
+    <div class="nav-item" data-section="bacheca" onclick="showSection('bacheca', this)">
+      <span class="nav-icon">📢</span> Bacheca
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="nav-item" onclick="doLogout()" style="color:#ef4444;">
+        <span class="nav-icon">🚪</span> Esci
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="dash-main">
+
+    <!-- HOME -->
+    <div class="section-panel active" id="section-home">
+      <div class="section-title">🏠 Home — Riepilogo</div>
+      <div class="section-subtitle">Panoramica generale di tutte le annate della società</div>
+
+      <!-- Stat cards -->
+      <div class="stats-grid" id="home-stats">
+        <div class="loading-spinner" style="grid-column:1/-1">
+          <div class="spinner"></div> Caricamento dati...
+        </div>
+      </div>
+
+      <!-- Tabella per annata -->
+      <div class="card" id="home-table-card" style="display:none">
+        <div class="card-title">📋 Dettaglio per Annata</div>
+        <div style="overflow-x:auto">
+          <table class="data-table" id="home-annate-table">
+            <thead>
+              <tr>
+                <th>Annata</th>
+                <th>Atleti</th>
+                <th>Staff Totale</th>
+                <th>Allenatori</th>
+                <th>Dirigenti</th>
+                <th>Ospiti</th>
+              </tr>
+            </thead>
+            <tbody id="home-annate-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SQUADRA -->
+    <div class="section-panel" id="section-squadra">
+      <div class="section-title">👥 Squadra</div>
+      <div class="section-subtitle">Lista atleti con scadenze visite mediche e tessera</div>
+
+      <!-- Filtri -->
+      <div class="card" style="margin-bottom:16px;padding:14px 16px;">
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <label style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap;">Annata:</label>
+            <select id="squadra-annata-filter" onchange="loadSquadraData()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;">
+              <option value="">Tutte</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:180px;">
+            <label style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap;">Cerca:</label>
+            <input type="text" id="squadra-search" placeholder="Nome atleta..." oninput="filterSquadraTable()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;flex:1;">
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <label style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap;">Mostra:</label>
+            <select id="squadra-status-filter" onchange="filterSquadraTable()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;">
+              <option value="">Tutti</option>
+              <option value="ok">✅ OK</option>
+              <option value="warning">⚠️ In scadenza</option>
+              <option value="expired">🔴 Scaduti</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stat cards scadenze -->
+      <div class="stats-grid" id="squadra-stats" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:16px;"></div>
+
+      <!-- Tabella -->
+      <div class="card" id="squadra-table-card">
+        <div id="squadra-loading" class="loading-spinner"><div class="spinner"></div> Caricamento...</div>
+        <div style="overflow-x:auto;display:none" id="squadra-table-wrap">
+          <table class="data-table" id="squadra-table">
+            <thead>
+              <tr>
+                <th>N°</th>
+                <th>Nome</th>
+                <th>Ruolo</th>
+                <th>Visita Medica</th>
+                <th>Tessera</th>
+                <th>Situazione</th>
+              </tr>
+            </thead>
+            <tbody id="squadra-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRESENZE -->
+    <div class="section-panel" id="section-presenze">
+      <div class="section-title">📅 Presenze</div>
+      <div class="section-subtitle">Presenze agli allenamenti per annata e tipologia</div>
+
+      <div class="card" style="margin-bottom:16px;padding:14px 16px;">
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <label style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap;">Annata:</label>
+            <select id="presenze-annata-filter" onchange="loadPresenzeData()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;">
+              <option value="">Tutte</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <label style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap;">Mostra:</label>
+            <select id="presenze-tipo-filter" onchange="loadPresenzeData()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;">
+              <option value="atleti">Atleti</option>
+              <option value="staff">Staff</option>
+              <option value="tutti">Tutti</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-grid" id="presenze-stats" style="margin-bottom:16px;"></div>
+
+      <div class="card">
+        <div id="presenze-loading" class="loading-spinner"><div class="spinner"></div> Caricamento...</div>
+        <div id="presenze-content" style="display:none">
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Atleta / Staff</th>
+                  <th style="text-align:center">Sessioni</th>
+                  <th style="text-align:center;color:#22c55e">Presenti</th>
+                  <th style="text-align:center;color:#ef4444">Assenti</th>
+                  <th style="text-align:center;color:#f59e0b">Giustif.</th>
+                  <th style="min-width:140px">% Presenze</th>
+                </tr>
+              </thead>
+              <tbody id="presenze-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MATERIALE -->
+    <div class="section-panel" id="section-materiale">
+      <div class="section-title">🎽 Materiale</div>
+      <div class="section-subtitle">Distribuzione materiale per annata e tipologia</div>
+
+      <div class="card" style="margin-bottom:16px;padding:14px 16px;">
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <label style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap;">Annata:</label>
+            <select id="materiale-annata-filter" onchange="loadMaterialeData()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;">
+              <option value="">Seleziona...</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <label style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap;">Mostra:</label>
+            <select id="materiale-tipo-filter" onchange="loadMaterialeData()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;">
+              <option value="atleti">Atleti</option>
+              <option value="staff">Staff</option>
+              <option value="tutti">Tutti</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-grid" id="materiale-stats" style="margin-bottom:16px;"></div>
+
+      <div class="card">
+        <div id="materiale-loading" class="loading-spinner"><div class="spinner"></div> Caricamento...</div>
+        <div id="materiale-content" style="display:none">
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead id="materiale-thead"></thead>
+              <tbody id="materiale-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGAMENTI -->
+    <div class="section-panel" id="section-pagamenti">
+      <div class="section-title">💰 Pagamenti</div>
+      <div class="section-subtitle">Riepilogo pagamenti per annata e tipologia</div>
+
+      <div class="card" style="margin-bottom:16px;padding:14px 16px;">
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <label style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap;">Annata:</label>
+            <select id="pagamenti-annata-filter" onchange="loadPagamentiData()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;">
+              <option value="">Seleziona...</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <label style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap;">Mostra:</label>
+            <select id="pagamenti-tipo-filter" onchange="loadPagamentiData()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;">
+              <option value="atleti">Atleti</option>
+              <option value="staff">Staff</option>
+              <option value="tutti">Tutti</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-grid" id="pagamenti-stats" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:16px;"></div>
+
+      <div class="card">
+        <div id="pagamenti-loading" class="loading-spinner"><div class="spinner"></div> Caricamento...</div>
+        <div id="pagamenti-content" style="display:none">
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead id="pagamenti-thead"></thead>
+              <tbody id="pagamenti-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BACHECA -->
+    <div class="section-panel" id="section-bacheca">
+      <div class="section-title">📢 Bacheca Pubblica</div>
+      <div class="section-subtitle">Comunicati pubblicati dalla società</div>
+
+      <div id="bacheca-loading" class="loading-spinner"><div class="spinner"></div> Caricamento...</div>
+      <div id="bacheca-content" style="display:none"></div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ══ Costanti sessione (stesse di auth-multi-annata.js) ══
+  const SESSION_KEY       = 'gosport_auth_session';
+  const SESSION_USER      = 'gosport_auth_user';
+  const SESSION_USER_ROLE = 'gosport_user_role';
+  const SESSION_TOKEN     = 'gosport_session_token';
+  const SESSION_SOCIETY   = 'gosport_society_id';
+  const LICENSE_PLAN      = 'gosport_license_plan';
+
+  const DASHBOARD_ROLES = ['direttivo', 'dirigente', 'staff', 'admin'];
+  const ROLE_LABELS = {
+    admin:     '👑 Admin',
+    direttivo: '🏛️ Direttivo',
+    dirigente: '📋 Dirigente',
+    staff:     '👥 Staff',
+  };
+
+  // ══ Auth gate ══════════════════════════════════════════════════
+  function checkAuth() {
+    const isAuth   = sessionStorage.getItem(SESSION_KEY) === 'true';
+    const expiry   = sessionStorage.getItem(SESSION_KEY + '_expiry');
+    const role     = sessionStorage.getItem(SESSION_USER_ROLE) || '';
+    const plan     = sessionStorage.getItem(LICENSE_PLAN) || '';
+
+    // Non autenticato o sessione scaduta → login
+    if (!isAuth || !expiry || Date.now() > parseInt(expiry)) {
+      window.location.href = '/index.html';
+      return;
+    }
+
+    // Ruolo non abilitato alla dashboard → torna all'app normale
+    if (!DASHBOARD_ROLES.includes(role)) {
+      window.location.href = '/index.html';
+      return;
+    }
+
+    // Licenza non Platinum (l'admin bypassa il controllo piano)
+    if (role !== 'admin' && plan !== 'platinum') {
+      document.getElementById('platinum-gate').classList.add('show');
+      return;
+    }
+
+    // OK — inizializza UI
+    initDashboard(role);
+  }
+
+  function initDashboard(role) {
+    const user = sessionStorage.getItem(SESSION_USER) || '—';
+
+    document.getElementById('header-user-badge').textContent = '👤 ' + user;
+    document.getElementById('header-role-badge').textContent = ROLE_LABELS[role] || role;
+
+    // Applica tema salvato
+    const savedTheme = localStorage.getItem('gosport_theme') || 'dark';
+    applyTheme(savedTheme);
+
+    // Carica dati Home
+    loadHomeData();
+  }
+
+  // ══ Tema ═══════════════════════════════════════════════════════
+  function applyTheme(theme) {
+    if (theme === 'light') {
+      document.documentElement.classList.add('theme-light');
+      document.getElementById('theme-btn').textContent = '☀️';
+    } else {
+      document.documentElement.classList.remove('theme-light');
+      document.getElementById('theme-btn').textContent = '🌙';
+    }
+  }
+
+  window.toggleTheme = function() {
+    const isLight = document.documentElement.classList.contains('theme-light');
+    const next = isLight ? 'dark' : 'light';
+    localStorage.setItem('gosport_theme', next);
+    applyTheme(next);
+  };
+
+  // ══ Logout ═════════════════════════════════════════════════════
+  window.doLogout = function() {
+    const token = sessionStorage.getItem(SESSION_TOKEN);
+    if (token) {
+      fetch('/api/auth/session?action=revoke', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      }).catch(() => {});
+    }
+    sessionStorage.clear();
+    window.location.href = '/index.html';
+  };
+
+  // ══ Helper API headers ════════════════════════════════════════
+  function authHeaders(annataId) {
+    const h = {
+      'Content-Type': 'application/json',
+      'x-auth-session': sessionStorage.getItem(SESSION_KEY) || '',
+      'x-auth-user':    sessionStorage.getItem(SESSION_USER) || '',
+      'x-user-role':    sessionStorage.getItem(SESSION_USER_ROLE) || '',
+      'x-society-id':   sessionStorage.getItem(SESSION_SOCIETY) || '',
+    };
+    if (annataId) h['x-annata-id'] = annataId;
+    return h;
+  }
+
+  // ══ Carica annate ══════════════════════════════════════════════
+  async function fetchAnnate() {
+    const r = await fetch('/api/annate/list', { headers: authHeaders() });
+    if (!r.ok) throw new Error('Errore caricamento annate');
+    const d = await r.json();
+    return d.annate || [];
+  }
+
+  // ══ Carica atleti di una singola annata ════════════════════════
+  async function fetchAthletes(annataId) {
+    try {
+      const r = await fetch('/api/data', { headers: authHeaders(annataId) });
+      if (!r.ok) return [];
+      const d = await r.json();
+      return d.athletes || [];
+    } catch { return []; }
+  }
+
+  // ══ HOME — carica e mostra dati ═══════════════════════════════
+  async function loadHomeData() {
+    const statsEl  = document.getElementById('home-stats');
+    const tableCard = document.getElementById('home-table-card');
+    const tbody    = document.getElementById('home-annate-tbody');
+    if (!statsEl) return;
+
+    try {
+      const annate = await fetchAnnate();
+
+      if (!annate.length) {
+        statsEl.innerHTML = '<div class="placeholder-box" style="grid-column:1/-1"><div class="ph-icon">📭</div><div class="ph-title">Nessuna annata trovata</div></div>';
+        return;
+      }
+
+      // Fetch atleti di tutte le annate in parallelo
+      const results = await Promise.all(
+        annate.map(async ann => {
+          const athletes = await fetchAthletes(ann.id);
+          const ufficiali = athletes.filter(a => !a.isGuest && !a.isStaff);
+          const staff     = athletes.filter(a => a.isStaff && !a.isGuest);
+          const ospiti    = athletes.filter(a => a.isGuest);
+
+          // Conta Allenatori e Dirigenti dal campo role
+          let allenatori = 0, dirigenti = 0, altroStaff = 0;
+          staff.forEach(s => {
+            const r = (s.role || '').toLowerCase();
+            if (r.includes('allenatore') || r.includes('coach')) allenatori++;
+            else if (r.includes('dirigente')) dirigenti++;
+            else altroStaff++;
+          });
+
+          return { ann, ufficiali: ufficiali.length, staff: staff.length, allenatori, dirigenti, altroStaff, ospiti: ospiti.length };
+        })
+      );
+
+      // Totali aggregati
+      const totAtleti     = results.reduce((s, r) => s + r.ufficiali, 0);
+      const totStaff      = results.reduce((s, r) => s + r.staff, 0);
+      const totAllenatori = results.reduce((s, r) => s + r.allenatori, 0);
+      const totDirigenti  = results.reduce((s, r) => s + r.dirigenti, 0);
+
+      // Stat cards
+      statsEl.innerHTML = `
+        <div class="stat-card">
+          <div class="stat-num">${annate.length}</div>
+          <div class="stat-label">Annate</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">${totAtleti}</div>
+          <div class="stat-label">Atleti Totali</div>
+          <div class="stat-sub">Somma su tutte le annate</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-num">${totStaff}</div>
+          <div class="stat-label">Staff Tecnico</div>
+          <div class="stat-sub">Totale cumulativo</div>
+        </div>
+        <div class="stat-card yellow">
+          <div class="stat-num">${totAllenatori}</div>
+          <div class="stat-label">Allenatori</div>
+        </div>
+        <div class="stat-card yellow">
+          <div class="stat-num">${totDirigenti}</div>
+          <div class="stat-label">Dirigenti</div>
+        </div>
+      `;
+
+      // Tabella per annata (più recente prima)
+      tbody.innerHTML = results.map(r => `
+        <tr>
+          <td><strong>${r.ann.nome || r.ann.id}</strong></td>
+          <td><span class="badge-pill badge-blue">${r.ufficiali}</span></td>
+          <td>${r.staff}</td>
+          <td>${r.allenatori}</td>
+          <td>${r.dirigenti}</td>
+          <td style="color:var(--text-muted)">${r.ospiti}</td>
+        </tr>
+      `).join('');
+
+      tableCard.style.display = 'block';
+
+    } catch (e) {
+      statsEl.innerHTML = `<div class="placeholder-box" style="grid-column:1/-1"><div class="ph-icon">⚠️</div><div class="ph-title">Errore caricamento</div><div class="ph-sub">${e.message}</div></div>`;
+    }
+  }
+
+  // ══ SQUADRA ════════════════════════════════════════════════════
+  let _squadraAnnate = [];
+  let _squadraAthletes = []; // atleti correnti caricati
+
+  async function initSquadra() {
+    if (_squadraAnnate.length) return; // già inizializzato
+    const annate = await fetchAnnate();
+    _squadraAnnate = annate;
+    const sel = document.getElementById('squadra-annata-filter');
+    if (!sel) return;
+    annate.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a.id;
+      opt.textContent = a.nome || a.id;
+      sel.appendChild(opt);
+    });
+    // Seleziona l'annata più recente di default
+    if (annate.length) sel.value = annate[0].id;
+    await loadSquadraData();
+  }
+
+  function dateStatus(dateStr) {
+    if (!dateStr) return 'none';
+    const d = new Date(dateStr);
+    const today = new Date(); today.setHours(0,0,0,0);
+    const threeMonths = new Date(today); threeMonths.setMonth(threeMonths.getMonth() + 3);
+    if (d < today) return 'expired';
+    if (d <= threeMonths) return 'warning';
+    return 'ok';
+  }
+
+  function dateBadge(dateStr) {
+    if (!dateStr) return '<span style="color:var(--text-muted);font-size:0.78rem">—</span>';
+    const status = dateStatus(dateStr);
+    const label = new Date(dateStr).toLocaleDateString('it-IT');
+    const styles = {
+      expired: 'background:#450a0a;color:#f87171;border:1px solid #f87171',
+      warning: 'background:#422006;color:#fbbf24;border:1px solid #fbbf24',
+      ok:      'background:#14532d;color:#4ade80;border:1px solid #4ade80',
+    };
+    return `<span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:0.78rem;${styles[status]}">${label}</span>`;
+  }
+
+  window.loadSquadraData = async function() {
+    const annataId = document.getElementById('squadra-annata-filter')?.value;
+    const loading  = document.getElementById('squadra-loading');
+    const wrap     = document.getElementById('squadra-table-wrap');
+    const statsEl  = document.getElementById('squadra-stats');
+    if (!loading) return;
+
+    loading.style.display = 'flex';
+    if (wrap) wrap.style.display = 'none';
+
+    const allAthletes = [];
+    if (annataId) {
+      const list = await fetchAthletes(annataId);
+      list.forEach(a => { a._annata = annataId; });
+      allAthletes.push(...list);
+    } else {
+      for (const ann of _squadraAnnate) {
+        const list = await fetchAthletes(ann.id);
+        list.forEach(a => { a._annata = ann.nome || ann.id; });
+        allAthletes.push(...list);
+      }
+    }
+
+    _squadraAthletes = allAthletes.filter(a => !a.isGuest && !a.isStaff);
+
+    // Stat cards
+    const today = new Date(); today.setHours(0,0,0,0);
+    let expVisita = 0, warnVisita = 0, expTessera = 0, warnTessera = 0;
+    _squadraAthletes.forEach(a => {
+      const sv = dateStatus(a.scadenzaVisita);
+      const st = dateStatus(a.scadenzaTessera);
+      if (sv === 'expired') expVisita++;
+      else if (sv === 'warning') warnVisita++;
+      if (st === 'expired') expTessera++;
+      else if (st === 'warning') warnTessera++;
+    });
+
+    if (statsEl) statsEl.innerHTML = `
+      <div class="stat-card"><div class="stat-num">${_squadraAthletes.length}</div><div class="stat-label">Atleti</div></div>
+      <div class="stat-card red"><div class="stat-num">${expVisita}</div><div class="stat-label">Visite Scadute</div></div>
+      <div class="stat-card yellow"><div class="stat-num">${warnVisita}</div><div class="stat-label">Visite in Scadenza</div></div>
+      <div class="stat-card red"><div class="stat-num">${expTessera}</div><div class="stat-label">Tessere Scadute</div></div>
+      <div class="stat-card yellow"><div class="stat-num">${warnTessera}</div><div class="stat-label">Tessere in Scadenza</div></div>
+    `;
+
+    loading.style.display = 'none';
+    if (wrap) wrap.style.display = 'block';
+    renderSquadraTable(_squadraAthletes);
+  };
+
+  function renderSquadraTable(athletes) {
+    const tbody = document.getElementById('squadra-tbody');
+    if (!tbody) return;
+    if (!athletes.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:32px">Nessun atleta trovato</td></tr>';
+      return;
+    }
+    tbody.innerHTML = athletes.map(a => {
+      const sv = dateStatus(a.scadenzaVisita);
+      const st = dateStatus(a.scadenzaTessera);
+      let overall = 'ok';
+      if (sv === 'expired' || st === 'expired') overall = 'expired';
+      else if (sv === 'warning' || st === 'warning') overall = 'warning';
+      const overallBadge = {
+        ok:      '<span class="badge-pill badge-green">✅ OK</span>',
+        warning: '<span class="badge-pill" style="background:#422006;color:#fbbf24">⚠️ Attenzione</span>',
+        expired: '<span class="badge-pill" style="background:#450a0a;color:#f87171">🔴 Critico</span>',
+      }[overall];
+      return `<tr data-status="${overall}">
+        <td style="color:var(--text-muted)">${a.number || '—'}</td>
+        <td><strong>${a.name || '—'}</strong>${a._annata && !document.getElementById('squadra-annata-filter')?.value ? `<br><span style="font-size:0.7rem;color:var(--text-muted)">${a._annata}</span>` : ''}</td>
+        <td style="color:var(--text-muted)">${a.role || '—'}</td>
+        <td>${dateBadge(a.scadenzaVisita)}</td>
+        <td>${dateBadge(a.scadenzaTessera)}</td>
+        <td>${overallBadge}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  window.filterSquadraTable = function() {
+    const search = (document.getElementById('squadra-search')?.value || '').toLowerCase();
+    const status = document.getElementById('squadra-status-filter')?.value || '';
+    const filtered = _squadraAthletes.filter(a => {
+      const matchName = !search || (a.name || '').toLowerCase().includes(search);
+      if (!matchName) return false;
+      if (!status) return true;
+      const sv = dateStatus(a.scadenzaVisita);
+      const st = dateStatus(a.scadenzaTessera);
+      let overall = 'ok';
+      if (sv === 'expired' || st === 'expired') overall = 'expired';
+      else if (sv === 'warning' || st === 'warning') overall = 'warning';
+      return overall === status;
+    });
+    renderSquadraTable(filtered);
+  };
+
+  // ══ PRESENZE ══════════════════════════════════════════════════
+  let _presenzeInit = false;
+
+  async function initPresenze() {
+    if (_presenzeInit) return;
+    const annate = await fetchAnnate();
+    const sel = document.getElementById('presenze-annata-filter');
+    if (!sel) return;
+    annate.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a.id;
+      opt.textContent = a.nome || a.id;
+      sel.appendChild(opt);
+    });
+    if (annate.length) sel.value = annate[0].id;
+    _presenzeInit = true;
+    await loadPresenzeData();
+  }
+
+  window.loadPresenzeData = async function() {
+    const annataId = document.getElementById('presenze-annata-filter')?.value || '';
+    const tipo = document.getElementById('presenze-tipo-filter')?.value || 'atleti';
+    const loading = document.getElementById('presenze-loading');
+    const content = document.getElementById('presenze-content');
+    const statsEl = document.getElementById('presenze-stats');
+    if (!loading) return;
+    loading.style.display = 'flex';
+    loading.innerHTML = '<div class="spinner"></div> Caricamento...';
+    if (content) content.style.display = 'none';
+
+    try {
+      const r = await fetch('/api/data', { headers: authHeaders(annataId || undefined) });
+      if (!r.ok) throw new Error('Errore ' + r.status);
+      const data = await r.json();
+
+      const athletes = data.athletes || [];
+      const evaluations = data.evaluations || {};
+
+      const filtered = athletes.filter(a => {
+        if (a.isGuest) return false;
+        if (tipo === 'staff') return !!a.isStaff;
+        if (tipo === 'atleti') return !a.isStaff;
+        return true;
+      });
+
+      const sessionDates = Object.keys(evaluations).sort();
+      const totalSessions = sessionDates.length;
+
+      const stats = filtered.map(a => {
+        const id = String(a.id);
+        let present = 0, absent = 0, justified = 0;
+        sessionDates.forEach(date => {
+          const ev = (evaluations[date] || {})[id];
+          if (!ev) return;
+          const val = parseInt(ev['presenza-allenamento'], 10);
+          if (val > 0) present++;
+          else if (val === 0) absent++;
+          else if (val === -1) justified++;
+        });
+        const sessions = present + absent + justified;
+        const pct = sessions > 0 ? Math.round(present / sessions * 100) : null;
+        return { ...a, present, absent, justified, sessions, pct };
+      }).sort((a, b) => (b.present || 0) - (a.present || 0));
+
+      const withPct = stats.filter(s => s.pct !== null);
+      const avgPct = withPct.length > 0 ? Math.round(withPct.reduce((s, x) => s + x.pct, 0) / withPct.length) : 0;
+      const highPct = withPct.filter(s => s.pct >= 80).length;
+      const lowPct  = withPct.filter(s => s.pct < 50).length;
+
+      if (statsEl) statsEl.innerHTML = `
+        <div class="stat-card"><div class="stat-num">${totalSessions}</div><div class="stat-label">Sessioni</div></div>
+        <div class="stat-card"><div class="stat-num">${stats.length}</div><div class="stat-label">Membri</div></div>
+        <div class="stat-card green"><div class="stat-num">${avgPct}%</div><div class="stat-label">Media</div></div>
+        <div class="stat-card green"><div class="stat-num">${highPct}</div><div class="stat-label">≥ 80%</div></div>
+        <div class="stat-card red"><div class="stat-num">${lowPct}</div><div class="stat-label">< 50%</div></div>
+      `;
+
+      const tbody = document.getElementById('presenze-tbody');
+      if (tbody) {
+        if (!stats.length) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:32px">Nessun dato per questa selezione</td></tr>';
+        } else {
+          tbody.innerHTML = stats.map(s => {
+            const pct = s.pct;
+            const barColor = pct === null ? '#64748b' : pct >= 80 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444';
+            const barW = pct !== null ? pct : 0;
+            const nameExtra = s.isStaff ? `<br><span style="font-size:0.7rem;color:#f59e0b">${s.role || 'Staff'}</span>` : '';
+            return `<tr>
+              <td><strong>${s.name || '—'}</strong>${nameExtra}</td>
+              <td style="text-align:center">${s.sessions}</td>
+              <td style="text-align:center;color:#22c55e">${s.present}</td>
+              <td style="text-align:center;color:#ef4444">${s.absent}</td>
+              <td style="text-align:center;color:#f59e0b">${s.justified}</td>
+              <td style="min-width:130px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="flex:1;background:var(--bg-panel);border-radius:4px;height:8px">
+                    <div style="background:${barColor};border-radius:4px;height:8px;width:${barW}%"></div>
+                  </div>
+                  <span style="font-size:0.8rem;color:${barColor};min-width:36px;text-align:right">${pct !== null ? pct + '%' : '—'}</span>
+                </div>
+              </td>
+            </tr>`;
+          }).join('');
+        }
+      }
+
+      loading.style.display = 'none';
+      if (content) content.style.display = 'block';
+    } catch(e) {
+      loading.innerHTML = `<div style="color:#ef4444">⚠️ ${e.message}</div>`;
+    }
+  };
+
+  // ══ MATERIALE ══════════════════════════════════════════════════
+  let _materialeInit = false;
+
+  async function initMateriale() {
+    if (_materialeInit) return;
+    const annate = await fetchAnnate();
+    const sel = document.getElementById('materiale-annata-filter');
+    if (!sel) return;
+    sel.innerHTML = '';
+    annate.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a.id;
+      opt.textContent = a.nome || a.id;
+      sel.appendChild(opt);
+    });
+    if (annate.length) sel.value = annate[0].id;
+    _materialeInit = true;
+    await loadMaterialeData();
+  }
+
+  window.loadMaterialeData = async function() {
+    const annataId = document.getElementById('materiale-annata-filter')?.value || '';
+    const tipo = document.getElementById('materiale-tipo-filter')?.value || 'atleti';
+    const loading = document.getElementById('materiale-loading');
+    const content = document.getElementById('materiale-content');
+    const statsEl = document.getElementById('materiale-stats');
+    if (!loading) return;
+    loading.style.display = 'flex';
+    loading.innerHTML = '<div class="spinner"></div> Caricamento...';
+    if (content) content.style.display = 'none';
+
+    try {
+      const r = await fetch('/api/data', { headers: authHeaders(annataId || undefined) });
+      if (!r.ok) throw new Error('Errore ' + r.status);
+      const data = await r.json();
+
+      const athletes = data.athletes || [];
+      const mat = data.materiale || { items: [], assignments: {} };
+      const items = mat.items || [];
+      const assignments = mat.assignments || {};
+
+      const filtered = athletes.filter(a => {
+        if (a.isGuest) return false;
+        if (tipo === 'staff') return !!a.isStaff;
+        if (tipo === 'atleti') return !a.isStaff;
+        return true;
+      });
+
+      let totalConsegnato = 0, totalDaDare = 0, totalRestituito = 0;
+      filtered.forEach(a => {
+        const asgn = assignments[String(a.id)] || {};
+        items.forEach(item => {
+          const entry = asgn[item];
+          if (!entry) return;
+          const st = typeof entry === 'string' ? entry : (entry.status || '');
+          if (st === 'consegnato') totalConsegnato++;
+          else if (st === 'da_dare') totalDaDare++;
+          else if (st === 'restituito') totalRestituito++;
+        });
+      });
+
+      if (statsEl) statsEl.innerHTML = `
+        <div class="stat-card"><div class="stat-num">${items.length}</div><div class="stat-label">Articoli</div></div>
+        <div class="stat-card"><div class="stat-num">${filtered.length}</div><div class="stat-label">Membri</div></div>
+        <div class="stat-card green"><div class="stat-num">${totalConsegnato}</div><div class="stat-label">Consegnati</div></div>
+        <div class="stat-card yellow"><div class="stat-num">${totalDaDare}</div><div class="stat-label">Da Consegnare</div></div>
+        <div class="stat-card"><div class="stat-num">${totalRestituito}</div><div class="stat-label">Restituiti</div></div>
+      `;
+
+      const thead = document.getElementById('materiale-thead');
+      const tbody = document.getElementById('materiale-tbody');
+
+      const statusIcon = st => {
+        if (st === 'consegnato') return '<span style="color:#22c55e">✅</span>';
+        if (st === 'da_dare')    return '<span style="color:#f59e0b">📦</span>';
+        if (st === 'restituito') return '<span style="color:#3b82f6">↩️</span>';
+        return '<span style="color:var(--text-muted)">—</span>';
+      };
+
+      if (!items.length) {
+        if (thead) thead.innerHTML = '<tr><th>Atleta</th></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td style="color:var(--text-muted);padding:32px;text-align:center">Nessun articolo definito per questa annata</td></tr>';
+      } else {
+        if (thead) thead.innerHTML = '<tr><th>Atleta</th>' + items.map(i => `<th style="text-align:center">${i}</th>`).join('') + '</tr>';
+        if (tbody) tbody.innerHTML = filtered.map(a => {
+          const asgn = assignments[String(a.id)] || {};
+          const cells = items.map(item => {
+            const entry = asgn[item];
+            if (!entry) return '<td style="text-align:center">—</td>';
+            const st  = typeof entry === 'string' ? entry : (entry.status || '');
+            const qty = typeof entry === 'object' ? (entry.qty || 1) : 1;
+            const tag = typeof entry === 'object' ? (entry.taglia || '') : '';
+            const sub = (tag || qty > 1) ? `<br><span style="font-size:0.68rem;color:var(--text-muted)">${tag}${qty > 1 ? ' ×' + qty : ''}</span>` : '';
+            return `<td style="text-align:center">${statusIcon(st)}${sub}</td>`;
+          }).join('');
+          const nameCell = `<td><strong>${a.name}</strong>${a.isStaff ? `<br><span style="font-size:0.7rem;color:#f59e0b">${a.role || 'Staff'}</span>` : ''}</td>`;
+          return `<tr>${nameCell}${cells}</tr>`;
+        }).join('');
+      }
+
+      loading.style.display = 'none';
+      if (content) content.style.display = 'block';
+    } catch(e) {
+      loading.innerHTML = `<div style="color:#ef4444">⚠️ ${e.message}</div>`;
+    }
+  };
+
+  // ══ PAGAMENTI ══════════════════════════════════════════════════
+  let _pagamentiInit = false;
+
+  async function initPagamenti() {
+    if (_pagamentiInit) return;
+    const annate = await fetchAnnate();
+    const sel = document.getElementById('pagamenti-annata-filter');
+    if (!sel) return;
+    sel.innerHTML = '';
+    annate.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a.id;
+      opt.textContent = a.nome || a.id;
+      sel.appendChild(opt);
+    });
+    if (annate.length) sel.value = annate[0].id;
+    _pagamentiInit = true;
+    await loadPagamentiData();
+  }
+
+  window.loadPagamentiData = async function() {
+    const annataId = document.getElementById('pagamenti-annata-filter')?.value || '';
+    const tipo = document.getElementById('pagamenti-tipo-filter')?.value || 'atleti';
+    const loading = document.getElementById('pagamenti-loading');
+    const content = document.getElementById('pagamenti-content');
+    const statsEl = document.getElementById('pagamenti-stats');
+    if (!loading) return;
+    loading.style.display = 'flex';
+    loading.innerHTML = '<div class="spinner"></div> Caricamento...';
+    if (content) content.style.display = 'none';
+
+    try {
+      const r = await fetch('/api/data', { headers: authHeaders(annataId || undefined) });
+      if (!r.ok) throw new Error('Errore ' + r.status);
+      const data = await r.json();
+
+      const athletes = data.athletes || [];
+      const pagamenti = data.pagamenti || {};
+      const pagVoci   = data.pagVoci   || ['tessera', 'iscrizione', 'vestiario'];
+      const pagLabels = data.pagLabels || { tessera: 'Tessera', iscrizione: 'Iscrizione', vestiario: 'Vestiario' };
+
+      const filtered = athletes.filter(a => {
+        if (a.isGuest) return false;
+        if (tipo === 'staff') return !!a.isStaff;
+        if (tipo === 'atleti') return !a.isStaff;
+        return true;
+      });
+
+      const getNetto = voce => {
+        if (!voce || !voce.base) return 0;
+        const base = parseFloat(voce.base) || 0;
+        const disc = parseFloat(voce.discount) || 0;
+        return voce.discountType === 'percent' ? base * (1 - disc / 100) : Math.max(0, base - disc);
+      };
+      const getPaid = voce => {
+        if (!voce) return 0;
+        return (voce.installments || []).filter(r => r.paid).reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+      };
+
+      let totDovuto = 0, totPagato = 0;
+      const rows = filtered.map(a => {
+        const pag = pagamenti[String(a.id)] || {};
+        let dovuto = 0, pagato = 0;
+        pagVoci.forEach(v => { dovuto += getNetto(pag[v]); pagato += getPaid(pag[v]); });
+        totDovuto += dovuto; totPagato += pagato;
+        return { ...a, dovuto, pagato, arretrati: dovuto - pagato, pag };
+      });
+
+      const fmt = n => n.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+
+      if (statsEl) statsEl.innerHTML = `
+        <div class="stat-card"><div class="stat-num" style="font-size:1.3rem">${fmt(totDovuto)}</div><div class="stat-label">Totale Dovuto</div></div>
+        <div class="stat-card green"><div class="stat-num" style="font-size:1.3rem">${fmt(totPagato)}</div><div class="stat-label">Pagato</div></div>
+        <div class="stat-card red"><div class="stat-num" style="font-size:1.3rem">${fmt(totDovuto - totPagato)}</div><div class="stat-label">Arretrati</div></div>
+      `;
+
+      const thead = document.getElementById('pagamenti-thead');
+      const tbody  = document.getElementById('pagamenti-tbody');
+
+      const voceLabels = pagVoci.map(v => pagLabels[v] || v);
+      if (thead) thead.innerHTML = '<tr><th>Atleta</th>' +
+        voceLabels.map(l => `<th style="text-align:right">${l}</th>`).join('') +
+        '<th style="text-align:right">Dovuto</th><th style="text-align:right">Pagato</th><th style="text-align:right">Arretrati</th></tr>';
+
+      if (tbody) tbody.innerHTML = rows.map(row => {
+        const cells = pagVoci.map(v => {
+          const n = getNetto(row.pag[v]);
+          return `<td style="text-align:right;color:var(--text-muted)">${n > 0 ? fmt(n) : '—'}</td>`;
+        }).join('');
+        const arrColor = row.arretrati > 0.005 ? '#ef4444' : '#22c55e';
+        const nameExtra = row.isStaff ? `<br><span style="font-size:0.7rem;color:#f59e0b">${row.role || 'Staff'}</span>` : '';
+        return `<tr>
+          <td><strong>${row.name}</strong>${nameExtra}</td>
+          ${cells}
+          <td style="text-align:right">${fmt(row.dovuto)}</td>
+          <td style="text-align:right;color:#22c55e">${fmt(row.pagato)}</td>
+          <td style="text-align:right;color:${arrColor}">${fmt(row.arretrati)}</td>
+        </tr>`;
+      }).join('');
+
+      loading.style.display = 'none';
+      if (content) content.style.display = 'block';
+    } catch(e) {
+      loading.innerHTML = `<div style="color:#ef4444">⚠️ ${e.message}</div>`;
+    }
+  };
+
+  // ══ BACHECA ════════════════════════════════════════════════════
+  let _bachecaInit = false;
+
+  async function initBacheca() {
+    if (_bachecaInit) return;
+    _bachecaInit = true;
+    await loadBachecaData();
+  }
+
+  window.reloadBacheca = function() {
+    _bachecaInit = false;
+    initBacheca();
+  };
+
+  window.loadBachecaData = async function() {
+    const loading = document.getElementById('bacheca-loading');
+    const content = document.getElementById('bacheca-content');
+    if (!loading) return;
+    loading.style.display = 'flex';
+    loading.innerHTML = '<div class="spinner"></div> Caricamento...';
+    if (content) content.style.display = 'none';
+
+    try {
+      // Per avere le immagini dei post serve un annataId valido
+      const annate = await fetchAnnate().catch(() => []);
+      const firstId = annate.length ? annate[0].id : null;
+
+      // Fetch parallele: post globali + immagini (solo post "Tutte le Annate e Gruppi")
+      const [rGlobal, rImages] = await Promise.all([
+        fetch('/api/data', { headers: authHeaders() }),
+        firstId
+          ? fetch('/api/data?action=postImages', { headers: authHeaders(firstId) })
+          : Promise.resolve(null)
+      ]);
+
+      const dGlobal = rGlobal.ok ? await rGlobal.json() : {};
+      const dImages = (rImages && rImages.ok) ? await rImages.json() : {};
+
+      const globalPosts = dGlobal.globalPosts || [];
+      const postImages  = dImages.postImages  || {};
+
+      const allPosts = globalPosts.slice().sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+      loading.style.display = 'none';
+      if (content) {
+        content.style.display = 'block';
+        if (!allPosts.length) {
+          content.innerHTML = '<div class="placeholder-box"><div class="ph-icon">📭</div><div class="ph-title">Bacheca vuota</div><div class="ph-sub">Nessun comunicato pubblicato</div></div>';
+        } else {
+          content.innerHTML = allPosts.map(p => {
+            const dt  = p.date ? new Date(p.date).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' }) : '';
+            const img = postImages[p.id];
+            return `<div class="card" style="margin-bottom:12px">
+              ${img ? `<img src="${img}" alt="" style="width:100%;max-height:280px;object-fit:cover;border-radius:8px;margin-bottom:12px">` : ''}
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;gap:12px">
+                <div style="font-size:0.95rem;font-weight:600;color:var(--text-primary)">${p.title || '(Senza titolo)'}</div>
+                <div style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap">${dt}</div>
+              </div>
+              ${p.text ? `<div style="font-size:0.87rem;color:var(--text-muted);white-space:pre-wrap;line-height:1.5">${p.text}</div>` : ''}
+            </div>`;
+          }).join('');
+        }
+      }
+    } catch(e) {
+      if (loading) loading.innerHTML = `<div style="color:#ef4444">⚠️ ${e.message}</div>`;
+    }
+  };
+
+  // ══ Navigazione sezioni ════════════════════════════════════════
+  window.showSection = function(name, el) {
+    document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const panel = document.getElementById('section-' + name);
+    if (panel) panel.classList.add('active');
+    if (el) el.classList.add('active');
+    if      (name === 'squadra')   initSquadra();
+    else if (name === 'presenze')  initPresenze();
+    else if (name === 'materiale') initMateriale();
+    else if (name === 'pagamenti') initPagamenti();
+    else if (name === 'bacheca')   initBacheca();
+  };
+
+  // ══ Sidebar mobile ════════════════════════════════════════════
+  window.toggleMobileSidebar = function() {
+    const sidebar  = document.querySelector('.dash-sidebar');
+    const overlay  = document.getElementById('sidebar-overlay');
+    const isOpen   = sidebar.classList.contains('open');
+    sidebar.classList.toggle('open', !isOpen);
+    overlay.classList.toggle('show', !isOpen);
+  };
+
+  window.closeMobileSidebar = function() {
+    document.querySelector('.dash-sidebar')?.classList.remove('open');
+    document.getElementById('sidebar-overlay')?.classList.remove('show');
+  };
+
+  // Chiudi sidebar quando si seleziona una sezione su mobile
+  const _origShowSection = window.showSection;
+  window.showSection = function(name, el) {
+    _origShowSection(name, el);
+    if (window.innerWidth <= 768) closeMobileSidebar();
+  };
+
+  // ══ Avvio ══════════════════════════════════════════════════════
+  checkAuth();
+
+})();
+</script>
+</body>
+</html>

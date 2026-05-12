@@ -2222,11 +2222,11 @@ window.deleteUser = async function(username) {
         async function proceedAfterLogin() {
             // Verifica se il login ha restituito info sulla licenza
             const licenseStatus = sessionStorage.getItem('gosport_license_status');
-            
+
             if (licenseStatus) {
                 try {
                     const status = JSON.parse(licenseStatus);
-                    
+
                     if (!status.valid) {
                         if (status.reason === 'expired') {
                             showLicenseScreen(`Licenza scaduta il ${new Date(status.expiry + 'T00:00:00').toLocaleDateString('it-IT')}. Contatta Sport Monitoring per rinnovarla.`);
@@ -2239,6 +2239,14 @@ window.deleteUser = async function(username) {
                     }
                     // Licenza valida → procedi
                 } catch(e) {}
+            }
+
+            // Ruoli Dashboard (A1/A2/A3) → redirect diretto a dashboard.html
+            const role = getUserRole();
+            const DASHBOARD_ROLES = ['direttivo', 'dirigente', 'staff'];
+            if (DASHBOARD_ROLES.includes(role)) {
+                window.location.href = '/dashboard.html';
+                return;
             }
 
             // Coach o admin con licenza ok → selezione annata

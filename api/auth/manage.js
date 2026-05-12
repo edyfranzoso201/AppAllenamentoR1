@@ -27,6 +27,10 @@ const VALID_ROLES = [
   'coach_l1', 'coach_l2', 'coach_l3', 'coach_readonly',
   'dirigente_l1', 'dirigente_l2', 'dirigente_l3', 'dirigente_l4',
   'societa_l1', 'societa_l2', 'societa_l3',
+  // Ruoli Dashboard (accesso solo licenza Platinum)
+  'direttivo',  // A1 — Direttivo
+  'dirigente',  // A2 — Dirigenti
+  'staff',      // A3 — Staff (Dirigenti + Allenatori)
 ];
 
 // SHA256 — stesso metodo usato da api/auth/login.js

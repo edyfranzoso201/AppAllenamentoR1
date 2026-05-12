@@ -39,17 +39,24 @@ function isLegacyHash(hash) {
 function getPermissions(role) {
   switch(role) {
     case 'admin':
-      return { canEditGeneral: true, canViewGPS: true, canEditGPS: true, isAdmin: true };
+      return { canEditGeneral: true, canViewGPS: true, canEditGPS: true, isAdmin: true, isDashboard: false };
     case 'coach_l1':
-      return { canEditGeneral: true, canViewGPS: true, canEditGPS: true, isAdmin: false };
+      return { canEditGeneral: true, canViewGPS: true, canEditGPS: true, isAdmin: false, isDashboard: false };
     case 'coach_l2':
-      return { canEditGeneral: true, canViewGPS: true, canEditGPS: false, isAdmin: false };
+      return { canEditGeneral: true, canViewGPS: true, canEditGPS: false, isAdmin: false, isDashboard: false };
     case 'coach_l3':
-      return { canEditGeneral: false, canViewGPS: true, canEditGPS: false, isAdmin: false };
+      return { canEditGeneral: false, canViewGPS: true, canEditGPS: false, isAdmin: false, isDashboard: false };
     case 'coach_readonly':
-      return { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false };
+      return { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: false };
+    // Ruoli Dashboard — accesso solo alla Dashboard (licenza Platinum)
+    case 'direttivo':
+      return { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true };
+    case 'dirigente':
+      return { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true };
+    case 'staff':
+      return { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true };
     default:
-      return { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false };
+      return { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: false };
   }
 }
 
