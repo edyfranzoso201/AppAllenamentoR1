@@ -78,6 +78,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (role === 'coach_l2') return { canEditGeneral: true, canViewGPS: true, canEditGPS: false, isAdmin: false };
         if (role === 'coach_l3') return { canEditGeneral: false, canViewGPS: true, canEditGPS: false, isAdmin: false };
         if (role === 'coach_readonly') return { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false };
+        if (role === 'societa_l1')   return { canEditGeneral: true,  canViewGPS: true,  canEditGPS: true,  isAdmin: false, isDashboard: true };
+        if (role === 'dirigente_l1') return { canEditGeneral: true,  canViewGPS: true,  canEditGPS: false, isAdmin: false, isDashboard: true };
+        if (role === 'societa_l3')   return { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true };
         return { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false };
     }
 
@@ -1539,7 +1542,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const data = { labels, datasets };
         if (chartInstances.matchResults) chartInstances.matchResults.destroy();
-        chartInstances.matchResults = new Chart(document.getElementById('matchResultsChart').getContext('2d'), {
+        const _matchResultsCanvas = document.getElementById('matchResultsChart');
+        if (!_matchResultsCanvas) return;
+        chartInstances.matchResults = new Chart(_matchResultsCanvas.getContext('2d'), {
             type: 'bar',
             data: data,
             options: {
@@ -1574,7 +1579,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return count > 0 ? (total / count).toFixed(2) : 0;
         });
         if(chartInstances.dailyTeam) chartInstances.dailyTeam.destroy();
-        chartInstances.dailyTeam = new Chart(document.getElementById('dailyTeamChart').getContext('2d'), {
+        const _dailyTeamCanvas = document.getElementById('dailyTeamChart');
+        if (!_dailyTeamCanvas) return;
+        chartInstances.dailyTeam = new Chart(_dailyTeamCanvas.getContext('2d'), {
             type: 'line',
             data: {
                 labels: last7Days.map(d => new Date(d).toLocaleDateString('it-IT', {day:'2-digit', month:'short'})),
@@ -1643,7 +1650,9 @@ document.addEventListener('DOMContentLoaded', () => {
             scoresToShow = allSortedScores.filter(a => a.score >= cutoffScore);
         }
         if(chartInstances.monthlyComparison) chartInstances.monthlyComparison.destroy();
-        chartInstances.monthlyComparison = new Chart(document.getElementById('monthlyComparisonChart').getContext('2d'), {
+        const _monthlyCanvas = document.getElementById('monthlyComparisonChart');
+        if (!_monthlyCanvas) return;
+        chartInstances.monthlyComparison = new Chart(_monthlyCanvas.getContext('2d'), {
             type: 'bar',
             data: {
                 labels: scoresToShow.map(a=>a.name),
@@ -1796,6 +1805,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if(chartInstances.attendance) chartInstances.attendance.destroy();
         const attendanceCanvas = document.getElementById('attendanceChart');
+        if (!attendanceCanvas) return;
         const attWrapper = document.getElementById('attendance-chart-wrapper') || attendanceCanvas.parentElement;
         const isMobile = window.innerWidth < 768;
         const rawW = attWrapper ? attWrapper.offsetWidth : 0;

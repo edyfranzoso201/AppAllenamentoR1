@@ -728,10 +728,12 @@
 
   // ══ Auth gate ══════════════════════════════════════════════════
   function checkAuth() {
-    const isAuth   = sessionStorage.getItem(SESSION_KEY) === 'true';
-    const expiry   = sessionStorage.getItem(SESSION_KEY + '_expiry');
-    const role     = sessionStorage.getItem(SESSION_USER_ROLE) || '';
-    const plan     = sessionStorage.getItem(LICENSE_PLAN) || '';
+    const isAuth       = sessionStorage.getItem(SESSION_KEY) === 'true';
+    const expiry       = sessionStorage.getItem(SESSION_KEY + '_expiry');
+    const role         = sessionStorage.getItem(SESSION_USER_ROLE) || '';
+    const plan         = sessionStorage.getItem(LICENSE_PLAN) || '';
+    const hasDashboard = sessionStorage.getItem('gosport_has_dashboard') === 'true';
+    const dashRole     = sessionStorage.getItem('gosport_dashboard_role') || '';
 
     // Non autenticato o sessione scaduta → login
     if (!isAuth || !expiry || Date.now() > parseInt(expiry)) {
@@ -739,8 +741,8 @@
       return;
     }
 
-    // Ruolo non abilitato alla dashboard → torna all'app normale
-    if (!DASHBOARD_ROLES.includes(role)) {
+    // Accesso consentito se: ruolo diretto (admin/direttivo/...) OPPURE flag has_dashboard
+    if (!DASHBOARD_ROLES.includes(role) && !hasDashboard) {
       window.location.href = '/index.html';
       return;
     }
@@ -751,8 +753,11 @@
       return;
     }
 
+    // Per utenti mappati (direttivo→societa_l1 ecc.) usa il ruolo originale per i label
+    const displayRole = hasDashboard && dashRole ? dashRole : role;
+
     // OK — inizializza UI
-    initDashboard(role);
+    initDashboard(displayRole);
   }
 
   function initDashboard(role) {

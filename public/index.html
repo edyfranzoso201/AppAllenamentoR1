@@ -1164,6 +1164,7 @@
             <button class="tab-nav-btn" data-tab="monitoraggio-gps-section" onclick="switchTab('monitoraggio-gps-section')"><i class="bi bi-graph-up-arrow"></i><span class="tab-label"> GPS</span></button>
             <button class="tab-nav-btn" data-tab="analisi-singolo-section" onclick="switchTab('analisi-singolo-section')"><i class="bi bi-person-lines-fill"></i><span class="tab-label"> Analisi</span></button>
             <a href="/calendario.html" class="tab-nav-btn tab-external" target="_blank"><i class="bi bi-calendar-plus"></i><span class="tab-label"> Cal. ↗</span></a>
+            <a href="/dashboard.html" id="dashboard-nav-btn" class="tab-nav-btn tab-external" style="display:none;"><i class="bi bi-speedometer2"></i><span class="tab-label"> Dashboard</span></a>
             <button class="tab-nav-btn" data-tab="materiale-section" onclick="switchTab('materiale-section')"><i class="bi bi-box-seam-fill"></i><span class="tab-label"> Materiale</span></button>
             <button class="tab-nav-btn" data-tab="pagamenti-section" onclick="switchTab('pagamenti-section')"><i class="bi bi-credit-card-fill"></i><span class="tab-label"> Pagamenti</span></button>
             <button class="tab-nav-btn" data-tab="convocazioni-section" onclick="switchTab('convocazioni-section')"><i class="bi bi-megaphone-fill"></i><span class="tab-label"> Convocazioni</span></button>
@@ -2270,10 +2271,10 @@
     
     <!-- Multi-annata system - ORDINE IMPORTANTE! -->
     <script src="data-adapter-multi-annata.js?v=1778056923"></script>
-    <script src="auth-multi-annata.js?v=1778056923"></script>
+    <script src="auth-multi-annata.js?v=1778700000"></script>
     
     <!-- Script personalizzato -->
-    <script src="script.js?v=1778065000"></script>
+    <script src="script.js?v=1778700001"></script>
     <script>
 
     // ========================================================================
@@ -3155,6 +3156,22 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('DOMContentLoaded', showAccessTabIfAdmin);
     // Fallback: controlla dopo auth
     setTimeout(showAccessTabIfAdmin, 1500);
+})();
+
+// ── Pulsante Dashboard (solo Platinum + has_dashboard) ──
+(function() {
+    function showDashboardBtn() {
+        var hasDashboard = sessionStorage.getItem('gosport_has_dashboard') === 'true';
+        var role = sessionStorage.getItem('gosport_user_role') || '';
+        var plan = sessionStorage.getItem('gosport_license_plan') || '';
+        var btn = document.getElementById('dashboard-nav-btn');
+        var allowed = hasDashboard || role === 'admin';
+        if (btn && allowed && plan === 'platinum') {
+            btn.style.display = '';
+        }
+    }
+    document.addEventListener('DOMContentLoaded', showDashboardBtn);
+    setTimeout(showDashboardBtn, 1500);
 })();
 </script>
 

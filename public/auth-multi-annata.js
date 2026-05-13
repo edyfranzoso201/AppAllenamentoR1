@@ -515,7 +515,24 @@
                             sessionStorage.setItem(SESSION_TOKEN, result.sessionToken);
                         }
                         sessionStorage.setItem(SESSION_USER, username);
-                        sessionStorage.setItem(SESSION_USER_ROLE, result.role);
+                        const DASHBOARD_ROLE_MAP = { direttivo: 'societa_l1', dirigente: 'dirigente_l1', staff: 'societa_l3' };
+                        const DASHBOARD_APP_PERMS = {
+                            societa_l1:   { canEditGeneral: true,  canViewGPS: true,  canEditGPS: true,  isAdmin: false, isDashboard: true },
+                            dirigente_l1: { canEditGeneral: true,  canViewGPS: true,  canEditGPS: false, isAdmin: false, isDashboard: true },
+                            societa_l3:   { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true }
+                        };
+                        const _origRole = result.role;
+                        const _appRole = DASHBOARD_ROLE_MAP[_origRole];
+                        const _isDashboard = !!_appRole;
+                        sessionStorage.setItem(SESSION_USER_ROLE, _isDashboard ? _appRole : _origRole);
+                        if (_isDashboard) {
+                            sessionStorage.setItem('gosport_has_dashboard', 'true');
+                            sessionStorage.setItem('gosport_dashboard_role', _origRole);
+                            sessionStorage.setItem('gosport_permissions', JSON.stringify(DASHBOARD_APP_PERMS[_appRole]));
+                        } else {
+                            sessionStorage.removeItem('gosport_has_dashboard');
+                            sessionStorage.removeItem('gosport_dashboard_role');
+                        }
                         // Salva permissions per controllo lato client
                         if (result.user && result.user.permissions) {
                             sessionStorage.setItem('gosport_permissions', JSON.stringify(result.user.permissions));
@@ -843,7 +860,13 @@ async function loadAnnateList() {
             let athletesCount = 0;
             try {
                 const dataResponse = await fetch('/api/data', {
-                    headers: { 'X-Annata-Id': annata.id }
+                    headers: {
+                        'X-Annata-Id': annata.id,
+                        'X-Auth-Session': sessionStorage.getItem(SESSION_KEY) || '',
+                        'X-Auth-User': sessionStorage.getItem(SESSION_USER) || '',
+                        'X-User-Role': sessionStorage.getItem(SESSION_USER_ROLE) || '',
+                        'X-Society-Id': sessionStorage.getItem(SESSION_SOCIETY) || ''
+                    }
                 });
                 if (dataResponse.ok) {
                     const annataData = await dataResponse.json();
@@ -1480,7 +1503,13 @@ async function loadAnnateList() {
             let athletesCount = 0;
             try {
                 const dataResponse = await fetch('/api/data', {
-                    headers: { 'X-Annata-Id': annata.id }
+                    headers: {
+                        'X-Annata-Id': annata.id,
+                        'X-Auth-Session': sessionStorage.getItem(SESSION_KEY) || '',
+                        'X-Auth-User': sessionStorage.getItem(SESSION_USER) || '',
+                        'X-User-Role': sessionStorage.getItem(SESSION_USER_ROLE) || '',
+                        'X-Society-Id': sessionStorage.getItem(SESSION_SOCIETY) || ''
+                    }
                 });
                 if (dataResponse.ok) {
                     const annataData = await dataResponse.json();
@@ -2113,6 +2142,17 @@ window.deleteUser = async function(username) {
 
             console.log('🎫 Piano licenza: ' + licensePlan + ' | Tab consentiti: ' + allowedByPlan.length);
 
+            // Pulsante Dashboard: visibile per utenti con has_dashboard o admin, solo Platinum
+            var hasDashboardFlag = sessionStorage.getItem('gosport_has_dashboard') === 'true';
+            var dashBtn = document.getElementById('dashboard-nav-btn');
+            if (dashBtn) {
+                if ((hasDashboardFlag || role === 'admin') && licensePlan === 'platinum') {
+                    dashBtn.style.display = '';
+                } else {
+                    dashBtn.style.display = 'none';
+                }
+            }
+
             // Mostra pulsante Reset Fine Annata per i ruoli abilitati
             if (window.setupResetAnnataBtn) window.setupResetAnnataBtn();
         }
@@ -2251,14 +2291,6 @@ window.deleteUser = async function(username) {
                 } catch(e) {}
             }
 
-            // Ruoli Dashboard (A1/A2/A3) → redirect diretto a dashboard.html
-            const role = getUserRole();
-            const DASHBOARD_ROLES = ['direttivo', 'dirigente', 'staff'];
-            if (DASHBOARD_ROLES.includes(role)) {
-                window.location.href = '/dashboard.html';
-                return;
-            }
-
             // Coach o admin con licenza ok → selezione annata
             showAnnataSelection();
         }
@@ -2266,6 +2298,8 @@ window.deleteUser = async function(username) {
         if (!isAuthenticated()) {
             showLoginScreen();
         } else if (!hasSelectedAnnata()) {
+            // Attiva l'interceptor subito così le chiamate API di script.js hanno le auth headers
+            setupFetchInterceptor();
             // ── Già autenticato, nessuna annata → verifica token prima di procedere ──
             (async () => {
                 const token = sessionStorage.getItem(SESSION_TOKEN);
