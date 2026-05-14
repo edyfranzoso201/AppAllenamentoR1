@@ -187,13 +187,12 @@ document.addEventListener('DOMContentLoaded', () => {
     async function checkIscrizioni() {
         const perms = getPermissions();
         if (!perms.isDashboard && !perms.isAdmin) return;
+        const socId = sessionStorage.getItem('gosport_society_id') || '';
+        if (!socId) return;
         try {
-            const token   = sessionStorage.getItem('gosport_session_token') || '';
-            const socId   = sessionStorage.getItem('gosport_society_id')    || '';
-            if (!token || !socId) return;
-            const r = await fetch('/api/registrations?action=list', {
-                headers: { 'Content-Type':'application/json', 'x-auth-session': token, 'x-society-id': socId }
-            });
+            // Nessun header esplicito: l'interceptor di auth-multi-annata aggiunge
+            // automaticamente X-Auth-Session e X-Society-Id dal sessionStorage
+            const r = await fetch('/api/registrations?action=list');
             if (!r.ok) return;
             const d = await r.json();
             const pending = d.pending || 0;
