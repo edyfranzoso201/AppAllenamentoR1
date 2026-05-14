@@ -2028,6 +2028,10 @@
       if (!d.success) throw new Error(d.message);
       _iscrizioni = [];
       await initIscrizioni(true);
+      const reg = _iscrizioni.find(x => x.id === id) || {};
+      const nomeAtleta = [reg.nome, reg.cognome].filter(Boolean).join(' ') || 'l\'atleta';
+      const nomeAnnata = _iscrAnnate.find(a => a.id === annataId)?.nome || annataId;
+      alert(`✅ Richiesta accettata!\n\nRicorda di aggiungere manualmente ${nomeAtleta} all\'annata "${nomeAnnata}" nella sezione Squadra.`);
     } catch(e) { alert('Errore: ' + e.message); }
   }
 
