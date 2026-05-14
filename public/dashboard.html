@@ -236,6 +236,42 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* ══ ISCRIZIONI ════════════════════════════════════════════════ */
+  .btn-fi {
+    background: var(--bg-panel); border: 1px solid var(--border-soft);
+    color: var(--text-muted); border-radius: 8px; padding: 6px 14px;
+    cursor: pointer; font-size: 0.82rem; transition: all 0.2s;
+  }
+  .btn-fi:hover { border-color: var(--accent); color: var(--text-primary); }
+  .btn-fi.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .fi-count {
+    background: rgba(255,255,255,0.25); border-radius: 10px;
+    font-size: 0.7rem; font-weight: 700; padding: 0 6px; margin-left: 4px;
+  }
+  .iscr-card {
+    background: var(--bg-panel); border: 1px solid var(--border-soft);
+    border-radius: 10px; padding: 16px; margin-bottom: 12px;
+  }
+  .iscr-card.pending  { border-left: 4px solid #f59e0b; }
+  .iscr-card.accepted { border-left: 4px solid #10b981; }
+  .iscr-card.rejected { border-left: 4px solid #ef4444; }
+  .iscr-name { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+  .iscr-meta { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+  .iscr-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
+  .btn-accept { background: #065f46; border: 1px solid #10b981; color: #6ee7b7; border-radius: 7px; padding: 6px 14px; cursor: pointer; font-size: 0.82rem; }
+  .btn-reject { background: #450a0a; border: 1px solid #ef4444; color: #fca5a5; border-radius: 7px; padding: 6px 14px; cursor: pointer; font-size: 0.82rem; }
+  .btn-del-iscr { background: none; border: 1px solid var(--border-soft); color: var(--text-muted); border-radius: 7px; padding: 6px 12px; cursor: pointer; font-size: 0.82rem; }
+  .annata-sel-inline { background: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-primary); border-radius: 7px; padding: 5px 10px; font-size: 0.82rem; }
+  /* Popup richieste pendenti */
+  .iscr-popup {
+    background: #1a2e1a; border: 1px solid #16a34a; border-radius: 10px;
+    padding: 14px 18px; margin-bottom: 18px; display: flex;
+    align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .iscr-popup-text { flex: 1; font-size: 0.88rem; color: #86efac; }
+  .iscr-popup-btn { background: #16a34a; border: none; color: #fff; border-radius: 7px; padding: 7px 16px; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
+  .iscr-popup-close { background: none; border: none; color: #86efac; cursor: pointer; font-size: 1.1rem; padding: 0 4px; }
+
   /* ══ MAIN CONTENT ══════════════════════════════════════════════ */
   .dash-main {
     margin-left: var(--sidebar-w);
@@ -468,6 +504,10 @@
     <div class="nav-item" data-section="gare" onclick="showSection('gare', this)">
       <span class="nav-icon">⚽</span> Gare da Disputare
     </div>
+    <div class="nav-item" id="nav-iscrizioni" data-section="iscrizioni" onclick="showSection('iscrizioni', this)" style="display:none;position:relative;">
+      <span class="nav-icon">📋</span> Iscrizioni
+      <span id="nav-iscr-badge" style="display:none;background:#ef4444;color:#fff;border-radius:10px;font-size:0.65rem;font-weight:700;padding:1px 7px;margin-left:auto;"></span>
+    </div>
 
     <div class="nav-section-label">Comunicazione</div>
     <div class="nav-item" data-section="bacheca" onclick="showSection('bacheca', this)">
@@ -488,6 +528,27 @@
     <div class="section-panel active" id="section-home">
       <div class="section-title">🏠 Home — Riepilogo</div>
       <div class="section-subtitle">Panoramica generale di tutte le annate della società</div>
+
+      <!-- Popup richieste iscrizione pendenti -->
+      <div id="iscr-popup-home" class="iscr-popup" style="display:none">
+        <div class="iscr-popup-text">
+          🔔 Ci sono <strong id="iscr-popup-count">0</strong> nuove richieste di iscrizione in attesa di valutazione.
+        </div>
+        <button type="button" class="iscr-popup-btn" onclick="showSection('iscrizioni', document.getElementById('nav-iscrizioni'))">Vai alle Iscrizioni</button>
+        <button type="button" class="iscr-popup-close" onclick="document.getElementById('iscr-popup-home').style.display='none'" title="Chiudi">✕</button>
+      </div>
+
+      <!-- Link registrazione (solo admin/coach) -->
+      <div id="home-reg-link-box" style="display:none;margin-bottom:18px;">
+        <div class="card" style="padding:14px 18px;border-left:4px solid var(--accent);">
+          <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:6px;">🔗 Link modulo iscrizione pubblica (condividi con gli atleti o genera QR)</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <input type="text" id="home-reg-link-input" readonly
+              style="flex:1;min-width:200px;background:var(--bg-card);border:1px solid var(--border-soft);border-radius:8px;padding:7px 12px;color:var(--text-primary);font-size:0.82rem;font-family:monospace;">
+            <button type="button" onclick="copyRegLink()" style="background:var(--accent);border:none;color:#fff;border-radius:8px;padding:7px 16px;cursor:pointer;font-size:0.82rem;font-weight:600;">📋 Copia</button>
+          </div>
+        </div>
+      </div>
 
       <!-- Stat cards -->
       <div class="stats-grid" id="home-stats">
@@ -741,6 +802,32 @@
       </div>
     </div>
 
+    <!-- ISCRIZIONI -->
+    <div class="section-panel" id="section-iscrizioni">
+      <div class="section-title">📋 Richieste di Iscrizione</div>
+      <div class="section-subtitle">Gestione richieste ricevute tramite il modulo pubblico</div>
+
+      <!-- Filtri stato -->
+      <div class="card" style="margin-bottom:16px;padding:12px 16px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button onclick="filterIscrizioni('pending')"   id="fi-pending"   class="btn-fi active">⏳ In attesa <span id="fi-count-pending"  class="fi-count"></span></button>
+            <button onclick="filterIscrizioni('accepted')"  id="fi-accepted"  class="btn-fi">✅ Accettate <span id="fi-count-accepted" class="fi-count"></span></button>
+            <button onclick="filterIscrizioni('rejected')"  id="fi-rejected"  class="btn-fi">❌ Rifiutate <span id="fi-count-rejected" class="fi-count"></span></button>
+            <button onclick="filterIscrizioni('all')"       id="fi-all"       class="btn-fi">📄 Tutte</button>
+          </div>
+          <button onclick="initIscrizioni(true)" style="background:none;border:1px solid var(--border-soft);color:var(--text-muted);border-radius:8px;padding:5px 12px;cursor:pointer;font-size:0.8rem;">🔄 Aggiorna</button>
+        </div>
+      </div>
+
+      <div id="iscr-loading" class="loading-spinner"><div class="spinner"></div> Caricamento...</div>
+      <div id="iscr-list"></div>
+      <div id="iscr-empty" style="display:none;text-align:center;color:var(--text-muted);padding:40px 16px;">
+        <div style="font-size:2rem;margin-bottom:8px;">📭</div>
+        Nessuna richiesta in questa categoria
+      </div>
+    </div>
+
     <!-- BACHECA -->
     <div class="section-panel" id="section-bacheca">
       <div class="section-title">📢 Bacheca Pubblica</div>
@@ -834,8 +921,26 @@
     const savedTheme = localStorage.getItem('gosport_theme') || 'dark';
     applyTheme(savedTheme);
 
+    // Iscrizioni: visibile a direttivo, dirigente, admin
+    const canSeeIscrizioni = ['direttivo', 'dirigente', 'admin'].includes(role);
+    const navIscr = document.getElementById('nav-iscrizioni');
+    if (navIscr && canSeeIscrizioni) navIscr.style.display = '';
+
+    // Link registrazione: visibile a direttivo e admin
+    if (['direttivo', 'admin'].includes(role)) {
+      const societyId = sessionStorage.getItem('gosport_society_id') || '';
+      const sName = sessionStorage.getItem('gosport_society_name') || '';
+      const base = window.location.origin;
+      const link = `${base}/register.html?sid=${societyId}&name=${encodeURIComponent(sName)}`;
+      const linkBox = document.getElementById('home-reg-link-box');
+      const linkInput = document.getElementById('home-reg-link-input');
+      if (linkBox)  linkBox.style.display  = '';
+      if (linkInput) linkInput.value = link;
+    }
+
     // Carica dati Home
     loadHomeData();
+    if (canSeeIscrizioni) checkPendingIscrizioni();
   }
 
   // ══ Tema ═══════════════════════════════════════════════════════
@@ -1721,8 +1826,9 @@
     else if (name === 'presenze')  initPresenze();
     else if (name === 'materiale') initMateriale();
     else if (name === 'pagamenti') initPagamenti();
-    else if (name === 'gare')      initGare();
-    else if (name === 'bacheca')   initBacheca();
+    else if (name === 'gare')        initGare();
+    else if (name === 'iscrizioni')  initIscrizioni();
+    else if (name === 'bacheca')     initBacheca();
   };
 
   // ══ Sidebar mobile ════════════════════════════════════════════
@@ -1744,6 +1850,224 @@
   window.showSection = function(name, el) {
     _origShowSection(name, el);
     if (window.innerWidth <= 768) closeMobileSidebar();
+  };
+
+  // ══ ISCRIZIONI ════════════════════════════════════════════════
+  let _iscrizioni = [];
+  let _iscrAnnate = [];
+  let _iscrFilter = 'pending';
+
+  function iscrAuthHeaders() {
+    return {
+      'Content-Type': 'application/json',
+      'x-auth-session': sessionStorage.getItem('gosport_session_token') || '',
+      'x-society-id':   sessionStorage.getItem('gosport_society_id')    || ''
+    };
+  }
+
+  async function checkPendingIscrizioni() {
+    try {
+      const r = await fetch('/api/registrations?action=list', { headers: iscrAuthHeaders() });
+      if (!r.ok) return;
+      const d = await r.json();
+      const pending = d.pending || 0;
+      // Aggiorna badge nav
+      const badge = document.getElementById('nav-iscr-badge');
+      if (badge) {
+        badge.textContent = pending;
+        badge.style.display = pending > 0 ? '' : 'none';
+      }
+      // Mostra popup Home se ci sono pendenti
+      const popup = document.getElementById('iscr-popup-home');
+      const countEl = document.getElementById('iscr-popup-count');
+      if (popup && pending > 0) {
+        if (countEl) countEl.textContent = pending;
+        popup.style.display = '';
+      }
+    } catch(_) {}
+  }
+
+  async function initIscrizioni(force) {
+    if (_iscrizioni.length && !force) { renderIscrizioni(); return; }
+    document.getElementById('iscr-loading').style.display = '';
+    document.getElementById('iscr-list').innerHTML = '';
+    document.getElementById('iscr-empty').style.display = 'none';
+    try {
+      const [ri, ra] = await Promise.all([
+        fetch('/api/registrations?action=list', { headers: iscrAuthHeaders() }).then(r => r.json()),
+        fetchAnnate()
+      ]);
+      _iscrizioni = ri.registrations || [];
+      _iscrAnnate = ra;
+      // Aggiorna contatori badge
+      const counts = { pending: 0, accepted: 0, rejected: 0 };
+      _iscrizioni.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
+      ['pending','accepted','rejected'].forEach(s => {
+        const el = document.getElementById('fi-count-' + s);
+        if (el) el.textContent = counts[s] || '';
+      });
+      // Badge nav
+      const badge = document.getElementById('nav-iscr-badge');
+      if (badge) { badge.textContent = counts.pending; badge.style.display = counts.pending > 0 ? '' : 'none'; }
+      // Nascondi popup se zero pendenti
+      if (!counts.pending) document.getElementById('iscr-popup-home').style.display = 'none';
+    } catch(e) {
+      document.getElementById('iscr-list').innerHTML = `<div style="color:#ef4444;padding:20px">❌ Errore: ${e.message}</div>`;
+    } finally {
+      document.getElementById('iscr-loading').style.display = 'none';
+    }
+    renderIscrizioni();
+  }
+
+  function filterIscrizioni(status) {
+    _iscrFilter = status;
+    document.querySelectorAll('.btn-fi').forEach(b => b.classList.remove('active'));
+    const btn = document.getElementById('fi-' + status);
+    if (btn) btn.classList.add('active');
+    renderIscrizioni();
+  }
+
+  function renderIscrizioni() {
+    const list = document.getElementById('iscr-list');
+    const empty = document.getElementById('iscr-empty');
+    const filtered = _iscrFilter === 'all' ? _iscrizioni : _iscrizioni.filter(r => r.status === _iscrFilter);
+    if (!filtered.length) { list.innerHTML = ''; empty.style.display = ''; return; }
+    empty.style.display = 'none';
+
+    const annateOpts = _iscrAnnate.map(a => `<option value="${a.id}">${a.nome || a.id}</option>`).join('');
+
+    list.innerHTML = filtered.map(reg => {
+      const dataInvio = new Date(reg.submittedAt).toLocaleString('it-IT');
+      const eta = calcolaEta(reg.dataNascita);
+      const tipoLabel = reg.isAdult ? '🔞 Maggiorenne' : '👶 Minorenne';
+      const statusBadge = reg.status === 'pending'
+        ? '<span style="background:#78350f;color:#fde68a;border-radius:6px;padding:2px 8px;font-size:0.75rem;font-weight:600;">⏳ In attesa</span>'
+        : reg.status === 'accepted'
+        ? '<span style="background:#052e16;color:#86efac;border-radius:6px;padding:2px 8px;font-size:0.75rem;font-weight:600;">✅ Accettata</span>'
+        : '<span style="background:#450a0a;color:#fca5a5;border-radius:6px;padding:2px 8px;font-size:0.75rem;font-weight:600;">❌ Rifiutata</span>';
+
+      let genitoreInfo = '';
+      if (!reg.isAdult && reg.genitore) {
+        const g = reg.genitore;
+        genitoreInfo = `<div style="margin-top:8px;padding:8px 10px;background:var(--bg-card);border-radius:7px;font-size:0.78rem;color:var(--text-muted);">
+          👨‍👩‍👧 <strong>Genitore/Tutore:</strong> ${esc(g.nome)} ${esc(g.cognome)} — ${esc(g.cellulare)} — ${esc(g.email)}<br>
+          CF: ${esc(g.codiceFiscale)} — ${esc(g.indirizzo)}
+        </div>`;
+      }
+
+      let contactInfo = '';
+      if (reg.isAdult) {
+        contactInfo = `<span style="color:var(--text-muted);font-size:0.78rem;">📧 ${esc(reg.email)} &nbsp;📱 ${esc(reg.cellulare)} &nbsp;CF: ${esc(reg.codiceFiscale)}</span>`;
+      }
+
+      let respondedInfo = '';
+      if (reg.respondedAt) {
+        respondedInfo = `<div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">
+          ${reg.status === 'accepted' ? '✅ Accettata' : '❌ Rifiutata'} da <strong>${esc(reg.respondedBy || '—')}</strong>
+          il ${new Date(reg.respondedAt).toLocaleString('it-IT')}
+          ${reg.annataId ? ` — Annata: ${_iscrAnnate.find(a=>a.id===reg.annataId)?.nome || reg.annataId}` : ''}
+        </div>`;
+      }
+
+      const actionBtns = reg.status === 'pending' ? `
+        <select class="annata-sel-inline" id="annata-sel-${reg.id}" title="Seleziona annata per accettazione">
+          <option value="">— Seleziona annata —</option>
+          ${annateOpts}
+        </select>
+        <button type="button" class="btn-accept" onclick="accettaIscrizione('${reg.id}')">✅ Accetta</button>
+        <button type="button" class="btn-reject" onclick="rifiutaIscrizione('${reg.id}')">❌ Rifiuta</button>
+        <button type="button" class="btn-del-iscr" onclick="eliminaIscrizione('${reg.id}')" title="Elimina">🗑️</button>
+      ` : `
+        <button type="button" class="btn-del-iscr" onclick="eliminaIscrizione('${reg.id}')" title="Elimina">🗑️ Elimina</button>
+      `;
+
+      return `<div class="iscr-card ${reg.status}">
+        <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <div class="iscr-name">${esc(reg.nome)} ${esc(reg.cognome)}</div>
+            <div class="iscr-meta">📅 Nato/a il ${esc(reg.dataNascita)} &nbsp;(${eta} anni) &nbsp;${tipoLabel}</div>
+            ${contactInfo}
+            ${genitoreInfo}
+            ${respondedInfo}
+          </div>
+          <div style="text-align:right;font-size:0.75rem;color:var(--text-muted);flex-shrink:0;">
+            ${statusBadge}<br>
+            <span style="margin-top:4px;display:block">${dataInvio}</span>
+          </div>
+        </div>
+        <div class="iscr-actions">${actionBtns}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function calcolaEta(dataNascita) {
+    if (!dataNascita) return '?';
+    const b = new Date(dataNascita);
+    const t = new Date();
+    let a = t.getFullYear() - b.getFullYear();
+    const m = t.getMonth() - b.getMonth();
+    if (m < 0 || (m === 0 && t.getDate() < b.getDate())) a--;
+    return a;
+  }
+
+  function esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  async function accettaIscrizione(id) {
+    const annataId = document.getElementById('annata-sel-' + id)?.value || '';
+    if (!annataId) { alert('Seleziona un\'annata prima di accettare.'); return; }
+    if (!confirm('Accettare questa richiesta?')) return;
+    try {
+      const r = await fetch('/api/registrations?action=accept', {
+        method: 'PUT',
+        headers: iscrAuthHeaders(),
+        body: JSON.stringify({ id, annataId })
+      });
+      const d = await r.json();
+      if (!d.success) throw new Error(d.message);
+      _iscrizioni = [];
+      await initIscrizioni(true);
+    } catch(e) { alert('Errore: ' + e.message); }
+  }
+
+  async function rifiutaIscrizione(id) {
+    if (!confirm('Rifiutare questa richiesta?')) return;
+    try {
+      const r = await fetch('/api/registrations?action=reject', {
+        method: 'PUT',
+        headers: iscrAuthHeaders(),
+        body: JSON.stringify({ id })
+      });
+      const d = await r.json();
+      if (!d.success) throw new Error(d.message);
+      _iscrizioni = [];
+      await initIscrizioni(true);
+    } catch(e) { alert('Errore: ' + e.message); }
+  }
+
+  async function eliminaIscrizione(id) {
+    if (!confirm('Eliminare definitivamente questa richiesta?')) return;
+    try {
+      const r = await fetch('/api/registrations?action=delete', {
+        method: 'DELETE',
+        headers: iscrAuthHeaders(),
+        body: JSON.stringify({ id })
+      });
+      const d = await r.json();
+      if (!d.success) throw new Error(d.message);
+      _iscrizioni = [];
+      await initIscrizioni(true);
+    } catch(e) { alert('Errore: ' + e.message); }
+  }
+
+  window.copyRegLink = function() {
+    const inp = document.getElementById('home-reg-link-input');
+    if (!inp) return;
+    navigator.clipboard.writeText(inp.value).then(() => {
+      const btn = inp.nextElementSibling;
+      if (btn) { btn.textContent = '✅ Copiato!'; setTimeout(() => { btn.textContent = '📋 Copia'; }, 2000); }
+    }).catch(() => { inp.select(); document.execCommand('copy'); });
   };
 
   // ══ Avvio ══════════════════════════════════════════════════════

@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Richiesta Iscrizione — Sport Monitoring</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:#0f172a; color:#e2e8f0; min-height:100vh; }
+
+    .page { max-width:640px; margin:0 auto; padding:24px 16px 60px; }
+
+    .header { text-align:center; margin-bottom:28px; }
+    .header-logo { font-size:2.4rem; margin-bottom:6px; }
+    .header-title { font-size:1.4rem; font-weight:700; color:#fff; }
+    .header-society { font-size:1rem; color:#38bdf8; margin-top:4px; font-weight:600; }
+    .header-sub { font-size:0.82rem; color:#64748b; margin-top:4px; }
+
+    .card { background:#1e293b; border:1px solid #334155; border-radius:12px; padding:20px; margin-bottom:18px; }
+    .card-title { font-size:0.95rem; font-weight:700; color:#fff; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+
+    .form-group { margin-bottom:14px; }
+    .form-label { display:block; font-size:0.82rem; color:#94a3b8; margin-bottom:5px; }
+    .form-label span.req { color:#ef4444; margin-left:2px; }
+    .form-control {
+      width:100%; background:#0f172a; border:1px solid #334155; border-radius:8px;
+      padding:9px 12px; color:#e2e8f0; font-size:0.88rem; outline:none;
+      transition:border-color 0.2s;
+    }
+    .form-control:focus { border-color:#38bdf8; }
+    .form-control::placeholder { color:#475569; }
+    .row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    @media(max-width:480px){ .row { grid-template-columns:1fr; } }
+
+    .section-minor { display:none; }
+    .section-minor.visible { display:block; }
+
+    /* Privacy box */
+    .privacy-box {
+      background:#0a1628; border:1px solid #1e3a5f; border-radius:10px;
+      padding:16px; margin-bottom:18px; font-size:0.8rem; color:#94a3b8; line-height:1.6;
+    }
+    .privacy-box strong { color:#f59e0b; }
+    .privacy-switch-row {
+      display:flex; align-items:center; gap:12px; margin-top:12px;
+      background:#1e293b; border:1px solid #334155; border-radius:8px; padding:12px;
+    }
+    .switch-label { flex:1; font-size:0.82rem; color:#e2e8f0; font-weight:500; }
+    .switch { position:relative; width:44px; height:24px; flex-shrink:0; }
+    .switch input { opacity:0; width:0; height:0; }
+    .slider {
+      position:absolute; inset:0; background:#334155; border-radius:24px; cursor:pointer;
+      transition:background 0.3s;
+    }
+    .slider:before {
+      content:''; position:absolute; width:18px; height:18px; left:3px; top:3px;
+      background:#fff; border-radius:50%; transition:transform 0.3s;
+    }
+    .switch input:checked + .slider { background:#10b981; }
+    .switch input:checked + .slider:before { transform:translateX(20px); }
+
+    .btn { width:100%; padding:14px; border:none; border-radius:10px; font-size:1rem; font-weight:600; cursor:pointer; transition:opacity 0.2s; }
+    .btn:disabled { opacity:0.5; cursor:not-allowed; }
+    .btn-primary { background:linear-gradient(135deg,#0369a1,#0284c7); color:#fff; }
+    .btn-primary:hover:not(:disabled) { opacity:0.9; }
+    .btn-print { background:#1e293b; border:1px solid #334155; color:#94a3b8; margin-top:10px; }
+    .btn-print:hover { border-color:#64748b; color:#e2e8f0; }
+
+    .alert { padding:12px 14px; border-radius:8px; font-size:0.85rem; margin-bottom:14px; display:none; }
+    .alert-error { background:#450a0a; border:1px solid #991b1b; color:#fca5a5; display:block; }
+    .alert-success { background:#052e16; border:1px solid #166534; color:#86efac; display:block; }
+
+    .note-box { background:#1a1040; border:1px solid #2d1b5e; border-radius:8px; padding:12px 14px; font-size:0.8rem; color:#a78bfa; margin-bottom:18px; }
+
+    .divider { border:none; border-top:1px solid #1e293b; margin:16px 0; }
+
+    /* ── PRINT ─────────────────────────────────── */
+    @media print {
+      body { background:#fff; color:#000; }
+      .card { background:#fff; border:1px solid #ccc; page-break-inside:avoid; }
+      .card-title { color:#000; }
+      .form-label { color:#333; }
+      .form-control {
+        border:1px solid #999; border-radius:4px; background:#fff; color:#000;
+        padding:6px 8px;
+      }
+      .privacy-box { background:#f9f9f9; border:1px solid #ccc; color:#333; }
+      .privacy-box strong { color:#b45309; }
+      .privacy-switch-row { background:#f9f9f9; border:1px solid #ccc; }
+      .switch-label { color:#000; }
+      .no-print, .btn-print, .btn-primary, #submit-btn { display:none !important; }
+      .print-only { display:block !important; }
+      .header-title, .header-society { color:#000; }
+      .note-box { background:#fffbeb; border:1px solid #fbbf24; color:#78350f; }
+      .slider { display:none; }
+    }
+    .print-only { display:none; }
+  </style>
+</head>
+<body>
+<div class="page" id="main-page">
+
+  <div class="header">
+    <div class="header-logo">⚽</div>
+    <div class="header-title">Sport Monitoring</div>
+    <div class="header-society" id="society-name-display">Caricamento...</div>
+    <div class="header-sub">Modulo di richiesta iscrizione</div>
+  </div>
+
+  <div id="alert-error" class="alert" style="display:none"></div>
+
+  <!-- ── DATI PERSONALI ── -->
+  <div class="card">
+    <div class="card-title">👤 Dati Personali</div>
+    <div class="row">
+      <div class="form-group">
+        <label class="form-label">Nome <span class="req">*</span></label>
+        <input type="text" class="form-control" id="f-nome" placeholder="es. Mario" autocomplete="given-name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cognome <span class="req">*</span></label>
+        <input type="text" class="form-control" id="f-cognome" placeholder="es. Rossi" autocomplete="family-name">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Data di Nascita <span class="req">*</span></label>
+      <input type="date" class="form-control" id="f-nascita" onchange="onNascitaChange()">
+    </div>
+
+    <!-- Campi solo adulti -->
+    <div id="section-adult" style="display:none">
+      <hr class="divider">
+      <div class="form-group">
+        <label class="form-label">Email <span class="req">*</span></label>
+        <input type="email" class="form-control" id="f-email" placeholder="mario@email.com" autocomplete="email">
+      </div>
+      <div class="row">
+        <div class="form-group">
+          <label class="form-label">Numero Cellulare <span class="req">*</span></label>
+          <input type="tel" class="form-control" id="f-cellulare" placeholder="333 1234567" autocomplete="tel">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Codice Fiscale <span class="req">*</span></label>
+          <input type="text" class="form-control" id="f-cf" placeholder="RSSMRA..." maxlength="16" style="text-transform:uppercase">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── DATI GENITORE (minori) ── -->
+  <div class="card" id="section-minor" style="display:none">
+    <div class="card-title">👨‍👩‍👧 Dati Genitore / Tutore <span style="font-size:0.75rem;color:#f59e0b;font-weight:400">(obbligatori per minori)</span></div>
+    <div class="row">
+      <div class="form-group">
+        <label class="form-label">Nome <span class="req">*</span></label>
+        <input type="text" class="form-control" id="g-nome" placeholder="es. Giuseppe">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cognome <span class="req">*</span></label>
+        <input type="text" class="form-control" id="g-cognome" placeholder="es. Rossi">
+      </div>
+    </div>
+    <div class="row">
+      <div class="form-group">
+        <label class="form-label">Numero Cellulare <span class="req">*</span></label>
+        <input type="tel" class="form-control" id="g-cellulare" placeholder="333 1234567">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email <span class="req">*</span></label>
+        <input type="email" class="form-control" id="g-email" placeholder="genitore@email.com">
+      </div>
+    </div>
+    <div class="row">
+      <div class="form-group">
+        <label class="form-label">Codice Fiscale <span class="req">*</span></label>
+        <input type="text" class="form-control" id="g-cf" placeholder="RSSGPP..." maxlength="16" style="text-transform:uppercase">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Indirizzo <span class="req">*</span></label>
+        <input type="text" class="form-control" id="g-indirizzo" placeholder="Via Roma 1, Milano">
+      </div>
+    </div>
+  </div>
+
+  <!-- ── NOTE ── -->
+  <div class="note-box no-print">
+    ℹ️ Il link per accedere all'area personale (calendario, comunicazioni) verrà inviato dalla società <strong>solo dopo l'accettazione</strong> della richiesta di iscrizione.
+  </div>
+
+  <!-- ── PRIVACY ── -->
+  <div class="privacy-box">
+    <strong>⚠️ Informativa Privacy e Modalità di Accesso</strong><br><br>
+    La presente piattaforma <strong>Sport Monitoring</strong> utilizza un sistema di accesso tramite link personale.
+    Chiunque sia in possesso del link ricevuto potrà accedere senza inserire una password e visualizzare
+    i dati presenti nella propria area (calendario, convocazioni, documenti).<br><br>
+    I dati forniti in questo modulo saranno trattati esclusivamente dalla società sportiva per finalità
+    di gestione dell'iscrizione, nel rispetto del Reg. UE 2016/679 (GDPR).<br><br>
+    I dati non verranno ceduti a terzi né utilizzati per finalità commerciali.
+    <div class="privacy-switch-row">
+      <span class="switch-label">Ho letto e accetto l'informativa privacy e le modalità di accesso sopra descritte <span class="req">*</span></span>
+      <label class="switch">
+        <input type="checkbox" id="privacy-switch">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <!-- Print-only privacy box -->
+    <div class="print-only" style="margin-top:12px;border-top:1px solid #ccc;padding-top:10px;font-size:0.78rem;color:#555">
+      Firma per accettazione: _____________________________________ &nbsp;&nbsp; Data: _______________
+    </div>
+  </div>
+
+  <div id="submit-error" class="alert" style="display:none"></div>
+
+  <button class="btn btn-primary no-print" id="submit-btn" onclick="submitForm()">
+    Invia Richiesta di Iscrizione
+  </button>
+
+  <button class="btn btn-print no-print" onclick="printForm('compiled')">
+    🖨️ Scarica / Stampa modulo compilato
+  </button>
+  <button class="btn btn-print no-print" style="margin-top:6px" onclick="printForm('blank')">
+    📄 Scarica / Stampa modulo vergine
+  </button>
+</div>
+
+<!-- ── SUCCESSO ── -->
+<div id="success-page" style="display:none; text-align:center; padding:60px 24px;">
+  <div style="font-size:3rem; margin-bottom:16px;">✅</div>
+  <div style="font-size:1.3rem; font-weight:700; color:#fff; margin-bottom:8px;">Richiesta inviata!</div>
+  <div style="color:#94a3b8; font-size:0.9rem; max-width:380px; margin:0 auto;">
+    La tua richiesta è stata ricevuta. Sarai contattato dalla società non appena verrà valutata.
+  </div>
+</div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const SOCIETY_ID = params.get('sid') || '';
+const API_BASE = '';
+
+let societyName = '';
+
+async function init() {
+  if (!SOCIETY_ID) {
+    showError('Link non valido. Contatta la società per ricevere il link corretto.');
+    return;
+  }
+  try {
+    // Verifica che la società esista controllando le annate (endpoint pubblico)
+    const r = await fetch(`${API_BASE}/api/annate/list`, {
+      headers: { 'X-Society-Id': SOCIETY_ID }
+    });
+    const d = await r.json();
+    // Se risponde, la società esiste — prendiamo il nome dalla licenza
+    const lr = await fetch(`${API_BASE}/api/licenze?action=verify`, {
+      headers: { 'x-license-key': 'CHECK', 'x-license-email': 'check@check.com' }
+    });
+    // Usiamo societyId per recuperare nome — non abbiamo endpoint pubblico per nome
+    // Mostriamo un generico
+    document.getElementById('society-name-display').textContent = 'Modulo Iscrizione';
+  } catch(e) {
+    // Non bloccare il form anche se non si riesce a leggere il nome
+    document.getElementById('society-name-display').textContent = 'Modulo Iscrizione';
+  }
+}
+
+// Recupera il nome società dal parametro opzionale
+const sidName = params.get('name');
+if (sidName) {
+  document.getElementById('society-name-display').textContent = decodeURIComponent(sidName);
+} else {
+  document.getElementById('society-name-display').textContent = 'Modulo Iscrizione';
+}
+
+function onNascitaChange() {
+  const val = document.getElementById('f-nascita').value;
+  if (!val) return;
+  const birth = new Date(val);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+
+  const isAdult = age >= 18;
+  document.getElementById('section-adult').style.display = isAdult ? '' : 'none';
+  document.getElementById('section-minor').style.display = !isAdult ? '' : 'none';
+}
+
+function showError(msg) {
+  const el = document.getElementById('alert-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function showSubmitError(msg) {
+  const el = document.getElementById('submit-error');
+  el.textContent = msg;
+  el.className = 'alert alert-error';
+  el.style.display = 'block';
+}
+
+async function submitForm() {
+  document.getElementById('submit-error').style.display = 'none';
+
+  const nome = document.getElementById('f-nome').value.trim();
+  const cognome = document.getElementById('f-cognome').value.trim();
+  const dataNascita = document.getElementById('f-nascita').value;
+  const privacy = document.getElementById('privacy-switch').checked;
+
+  if (!nome || !cognome || !dataNascita) {
+    showSubmitError('⚠️ Compilare Nome, Cognome e Data di Nascita.');
+    return;
+  }
+  if (!privacy) {
+    showSubmitError('⚠️ È necessario accettare l\'informativa privacy per procedere.');
+    return;
+  }
+
+  const birth = new Date(dataNascita);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const mo = today.getMonth() - birth.getMonth();
+  if (mo < 0 || (mo === 0 && today.getDate() < birth.getDate())) age--;
+  const isAdult = age >= 18;
+
+  let body = { societyId: SOCIETY_ID, nome, cognome, dataNascita, isAdult, privacyAccepted: true };
+
+  if (isAdult) {
+    const email = document.getElementById('f-email').value.trim();
+    const cellulare = document.getElementById('f-cellulare').value.trim();
+    const cf = document.getElementById('f-cf').value.trim().toUpperCase();
+    if (!email || !cellulare || !cf) {
+      showSubmitError('⚠️ Per i maggiorenni sono obbligatori Email, Cellulare e Codice Fiscale.');
+      return;
+    }
+    body = { ...body, email, cellulare, codiceFiscale: cf };
+  } else {
+    const gNome = document.getElementById('g-nome').value.trim();
+    const gCognome = document.getElementById('g-cognome').value.trim();
+    const gCell = document.getElementById('g-cellulare').value.trim();
+    const gEmail = document.getElementById('g-email').value.trim();
+    const gCf = document.getElementById('g-cf').value.trim().toUpperCase();
+    const gInd = document.getElementById('g-indirizzo').value.trim();
+    if (!gNome || !gCognome || !gCell || !gEmail || !gCf || !gInd) {
+      showSubmitError('⚠️ Per i minori sono obbligatori tutti i dati del genitore/tutore.');
+      return;
+    }
+    body.genitore = { nome: gNome, cognome: gCognome, cellulare: gCell, email: gEmail, codiceFiscale: gCf, indirizzo: gInd };
+  }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Invio in corso...';
+
+  try {
+    const r = await fetch(`${API_BASE}/api/registrations?action=submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await r.json();
+    if (!data.success) throw new Error(data.message || 'Errore invio');
+
+    document.getElementById('main-page').style.display = 'none';
+    document.getElementById('success-page').style.display = 'block';
+  } catch(e) {
+    showSubmitError('❌ ' + e.message);
+    btn.disabled = false;
+    btn.textContent = 'Invia Richiesta di Iscrizione';
+  }
+}
+
+function printForm(mode) {
+  if (mode === 'blank') {
+    // Salva valori, svuota tutto, stampa, ripristina
+    const fields = ['f-nome','f-cognome','f-nascita','f-email','f-cellulare','f-cf',
+                    'g-nome','g-cognome','g-cellulare','g-email','g-cf','g-indirizzo'];
+    const saved = {};
+    fields.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { saved[id] = el.value; el.value = ''; }
+    });
+    const privacySaved = document.getElementById('privacy-switch').checked;
+    document.getElementById('privacy-switch').checked = false;
+    // Mostra entrambe le sezioni per il modulo vergine
+    document.getElementById('section-adult').style.display = '';
+    document.getElementById('section-minor').style.display = '';
+    window.print();
+    // Ripristina
+    fields.forEach(id => { const el = document.getElementById(id); if (el) el.value = saved[id] || ''; });
+    document.getElementById('privacy-switch').checked = privacySaved;
+    onNascitaChange();
+  } else {
+    window.print();
+  }
+}
+
+init();
+</script>
+</body>
+</html>

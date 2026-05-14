@@ -175,12 +175,12 @@ export default async function handler(req, res) {
     // ACTION: create - Crea nuova licenza
     // ==========================================
     if (action === 'create' && req.method === 'POST') {
-      const { email, societyName, expiry, notes } = req.body;
+      const { email, societyName, expiry, notes, plan } = req.body;
 
       if (!email || !societyName || !expiry) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Email, nome società e scadenza obbligatori' 
+        return res.status(400).json({
+          success: false,
+          message: 'Email, nome società e scadenza obbligatori'
         });
       }
 
@@ -212,6 +212,7 @@ export default async function handler(req, res) {
         societyName,
         societyId,
         expiry,
+        plan: plan || 'platinum',
         notes: notes || '',
         active: true,
         signature,
@@ -240,7 +241,7 @@ export default async function handler(req, res) {
     // ACTION: update - Modifica licenza (rinnovo, revoca)
     // ==========================================
     if (action === 'update' && req.method === 'PUT') {
-      const { licenseKey, expiry, active, notes } = req.body;
+      const { licenseKey, expiry, active, plan, notes } = req.body;
 
       if (!licenseKey) {
         return res.status(400).json({ success: false, message: 'licenseKey obbligatorio' });
@@ -253,6 +254,7 @@ export default async function handler(req, res) {
 
       if (expiry !== undefined) stored.expiry = expiry;
       if (active !== undefined) stored.active = active;
+      if (plan  !== undefined) stored.plan  = plan;
       if (notes !== undefined) stored.notes = notes;
       stored.updatedAt = new Date().toISOString();
 
@@ -284,6 +286,39 @@ export default async function handler(req, res) {
       ]);
 
       return res.status(200).json({ success: true, message: 'Licenza eliminata' });
+    }
+
+    // ==========================================
+    // ACTION: societyStats - Atleti/Staff per società (SuperAdmin)
+    // ==========================================
+    if (action === 'societyStats' && req.method === 'GET') {
+      const { societyId } = req.query;
+      if (!societyId) {
+        return res.status(400).json({ success: false, message: 'societyId obbligatorio' });
+      }
+
+      const allAnnate = (await kv.get('annate:list')) || [];
+      const annate = allAnnate.filter(a => a.societyId === societyId);
+
+      const annateCounts = await Promise.all(
+        annate.map(async a => {
+          const athletes = (await kv.get(`annate:${a.id}:athletes`)) || [];
+          const atleti = athletes.filter(x => !x.isStaff && !x.isGuest).length;
+          const staff  = athletes.filter(x =>  x.isStaff && !x.isGuest).length;
+          return { id: a.id, nome: a.nome || a.id, dataInizio: a.dataInizio, atleti, staff, totale: atleti + staff };
+        })
+      );
+
+      annateCounts.sort((a, b) => new Date(b.dataInizio) - new Date(a.dataInizio));
+
+      const totAtleti = annateCounts.reduce((s, a) => s + a.atleti, 0);
+      const totStaff  = annateCounts.reduce((s, a) => s + a.staff, 0);
+
+      return res.status(200).json({
+        success: true,
+        annate: annateCounts,
+        totali: { atleti: totAtleti, staff: totStaff, totale: totAtleti + totStaff }
+      });
     }
 
     // ==========================================
