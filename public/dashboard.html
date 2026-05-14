@@ -1887,7 +1887,7 @@
     } catch(_) {}
   }
 
-  async function initIscrizioni(force) {
+  window.initIscrizioni = async function initIscrizioni(force) {
     if (_iscrizioni.length && !force) { renderIscrizioni(); return; }
     document.getElementById('iscr-loading').style.display = '';
     document.getElementById('iscr-list').innerHTML = '';
@@ -1919,7 +1919,7 @@
     renderIscrizioni();
   }
 
-  function filterIscrizioni(status) {
+  window.filterIscrizioni = function filterIscrizioni(status) {
     _iscrFilter = status;
     document.querySelectorAll('.btn-fi').forEach(b => b.classList.remove('active'));
     const btn = document.getElementById('fi-' + status);
@@ -2014,7 +2014,7 @@
     return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
-  async function accettaIscrizione(id) {
+  window.accettaIscrizione = async function accettaIscrizione(id) {
     const annataId = document.getElementById('annata-sel-' + id)?.value || '';
     if (!annataId) { alert('Seleziona un\'annata prima di accettare.'); return; }
     if (!confirm('Accettare questa richiesta?')) return;
@@ -2031,7 +2031,7 @@
     } catch(e) { alert('Errore: ' + e.message); }
   }
 
-  async function rifiutaIscrizione(id) {
+  window.rifiutaIscrizione = async function rifiutaIscrizione(id) {
     if (!confirm('Rifiutare questa richiesta?')) return;
     try {
       const r = await fetch('/api/registrations?action=reject', {
@@ -2046,7 +2046,7 @@
     } catch(e) { alert('Errore: ' + e.message); }
   }
 
-  async function eliminaIscrizione(id) {
+  window.eliminaIscrizione = async function eliminaIscrizione(id) {
     if (!confirm('Eliminare definitivamente questa richiesta?')) return;
     try {
       const r = await fetch('/api/registrations?action=delete', {
