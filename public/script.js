@@ -183,6 +183,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // Applica subito per elementi già presenti
     setTimeout(applyPermissions, 500);
 
+    // ── Banner iscrizioni in attesa (solo direttivo/dirigente/admin) ──
+    async function checkIscrizioni() {
+        const perms = getPermissions();
+        if (!perms.isDashboard && !perms.isAdmin) return;
+        try {
+            const token   = sessionStorage.getItem('gosport_session_token') || '';
+            const socId   = sessionStorage.getItem('gosport_society_id')    || '';
+            if (!token || !socId) return;
+            const r = await fetch('/api/registrations?action=list', {
+                headers: { 'Content-Type':'application/json', 'x-auth-session': token, 'x-society-id': socId }
+            });
+            if (!r.ok) return;
+            const d = await r.json();
+            const pending = d.pending || 0;
+            const banner  = document.getElementById('iscr-alert-index');
+            const countEl = document.getElementById('iscr-alert-count');
+            if (banner && pending > 0) {
+                if (countEl) countEl.textContent = pending;
+                banner.style.display = 'flex';
+            }
+        } catch(_) {}
+    }
+    setTimeout(checkIscrizioni, 1200);
+
     const evaluationModal = new bootstrap.Modal(document.getElementById('evaluationModal'));
     const athleteModal = new bootstrap.Modal(document.getElementById('athleteModal'));
     const parentModal  = new bootstrap.Modal(document.getElementById('parentModal'));

@@ -811,10 +811,10 @@
       <div class="card" style="margin-bottom:16px;padding:12px 16px;">
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;">
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button onclick="filterIscrizioni('pending')"   id="fi-pending"   class="btn-fi active">⏳ In attesa <span id="fi-count-pending"  class="fi-count"></span></button>
+            <button onclick="filterIscrizioni('all')"       id="fi-all"       class="btn-fi active">📄 Tutte</button>
+            <button onclick="filterIscrizioni('pending')"   id="fi-pending"   class="btn-fi">⏳ In attesa <span id="fi-count-pending"  class="fi-count"></span></button>
             <button onclick="filterIscrizioni('accepted')"  id="fi-accepted"  class="btn-fi">✅ Accettate <span id="fi-count-accepted" class="fi-count"></span></button>
             <button onclick="filterIscrizioni('rejected')"  id="fi-rejected"  class="btn-fi">❌ Rifiutate <span id="fi-count-rejected" class="fi-count"></span></button>
-            <button onclick="filterIscrizioni('all')"       id="fi-all"       class="btn-fi">📄 Tutte</button>
           </div>
           <button onclick="initIscrizioni(true)" style="background:none;border:1px solid var(--border-soft);color:var(--text-muted);border-radius:8px;padding:5px 12px;cursor:pointer;font-size:0.8rem;">🔄 Aggiorna</button>
         </div>
@@ -1855,7 +1855,7 @@
   // ══ ISCRIZIONI ════════════════════════════════════════════════
   let _iscrizioni = [];
   let _iscrAnnate = [];
-  let _iscrFilter = 'pending';
+  let _iscrFilter = 'all';
 
   function iscrAuthHeaders() {
     return {
@@ -1976,6 +1976,13 @@
         </select>
         <button type="button" class="btn-accept" onclick="accettaIscrizione('${reg.id}')">✅ Accetta</button>
         <button type="button" class="btn-reject" onclick="rifiutaIscrizione('${reg.id}')">❌ Rifiuta</button>
+        <button type="button" class="btn-del-iscr" onclick="eliminaIscrizione('${reg.id}')" title="Elimina">🗑️</button>
+      ` : reg.status === 'rejected' ? `
+        <select class="annata-sel-inline" id="annata-sel-${reg.id}" title="Seleziona annata per accettazione">
+          <option value="">— Seleziona annata —</option>
+          ${annateOpts}
+        </select>
+        <button type="button" class="btn-accept" onclick="accettaIscrizione('${reg.id}')">✅ Accetta ora</button>
         <button type="button" class="btn-del-iscr" onclick="eliminaIscrizione('${reg.id}')" title="Elimina">🗑️</button>
       ` : `
         <button type="button" class="btn-del-iscr" onclick="eliminaIscrizione('${reg.id}')" title="Elimina">🗑️ Elimina</button>
