@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <title>Dashboard — Sport Monitoring</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
   /* ══ Variabili Tema ══════════════════════════════════════════════ */
   :root {
@@ -975,22 +976,25 @@
       const linkInput = document.getElementById('home-reg-link-input');
       if (linkBox)  linkBox.style.display  = '';
       if (linkInput) linkInput.value = link;
-      // QR Code via qrcodejs (canvas locale, nessuna API esterna)
-      const qrWrap = document.getElementById('home-reg-qr');
-      const qrCanvas = document.getElementById('home-reg-qr-canvas');
-      if (qrWrap && qrCanvas && window.QRCode) {
+      // QR Code: genera subito se qrcodejs è già caricato, altrimenti aspetta window.load
+      window._pendingQRLink = link;
+      function generateRegQR(url) {
+        const qrWrap   = document.getElementById('home-reg-qr');
+        const qrCanvas = document.getElementById('home-reg-qr-canvas');
+        if (!qrWrap || !qrCanvas || !window.QRCode) return false;
         qrCanvas.innerHTML = '';
         new QRCode(qrCanvas, {
-          text: link,
-          width: 140,
-          height: 140,
-          colorDark: '#000000',
-          colorLight: '#ffffff',
+          text: url, width: 140, height: 140,
+          colorDark: '#000000', colorLight: '#ffffff',
           correctLevel: QRCode.CorrectLevel.M
         });
         qrWrap.style.display = '';
+        return true;
       }
-      // Funzione download QR
+      if (!generateRegQR(link)) {
+        window.addEventListener('load', function() { generateRegQR(window._pendingQRLink || link); });
+      }
+      // Download QR
       window.downloadRegQR = function() {
         const canvas = document.querySelector('#home-reg-qr-canvas canvas');
         if (!canvas) return;
@@ -2149,6 +2153,5 @@
 
 })();
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </body>
 </html>
