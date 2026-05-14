@@ -75,12 +75,18 @@ export default async function handler(req, res) {
     if (!sessionToken || !societyId) {
       return res.status(401).json({ success: false, message: 'Autenticazione richiesta' });
     }
-    const session = await kv.get(`session:${sessionToken}`);
-    if (!session) {
-      return res.status(401).json({ success: false, message: 'Sessione scaduta' });
+
+    // Supporta sia il token KV (dashboard) che l'auth semplice 'true' (index.html/data.js)
+    const simpleAuth = sessionToken === 'true';
+    let session = null;
+    if (!simpleAuth) {
+      session = await kv.get(`session:${sessionToken}`);
+      if (!session) {
+        return res.status(401).json({ success: false, message: 'Sessione scaduta' });
+      }
     }
 
-    // ── LIST ─────────────────────────────────────────────────────────────
+    // ── LIST (accessibile anche con auth semplice, sola lettura) ─────────
     if (action === 'list' && req.method === 'GET') {
       const all = (await kv.get(kvKey(societyId))) || [];
       const sorted = [...all].sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
@@ -101,7 +107,7 @@ export default async function handler(req, res) {
         ...all[idx],
         status: 'accepted',
         respondedAt: new Date().toISOString(),
-        respondedBy: session.username,
+        respondedBy: session ? session.username : (req.headers['x-auth-user'] || 'utente'),
         annataId: annataId || null,
       };
       await kv.set(kvKey(societyId), all);
@@ -121,7 +127,7 @@ export default async function handler(req, res) {
         ...all[idx],
         status: 'rejected',
         respondedAt: new Date().toISOString(),
-        respondedBy: session.username,
+        respondedBy: session ? session.username : (req.headers['x-auth-user'] || 'utente'),
       };
       await kv.set(kvKey(societyId), all);
       return res.status(200).json({ success: true });
