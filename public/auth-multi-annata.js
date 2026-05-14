@@ -289,6 +289,7 @@
                         sessionStorage.setItem(SESSION_SOCIETY, result.societyId);
                         sessionStorage.setItem('gosport_license_status', JSON.stringify(result));
                         sessionStorage.setItem('gosport_license_plan', result.plan || 'platinum');
+                        if (result.societyName) sessionStorage.setItem('gosport_society_name', result.societyName);
 
                         const expiry = new Date(result.expiry + 'T00:00:00').toLocaleDateString('it-IT');
                         showLicenseAlert(`✅ Benvenuto ${result.societyName}! Licenza valida fino al ${expiry}`, 'success');
@@ -517,8 +518,8 @@
                         sessionStorage.setItem(SESSION_USER, username);
                         const DASHBOARD_ROLE_MAP = { direttivo: 'societa_l1', dirigente: 'dirigente_l1', staff: 'societa_l3' };
                         const DASHBOARD_APP_PERMS = {
-                            societa_l1:   { canEditGeneral: true,  canViewGPS: true,  canEditGPS: true,  isAdmin: false, isDashboard: true },
-                            dirigente_l1: { canEditGeneral: true,  canViewGPS: true,  canEditGPS: false, isAdmin: false, isDashboard: true },
+                            societa_l1:   { canEditGeneral: true,  canViewGPS: true,  canEditGPS: false, isAdmin: false, isDashboard: true },
+                            dirigente_l1: { canEditGeneral: true,  canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true },
                             societa_l3:   { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true }
                         };
                         const _origRole = result.role;
@@ -551,6 +552,9 @@
                             // Salva piano licenza: viene da licenseStatus.plan (login con societyId)
                             const planFromLogin = result.licenseStatus.plan || result.plan || 'platinum';
                             sessionStorage.setItem('gosport_license_plan', planFromLogin);
+                            // Salva nome società per display nella dashboard
+                            const sName = result.licenseStatus.societyName || result.societyName || '';
+                            if (sName) sessionStorage.setItem('gosport_society_name', sName);
                         }
 
                         const expiry = Date.now() + (8 * 60 * 60 * 1000);
@@ -2036,6 +2040,10 @@ window.deleteUser = async function(username) {
             const role = getUserRole();
             if (!role) return;
 
+            // Per utenti dashboard (A1/A2/A3) usa il ruolo originale per le restrizioni nav
+            const dashboardRole = sessionStorage.getItem('gosport_dashboard_role') || '';
+            const navRole = dashboardRole || role;
+
             // Esegui solo su index.html (non su calendario.html o altre pagine)
             const isIndexPage = document.getElementById('home-section') !== null;
             if (!isIndexPage) return;
@@ -2055,19 +2063,30 @@ window.deleteUser = async function(username) {
                 coach_readonly: ['monitoraggio-gps-section', 'analisi-singolo-section', 'pagamenti-section'],
                 dirigente_l1:   [],
                 dirigente_l2:   [],
-                dirigente_l3:   ['monitoraggio-gps-section', 'analisi-singolo-section', 'pagamenti-section'],
+                dirigente_l3:   ['monitoraggio-gps-section', 'pagamenti-section'],
                 dirigente_l4:   [
                     'formazione-section', 'calendario-section', 'match-results-section',
                     'report-valutazioni-section', 'report-presenze-section', 'hall-of-fame-section',
-                    'monitoraggio-gps-section', 'analisi-singolo-section',
-                    'pagamenti-section', 'convocazioni-section'
+                    'monitoraggio-gps-section', 'analisi-singolo-section', 'pagamenti-section'
                 ],
                 societa_l1: [
                     'formazione-section', 'match-results-section', 'report-valutazioni-section',
                     'hall-of-fame-section', 'monitoraggio-gps-section', 'analisi-singolo-section',
-                    'convocazioni-section'
+                    'convocazioni-section', 'report-presenze-section'
                 ],
                 societa_l3: [
+                    'formazione-section', 'match-results-section',
+                    'report-valutazioni-section', 'report-presenze-section', 'hall-of-fame-section',
+                    'monitoraggio-gps-section', 'analisi-singolo-section', 'convocazioni-section'
+                ],
+                // Ruoli dashboard (A1/A2/A3) — ruolo originale prima del DASHBOARD_ROLE_MAP
+                direttivo: [
+                    'match-results-section', 'hall-of-fame-section', 'convocazioni-section'
+                ],
+                dirigente: [
+                    'monitoraggio-gps-section'
+                ],
+                staff: [
                     'formazione-section', 'calendario-section', 'match-results-section',
                     'report-valutazioni-section', 'report-presenze-section', 'hall-of-fame-section',
                     'monitoraggio-gps-section', 'analisi-singolo-section', 'convocazioni-section'
@@ -2077,7 +2096,7 @@ window.deleteUser = async function(username) {
             // Ruoli che NON vedono il link Cal. ↗ esterno
             const HIDE_CAL_EXT = ['dirigente_l4'];
 
-            const hiddenTabs = TAB_RESTRICTIONS[role] || [];
+            const hiddenTabs = TAB_RESTRICTIONS[navRole] || [];
 
             // Nascondi i pulsanti tab specificati
             hiddenTabs.forEach(tabId => {
@@ -2086,11 +2105,11 @@ window.deleteUser = async function(username) {
             });
 
             // Nascondi Cal. ↗ esterno se necessario
-            if (HIDE_CAL_EXT.includes(role)) {
+            if (HIDE_CAL_EXT.includes(navRole)) {
                 document.querySelectorAll('.tab-external').forEach(el => el.style.display = 'none');
             }
 
-            console.log('🔐 Navigazione applicata per ruolo: ' + role + ' | Tab nascosti: ' + hiddenTabs.length);
+            console.log('🔐 Navigazione applicata per ruolo: ' + navRole + ' | Tab nascosti: ' + hiddenTabs.length);
 
             // ── Restrizioni per PIANO LICENZA ─────────────────────────────
             // Si applicano SOPRA al ruolo: se il piano non include un tab, nessun ruolo lo vede
@@ -2102,8 +2121,7 @@ window.deleteUser = async function(username) {
                            'convocazioni-section'],
                 gold:     ['home-section', 'squadra-section', 'materiale-section',
                            'calendario-section', 'pagamenti-section', 'convocazioni-section',
-                           'monitoraggio-gps-section', 'analisi-singolo-section',
-                           'report-presenze-section'],
+                           'monitoraggio-gps-section', 'analisi-singolo-section'],
                 platinum: ['home-section', 'squadra-section', 'materiale-section',
                            'calendario-section', 'pagamenti-section', 'convocazioni-section',
                            'monitoraggio-gps-section', 'analisi-singolo-section',

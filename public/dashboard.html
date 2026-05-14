@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <title>Dashboard Direttivo — GO Sport</title>
+  <title>Dashboard — Sport Monitoring</title>
   <style>
   /* ══ Variabili Tema ══════════════════════════════════════════════ */
   :root {
@@ -432,8 +432,8 @@
 <!-- ══ HEADER ══════════════════════════════════════════════════ -->
 <header class="dash-header">
   <button class="btn-icon" id="hamburger-btn" onclick="toggleMobileSidebar()" style="display:none;align-items:center;justify-content:center;font-size:1.2rem;min-width:36px">☰</button>
-  <div class="logo">⚽ GO Sport</div>
-  <div class="title">Dashboard Direttivo</div>
+  <div class="logo" id="header-logo">⚽ Sport Monitoring</div>
+  <div class="title" id="header-dash-title">Dashboard Direttivo</div>
   <div class="header-right">
     <span class="role-badge" id="header-role-badge">—</span>
     <span class="user-badge" id="header-user-badge">—</span>
@@ -766,6 +766,23 @@
     document.getElementById('header-user-badge').textContent = '👤 ' + user;
     document.getElementById('header-role-badge').textContent = ROLE_LABELS[role] || role;
 
+    // Logo: nome società se disponibile, altrimenti "Sport Monitoring"
+    const societyName = sessionStorage.getItem('gosport_society_name') || '';
+    const logoEl = document.getElementById('header-logo');
+    const displayName = societyName || 'Sport Monitoring';
+    if (logoEl) logoEl.textContent = '⚽ ' + displayName;
+    document.title = 'Dashboard — ' + displayName;
+
+    // Titolo header: "Dashboard" + ruolo in italiano
+    const roleTitles = {
+      direttivo: 'Dashboard Direttivo',
+      dirigente:  'Dashboard Dirigente',
+      staff:      'Dashboard Staff',
+      admin:      'Dashboard Admin'
+    };
+    const titleEl = document.getElementById('header-dash-title');
+    if (titleEl) titleEl.textContent = roleTitles[role] || 'Dashboard Direttivo';
+
     // Applica tema salvato
     const savedTheme = localStorage.getItem('gosport_theme') || 'dark';
     applyTheme(savedTheme);
@@ -1094,52 +1111,104 @@
     if (content) content.style.display = 'none';
 
     try {
-      const r = await fetch('/api/data', { headers: authHeaders(annataId || undefined) });
-      if (!r.ok) throw new Error('Errore ' + r.status);
-      const data = await r.json();
+      let stats = [];
+      let totalSessionsCard = 0;
 
-      const athletes = data.athletes || [];
-      const evaluations = data.evaluations || {};
+      if (annataId) {
+        // ── Singola annata ──────────────────────────────────────────
+        const r = await fetch('/api/data', { headers: authHeaders(annataId) });
+        if (!r.ok) throw new Error('Errore ' + r.status);
+        const data = await r.json();
+        const athletes = (data.athletes || []).filter(a => !a.isGuest);
+        const evaluations = data.evaluations || {};
 
-      const filtered = athletes.filter(a => {
-        if (a.isGuest) return false;
-        if (tipo === 'staff') return !!a.isStaff;
-        if (tipo === 'atleti') return !a.isStaff;
-        return true;
-      });
-
-      // Sessioni reali = date con almeno 1 atleta presente (presenza-allenamento > 0)
-      const sessionDates = Object.keys(evaluations).filter(date =>
-        Object.values(evaluations[date]).some(ev =>
-          ev && parseInt(ev['presenza-allenamento'], 10) > 0
-        )
-      ).sort();
-      const totalSessions = sessionDates.length;
-
-      const stats = filtered.map(a => {
-        const id = String(a.id);
-        let present = 0, justified = 0;
-        sessionDates.forEach(date => {
-          const ev = (evaluations[date] || {})[id];
-          if (!ev) return;
-          const val = parseInt(ev['presenza-allenamento'], 10);
-          if (val > 0) present++;
-          else if (val === -1) justified++;
+        const filtered = athletes.filter(a => {
+          if (tipo === 'staff') return !!a.isStaff;
+          if (tipo === 'atleti') return !a.isStaff;
+          return true;
         });
-        // Assenti = tutte le sessioni non presenti e non giustificate
-        const absent = totalSessions - present - justified;
-        // % include le giustificate (infortuni in partita = presenza valida)
-        const pct = totalSessions > 0 ? Math.round((present + justified) / totalSessions * 100) : null;
-        return { ...a, present, absent: Math.max(0, absent), justified, sessions: totalSessions, pct };
-      }).sort((a, b) => (b.pct ?? -1) - (a.pct ?? -1));
 
+        const sessionDates = Object.keys(evaluations).filter(date =>
+          Object.values(evaluations[date]).some(ev => ev && parseInt(ev['presenza-allenamento'], 10) > 0)
+        ).sort();
+        const totalSessions = sessionDates.length;
+        totalSessionsCard = totalSessions;
+
+        stats = filtered.map(a => {
+          const id = String(a.id);
+          let present = 0, justified = 0;
+          sessionDates.forEach(date => {
+            const ev = (evaluations[date] || {})[id];
+            if (!ev) return;
+            const val = parseInt(ev['presenza-allenamento'], 10);
+            if (val > 0) present++;
+            else if (val === -1) justified++;
+          });
+          const absent = Math.max(0, totalSessions - present - justified);
+          const pct = totalSessions > 0 ? Math.round((present + justified) / totalSessions * 100) : null;
+          return { ...a, present, absent, justified, sessions: totalSessions, pct };
+        }).sort((a, b) => (b.pct ?? -1) - (a.pct ?? -1));
+
+      } else {
+        // ── Tutte le annate: aggrega per nome atleta ────────────────
+        const annate = await fetchAnnate();
+        const allData = await Promise.all(
+          annate.map(a =>
+            fetch('/api/data', { headers: authHeaders(a.id) })
+              .then(r => r.ok ? r.json() : {})
+              .catch(() => ({}))
+          )
+        );
+
+        const aggregated = {};
+        allData.forEach(data => {
+          const aths = (data.athletes || []).filter(a => !a.isGuest);
+          const evals = data.evaluations || {};
+          const sessionDates = Object.keys(evals).filter(date =>
+            Object.values(evals[date]).some(ev => ev && parseInt(ev['presenza-allenamento'], 10) > 0)
+          );
+          totalSessionsCard += sessionDates.length;
+
+          aths.forEach(a => {
+            const key = (a.name || '').trim().toLowerCase();
+            if (!key) return;
+            if (!aggregated[key]) {
+              aggregated[key] = { ...a, sessions: 0, present: 0, justified: 0 };
+            }
+            aggregated[key].sessions += sessionDates.length;
+            const id = String(a.id);
+            sessionDates.forEach(date => {
+              const ev = (evals[date] || {})[id];
+              if (!ev) return;
+              const val = parseInt(ev['presenza-allenamento'], 10);
+              if (val > 0) aggregated[key].present++;
+              else if (val === -1) aggregated[key].justified++;
+            });
+          });
+        });
+
+        stats = Object.values(aggregated)
+          .filter(a => {
+            if (tipo === 'staff') return !!a.isStaff;
+            if (tipo === 'atleti') return !a.isStaff;
+            return true;
+          })
+          .map(a => {
+            const absent = Math.max(0, a.sessions - a.present - a.justified);
+            const pct = a.sessions > 0 ? Math.round((a.present + a.justified) / a.sessions * 100) : null;
+            return { ...a, absent, pct };
+          })
+          .sort((a, b) => (b.pct ?? -1) - (a.pct ?? -1));
+      }
+
+      // ── KPI ────────────────────────────────────────────────────────
       const withPct = stats.filter(s => s.pct !== null);
       const avgPct = withPct.length > 0 ? Math.round(withPct.reduce((s, x) => s + x.pct, 0) / withPct.length) : 0;
       const highPct = withPct.filter(s => s.pct >= 80).length;
       const lowPct  = withPct.filter(s => s.pct < 50).length;
 
       if (statsEl) statsEl.innerHTML = `
-        <div class="stat-card"><div class="stat-num">${totalSessions}</div><div class="stat-label">Sessioni</div></div>
+        <div class="stat-card"><div class="stat-num">${totalSessionsCard}</div><div class="stat-label">Sessioni</div></div>
         <div class="stat-card"><div class="stat-num">${stats.length}</div><div class="stat-label">Membri</div></div>
         <div class="stat-card green"><div class="stat-num">${avgPct}%</div><div class="stat-label">Media</div></div>
         <div class="stat-card green"><div class="stat-num">${highPct}</div><div class="stat-label">≥ 80%</div></div>
