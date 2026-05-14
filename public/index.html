@@ -3169,13 +3169,34 @@ document.addEventListener('DOMContentLoaded', function() {
 (function() {
     function showDashboardBtn() {
         var hasDashboard = sessionStorage.getItem('gosport_has_dashboard') === 'true';
-        var role = sessionStorage.getItem('gosport_user_role') || '';
-        var plan = sessionStorage.getItem('gosport_license_plan') || '';
-        var btn = document.getElementById('dashboard-nav-btn');
-        var allowed = hasDashboard || role === 'admin';
-        if (btn && allowed && plan === 'platinum') {
-            btn.style.display = '';
+        var role         = sessionStorage.getItem('gosport_user_role')      || '';
+        var plan         = sessionStorage.getItem('gosport_license_plan')   || '';
+        var btn          = document.getElementById('dashboard-nav-btn');
+        var allowed      = hasDashboard || role === 'admin';
+        if (!btn || !allowed || plan !== 'platinum') return;
+
+        // Passa la sessione nel hash dell'URL in modo che dashboard.html
+        // possa inizializzare sessionStorage nel nuovo tab (non condiviso).
+        function buildDashboardUrl() {
+            var p = new URLSearchParams({
+                t:  sessionStorage.getItem('gosport_session_token')   || '',
+                s:  sessionStorage.getItem('gosport_society_id')      || '',
+                u:  sessionStorage.getItem('gosport_auth_user')       || '',
+                r:  role,
+                p:  plan,
+                n:  sessionStorage.getItem('gosport_society_name')    || '',
+                hd: hasDashboard ? 'true' : '',
+                dr: sessionStorage.getItem('gosport_dashboard_role')  || '',
+                ex: (Date.now() + 8 * 60 * 60 * 1000).toString()
+            });
+            return '/dashboard.html#' + p.toString();
         }
+        btn.href = buildDashboardUrl();
+        btn.style.display = '';
+        // Aggiorna l'href ogni volta che si clicca (token potrebbe cambiare)
+        btn.addEventListener('click', function() {
+            btn.href = buildDashboardUrl();
+        });
     }
     document.addEventListener('DOMContentLoaded', showDashboardBtn);
     setTimeout(showDashboardBtn, 1500);

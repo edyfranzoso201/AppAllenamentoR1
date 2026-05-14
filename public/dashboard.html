@@ -873,6 +873,32 @@
     staff:     '👥 Staff',
   };
 
+  // ══ Init da hash URL (apertura da nuovo tab da index.html) ══════
+  function initFromHash() {
+    const hash = window.location.hash.slice(1);
+    if (!hash) return;
+    try {
+      const p = new URLSearchParams(hash);
+      const token = p.get('t');
+      if (!token) return;
+      sessionStorage.setItem(SESSION_TOKEN,           token);
+      sessionStorage.setItem(SESSION_SOCIETY,         p.get('s') || '');
+      sessionStorage.setItem(SESSION_USER,            p.get('u') || '');
+      sessionStorage.setItem(SESSION_USER_ROLE,       p.get('r') || '');
+      sessionStorage.setItem(LICENSE_PLAN,            p.get('p') || 'platinum');
+      sessionStorage.setItem('gosport_society_name',  p.get('n') || '');
+      sessionStorage.setItem(SESSION_KEY,             'true');
+      sessionStorage.setItem(SESSION_KEY + '_expiry', p.get('ex') || (Date.now() + 8 * 60 * 60 * 1000).toString());
+      if (p.get('hd') === 'true') {
+        sessionStorage.setItem('gosport_has_dashboard',   'true');
+        sessionStorage.setItem('gosport_dashboard_role',  p.get('dr') || '');
+      }
+      // Rimuove il hash dall'URL senza ricaricare la pagina
+      history.replaceState(null, '', window.location.pathname);
+    } catch(e) {}
+  }
+  initFromHash();
+
   // ══ Auth gate ══════════════════════════════════════════════════
   function checkAuth() {
     const isAuth       = sessionStorage.getItem(SESSION_KEY) === 'true';
