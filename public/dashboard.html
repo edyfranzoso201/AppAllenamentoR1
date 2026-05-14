@@ -465,6 +465,9 @@
     <div class="nav-item" data-section="pagamenti" onclick="showSection('pagamenti', this)">
       <span class="nav-icon">💰</span> Pagamenti
     </div>
+    <div class="nav-item" data-section="gare" onclick="showSection('gare', this)">
+      <span class="nav-icon">⚽</span> Gare da Disputare
+    </div>
 
     <div class="nav-section-label">Comunicazione</div>
     <div class="nav-item" data-section="bacheca" onclick="showSection('bacheca', this)">
@@ -690,6 +693,50 @@
               <tbody id="pagamenti-tbody"></tbody>
             </table>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GARE DA DISPUTARE -->
+    <div class="section-panel" id="section-gare">
+      <div class="section-title">⚽ Gare da Disputare</div>
+      <div class="section-subtitle">Partite in programma senza risultato inserito</div>
+
+      <div class="card" style="margin-bottom:16px;padding:14px 16px;">
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <label style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap;">Annata:</label>
+            <select id="gare-annata-filter" onchange="loadGareData()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;">
+              <option value="">Tutte</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-grid" id="gare-stats" style="margin-bottom:16px;"></div>
+
+      <div class="card">
+        <div id="gare-loading" class="loading-spinner"><div class="spinner"></div> Caricamento...</div>
+        <div id="gare-content" style="display:none">
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Giorno</th>
+                  <th>Avversario</th>
+                  <th>Casa / Trasferta</th>
+                  <th>Orario</th>
+                  <th>Campo / Luogo</th>
+                  <th>Annata</th>
+                </tr>
+              </thead>
+              <tbody id="gare-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="gare-empty" style="display:none;text-align:center;color:var(--text-muted);padding:32px;">
+          Nessuna gara in programma
         </div>
       </div>
     </div>
@@ -1465,6 +1512,136 @@
     }
   };
 
+  // ══ GARE DA DISPUTARE ══════════════════════════════════════════
+  let _gareInit = false;
+  let _gareAnnate = [];
+
+  async function initGare() {
+    if (_gareInit) return;
+    const annate = await fetchAnnate();
+    _gareAnnate = annate;
+    const sel = document.getElementById('gare-annata-filter');
+    if (!sel) return;
+    annate.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a.id;
+      opt.textContent = a.nome || a.id;
+      sel.appendChild(opt);
+    });
+    sel.value = ''; // default Tutte
+    _gareInit = true;
+    await loadGareData();
+  }
+
+  window.loadGareData = async function() {
+    const annataId = document.getElementById('gare-annata-filter')?.value || '';
+    const loading  = document.getElementById('gare-loading');
+    const content  = document.getElementById('gare-content');
+    const emptyEl  = document.getElementById('gare-empty');
+    const statsEl  = document.getElementById('gare-stats');
+    if (!loading) return;
+    loading.style.display = 'flex';
+    loading.innerHTML = '<div class="spinner"></div> Caricamento...';
+    if (content) content.style.display = 'none';
+    if (emptyEl) emptyEl.style.display = 'none';
+
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      let allMatches = [];
+
+      if (annataId) {
+        const r = await fetch('/api/data', { headers: authHeaders(annataId) });
+        if (!r.ok) throw new Error('Errore ' + r.status);
+        const data = await r.json();
+        const annata = _gareAnnate.find(a => a.id === annataId);
+        const annotateName = annata ? (annata.nome || annata.id) : annataId;
+        Object.values(data.matchResults || {}).forEach(m => {
+          allMatches.push({ ...m, annotateName });
+        });
+      } else {
+        const annate = _gareAnnate.length ? _gareAnnate : await fetchAnnate();
+        const allData = await Promise.all(
+          annate.map(a =>
+            fetch('/api/data', { headers: authHeaders(a.id) })
+              .then(r => r.ok ? r.json() : {})
+              .catch(() => ({}))
+          )
+        );
+        allData.forEach((data, idx) => {
+          const annotateName = annate[idx].nome || annate[idx].id;
+          Object.values(data.matchResults || {}).forEach(m => {
+            allMatches.push({ ...m, annotateName });
+          });
+        });
+      }
+
+      // Solo partite future (data >= oggi) senza punteggio inserito
+      const upcoming = allMatches.filter(m => {
+        if (!m.date) return false;
+        if (m.date.slice(0, 10) < today) return false;
+        const hs = m.homeScore, as_ = m.awayScore;
+        return (hs === null || hs === undefined || hs === '') &&
+               (as_ === null || as_ === undefined || as_ === '');
+      }).sort((a, b) => a.date.localeCompare(b.date));
+
+      // KPI
+      const nextMatch = upcoming[0];
+      let daysLabel = '—';
+      if (nextMatch) {
+        const diff = Math.ceil(
+          (new Date(nextMatch.date + 'T00:00:00') - new Date(today + 'T00:00:00')) / 86400000
+        );
+        daysLabel = diff === 0 ? 'Oggi' : diff === 1 ? 'Domani' : diff + ' giorni';
+      }
+      const homeCount = upcoming.filter(m => m.location === 'home').length;
+      const awayCount = upcoming.filter(m => m.location === 'away').length;
+
+      if (statsEl) statsEl.innerHTML = `
+        <div class="stat-card"><div class="stat-num">${upcoming.length}</div><div class="stat-label">In programma</div></div>
+        <div class="stat-card green"><div class="stat-num" style="font-size:1.1rem">${daysLabel}</div><div class="stat-label">Prossima gara</div></div>
+        <div class="stat-card"><div class="stat-num">${homeCount}</div><div class="stat-label">In casa</div></div>
+        <div class="stat-card"><div class="stat-num">${awayCount}</div><div class="stat-label">In trasferta</div></div>
+      `;
+
+      loading.style.display = 'none';
+
+      if (!upcoming.length) {
+        if (emptyEl) emptyEl.style.display = 'block';
+        return;
+      }
+
+      const GIORNI = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+      const tbody = document.getElementById('gare-tbody');
+      if (tbody) {
+        tbody.innerHTML = upcoming.map(m => {
+          const d = new Date(m.date + 'T00:00:00');
+          const dateStr = d.toLocaleDateString('it-IT', { day:'2-digit', month:'2-digit', year:'numeric' });
+          const dayStr  = GIORNI[d.getDay()];
+          const isToday = m.date.slice(0, 10) === today;
+          const locLabel = m.location === 'home'
+            ? '<span style="color:#22c55e;font-weight:600">🏠 Casa</span>'
+            : '<span style="color:#f59e0b;font-weight:600">✈️ Trasferta</span>';
+          const rowStyle = isToday ? 'background:rgba(34,197,94,0.08)' : '';
+          const todayBadge = isToday
+            ? ' <span style="font-size:0.7rem;color:#22c55e;font-weight:700;background:rgba(34,197,94,0.15);padding:1px 5px;border-radius:4px">OGGI</span>'
+            : '';
+          return `<tr style="${rowStyle}">
+            <td>${dateStr}${todayBadge}</td>
+            <td style="color:var(--text-muted)">${dayStr}</td>
+            <td><strong>${m.opponentName || '—'}</strong></td>
+            <td>${locLabel}</td>
+            <td style="color:var(--text-muted)">${m.time || '—'}</td>
+            <td style="color:var(--text-muted)">${m.venue || '—'}</td>
+            <td style="font-size:0.8rem;color:var(--text-muted)">${m.annotateName}</td>
+          </tr>`;
+        }).join('');
+      }
+      if (content) content.style.display = 'block';
+    } catch(e) {
+      loading.innerHTML = `<div style="color:#ef4444">⚠️ ${e.message}</div>`;
+    }
+  };
+
   // ══ BACHECA ════════════════════════════════════════════════════
   let _bachecaInit = false;
 
@@ -1544,6 +1721,7 @@
     else if (name === 'presenze')  initPresenze();
     else if (name === 'materiale') initMateriale();
     else if (name === 'pagamenti') initPagamenti();
+    else if (name === 'gare')      initGare();
     else if (name === 'bacheca')   initBacheca();
   };
 

@@ -2271,10 +2271,10 @@
     
     <!-- Multi-annata system - ORDINE IMPORTANTE! -->
     <script src="data-adapter-multi-annata.js?v=1778056923"></script>
-    <script src="auth-multi-annata.js?v=1778800000"></script>
+    <script src="auth-multi-annata.js?v=1778900000"></script>
     
     <!-- Script personalizzato -->
-    <script src="script.js?v=1778800001"></script>
+    <script src="script.js?v=1778900001"></script>
     <script>
 
     // ========================================================================
@@ -4955,5 +4955,43 @@ body.theme-light #theme-toggle-btn {
     border: 1.5px solid #6b7280 !important;
 }
 </style>
+
+<!-- MODAL CAMBIO PASSWORD -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:400px">
+    <div class="modal-content" style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:14px;">
+      <div class="modal-header" style="border-bottom:1px solid var(--border-color);padding:16px 20px;">
+        <h5 class="modal-title" style="font-weight:700;font-size:1rem;">🔑 Cambia Password</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" style="padding:20px;">
+        <div id="chpwd-error" style="display:none;background:#450a0a;color:#fca5a5;padding:10px 14px;border-radius:8px;font-size:0.85rem;margin-bottom:14px;"></div>
+        <div id="chpwd-success" style="display:none;background:#052e16;color:#86efac;padding:10px 14px;border-radius:8px;font-size:0.85rem;margin-bottom:14px;"></div>
+        <div style="margin-bottom:14px;">
+          <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Password attuale</label>
+          <input type="password" id="chpwd-current" autocomplete="current-password" placeholder="••••••••"
+            style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-primary);color:var(--text-primary);font-size:0.9rem;">
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Nuova password <small>(min. 6 caratteri)</small></label>
+          <input type="password" id="chpwd-new" autocomplete="new-password" placeholder="••••••••"
+            style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-primary);color:var(--text-primary);font-size:0.9rem;">
+        </div>
+        <div style="margin-bottom:6px;">
+          <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Conferma nuova password</label>
+          <input type="password" id="chpwd-confirm" autocomplete="new-password" placeholder="••••••••"
+            style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-primary);color:var(--text-primary);font-size:0.9rem;">
+        </div>
+      </div>
+      <div class="modal-footer" style="border-top:1px solid var(--border-color);padding:14px 20px;gap:8px;">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annulla</button>
+        <button type="button" class="btn btn-primary btn-sm" id="chpwd-submit-btn" onclick="submitChangePassword()">
+          <i class="bi bi-shield-lock-fill"></i> Aggiorna Password
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

@@ -4412,6 +4412,12 @@ function updateHeaderUI(annataName, currentUser, userRole, currentAnnataId) {
                    margin-bottom:6px;display:block;text-align:left;">
             &#16a34a; Cambia Annata
         </button>` : ''}
+        <button type="button" onclick="window.openChangePasswordModal();closeAdminMenu();"
+            style="width:100%;background:linear-gradient(135deg,#0369a1,#0284c7);color:white;border:none;
+                   padding:8px 12px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;
+                   margin-bottom:6px;display:block;text-align:left;">
+            🔑 Cambia Password
+        </button>
         <button type="button" onclick="window.handleQuickLogout();"
             style="width:100%;background:#d90429;color:white;border:none;
                    padding:8px 12px;border-radius:8px;font-weight:600;font-size:13px;
@@ -4451,6 +4457,81 @@ function closeAdminMenu() {
     var m = document.getElementById('admin-dd-menu');
     if (m) m.style.display = 'none';
 }
+
+// ── Cambio Password self-service ──────────────────────────────
+window.openChangePasswordModal = function() {
+    var modal = document.getElementById('changePasswordModal');
+    if (!modal) return;
+    // Reset campi e messaggi
+    ['chpwd-current', 'chpwd-new', 'chpwd-confirm'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    document.getElementById('chpwd-error').style.display   = 'none';
+    document.getElementById('chpwd-success').style.display = 'none';
+    var btn = document.getElementById('chpwd-submit-btn');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-shield-lock-fill"></i> Aggiorna Password'; }
+    var bsModal = bootstrap.Modal.getOrCreateInstance(modal);
+    bsModal.show();
+};
+
+window.submitChangePassword = async function() {
+    var currentPwd  = (document.getElementById('chpwd-current')?.value  || '').trim();
+    var newPwd      = (document.getElementById('chpwd-new')?.value      || '').trim();
+    var confirmPwd  = (document.getElementById('chpwd-confirm')?.value  || '').trim();
+    var errEl       = document.getElementById('chpwd-error');
+    var okEl        = document.getElementById('chpwd-success');
+    var btn         = document.getElementById('chpwd-submit-btn');
+
+    var showErr = function(msg) {
+        errEl.textContent = msg;
+        errEl.style.display = 'block';
+        okEl.style.display = 'none';
+    };
+
+    errEl.style.display = 'none';
+    okEl.style.display  = 'none';
+
+    if (!currentPwd || !newPwd || !confirmPwd) return showErr('Compila tutti i campi.');
+    if (newPwd.length < 6)                      return showErr('La nuova password deve avere almeno 6 caratteri.');
+    if (newPwd !== confirmPwd)                   return showErr('Le due password non coincidono.');
+    if (newPwd === currentPwd)                   return showErr('La nuova password deve essere diversa da quella attuale.');
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Aggiornamento...';
+
+    try {
+        var sessionToken = sessionStorage.getItem('gosport_session_token') || '';
+        var response = await fetch('/api/auth/change-password', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Auth-Session': sessionToken
+            },
+            body: JSON.stringify({ currentPassword: currentPwd, newPassword: newPwd })
+        });
+        var data = await response.json();
+        if (data.success) {
+            okEl.textContent = '✅ ' + data.message;
+            okEl.style.display = 'block';
+            errEl.style.display = 'none';
+            btn.innerHTML = '✅ Aggiornata';
+            // Chiudi automaticamente dopo 2 secondi
+            setTimeout(function() {
+                var modal = document.getElementById('changePasswordModal');
+                if (modal) bootstrap.Modal.getInstance(modal)?.hide();
+            }, 2000);
+        } else {
+            showErr('⚠️ ' + data.message);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-shield-lock-fill"></i> Aggiorna Password';
+        }
+    } catch(e) {
+        showErr('⚠️ Errore di rete. Riprova.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-shield-lock-fill"></i> Aggiorna Password';
+    }
+};
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', updateAppHeader);
