@@ -553,9 +553,11 @@
               <div style="font-size:0.75rem;color:var(--text-muted);margin-top:6px;">Scannerizza il QR con il telefono per aprire il modulo →</div>
             </div>
             <!-- QR Code -->
-            <div id="home-reg-qr" style="flex-shrink:0;text-align:center;">
-              <img id="home-reg-qr-img" src="" alt="QR Code iscrizione"
-                style="width:120px;height:120px;border-radius:10px;background:#fff;padding:6px;display:none;">
+            <div id="home-reg-qr" style="flex-shrink:0;text-align:center;display:none;">
+              <div id="home-reg-qr-canvas" style="background:#fff;padding:8px;border-radius:10px;display:inline-block;line-height:0;"></div>
+              <div style="margin-top:6px;">
+                <button type="button" onclick="window.downloadRegQR()" style="background:var(--accent);border:none;color:#fff;border-radius:7px;padding:5px 12px;cursor:pointer;font-size:0.78rem;font-weight:600;">💾 Salva QR</button>
+              </div>
             </div>
           </div>
         </div>
@@ -947,12 +949,30 @@
       const linkInput = document.getElementById('home-reg-link-input');
       if (linkBox)  linkBox.style.display  = '';
       if (linkInput) linkInput.value = link;
-      // QR Code via Google Charts API
-      const qrImg = document.getElementById('home-reg-qr-img');
-      if (qrImg) {
-        qrImg.src = `https://chart.googleapis.com/chart?chs=200x200&cht=qr&choe=UTF-8&chl=${encodeURIComponent(link)}`;
-        qrImg.style.display = '';
+      // QR Code via qrcodejs (canvas locale, nessuna API esterna)
+      const qrWrap = document.getElementById('home-reg-qr');
+      const qrCanvas = document.getElementById('home-reg-qr-canvas');
+      if (qrWrap && qrCanvas && window.QRCode) {
+        qrCanvas.innerHTML = '';
+        new QRCode(qrCanvas, {
+          text: link,
+          width: 140,
+          height: 140,
+          colorDark: '#000000',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+        qrWrap.style.display = '';
       }
+      // Funzione download QR
+      window.downloadRegQR = function() {
+        const canvas = document.querySelector('#home-reg-qr-canvas canvas');
+        if (!canvas) return;
+        const a = document.createElement('a');
+        a.download = 'qr-iscrizione.png';
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+      };
     }
 
     // Carica dati Home
@@ -2103,5 +2123,6 @@
 
 })();
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </body>
 </html>
