@@ -538,14 +538,25 @@
         <button type="button" class="iscr-popup-close" onclick="document.getElementById('iscr-popup-home').style.display='none'" title="Chiudi">✕</button>
       </div>
 
-      <!-- Link registrazione (solo admin/coach) -->
+      <!-- Link registrazione (solo admin/direttivo) -->
       <div id="home-reg-link-box" style="display:none;margin-bottom:18px;">
         <div class="card" style="padding:14px 18px;border-left:4px solid var(--accent);">
-          <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:6px;">🔗 Link modulo iscrizione pubblica (condividi con gli atleti o genera QR)</div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <input type="text" id="home-reg-link-input" readonly
-              style="flex:1;min-width:200px;background:var(--bg-card);border:1px solid var(--border-soft);border-radius:8px;padding:7px 12px;color:var(--text-primary);font-size:0.82rem;font-family:monospace;">
-            <button type="button" onclick="copyRegLink()" style="background:var(--accent);border:none;color:#fff;border-radius:8px;padding:7px 16px;cursor:pointer;font-size:0.82rem;font-weight:600;">📋 Copia</button>
+          <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:10px;">🔗 Link modulo iscrizione pubblica (condividi con gli atleti o genera QR)</div>
+          <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
+            <!-- Link + pulsante copia -->
+            <div style="flex:1;min-width:220px;">
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <input type="text" id="home-reg-link-input" readonly
+                  style="flex:1;min-width:200px;background:var(--bg-card);border:1px solid var(--border-soft);border-radius:8px;padding:7px 12px;color:var(--text-primary);font-size:0.82rem;font-family:monospace;">
+                <button type="button" onclick="copyRegLink()" style="background:var(--accent);border:none;color:#fff;border-radius:8px;padding:7px 16px;cursor:pointer;font-size:0.82rem;font-weight:600;">📋 Copia</button>
+              </div>
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-top:6px;">Scannerizza il QR con il telefono per aprire il modulo →</div>
+            </div>
+            <!-- QR Code -->
+            <div id="home-reg-qr" style="flex-shrink:0;text-align:center;">
+              <img id="home-reg-qr-img" src="" alt="QR Code iscrizione"
+                style="width:120px;height:120px;border-radius:10px;background:#fff;padding:6px;display:none;">
+            </div>
           </div>
         </div>
       </div>
@@ -936,6 +947,12 @@
       const linkInput = document.getElementById('home-reg-link-input');
       if (linkBox)  linkBox.style.display  = '';
       if (linkInput) linkInput.value = link;
+      // QR Code via Google Charts API
+      const qrImg = document.getElementById('home-reg-qr-img');
+      if (qrImg) {
+        qrImg.src = `https://chart.googleapis.com/chart?chs=200x200&cht=qr&choe=UTF-8&chl=${encodeURIComponent(link)}`;
+        qrImg.style.display = '';
+      }
     }
 
     // Carica dati Home
