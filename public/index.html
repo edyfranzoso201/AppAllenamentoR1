@@ -2145,6 +2145,9 @@
                 <button class="btn btn-sm btn-outline-secondary ms-2 no-print" onclick="window.loadAccessLog()">
                     <i class="bi bi-arrow-clockwise"></i> Aggiorna
                 </button>
+                <button class="btn btn-sm btn-outline-danger ms-1 no-print" onclick="window.clearAccessLog()">
+                    <i class="bi bi-trash3"></i> Azzera Log
+                </button>
                 <div class="ms-auto d-flex align-items-center gap-2 no-print">
                     <label class="form-label mb-0 text-nowrap" style="color:#64748b;">Filtra utente:</label>
                     <select id="accessi-user-filter" class="form-select form-select-sm" style="max-width:180px;" onchange="window.loadAccessLog()">
@@ -3156,6 +3159,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
         } catch(e) {
             tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#d90429;padding:20px;">❌ Errore: ${e.message}</td></tr>`;
+        }
+    };
+
+    window.clearAccessLog = async function() {
+        if (!confirm('Azzerare tutti i log di accesso della società?\nL\'operazione è irreversibile.')) return;
+        try {
+            const r = await fetch('/api/log', { method: 'DELETE' });
+            const d = await r.json();
+            if (!d.ok) throw new Error(d.error || 'Errore');
+            // Reset filtro utenti e ricarica
+            const filter = document.getElementById('accessi-user-filter');
+            if (filter) { filter.innerHTML = '<option value="">— Tutti —</option>'; }
+            await window.loadAccessLog();
+        } catch(e) {
+            alert('❌ Errore durante l\'azzeramento: ' + e.message);
         }
     };
 

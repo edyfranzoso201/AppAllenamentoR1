@@ -8,11 +8,26 @@ const kv = createClient({
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Society-Id, X-Auth-Session');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
+    if (req.method === 'DELETE') {
+      // Cancella i log della società specificata
+      const societyId = req.headers['x-society-id'] || '';
+      const existing = await kv.get('access_log');
+      const arr = Array.isArray(existing) ? existing : [];
+      if (!societyId) {
+        // senza societyId non cancelliamo nulla per sicurezza
+        return res.status(400).json({ ok: false, error: 'societyId obbligatorio' });
+      }
+      const filtered = arr.filter(l => l.societyId !== societyId);
+      await kv.set('access_log', filtered);
+      console.log(`🗑️ Log azzerati per societyId=${societyId} — rimossi ${arr.length - filtered.length} entries`);
+      return res.status(200).json({ ok: true, removed: arr.length - filtered.length });
+    }
+
     if (req.method === 'POST') {
       // Scrivi log
       let body = req.body;
