@@ -5017,6 +5017,32 @@ body.theme-light #theme-toggle-btn {
     background: #d1d5db !important;
     border: 1.5px solid #6b7280 !important;
 }
+
+/* FIX mobile tema chiaro: menu a tendina */
+@media (max-width: 991px) {
+    html.theme-light #navbarNav.show,
+    body.theme-light #navbarNav.show {
+        border-bottom: 2px solid #cbd5e0 !important;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15) !important;
+    }
+    html.theme-light #navbarNav.show .tab-nav-btn,
+    body.theme-light #navbarNav.show .tab-nav-btn {
+        border-bottom: 1px solid rgba(0,0,0,0.1) !important;
+    }
+    /* Voce attiva nel drawer: sfondo pallido → testo scuro leggibile */
+    html.theme-light #navbarNav.show .tab-nav-btn.active,
+    body.theme-light #navbarNav.show .tab-nav-btn.active {
+        color: #1d4ed8 !important;
+    }
+    html.theme-light #navbarNav.show .tab-nav-btn.active *,
+    body.theme-light #navbarNav.show .tab-nav-btn.active * {
+        color: #1d4ed8 !important;
+    }
+    html.theme-light #app-header-mobile,
+    body.theme-light #app-header-mobile {
+        border-top: 1px solid rgba(0,0,0,0.1) !important;
+    }
+}
 </style>
 
 <style>
