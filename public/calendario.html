@@ -1130,6 +1130,10 @@ document.addEventListener('DOMContentLoaded', function() {
             <input type="file" id="file-input" accept=".json" style="display:none">
             <button class="btn-cal btn-resp"   id="responses-btn" onclick="showResponses()"><i class="bi bi-eye"></i> Risposte</button>
             <button class="btn-cal btn-delete" id="delete-btn"    onclick="deleteOldEvents()"><i class="bi bi-trash"></i> Elimina Vecchi</button>
+            <button id="cal-push-btn" onclick="window.calPushSubscribe()" hidden
+                style="background:#3b82f6;color:#fff;border:none;border-radius:50px;padding:5px 14px;cursor:pointer;font-size:0.82rem;font-weight:600;">
+                🔔 <span id="cal-push-label">Ricevi Notifiche</span>
+            </button>
             <button onclick="calToggleTheme()" id="cal-theme-btn"
                 style="background:var(--bg-card);border:1px solid var(--border);border-radius:50px;padding:5px 14px;cursor:pointer;display:flex;align-items:center;gap:7px;color:var(--text);font-size:0.82rem;font-weight:600;margin-left:auto;">
                 <span id="cal-theme-icon">☀️</span>
@@ -3852,6 +3856,81 @@ window._showImgLightbox = function(src) {
     overlay.appendChild(closeBtn);
     document.body.appendChild(overlay);
 };
+</script>
+
+<script>
+// ── Web Push — Vista Genitore (calendario.html?athleteId=...&annata=...) ──
+(function() {
+  var urlP = new URLSearchParams(location.search);
+  var _athleteId = urlP.get('athleteId') || '';
+  var _annataId  = urlP.get('annata') || '';
+  if (!_athleteId || !_annataId) return; // solo in modalità genitore
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+  function urlB64ToUint8(b64) {
+    var p = (b64 + '===').slice(0, b64.length + (4 - b64.length % 4) % 4);
+    var raw = atob(p.replace(/-/g, '+').replace(/_/g, '/'));
+    return Uint8Array.from([...raw].map(function(c) { return c.charCodeAt(0); }));
+  }
+
+  var VAPID_PUB = 'BAqRMisWZnHwNfhaQ5KC0E5IQyEvXFO3Xubs9ydugGpbr1At_1sKIk-eqoddcPr9rHOF6yd8yq9W-8r8Eu76vA8';
+  var btn = document.getElementById('cal-push-btn');
+  var lbl = document.getElementById('cal-push-label');
+  var _swReg = null;
+
+  function _updateBtn(perm, sub) {
+    if (!btn) return;
+    btn.hidden = false;
+    if (perm === 'denied') {
+      lbl.textContent = 'Notifiche Bloccate';
+      btn.style.background = '#dc2626';
+      btn.title = 'Riabilita nelle impostazioni del browser';
+    } else if (sub || perm === 'granted') {
+      lbl.textContent = 'Notifiche Attive ✅';
+      btn.style.background = '#16a34a';
+    } else {
+      lbl.textContent = 'Ricevi Notifiche';
+      btn.style.background = '#3b82f6';
+    }
+  }
+
+  navigator.serviceWorker.register('/sw.js').then(function(reg) {
+    _swReg = reg;
+    reg.pushManager.getSubscription().then(function(sub) {
+      _updateBtn(Notification.permission, sub);
+    });
+  }).catch(function(e) { console.warn('[CalPush] SW fallito:', e); });
+
+  window.calPushSubscribe = async function() {
+    if (!_swReg) return;
+    if (Notification.permission === 'denied') {
+      alert('🔕 Notifiche bloccate.\n\nPer riattivarle:\n• Clicca il 🔒 nella barra degli indirizzi\n• Vai in "Autorizzazioni" → "Notifiche"\n• Cambia a "Consenti"\n• Ricarica la pagina');
+      return;
+    }
+    try {
+      var sub = await _swReg.pushManager.getSubscription();
+      if (!sub) {
+        sub = await _swReg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlB64ToUint8(VAPID_PUB)
+        });
+      }
+      await fetch('/api/data?action=push-subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: sub.toJSON(), annataId: _annataId })
+      });
+      _updateBtn('granted', sub);
+      alert('✅ Notifiche attivate! Riceverai avvisi per convocazioni e promemoria.');
+    } catch(e) {
+      if (e.name === 'AbortError' || e.name === 'NotAllowedError') {
+        alert('❌ Permesso negato. Vai nelle impostazioni del browser e consenti le notifiche.');
+      } else {
+        alert('❌ Errore: ' + e.message);
+      }
+    }
+  };
+})();
 </script>
 </body>
 </html>
