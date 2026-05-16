@@ -129,6 +129,19 @@ export default async function handler(req, res) {
           const phone = reg.isAdult ? (reg.cellulare || '') : (reg.genitore?.cellulare || '');
           const emailAth = reg.isAdult ? (reg.email || '') : (reg.genitore?.email || '');
           const cf = reg.isAdult ? (reg.codiceFiscale || '') : (reg.codiceFiscaleAtleta || '');
+          // Mappa genitore iscrizione → struttura parents attesa dal modal (telefono/cf)
+          const parents = (!reg.isAdult && reg.genitore) ? {
+            parent1: {
+              nome:      reg.genitore.nome      || '',
+              cognome:   reg.genitore.cognome   || '',
+              telefono:  reg.genitore.cellulare || '',
+              cf:        reg.genitore.codiceFiscale || '',
+              email:     reg.genitore.email     || '',
+              indirizzo: reg.genitore.indirizzo || '',
+            },
+            parent2: { nome:'', cognome:'', telefono:'', cf:'', email:'', indirizzo:'' }
+          } : null;
+
           const newAthlete = {
             id: Date.now(),
             name: `${reg.nome} ${reg.cognome}`.trim(),
@@ -142,13 +155,14 @@ export default async function handler(req, res) {
             isGuest: false,
             scadenzaVisita: '',
             scadenzaTessera: '',
-            dataNascita: reg.dataNascita || '',
-            codiceFiscale: cf,
-            sesso: reg.sesso || '',
-            luogoNascita: reg.luogoNascita || '',
-            indirizzo: reg.isAdult ? (reg.indirizzo || '') : (reg.genitore?.indirizzo || ''),
-            genitore: reg.isAdult ? null : (reg.genitore || null),
-            consensoFoto: reg.consensoFoto || false,
+            dataNascita:    reg.dataNascita || '',
+            codiceFiscale:  cf,
+            sesso:          reg.sesso       || '',
+            luogoNascita:   reg.luogoNascita || '',
+            indirizzo:      reg.isAdult ? (reg.indirizzo || '') : (reg.genitore?.indirizzo || ''),
+            parents,
+            uscitaAutonoma: reg.uscitaAutonoma || false,
+            consensoFoto:   reg.consensoFoto   || false,
           };
           athletes.push(newAthlete);
           await kv.set(`${prefix}:athletes`, athletes);
