@@ -32,6 +32,37 @@
     --text-muted:   #64748b;
   }
 
+  /* ══ TEMA CHIARO — overrides hardcoded dark colors ═══════════════ */
+  html.theme-light .role-badge {
+    background: #dbeafe !important;
+    color: #1d4ed8 !important;
+    border-color: #93c5fd !important;
+  }
+  html.theme-light .nav-item.active {
+    background: #dbeafe !important;
+    border-color: #3b82f6 !important;
+    color: #1d4ed8 !important;
+  }
+  html.theme-light .badge-blue   { background: #dbeafe !important; color: #1d4ed8 !important; }
+  html.theme-light .badge-green  { background: #dcfce7 !important; color: #15803d !important; }
+  html.theme-light .badge-yellow { background: #fef3c7 !important; color: #92400e !important; }
+  html.theme-light .btn-accept {
+    background: #16a34a !important; border-color: #15803d !important; color: #ffffff !important;
+  }
+  html.theme-light .btn-reject {
+    background: #dc2626 !important; border-color: #b91c1c !important; color: #ffffff !important;
+  }
+  html.theme-light .iscr-popup {
+    background: #f0fdf4 !important; border-color: #86efac !important;
+  }
+  html.theme-light .iscr-popup-text  { color: #15803d !important; }
+  html.theme-light .iscr-popup-close { color: #15803d !important; }
+  html.theme-light .gate-card {
+    background: #ffffff !important; border-color: #e2e8f0 !important;
+  }
+  html.theme-light .gate-card h2 { color: #0f172a !important; }
+  html.theme-light .gate-card p  { color: #374151 !important; }
+
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
@@ -455,11 +486,11 @@
 <div id="platinum-gate">
   <div class="gate-card">
     <div style="font-size:3rem;margin-bottom:16px">💎</div>
-    <h2 style="color:#e2e8f0;margin-bottom:8px">Dashboard Direttivo</h2>
-    <p style="color:#64748b;margin-bottom:24px;font-size:0.9rem">
+    <h2 style="color:var(--text-primary);margin-bottom:8px">Dashboard Direttivo</h2>
+    <p style="color:var(--text-muted);margin-bottom:24px;font-size:0.9rem">
       Questa funzione è disponibile esclusivamente con la licenza <strong style="color:#f59e0b">Platinum</strong>.
     </p>
-    <p style="color:#64748b;font-size:0.8rem">Contatta GO Sport per aggiornare la tua licenza.</p>
+    <p style="color:var(--text-muted);font-size:0.8rem">Contatta GO Sport per aggiornare la tua licenza.</p>
     <button onclick="doLogout()" style="margin-top:24px;padding:10px 24px;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.9rem;">
       Torna al login
     </button>
@@ -1196,9 +1227,9 @@
     const status = dateStatus(dateStr);
     const label = new Date(dateStr).toLocaleDateString('it-IT');
     const styles = {
-      expired: 'background:#450a0a;color:#f87171;border:1px solid #f87171',
-      warning: 'background:#422006;color:#fbbf24;border:1px solid #fbbf24',
-      ok:      'background:#14532d;color:#4ade80;border:1px solid #4ade80',
+      expired: 'background:#dc2626;color:#fff;border:1px solid #b91c1c',
+      warning: 'background:#d97706;color:#fff;border:1px solid #b45309',
+      ok:      'background:#16a34a;color:#fff;border:1px solid #15803d',
     };
     return `<span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:0.78rem;${styles[status]}">${label}</span>`;
   }
@@ -1268,8 +1299,8 @@
       else if (sv === 'warning' || st === 'warning') overall = 'warning';
       const overallBadge = {
         ok:      '<span class="badge-pill badge-green">✅ OK</span>',
-        warning: '<span class="badge-pill" style="background:#422006;color:#fbbf24">⚠️ Attenzione</span>',
-        expired: '<span class="badge-pill" style="background:#450a0a;color:#f87171">🔴 Critico</span>',
+        warning: '<span class="badge-pill" style="background:#d97706;color:#fff">⚠️ Attenzione</span>',
+        expired: '<span class="badge-pill" style="background:#dc2626;color:#fff">🔴 Critico</span>',
       }[overall];
       return `<tr data-status="${overall}">
         <td style="color:var(--text-muted)">${a.number || '—'}</td>
@@ -2008,10 +2039,10 @@
       const eta = calcolaEta(reg.dataNascita);
       const tipoLabel = reg.isAdult ? '🔞 Maggiorenne' : '👶 Minorenne';
       const statusBadge = reg.status === 'pending'
-        ? '<span style="background:#78350f;color:#fde68a;border-radius:6px;padding:2px 8px;font-size:0.75rem;font-weight:600;">⏳ In attesa</span>'
+        ? '<span style="background:#d97706;color:#fff;border-radius:6px;padding:2px 8px;font-size:0.75rem;font-weight:600;">⏳ In attesa</span>'
         : reg.status === 'accepted'
-        ? '<span style="background:#052e16;color:#86efac;border-radius:6px;padding:2px 8px;font-size:0.75rem;font-weight:600;">✅ Accettata</span>'
-        : '<span style="background:#450a0a;color:#fca5a5;border-radius:6px;padding:2px 8px;font-size:0.75rem;font-weight:600;">❌ Rifiutata</span>';
+        ? '<span style="background:#16a34a;color:#fff;border-radius:6px;padding:2px 8px;font-size:0.75rem;font-weight:600;">✅ Accettata</span>'
+        : '<span style="background:#dc2626;color:#fff;border-radius:6px;padding:2px 8px;font-size:0.75rem;font-weight:600;">❌ Rifiutata</span>';
 
       let genitoreInfo = '';
       if (!reg.isAdult && reg.genitore) {

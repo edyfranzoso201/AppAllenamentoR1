@@ -1172,3 +1172,84 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 @media (max-width: 575.98px) {
     .badge, #annata-badge { font-size: 0.75rem !important; padding: 4px 8px !important; }
 }
+
+/* ── TEMA CHIARO: modal sfondo grigio chiaro ───────────────────────── */
+html.theme-light .modal-content,
+html[data-bs-theme="light"] .modal-content,
+body.theme-light .modal-content {
+    background-color: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+    color: #1a202c !important;
+}
+html.theme-light .modal-header,
+html.theme-light .modal-body,
+html.theme-light .modal-footer,
+html[data-bs-theme="light"] .modal-header,
+html[data-bs-theme="light"] .modal-body,
+html[data-bs-theme="light"] .modal-footer {
+    background-color: #f1f5f9 !important;
+    border-color: #dee2e6 !important;
+    color: #1a202c !important;
+}
+html.theme-light .modal-content .form-control,
+html.theme-light .modal-content .form-select,
+html.theme-light .modal-content textarea,
+html[data-bs-theme="light"] .modal-content .form-control,
+html[data-bs-theme="light"] .modal-content .form-select,
+html[data-bs-theme="light"] .modal-content textarea {
+    background-color: #ffffff !important;
+    color: #1a202c !important;
+    border-color: #cbd5e0 !important;
+}
+html.theme-light .modal-content .form-control::placeholder,
+html[data-bs-theme="light"] .modal-content .form-control::placeholder { color: #94a3b8 !important; }
+html.theme-light .modal-content label,
+html.theme-light .modal-content .form-label,
+html[data-bs-theme="light"] .modal-content label,
+html[data-bs-theme="light"] .modal-content .form-label { color: #374151 !important; }
+html.theme-light .modal-title,
+html[data-bs-theme="light"] .modal-title { color: #0f172a !important; }
+html.theme-light .modal-content .btn-close,
+html[data-bs-theme="light"] .modal-content .btn-close { filter: invert(1); }
+/* ── TEMA CHIARO: btn-primary-custom testo bianco ─────────────────── */
+html.theme-light .btn-primary-custom,
+html[data-bs-theme="light"] .btn-primary-custom,
+body.theme-light .btn-primary-custom { color: #ffffff !important; }
+
+/* ── TEMA CHIARO: btn Bootstrap — override regola globale * {color:#000103} ── */
+/* Pulsanti pieni (sfondo colorato): ripristina testo bianco */
+html.theme-light .btn-primary,   html[data-bs-theme="light"] .btn-primary,
+html.theme-light .btn-secondary, html[data-bs-theme="light"] .btn-secondary,
+html.theme-light .btn-success,   html[data-bs-theme="light"] .btn-success,
+html.theme-light .btn-danger,    html[data-bs-theme="light"] .btn-danger,
+html.theme-light .btn-info,      html[data-bs-theme="light"] .btn-info { color: #ffffff !important; }
+
+/* btn-warning: sfondo giallo → testo scuro (Bootstrap standard) */
+html.theme-light .btn-warning,   html[data-bs-theme="light"] .btn-warning { color: #000000 !important; }
+
+/* btn-outline-light: in dark aveva bordo bianco → invisibile in light */
+html.theme-light .btn-outline-light,
+html[data-bs-theme="light"] .btn-outline-light {
+    color: #1a202c !important; border-color: #374151 !important;
+}
+html.theme-light .btn-outline-light:hover,
+html[data-bs-theme="light"] .btn-outline-light:hover {
+    background-color: #374151 !important; color: #ffffff !important;
+}
+
+/* btn-outline-secondary: bordo grigio chiaro → scuro per visibilità */
+html.theme-light .btn-outline-secondary,
+html[data-bs-theme="light"] .btn-outline-secondary {
+    color: #374151 !important; border-color: #374151 !important;
+}
+html.theme-light .btn-outline-secondary:hover,
+html[data-bs-theme="light"] .btn-outline-secondary:hover {
+    background-color: #374151 !important; color: #ffffff !important;
+}
+
+/* btn-outline-*: ripristina colori corretti (la regola * li rende tutti neri) */
+html.theme-light .btn-outline-primary,  html[data-bs-theme="light"] .btn-outline-primary  { color: #1d4ed8 !important; border-color: #1d4ed8 !important; }
+html.theme-light .btn-outline-danger,   html[data-bs-theme="light"] .btn-outline-danger   { color: #dc2626 !important; border-color: #dc2626 !important; }
+html.theme-light .btn-outline-success,  html[data-bs-theme="light"] .btn-outline-success  { color: #16a34a !important; border-color: #16a34a !important; }
+html.theme-light .btn-outline-warning,  html[data-bs-theme="light"] .btn-outline-warning  { color: #d97706 !important; border-color: #b45309 !important; }
+html.theme-light .btn-outline-info,     html[data-bs-theme="light"] .btn-outline-info     { color: #0369a1 !important; border-color: #0369a1 !important; }

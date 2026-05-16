@@ -37,11 +37,10 @@
     html.theme-light body, body.theme-light {
       background: #ffffff !important;
     }
-    /* Testo nero e grassetto su tutto */
+    /* Testo nero su tutto */
     html.theme-light, html.theme-light *,
     body.theme-light, body.theme-light * {
       color: #000103;
-      font-weight: 600;
     }
     /* A — Nav bar in tema chiaro: grigio scuro */
     html.theme-light .nav-header, body.theme-light .nav-header {
@@ -59,7 +58,7 @@
     body.theme-light .calendar-grid th {
       background: #f0f1f2 !important;
       border-color: #f0f1f2 !important;
-      color: #f9fafb !important;
+      color: #000103 !important;
     }
     /* C — Alert SCADUTE: blu invece di rosso scuro */
     html.theme-light .alert-danger, body.theme-light .alert-danger {
@@ -478,7 +477,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <!-- Foglio di stile personalizzato -->
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=1779400001">
 
     <style>
     /* ===== TAB BAR - seconda riga dell'header fisso ===== */
@@ -1236,6 +1235,7 @@
                                 <button class="btn btn-warning" id="quick-add-staff-btn" style="color:#000;"><i class="bi bi-person-badge-fill"></i> Aggiungi Staff</button>
                                 <button class="btn btn-secondary" id="quick-plan-session-btn"><i class="bi bi-calendar-plus"></i> Pianifica Sessione</button>
                                 <button class="btn btn-success" id="export-all-data-btn" title="Scarica backup completo dati"><i class="bi bi-download"></i> Backup Dati</button>
+                                <button class="btn btn-success" id="export-excel-btn" title="Scarica backup Excel"><i class="bi bi-file-earmark-excel"></i> Backup Excel</button>
                                 <button class="btn btn-danger no-print" id="reset-annata-btn" style="display:none;" title="Azzera dati a fine annata">
                                     <i class="bi bi-trash3-fill"></i> Reset Fine Annata
                                 </button>
@@ -2284,7 +2284,7 @@
     <script src="auth-multi-annata.js?v=1779000000"></script>
     
     <!-- Script personalizzato -->
-    <script src="script.js?v=1778900004"></script>
+    <script src="script.js?v=1779300001"></script>
     <script>
 
     // ========================================================================
@@ -4956,29 +4956,46 @@ html.theme-light #tipo-dirigente-btn { color: #ffffff !important; }
 /* FIX v1.5.21: simboli (C) e (VC) nella formazione - testo bianco in tema chiaro */
 html.theme-light .token-captain { color: #ffffff !important; }
 
-/* FIX v1.5.21: modal Pianifica Sessione - sfondo bianco in tema chiaro */
-html.theme-light #sessionModal .modal-content,
-html.theme-light #sessionModal .modal-header,
-html.theme-light #sessionModal .modal-body,
-html.theme-light #sessionModal .modal-footer {
-    background-color: #ffffff !important;
-    --bs-modal-bg: #ffffff;
-    --bs-body-bg: #ffffff;
-    color: #1a202c !important;
+/* FIX: modal Pianifica Sessione - sfondo grigio chiaro in tema chiaro */
+html.theme-light .modal-content,
+html[data-bs-theme="light"] .modal-content,
+body.theme-light .modal-content {
+    background-color: #f1f5f9 !important;
+    --bs-modal-bg: #f1f5f9;
     border-color: #e2e8f0 !important;
 }
-html.theme-light #sessionModal .form-control,
-html.theme-light #sessionModal .form-select,
-html.theme-light #sessionModal textarea {
-    background-color: #f8fafc !important;
-    --bs-body-bg: #f8fafc;
+html.theme-light .modal-header,
+html.theme-light .modal-body,
+html.theme-light .modal-footer,
+html[data-bs-theme="light"] .modal-header,
+html[data-bs-theme="light"] .modal-body,
+html[data-bs-theme="light"] .modal-footer {
+    background-color: #f1f5f9 !important;
+    color: #1a202c !important;
+    border-color: #dee2e6 !important;
+}
+html.theme-light .modal-content .form-control,
+html.theme-light .modal-content .form-select,
+html.theme-light .modal-content textarea,
+html[data-bs-theme="light"] .modal-content .form-control,
+html[data-bs-theme="light"] .modal-content .form-select,
+html[data-bs-theme="light"] .modal-content textarea {
+    background-color: #ffffff !important;
     color: #1a202c !important;
     border-color: #cbd5e0 !important;
 }
-html.theme-light #sessionModal label,
-html.theme-light #sessionModal .form-label { color: #374151 !important; }
-html.theme-light #sessionModal .modal-title { color: #1a202c !important; }
-html.theme-light #sessionModal .btn-close { filter: invert(1); }
+html.theme-light .modal-content label,
+html.theme-light .modal-content .form-label,
+html[data-bs-theme="light"] .modal-content label,
+html[data-bs-theme="light"] .modal-content .form-label { color: #374151 !important; }
+html.theme-light .modal-title,
+html[data-bs-theme="light"] .modal-title { color: #1a202c !important; }
+html.theme-light .modal-content .btn-close,
+html[data-bs-theme="light"] .modal-content .btn-close { filter: invert(1); }
+/* FIX: pulsante btn-primary-custom — testo bianco in tema chiaro */
+html.theme-light .btn-primary-custom,
+html[data-bs-theme="light"] .btn-primary-custom,
+body.theme-light .btn-primary-custom { color: #ffffff !important; }
 
 /* FIX: pulsante hamburger ☰ - nero visibile in tema chiaro */
 html.theme-light #hamburger-btn,
@@ -5000,6 +5017,17 @@ body.theme-light #theme-toggle-btn {
     background: #d1d5db !important;
     border: 1.5px solid #6b7280 !important;
 }
+</style>
+
+<style>
+/* FIX tema chiaro: modal sfondo grigio chiaro */
+html.theme-light .modal-content,html[data-bs-theme="light"] .modal-content{background-color:#f1f5f9!important;border-color:#e2e8f0!important;color:#1a202c!important;}
+html.theme-light .modal-header,html.theme-light .modal-body,html.theme-light .modal-footer,html[data-bs-theme="light"] .modal-header,html[data-bs-theme="light"] .modal-body,html[data-bs-theme="light"] .modal-footer{background-color:#f1f5f9!important;color:#1a202c!important;border-color:#dee2e6!important;}
+html.theme-light .modal-content .form-control,html.theme-light .modal-content .form-select,html.theme-light .modal-content textarea,html[data-bs-theme="light"] .modal-content .form-control,html[data-bs-theme="light"] .modal-content .form-select,html[data-bs-theme="light"] .modal-content textarea{background-color:#ffffff!important;color:#1a202c!important;border-color:#cbd5e0!important;}
+html.theme-light .modal-content label,html.theme-light .modal-content .form-label,html[data-bs-theme="light"] .modal-content label,html[data-bs-theme="light"] .modal-content .form-label{color:#374151!important;}
+html.theme-light .modal-title,html[data-bs-theme="light"] .modal-title{color:#0f172a!important;}
+html.theme-light .modal-content .btn-close,html[data-bs-theme="light"] .modal-content .btn-close{filter:invert(1);}
+html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-custom{color:#ffffff!important;}
 </style>
 
 <!-- MODAL CAMBIO PASSWORD -->

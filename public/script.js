@@ -3365,11 +3365,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const performDownload = async (includeIndividual) => {
         try {
             // 1. RECUPERA ANNATA DA SESSIONSTORAGE
-const annataId = sessionStorage.getItem('gosportcurrentannata');
-const username = sessionStorage.getItem('gosportauthuser') || 'admin';
-const role = sessionStorage.getItem('gosportuserrole');
-const societyId = sessionStorage.getItem('gosportsocietyid');
-const authSession = sessionStorage.getItem('gosportauthsession');
+const annataId = sessionStorage.getItem('gosport_current_annata');
+const username = sessionStorage.getItem('gosport_auth_user') || 'admin';
+const role = sessionStorage.getItem('gosport_user_role');
+const societyId = sessionStorage.getItem('gosport_society_id');
+const authSession = sessionStorage.getItem('gosport_session_token');
 
 if (!annataId) {
     alert('⚠️ Errore: Nessuna annata selezionata.');
@@ -3539,6 +3539,139 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
         performDownload(isAuthenticated);
     }
 });
+
+    document.getElementById('export-excel-btn').addEventListener('click', async () => {
+        try {
+            const annataId = sessionStorage.getItem('gosport_current_annata');
+            if (!annataId) { alert('⚠️ Errore: Nessuna annata selezionata.'); return; }
+            const username = sessionStorage.getItem('gosport_auth_user') || 'admin';
+            const role = sessionStorage.getItem('gosport_user_role');
+            const societyId = sessionStorage.getItem('gosport_society_id');
+            const authSession = sessionStorage.getItem('gosport_session_token');
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-Annata-Id': annataId,
+                'X-Auth-Session': authSession || '',
+                'X-Auth-User': username,
+                'X-User-Role': role || '',
+                'X-Society-Id': societyId || ''
+            };
+            const response = await fetch('/api/data', { method: 'GET', headers });
+            if (!response.ok) throw new Error(`Errore caricamento dati: ${response.status}`);
+            const d = await response.json();
+            const wb = XLSX.utils.book_new();
+
+            // Sheet 1: Atleti
+            const atletiRows = (d.athletes || []).map(a => ({
+                'Nome': a.name || '',
+                'Ruolo': a.role || '',
+                'N. Maglia': a.number || '',
+                'Email': a.email || '',
+                'Telefono': a.phone || '',
+                'Capitano': a.isCaptain ? 'SI' : '',
+                'Vice Capitano': a.isViceCaptain ? 'SI' : '',
+                'Staff': a.isStaff ? 'SI' : '',
+                'Scad. Visita': a.scadenzaVisita || '',
+                'Scad. Tessera': a.scadenzaTessera || '',
+            }));
+            if (atletiRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(atletiRows), 'Atleti');
+
+            // Sheet 2: Valutazioni (evaluations[date][athleteId])
+            const valRows = [];
+            for (const [date, byAthlete] of Object.entries(d.evaluations || {})) {
+                for (const [aid, vals] of Object.entries(byAthlete || {})) {
+                    const ath = (d.athletes || []).find(a => String(a.id) === String(aid));
+                    valRows.push({
+                        'Data': date,
+                        'Atleta': ath ? ath.name : aid,
+                        'Presenza': vals['presenza-allenamento'] ?? '',
+                        'Serietà': vals['serieta-allenamento'] ?? '',
+                        'Abbig. Allenamento': vals['abbigliamento-allenamento'] ?? '',
+                        'Abbig. Partita': vals['abbigliamento-partita'] ?? '',
+                        'Comunicazioni': vals['comunicazioni'] ?? '',
+                        'Doccia': vals['doccia'] ?? '',
+                        'Individual': vals['presenza-individual'] ?? '',
+                    });
+                }
+            }
+            valRows.sort((a, b) => (a.Data > b.Data ? -1 : 1));
+            if (valRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(valRows), 'Valutazioni');
+
+            // Sheet 3: GPS / Performance (gpsData[athleteId][date] = [sessions])
+            const gpsRows = [];
+            for (const [aid, dates] of Object.entries(d.gpsData || {})) {
+                const ath = (d.athletes || []).find(a => String(a.id) === String(aid));
+                const name = ath ? ath.name : aid;
+                for (const [date, sessions] of Object.entries(dates || {})) {
+                    const arr = Array.isArray(sessions) ? sessions : [sessions];
+                    for (const s of arr) {
+                        gpsRows.push({
+                            'Data': s.data_di_registrazione || date,
+                            'Atleta': name,
+                            'Tipo': s.tipo_sessione || '',
+                            'Distanza (m)': s.distanza_totale || '',
+                            'Tempo (min)': s.tempo_totale || '',
+                            'Vel. Max (km/h)': s.velocita_massima || '',
+                            'Sprint (m)': s.distanza_sprint || '',
+                            'N. Sprint': s.numero_di_sprint || '',
+                            'Max Acc': s.max_acc || '',
+                            'Max Dec': s.max_dec || '',
+                            'Gol': s.gol || '',
+                            'Assist': s.assist || '',
+                            'Note': s.note || '',
+                        });
+                    }
+                }
+            }
+            gpsRows.sort((a, b) => (a.Data > b.Data ? -1 : 1));
+            if (gpsRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(gpsRows), 'GPS-Performance');
+
+            // Sheet 4: Partite
+            const partiteRows = [];
+            for (const [, m] of Object.entries(d.matchResults || {})) {
+                partiteRows.push({
+                    'Data': m.date || '',
+                    'Ora': m.time || '',
+                    'Avversario': m.opponentName || '',
+                    'Casa/Trasferta': m.location === 'home' ? 'Casa' : 'Trasferta',
+                    'Gol Nostri': m.homeScore ?? (m.location === 'home' ? m.myTeamScore : m.opponentScore) ?? '',
+                    'Gol Avversari': m.awayScore ?? (m.location === 'away' ? m.myTeamScore : m.opponentScore) ?? '',
+                    'Luogo': m.venue || '',
+                });
+            }
+            partiteRows.sort((a, b) => (a.Data > b.Data ? -1 : 1));
+            if (partiteRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(partiteRows), 'Partite');
+
+            // Sheet 5: Sessioni calendario (trainingSessions[date] = [sessions])
+            const sessioniRows = [];
+            for (const [date, arr] of Object.entries(d.trainingSessions || {})) {
+                const list = Array.isArray(arr) ? arr : [arr];
+                for (const s of list) {
+                    sessioniRows.push({
+                        'Data': s.date || date,
+                        'Tipo': s.type || '',
+                        'Titolo': s.title || '',
+                        'Ora': s.time || '',
+                        'Luogo': s.location || '',
+                        'Obiettivi': s.goals || '',
+                        'Note': s.note || '',
+                    });
+                }
+            }
+            sessioniRows.sort((a, b) => (a.Data > b.Data ? -1 : 1));
+            if (sessioniRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sessioniRows), 'Sessioni');
+
+            if (wb.SheetNames.length === 0) { alert('⚠️ Nessun dato da esportare.'); return; }
+
+            const timestamp = new Date().toISOString().split('T')[0];
+            const filename = `GoSport_Backup_${timestamp}.xlsx`;
+            XLSX.writeFile(wb, filename);
+            alert(`✅ Backup Excel completato!\n\nFile: ${filename}\nFogli: ${wb.SheetNames.join(', ')}`);
+        } catch (e) {
+            console.error('❌ Errore backup Excel:', e);
+            alert('❌ Errore durante il backup Excel:\n\n' + e.message);
+        }
+    });
 
     elements.deleteDayDataBtn.addEventListener('click', () => {
         const date = elements.evaluationDatePicker.value;
