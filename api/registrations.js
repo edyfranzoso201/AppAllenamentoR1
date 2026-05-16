@@ -31,7 +31,8 @@ export default async function handler(req, res) {
     if (action === 'submit' && req.method === 'POST') {
       const body = req.body || {};
       const { societyId, nome, cognome, dataNascita, isAdult,
-              email, cellulare, codiceFiscale, genitore, privacyAccepted } = body;
+              email, cellulare, codiceFiscale, codiceFiscaleAtleta,
+              genitore, privacyAccepted, sesso, luogoNascita, indirizzo, consensoFoto } = body;
 
       if (!societyId || !nome || !cognome || !dataNascita) {
         return res.status(400).json({ success: false, message: 'Dati obbligatori mancanti' });
@@ -56,9 +57,14 @@ export default async function handler(req, res) {
         cognome: cognome.trim(),
         dataNascita,
         isAdult: !!isAdult,
+        sesso: sesso || '',
+        luogoNascita: luogoNascita || '',
+        consensoFoto: !!consensoFoto,
         email: isAdult ? (email || '').trim() : '',
         cellulare: isAdult ? (cellulare || '').trim() : '',
         codiceFiscale: isAdult ? (codiceFiscale || '').trim() : '',
+        indirizzo: isAdult ? (indirizzo || '').trim() : '',
+        codiceFiscaleAtleta: !isAdult ? (codiceFiscaleAtleta || '').trim() : '',
         genitore: !isAdult ? (genitore || {}) : null,
         privacyAccepted: true,
       };
@@ -103,15 +109,55 @@ export default async function handler(req, res) {
       const idx = all.findIndex(r => r.id === id);
       if (idx === -1) return res.status(404).json({ success: false, message: 'Richiesta non trovata' });
 
+      const reg = all[idx];
       all[idx] = {
-        ...all[idx],
+        ...reg,
         status: 'accepted',
         respondedAt: new Date().toISOString(),
         respondedBy: session ? session.username : (req.headers['x-auth-user'] || 'utente'),
         annataId: annataId || null,
       };
       await kv.set(kvKey(societyId), all);
-      return res.status(200).json({ success: true });
+
+      // Auto-crea atleta nell'annata se specificata
+      let athleteCreated = false;
+      if (annataId) {
+        try {
+          const prefix = `annate:${annataId}`;
+          const athletes = (await kv.get(`${prefix}:athletes`)) || [];
+          const phone = reg.isAdult ? (reg.cellulare || '') : (reg.genitore?.cellulare || '');
+          const emailAth = reg.isAdult ? (reg.email || '') : (reg.genitore?.email || '');
+          const cf = reg.isAdult ? (reg.codiceFiscale || '') : (reg.codiceFiscaleAtleta || '');
+          const newAthlete = {
+            id: Date.now(),
+            name: `${reg.nome} ${reg.cognome}`.trim(),
+            email: emailAth,
+            phone,
+            role: '',
+            isStaff: false,
+            number: 0,
+            isCaptain: false,
+            isViceCaptain: false,
+            isGuest: false,
+            scadenzaVisita: '',
+            scadenzaTessera: '',
+            dataNascita: reg.dataNascita || '',
+            codiceFiscale: cf,
+            sesso: reg.sesso || '',
+            luogoNascita: reg.luogoNascita || '',
+            indirizzo: reg.isAdult ? (reg.indirizzo || '') : (reg.genitore?.indirizzo || ''),
+            genitore: reg.isAdult ? null : (reg.genitore || null),
+            consensoFoto: reg.consensoFoto || false,
+          };
+          athletes.push(newAthlete);
+          await kv.set(`${prefix}:athletes`, athletes);
+          athleteCreated = true;
+        } catch (e) {
+          console.warn('Auto-create atleta fallito:', e.message);
+        }
+      }
+
+      return res.status(200).json({ success: true, athleteCreated });
     }
 
     // ── REJECT ───────────────────────────────────────────────────────────

@@ -122,6 +122,20 @@
       .slider { display:none; }
     }
     .print-only { display:none; }
+
+    /* Campi uppercase */
+    #f-cf, #f-cf-minore, #g-cf, #f-provincia { text-transform:uppercase; }
+
+    /* Radio sesso */
+    .radio-row { display:flex; gap:24px; align-items:center; padding:8px 0; }
+    .radio-label { display:flex; align-items:center; gap:7px; font-size:0.9rem; color:#1e293b; cursor:pointer; font-weight:500; }
+    .radio-label input[type=radio] { width:17px; height:17px; accent-color:#0284c7; cursor:pointer; }
+
+    /* Nota card-title minori */
+    .label-note { font-size:0.75rem; color:#f59e0b; font-weight:400; }
+
+    /* Consenso foto switch */
+    .privacy-switch-row.foto { background:#f0fdf4; border-color:#bbf7d0; margin-top:10px; }
   </style>
 </head>
 <body>
@@ -151,7 +165,24 @@
     </div>
     <div class="form-group">
       <label class="form-label">Data di Nascita <span class="req">*</span></label>
-      <input type="date" class="form-control" id="f-nascita" onchange="onNascitaChange()">
+      <input type="date" class="form-control" id="f-nascita" title="Data di nascita" onchange="onNascitaChange()">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Sesso <span class="req">*</span></label>
+      <div class="radio-row">
+        <label class="radio-label"><input type="radio" name="sesso" id="sesso-m" value="M"> Maschio</label>
+        <label class="radio-label"><input type="radio" name="sesso" id="sesso-f" value="F"> Femmina</label>
+      </div>
+    </div>
+    <div class="row">
+      <div class="form-group">
+        <label class="form-label">Comune di Nascita <span class="req">*</span></label>
+        <input type="text" class="form-control" id="f-comune" placeholder="es. Roma">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Prov. <span class="req">*</span></label>
+        <input type="text" class="form-control" id="f-provincia" placeholder="RM" maxlength="2">
+      </div>
     </div>
 
     <!-- Campi solo adulti -->
@@ -168,15 +199,24 @@
         </div>
         <div class="form-group">
           <label class="form-label">Codice Fiscale <span class="req">*</span></label>
-          <input type="text" class="form-control" id="f-cf" placeholder="RSSMRA..." maxlength="16" style="text-transform:uppercase">
+          <input type="text" class="form-control" id="f-cf" placeholder="RSSMRA..." maxlength="16">
         </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Indirizzo di Residenza</label>
+        <input type="text" class="form-control" id="f-indirizzo" placeholder="Via Roma 1, Milano" autocomplete="street-address">
       </div>
     </div>
   </div>
 
   <!-- ── DATI GENITORE (minori) ── -->
   <div class="card" id="section-minor" style="display:none">
-    <div class="card-title">👨‍👩‍👧 Dati Genitore / Tutore <span style="font-size:0.75rem;color:#f59e0b;font-weight:400">(obbligatori per minori)</span></div>
+    <div class="card-title">👨‍👩‍👧 Dati Genitore / Tutore <span class="label-note">(obbligatori per minori)</span></div>
+    <div class="form-group">
+      <label class="form-label">Codice Fiscale Atleta <span class="req">*</span></label>
+      <input type="text" class="form-control" id="f-cf-minore" placeholder="RSSMRA..." maxlength="16">
+    </div>
+    <hr class="divider">
     <div class="row">
       <div class="form-group">
         <label class="form-label">Nome <span class="req">*</span></label>
@@ -226,7 +266,14 @@
     <div class="privacy-switch-row">
       <span class="switch-label">Ho letto e accetto l'informativa privacy e le modalità di accesso sopra descritte <span class="req">*</span></span>
       <label class="switch">
-        <input type="checkbox" id="privacy-switch">
+        <input type="checkbox" id="privacy-switch" title="Accetta informativa privacy" aria-label="Accetta informativa privacy">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="privacy-switch-row foto">
+      <span class="switch-label">Autorizzo la pubblicazione di foto e video che mi ritraggono (o ritraggono il minore) durante le attività sportive</span>
+      <label class="switch">
+        <input type="checkbox" id="consenso-foto" title="Consenso fotografico" aria-label="Consenso fotografico">
         <span class="slider"></span>
       </label>
     </div>
@@ -332,10 +379,22 @@ async function submitForm() {
   const nome = document.getElementById('f-nome').value.trim();
   const cognome = document.getElementById('f-cognome').value.trim();
   const dataNascita = document.getElementById('f-nascita').value;
+  const sesso = document.querySelector('input[name="sesso"]:checked')?.value || '';
+  const comune = document.getElementById('f-comune').value.trim();
+  const provincia = document.getElementById('f-provincia').value.trim().toUpperCase();
   const privacy = document.getElementById('privacy-switch').checked;
+  const consensoFoto = document.getElementById('consenso-foto').checked;
 
   if (!nome || !cognome || !dataNascita) {
     showSubmitError('⚠️ Compilare Nome, Cognome e Data di Nascita.');
+    return;
+  }
+  if (!sesso) {
+    showSubmitError('⚠️ Selezionare il sesso.');
+    return;
+  }
+  if (!comune || !provincia) {
+    showSubmitError('⚠️ Indicare il Comune e la Provincia di nascita.');
     return;
   }
   if (!privacy) {
@@ -350,18 +409,28 @@ async function submitForm() {
   if (mo < 0 || (mo === 0 && today.getDate() < birth.getDate())) age--;
   const isAdult = age >= 18;
 
-  let body = { societyId: SOCIETY_ID, nome, cognome, dataNascita, isAdult, privacyAccepted: true };
+  let body = {
+    societyId: SOCIETY_ID, nome, cognome, dataNascita, isAdult,
+    sesso, luogoNascita: comune + ' (' + provincia + ')',
+    privacyAccepted: true, consensoFoto
+  };
 
   if (isAdult) {
     const email = document.getElementById('f-email').value.trim();
     const cellulare = document.getElementById('f-cellulare').value.trim();
     const cf = document.getElementById('f-cf').value.trim().toUpperCase();
+    const indirizzo = document.getElementById('f-indirizzo').value.trim();
     if (!email || !cellulare || !cf) {
       showSubmitError('⚠️ Per i maggiorenni sono obbligatori Email, Cellulare e Codice Fiscale.');
       return;
     }
-    body = { ...body, email, cellulare, codiceFiscale: cf };
+    body = { ...body, email, cellulare, codiceFiscale: cf, indirizzo };
   } else {
+    const cfAtleta = document.getElementById('f-cf-minore').value.trim().toUpperCase();
+    if (!cfAtleta) {
+      showSubmitError('⚠️ Il Codice Fiscale dell\'atleta è obbligatorio.');
+      return;
+    }
     const gNome = document.getElementById('g-nome').value.trim();
     const gCognome = document.getElementById('g-cognome').value.trim();
     const gCell = document.getElementById('g-cellulare').value.trim();
@@ -372,6 +441,7 @@ async function submitForm() {
       showSubmitError('⚠️ Per i minori sono obbligatori tutti i dati del genitore/tutore.');
       return;
     }
+    body.codiceFiscaleAtleta = cfAtleta;
     body.genitore = { nome: gNome, cognome: gCognome, cellulare: gCell, email: gEmail, codiceFiscale: gCf, indirizzo: gInd };
   }
 
@@ -400,7 +470,8 @@ async function submitForm() {
 function printForm(mode) {
   if (mode === 'blank') {
     // Salva valori, svuota tutto, stampa, ripristina
-    const fields = ['f-nome','f-cognome','f-nascita','f-email','f-cellulare','f-cf',
+    const fields = ['f-nome','f-cognome','f-nascita','f-comune','f-provincia',
+                    'f-email','f-cellulare','f-cf','f-indirizzo','f-cf-minore',
                     'g-nome','g-cognome','g-cellulare','g-email','g-cf','g-indirizzo'];
     const saved = {};
     fields.forEach(id => {

@@ -2090,7 +2090,7 @@
         <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
           <div style="flex:1;min-width:200px;">
             <div class="iscr-name">${esc(reg.nome)} ${esc(reg.cognome)}</div>
-            <div class="iscr-meta">📅 Nato/a il ${esc(reg.dataNascita)} &nbsp;(${eta} anni) &nbsp;${tipoLabel}</div>
+            <div class="iscr-meta">📅 Nato/a il ${esc(reg.dataNascita)} &nbsp;(${eta} anni) &nbsp;${tipoLabel}${reg.sesso ? ' &nbsp;· ' + (reg.sesso === 'M' ? '♂️' : '♀️') : ''}${reg.luogoNascita ? ' &nbsp;· 📍 ' + esc(reg.luogoNascita) : ''}${reg.consensoFoto ? ' &nbsp;· 📷 foto ✅' : ''}</div>
             ${contactInfo}
             ${genitoreInfo}
             ${respondedInfo}
@@ -2136,7 +2136,11 @@
       const reg = _iscrizioni.find(x => x.id === id) || {};
       const nomeAtleta = [reg.nome, reg.cognome].filter(Boolean).join(' ') || 'l\'atleta';
       const nomeAnnata = _iscrAnnate.find(a => a.id === annataId)?.nome || annataId;
-      alert(`✅ Richiesta accettata!\n\nRicorda di aggiungere manualmente ${nomeAtleta} all\'annata "${nomeAnnata}" nella sezione Squadra.`);
+      if (d.athleteCreated) {
+        alert(`✅ Richiesta accettata!\n\n${nomeAtleta} è stato aggiunto automaticamente alla rosa dell\'annata "${nomeAnnata}".\n\nApri la sezione Squadra per completare il profilo (numero maglia, ruolo, ecc.).`);
+      } else {
+        alert(`✅ Richiesta accettata!\n\nRicorda di aggiungere manualmente ${nomeAtleta} all\'annata "${nomeAnnata}" nella sezione Squadra.`);
+      }
     } catch(e) { alert('Errore: ' + e.message); }
   }
 
