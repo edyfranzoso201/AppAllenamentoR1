@@ -477,7 +477,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <!-- Foglio di stile personalizzato -->
-    <link rel="stylesheet" href="style.css?v=1779500001">
+    <link rel="stylesheet" href="style.css?v=1779500002">
 
     <style>
     /* ===== TAB BAR - seconda riga dell'header fisso ===== */
@@ -1444,6 +1444,25 @@
                     </div>
                 </div>
             </div>
+            <!-- GPS Capocannonieri/Assist -->
+            <div class="row mt-2">
+                <div class="col-md-6 mb-3">
+                    <div class="card table-card">
+                        <div class="card-body">
+                            <h5 class="card-title">⚽ Marcatori Stagione (GPS)</h5>
+                            <div id="gps-scorers-container" style="max-height:220px;overflow-y:auto;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="card table-card">
+                        <div class="card-body">
+                            <h5 class="card-title">🎯 Assist Stagione (GPS)</h5>
+                            <div id="gps-assists-container" style="max-height:220px;overflow-y:auto;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         <hr class="my-5 no-print">
         <div id="report-valutazioni-section" class="tab-section row my-4 printable-area">
@@ -2285,7 +2304,7 @@
     <script src="auth-multi-annata.js?v=1779000000"></script>
     
     <!-- Script personalizzato -->
-    <script src="script.js?v=1779500003"></script>
+    <script src="script.js?v=1779500004"></script>
     <script>
 
     // ========================================================================
@@ -3969,8 +3988,13 @@ document.addEventListener('DOMContentLoaded', function() {
         var selAtl = conv ? (conv.atletiIds || []) : [];
         var atlHtml = '';
         atleti.forEach(function(a) {
-            var chk = selAtl.includes(String(a.id)) ? 'checked' : '';
-            atlHtml += '<div class="form-check"><input class="form-check-input conv-atleta-chk" type="checkbox" value="'+a.id+'" id="cat'+a.id+'" '+chk+'><label class="form-check-label small" for="cat'+a.id+'">'+a.name+'</label></div>';
+            if (a.infortunato) {
+                var rientroNote = a.dataRientro ? ' (rientro ' + new Date(a.dataRientro + 'T00:00:00').toLocaleDateString('it-IT', {day:'2-digit',month:'2-digit'}) + ')' : '';
+                atlHtml += '<div class="form-check" style="opacity:0.45;"><input class="form-check-input" type="checkbox" value="'+a.id+'" id="cat'+a.id+'" disabled><label class="form-check-label small" for="cat'+a.id+'">🤕 '+a.name+rientroNote+'</label></div>';
+            } else {
+                var chk = selAtl.includes(String(a.id)) ? 'checked' : '';
+                atlHtml += '<div class="form-check"><input class="form-check-input conv-atleta-chk" type="checkbox" value="'+a.id+'" id="cat'+a.id+'" '+chk+'><label class="form-check-label small" for="cat'+a.id+'">'+a.name+'</label></div>';
+            }
         });
         document.getElementById('conv-atleti-list').innerHTML = atlHtml || '<span class="text-muted small">Nessun atleta</span>';
     };
