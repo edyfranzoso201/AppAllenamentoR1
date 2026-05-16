@@ -21,6 +21,8 @@ body { background: #0a2463; color: #ffffff; font-family: system-ui, sans-serif; 
 .header-logo { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; border: 2px solid #3b5a9d; }
 .header-title { font-size: 1.5rem; font-weight: 800; color: #fff; letter-spacing: 0.02em; }
 .header-sub { font-size: 0.78rem; color: #8a9fc1; margin-top: 2px; }
+.bacheca-push-btn { margin-top: 8px; background: #3b82f6; color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-size: 0.85rem; cursor: pointer; white-space: nowrap; }
+.bacheca-push-btn.active { background: #16a34a; }
 .header-ticker {
   flex: 1; overflow: hidden; margin-left: 20px;
   border-left: 1px solid #3b5a9d; padding-left: 16px;
@@ -168,6 +170,9 @@ body { overflow-x: auto; }
   <div class="header-ticker">
     <span class="ticker-inner" id="ticker-text">📢 Benvenuti nella bacheca ufficiale della squadra &nbsp;·&nbsp; Seguici per tutti gli aggiornamenti!</span>
   </div>
+  <button type="button" id="bacheca-push-btn" onclick="window.bachPushSubscribe()" class="bacheca-push-btn" hidden>
+    🔔 <span id="bacheca-push-label">Ricevi Notifiche</span>
+  </button>
 </div>
 
 <!-- MAIN LAYOUT -->
@@ -426,6 +431,59 @@ function formatDateTime(dateStr) {
   } catch(e) {
     document.getElementById('posts-container').innerHTML = '<div class="empty"><p>Errore caricamento.</p></div>';
   }
+})();
+</script>
+
+<script>
+// ── Web Push — Bacheca Genitori ────────────────────────────────────────────
+(function() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !_urlSid) return;
+
+  function urlB64ToUint8(b64) {
+    const p = (b64 + '===').slice(0, b64.length + (4 - b64.length % 4) % 4);
+    const raw = atob(p.replace(/-/g, '+').replace(/_/g, '/'));
+    return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+  }
+
+  const VAPID_PUB = 'BAqRMisWZnHwNfhaQ5KC0E5IQyEvXFO3Xubs9ydugGpbr1At_1sKIk-eqoddcPr9rHOF6yd8yq9W-8r8Eu76vA8';
+  const btn = document.getElementById('bacheca-push-btn');
+  const lbl = document.getElementById('bacheca-push-label');
+  let _swReg = null;
+
+  navigator.serviceWorker.register('/sw.js').then(reg => {
+    _swReg = reg;
+    btn.hidden = false;
+    reg.pushManager.getSubscription().then(sub => {
+      if (sub) { lbl.textContent = 'Notifiche Attive ✅'; btn.classList.add('active'); }
+    });
+  }).catch(e => console.warn('[Bacheca] SW fallito:', e));
+
+  window.bachPushSubscribe = async function() {
+    if (!_swReg) return;
+    try {
+      let sub = await _swReg.pushManager.getSubscription();
+      if (!sub) {
+        sub = await _swReg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlB64ToUint8(VAPID_PUB)
+        });
+      }
+      await fetch('/api/data?action=push-subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: sub.toJSON(), societyId: _urlSid })
+      });
+      lbl.textContent = 'Notifiche Attive ✅';
+      btn.classList.add('active');
+      alert('✅ Notifiche attivate! Riceverai avvisi per convocazioni e aggiornamenti.');
+    } catch(e) {
+      if (e.name === 'AbortError' || e.name === 'NotAllowedError') {
+        alert('❌ Permesso negato. Vai nelle impostazioni del browser e consenti le notifiche per questo sito.');
+      } else {
+        alert('❌ Errore: ' + e.message);
+      }
+    }
+  };
 })();
 </script>
 </body>

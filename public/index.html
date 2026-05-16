@@ -5159,11 +5159,16 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
 
   // Subscribe — chiamato dal bottone
   window.gsPushSubscribe = async function() {
+    console.log('[Push] gsPushSubscribe chiamata');
+    console.log('[Push] _swReg:', _swReg);
+    console.log('[Push] Notification.permission:', Notification.permission);
     if (!_swReg) { alert('Service worker non pronto, riprova.'); return; }
     const societyId = sessionStorage.getItem('gosport_society_id');
+    console.log('[Push] societyId:', societyId);
     if (!societyId) { alert('Accedi prima alla dashboard.'); return; }
     try {
       let sub = await _swReg.pushManager.getSubscription();
+      console.log('[Push] sub esistente:', sub);
       if (!sub) {
         sub = await _swReg.pushManager.subscribe({
           userVisibleOnly: true,
@@ -5182,7 +5187,11 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       alert('✅ Notifiche attivate! Riceverai avvisi per convocazioni e promemoria.');
     } catch(e) {
       console.error('Push subscribe error:', e);
-      alert('❌ Impossibile attivare notifiche: ' + e.message);
+      if (e.name === 'AbortError' || e.name === 'NotAllowedError') {
+        alert('❌ Notifiche non disponibili.\n\n• Stai usando una finestra privata/incognito? Le notifiche push non funzionano in modalità privata.\n• Oppure hai negato il permesso: vai in Impostazioni browser → Notifiche → consenti localhost:3000');
+      } else {
+        alert('❌ Impossibile attivare notifiche: ' + e.message);
+      }
     }
   };
 
