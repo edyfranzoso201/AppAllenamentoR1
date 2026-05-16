@@ -136,6 +136,15 @@
 
     /* Consenso foto switch */
     .privacy-switch-row.foto { background:#f0fdf4; border-color:#bbf7d0; margin-top:10px; }
+
+    /* Box autorizzazione uscita autonoma minori */
+    .uscita-box {
+      background:#fff; border:1.5px solid #fed7aa; border-radius:12px;
+      padding:18px; margin-bottom:18px; font-size:0.82rem; color:#475569; line-height:1.65;
+      box-shadow:0 1px 4px rgba(0,0,0,0.05);
+    }
+    .uscita-box strong { color:#c2410c; }
+    .privacy-switch-row.uscita { background:#fff7ed; border-color:#fed7aa; margin-top:14px; }
   </style>
 </head>
 <body>
@@ -152,7 +161,7 @@
 
   <!-- ── DATI PERSONALI ── -->
   <div class="card">
-    <div class="card-title">👤 Dati Personali</div>
+    <div class="card-title">👤 Dati Personali Atleta</div>
     <div class="row">
       <div class="form-group">
         <label class="form-label">Nome <span class="req">*</span></label>
@@ -284,6 +293,27 @@
     </div>
   </div>
 
+  <!-- ── AUTORIZZAZIONE USCITA AUTONOMA (solo minori) ── -->
+  <div class="uscita-box" id="section-uscita" style="display:none">
+    <strong>🚶 Autorizzazione Uscita Autonoma</strong><br><br>
+    Il/la sottoscritto/a genitore o tutore legale dell'atleta minore dichiara di
+    <strong>autorizzare</strong> / <strong>non autorizzare</strong> il proprio figlio/a
+    a lasciare autonomamente la struttura sportiva al termine degli allenamenti e delle
+    gare, <strong>senza necessità di accompagnamento da parte di un adulto</strong>.<br><br>
+    In caso di autorizzazione, la società sportiva è sollevata da qualsiasi responsabilità
+    per quanto avviene al minore dal momento in cui abbandona la struttura.
+    <div class="privacy-switch-row uscita">
+      <span class="switch-label">Autorizzo il/la minore a uscire autonomamente dalla struttura sportiva al termine delle attività</span>
+      <label class="switch">
+        <input type="checkbox" id="uscita-autonoma" title="Autorizzazione uscita autonoma" aria-label="Autorizzazione uscita autonoma">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="print-only" style="margin-top:12px;border-top:1px solid #fed7aa;padding-top:10px;font-size:0.78rem;color:#555">
+      Firma genitore/tutore: _____________________________________ &nbsp;&nbsp; Data: _______________
+    </div>
+  </div>
+
   <div id="submit-error" class="alert" style="display:none"></div>
 
   <button class="btn btn-primary no-print" id="submit-btn" onclick="submitForm()">
@@ -358,6 +388,7 @@ function onNascitaChange() {
   const isAdult = age >= 18;
   document.getElementById('section-adult').style.display = isAdult ? '' : 'none';
   document.getElementById('section-minor').style.display = !isAdult ? '' : 'none';
+  document.getElementById('section-uscita').style.display = !isAdult ? '' : 'none';
 }
 
 function showError(msg) {
@@ -409,10 +440,12 @@ async function submitForm() {
   if (mo < 0 || (mo === 0 && today.getDate() < birth.getDate())) age--;
   const isAdult = age >= 18;
 
+  const uscitaAutonoma = !isAdult && document.getElementById('uscita-autonoma').checked;
+
   let body = {
     societyId: SOCIETY_ID, nome, cognome, dataNascita, isAdult,
     sesso, luogoNascita: comune + ' (' + provincia + ')',
-    privacyAccepted: true, consensoFoto
+    privacyAccepted: true, consensoFoto, uscitaAutonoma
   };
 
   if (isAdult) {

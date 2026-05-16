@@ -2090,7 +2090,7 @@
         <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
           <div style="flex:1;min-width:200px;">
             <div class="iscr-name">${esc(reg.nome)} ${esc(reg.cognome)}</div>
-            <div class="iscr-meta">📅 Nato/a il ${esc(reg.dataNascita)} &nbsp;(${eta} anni) &nbsp;${tipoLabel}${reg.sesso ? ' &nbsp;· ' + (reg.sesso === 'M' ? '♂️' : '♀️') : ''}${reg.luogoNascita ? ' &nbsp;· 📍 ' + esc(reg.luogoNascita) : ''}${reg.consensoFoto ? ' &nbsp;· 📷 foto ✅' : ''}</div>
+            <div class="iscr-meta">📅 Nato/a il ${esc(reg.dataNascita)} &nbsp;(${eta} anni) &nbsp;${tipoLabel}${reg.sesso ? ' &nbsp;· ' + (reg.sesso === 'M' ? '♂️' : '♀️') : ''}${reg.luogoNascita ? ' &nbsp;· 📍 ' + esc(reg.luogoNascita) : ''}${reg.consensoFoto ? ' &nbsp;· 📷 ✅' : ''}${!reg.isAdult ? (reg.uscitaAutonoma ? ' &nbsp;· 🚶 uscita ✅' : ' &nbsp;· 🚶 uscita ❌') : ''}</div>
             ${contactInfo}
             ${genitoreInfo}
             ${respondedInfo}

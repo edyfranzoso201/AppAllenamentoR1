@@ -32,7 +32,7 @@ export default async function handler(req, res) {
       const body = req.body || {};
       const { societyId, nome, cognome, dataNascita, isAdult,
               email, cellulare, codiceFiscale, codiceFiscaleAtleta,
-              genitore, privacyAccepted, sesso, luogoNascita, indirizzo, consensoFoto } = body;
+              genitore, privacyAccepted, sesso, luogoNascita, indirizzo, consensoFoto, uscitaAutonoma } = body;
 
       if (!societyId || !nome || !cognome || !dataNascita) {
         return res.status(400).json({ success: false, message: 'Dati obbligatori mancanti' });
@@ -60,6 +60,7 @@ export default async function handler(req, res) {
         sesso: sesso || '',
         luogoNascita: luogoNascita || '',
         consensoFoto: !!consensoFoto,
+        uscitaAutonoma: !!uscitaAutonoma,
         email: isAdult ? (email || '').trim() : '',
         cellulare: isAdult ? (cellulare || '').trim() : '',
         codiceFiscale: isAdult ? (codiceFiscale || '').trim() : '',
