@@ -2312,7 +2312,13 @@ window.toggleSponsorEnabled = function(enabled) {
 };
 
 window.copyBachecaLink = function() {
-    var link = window.location.origin + '/bacheca.html';
+    var sid = sessionStorage.getItem('gosport_society_id') || '';
+    var annata = sessionStorage.getItem('gosport_current_annata') || new URLSearchParams(location.search).get('annata') || '';
+    var params = new URLSearchParams();
+    if (annata) params.set('annata', annata);
+    if (sid) params.set('sid', sid);
+    var qs = params.toString();
+    var link = window.location.origin + '/bacheca.html' + (qs ? '?' + qs : '');
     if (navigator.clipboard) {
         navigator.clipboard.writeText(link).then(function() {
             alert('✅ Link copiato!\n\n' + link + '\n\nCondividi questo link su WhatsApp, Instagram o Facebook.');
