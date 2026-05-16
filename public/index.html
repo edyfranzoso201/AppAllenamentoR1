@@ -5180,8 +5180,8 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       alert('🔕 Notifiche bloccate dal browser.\n\nPer riattivarle:\n• Clicca il 🔒 nella barra degli indirizzi\n• Vai in "Autorizzazioni" → "Notifiche"\n• Cambia da "Blocca" ad "Consenti"\n• Ricarica la pagina e clicca di nuovo');
       return;
     }
-    const societyId = sessionStorage.getItem('gosport_society_id');
-    if (!societyId) { alert('Accedi prima alla dashboard.'); return; }
+    const annataId = sessionStorage.getItem('gosport_current_annata');
+    if (!annataId) { alert('Accedi prima alla dashboard e seleziona un\'annata.'); return; }
     try {
       let sub = await _swReg.pushManager.getSubscription();
       if (!sub) {
@@ -5192,8 +5192,8 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       }
       await fetch('/api/data?action=push-subscribe', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Society-Id': societyId },
-        body: JSON.stringify({ subscription: sub.toJSON(), societyId })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: sub.toJSON(), annataId })
       });
       _updatePushBtn('granted', sub);
       alert('✅ Notifiche attivate! Riceverai avvisi per convocazioni e promemoria.');
@@ -5209,19 +5209,19 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
 
   // Send — chiamato da convSalva (fire & forget)
   window.gsPushSend = function(payload) {
-    const societyId = sessionStorage.getItem('gosport_society_id');
+    const annataId = sessionStorage.getItem('gosport_current_annata');
     const token = sessionStorage.getItem('gosport_session_token') || 'true';
     const role  = sessionStorage.getItem('gosport_user_role') || '';
-    if (!societyId) return;
+    if (!annataId) return;
     fetch('/api/data?action=push-send', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-Auth-Session': token,
-        'X-Society-Id': societyId,
+        'X-Annata-Id': annataId,
         'X-User-Role': role
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({ ...payload, annataId })
     }).catch(() => {});
   };
 })();

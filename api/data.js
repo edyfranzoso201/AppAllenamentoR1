@@ -57,19 +57,17 @@ return res.status(400).json({ success: false, message: 'Formato annataId non val
 
 // ── PUSH: subscribe ────────────────────────────────────────────────────────
 if (req.query?.action === 'push-subscribe' && req.method === 'POST') {
-  const { subscription, societyId: bodyId } = req.body || {};
-  const sid = session.societyId || bodyId;
-  if (!sid || !subscription?.endpoint) {
+  const { subscription, annataId: subAnnataId } = req.body || {};
+  if (!subAnnataId || !subscription?.endpoint) {
     return res.status(400).json({ success: false, message: 'Dati mancanti' });
   }
-  const key = `push:${sid}:subs`;
+  const key = `push:annata:${subAnnataId}:subs`;
   const subs = (await kv.get(key)) || [];
   if (!subs.find(s => s.endpoint === subscription.endpoint)) {
     subs.push(subscription);
     await kv.set(key, subs);
-    // Mantieni indice globale delle società con subscriber
-    const socList = (await kv.get('push:societies')) || [];
-    if (!socList.includes(sid)) { socList.push(sid); await kv.set('push:societies', socList); }
+    const annateList = (await kv.get('push:annate')) || [];
+    if (!annateList.includes(subAnnataId)) { annateList.push(subAnnataId); await kv.set('push:annate', annateList); }
   }
   return res.status(200).json({ success: true });
 }
@@ -79,10 +77,10 @@ if (req.query?.action === 'push-send' && req.method === 'POST') {
   if (!session.isAuthenticated) {
     return res.status(401).json({ success: false, message: 'Non autorizzato' });
   }
-  const { title, body, url } = req.body || {};
-  const sid = session.societyId;
-  if (!sid) return res.status(400).json({ success: false, message: 'societyId mancante' });
-  const subs = (await kv.get(`push:${sid}:subs`)) || [];
+  const { title, body, url, annataId: sendAnnataId } = req.body || {};
+  const aid = sendAnnataId || annataId;
+  if (!aid) return res.status(400).json({ success: false, message: 'annataId mancante' });
+  const subs = (await kv.get(`push:annata:${aid}:subs`)) || [];
   if (subs.length === 0) return res.status(200).json({ success: true, sent: 0 });
   const { default: webpush } = await import('web-push');
   webpush.setVapidDetails(
@@ -92,9 +90,8 @@ if (req.query?.action === 'push-send' && req.method === 'POST') {
   );
   const payload = JSON.stringify({ title: title || 'GO Sport', body: body || '', url: url || '/' });
   const results = await Promise.allSettled(subs.map(s => webpush.sendNotification(s, payload)));
-  // Rimuovi subscription scadute (410 Gone)
   const valid = subs.filter((_, i) => !(results[i].status === 'rejected' && results[i].reason?.statusCode === 410));
-  if (valid.length !== subs.length) await kv.set(`push:${sid}:subs`, valid);
+  if (valid.length !== subs.length) await kv.set(`push:annata:${aid}:subs`, valid);
   return res.status(200).json({ success: true, sent: results.filter(r => r.status === 'fulfilled').length });
 }
 
@@ -105,7 +102,7 @@ if (req.query?.action === 'cron-remind' && req.method === 'GET') {
   }
   const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowStr = tomorrow.toISOString().split('T')[0];
-  const societies = (await kv.get('push:societies')) || [];
+  const annateList = (await kv.get('push:annate')) || [];
   let totalSent = 0;
   const { default: webpush } = await import('web-push');
   webpush.setVapidDetails(
@@ -113,16 +110,11 @@ if (req.query?.action === 'cron-remind' && req.method === 'GET') {
     process.env.VAPID_PUBLIC_KEY,
     process.env.VAPID_PRIVATE_KEY
   );
-  for (const sid of societies) {
-    const subs = (await kv.get(`push:${sid}:subs`)) || [];
+  for (const aid of annateList) {
+    const subs = (await kv.get(`push:annata:${aid}:subs`)) || [];
     if (!subs.length) continue;
-    // Cerca sessioni domani in tutte le annate della società
-    const annate = (await kv.get(`annate:${sid}`)) || [];
-    const sessionsTomorrow = [];
-    for (const ann of annate) {
-      const ts = (await kv.get(`annate:${ann.id}:trainingSessions`)) || {};
-      if (ts[tomorrowStr]) sessionsTomorrow.push(...ts[tomorrowStr]);
-    }
+    const ts = (await kv.get(`annate:${aid}:trainingSessions`)) || {};
+    const sessionsTomorrow = ts[tomorrowStr] || [];
     if (!sessionsTomorrow.length) continue;
     const session0 = sessionsTomorrow[0];
     const payload = JSON.stringify({
@@ -132,7 +124,7 @@ if (req.query?.action === 'cron-remind' && req.method === 'GET') {
     });
     const results = await Promise.allSettled(subs.map(s => webpush.sendNotification(s, payload)));
     const valid = subs.filter((_, i) => !(results[i].status === 'rejected' && results[i].reason?.statusCode === 410));
-    if (valid.length !== subs.length) await kv.set(`push:${sid}:subs`, valid);
+    if (valid.length !== subs.length) await kv.set(`push:annata:${aid}:subs`, valid);
     totalSent += results.filter(r => r.status === 'fulfilled').length;
   }
   return res.status(200).json({ success: true, totalSent });

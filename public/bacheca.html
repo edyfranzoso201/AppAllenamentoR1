@@ -437,7 +437,8 @@ function formatDateTime(dateStr) {
 <script>
 // ── Web Push — Bacheca Genitori ────────────────────────────────────────────
 (function() {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !_urlSid) return;
+  var _urlAnnata = new URLSearchParams(location.search).get('annata') || '';
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !_urlAnnata) return;
 
   function urlB64ToUint8(b64) {
     const p = (b64 + '===').slice(0, b64.length + (4 - b64.length % 4) % 4);
@@ -486,7 +487,7 @@ function formatDateTime(dateStr) {
       await fetch('/api/data?action=push-subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscription: sub.toJSON(), societyId: _urlSid })
+        body: JSON.stringify({ subscription: sub.toJSON(), annataId: _urlAnnata })
       });
       _bachUpdateBtn('granted', sub);
       alert('✅ Notifiche attivate! Riceverai avvisi per convocazioni e aggiornamenti.');
