@@ -55,6 +55,89 @@ if (annataId && !isValidId(annataId)) {
 return res.status(400).json({ success: false, message: 'Formato annataId non valido' });
 }
 
+// ── PUSH: subscribe ────────────────────────────────────────────────────────
+if (req.query?.action === 'push-subscribe' && req.method === 'POST') {
+  const { subscription, societyId: bodyId } = req.body || {};
+  const sid = session.societyId || bodyId;
+  if (!sid || !subscription?.endpoint) {
+    return res.status(400).json({ success: false, message: 'Dati mancanti' });
+  }
+  const key = `push:${sid}:subs`;
+  const subs = (await kv.get(key)) || [];
+  if (!subs.find(s => s.endpoint === subscription.endpoint)) {
+    subs.push(subscription);
+    await kv.set(key, subs);
+    // Mantieni indice globale delle società con subscriber
+    const socList = (await kv.get('push:societies')) || [];
+    if (!socList.includes(sid)) { socList.push(sid); await kv.set('push:societies', socList); }
+  }
+  return res.status(200).json({ success: true });
+}
+
+// ── PUSH: send ─────────────────────────────────────────────────────────────
+if (req.query?.action === 'push-send' && req.method === 'POST') {
+  if (!session.isAuthenticated) {
+    return res.status(401).json({ success: false, message: 'Non autorizzato' });
+  }
+  const { title, body, url } = req.body || {};
+  const sid = session.societyId;
+  if (!sid) return res.status(400).json({ success: false, message: 'societyId mancante' });
+  const subs = (await kv.get(`push:${sid}:subs`)) || [];
+  if (subs.length === 0) return res.status(200).json({ success: true, sent: 0 });
+  const { default: webpush } = await import('web-push');
+  webpush.setVapidDetails(
+    `mailto:${process.env.VAPID_EMAIL || 'admin@gosport.app'}`,
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+  const payload = JSON.stringify({ title: title || 'GO Sport', body: body || '', url: url || '/' });
+  const results = await Promise.allSettled(subs.map(s => webpush.sendNotification(s, payload)));
+  // Rimuovi subscription scadute (410 Gone)
+  const valid = subs.filter((_, i) => !(results[i].status === 'rejected' && results[i].reason?.statusCode === 410));
+  if (valid.length !== subs.length) await kv.set(`push:${sid}:subs`, valid);
+  return res.status(200).json({ success: true, sent: results.filter(r => r.status === 'fulfilled').length });
+}
+
+// ── PUSH: cron reminder (chiamato da Vercel Cron ogni mattina) ─────────────
+if (req.query?.action === 'cron-remind' && req.method === 'GET') {
+  if (req.headers['authorization'] !== `Bearer ${process.env.CRON_SECRET}`) {
+    return res.status(401).json({ success: false, message: 'Non autorizzato' });
+  }
+  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+  const societies = (await kv.get('push:societies')) || [];
+  let totalSent = 0;
+  const { default: webpush } = await import('web-push');
+  webpush.setVapidDetails(
+    `mailto:${process.env.VAPID_EMAIL || 'admin@gosport.app'}`,
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+  for (const sid of societies) {
+    const subs = (await kv.get(`push:${sid}:subs`)) || [];
+    if (!subs.length) continue;
+    // Cerca sessioni domani in tutte le annate della società
+    const annate = (await kv.get(`annate:${sid}`)) || [];
+    const sessionsTomorrow = [];
+    for (const ann of annate) {
+      const ts = (await kv.get(`annate:${ann.id}:trainingSessions`)) || {};
+      if (ts[tomorrowStr]) sessionsTomorrow.push(...ts[tomorrowStr]);
+    }
+    if (!sessionsTomorrow.length) continue;
+    const session0 = sessionsTomorrow[0];
+    const payload = JSON.stringify({
+      title: '📅 Promemoria GO Sport',
+      body: `Domani: ${session0.title || 'Sessione'}${session0.time ? ' ore ' + session0.time : ''}${session0.location ? ' @ ' + session0.location : ''}`,
+      url: '/'
+    });
+    const results = await Promise.allSettled(subs.map(s => webpush.sendNotification(s, payload)));
+    const valid = subs.filter((_, i) => !(results[i].status === 'rejected' && results[i].reason?.statusCode === 410));
+    if (valid.length !== subs.length) await kv.set(`push:${sid}:subs`, valid);
+    totalSent += results.filter(r => r.status === 'fulfilled').length;
+  }
+  return res.status(200).json({ success: true, totalSent });
+}
+
 // ── Senza annataId: dati globali / bacheca pubblica ──────────────────────
 if (!annataId) {
 if (req.method === 'GET') {
