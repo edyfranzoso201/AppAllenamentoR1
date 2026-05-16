@@ -5153,22 +5153,37 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     if (!btn) return;
     btn.style.display = '';
     reg.pushManager.getSubscription().then(sub => {
-      if (sub) { lbl.textContent = 'Notifiche Attive ✅'; btn.style.background = '#16a34a'; btn.style.borderColor = '#16a34a'; btn.style.color = '#fff'; }
+      _updatePushBtn(Notification.permission, sub);
     });
   }).catch(e => console.warn('SW registrazione fallita:', e));
 
+  // Aggiorna stato bottone in base al permesso corrente
+  function _updatePushBtn(perm, sub) {
+    const btn = document.getElementById('push-subscribe-btn');
+    const lbl = document.getElementById('push-btn-label');
+    if (!btn || !lbl) return;
+    if (perm === 'denied') {
+      lbl.textContent = '🔕 Notifiche Bloccate';
+      btn.style.background = '#dc2626'; btn.style.borderColor = '#dc2626'; btn.style.color = '#fff';
+      btn.title = 'Riabilita dalle impostazioni del browser';
+    } else if (sub || perm === 'granted') {
+      lbl.textContent = 'Notifiche Attive ✅';
+      btn.style.background = '#16a34a'; btn.style.borderColor = '#16a34a'; btn.style.color = '#fff';
+    }
+  }
+
   // Subscribe — chiamato dal bottone
   window.gsPushSubscribe = async function() {
-    console.log('[Push] gsPushSubscribe chiamata');
-    console.log('[Push] _swReg:', _swReg);
-    console.log('[Push] Notification.permission:', Notification.permission);
     if (!_swReg) { alert('Service worker non pronto, riprova.'); return; }
+    // Permesso già negato: spiega come riabilitarlo
+    if (Notification.permission === 'denied') {
+      alert('🔕 Notifiche bloccate dal browser.\n\nPer riattivarle:\n• Clicca il 🔒 nella barra degli indirizzi\n• Vai in "Autorizzazioni" → "Notifiche"\n• Cambia da "Blocca" ad "Consenti"\n• Ricarica la pagina e clicca di nuovo');
+      return;
+    }
     const societyId = sessionStorage.getItem('gosport_society_id');
-    console.log('[Push] societyId:', societyId);
     if (!societyId) { alert('Accedi prima alla dashboard.'); return; }
     try {
       let sub = await _swReg.pushManager.getSubscription();
-      console.log('[Push] sub esistente:', sub);
       if (!sub) {
         sub = await _swReg.pushManager.subscribe({
           userVisibleOnly: true,
@@ -5180,10 +5195,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         headers: { 'Content-Type': 'application/json', 'X-Society-Id': societyId },
         body: JSON.stringify({ subscription: sub.toJSON(), societyId })
       });
-      const lbl = document.getElementById('push-btn-label');
-      const btn = document.getElementById('push-subscribe-btn');
-      if (lbl) lbl.textContent = 'Notifiche Attive ✅';
-      if (btn) { btn.style.background = '#16a34a'; btn.style.borderColor = '#16a34a'; btn.style.color = '#fff'; }
+      _updatePushBtn('granted', sub);
       alert('✅ Notifiche attivate! Riceverai avvisi per convocazioni e promemoria.');
     } catch(e) {
       console.error('Push subscribe error:', e);

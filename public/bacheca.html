@@ -450,16 +450,31 @@ function formatDateTime(dateStr) {
   const lbl = document.getElementById('bacheca-push-label');
   let _swReg = null;
 
+  function _bachUpdateBtn(perm, sub) {
+    btn.hidden = false;
+    if (perm === 'denied') {
+      lbl.textContent = '🔕 Notifiche Bloccate';
+      btn.style.background = '#dc2626';
+      btn.title = 'Riabilita dalle impostazioni del browser';
+    } else if (sub || perm === 'granted') {
+      lbl.textContent = 'Notifiche Attive ✅';
+      btn.classList.add('active');
+    }
+  }
+
   navigator.serviceWorker.register('/sw.js').then(reg => {
     _swReg = reg;
-    btn.hidden = false;
     reg.pushManager.getSubscription().then(sub => {
-      if (sub) { lbl.textContent = 'Notifiche Attive ✅'; btn.classList.add('active'); }
+      _bachUpdateBtn(Notification.permission, sub);
     });
   }).catch(e => console.warn('[Bacheca] SW fallito:', e));
 
   window.bachPushSubscribe = async function() {
     if (!_swReg) return;
+    if (Notification.permission === 'denied') {
+      alert('🔕 Notifiche bloccate dal browser.\n\nPer riattivarle:\n• Clicca il 🔒 nella barra degli indirizzi\n• Vai in "Autorizzazioni" → "Notifiche"\n• Cambia da "Blocca" a "Consenti"\n• Ricarica la pagina e clicca di nuovo');
+      return;
+    }
     try {
       let sub = await _swReg.pushManager.getSubscription();
       if (!sub) {
@@ -473,8 +488,7 @@ function formatDateTime(dateStr) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subscription: sub.toJSON(), societyId: _urlSid })
       });
-      lbl.textContent = 'Notifiche Attive ✅';
-      btn.classList.add('active');
+      _bachUpdateBtn('granted', sub);
       alert('✅ Notifiche attivate! Riceverai avvisi per convocazioni e aggiornamenti.');
     } catch(e) {
       if (e.name === 'AbortError' || e.name === 'NotAllowedError') {
