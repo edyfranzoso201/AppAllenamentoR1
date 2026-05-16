@@ -3902,10 +3902,27 @@ window._showImgLightbox = function(src) {
   }).catch(function(e) { console.warn('[CalPush] SW fallito:', e); });
 
   window.calPushSubscribe = async function() {
-    if (!_swReg) return;
+    // Se SW non pronto, riprova a ottenerlo
+    if (!_swReg) {
+      try {
+        _swReg = await navigator.serviceWorker.register('/sw.js');
+      } catch(e) {
+        alert('❌ Notifiche non disponibili su questo browser.');
+        return;
+      }
+    }
     if (Notification.permission === 'denied') {
       alert('🔕 Notifiche bloccate.\n\nPer riattivarle:\n• Clicca il 🔒 nella barra degli indirizzi\n• Vai in "Autorizzazioni" → "Notifiche"\n• Cambia a "Consenti"\n• Ricarica la pagina');
       return;
+    }
+    // Richiedi permesso esplicitamente (mostra popup del browser)
+    if (Notification.permission !== 'granted') {
+      var perm = await Notification.requestPermission();
+      if (perm !== 'granted') {
+        _updateBtn(perm, null);
+        alert('❌ Permesso notifiche non concesso. Puoi abilitarlo in qualsiasi momento dal lucchetto nella barra degli indirizzi.');
+        return;
+      }
     }
     try {
       var sub = await _swReg.pushManager.getSubscription();
@@ -3923,11 +3940,7 @@ window._showImgLightbox = function(src) {
       _updateBtn('granted', sub);
       alert('✅ Notifiche attivate! Riceverai avvisi per convocazioni e promemoria.');
     } catch(e) {
-      if (e.name === 'AbortError' || e.name === 'NotAllowedError') {
-        alert('❌ Permesso negato. Vai nelle impostazioni del browser e consenti le notifiche.');
-      } else {
-        alert('❌ Errore: ' + e.message);
-      }
+      alert('❌ Errore attivazione: ' + e.message);
     }
   };
 })();
