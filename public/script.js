@@ -3441,6 +3441,8 @@ if (!freshData.athletes || freshData.athletes.length === 0) {
                 calendarResponses: freshData.calendarResponses || {},
                 materiale: freshData.materiale || { items: [], assignments: {} },
                 pagamenti: freshData.pagamenti || {},
+                pagVoci:   freshData.pagVoci   || null,
+                pagLabels: freshData.pagLabels || null,
                 convocazioni: freshData.convocazioni || [],
                 convSettings: freshData.convSettings || {},
                 posts: freshData.posts || [],
@@ -3802,10 +3804,9 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
                     if (importedData && typeof importedData === 'object' && 'athletes' in importedData) {
                         // Aggiorna variabili globali
                         athletes = importedData.athletes || [];
-            // Ripristina ratingSheets se presenti nel backup
-            if (importedData.ratingSheets) {
-                if (window._appData) window._appData.ratingSheets = importedData.ratingSheets;
-            }
+                        if (importedData.ratingSheets && window._appData) {
+                            window._appData.ratingSheets = importedData.ratingSheets;
+                        }
                         evaluations = importedData.evaluations || {};
                         gpsData = importedData.gpsData || {};
                         awards = importedData.awards || {};
@@ -3865,10 +3866,14 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
                             calendarResponses: importedData.calendarResponses || {},
                             materiale:         importedData.materiale         || { items: [], assignments: {} },
                             pagamenti:         importedData.pagamenti         || {},
+                            pagVoci:           importedData.pagVoci           ?? null,
+                            pagLabels:         importedData.pagLabels         ?? null,
                             convocazioni:      importedData.convocazioni      || [],
                             convSettings:      importedData.convSettings      || {},
                             posts:             importedData.posts             || [],
-                            globalPosts:       importedData.globalPosts       || []
+                            globalPosts:       importedData.globalPosts       || [],
+                            ratingSheets:      importedData.ratingSheets      || {},
+                            documents:         importedData.documents         || []
                         };
 
                         console.log('[RESTORE] Annata:', restoreAnnataId, 'Atleti:', athletes.length);
