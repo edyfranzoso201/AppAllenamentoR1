@@ -599,7 +599,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCardsSummary();
         renderTopScorers();
         renderTopAssists();
-        renderGpsTopScorers();
         updateMatchAnalysisChart();
         updateEvaluationCharts();
         updateAttendanceChart();
@@ -1478,8 +1477,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const athlete = athletes.find(a => String(a.id) === athleteId);
             return { name: athlete ? athlete.name : 'Sconosciuto', goals };
         }).sort((a, b) => b.goals - a.goals);
+        const emptyMsg = '<p class="text-muted">Nessun marcatore registrato.</p>';
+        const homeEl = document.getElementById('home-top-scorers-container');
         if (sortedScorers.length === 0) {
-            elements.topScorersContainer.innerHTML = '<p class="text-muted">Nessun marcatore registrato.</p>';
+            elements.topScorersContainer.innerHTML = emptyMsg;
+            if (homeEl) homeEl.innerHTML = emptyMsg;
             return;
         }
         let ol = '<ol class="list-group list-group-numbered">';
@@ -1488,6 +1490,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         ol += '</ol>';
         elements.topScorersContainer.innerHTML = ol;
+        if (homeEl) {
+            let olHome = '<ol class="list-group list-group-numbered">';
+            sortedScorers.slice(0, 5).forEach(scorer => {
+                olHome += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; border-color: var(--border-color);">${scorer.name}<span class="badge bg-danger rounded-pill" style="color:#ffffff !important;">${scorer.goals}</span></li>`;
+            });
+            olHome += '</ol>';
+            homeEl.innerHTML = olHome;
+        }
     };
     const renderTopAssists = () => {
         const assistCounts = {};
@@ -1500,8 +1510,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const athlete = athletes.find(a => String(a.id) === athleteId);
             return { name: athlete ? athlete.name : 'Sconosciuto', assists };
         }).sort((a, b) => b.assists - a.assists);
+        const emptyMsg = '<p class="text-muted">Nessun assist registrato.</p>';
+        const homeEl = document.getElementById('home-top-assists-container');
         if (sortedAssists.length === 0) {
-            elements.topAssistsContainer.innerHTML = '<p class="text-muted">Nessun assist registrato.</p>';
+            elements.topAssistsContainer.innerHTML = emptyMsg;
+            if (homeEl) homeEl.innerHTML = emptyMsg;
             return;
         }
         let ol = '<ol class="list-group list-group-numbered">';
@@ -1510,35 +1523,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         ol += '</ol>';
         elements.topAssistsContainer.innerHTML = ol;
-    };
-    const renderGpsTopScorers = () => {
-        const scorerEl = document.getElementById('gps-scorers-container');
-        const assistEl = document.getElementById('gps-assists-container');
-        if (!scorerEl || !assistEl) return;
-        const goalCounts = {}, assistCounts = {};
-        for (const athleteId in gpsData) {
-            for (const date in gpsData[athleteId]) {
-                (gpsData[athleteId][date] || []).forEach(s => {
-                    if (s.tipo_sessione === 'Partita') {
-                        const g = parseInt(s.gol) || 0;
-                        const a = parseInt(s.assist) || 0;
-                        if (g > 0) goalCounts[athleteId] = (goalCounts[athleteId] || 0) + g;
-                        if (a > 0) assistCounts[athleteId] = (assistCounts[athleteId] || 0) + a;
-                    }
-                });
-            }
+        if (homeEl) {
+            let olHome = '<ol class="list-group list-group-numbered">';
+            sortedAssists.slice(0, 5).forEach(assist => {
+                olHome += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; border-color: var(--border-color);">${assist.name}<span class="badge bg-primary rounded-pill" style="color:#ffffff !important;">${assist.assists}</span></li>`;
+            });
+            olHome += '</ol>';
+            homeEl.innerHTML = olHome;
         }
-        const toName = (id) => { const a = athletes.find(x => String(x.id) === id); return a ? a.name : 'Sconosciuto'; };
-        const mkList = (entries, key, badgeClass) => {
-            if (entries.length === 0) return '<p class="text-muted small">Nessun dato registrato.</p>';
-            let ol = '<ol class="list-group list-group-numbered">';
-            entries.forEach(e => { ol += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background:transparent;border-color:var(--border-color);">${e.name}<span class="badge ${badgeClass} rounded-pill" style="color:#fff!important;">${e[key]}</span></li>`; });
-            return ol + '</ol>';
-        };
-        const sortedG = Object.entries(goalCounts).map(([id, goals]) => ({ name: toName(id), goals })).sort((a,b) => b.goals - a.goals);
-        const sortedA = Object.entries(assistCounts).map(([id, assists]) => ({ name: toName(id), assists })).sort((a,b) => b.assists - a.assists);
-        scorerEl.innerHTML = mkList(sortedG, 'goals', 'bg-danger');
-        assistEl.innerHTML = mkList(sortedA, 'assists', 'bg-primary');
     };
     const updateMatchAnalysisChart = () => {
         if (!document.getElementById('matchResultsChart')) return;
