@@ -623,7 +623,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     }
     
     .player-name {
-        font-size: 0.7em;
+        font-size: 0.84em;
         padding: 0.15em 0.3em;
         max-width: 80px;
         overflow: hidden;

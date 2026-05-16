@@ -477,7 +477,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <!-- Foglio di stile personalizzato -->
-    <link rel="stylesheet" href="style.css?v=1779400001">
+    <link rel="stylesheet" href="style.css?v=1779500001">
 
     <style>
     /* ===== TAB BAR - seconda riga dell'header fisso ===== */
@@ -753,7 +753,8 @@
         var icon = (role === 'admin') ? '\u{1F451}' : '\u{1F464}';
 
         var lbl = document.createElement('div');
-        lbl.style.cssText = 'display:flex;align-items:center;gap:8px;color:#e2e8f0;font-size:0.9rem;font-weight:600;';
+        var isLt = document.documentElement.classList.contains('theme-light');
+        lbl.style.cssText = 'display:flex;align-items:center;gap:8px;color:' + (isLt ? '#1a202c' : '#e2e8f0') + ';font-size:0.9rem;font-weight:600;';
         lbl.textContent = icon + ' ' + (user || 'Utente');
 
         dst.innerHTML = '';
@@ -4946,7 +4947,8 @@ html.theme-light #athleteModal textarea {
 html.theme-light #athleteModal label,
 html.theme-light #athleteModal .form-label { color: #374151 !important; }
 html.theme-light #athleteModal .modal-title { color: #1a202c !important; }
-html.theme-light #athleteModal .btn-close { filter: invert(1); }
+html.theme-light #athleteModal .btn-close-white { filter: invert(1); }
+html.theme-light #athleteModal .btn-close:not(.btn-close-white) { filter: none; }
 html.theme-light #athleteModal small.text-muted { color: #64748b !important; }
 /* Bottoni tipo persona: in tema chiaro testo sempre bianco (sfondo colorato) */
 html.theme-light #tipo-atleta-btn,
@@ -4990,8 +4992,10 @@ html[data-bs-theme="light"] .modal-content label,
 html[data-bs-theme="light"] .modal-content .form-label { color: #374151 !important; }
 html.theme-light .modal-title,
 html[data-bs-theme="light"] .modal-title { color: #1a202c !important; }
-html.theme-light .modal-content .btn-close,
-html[data-bs-theme="light"] .modal-content .btn-close { filter: invert(1); }
+html.theme-light .modal-content .btn-close-white,
+html[data-bs-theme="light"] .modal-content .btn-close-white { filter: invert(1); }
+html.theme-light .modal-content .btn-close:not(.btn-close-white),
+html[data-bs-theme="light"] .modal-content .btn-close:not(.btn-close-white) { filter: none; }
 /* FIX: pulsante btn-primary-custom — testo bianco in tema chiaro */
 html.theme-light .btn-primary-custom,
 html[data-bs-theme="light"] .btn-primary-custom,
@@ -5052,7 +5056,8 @@ html.theme-light .modal-header,html.theme-light .modal-body,html.theme-light .mo
 html.theme-light .modal-content .form-control,html.theme-light .modal-content .form-select,html.theme-light .modal-content textarea,html[data-bs-theme="light"] .modal-content .form-control,html[data-bs-theme="light"] .modal-content .form-select,html[data-bs-theme="light"] .modal-content textarea{background-color:#ffffff!important;color:#1a202c!important;border-color:#cbd5e0!important;}
 html.theme-light .modal-content label,html.theme-light .modal-content .form-label,html[data-bs-theme="light"] .modal-content label,html[data-bs-theme="light"] .modal-content .form-label{color:#374151!important;}
 html.theme-light .modal-title,html[data-bs-theme="light"] .modal-title{color:#0f172a!important;}
-html.theme-light .modal-content .btn-close,html[data-bs-theme="light"] .modal-content .btn-close{filter:invert(1);}
+html.theme-light .modal-content .btn-close-white,html[data-bs-theme="light"] .modal-content .btn-close-white{filter:invert(1);}
+html.theme-light .modal-content .btn-close:not(.btn-close-white),html[data-bs-theme="light"] .modal-content .btn-close:not(.btn-close-white){filter:none;}
 html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-custom{color:#ffffff!important;}
 </style>
 
