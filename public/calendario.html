@@ -1130,6 +1130,10 @@ document.addEventListener('DOMContentLoaded', function() {
             <input type="file" id="file-input" accept=".json" style="display:none">
             <button class="btn-cal btn-resp"   id="responses-btn" onclick="showResponses()"><i class="bi bi-eye"></i> Risposte</button>
             <button class="btn-cal btn-delete" id="delete-btn"    onclick="deleteOldEvents()"><i class="bi bi-trash"></i> Elimina Vecchi</button>
+            <button id="cal-bacheca-btn" hidden
+                style="background:#d90429;color:#fff;border:none;border-radius:50px;padding:5px 14px;cursor:pointer;font-size:0.82rem;font-weight:600;">
+                📢 Bacheca
+            </button>
             <button id="cal-push-btn" onclick="window.calPushSubscribe()" hidden
                 style="background:#3b82f6;color:#fff;border:none;border-radius:50px;padding:5px 14px;cursor:pointer;font-size:0.82rem;font-weight:600;">
                 🔔 <span id="cal-push-label">Ricevi Notifiche</span>
@@ -3861,12 +3865,22 @@ window._showImgLightbox = function(src) {
 </script>
 
 <script>
-// ── Web Push — Vista Genitore (calendario.html?athleteId=...&annata=...) ──
+// ── Vista Genitore: bottone bacheca + Web Push ────────────────────────────
 (function() {
   var urlP = new URLSearchParams(location.search);
   var _athleteId = urlP.get('athleteId') || '';
   var _annataId  = urlP.get('annata') || '';
+  var _sid       = urlP.get('sid') || '';
   if (!_athleteId || !_annataId) return; // solo in modalità genitore
+
+  // Mostra bottone bacheca pubblica
+  var bachecaBtn = document.getElementById('cal-bacheca-btn');
+  if (bachecaBtn) {
+    var bachecaUrl = '/bacheca.html?annata=' + encodeURIComponent(_annataId) + (_sid ? '&sid=' + encodeURIComponent(_sid) : '');
+    bachecaBtn.onclick = function() { window.open(bachecaUrl, '_blank'); };
+    bachecaBtn.hidden = false;
+  }
+
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
   function urlB64ToUint8(b64) {

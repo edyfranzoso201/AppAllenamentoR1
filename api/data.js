@@ -136,8 +136,12 @@ if (req.method === 'GET') {
 const globalPosts = (await kv.get('global:posts')) || [];
 const teamName = (await kv.get('global:teamName')) || 'GO SPORT';
 const bachecaConfig = (await kv.get('global:bachecaConfig')) || {};
+const postImages = {};
+await Promise.all(globalPosts.map(async p => {
+  if (p?.id) { const img = await kv.get(`global:postImg_${p.id}`); if (img) postImages[p.id] = img; }
+}));
 return res.status(200).json({
-success: true, globalPosts, postImages: {}, posts: [], teamName, bachecaConfig
+success: true, globalPosts, postImages, posts: [], teamName, bachecaConfig
 });
 }
 

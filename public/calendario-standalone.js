@@ -1125,9 +1125,10 @@ window.generatePresenceLink = function(athleteId, athleteName) {
                         localStorage.getItem('currentAnnata') || 
                         sessionStorage.getItem('gosport:currentannata');
   
-  // Link con athleteId E annata
-  const link = currentAnnata 
-    ? `${window.location.origin}/calendario.html?athleteId=${athleteId}&annata=${currentAnnata}`
+  // Link con athleteId, annata e societyId (per bacheca pubblica e notifiche)
+  const societyId = sessionStorage.getItem('gosport_society_id') || '';
+  const link = currentAnnata
+    ? `${window.location.origin}/calendario.html?athleteId=${athleteId}&annata=${currentAnnata}${societyId ? '&sid='+societyId : ''}`
     : `${window.location.origin}/calendario.html?athleteId=${athleteId}`;
   
   console.log('[CALENDARIO] 🔗 Link generato:', {
