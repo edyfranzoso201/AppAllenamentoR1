@@ -537,9 +537,6 @@
         <div class="section" id="banner-section">
             <div class="section-title">📢 Banner Globali <span style="background:#f59e0b;color:#000;font-size:0.65rem;font-weight:800;padding:2px 7px;border-radius:4px;letter-spacing:0.05em;margin-left:6px;">SUPER ADMIN</span></div>
 
-            <div class="alert alert-error" id="banner-error"></div>
-            <div class="alert alert-success" id="banner-success"></div>
-
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
                 <span style="font-size:0.9rem;font-weight:600;color:#e2e8f0;">Banner attivi</span>
                 <label style="position:relative;display:inline-block;width:46px;height:26px;flex-shrink:0;margin:0;">
@@ -1542,8 +1539,6 @@ async function saveBanners() {
             link: ((document.getElementById('sa-link-' + i) || {value:''}).value || '').trim()
         };
     });
-    showAlert('banner-error', '');
-    showAlert('banner-success', '');
     try {
         const r = await fetch(`${API_BASE}/api/data?action=superadmin-config`, {
             method: 'POST',
@@ -1552,13 +1547,12 @@ async function saveBanners() {
         });
         const d = await r.json();
         if (d.success) {
-            showAlert('banner-success', '✅ Banner salvati!');
-            setTimeout(() => showAlert('banner-success', ''), 3000);
+            showToast('✅ Banner salvati!');
         } else {
-            showAlert('banner-error', '❌ ' + (d.message || 'Errore salvataggio'));
+            showToast('❌ ' + (d.message || 'Errore salvataggio'));
         }
     } catch(e) {
-        showAlert('banner-error', '❌ Errore di rete: ' + e.message);
+        showToast('❌ Errore di rete: ' + e.message);
     }
 }
 
