@@ -1498,15 +1498,9 @@ if (currentAthleteId && mat.items && mat.assignments) {
     // FIX v1.5.21: controlla flag bannersEnabled (default true se non definito)
     try {
       var spCfg = (d && d.bachecaConfig) || {};
-      var bannersEnabled = spCfg.bannersEnabled !== false; // default true
-      if (bannersEnabled) {
-        var spSlots = [0,1,2,3,4]
-          .map(function(k){ return spCfg[k] || {}; })
-          .filter(function(s){ return s.img && s.img.trim(); });
-        if (spSlots.length > 0) showSponsorBannerOverlay(spSlots);
-      } else {
-        console.log('[Banner] Banner sponsor disabilitati dal coach.');
-      }
+      var saB = (d && d.superadminBanners) || {};
+      var allSlots = _buildBannerSlots(saB, spCfg);
+      if (allSlots.length > 0) showSponsorBannerOverlay(allSlots);
     } catch(e) { console.warn('[Banner] err:', e); }
 
     // Carica immagini in background (lazy)
@@ -1782,6 +1776,21 @@ const ico    = isOk ? C.okIcon         : isRet ? C.retIcon     : C.neutralIcon;
 // ═══════════════════════════════════════════════════════════════════
 // ████  BANNER SPONSOR OVERLAY  (aggiunto v1.5.16)
 // ═══════════════════════════════════════════════════════════════════
+function _buildBannerSlots(saBanners, spCfg) {
+  function toSlots(cfg, keys) {
+    return keys.map(function(k){ return cfg[k]||{}; })
+      .filter(function(s){ return s.img && s.img.trim(); })
+      .map(function(s) {
+        var m = s.img.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+        if (!m) m = s.img.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+        return Object.assign({}, s, { img: m ? 'https://lh3.googleusercontent.com/d/' + m[1] : s.img, _driveId: m ? m[1] : null });
+      });
+  }
+  var saSlots = saBanners.bannersEnabled !== false ? toSlots(saBanners, [0,1]) : [];
+  var spSlots = spCfg.bannersEnabled !== false ? toSlots(spCfg, [0,1,2]) : [];
+  return saSlots.concat(spSlots);
+}
+
 window.showSponsorBannerOverlay = function(slots) {
   if (!slots || !slots.length) return;
   if (window._bannerShown) return;
@@ -1795,43 +1804,53 @@ window.showSponsorBannerOverlay = function(slots) {
   container.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:10px;pointer-events:none;max-width:min(340px,calc(100vw - 32px));';
   document.body.appendChild(container);
 
-  slots.forEach(function(slot, idx) {
-    setTimeout(function() {
-      var card = document.createElement('div');
-      card.style.cssText = 'background:rgba(13,27,42,0.97);border:1px solid #3b5a9d;border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.5);pointer-events:auto;opacity:0;transform:translateY(20px);transition:opacity 0.4s ease,transform 0.4s ease;cursor:'+(slot.link?'pointer':'default')+';';
-
-      var img = document.createElement('img');
-      img.src = slot.img; img.alt = 'Sponsor';
-      img.style.cssText = 'width:100%;max-height:160px;object-fit:cover;display:block;';
-      img.onerror = function(){ card.remove(); };
-      card.appendChild(img);
-
-      var bar = document.createElement('div');
-      bar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(26,58,95,0.95);';
-      var lbl = document.createElement('span');
-      lbl.style.cssText = 'color:#f59e0b;font-size:0.72rem;font-weight:700;letter-spacing:0.04em;';
-      lbl.textContent = '⭐ SPONSOR';
-      var closeBtn = document.createElement('button');
-      closeBtn.textContent = '✕';
-      closeBtn.style.cssText = 'background:none;border:none;color:#60a5fa;cursor:pointer;font-size:0.85rem;padding:2px 6px;line-height:1;';
-      closeBtn.onclick = function(e){ e.stopPropagation(); fadeOutCard(card); };
-      bar.appendChild(lbl); bar.appendChild(closeBtn);
-      card.appendChild(bar);
-
-      if (slot.link) card.onclick = function(){ window.open(slot.link,'_blank','noopener'); };
-      container.appendChild(card);
-
-      requestAnimationFrame(function(){ requestAnimationFrame(function(){
-        card.style.opacity='1'; card.style.transform='translateY(0)';
-      }); });
-      setTimeout(function(){ fadeOutCard(card); }, 6000);
-    }, idx * 800);
-  });
-
-  function fadeOutCard(card){
+  function fadeOutCard(card, cb){
     card.style.opacity='0'; card.style.transform='translateY(20px)';
-    setTimeout(function(){ if(card.parentNode) card.parentNode.removeChild(card); }, 400);
+    setTimeout(function(){ if(card.parentNode) card.parentNode.removeChild(card); if(cb) cb(); }, 400);
   }
+
+  function showSlot(idx) {
+    if (idx >= slots.length) return;
+    var slot = slots[idx];
+    var card = document.createElement('div');
+    card.style.cssText = 'background:rgba(13,27,42,0.97);border:1px solid #3b5a9d;border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.5);pointer-events:auto;opacity:0;transform:translateY(20px);transition:opacity 0.4s ease,transform 0.4s ease;cursor:'+(slot.link?'pointer':'default')+';';
+
+    var img = document.createElement('img');
+    img.src = slot.img; img.alt = 'Sponsor';
+    img.style.cssText = 'width:100%;max-height:160px;object-fit:cover;display:block;';
+    img.onerror = function(){
+      if (slot._driveId && !this._f1) {
+        this._f1 = true;
+        this.src = 'https://drive.google.com/uc?export=view&id=' + slot._driveId;
+      } else if (slot._driveId && !this._f2) {
+        this._f2 = true;
+        this.src = 'https://drive.google.com/thumbnail?id=' + slot._driveId + '&sz=w600';
+      } else { this.style.display='none'; }
+    };
+    card.appendChild(img);
+
+    var bar = document.createElement('div');
+    bar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(26,58,95,0.95);';
+    var lbl = document.createElement('span');
+    lbl.style.cssText = 'color:#f59e0b;font-size:0.72rem;font-weight:700;letter-spacing:0.04em;';
+    lbl.textContent = '⭐ SPONSOR';
+    var closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕';
+    closeBtn.style.cssText = 'background:none;border:none;color:#60a5fa;cursor:pointer;font-size:0.85rem;padding:2px 6px;line-height:1;';
+    closeBtn.onclick = function(e){ e.stopPropagation(); fadeOutCard(card, function(){ showSlot(idx + 1); }); };
+    bar.appendChild(lbl); bar.appendChild(closeBtn);
+    card.appendChild(bar);
+
+    if (slot.link) card.onclick = function(){ window.open(slot.link,'_blank','noopener'); };
+    container.appendChild(card);
+
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){
+      card.style.opacity='1'; card.style.transform='translateY(0)';
+    }); });
+    setTimeout(function(){ fadeOutCard(card, function(){ showSlot(idx + 1); }); }, 5000);
+  }
+
+  showSlot(0);
 };
 // Elimina un singolo documento
 window._deleteAthleteDoc = async function(athleteId, annataId, docKey) {

@@ -40,7 +40,7 @@ return ['admin', 'coach', 'coachl1', 'coachl2'].includes(String(role || '').toLo
 export default async function handler(req, res) {
 setCors(req, res);
 res.setHeader('Access-Control-Allow-Headers',
-'Content-Type, X-Annata-Id, X-Auth-Session, X-Auth-User, X-User-Role, X-Society-Id');
+'Content-Type, X-Annata-Id, X-Auth-Session, X-Auth-User, X-User-Role, X-Society-Id, X-Sa-Key');
 res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
 
 if (req.method === 'OPTIONS') return res.status(200).end();
@@ -130,18 +130,39 @@ if (req.query?.action === 'cron-remind' && req.method === 'GET') {
   return res.status(200).json({ success: true, totalSent });
 }
 
+// ── SUPERADMIN: banner config ────────────────────────────────────────────
+if (req.query?.action === 'superadmin-config') {
+  const saKey = (req.headers['x-sa-key'] || '').trim();
+  const validKey = (process.env.SUPERADMIN_KEY || '').trim();
+  if (!validKey) {
+    return res.status(403).json({ success: false, message: 'ENV_NOT_SET' });
+  }
+  if (saKey !== validKey) {
+    return res.status(403).json({ success: false, message: 'WRONG_KEY' });
+  }
+  if (req.method === 'GET') {
+    const cfg = (await kv.get('global:superadminBanners')) || {};
+    return res.status(200).json({ success: true, superadminBanners: cfg });
+  }
+  if (req.method === 'POST') {
+    await kv.set('global:superadminBanners', req.body);
+    return res.status(200).json({ success: true });
+  }
+}
+
 // ── Senza annataId: dati globali / bacheca pubblica ──────────────────────
 if (!annataId) {
 if (req.method === 'GET') {
 const globalPosts = (await kv.get('global:posts')) || [];
 const teamName = (await kv.get('global:teamName')) || 'GO SPORT';
 const bachecaConfig = (await kv.get('global:bachecaConfig')) || {};
+const superadminBanners = (await kv.get('global:superadminBanners')) || {};
 const postImages = {};
 await Promise.all(globalPosts.map(async p => {
   if (p?.id) { const img = await kv.get(`global:postImg_${p.id}`); if (img) postImages[p.id] = img; }
 }));
 return res.status(200).json({
-success: true, globalPosts, postImages, posts: [], teamName, bachecaConfig
+success: true, globalPosts, postImages, posts: [], teamName, bachecaConfig, superadminBanners
 });
 }
 
@@ -183,7 +204,7 @@ return res.status(200).json({ success: true, postImages });
 
 // ── Risposta ridotta per genitori ────────────────────────────────────────
 if (isParentMode) {
-const [calendarEvents, calendarResponses, teamName, convSettings, athletes, posts, globalPosts, documents, materiale, bachecaConfig, convBg, convBg2, athleteDocs] = await Promise.all([
+const [calendarEvents, calendarResponses, teamName, convSettings, athletes, posts, globalPosts, documents, materiale, bachecaConfig, superadminBanners, convBg, convBg2, athleteDocs] = await Promise.all([
 kv.get(`${prefix}:calendarEvents`),
 kv.get(`${prefix}:calendarResponses`),
 kv.get('global:teamName'),
@@ -194,6 +215,7 @@ kv.get('global:posts'),
 kv.get(`${prefix}:documents`),
 kv.get(`${prefix}:materiale`),
 kv.get('global:bachecaConfig'),
+kv.get('global:superadminBanners'),
 kv.get(`${prefix}:convBg`),
 kv.get(`${prefix}:convBg2`),
 kv.get(`${prefix}:athleteDocs`)  // ← documenti caricati dai genitori
@@ -216,6 +238,7 @@ globalPosts: globalPosts || [],
 documents: (documents || []).filter(d => (d.visibility || []).includes('pubblica')),
 materiale: materiale || { items: [], assignments: {} },
 bachecaConfig: bachecaConfig || {},
+superadminBanners: superadminBanners || {},
 athleteDocs: athleteDocs || {}  // ← incluso nella risposta
 });
 }
@@ -258,7 +281,7 @@ athletes, evaluations, gpsData, awards, trainingSessions,
 formationData, matchResults, calendarEvents, calendarResponses,
 materiale, pagamenti, pagVoci, pagLabels, convocazioni, convSettings,
 convBg, convBg2, posts, globalPosts, teamName, individualPassword,
-ratingSheets, documents, athleteDocs
+ratingSheets, documents, athleteDocs, bachecaConfig, superadminBanners
 ] = await Promise.all([
 kv.get(`${prefix}:athletes`),
 kv.get(`${prefix}:evaluations`),
@@ -283,7 +306,9 @@ kv.get('global:teamName'),
 kv.get(`${prefix}:individualPassword`),
 kv.get(`${prefix}:ratingSheets`),
 kv.get(`${prefix}:documents`),
-kv.get(`${prefix}:athleteDocs`)  // ← documenti genitori
+kv.get(`${prefix}:athleteDocs`),
+kv.get('global:bachecaConfig'),
+kv.get('global:superadminBanners')
 ]);
 
 const data = {
@@ -311,7 +336,9 @@ teamName: teamName || 'GO SPORT',
 individualPassword: individualPassword || '1234',
 ratingSheets: ratingSheets || {},
 documents: documents || [],
-athleteDocs: athleteDocs || {}  // ← documenti caricati dai genitori
+athleteDocs: athleteDocs || {},
+bachecaConfig: bachecaConfig || {},
+superadminBanners: superadminBanners || {}
 };
 
 console.log(`GET /api/data - annata=${annataId} user=${session.username} role=${session.role} atleti=${Array.isArray(data.athletes) ? data.athletes.length : 0} tempo=${Date.now() - t0}ms`);

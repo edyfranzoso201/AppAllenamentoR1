@@ -35,7 +35,15 @@ body { background: #0a2463; color: #ffffff; font-family: system-ui, sans-serif; 
 @keyframes ticker { 0%{ transform:translateX(100%); } 100%{ transform:translateX(-100%); } }
 
 /* ── LAYOUT ── */
-.page { display: grid; grid-template-columns: 200px 1fr 200px; gap: 14px; padding: 14px; height: calc(100vh - 85px); min-width: 700px; align-items: stretch; }
+.page { display: grid; grid-template-columns: 200px 1fr 200px; gap: 14px; padding: 14px; height: calc(100vh - 85px); align-items: stretch; }
+
+@media (max-width: 700px) {
+  .page { grid-template-columns: 1fr; height: auto; }
+  .sidebar-left, .sidebar-right { display: none; }
+  .header { flex-wrap: wrap; }
+  .header-ticker { display: none; }
+  .bacheca-push-btn { margin-top: 0; }
+}
 
 /* ── LEFT SIDEBAR ── */
 .sidebar-left { display: flex; flex-direction: column; gap: 10px; height: 100%; }
@@ -154,8 +162,7 @@ body { background: #0a2463; color: #ffffff; font-family: system-ui, sans-serif; 
 /* ── FOOTER ── */
 footer { text-align: center; padding: 16px; color: #3b5a9d; font-size: 0.72rem; border-top: 1px solid #1a3a7a; }
 
-/* Scroll orizzontale su schermi piccoli invece di collassare */
-body { overflow-x: auto; }
+body { overflow-x: hidden; }
 </style>
 </head>
 <body>
@@ -264,6 +271,27 @@ var _urlSid = new URLSearchParams(location.search).get('sid') || '';
 // ── Sponsor: caricati da Redis via API ───────────────────────────────────
 var adConfig = {};
 
+function convertDriveUrl(url) {
+  if (!url) return url;
+  var m = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (!m) m = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (m) return 'https://lh3.googleusercontent.com/d/' + m[1];
+  return url;
+}
+
+function setDriveImg(img, url) {
+  var m = url && (url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/));
+  var did = m ? m[1] : null;
+  img.src = did ? 'https://lh3.googleusercontent.com/d/' + did : url;
+  if (did) {
+    img.onerror = function() {
+      if (!this._f1) { this._f1 = true; this.src = 'https://drive.google.com/uc?export=view&id=' + did; }
+      else if (!this._f2) { this._f2 = true; this.src = 'https://drive.google.com/thumbnail?id=' + did + '&sz=w600'; }
+      else { this.style.display = 'none'; }
+    };
+  }
+}
+
 function openAdLink(n) {
   var slot = adConfig[String(n)] || adConfig[n];
   if (slot && slot.link) window.open(slot.link, '_blank');
@@ -282,12 +310,12 @@ function applyAdConfig(cfg) {
     if (slot.img) {
       if (placeholder) placeholder.style.display = 'none';
       if (existingImg) {
-        existingImg.src = slot.img;
+        setDriveImg(existingImg, slot.img);
       } else {
         var img = document.createElement('img');
-        img.src = slot.img;
         img.alt = labels[n] || 'Sponsor';
         img.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;border-radius:11px;';
+        setDriveImg(img, slot.img);
         box.appendChild(img);
       }
     } else {
@@ -303,11 +331,11 @@ function applyAdConfig(cfg) {
   if (slot0.img) {
     if (sbPlaceholder) sbPlaceholder.style.display = 'none';
     if (sbImg) {
-      sbImg.src = slot0.img;
+      setDriveImg(sbImg, slot0.img);
     } else {
       var img0 = document.createElement('img');
-      img0.src = slot0.img;
       img0.alt = 'Sponsor';
+      setDriveImg(img0, slot0.img);
       sb.appendChild(img0);
     }
   } else {
@@ -471,10 +499,21 @@ function formatDateTime(dateStr) {
   }).catch(e => console.warn('[Bacheca] SW fallito:', e));
 
   window.bachPushSubscribe = async function() {
-    if (!_swReg) return;
+    if (!_swReg) {
+      try { _swReg = await navigator.serviceWorker.register('/sw.js'); }
+      catch(e) { alert('❌ Notifiche non disponibili su questo browser.'); return; }
+    }
     if (Notification.permission === 'denied') {
       alert('🔕 Notifiche bloccate dal browser.\n\nPer riattivarle:\n• Clicca il 🔒 nella barra degli indirizzi\n• Vai in "Autorizzazioni" → "Notifiche"\n• Cambia da "Blocca" a "Consenti"\n• Ricarica la pagina e clicca di nuovo');
       return;
+    }
+    if (Notification.permission !== 'granted') {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') {
+        _bachUpdateBtn(perm, null);
+        alert('❌ Permesso notifiche non concesso. Puoi cambiarlo nelle impostazioni del browser.');
+        return;
+      }
     }
     try {
       let sub = await _swReg.pushManager.getSubscription();

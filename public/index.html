@@ -4173,6 +4173,11 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             if (!save.ok) throw new Error('Salvataggio fallito: HTTP ' + save.status);
             alert('✅ Convocazione pubblicata in Bacheca!');
+            window.gsPushSend({
+                title: '📋 Convocazione in bacheca',
+                body: titolo.replace(/^📋\s*/, ''),
+                url: '/'
+            });
         } catch(e) {
             alert('❌ Errore: ' + e.message);
         }

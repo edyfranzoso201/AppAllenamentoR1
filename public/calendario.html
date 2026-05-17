@@ -1167,12 +1167,18 @@ document.addEventListener('DOMContentLoaded', function() {
         <!-- ── TAB: Bacheca ── -->
         <div class="tab-content" id="tab-content-bacheca">
         <div id="bacheca-section" class="bacheca-card">
-            <div class="bacheca-title" style="justify-content:space-between;">
+            <div class="bacheca-title" style="justify-content:space-between;flex-wrap:wrap;gap:6px;">
                 <span><i class="bi bi-megaphone-fill"></i> Bacheca Comunicazioni</span>
-                <button onclick="copyBachecaLink()" style="background:#d90429;color:white;border:none;
-                    border-radius:6px;padding:5px 12px;font-size:0.78rem;cursor:pointer;font-weight:600;">
-                    <i class="bi bi-link-45deg"></i> Copia Link Pubblico
-                </button>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button id="cal-push-manual-btn" onclick="window.calPushManualOpen()" hidden
+                        style="background:#f59e0b;color:#000;border:none;border-radius:6px;padding:5px 12px;font-size:0.78rem;cursor:pointer;font-weight:600;">
+                        🔔 Invia Notifica
+                    </button>
+                    <button onclick="copyBachecaLink()" style="background:#d90429;color:white;border:none;
+                        border-radius:6px;padding:5px 12px;font-size:0.78rem;cursor:pointer;font-weight:600;">
+                        <i class="bi bi-link-45deg"></i> Copia Link Pubblico
+                    </button>
+                </div>
             </div>
 
             <!-- Form nuovo post (solo admin) -->
@@ -1267,7 +1273,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <h6>⭐ Impostazioni Bacheca Pubblica — Sponsor & Locandine</h6>
             <p style="color:#60a5fa;font-size:0.8rem;margin-bottom:14px;">
                 Inserisci URL immagine (da internet o Google Drive) e link di destinazione per ogni slot.
-                <br>Google Drive: apri il file → Condividi → "Chiunque" → copia link → sostituisci <code style="color:#60a5fa;">/view</code> con <code style="color:#60a5fa;">/preview</code> per immagini usa <code style="color:#60a5fa;">https://drive.google.com/uc?id=ID</code>
+                <br>Google Drive: apri il file → Condividi → "Chiunque con il link" → copia e incolla il link direttamente — la conversione è automatica.
             </p>
             <!-- FIX v1.5.21: switch on/off banner pubblicitari -->
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:10px 14px;background:rgba(0,0,0,0.2);border-radius:8px;border:1px solid #3b5a9d;">
@@ -2068,6 +2074,22 @@ window.savePost = async function() {
     await _bSave();
     _bLoaded = false;
     await _bLoad();
+
+    // Invia push solo per nuovi post (non per edit) e non privati
+    if (!editId && vis !== 'privato') {
+        var _pushAid = _bAnnataId();
+        var _pushTok = sessionStorage.getItem('gosport_session_token') || 'true';
+        var _pushRole = sessionStorage.getItem('gosport_user_role') || '';
+        var _pushUrl  = vis === 'global'
+            ? '/bacheca.html?annata=' + _pushAid
+            : '/';
+        fetch('/api/data?action=push-send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Auth-Session': _pushTok, 'X-Annata-Id': _pushAid, 'X-User-Role': _pushRole },
+            body: JSON.stringify({ title: '📢 Nuovo comunicato', body: title, url: _pushUrl, annataId: _pushAid })
+        }).catch(function(){});
+    }
+
     document.getElementById('post-title').value = '';
     document.getElementById('post-text').value  = '';
     document.getElementById('post-img-data').value = '';
@@ -2197,12 +2219,33 @@ function rteClear() {
 var _sponsorConfig = {};
 
 var _sponsorSlots = [
-    { key: 0, label: '⭐ Sponsor Principale (destra basso — grande)' },
-    { key: 1, label: '🏷️ Sponsor 1 (sinistra)' },
-    { key: 2, label: '🏷️ Sponsor 2 (sinistra)' },
-    { key: 3, label: '📄 Locandina 1 (sinistra)' },
-    { key: 4, label: '📄 Locandina 2 (sinistra)' },
+    { key: 0, label: '🏷️ Banner Società 1' },
+    { key: 1, label: '🏷️ Banner Società 2' },
+    { key: 2, label: '📄 Banner Società 3' },
 ];
+
+function _buildBannerSlots(saBanners, spCfg) {
+    function toSlots(cfg, keys) {
+        return keys.map(function(k){ return cfg[k]||{}; })
+            .filter(function(s){ return s.img && s.img.trim(); })
+            .map(function(s) {
+                var m = s.img.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+                if (!m) m = s.img.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+                return Object.assign({}, s, { img: m ? 'https://lh3.googleusercontent.com/d/' + m[1] : s.img, _driveId: m ? m[1] : null });
+            });
+    }
+    var saSlots = saBanners.bannersEnabled !== false ? toSlots(saBanners, [0,1]) : [];
+    var spSlots = spCfg.bannersEnabled !== false ? toSlots(spCfg, [0,1,2]) : [];
+    return saSlots.concat(spSlots);
+}
+
+function _convertDriveUrl(url) {
+    if (!url) return url;
+    var m = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (!m) m = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (m) return 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w600';
+    return url;
+}
 
 async function _loadSponsorConfig() {
     try {
@@ -2216,20 +2259,13 @@ async function _loadSponsorConfig() {
         console.warn('[Sponsor DEBUG] bannersEnabled letto da Redis:', _dbg ? _dbg.bannersEnabled : 'bachecaConfig null');
         _sponsorConfig = (d && d.bachecaConfig) || {};
         _renderSponsorSlots();
-        // Mostra banner overlay anche nell'app (vista admin)
-        // FIX v1.5.21: controlla bannersEnabled prima di mostrare i banner
-        var _bannersEnabled = _sponsorConfig.bannersEnabled !== false;
-        if (_bannersEnabled) {
-            var _spSlots = [0,1,2,3,4].map(function(k){ return _sponsorConfig[k]||{}; })
-                .filter(function(s){ return s.img && s.img.trim(); });
-            if (_spSlots.length > 0 && typeof window.showSponsorBannerOverlay === 'function') {
-                window.showSponsorBannerOverlay(_spSlots);
-            } else if (_spSlots.length > 0) {
-                // Fallback inline se standalone non è caricato
-                _showCalSponsorOverlay(_spSlots);
+        var _allBannerSlots = _buildBannerSlots(d.superadminBanners || {}, _sponsorConfig);
+        if (_allBannerSlots.length > 0) {
+            if (typeof window.showSponsorBannerOverlay === 'function') {
+                window.showSponsorBannerOverlay(_allBannerSlots);
+            } else {
+                _showCalSponsorOverlay(_allBannerSlots);
             }
-        } else {
-            console.log('[Sponsor] Banner disabilitati dal coach.');
         }
         var __sp = document.getElementById('sponsor-admin-panel');
         // Mostra solo se il tab bacheca è ancora attivo (la XHR è async)
@@ -2256,7 +2292,7 @@ function _renderSponsorSlots() {
         h += '<label style="color:#60a5fa;font-size:0.75rem;margin-top:4px;">URL Immagine</label>';
         h += '<input type="text" id="sp-img-' + s.key + '" placeholder="https://... oppure https://drive.google.com/uc?id=..." value="' + (cfg.img||'') + '" onchange="previewSponsorImg(' + s.key + ')">';
         if (cfg.img) {
-            h += '<img src="' + cfg.img + '" class="sponsor-img-preview" id="sp-prev-' + s.key + '" style="display:block;">';
+            h += '<img src="' + _convertDriveUrl(cfg.img) + '" class="sponsor-img-preview" id="sp-prev-' + s.key + '" style="display:block;">';
         } else {
             h += '<img class="sponsor-img-preview" id="sp-prev-' + s.key + '">';
         }
@@ -2271,7 +2307,7 @@ window.previewSponsorImg = function(key) {
     var url  = document.getElementById('sp-img-' + key).value.trim();
     var prev = document.getElementById('sp-prev-' + key);
     if (!prev) return;
-    if (url) { prev.src = url; prev.style.display = 'block'; }
+    if (url) { prev.src = _convertDriveUrl(url); prev.style.display = 'block'; }
     else      { prev.style.display = 'none'; }
 };
 
@@ -3800,38 +3836,50 @@ function _showCalSponsorOverlay(slots) {
     container.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:10px;pointer-events:none;max-width:min(340px,calc(100vw - 32px));';
     document.body.appendChild(container);
 
-    slots.forEach(function(slot, idx) {
-        setTimeout(function() {
-            var card = document.createElement('div');
-            card.style.cssText = 'background:rgba(13,27,42,0.97);border:1px solid #3b5a9d;border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.5);pointer-events:auto;opacity:0;transform:translateY(20px);transition:opacity 0.4s ease,transform 0.4s ease;cursor:'+(slot.link?'pointer':'default')+';';
-            var img = document.createElement('img');
-            img.src = slot.img; img.alt = 'Sponsor';
-            img.style.cssText = 'width:100%;max-height:160px;object-fit:cover;display:block;';
-            img.onerror = function(){ card.remove(); };
-            card.appendChild(img);
-            var bar = document.createElement('div');
-            bar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(26,58,95,0.95);';
-            var lbl = document.createElement('span');
-            lbl.style.cssText = 'color:#f59e0b;font-size:0.72rem;font-weight:700;letter-spacing:0.04em;';
-            lbl.textContent = '⭐ SPONSOR';
-            var closeBtn = document.createElement('button');
-            closeBtn.textContent = '✕';
-            closeBtn.style.cssText = 'background:none;border:none;color:#60a5fa;cursor:pointer;font-size:0.85rem;padding:2px 6px;line-height:1;';
-            closeBtn.onclick = function(e){ e.stopPropagation(); fadeOut(card); };
-            bar.appendChild(lbl); bar.appendChild(closeBtn);
-            card.appendChild(bar);
-            if (slot.link) card.onclick = function(){ window.open(slot.link,'_blank','noopener'); };
-            container.appendChild(card);
-            requestAnimationFrame(function(){ requestAnimationFrame(function(){
-                card.style.opacity='1'; card.style.transform='translateY(0)';
-            }); });
-            setTimeout(function(){ fadeOut(card); }, 6000);
-        }, idx * 800);
-    });
-    function fadeOut(card){
+    function fadeOut(card, cb){
         card.style.opacity='0'; card.style.transform='translateY(20px)';
-        setTimeout(function(){ if(card.parentNode) card.parentNode.removeChild(card); }, 400);
+        setTimeout(function(){ if(card.parentNode) card.parentNode.removeChild(card); if(cb) cb(); }, 400);
     }
+    function showSlot(idx) {
+        if (idx >= slots.length) return;
+        var slot = slots[idx];
+        var card = document.createElement('div');
+        card.style.cssText = 'background:rgba(13,27,42,0.97);border:1px solid #3b5a9d;border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.5);pointer-events:auto;opacity:0;transform:translateY(20px);transition:opacity 0.4s ease,transform 0.4s ease;cursor:'+(slot.link?'pointer':'default')+';';
+        var img = document.createElement('img');
+        var _sm = slot.img && (slot.img.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/) || slot.img.match(/[?&]id=([a-zA-Z0-9_-]+)/));
+        var _driveId = _sm ? _sm[1] : null;
+        img.src = _driveId ? 'https://lh3.googleusercontent.com/d/' + _driveId : (slot.img || '');
+        img.alt = 'Sponsor';
+        img.style.cssText = 'width:100%;max-height:160px;object-fit:cover;display:block;';
+        img.onerror = function(){
+            if (_driveId && !this._f1) {
+                this._f1 = true;
+                this.src = 'https://drive.google.com/uc?export=view&id=' + _driveId;
+            } else if (_driveId && !this._f2) {
+                this._f2 = true;
+                this.src = 'https://drive.google.com/thumbnail?id=' + _driveId + '&sz=w600';
+            } else { this.style.display='none'; }
+        };
+        card.appendChild(img);
+        var bar = document.createElement('div');
+        bar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(26,58,95,0.95);';
+        var lbl = document.createElement('span');
+        lbl.style.cssText = 'color:#f59e0b;font-size:0.72rem;font-weight:700;letter-spacing:0.04em;';
+        lbl.textContent = '⭐ SPONSOR';
+        var closeBtn = document.createElement('button');
+        closeBtn.textContent = '✕';
+        closeBtn.style.cssText = 'background:none;border:none;color:#60a5fa;cursor:pointer;font-size:0.85rem;padding:2px 6px;line-height:1;';
+        closeBtn.onclick = function(e){ e.stopPropagation(); fadeOut(card, function(){ showSlot(idx + 1); }); };
+        bar.appendChild(lbl); bar.appendChild(closeBtn);
+        card.appendChild(bar);
+        if (slot.link) card.onclick = function(){ window.open(slot.link,'_blank','noopener'); };
+        container.appendChild(card);
+        requestAnimationFrame(function(){ requestAnimationFrame(function(){
+            card.style.opacity='1'; card.style.transform='translateY(0)';
+        }); });
+        setTimeout(function(){ fadeOut(card, function(){ showSlot(idx + 1); }); }, 5000);
+    }
+    showSlot(0);
 }
 // Re-render materiale con colori del nuovo tema
 var matBox = document.getElementById('bacheca-genitori-container');
@@ -3957,6 +4005,99 @@ window._showImgLightbox = function(src) {
       alert('✅ Notifiche attivate! Riceverai avvisi per convocazioni e promemoria.');
     } catch(e) {
       alert('❌ Errore attivazione: ' + e.message);
+    }
+  };
+})();
+</script>
+
+<script>
+(function() {
+  // Mostra il pulsante "Invia Notifica" solo ai ruoli che possono scrivere
+  var _noEditRoles = ['coach_l3','coach_readonly','societa_l2','societa_l3',
+                      'dirigente_l2','dirigente_l3','dirigente_l4'];
+  var _role = sessionStorage.getItem('gosport_user_role') || '';
+  var _isParent = !!new URLSearchParams(location.search).get('athleteId');
+  var _canSendNotif = _role && !_noEditRoles.includes(_role) && !_isParent;
+  if (_canSendNotif) {
+    var btn = document.getElementById('cal-push-manual-btn');
+    if (btn) btn.hidden = false;
+  }
+
+  // Crea modal dinamicamente al click per evitare problemi di timing DOM
+  window.calPushManualOpen = function() {
+    var existing = document.getElementById('_pnOverlay');
+    if (existing) existing.remove();
+
+    var ov = document.createElement('div');
+    ov.id = '_pnOverlay';
+    ov.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:99999;display:flex;align-items:center;justify-content:center;';
+    ov.innerHTML = '<div style="background:#0d1b2a;border:1px solid #3b5a9d;border-radius:12px;padding:24px;width:min(460px,92vw);display:flex;flex-direction:column;gap:14px;box-shadow:0 8px 32px rgba(0,0,0,0.6);">'
+      + '<div style="font-weight:700;font-size:1rem;color:#fff;">🔔 Invia Notifica Push</div>'
+      + '<div style="font-size:0.8rem;color:#8a9fc1;">Arriva su tutti i telefoni dei genitori che hanno attivato le notifiche per questa annata.</div>'
+      + '<input id="_pnTitle" type="text" maxlength="80" placeholder="Titolo (es: Convocazione domenica)..." style="background:#051438;border:1px solid #3b5a9d;color:#fff;border-radius:6px;padding:9px 12px;font-size:0.9rem;">'
+      + '<textarea id="_pnBody" rows="3" maxlength="200" placeholder="Testo (opzionale)..." style="background:#051438;border:1px solid #3b5a9d;color:#fff;border-radius:6px;padding:9px 12px;font-size:0.9rem;resize:vertical;font-family:inherit;"></textarea>'
+      + '<div id="_pnStatus" style="font-size:0.82rem;min-height:1.2em;color:#8a9fc1;"></div>'
+      + '<div style="display:flex;gap:10px;justify-content:flex-end;">'
+      + '<button type="button" id="_pnCancel" style="background:#1a3a7a;color:#fff;border:none;border-radius:6px;padding:8px 18px;cursor:pointer;font-size:0.88rem;">Annulla</button>'
+      + '<button type="button" id="_pnSend" style="background:#f59e0b;color:#000;border:none;border-radius:6px;padding:8px 18px;font-weight:700;cursor:pointer;font-size:0.88rem;">📣 Invia</button>'
+      + '</div></div>';
+    document.body.appendChild(ov);
+
+    document.getElementById('_pnCancel').onclick = window.calPushManualClose;
+    document.getElementById('_pnSend').onclick   = window.calPushManualSend;
+    ov.addEventListener('click', function(e) { if (e.target === ov) window.calPushManualClose(); });
+    setTimeout(function() { var t = document.getElementById('_pnTitle'); if (t) t.focus(); }, 50);
+  };
+
+  window.calPushManualClose = function() {
+    var ov = document.getElementById('_pnOverlay');
+    if (ov) ov.remove();
+  };
+
+  window.calPushManualSend = async function() {
+    var title   = (document.getElementById('_pnTitle').value || '').trim();
+    var body    = (document.getElementById('_pnBody').value  || '').trim();
+    var status  = document.getElementById('_pnStatus');
+    var sendBtn = document.getElementById('_pnSend');
+    if (!title) { status.style.color = '#d90429'; status.textContent = '⚠️ Inserisci un titolo.'; return; }
+
+    var aid = _bAnnataId();
+    if (!aid) { status.style.color = '#d90429'; status.textContent = '⚠️ Nessuna annata selezionata.'; return; }
+
+    sendBtn.disabled = true;
+    sendBtn.textContent = 'Invio...';
+    status.style.color = '#8a9fc1';
+    status.textContent = '';
+
+    try {
+      var tok  = sessionStorage.getItem('gosport_session_token') || 'true';
+      var role = sessionStorage.getItem('gosport_user_role') || '';
+      var res  = await fetch('/api/data?action=push-send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Auth-Session': tok,
+          'X-Annata-Id':   aid,
+          'X-User-Role':   role
+        },
+        body: JSON.stringify({ title: title, body: body, url: '/', annataId: aid })
+      });
+      var data = await res.json();
+      if (res.ok && data.success) {
+        var n = data.sent || 0;
+        status.style.color = '#16a34a';
+        status.textContent = '✅ Notifica inviata a ' + n + ' dispositiv' + (n === 1 ? 'o' : 'i') + '.';
+        setTimeout(window.calPushManualClose, 1800);
+      } else {
+        status.style.color = '#d90429';
+        status.textContent = '❌ ' + (data.message || 'Errore invio.');
+      }
+    } catch(e) {
+      status.style.color = '#d90429';
+      status.textContent = '❌ Errore: ' + e.message;
+    } finally {
+      sendBtn.disabled = false;
+      sendBtn.textContent = '📣 Invia';
     }
   };
 })();
