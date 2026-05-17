@@ -118,7 +118,7 @@ function saLogin() {
         _saKey = pwd;
         sessionStorage.setItem('_saKey', pwd);
         document.getElementById('login-panel').style.display = 'none';
-        document.getElementById('main-panel').style.display = '';
+        document.getElementById('main-panel').style.display = 'block';
         saLoadConfig(d.superadminBanners || {});
       } else if (d.message === 'ENV_NOT_SET') {
         msgEl.textContent = 'Variabile SUPERADMIN_KEY non configurata su Vercel (env var mancante).';
