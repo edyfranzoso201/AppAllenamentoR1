@@ -121,7 +121,7 @@ function saLogin() {
         document.getElementById('main-panel').style.display = 'block';
         saLoadConfig(d.superadminBanners || {});
       } else if (d.message === 'ENV_NOT_SET') {
-        msgEl.textContent = 'Variabile SUPERADMIN_KEY non configurata su Vercel (env var mancante).';
+        msgEl.textContent = 'Variabile SUPER_ADMIN_PASSWORD non configurata su Vercel (env var mancante).';
         msgEl.style.display = 'block';
       } else {
         msgEl.textContent = 'Chiave non valida. Ricontrolla la password.';

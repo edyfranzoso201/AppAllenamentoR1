@@ -133,7 +133,7 @@ if (req.query?.action === 'cron-remind' && req.method === 'GET') {
 // ── SUPERADMIN: banner config ────────────────────────────────────────────
 if (req.query?.action === 'superadmin-config') {
   const saKey = (req.headers['x-sa-key'] || '').trim();
-  const validKey = (process.env.SUPERADMIN_KEY || '').trim();
+  const validKey = (process.env.SUPER_ADMIN_PASSWORD || '').trim();
   if (!validKey) {
     return res.status(403).json({ success: false, message: 'ENV_NOT_SET' });
   }
