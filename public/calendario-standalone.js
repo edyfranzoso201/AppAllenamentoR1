@@ -1062,40 +1062,38 @@ window.editEvent = function(date) {
     
     // Salva su server
     try {
-      const annataId = currentAnnataId || 
+      const annataId = currentAnnataId ||
                        sessionStorage.getItem('gosport_current_annata') ||
                        localStorage.getItem('currentAnnata');
-      
+
+      const _ah = {};
+      try {
+        _ah['x-auth-session'] = sessionStorage.getItem('gosport_auth_session') || '';
+        _ah['x-auth-user']    = sessionStorage.getItem('gosport_auth_user')    || '';
+        _ah['x-user-role']    = sessionStorage.getItem('gosport_user_role')    || '';
+        _ah['x-society-id']   = sessionStorage.getItem('gosport_society_id')  || '';
+      } catch(e) {}
+
       const response = await fetch('/api/data', {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Annata-Id': annataId
-        }
+        headers: Object.assign({ 'Content-Type': 'application/json', 'X-Annata-Id': annataId }, _ah)
       });
-      
+
       const rawData = await response.json();
       const data = rawData.data || rawData;
       data.calendarEvents = data.calendarEvents || {};
-      
-      console.log('[EDIT EVENT] 📦 Dati caricati, events:', Object.keys(data.calendarEvents).length);
-      
+
       // Se la data è cambiata, elimina quella vecchia
       if (newDate !== date && data.calendarEvents[date]) {
         delete data.calendarEvents[date];
-        console.log('[EDIT EVENT] 🗑️ Eliminata vecchia data:', date);
       }
       const newAthleteEl = document.getElementById('new-event-athlete');
       const newAthleteName = (newType === 'Individual' && newAthleteEl) ? newAthleteEl.value : '';
       data.calendarEvents[newDate] = { type: newType, time: newTime, ...(newAthleteName ? { athleteName: newAthleteName } : {}), ...(newNote ? { note: newNote } : {}) };
-      console.log('[EDIT EVENT] ✅ Aggiunto nuovo evento:', newDate, newType, newTime);
-      
+
       const saveResponse = await fetch('/api/data', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Annata-Id': annataId
-        },
+        headers: Object.assign({ 'Content-Type': 'application/json', 'X-Annata-Id': annataId }, _ah),
         body: JSON.stringify(data)
       });
       
