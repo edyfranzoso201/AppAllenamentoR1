@@ -1354,7 +1354,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     const openSessionModal = (sessionData = null) => {
-        elements.sessionForm.reset(); if(sessionData) { document.getElementById('sessionModalLabel').textContent = "Modifica Sessione"; document.getElementById('session-id').value = sessionData.id; document.getElementById('session-date').value = sessionData.date; document.getElementById('session-title').value = sessionData.title; document.getElementById('session-time').value = sessionData.time; document.getElementById('session-location').value = sessionData.location; document.getElementById('session-goals').value = sessionData.goals; document.getElementById('session-description').value = sessionData.description; document.getElementById('session-note').value = sessionData.note || ''; elements.deleteSessionBtn.style.display = 'block'; } else { document.getElementById('sessionModalLabel').textContent = "Pianifica Sessione"; document.getElementById('session-id').value = ''; document.getElementById('session-date').valueAsDate = new Date(); elements.deleteSessionBtn.style.display = 'none'; } sessionModal.show();
+        elements.sessionForm.reset(); if(sessionData) { document.getElementById('sessionModalLabel').textContent = "Modifica Sessione"; document.getElementById('session-id').value = sessionData.id; document.getElementById('session-date').value = sessionData.date; document.getElementById('session-title').value = sessionData.title; document.getElementById('session-type').value = sessionData.type || ''; document.getElementById('session-time').value = sessionData.time; document.getElementById('session-location').value = sessionData.location; document.getElementById('session-goals').value = sessionData.goals; document.getElementById('session-description').value = sessionData.description; document.getElementById('session-note').value = sessionData.note || ''; elements.deleteSessionBtn.style.display = 'block'; } else { document.getElementById('sessionModalLabel').textContent = "Pianifica Sessione"; document.getElementById('session-id').value = ''; document.getElementById('session-date').valueAsDate = new Date(); elements.deleteSessionBtn.style.display = 'none'; } sessionModal.show();
     };
     const renderMatchResults = () => {
         elements.matchResultsContainer.innerHTML = '';
@@ -2709,6 +2709,7 @@ document.addEventListener('DOMContentLoaded', () => {
             id,
             date: newDate,
             title: finalTitle,
+            type: document.getElementById('session-type').value,
             time: document.getElementById('session-time').value,
             location: document.getElementById('session-location').value,
             goals: document.getElementById('session-goals').value,
