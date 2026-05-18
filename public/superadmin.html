@@ -733,14 +733,14 @@ function doLogin() {
     })
     .then(r => r.json())
     .then(data => {
-        if (data.success !== undefined) {
+        if (data.success === true) {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-screen').style.display = 'block';
             document.getElementById('header-url').textContent = API_BASE;
             loadLicenze();
             loadBanners();
         } else {
-            showAlert('login-error', data.message || 'Errore di connessione');
+            showAlert('login-error', data.message || data.error || 'Password errata o errore di connessione');
         }
     })
     .catch(() => showAlert('login-error', 'Impossibile raggiungere il server. Controlla URL e connessione.'));
