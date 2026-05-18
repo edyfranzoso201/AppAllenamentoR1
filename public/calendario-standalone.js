@@ -1066,35 +1066,28 @@ window.editEvent = function(date) {
                        sessionStorage.getItem('gosport_current_annata') ||
                        localStorage.getItem('currentAnnata');
 
-      const _ah = {};
-      try {
-        _ah['x-auth-session'] = sessionStorage.getItem('gosport_auth_session') || '';
-        _ah['x-auth-user']    = sessionStorage.getItem('gosport_auth_user')    || '';
-        _ah['x-user-role']    = sessionStorage.getItem('gosport_user_role')    || '';
-        _ah['x-society-id']   = sessionStorage.getItem('gosport_society_id')  || '';
-      } catch(e) {}
+      const baseHeaders = { 'Content-Type': 'application/json', 'X-Annata-Id': annataId };
 
       const response = await fetch('/api/data', {
         method: 'GET',
-        headers: Object.assign({ 'Content-Type': 'application/json', 'X-Annata-Id': annataId }, _ah)
+        headers: baseHeaders
       });
 
       const rawData = await response.json();
-      const data = rawData.data || rawData;
-      data.calendarEvents = data.calendarEvents || {};
+      const calendarEvents = (rawData.data || rawData).calendarEvents || {};
 
       // Se la data è cambiata, elimina quella vecchia
-      if (newDate !== date && data.calendarEvents[date]) {
-        delete data.calendarEvents[date];
+      if (newDate !== date && calendarEvents[date]) {
+        delete calendarEvents[date];
       }
       const newAthleteEl = document.getElementById('new-event-athlete');
       const newAthleteName = (newType === 'Individual' && newAthleteEl) ? newAthleteEl.value : '';
-      data.calendarEvents[newDate] = { type: newType, time: newTime, ...(newAthleteName ? { athleteName: newAthleteName } : {}), ...(newNote ? { note: newNote } : {}) };
+      calendarEvents[newDate] = { type: newType, time: newTime, ...(newAthleteName ? { athleteName: newAthleteName } : {}), ...(newNote ? { note: newNote } : {}) };
 
       const saveResponse = await fetch('/api/data', {
         method: 'POST',
-        headers: Object.assign({ 'Content-Type': 'application/json', 'X-Annata-Id': annataId }, _ah),
-        body: JSON.stringify(data)
+        headers: baseHeaders,
+        body: JSON.stringify({ calendarEvents })
       });
       
       if (saveResponse.ok) {
