@@ -942,17 +942,15 @@ window.deleteEvent = async function(date) {
     });
     
     const rawData = await response.json();
-    const data = rawData.data || rawData;
-    if (data.calendarEvents && data.calendarEvents[date]) {
-      delete data.calendarEvents[date];
-    }
-    
+    const calendarEvents = (rawData.data || rawData).calendarEvents || {};
+    delete calendarEvents[date];
+
     const saveResponse = await fetch('/api/data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Annata-Id': annataId },
-      body: JSON.stringify(data)
+      body: JSON.stringify({ calendarEvents })
     });
-    
+
     if (saveResponse.ok) {
       alert('✅ Evento eliminato!');
       location.reload();
@@ -1266,16 +1264,15 @@ window.addEvent = function() {
       });
       
       const rawData = await response.json();
-      const data = rawData.data || rawData;
-      data.calendarEvents = data.calendarEvents || {};
-      data.calendarEvents[newDate] = { type: newType, time: newTime, ...(newNote ? { note: newNote } : {}) };
-      
+      const calendarEvents = (rawData.data || rawData).calendarEvents || {};
+      calendarEvents[newDate] = { type: newType, time: newTime, ...(newNote ? { note: newNote } : {}) };
+
       console.log('[ADD EVENT] ✅ Aggiunto:', newDate, newType, newTime);
-      
+
       const saveResponse = await fetch('/api/data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Annata-Id': annataId },
-        body: JSON.stringify(data)
+        body: JSON.stringify({ calendarEvents })
       });
       
       if (saveResponse.ok) {
@@ -1375,7 +1372,7 @@ window.deleteOldEvents = async function() {
         'Content-Type': 'application/json',
         ...(annataId ? { 'X-Annata-Id': annataId } : {})
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify({ calendarEvents: data.calendarEvents, calendarResponses: data.calendarResponses })
     });
 
     if (!saveResp.ok) throw new Error(`Salvataggio fallito: HTTP ${saveResp.status}`);
