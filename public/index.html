@@ -559,6 +559,11 @@
     }
     html.theme-light .tab-nav-btn:hover i, body.theme-light .tab-nav-btn:hover i { color: #000103 !important; }
     html.theme-light .tab-nav-btn.active *, body.theme-light .tab-nav-btn.active * { color: #ffffff !important; }
+    /* Menu hamburger aperto in tema chiaro: bottone attivo ha sfondo chiaro → testo scuro */
+    html.theme-light #navbarNav.show .tab-nav-btn.active,
+    body.theme-light #navbarNav.show .tab-nav-btn.active { color: #1e293b !important; }
+    html.theme-light #navbarNav.show .tab-nav-btn.active *,
+    body.theme-light #navbarNav.show .tab-nav-btn.active * { color: #1e293b !important; }
 
     /* Bottone account compatto */
     .tab-account-btn {
