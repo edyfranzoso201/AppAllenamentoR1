@@ -408,7 +408,15 @@ function formatDateTime(dateStr) {
       document.getElementById('team-name').textContent = data.teamName + ' — Bacheca';
       document.title = data.teamName + ' — Bacheca';
     }
-    if (data.bachecaConfig) applyAdConfig(data.bachecaConfig);
+    // Merge: bachecaConfig + superadminBanners (riempiono gli slot vuoti)
+    var adCfg = Object.assign({}, data.bachecaConfig || {});
+    var sa = data.superadminBanners || {};
+    if (sa.bannersEnabled !== false) {
+      var saBanners = [sa[0], sa[1]].filter(function(b){ return b && b.img; });
+      var emptySlots = [1,2,3,4].filter(function(n){ var s = adCfg[n] || adCfg[String(n)] || {}; return !s.img; });
+      saBanners.forEach(function(b, i){ if (emptySlots[i] !== undefined) adCfg[emptySlots[i]] = b; });
+    }
+    applyAdConfig(adCfg);
 
     var allGlobal = data.globalPosts || [];
 
