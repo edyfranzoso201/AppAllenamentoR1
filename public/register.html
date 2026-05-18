@@ -137,6 +137,9 @@
     /* Consenso foto switch */
     .privacy-switch-row.foto { background:#f0fdf4; border-color:#bbf7d0; margin-top:10px; }
 
+    /* Feedback validazione Codice Fiscale */
+    .cf-feedback { margin-top:5px; font-size:0.78rem; min-height:1.1em; }
+
     /* Box autorizzazione uscita autonoma minori */
     .uscita-box {
       background:#fff; border:1.5px solid #fed7aa; border-radius:12px;
@@ -165,22 +168,22 @@
     <div class="row">
       <div class="form-group">
         <label class="form-label">Nome <span class="req">*</span></label>
-        <input type="text" class="form-control" id="f-nome" placeholder="es. Mario" autocomplete="given-name">
+        <input type="text" class="form-control" id="f-nome" placeholder="es. Mario" autocomplete="given-name" oninput="revalidateCF()">
       </div>
       <div class="form-group">
         <label class="form-label">Cognome <span class="req">*</span></label>
-        <input type="text" class="form-control" id="f-cognome" placeholder="es. Rossi" autocomplete="family-name">
+        <input type="text" class="form-control" id="f-cognome" placeholder="es. Rossi" autocomplete="family-name" oninput="revalidateCF()">
       </div>
     </div>
     <div class="form-group">
       <label class="form-label">Data di Nascita <span class="req">*</span></label>
-      <input type="date" class="form-control" id="f-nascita" title="Data di nascita" onchange="onNascitaChange()">
+      <input type="date" class="form-control" id="f-nascita" title="Data di nascita" onchange="onNascitaChange(); revalidateCF()">
     </div>
     <div class="form-group">
       <label class="form-label">Sesso <span class="req">*</span></label>
       <div class="radio-row">
-        <label class="radio-label"><input type="radio" name="sesso" id="sesso-m" value="M"> Maschio</label>
-        <label class="radio-label"><input type="radio" name="sesso" id="sesso-f" value="F"> Femmina</label>
+        <label class="radio-label"><input type="radio" name="sesso" id="sesso-m" value="M" onchange="revalidateCF()"> Maschio</label>
+        <label class="radio-label"><input type="radio" name="sesso" id="sesso-f" value="F" onchange="revalidateCF()"> Femmina</label>
       </div>
     </div>
     <div class="row">
@@ -208,7 +211,8 @@
         </div>
         <div class="form-group">
           <label class="form-label">Codice Fiscale <span class="req">*</span></label>
-          <input type="text" class="form-control" id="f-cf" placeholder="RSSMRA..." maxlength="16">
+          <input type="text" class="form-control" id="f-cf" placeholder="RSSMRA..." maxlength="16" oninput="validateCFField('f-cf','cf-feedback-adult')">
+          <div id="cf-feedback-adult" class="cf-feedback"></div>
         </div>
       </div>
       <div class="form-group">
@@ -223,7 +227,8 @@
     <div class="card-title">👨‍👩‍👧 Dati Genitore / Tutore <span class="label-note">(obbligatori per minori)</span></div>
     <div class="form-group">
       <label class="form-label">Codice Fiscale Atleta <span class="req">*</span></label>
-      <input type="text" class="form-control" id="f-cf-minore" placeholder="RSSMRA..." maxlength="16">
+      <input type="text" class="form-control" id="f-cf-minore" placeholder="RSSMRA..." maxlength="16" oninput="validateCFField('f-cf-minore','cf-feedback-minor')">
+      <div id="cf-feedback-minor" class="cf-feedback"></div>
     </div>
     <hr class="divider">
     <div class="row">
@@ -448,6 +453,16 @@ async function submitForm() {
     privacyAccepted: true, consensoFoto, uscitaAutonoma
   };
 
+  const isCFValid = (cf) => {
+    const CF_RE = /^[A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$/i;
+    if (cf.length !== 16 || !CF_RE.test(cf)) return false;
+    const ODD  = {0:1,1:0,2:5,3:7,4:9,5:13,6:15,7:17,8:19,9:21,A:1,B:0,C:5,D:7,E:9,F:13,G:15,H:17,I:19,J:21,K:2,L:4,M:18,N:20,O:11,P:3,Q:6,R:8,S:12,T:14,U:16,V:10,W:22,X:25,Y:24,Z:23};
+    const EVEN = {0:0,1:1,2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,A:0,B:1,C:2,D:3,E:4,F:5,G:6,H:7,I:8,J:9,K:10,L:11,M:12,N:13,O:14,P:15,Q:16,R:17,S:18,T:19,U:20,V:21,W:22,X:23,Y:24,Z:25};
+    let sum = 0;
+    for (let i = 0; i < 15; i++) sum += (i % 2 === 0) ? ODD[cf[i]] : EVEN[cf[i]];
+    return cf[15] === String.fromCharCode(65 + (sum % 26));
+  };
+
   if (isAdult) {
     const email = document.getElementById('f-email').value.trim();
     const cellulare = document.getElementById('f-cellulare').value.trim();
@@ -457,11 +472,19 @@ async function submitForm() {
       showSubmitError('⚠️ Per i maggiorenni sono obbligatori Email, Cellulare e Codice Fiscale.');
       return;
     }
+    if (!isCFValid(cf)) {
+      showSubmitError('⚠️ Il Codice Fiscale inserito non è valido. Verificare il valore prima di inviare.');
+      return;
+    }
     body = { ...body, email, cellulare, codiceFiscale: cf, indirizzo };
   } else {
     const cfAtleta = document.getElementById('f-cf-minore').value.trim().toUpperCase();
     if (!cfAtleta) {
       showSubmitError('⚠️ Il Codice Fiscale dell\'atleta è obbligatorio.');
+      return;
+    }
+    if (!isCFValid(cfAtleta)) {
+      showSubmitError('⚠️ Il Codice Fiscale dell\'atleta non è valido. Verificare il valore prima di inviare.');
       return;
     }
     const gNome = document.getElementById('g-nome').value.trim();
@@ -524,6 +547,79 @@ function printForm(mode) {
   } else {
     window.print();
   }
+}
+
+// ── Validazione Codice Fiscale ─────────────────────────────────────
+function validateCFField(inputId, feedbackId) {
+  const cfEl = document.getElementById(inputId);
+  const feedbackEl = document.getElementById(feedbackId);
+  if (!cfEl || !feedbackEl) return;
+  const cf = cfEl.value.toUpperCase().replace(/\s/g, '');
+  cfEl.value = cf;
+  if (!cf) { feedbackEl.textContent = ''; return; }
+
+  const CF_RE = /^[A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$/i;
+  if (cf.length !== 16 || !CF_RE.test(cf)) {
+    feedbackEl.innerHTML = '<span style="color:#dc2626">✗ Formato non valido (16 caratteri richiesti)</span>';
+    return;
+  }
+
+  // Checksum
+  const ODD  = {0:1,1:0,2:5,3:7,4:9,5:13,6:15,7:17,8:19,9:21,A:1,B:0,C:5,D:7,E:9,F:13,G:15,H:17,I:19,J:21,K:2,L:4,M:18,N:20,O:11,P:3,Q:6,R:8,S:12,T:14,U:16,V:10,W:22,X:25,Y:24,Z:23};
+  const EVEN = {0:0,1:1,2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,A:0,B:1,C:2,D:3,E:4,F:5,G:6,H:7,I:8,J:9,K:10,L:11,M:12,N:13,O:14,P:15,Q:16,R:17,S:18,T:19,U:20,V:21,W:22,X:23,Y:24,Z:25};
+  let sum = 0;
+  for (let i = 0; i < 15; i++) sum += (i % 2 === 0) ? ODD[cf[i]] : EVEN[cf[i]];
+  if (cf[15] !== String.fromCharCode(65 + (sum % 26))) {
+    feedbackEl.innerHTML = '<span style="color:#dc2626">✗ Carattere di controllo errato (probabile errore di battitura)</span>';
+    return;
+  }
+
+  // Cross-check con i dati del form
+  const issues = [], notes = [];
+  const MONTH_CODE = ['A','B','C','D','E','H','L','M','P','R','S','T'];
+
+  const dob = document.getElementById('f-nascita')?.value;
+  if (dob) {
+    const d = new Date(dob + 'T00:00:00');
+    const yy = String(d.getFullYear()).slice(-2);
+    const mm = MONTH_CODE[d.getMonth()];
+    const dd = d.getDate();
+    if (cf.slice(6,8) !== yy) issues.push(`anno (CF:${cf.slice(6,8)} ≠ ${yy})`);
+    if (cf[8] !== mm)          issues.push(`mese (CF:${cf[8]} ≠ ${mm})`);
+    const cfDay = parseInt(cf.slice(9,11));
+    if (cfDay !== dd && cfDay !== dd + 40) issues.push(`giorno (CF:${cfDay} ≠ ${dd} o ${dd+40})`);
+
+    const sesso = document.querySelector('input[name="sesso"]:checked')?.value;
+    if (sesso) {
+      if (sesso === 'M' && cfDay > 40)  issues.push('sesso (CF=F, selezionato M)');
+      if (sesso === 'F' && cfDay <= 40) issues.push('sesso (CF=M, selezionato F)');
+    }
+  }
+
+  const nome    = (document.getElementById('f-nome')?.value    || '').trim();
+  const cognome = (document.getElementById('f-cognome')?.value || '').trim();
+  if (nome && cognome) {
+    const norm = s => s.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Z]/g,'');
+    const extSur  = s => { const n=norm(s); const c=n.replace(/[AEIOU]/g,''), v=n.replace(/[^AEIOU]/g,''); return (c+v+'XXX').slice(0,3); };
+    const extName = s => { const n=norm(s); const c=n.replace(/[AEIOU]/g,''); if(c.length>=4) return c[0]+c[2]+c[3]; const v=n.replace(/[^AEIOU]/g,''); return (c+v+'XXX').slice(0,3); };
+    const exp_cog = extSur(cognome), exp_nom = extName(nome);
+    if (cf.slice(0,3) !== exp_cog) notes.push(`cognome (atteso:${exp_cog})`);
+    if (cf.slice(3,6) !== exp_nom) notes.push(`nome (atteso:${exp_nom})`);
+  }
+
+  if (issues.length > 0) {
+    feedbackEl.innerHTML = `<span style="color:#d97706">⚠ CF valido ma discordante: ${issues.join(', ')}</span>`;
+  } else if (notes.length > 0) {
+    feedbackEl.innerHTML = `<span style="color:#d97706">⚠ CF valido. Verifica nome/cognome: ${notes.join(', ')}</span>`;
+  } else {
+    feedbackEl.innerHTML = '<span style="color:#16a34a">✓ Codice Fiscale valido e coerente con i dati inseriti</span>';
+  }
+}
+
+function revalidateCF() {
+  const isAdult = document.getElementById('section-adult')?.style.display !== 'none';
+  if (isAdult && document.getElementById('f-cf')?.value) validateCFField('f-cf', 'cf-feedback-adult');
+  if (!isAdult && document.getElementById('f-cf-minore')?.value) validateCFField('f-cf-minore', 'cf-feedback-minor');
 }
 
 init();

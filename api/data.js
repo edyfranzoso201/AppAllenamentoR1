@@ -97,37 +97,128 @@ if (req.query?.action === 'push-send' && req.method === 'POST') {
 
 // ── PUSH: cron reminder (chiamato da Vercel Cron ogni mattina) ─────────────
 if (req.query?.action === 'cron-remind' && req.method === 'GET') {
-  if (req.headers['authorization'] !== `Bearer ${process.env.CRON_SECRET}`) {
+  const secret = process.env.CRON_SECRET || 'gs_cron_2026';
+  const authOk = req.headers['authorization'] === `Bearer ${secret}`
+              || req.query.token === secret;
+  if (!authOk) {
     return res.status(401).json({ success: false, message: 'Non autorizzato' });
   }
   const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowStr = tomorrow.toISOString().split('T')[0];
-  const annateList = (await kv.get('push:annate')) || [];
   let totalSent = 0;
-  const { default: webpush } = await import('web-push');
-  webpush.setVapidDetails(
-    `mailto:${process.env.VAPID_EMAIL || 'admin@gosport.app'}`,
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-  );
-  for (const aid of annateList) {
-    const subs = (await kv.get(`push:annata:${aid}:subs`)) || [];
-    if (!subs.length) continue;
-    const ts = (await kv.get(`annate:${aid}:trainingSessions`)) || {};
-    const sessionsTomorrow = ts[tomorrowStr] || [];
-    if (!sessionsTomorrow.length) continue;
-    const session0 = sessionsTomorrow[0];
-    const payload = JSON.stringify({
-      title: '📅 Promemoria GO Sport',
-      body: `Domani: ${session0.title || 'Sessione'}${session0.time ? ' ore ' + session0.time : ''}${session0.location ? ' @ ' + session0.location : ''}`,
-      url: '/'
-    });
-    const results = await Promise.allSettled(subs.map(s => webpush.sendNotification(s, payload)));
-    const valid = subs.filter((_, i) => !(results[i].status === 'rejected' && results[i].reason?.statusCode === 410));
-    if (valid.length !== subs.length) await kv.set(`push:annata:${aid}:subs`, valid);
-    totalSent += results.filter(r => r.status === 'fulfilled').length;
+  if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+    const annateList = (await kv.get('push:annate')) || [];
+    const { default: webpush } = await import('web-push');
+    webpush.setVapidDetails(
+      `mailto:${process.env.VAPID_EMAIL || 'admin@gosport.app'}`,
+      process.env.VAPID_PUBLIC_KEY,
+      process.env.VAPID_PRIVATE_KEY
+    );
+    for (const aid of annateList) {
+      const subs = (await kv.get(`push:annata:${aid}:subs`)) || [];
+      if (!subs.length) continue;
+      const ts = (await kv.get(`annate:${aid}:trainingSessions`)) || {};
+      const sessionsTomorrow = ts[tomorrowStr] || [];
+      if (!sessionsTomorrow.length) continue;
+      const session0 = sessionsTomorrow[0];
+      const payload = JSON.stringify({
+        title: '📅 Promemoria GO Sport',
+        body: `Domani: ${session0.title || 'Sessione'}${session0.time ? ' ore ' + session0.time : ''}${session0.location ? ' @ ' + session0.location : ''}`,
+        url: '/'
+      });
+      const results = await Promise.allSettled(subs.map(s => webpush.sendNotification(s, payload)));
+      const valid = subs.filter((_, i) => !(results[i].status === 'rejected' && results[i].reason?.statusCode === 410));
+      if (valid.length !== subs.length) await kv.set(`push:annata:${aid}:subs`, valid);
+      totalSent += results.filter(r => r.status === 'fulfilled').length;
+    }
   }
+  // ── Email alerts: scadenza visita medica e tessera ──────────────────────
+  try {
+    const { Resend } = await import('resend');
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const todayStr = new Date().toISOString().split('T')[0];
+    const today0 = new Date(todayStr + 'T00:00:00Z');
+
+    const allLicenseKeys = await kv.smembers('licenze:index');
+    const allAnnate = (await kv.get('annate:list')) || [];
+    let emailsSent = 0;
+
+    for (const licKey of (allLicenseKeys || [])) {
+      const lic = await kv.get(`licenze:${licKey}`);
+      if (!lic || !lic.active || lic.plan !== 'platinum' || !lic.emailAlertsEnabled) continue;
+      if (lic.expiry < todayStr) continue;
+
+      const settings = (await kv.get(`society:${lic.societyId}:alertSettings`)) || { visitaDays: 60, tesseraDays: 15 };
+      const societyAnnate = allAnnate.filter(a => !a.societyId || a.societyId === lic.societyId);
+
+      const visitaAlert = new Date(today0); visitaAlert.setDate(visitaAlert.getDate() + Number(settings.visitaDays || 60));
+      const tesseraAlert = new Date(today0); tesseraAlert.setDate(tesseraAlert.getDate() + Number(settings.tesseraDays || 15));
+      const visitaAlertStr  = visitaAlert.toISOString().split('T')[0];
+      const tesseraAlertStr = tesseraAlert.toISOString().split('T')[0];
+
+      for (const annata of societyAnnate) {
+        const athletes = (await kv.get(`annate:${annata.id}:athletes`)) || [];
+        for (const athlete of athletes) {
+          if (athlete.isGuest) continue;
+          const emails = [];
+          if (athlete.email) emails.push(athlete.email);
+          if (athlete.parents?.parent1?.email) emails.push(athlete.parents.parent1.email);
+          if (athlete.parents?.parent2?.email && athlete.parents.parent2.email !== athlete.parents?.parent1?.email) emails.push(athlete.parents.parent2.email);
+          if (!emails.length) continue;
+
+          const fmtDate = iso => new Date(iso + 'T00:00:00').toLocaleDateString('it-IT', { day:'2-digit', month:'long', year:'numeric' });
+
+          if (athlete.scadenzaVisita === visitaAlertStr) {
+            const { error: e1 } = await resend.emails.send({
+              from: 'Sport Monitoring <onboarding@resend.dev>',
+              to: emails,
+              subject: `⚕️ Scadenza Visita Medica — ${athlete.name}`,
+              html: emailTemplate({ athleteName: athlete.name, societyName: lic.societyName, tipo: 'Visita Medica', scadenza: fmtDate(athlete.scadenzaVisita), giorni: settings.visitaDays || 60 })
+            });
+            if (e1) console.error('[cron-email] Errore visita:', e1.message || JSON.stringify(e1));
+            else emailsSent++;
+          }
+          if (athlete.scadenzaTessera === tesseraAlertStr) {
+            const { error: e2 } = await resend.emails.send({
+              from: 'Sport Monitoring <onboarding@resend.dev>',
+              to: emails,
+              subject: `🎫 Scadenza Tessera Sportiva — ${athlete.name}`,
+              html: emailTemplate({ athleteName: athlete.name, societyName: lic.societyName, tipo: 'Tessera Sportiva', scadenza: fmtDate(athlete.scadenzaTessera), giorni: settings.tesseraDays || 15 })
+            });
+            if (e2) console.error('[cron-email] Errore tessera:', e2.message || JSON.stringify(e2));
+            else emailsSent++;
+          }
+        }
+      }
+    }
+    totalSent += emailsSent;
+  } catch(emailErr) {
+    console.error('❌ Errore email alerts:', emailErr.message);
+  }
+
   return res.status(200).json({ success: true, totalSent });
+}
+
+function emailTemplate({ athleteName, societyName, tipo, scadenza, giorni }) {
+  return `<!DOCTYPE html><html><body style="font-family:sans-serif;background:#f1f5f9;padding:24px;">
+<div style="max-width:480px;margin:0 auto;background:#fff;border-radius:12px;padding:28px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+  <div style="text-align:center;margin-bottom:20px;">
+    <span style="font-size:2.2rem;">⚽</span>
+    <h2 style="margin:8px 0 4px;color:#0f172a;font-size:1.2rem;">Sport Monitoring</h2>
+    <div style="color:#64748b;font-size:0.85rem;">${societyName}</div>
+  </div>
+  <hr style="border:none;border-top:1px solid #e2e8f0;margin:16px 0;">
+  <p style="color:#1e293b;font-size:1rem;">Gentile genitore / atleta,</p>
+  <p style="color:#374151;">ti informiamo che la <strong>${tipo}</strong> di <strong>${athleteName}</strong> è in scadenza tra <strong>${giorni} giorni</strong>.</p>
+  <div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:14px 18px;margin:20px 0;text-align:center;">
+    <div style="font-size:0.8rem;color:#92400e;text-transform:uppercase;letter-spacing:0.05em;">Data scadenza</div>
+    <div style="font-size:1.3rem;font-weight:700;color:#c2410c;margin-top:4px;">${scadenza}</div>
+  </div>
+  <p style="color:#475569;font-size:0.88rem;">Ti preghiamo di procedere al rinnovo prima della data indicata per evitare la sospensione dell'attività sportiva.</p>
+  <p style="color:#475569;font-size:0.88rem;">Per informazioni contatta la tua società sportiva.</p>
+  <hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0;">
+  <p style="color:#94a3b8;font-size:0.75rem;text-align:center;">Questo messaggio è stato inviato automaticamente da Sport Monitoring.<br>Non rispondere a questa email.</p>
+</div></body></html>`;
 }
 
 // ── SUPERADMIN: banner config ────────────────────────────────────────────
@@ -146,6 +237,25 @@ if (req.query?.action === 'superadmin-config') {
   }
   if (req.method === 'POST') {
     await kv.set('global:superadminBanners', req.body);
+    return res.status(200).json({ success: true });
+  }
+}
+
+// ── Alert settings per società (usato da pannello admin) ────────────────
+if (req.query?.action === 'alert-settings') {
+  const sid = (req.headers['x-society-id'] || '').trim();
+  if (!sid) return res.status(400).json({ success: false, message: 'societyId obbligatorio' });
+  if (req.method === 'GET') {
+    const s = (await kv.get(`society:${sid}:alertSettings`)) || { visitaDays: 60, tesseraDays: 15 };
+    return res.status(200).json({ success: true, settings: s });
+  }
+  if (req.method === 'POST') {
+    if (!session.isAuthenticated) return res.status(401).json({ success: false });
+    const { visitaDays, tesseraDays } = req.body;
+    await kv.set(`society:${sid}:alertSettings`, {
+      visitaDays: Math.max(1, Math.min(365, parseInt(visitaDays) || 60)),
+      tesseraDays: Math.max(1, Math.min(365, parseInt(tesseraDays) || 15))
+    });
     return res.status(200).json({ success: true });
   }
 }

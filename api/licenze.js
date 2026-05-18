@@ -238,6 +238,20 @@ export default async function handler(req, res) {
     }
 
     // ==========================================
+    // ACTION: toggle-email-alerts - Attiva/disattiva alert email per licenza Platinum
+    // ==========================================
+    if (action === 'toggle-email-alerts' && req.method === 'POST') {
+      const { licenseKey } = req.body;
+      if (!licenseKey) return res.status(400).json({ success: false, message: 'licenseKey obbligatorio' });
+      const stored = await kv.get(`licenze:${licenseKey}`);
+      if (!stored) return res.status(404).json({ success: false, message: 'Licenza non trovata' });
+      if (stored.plan !== 'platinum') return res.status(403).json({ success: false, message: 'Solo licenze Platinum' });
+      stored.emailAlertsEnabled = !stored.emailAlertsEnabled;
+      stored.updatedAt = new Date().toISOString();
+      await kv.set(`licenze:${licenseKey}`, stored);
+      return res.status(200).json({ success: true, emailAlertsEnabled: stored.emailAlertsEnabled });
+    }
+
     // ACTION: update - Modifica licenza (rinnovo, revoca)
     // ==========================================
     if (action === 'update' && req.method === 'PUT') {

@@ -859,6 +859,17 @@ function renderTable(licenze) {
             <td>
                 ${l.plan === 'platinum' ? '<span class="badge" style="background:#7c3aed;color:#ede9fe">💎 Platinum</span>' : l.plan === 'gold' ? '<span class="badge" style="background:#b45309;color:#fef3c7">🥇 Gold</span>' : '<span class="badge" style="background:#374151;color:#d1d5db">🥈 Silver</span>'}
             </td>
+            <td style="text-align:center">
+                ${l.plan === 'platinum'
+                    ? `<button id="btn-alert-${safeKey}" onclick="toggleEmailAlerts('${l.licenseKey}','${safeKey}')"
+                        style="border:none;border-radius:20px;padding:4px 12px;font-size:0.8rem;cursor:pointer;
+                        background:${l.emailAlertsEnabled ? '#10b981' : '#374151'};
+                        color:${l.emailAlertsEnabled ? '#fff' : '#9ca3af'};">
+                        ${l.emailAlertsEnabled ? '✅ ON' : '⏸ OFF'}
+                      </button>`
+                    : '<span style="color:#4b5563;font-size:0.75rem">— solo Platinum</span>'
+                }
+            </td>
             <td>
                 <div class="actions-cell">
                     <button class="btn btn-warning btn-sm" onclick="openEdit('${l.licenseKey}')">✏️</button>
@@ -884,6 +895,7 @@ function renderTable(licenze) {
                     <th>Stato</th>
                     <th>Ultimo Accesso</th>
                     <th>Piano</th>
+                    <th>Alert Email</th>
                     <th>Azioni</th>
                 </tr>
             </thead>
@@ -1167,6 +1179,30 @@ function copyKey() {
 
 function copyText(text) {
     navigator.clipboard.writeText(text).then(() => showToast('✅ Copiato!'));
+}
+
+async function toggleEmailAlerts(licenseKey, safeKey) {
+    const btn = document.getElementById(`btn-alert-${safeKey}`);
+    if (btn) { btn.disabled = true; btn.textContent = '...'; }
+    try {
+        const r = await fetch(`${API_BASE}/api/licenze?action=toggle-email-alerts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Super-Admin-Password': ADMIN_PWD },
+            body: JSON.stringify({ licenseKey })
+        });
+        const d = await r.json();
+        if (!d.success) throw new Error(d.message || 'Errore');
+        if (btn) {
+            btn.disabled = false;
+            btn.style.background = d.emailAlertsEnabled ? '#10b981' : '#374151';
+            btn.style.color = d.emailAlertsEnabled ? '#fff' : '#9ca3af';
+            btn.textContent = d.emailAlertsEnabled ? '✅ ON' : '⏸ OFF';
+        }
+        showToast(d.emailAlertsEnabled ? '✅ Alert email attivati' : '⏸ Alert email disattivati');
+    } catch(e) {
+        if (btn) { btn.disabled = false; btn.textContent = 'Errore'; }
+        showToast('❌ ' + e.message);
+    }
 }
 
 // ==========================================

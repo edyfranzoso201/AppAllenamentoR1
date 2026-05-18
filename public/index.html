@@ -219,6 +219,32 @@
     body.theme-light #report-presenze-section .form-select {
       background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23000103' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e") !important;
     }
+    /* Filter bar Squadra e Risultati in tema chiaro */
+    html.theme-light #squadra-filter-bar .form-control,
+    html.theme-light #squadra-filter-bar .form-select,
+    body.theme-light #squadra-filter-bar .form-control,
+    body.theme-light #squadra-filter-bar .form-select,
+    html.theme-light #risultati-filter-bar .form-control,
+    html.theme-light #risultati-filter-bar .form-select,
+    body.theme-light #risultati-filter-bar .form-control,
+    body.theme-light #risultati-filter-bar .form-select {
+      background-color: #f1f5f9 !important;
+      color: #1e293b !important;
+      border-color: #cbd5e0 !important;
+    }
+    html.theme-light #squadra-filter-bar .form-select,
+    body.theme-light #squadra-filter-bar .form-select,
+    html.theme-light #risultati-filter-bar .form-select,
+    body.theme-light #risultati-filter-bar .form-select {
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%231e293b' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e") !important;
+    }
+    html.theme-light #squadra-filter-bar .btn-outline-secondary,
+    body.theme-light #squadra-filter-bar .btn-outline-secondary,
+    html.theme-light #risultati-filter-bar .btn-outline-secondary,
+    body.theme-light #risultati-filter-bar .btn-outline-secondary {
+      color: #475569 !important;
+      border-color: #94a3b8 !important;
+    }
     /* n2 — GPS: select per parametro e atleti → #ccd3db */
     html.theme-light #performance-metric-selector,
     body.theme-light #performance-metric-selector,
@@ -1174,6 +1200,7 @@
             <button class="tab-nav-btn" data-tab="pagamenti-section" onclick="switchTab('pagamenti-section')"><i class="bi bi-credit-card-fill"></i><span class="tab-label"> Pagamenti</span></button>
             <button class="tab-nav-btn" data-tab="convocazioni-section" onclick="switchTab('convocazioni-section')"><i class="bi bi-megaphone-fill"></i><span class="tab-label"> Convocazioni</span></button>
             <button class="tab-nav-btn admin-only" data-tab="accessi-section" onclick="switchTab('accessi-section')" style="display:none;"><i class="bi bi-clock-history"></i><span class="tab-label"> Accessi</span></button>
+            <button class="tab-nav-btn admin-only" data-tab="alert-settings-section" onclick="switchTab('alert-settings-section')" style="display:none;"><i class="bi bi-bell-fill"></i><span class="tab-label"> Alert</span></button>
         </div>
         <!-- Riga admin mobile: in fondo alla tendina, solo su mobile -->
         <div id="app-header-mobile" class="d-lg-none"
@@ -1390,6 +1417,7 @@
                 </div>
                 <div class="col-md-8 d-flex justify-content-md-end align-items-center flex-wrap gap-2 no-print">
                     <button class="btn btn-secondary" id="export-squadra-btn"><i class="bi bi-download"></i> Esporta Dati</button>
+                    <button class="btn btn-success no-print" onclick="window.exportFIGCCSV()" title="Esporta CSV nel formato FIGC per il portale federale"><i class="bi bi-filetype-csv"></i> Esporta FIGC</button>
                     <label for="import-file-input" class="btn btn-secondary mb-0"><i class="bi bi-upload"></i> Importa Dati</label>
                     <input type="file" id="import-file-input" accept=".json" style="display: none;">
                     <button class="btn btn-primary-custom" id="add-athlete-btn"><i class="bi bi-person-plus-fill"></i> Aggiungi Atleta</button>
@@ -1444,6 +1472,30 @@
                 </div>
                 <div class="col-md-4 d-flex justify-content-md-end no-print">
                     <button class="btn btn-primary-custom" id="add-match-btn"><i class="bi bi-plus-circle-fill"></i> Aggiungi Partita</button>
+                </div>
+            </div>
+            <!-- Barra filtri risultati -->
+            <div class="row mb-3 g-2 no-print" id="risultati-filter-bar">
+                <div class="col-md-5 col-sm-12">
+                    <input type="text" id="risultati-filter-opponent" class="form-control form-control-sm" placeholder="Cerca società avversaria..." oninput="window.renderMatchResults()">
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <select id="risultati-filter-location" class="form-select form-select-sm" onchange="window.renderMatchResults()">
+                        <option value="">Casa e Trasferta</option>
+                        <option value="home">Casa</option>
+                        <option value="away">Trasferta</option>
+                    </select>
+                </div>
+                <div class="col-md-2 col-sm-4">
+                    <select id="risultati-filter-result" class="form-select form-select-sm" onchange="window.renderMatchResults()">
+                        <option value="">Tutti i risultati</option>
+                        <option value="win">Vittoria</option>
+                        <option value="draw">Pareggio</option>
+                        <option value="loss">Sconfitta</option>
+                    </select>
+                </div>
+                <div class="col-md-2 col-sm-2 d-flex align-items-center">
+                    <button class="btn btn-sm btn-outline-secondary w-100" onclick="document.getElementById('risultati-filter-opponent').value='';document.getElementById('risultati-filter-location').value='';document.getElementById('risultati-filter-result').value='';window.renderMatchResults();" title="Azzera filtri"><i class="bi bi-x-circle"></i> Reset</button>
                 </div>
             </div>
             <div class="row" id="match-results-container">
@@ -2230,6 +2282,35 @@
             <!-- Statistiche rapide -->
             <div class="col-12 mt-3">
                 <div id="accessi-stats" class="d-flex flex-wrap gap-3"></div>
+            </div>
+        </div>
+
+        <!-- ── Impostazioni Alert Email (solo admin, solo Platinum) ── -->
+        <div id="alert-settings-section" class="tab-section row my-4 admin-only" style="display:none;">
+            <div class="col-12 mb-3">
+                <h2 class="main-title mb-0"><i class="bi bi-bell-fill" style="color:#f59e0b;"></i> Impostazioni Alert Email</h2>
+                <p class="text-muted mt-2" style="font-size:0.88rem;">Configura quanti giorni prima della scadenza inviare l'email automatica ai genitori / atleti.<br>
+                <small>Funzione attiva solo se abilitata dal pannello SuperAdmin (licenza Platinum).</small></p>
+            </div>
+            <div class="col-md-6 col-12">
+                <div class="card chart-card">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label"><i class="bi bi-heart-pulse-fill" style="color:#ef4444;"></i> Giorni prima — Visita Medica</label>
+                            <input type="number" class="form-control" id="alert-visita-days" min="1" max="365" value="60" placeholder="es. 60">
+                            <small class="text-muted">Default: 60 giorni (2 mesi prima)</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><i class="bi bi-card-checklist" style="color:#3b82f6;"></i> Giorni prima — Tessera Sportiva</label>
+                            <input type="number" class="form-control" id="alert-tessera-days" min="1" max="365" value="15" placeholder="es. 15">
+                            <small class="text-muted">Default: 15 giorni</small>
+                        </div>
+                        <button class="btn btn-primary-custom" onclick="window.saveAlertSettings()">
+                            <i class="bi bi-save-fill"></i> Salva Impostazioni
+                        </button>
+                        <span id="alert-settings-feedback" class="ms-2 small"></span>
+                    </div>
+                </div>
             </div>
         </div>
 
