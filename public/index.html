@@ -1406,6 +1406,32 @@
                     </div>
                 </div>
             </div>
+            <!-- Barra filtri squadra -->
+            <div class="row mb-3 g-2 no-print" id="squadra-filter-bar">
+                <div class="col-md-5 col-sm-12">
+                    <input type="text" id="squad-filter-name" class="form-control form-control-sm" placeholder="Cerca per nome o cognome..." oninput="renderAthletes()">
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <select id="squad-filter-role" class="form-select form-select-sm" onchange="renderAthletes()">
+                        <option value="">Tutti i ruoli</option>
+                        <option>Portiere</option>
+                        <option>Difensore</option>
+                        <option>Centrocampista</option>
+                        <option>Attaccante</option>
+                        <option>Ala</option>
+                        <option>Terzino</option>
+                        <option>Esterno</option>
+                        <option>Allenatore</option>
+                        <option>Dirigente</option>
+                    </select>
+                </div>
+                <div class="col-md-2 col-sm-4">
+                    <input type="number" id="squad-filter-number" class="form-control form-control-sm" placeholder="N° maglia" min="1" max="99" oninput="renderAthletes()">
+                </div>
+                <div class="col-md-2 col-sm-2 d-flex align-items-center">
+                    <button class="btn btn-sm btn-outline-secondary w-100" onclick="document.getElementById('squad-filter-name').value='';document.getElementById('squad-filter-role').value='';document.getElementById('squad-filter-number').value='';renderAthletes();" title="Azzera filtri"><i class="bi bi-x-circle"></i> Reset</button>
+                </div>
+            </div>
             <div class="row" id="athlete-grid"></div>
         </div>
         <hr class="my-5 no-print">

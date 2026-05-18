@@ -1144,6 +1144,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Vista Squadra: 'box' o 'list' ──────────────────────────
     let squadView = sessionStorage.getItem('gosport_squad_view') || 'box';
 
+    window.renderAthletes = () => renderAthletes();
+
     window.setSquadView = function(view) {
         squadView = view;
         sessionStorage.setItem('gosport_squad_view', view);
@@ -1163,7 +1165,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const today = new Date(); today.setHours(0,0,0,0);
         const threeMonths = new Date(today); threeMonths.setMonth(today.getMonth() + 3);
-        athletes.forEach(athlete => {
+        const filterName   = (document.getElementById('squad-filter-name')?.value || '').trim().toLowerCase();
+        const filterRole   = (document.getElementById('squad-filter-role')?.value || '').toLowerCase();
+        const filterNumber = (document.getElementById('squad-filter-number')?.value || '').trim();
+        const filteredAthletes = athletes.filter(a => {
+            if (filterName   && !(a.name || '').toLowerCase().includes(filterName)) return false;
+            if (filterRole   && (a.role || '').toLowerCase() !== filterRole) return false;
+            if (filterNumber && String(a.number) !== filterNumber) return false;
+            return true;
+        });
+        filteredAthletes.forEach(athlete => {
             let statusIcon = '';
             if (athlete.scadenzaVisita) {
                 const deadline = new Date(athlete.scadenzaVisita);
