@@ -134,8 +134,11 @@ if (req.query?.action === 'cron-remind' && req.method === 'GET') {
   }
   // ── Email alerts: scadenza visita medica e tessera ──────────────────────
   try {
-    const { Resend } = await import('resend');
-    const resend = new Resend(process.env.RESEND_API_KEY);
+    const { createTransport } = await import('nodemailer');
+    const transporter = createTransport({
+      service: 'gmail',
+      auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
+    });
     const todayStr = new Date().toISOString().split('T')[0];
     const today0 = new Date(todayStr + 'T00:00:00Z');
 
@@ -151,8 +154,8 @@ if (req.query?.action === 'cron-remind' && req.method === 'GET') {
       const settings = (await kv.get(`society:${lic.societyId}:alertSettings`)) || { visitaDays: 60, tesseraDays: 15 };
       const societyAnnate = allAnnate.filter(a => !a.societyId || a.societyId === lic.societyId);
 
-      const visitaAlert = new Date(today0); visitaAlert.setDate(visitaAlert.getDate() + Number(settings.visitaDays || 60));
-      const tesseraAlert = new Date(today0); tesseraAlert.setDate(tesseraAlert.getDate() + Number(settings.tesseraDays || 15));
+      const visitaAlert = new Date(today0); visitaAlert.setUTCDate(visitaAlert.getUTCDate() + Number(settings.visitaDays || 60));
+      const tesseraAlert = new Date(today0); tesseraAlert.setUTCDate(tesseraAlert.getUTCDate() + Number(settings.tesseraDays || 15));
       const visitaAlertStr  = visitaAlert.toISOString().split('T')[0];
       const tesseraAlertStr = tesseraAlert.toISOString().split('T')[0];
 
@@ -169,24 +172,26 @@ if (req.query?.action === 'cron-remind' && req.method === 'GET') {
           const fmtDate = iso => new Date(iso + 'T00:00:00').toLocaleDateString('it-IT', { day:'2-digit', month:'long', year:'numeric' });
 
           if (athlete.scadenzaVisita === visitaAlertStr) {
-            const { error: e1 } = await resend.emails.send({
-              from: 'Sport Monitoring <onboarding@resend.dev>',
-              to: emails,
-              subject: `⚕️ Scadenza Visita Medica — ${athlete.name}`,
-              html: emailTemplate({ athleteName: athlete.name, societyName: lic.societyName, tipo: 'Visita Medica', scadenza: fmtDate(athlete.scadenzaVisita), giorni: settings.visitaDays || 60 })
-            });
-            if (e1) console.error('[cron-email] Errore visita:', e1.message || JSON.stringify(e1));
-            else emailsSent++;
+            try {
+              await transporter.sendMail({
+                from: `"Sport Monitoring" <${process.env.GMAIL_USER}>`,
+                to: emails.join(','),
+                subject: `⚕️ Scadenza Visita Medica — ${athlete.name}`,
+                html: emailTemplate({ athleteName: athlete.name, societyName: lic.societyName, tipo: 'Visita Medica', scadenza: fmtDate(athlete.scadenzaVisita), giorni: settings.visitaDays || 60 })
+              });
+              emailsSent++;
+            } catch(e) { console.error('[cron-email] Errore visita:', e.message); }
           }
           if (athlete.scadenzaTessera === tesseraAlertStr) {
-            const { error: e2 } = await resend.emails.send({
-              from: 'Sport Monitoring <onboarding@resend.dev>',
-              to: emails,
-              subject: `🎫 Scadenza Tessera Sportiva — ${athlete.name}`,
-              html: emailTemplate({ athleteName: athlete.name, societyName: lic.societyName, tipo: 'Tessera Sportiva', scadenza: fmtDate(athlete.scadenzaTessera), giorni: settings.tesseraDays || 15 })
-            });
-            if (e2) console.error('[cron-email] Errore tessera:', e2.message || JSON.stringify(e2));
-            else emailsSent++;
+            try {
+              await transporter.sendMail({
+                from: `"Sport Monitoring" <${process.env.GMAIL_USER}>`,
+                to: emails.join(','),
+                subject: `🎫 Scadenza Tessera Sportiva — ${athlete.name}`,
+                html: emailTemplate({ athleteName: athlete.name, societyName: lic.societyName, tipo: 'Tessera Sportiva', scadenza: fmtDate(athlete.scadenzaTessera), giorni: settings.tesseraDays || 15 })
+              });
+              emailsSent++;
+            } catch(e) { console.error('[cron-email] Errore tessera:', e.message); }
           }
         }
       }
