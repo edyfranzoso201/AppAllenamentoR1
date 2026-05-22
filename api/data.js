@@ -471,75 +471,57 @@ VINCOLI OBBLIGATORI (rispettali tutti):
 7. Usa campo alternativo (CampoAlt) al massimo 1 volta a settimana per squadra
 8. Squadre della stessa fascia d'età (anno nel nome simile) condividono i giorni quando possibile
 
-Rispondi SOLO con JSON valido, zero testo aggiuntivo:
-{"slots":[{"campoNome":"NOME_ESATTO","porzione":1,"giorno":1,"squadra":"NOME","atletiCount":0,"oraInizio":"HH:MM","oraFine":"HH:MM"},...]}
-giorno: 0=Dom 1=Lun 2=Mar 3=Mer 4=Gio 5=Ven 6=Sab`;
+ISTRUZIONI OUTPUT (OBBLIGATORIO):
+- Scrivi SOLO JSON compatto su UNA RIGA, nessun markdown, nessun testo, nessun commento
+- Inizia IMMEDIATAMENTE con { e termina con }
+- Formato: {"slots":[{"campoNome":"NOME","porzione":1,"giorno":1,"squadra":"NOME","atletiCount":0,"oraInizio":"HH:MM","oraFine":"HH:MM"},...]}
+- giorno: 0=Dom 1=Lun 2=Mar 3=Mer 4=Gio 5=Ven 6=Sab`;
 
-  const MODELS = ['gemini-2.5-flash'];
+  const extractJSON = raw => {
+    try { return JSON.parse(raw); } catch(_) {}
+    const md = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (md) { try { return JSON.parse(md[1].trim()); } catch(_) {} }
+    const s = raw.indexOf('{'), e2 = raw.lastIndexOf('}');
+    if (s >= 0 && e2 > s) return JSON.parse(raw.slice(s, e2 + 1));
+    throw new Error('Nessun JSON trovato nella risposta');
+  };
+
   const modelErrors = [];
-  for (const model of MODELS) {
-    try {
-      const resp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: {
-              temperature: 0.2,
-              maxOutputTokens: 8192,
-              responseMimeType: 'application/json',
-              responseSchema: {
-                type: 'OBJECT',
-                properties: {
-                  slots: {
-                    type: 'ARRAY',
-                    items: {
-                      type: 'OBJECT',
-                      properties: {
-                        campoNome:   { type: 'STRING' },
-                        porzione:    { type: 'INTEGER' },
-                        giorno:      { type: 'INTEGER' },
-                        squadra:     { type: 'STRING' },
-                        atletiCount: { type: 'INTEGER' },
-                        oraInizio:   { type: 'STRING' },
-                        oraFine:     { type: 'STRING' }
-                      },
-                      required: ['campoNome','porzione','giorno','squadra','atletiCount','oraInizio','oraFine']
-                    }
-                  }
-                },
-                required: ['slots']
-              }
-            }
-          })
-        }
-      );
-      const data = await resp.json();
-      if (!resp.ok) {
-        modelErrors.push(`${model}: ${data.error?.message || resp.status}`);
-        continue;
+  try {
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 8192, thinkingConfig: { thinkingBudget: 0 } }
+        })
       }
-      const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      let parsed;
-      try { parsed = JSON.parse(raw); } catch(e) {
-        const pos = parseInt((e.message.match(/position (\d+)/)||[])[1]||0);
-        const snippet = raw.substring(Math.max(0,pos-30), Math.min(raw.length,pos+30));
-        modelErrors.push(`${model}: ${e.message} | raw[${pos}]: "${snippet}"`);
-        continue;
-      }
-      const slots = parsed.slots || parsed;
-      if (!Array.isArray(slots) || !slots.length) {
-        modelErrors.push(`${model}: nessuno slot generato`);
-        continue;
-      }
-      return res.status(200).json({ success: true, slots, model });
-    } catch(e) {
-      modelErrors.push(`${model}: ${e.message}`);
+    );
+    const data = await resp.json();
+    if (!resp.ok) {
+      return res.status(500).json({ success: false, message: `gemini-2.5-flash: ${data.error?.message || resp.status}` });
     }
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const finishReason = data.candidates?.[0]?.finishReason;
+    let parsed;
+    try { parsed = extractJSON(raw); } catch(e) {
+      const pos = parseInt((e.message.match(/position (\d+)/)||[])[1]||0);
+      const snippet = raw.substring(Math.max(0,pos-40), Math.min(raw.length,pos+40));
+      return res.status(500).json({
+        success: false,
+        message: `JSON parse error (finishReason:${finishReason}): ${e.message}`,
+        debug_snippet: snippet,
+        debug_raw_len: raw.length
+      });
+    }
+    const slots = parsed.slots || (Array.isArray(parsed) ? parsed : null);
+    if (!slots?.length) return res.status(500).json({ success: false, message: 'AI non ha generato slot validi' });
+    return res.status(200).json({ success: true, slots, model: 'gemini-2.5-flash' });
+  } catch(e) {
+    return res.status(500).json({ success: false, message: `gemini-2.5-flash: ${e.message}` });
   }
-  return res.status(500).json({ success: false, message: modelErrors.join(' | ') || 'Nessun modello disponibile' });
 }
 
 // ── Senza annataId: dati globali / bacheca pubblica ──────────────────────
