@@ -486,7 +486,33 @@ giorno: 0=Dom 1=Lun 2=Mar 3=Mer 4=Gio 5=Ven 6=Sab`;
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.2, maxOutputTokens: 8192, responseMimeType: 'application/json' }
+            generationConfig: {
+              temperature: 0.2,
+              maxOutputTokens: 8192,
+              responseMimeType: 'application/json',
+              responseSchema: {
+                type: 'OBJECT',
+                properties: {
+                  slots: {
+                    type: 'ARRAY',
+                    items: {
+                      type: 'OBJECT',
+                      properties: {
+                        campoNome:   { type: 'STRING' },
+                        porzione:    { type: 'INTEGER' },
+                        giorno:      { type: 'INTEGER' },
+                        squadra:     { type: 'STRING' },
+                        atletiCount: { type: 'INTEGER' },
+                        oraInizio:   { type: 'STRING' },
+                        oraFine:     { type: 'STRING' }
+                      },
+                      required: ['campoNome','porzione','giorno','squadra','atletiCount','oraInizio','oraFine']
+                    }
+                  }
+                },
+                required: ['slots']
+              }
+            }
           })
         }
       );
