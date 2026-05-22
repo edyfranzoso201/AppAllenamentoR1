@@ -391,36 +391,37 @@ Regole:
 - Se suggerisci cambiamenti, spiega il motivo
 - Per domande sui giorni usa: L=Lunedì M=Martedì Me=Mercoledì G=Giovedì V=Venerdì S=Sabato D=Domenica`;
 
-  // Prepend system context as first user/model exchange (gemini-pro doesn't support system_instruction)
-  const contents = [
-    { role: 'user',  parts: [{ text: `[ISTRUZIONI]\n${systemPrompt}` }] },
-    { role: 'model', parts: [{ text: 'Capito. Sono pronto ad assistere con la gestione impianti GO Sport.' }] },
-    ...(messages || []).map(m => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }]
-    }))
-  ];
+  const geminiMessages = (messages || []).map(m => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: m.content }]
+  }));
 
-  // Try models in order: 1.5-flash → 1.5-flash-latest → gemini-pro
-  const MODELS = ['gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-pro'];
-  let lastError = '';
-  for (const model of MODELS) {
-    try {
-      const resp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents, generationConfig: { temperature: 0.7, maxOutputTokens: 1024 } })
-        }
-      );
-      const data = await resp.json();
-      if (!resp.ok) { lastError = data.error?.message || `Errore ${model}`; continue; }
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '(nessuna risposta)';
-      return res.status(200).json({ success: true, reply: text });
-    } catch(e) { lastError = e.message; }
+  try {
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents: geminiMessages,
+          generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
+        })
+      }
+    );
+    const data = await resp.json();
+    if (!resp.ok) {
+      const msg = data.error?.message || 'Errore Gemini';
+      const hint = msg.includes('quota') || msg.includes('limit')
+        ? msg + ' — verifica che il billing sia attivo su console.cloud.google.com'
+        : msg;
+      return res.status(500).json({ success: false, message: hint });
+    }
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '(nessuna risposta)';
+    return res.status(200).json({ success: true, reply: text });
+  } catch(e) {
+    return res.status(500).json({ success: false, message: e.message });
   }
-  return res.status(500).json({ success: false, message: lastError || 'Tutti i modelli non disponibili' });
 }
 
 // ── Senza annataId: dati globali / bacheca pubblica ──────────────────────
