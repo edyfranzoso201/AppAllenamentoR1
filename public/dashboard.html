@@ -3603,16 +3603,16 @@
           if (tryPlaceOnDay(g, !availDays.includes(g), fStart, fEnd)) { assigned++; usedDays.add(g); }
         }
       }
-      // Pass B: candidati ordinati, rilassa vincolo consecutivi (solo se A+A2 non bastano), mantiene fascia
+      // Pass B: candidati ordinati, finestra fascia — mantiene sempre wouldRun3
       if (assigned < availDays.length) {
         for (const g of ordCandidates) {
           if (assigned >= availDays.length) break;
-          if (usedDays.has(g)) continue;
+          if (usedDays.has(g) || wouldRun3(usedDays, g)) continue;
           if (tryPlaceOnDay(g, !availDays.includes(g), fStart, fEnd)) { assigned++; usedDays.add(g); }
         }
       }
-      // Pass C (last resort): tutti i giorni per carico, non-consecutivi, finestra piena
-      if (assigned < availDays.length && fascia) {
+      // Pass C: tutti i giorni per carico, non-consecutivi, finestra piena (rimuove vincolo fascia)
+      if (assigned < availDays.length) {
         const byLoad = [...giorni].filter(d => !usedDays.has(d)).sort((a, b) => loadOf(a) - loadOf(b));
         for (const g of byLoad) {
           if (assigned >= availDays.length) break;
@@ -3620,11 +3620,12 @@
           if (tryPlaceOnDay(g, true, startMin, endMin)) { assigned++; usedDays.add(g); }
         }
       }
-      // Pass D (absolute fallback): nessun vincolo, finestra piena
+      // Pass D (absolute fallback): tutti i giorni per carico, finestra piena — wouldRun3 sempre rispettato
       if (assigned < availDays.length) {
         const byLoad = [...giorni].filter(d => !usedDays.has(d)).sort((a, b) => loadOf(a) - loadOf(b));
         for (const g of byLoad) {
           if (assigned >= availDays.length) break;
+          if (wouldRun3(usedDays, g)) continue;
           if (tryPlaceOnDay(g, true, startMin, endMin)) { assigned++; usedDays.add(g); }
         }
       }
