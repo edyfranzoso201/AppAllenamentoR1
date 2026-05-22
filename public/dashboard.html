@@ -503,6 +503,9 @@
   .imp-slot-card.hl-ora { box-shadow: 0 0 0 2px #f59e0b, 0 2px 10px #f59e0b40; }
   .imp-slot-card.hl-sq1.hl-ora { box-shadow: 0 0 0 2px #6366f1, 0 0 0 4px #f59e0b60; }
   .imp-slot-card.hl-sq2.hl-ora { box-shadow: 0 0 0 2px #14b8a6, 0 0 0 4px #f59e0b60; }
+  .imp-slot-card.hl-campo { box-shadow: 0 0 0 2px #f97316, 0 2px 10px #f9731640; }
+  .imp-slot-card.hl-sq1.hl-campo { box-shadow: 0 0 0 2px #6366f1, 0 0 0 4px #f9731660; }
+  .imp-slot-card.hl-sq2.hl-campo { box-shadow: 0 0 0 2px #14b8a6, 0 0 0 4px #f9731660; }
   /* ── AI Chat Panel ── */
   #imp-ai-fab { position:fixed;bottom:28px;right:28px;z-index:1200;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:1.4rem;border:none;cursor:pointer;box-shadow:0 4px 20px #6366f155;display:none;align-items:center;justify-content:center;transition:transform 0.15s,box-shadow 0.15s; }
   #imp-ai-fab:hover { transform:scale(1.1);box-shadow:0 6px 28px #6366f177; }
@@ -2557,7 +2560,7 @@
   let impAnnateConfig = [];
   let impPropostaGenerata = [];
   let impLoaded = false;
-  let impHL = { squadra: [], ora: null }; // squadra = array max 2 per confronto
+  let impHL = { squadra: [], ora: null, campo: null }; // squadra = array max 2 per confronto
 
   function impHeaders() {
     return {
@@ -2866,6 +2869,7 @@
     if (!slots.length) { bar.innerHTML = ''; return; }
     const squadre = [...new Set(slots.map(impCleanSquadra))].filter(Boolean).sort();
     const ore = [...new Set(slots.map(s => s.oraInizio).filter(Boolean))].sort();
+    const campiNomi = [...new Set(slots.map(s => { const c = impState.config.campi.find(x => x.id === s.campoId); return c?.nome||''; }).filter(Boolean))].sort();
     const SQ_COLORS = ['#6366f1','#14b8a6'];
 
     const squadraChip = s => {
@@ -2880,7 +2884,11 @@
       const active = impHL.ora === o;
       return `<button onclick="impToggleHL('ora','${o}')" style="font-size:0.72rem;padding:2px 10px;border-radius:20px;cursor:pointer;border:1px solid;transition:all 0.15s;${active?`background:#f59e0b22;border-color:#f59e0b;color:#f59e0b;font-weight:700;`:`background:transparent;color:var(--text-muted);border-color:var(--border-soft);`}">🕐 ${o}</button>`;
     };
-    const anyActive = impHL.squadra.length > 0 || impHL.ora;
+    const campoChip = c => {
+      const active = impHL.campo === c;
+      return `<button onclick="impToggleHL('campo','${c.replace(/'/g,"\\'")}')" style="font-size:0.72rem;padding:2px 10px;border-radius:20px;cursor:pointer;border:1px solid;transition:all 0.15s;${active?`background:#f9731622;border-color:#f97316;color:#f97316;font-weight:700;`:`background:transparent;color:var(--text-muted);border-color:var(--border-soft);`}">⚽ ${c}</button>`;
+    };
+    const anyActive = impHL.squadra.length > 0 || impHL.ora || impHL.campo;
     const legend = impHL.squadra.length > 0 ? impHL.squadra.map((s,i) =>
       `<span style="font-size:0.7rem;display:inline-flex;align-items:center;gap:3px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${SQ_COLORS[i]};"></span>${s}</span>`
     ).join(' vs ') : '';
@@ -2889,26 +2897,29 @@
       <span style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-right:4px;">Evidenzia:</span>
       ${squadre.map(squadraChip).join('')}
       ${ore.length > 1 ? `<span style="display:inline-block;width:1px;height:14px;background:var(--border-soft);margin:0 3px;"></span>${ore.map(oraChip).join('')}` : ''}
+      ${campiNomi.length > 1 ? `<span style="display:inline-block;width:1px;height:14px;background:var(--border-soft);margin:0 3px;"></span>${campiNomi.map(campoChip).join('')}` : ''}
       ${anyActive ? `<button onclick="impClearHL()" style="font-size:0.72rem;padding:2px 9px;border-radius:20px;border:1px solid #ef444466;background:transparent;color:#ef4444;cursor:pointer;margin-left:2px;">✕</button>` : ''}
       ${legend ? `<span style="font-size:0.7rem;color:var(--text-muted);margin-left:6px;">${legend}</span>` : ''}
     </div>`;
   }
 
   function impApplyHighlight() {
-    const { squadra: hs, ora: ho } = impHL;
-    const anyActive = hs.length > 0 || ho;
+    const { squadra: hs, ora: ho, campo: hc } = impHL;
+    const anyActive = hs.length > 0 || ho || hc;
     document.querySelectorAll('.imp-slot-card[data-hl-sq]').forEach(card => {
-      card.classList.remove('hl-dim','hl-sq1','hl-sq2','hl-ora');
+      card.classList.remove('hl-dim','hl-sq1','hl-sq2','hl-ora','hl-campo');
       if (!anyActive) return;
       const sq = card.dataset.hlSq;
       const i1 = hs[0] && sq === hs[0];
       const i2 = hs[1] && sq === hs[1];
       const mO = !ho || card.dataset.hlOra === ho;
+      const mC = !hc || card.dataset.hlCampo === hc;
       const mS = hs.length === 0 || i1 || i2;
-      if (mS && mO) {
+      if (mS && mO && mC) {
         if (i1) card.classList.add('hl-sq1');
         if (i2) card.classList.add('hl-sq2');
-        if (mO && ho) card.classList.add('hl-ora');
+        if (ho) card.classList.add('hl-ora');
+        if (hc) card.classList.add('hl-campo');
       } else {
         card.classList.add('hl-dim');
       }
@@ -2928,7 +2939,7 @@
     impApplyHighlight();
   };
   window.impClearHL = function() {
-    impHL = { squadra: [], ora: null };
+    impHL = { squadra: [], ora: null, campo: null };
     impRenderHighlightBar();
     impApplyHighlight();
   };
@@ -2988,7 +2999,8 @@
           const spoglBadge = spoglNum ? `<span style="font-size:0.72rem;background:#6366f122;color:#818cf8;border-radius:4px;padding:1px 7px;font-weight:600;" title="Spogliatoio assegnato">🚿 ${spoglNum}</span>` : '';
           const noteTxt = s.note ? `<span style="font-size:0.72rem;color:var(--text-muted);font-style:italic;margin-left:6px;" title="${s.note.replace(/"/g,'&quot;')}">📝 ${s.note}</span>` : '';
           const cleanSq = impCleanSquadra(s);
-          return `<div class="imp-slot-card" data-hl-sq="${cleanSq.replace(/"/g,'&quot;')}" data-hl-ora="${s.oraInizio||''}" style="border-color:${borderColor}${hasConflict||hasSpogl?';border-width:2px':''};">
+          const campoNome = campo?.nome || '';
+          return `<div class="imp-slot-card" data-hl-sq="${cleanSq.replace(/"/g,'&quot;')}" data-hl-ora="${s.oraInizio||''}" data-hl-campo="${campoNome.replace(/"/g,'&quot;')}" style="border-color:${borderColor}${hasConflict||hasSpogl?';border-width:2px':''};">
             <span style="font-size:0.82rem;font-weight:700;color:var(--text-muted);min-width:90px;">${s.oraInizio||'--:--'} – ${s.oraFine||'--:--'}</span>
             ${info ? `<span class="imp-tipo-badge" style="background:${info.color}22;color:${info.color};">${campo.nome}</span>` : ''}
             <span style="font-size:0.8rem;color:var(--text-muted);">${porzLabel}</span>
