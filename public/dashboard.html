@@ -3700,7 +3700,16 @@
           conflittoSpogliatoi: spoglConflicts.has(s.id)
         };
       }),
-      conflitti: { campo: campoConflicts.size, spogliatoi: spoglConflicts.size }
+      conflitti: { campo: campoConflicts.size, spogliatoi: spoglConflicts.size },
+      partiteETornei: (impState.eventi || []).map(e => {
+        const campo = impState.config.campi.find(c => c.id === e.campoId);
+        return {
+          tipo: e.tipo, data: e.data,
+          squadra: e.squadra, avversario: e.avversario,
+          oraInizio: e.oraInizio, oraFine: e.oraFine,
+          campo: campo?.nome, note: e.note
+        };
+      })
     };
   }
 
