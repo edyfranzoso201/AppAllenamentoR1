@@ -475,7 +475,7 @@ Rispondi SOLO con JSON valido, zero testo aggiuntivo:
 {"slots":[{"campoNome":"NOME_ESATTO","porzione":1,"giorno":1,"squadra":"NOME","atletiCount":0,"oraInizio":"HH:MM","oraFine":"HH:MM"},...]}
 giorno: 0=Dom 1=Lun 2=Mar 3=Mer 4=Gio 5=Ven 6=Sab`;
 
-  const MODELS = ['gemini-2.5-flash-preview-05-20','gemini-2.5-flash'];
+  const MODELS = ['gemini-2.5-flash'];
   const modelErrors = [];
   for (const model of MODELS) {
     try {
@@ -486,7 +486,7 @@ giorno: 0=Dom 1=Lun 2=Mar 3=Mer 4=Gio 5=Ven 6=Sab`;
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.2, maxOutputTokens: 4096 }
+            generationConfig: { temperature: 0.2, maxOutputTokens: 8192, responseMimeType: 'application/json' }
           })
         }
       );
