@@ -378,49 +378,60 @@ if (req.query?.action === 'ai-chat') {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return res.status(500).json({ success: false, message: 'API key non configurata' });
 
-  const systemPrompt = `Sei un assistente esperto di gestione impianti sportivi per la piattaforma GO Sport.
-Hai accesso ai dati in tempo reale dell'impianto e rispondi sempre in italiano in modo conciso e pratico.
+  const GIORNI_NOMI_CHAT = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+  const systemPrompt = `Sei un assistente esperto di pianificazione allenamenti per la piattaforma GO Sport.
+Rispondi SEMPRE in italiano, in modo diretto e pratico. Puoi fare domande di chiarimento, proporre varianti e ragionare insieme all'utente.
 
 DATI IMPIANTO CORRENTI:
 ${context ? JSON.stringify(context, null, 2) : 'Nessun dato disponibile'}
 
-Regole:
-- Rispondi in italiano
-- Sii conciso e diretto
-- Se rilevi conflitti o problemi negli slot, evidenziali
-- Se suggerisci cambiamenti, spiega il motivo
-- Per domande sui giorni usa: L=Lunedì M=Martedì Me=Mercoledì G=Giovedì V=Venerdì S=Sabato D=Domenica`;
+GIORNI: 0=Dom 1=Lun 2=Mar 3=Mer 4=Gio 5=Ven 6=Sab
+
+REGOLE DI PIANIFICAZIONE (applica sempre):
+- Mai 3 giorni consecutivi per la stessa squadra
+- Squadre "grandi" (nate 2009-2011) si allenano preferibilmente sul campo grande A11
+- Squadre "medi/piccoli" (nate 2012+) possono usare anche il campo piccolo A7
+- Squadre con "coppiaCon" devono condividere gli stessi giorni
+- Distribuisci il carico uniformemente nei giorni disponibili
+
+COME PROPORRE UNA PIANIFICAZIONE:
+Quando l'utente ti chiede di generare o modificare una pianificazione, ragiona ad alta voce spiegando le scelte, poi IN FONDO alla risposta includi ESATTAMENTE questo blocco (tutte squadre, anche quelle non modificate):
+[PROPOSTA: {"NomeSquadra":[giorno,...],"AltraSquadra":[giorno,...]}]
+Usa i numeri per i giorni (1=Lun, 2=Mar, 3=Mer, 4=Gio, 5=Ven, 6=Sab, 0=Dom).
+Se non sei sicuro dei dati di una squadra, chiedi all'utente prima di proporre.
+Se la richiesta è solo informativa (analisi, domanda), NON includere il blocco PROPOSTA.`;
 
   const geminiMessages = (messages || []).map(m => ({
     role: m.role === 'assistant' ? 'model' : 'user',
     parts: [{ text: m.content }]
   }));
 
-  const MODELS = [
-    'gemini-2.5-flash-preview-05-20',
-    'gemini-2.5-flash',
-    'gemini-2.0-flash-lite',
-    'gemini-2.0-flash',
+  const CHAT_MODELS = [
+    { id: 'gemini-2.5-flash',    thinking: true  },
+    { id: 'gemini-1.5-flash',    thinking: false },
+    { id: 'gemini-1.5-flash-8b', thinking: false },
   ];
   let lastErr = 'Nessun modello disponibile';
-  for (const model of MODELS) {
+  for (const { id, thinking } of CHAT_MODELS) {
     try {
+      const genCfg = { temperature: 0.7, maxOutputTokens: 1024 };
+      if (thinking) genCfg.thinkingConfig = { thinkingBudget: 0 };
       const resp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${id}:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             system_instruction: { parts: [{ text: systemPrompt }] },
             contents: geminiMessages,
-            generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
+            generationConfig: genCfg
           })
         }
       );
       const data = await resp.json();
-      if (!resp.ok) { lastErr = data.error?.message || `Errore ${model}`; continue; }
+      if (!resp.ok) { lastErr = data.error?.message || `Errore ${id}`; continue; }
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '(nessuna risposta)';
-      return res.status(200).json({ success: true, reply: text });
+      return res.status(200).json({ success: true, reply: text, model: id });
     } catch(e) { lastErr = e.message; }
   }
   return res.status(500).json({ success: false, message: lastErr });
@@ -450,32 +461,20 @@ if (req.query?.action === 'ai-optimize') {
     `Nome:"${a.nome}" Atleti:${a.atletiCount||a.atleti||0} Campo:${a.campoTipo||a.campo} CampoAlt:${a.campoTipoAlt||'—'} Durata:${a.durata}min GiorniPref:[${(a.giorniPref||[]).map(d=>GIORNI_NOMI[d]||d).join(',')}] Fascia:${a.fascia||'libera'} CoppiaCon:"${a.coppiaCon||''}" Doccia:${a.doccia!==false}`
   ).join('\n');
 
-  const prompt = `Sei un esperto di pianificazione oraria per impianti sportivi italiani.
-Genera un piano settimanale COMPLETO di allenamenti rispettando tutti i vincoli.
+  // Prompt compatto: chiede solo l'assegnazione giorni per squadra (~50 token output)
+  // Il frontend userà quei giorni con l'algoritmo esistente → zero conflitti garantiti
+  const squadreCompact = (annateConfig||[]).map(a => {
+    const pref = (a.giorniPref||giorni).filter(d => giorni.includes(d));
+    return `${a.nome}:${pref.length||giorni.length}gg,pref:[${pref.map(d=>GIORNI_NOMI[d]).join(',')}]${a.coppiaCon?`,coppia:${a.coppiaCon}`:''}`;
+  }).join(' | ');
 
-CAMPI: ${campiDesc}
-SPOGLIATOI TOTALI: ${spogliatoi||0}
-ORARIO: ${oraInizio}–${oraFine}, giorni disponibili: ${(giorni||[]).map(d=>GIORNI_NOMI[d]).join(',')}
-Fascia "prima"=${oraInizio}–${toTime(midMin)} | Fascia "tarda"=${toTime(midMin)}–${oraFine} | "libera"=tutto
-
-SQUADRE DA PIANIFICARE:
-${annateDesc}
-
-VINCOLI OBBLIGATORI (rispettali tutti):
-1. MAI 3 giorni consecutivi per la stessa squadra (es. Mar+Mer+Gio vietato)
-2. Ogni squadra deve allenarsi per tanti giorni quanti sono in GiorniPref (solo quelli disponibili)
-3. Capienza campo: somma atletiCount contemporanei sullo stesso campo/porzione/orario ≤ max
-4. Spogliatoi: squadre con orari sovrapposti (±15min) non superano ${spogliatoi||0} contemporaneamente
-5. Fascia "prima": orario nella prima metà; "tarda": seconda metà; "libera": qualsiasi
-6. CoppiaCon: squadre con stesso codice preferiscono gli stessi giorni
-7. Usa campo alternativo (CampoAlt) al massimo 1 volta a settimana per squadra
-8. Squadre della stessa fascia d'età (anno nel nome simile) condividono i giorni quando possibile
-
-ISTRUZIONI OUTPUT (OBBLIGATORIO):
-- Scrivi SOLO JSON compatto su UNA RIGA, nessun markdown, nessun testo, nessun commento
-- Inizia IMMEDIATAMENTE con { e termina con }
-- Formato: {"slots":[{"campoNome":"NOME","porzione":1,"giorno":1,"squadra":"NOME","atletiCount":0,"oraInizio":"HH:MM","oraFine":"HH:MM"},...]}
-- giorno: 0=Dom 1=Lun 2=Mar 3=Mer 4=Gio 5=Ven 6=Sab`;
+  const prompt = `Pianifica i giorni di allenamento settimanali per squadre di calcio italiane.
+Giorni disponibili: ${(giorni||[]).map(d=>`${GIORNI_NOMI[d]}=${d}`).join(',')}
+Squadre (nome:giorni_richiesti,preferenze): ${squadreCompact}
+VINCOLI: 1) MAI 3 giorni consecutivi. 2) Rispetta le preferenze. 3) Squadre "coppia" condividano gli stessi giorni. 4) Distribuisci il carico uniformemente.
+OBBLIGATORIO: ogni squadra deve ricevere ESATTAMENTE il numero di giorni indicato (Ngg = N giorni nel JSON). Non uno di meno.
+Rispondi SOLO con JSON compatto su una riga: {"NomeSquadra":[giorno,...],...}
+Esempio: {"U2010":[1,3,5],"U2011":[2,4,6]}`;
 
   const extractJSON = raw => {
     try { return JSON.parse(raw); } catch(_) {}
@@ -486,7 +485,6 @@ ISTRUZIONI OUTPUT (OBBLIGATORIO):
     throw new Error('Nessun JSON trovato nella risposta');
   };
 
-  const modelErrors = [];
   try {
     const resp = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
@@ -495,32 +493,54 @@ ISTRUZIONI OUTPUT (OBBLIGATORIO):
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 8192, thinkingConfig: { thinkingBudget: 0 } }
+          generationConfig: { temperature: 0.1, maxOutputTokens: 512, thinkingConfig: { thinkingBudget: 0 } }
         })
       }
     );
     const data = await resp.json();
-    if (!resp.ok) {
-      return res.status(500).json({ success: false, message: `gemini-2.5-flash: ${data.error?.message || resp.status}` });
-    }
+    if (!resp.ok)
+      return res.status(500).json({ success: false, message: `Gemini: ${data.error?.message || resp.status}` });
     const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const finishReason = data.candidates?.[0]?.finishReason;
     let parsed;
     try { parsed = extractJSON(raw); } catch(e) {
-      const pos = parseInt((e.message.match(/position (\d+)/)||[])[1]||0);
-      const snippet = raw.substring(Math.max(0,pos-40), Math.min(raw.length,pos+40));
-      return res.status(500).json({
-        success: false,
-        message: `JSON parse error (finishReason:${finishReason}): ${e.message}`,
-        debug_snippet: snippet,
-        debug_raw_len: raw.length
-      });
+      return res.status(500).json({ success: false, message: `JSON parse: ${e.message}`, debug_raw: raw.substring(0,300) });
     }
-    const slots = parsed.slots || (Array.isArray(parsed) ? parsed : null);
-    if (!slots?.length) return res.status(500).json({ success: false, message: 'AI non ha generato slot validi' });
-    return res.status(200).json({ success: true, slots, model: 'gemini-2.5-flash' });
+    if (typeof parsed !== 'object' || Array.isArray(parsed) || !Object.keys(parsed).length)
+      return res.status(500).json({ success: false, message: 'AI non ha restituito assegnazioni valide' });
+
+    // Valida e integra: se l'AI ha assegnato meno giorni del necessario, supplementa
+    const dayLoad = {};
+    giorni.forEach(d => { dayLoad[d] = 0; });
+    Object.values(parsed).forEach(days => (days||[]).forEach(d => { if (dayLoad[d] !== undefined) dayLoad[d]++; }));
+
+    const supplemented = [];
+    const validated = {};
+    for (const ac of (annateConfig||[])) {
+      const pref = (ac.giorniPref||giorni).filter(d => giorni.includes(d));
+      const required = pref.length || giorni.length;
+      let assigned = [...new Set((parsed[ac.nome]||[]).filter(d => giorni.includes(d)))];
+      if (assigned.length < required) {
+        supplemented.push(ac.nome);
+        const usedDays = new Set(assigned);
+        const prefSet = new Set(pref);
+        const candidates = [...giorni]
+          .filter(d => !usedDays.has(d))
+          .sort((a, b) => {
+            const ap = prefSet.has(a) ? 0 : 1, bp = prefSet.has(b) ? 0 : 1;
+            return ap !== bp ? ap - bp : dayLoad[a] - dayLoad[b];
+          });
+        while (assigned.length < required && candidates.length > 0) {
+          const d = candidates.shift();
+          assigned.push(d);
+          dayLoad[d]++;
+        }
+      }
+      validated[ac.nome] = assigned;
+    }
+
+    return res.status(200).json({ success: true, dayAssignments: validated, supplemented });
   } catch(e) {
-    return res.status(500).json({ success: false, message: `gemini-2.5-flash: ${e.message}` });
+    return res.status(500).json({ success: false, message: `Gemini: ${e.message}` });
   }
 }
 

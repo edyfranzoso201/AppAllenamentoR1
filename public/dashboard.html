@@ -1057,7 +1057,7 @@
             </div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
               <button onclick="impGeneraProposta()" class="imp-btn">⚡ Genera Proposta</button>
-              <button onclick="impGeneraConAI()" class="imp-btn" id="imp-ai-gen-btn" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);">🤖 Genera con AI</button>
+              <button onclick="impGeneraConAI()" class="imp-btn" id="imp-ai-gen-btn" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);display:none;">🤖 Genera con AI</button>
               <span style="font-size:0.78rem;color:var(--text-muted);">Usa la configurazione annate nel tab Struttura</span>
             </div>
             <div style="margin-top:8px;font-size:0.75rem;color:var(--text-muted);background:var(--bg-input,var(--bg-panel));border-radius:6px;padding:6px 10px;display:inline-flex;align-items:center;gap:6px;">
@@ -1088,6 +1088,7 @@
           </div>
         </div>
         <div id="imp-highlight-bar"></div>
+        <div id="imp-filter-bar" style="margin-bottom:8px;"></div>
         <div id="imp-slots-list"></div>
 
         <div id="imp-slot-form" class="card" style="display:none;margin-bottom:16px;padding:16px 18px;border:2px solid var(--accent);">
@@ -2562,6 +2563,8 @@
   let impPropostaGenerata = [];
   let impLoaded = false;
   let impHL = { squadra: [], ora: null, campo: null }; // squadra = array max 2 per confronto
+  let impFilterSquadre = new Set(); // squadre selezionate (vuoto = tutte)
+  let impFilterOrari   = new Set(); // fasce orarie selezionate (vuoto = tutte)
 
   function impHeaders() {
     return {
@@ -2619,6 +2622,9 @@
     impRenderAnnateConfig();
     impRenderSlots();
     impRenderEventi();
+    const role = sessionStorage.getItem('gosport_user_role');
+    const aib = document.getElementById('imp-ai-gen-btn');
+    if (aib) aib.style.display = role === 'admin' ? '' : 'none';
   }
 
   // ── Tab switching ──────────────────────────────────────────────
@@ -2945,12 +2951,63 @@
     impApplyHighlight();
   };
 
+  function impRenderFilterBar() {
+    const bar = document.getElementById('imp-filter-bar');
+    if (!bar) return;
+    const all = impState.slots || [];
+    const squadre = [...new Set(all.map(impCleanSquadra).filter(Boolean))].sort();
+    const orari   = [...new Set(all.map(s => `${s.oraInizio||''}–${s.oraFine||''}`).filter(k => k !== '–'))].sort();
+    if (!all.length || (squadre.length <= 1 && orari.length <= 1)) { bar.innerHTML = ''; return; }
+
+    const chip = (label, active, fn) => {
+      const key = label.replace(/'/g, '\\\'');
+      return `<button onclick="${fn}('${key}')" style="cursor:pointer;font-size:0.73rem;padding:2px 9px;border-radius:20px;border:1px solid ${active?'var(--accent)':'var(--border-soft)'};background:${active?'var(--accent)22':'transparent'};color:${active?'var(--accent)':'var(--text-muted)'};transition:all 0.15s;white-space:nowrap;">${label}</button>`;
+    };
+
+    const hasActive = impFilterSquadre.size > 0 || impFilterOrari.size > 0;
+    const count = impFilterSquadre.size + impFilterOrari.size;
+    const resetBtn = hasActive
+      ? `<button onclick="impClearFilters()" style="cursor:pointer;font-size:0.73rem;padding:2px 9px;border-radius:20px;border:1px solid #ef444444;background:#ef444411;color:#ef4444;">✕ Azzera${count>0?' ('+count+')':''}</button>`
+      : '';
+
+    bar.innerHTML = `<div style="background:var(--bg-panel);border:1px solid var(--border-soft);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:7px;">
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <span style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;min-width:68px;">👥 Squadra:</span>
+        ${squadre.map(sq => chip(sq, impFilterSquadre.has(sq), 'impToggleFilterSq')).join('')}
+        ${resetBtn}
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <span style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;min-width:68px;">⏱️ Orario:</span>
+        ${orari.map(o => chip(o, impFilterOrari.has(o), 'impToggleFilterOra')).join('')}
+      </div>
+    </div>`;
+  }
+
+  window.impToggleFilterSq = function(sq) {
+    if (impFilterSquadre.has(sq)) impFilterSquadre.delete(sq); else impFilterSquadre.add(sq);
+    impRenderSlots();
+  };
+  window.impToggleFilterOra = function(o) {
+    if (impFilterOrari.has(o)) impFilterOrari.delete(o); else impFilterOrari.add(o);
+    impRenderSlots();
+  };
+  window.impClearFilters = function() {
+    impFilterSquadre.clear(); impFilterOrari.clear(); impRenderSlots();
+  };
+
   function impRenderSlots() {
     impAggiornaBtnRipristina();
+    impRenderFilterBar();
     const el = document.getElementById('imp-slots-list');
-    const slots = impState.slots || [];
+    let slots = impState.slots || [];
+
+    // Applica filtri multi-selezione
+    if (impFilterSquadre.size > 0) slots = slots.filter(s => impFilterSquadre.has(impCleanSquadra(s)));
+    if (impFilterOrari.size   > 0) slots = slots.filter(s => impFilterOrari.has(`${s.oraInizio||''}–${s.oraFine||''}`));
+
     if (!slots.length) {
-      el.innerHTML = '<div class="card" style="text-align:center;color:var(--text-muted);padding:28px;font-size:0.85rem;">Nessuno slot configurato</div>';
+      const hasF = impFilterSquadre.size > 0 || impFilterOrari.size > 0;
+      el.innerHTML = `<div class="card" style="text-align:center;color:var(--text-muted);padding:28px;font-size:0.85rem;">${hasF ? '🔍 Nessuno slot corrisponde ai filtri selezionati' : 'Nessuno slot configurato'}</div>`;
       impRenderHighlightBar();
       return;
     }
@@ -3439,6 +3496,7 @@
     btn.disabled = true; btn.textContent = '⏳ AI elabora...';
 
     try {
+      // 1. AI decide quali giorni assegnare a ogni squadra
       const r = await fetch('/api/data?action=ai-optimize', {
         method: 'POST', headers: impHeaders(),
         body: JSON.stringify({
@@ -3464,22 +3522,16 @@
         return;
       }
 
-      const slots = (d.slots || []).map(s => {
-        const campo = impState.config.campi.find(c =>
-          c.nome === s.campoNome ||
-          c.nome.toLowerCase() === (s.campoNome || '').toLowerCase() ||
-          c.nome.toLowerCase().includes((s.campoNome || '').toLowerCase())
-        );
-        if (!campo) return null;
-        return {
-          id: impUid(), campoId: campo.id, porzione: s.porzione || 1,
-          giorno: s.giorno, annataId: null, squadra: s.squadra,
-          atletiCount: s.atletiCount || 0, doccia: true,
-          oraInizio: s.oraInizio, oraFine: s.oraFine
-        };
-      }).filter(Boolean);
+      // 2. Override giorniPref di ogni squadra con i giorni scelti dall'AI
+      const dayAssignments = d.dayAssignments || {};
+      const cfgConAI = cfgCorrente.map(ac => {
+        const aiDays = dayAssignments[ac.nome];
+        if (!aiDays?.length) return ac;
+        return { ...ac, giorniPref: aiDays.filter(d2 => giorni.includes(d2)) };
+      });
 
-      if (!slots.length) { impAlert('AI non ha generato slot validi per i campi configurati'); return; }
+      // 3. Algoritmo deterministico → orari e campi assegnati, zero conflitti garantiti
+      const { slots, unscheduled } = impRunAlgoritmo({ giorni, oraInizio, oraFine, annateConfig: cfgConAI });
       impPropostaGenerata = slots;
 
       const preview = document.getElementById('imp-gen-preview');
@@ -3489,24 +3541,45 @@
 
       const GIORNI_NOMI = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
       const byDay = {};
-      slots.forEach(s => { (byDay[s.giorno] = byDay[s.giorno] || []).push(s); });
+      slots.forEach(s => { (byDay[s.giorno] = byDay[s.giorno]||[]).push(s); });
       const order = [1,2,3,4,5,6,0];
       list.innerHTML = order.filter(d2 => byDay[d2]).map(d2 => {
-        const ds = byDay[d2].sort((a, b) => a.oraInizio.localeCompare(b.oraInizio));
+        const ds = byDay[d2].sort((a,b)=>a.oraInizio.localeCompare(b.oraInizio));
         return `<div style="margin-bottom:8px;"><strong style="font-size:0.78rem;color:var(--text-muted);text-transform:uppercase;">${GIORNI_NOMI[d2]}</strong><br>` +
           ds.map(s => {
-            const campo = impState.config.campi.find(c => c.id === s.campoId);
+            const campo = impState.config.campi.find(c=>c.id===s.campoId);
             return `<span style="display:inline-block;margin:2px 4px 2px 0;font-size:0.8rem;background:var(--bg-panel);border:1px solid var(--border-soft);border-radius:6px;padding:2px 8px;">
-              ${s.oraInizio}–${s.oraFine} · <strong>${s.squadra}</strong> (${s.atletiCount}) · ${campo?.nome || '?'} Porz.${s.porzione}
+              ${s.oraInizio}–${s.oraFine} · <strong>${s.squadra}</strong> (${s.atletiCount}) · ${campo?.nome||'?'} Porz.${s.porzione}
             </span>`;
           }).join('') + '</div>';
-      }).join('') || '<div style="color:var(--text-muted);font-size:0.85rem;">Nessuno slot generato dall\'AI.</div>';
+      }).join('') || '<div style="color:var(--text-muted);font-size:0.85rem;">Nessuno slot generabile con i parametri attuali.</div>';
+
+      // Riepilogo per annata: giorni richiesti vs assegnati
+      const riepilogo = cfgConAI.map(ac => {
+        const richiesti = (Array.isArray(ac.giorniPref) && ac.giorniPref.length)
+          ? ac.giorniPref.filter(d2 => giorni.includes(d2)).length : giorni.length;
+        const cleanName = ac.nome.trim();
+        const assegnati = [...new Set(
+          slots.filter(s => s.squadra.replace(/\s*(⏱️|↗|📅)/g,'').trim() === cleanName).map(s => s.giorno)
+        )].length;
+        const ok = assegnati >= richiesti;
+        return `<span style="display:inline-flex;align-items:center;gap:4px;margin:2px 4px 2px 0;font-size:0.78rem;
+          background:${ok?'#d1fae522':'#fee2e222'};border:1px solid ${ok?'#34d39944':'#f8717144'};
+          border-radius:6px;padding:2px 8px;color:${ok?'#6ee7b7':'#fca5a5'};">
+          ${ok?'✓':'⚠️'} <strong>${cleanName}</strong> ${assegnati}/${richiesti}gg
+        </span>`;
+      }).join('');
 
       unsched.style.display = '';
       unsched.style.background = 'transparent';
       unsched.style.color = 'inherit';
       unsched.style.padding = '6px 0 0';
-      unsched.innerHTML = `<div style="font-size:0.78rem;color:var(--accent);margin-bottom:4px;">🤖 Piano generato da AI — <strong>verifica i conflitti prima di applicare</strong>. L'AI suggerisce ma non garantisce vincoli.</div>`;
+      const suppNote = (d.supplemented||[]).length
+        ? `<div style="font-size:0.75rem;color:#f59e0b;margin-bottom:4px;">⚠️ Giorni integrati automaticamente (AI ne aveva assegnati meno del necessario): <strong>${d.supplemented.join(', ')}</strong></div>`
+        : '';
+      unsched.innerHTML = `<div style="font-size:0.78rem;color:var(--accent);margin-bottom:4px;">🤖 AI ha scelto i giorni — orari e campi assegnati dall'algoritmo (zero conflitti garantiti).</div>
+        ${suppNote}<div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:4px;">Riepilogo annate:</div>${riepilogo}` +
+        (unscheduled.length ? `<div style="margin-top:8px;padding:8px 10px;background:#fee2e2;border-radius:8px;font-size:0.82rem;color:#991b1b;">⚠️ Non pianificati:<br>${unscheduled.map(u=>`• ${u}`).join('<br>')}</div>` : '');
     } catch(e) {
       impAlert('Errore: ' + e.message);
     } finally {
@@ -3550,13 +3623,23 @@
       return r;
     };
 
-    // Ordina: prima fascia "prima" (bambini), poi libre, poi "tarda" (adulti)
-    // Così le squads del primo orario vengono piazzate prime → le squads tarda trovano
-    // già occupati gli spogliatoi e slittano da soli di 15' invece di comprimere l'orario
+    // Ordina: prima fascia, poi priorità campo
+    // Dentro la stessa fascia: team senza alt campo prima (bloccati su primary),
+    // poi grandi/adulti con alt (preferiscono A11 ma hanno fallback),
+    // poi medi/piccoli (flessibili, vanno bene su A7)
+    // Così A11 viene assegnato prima a chi ne ha più bisogno.
     const fasciaRank = f => f === 'prima' ? 0 : f === 'tarda' ? 2 : 1;
+    const campoFlexRank = ac => {
+      if (!ac.campoTipoAlt) return 0; // nessun alt: deve usare primary → priorità assoluta
+      const g = groupOf(ac.nome);
+      if (g === 'adulti' || g === 'grandi') return 1; // ha alt ma preferisce A11
+      return 2; // medi/piccoli: flessibili
+    };
     const sorted = [...annateConfig].sort((a,b) => {
       const fr = fasciaRank(a.fascia||'') - fasciaRank(b.fascia||'');
       if (fr !== 0) return fr;
+      const cr = campoFlexRank(a) - campoFlexRank(b);
+      if (cr !== 0) return cr;
       return (b.atletiCount||0) - (a.atletiCount||0);
     });
 
@@ -3646,15 +3729,20 @@
         ]);
       }
 
+      // Max usi campo alternativo per gruppo d'età:
+      // grandi/adulti: 1 (devono allenarsi su A11); piccoli/medi: illimitato (A7 va bene)
+      const maxAltUses = (myGroup === 'piccoli' || myGroup === 'medi') ? 999 : 1;
+      // Nelle pass C/D piccoli/medi possono usare A7 liberamente per completare il programma
+      const freeAltFallback = myGroup === 'piccoli' || myGroup === 'medi';
+
       // Conta quante volte questa annata è già stata messa sul campo alternativo
       let altCampoUsed = 0;
 
-      const tryPlaceOnDay = (giorno, isFallback, tStart, tEnd) => {
+      const tryPlaceOnDay = (giorno, isFallback, tStart, tEnd, freeAlt = false) => {
         for (const att of attempts) {
-          // Max 1 uso del campo alternativo per stagione (evita che grandi squadre A11
-          // finiscano spesso sul campo piccolo)
           const isAlt = campoTipoAlt && att.tipo === campoTipoAlt;
-          if (isAlt && altCampoUsed >= 1) continue;
+          // Grandi/adulti: max 1 uso A7; piccoli/medi: nessun limite
+          if (isAlt && !freeAlt && altCampoUsed >= maxAltUses) continue;
           const cands = campi.filter(c => c.tipo === att.tipo);
           if (!cands.length) continue;
           const mxP      = CAMPO_INFO[att.tipo]?.maxPorzioni || 1;
@@ -3713,22 +3801,23 @@
           if (tryPlaceOnDay(g, !availDays.includes(g), fStart, fEnd)) { assigned++; usedDays.add(g); }
         }
       }
-      // Pass C: tutti i giorni per carico, non-consecutivi, finestra piena (rimuove vincolo fascia)
+      // Pass C: tutti i giorni per carico, non-consecutivi, finestra piena
+      // freeAlt=true solo per piccoli/medi (che possono usare A7 senza limiti)
       if (assigned < availDays.length) {
         const byLoad = [...giorni].filter(d => !usedDays.has(d)).sort((a, b) => loadOf(a) - loadOf(b));
         for (const g of byLoad) {
           if (assigned >= availDays.length) break;
           if (wouldRun3(usedDays, g)) continue;
-          if (tryPlaceOnDay(g, true, startMin, endMin)) { assigned++; usedDays.add(g); }
+          if (tryPlaceOnDay(g, true, startMin, endMin, freeAltFallback)) { assigned++; usedDays.add(g); }
         }
       }
-      // Pass D (absolute fallback): tutti i giorni per carico, finestra piena — wouldRun3 sempre rispettato
+      // Pass D (absolute fallback): tutti i giorni per carico, finestra piena
       if (assigned < availDays.length) {
         const byLoad = [...giorni].filter(d => !usedDays.has(d)).sort((a, b) => loadOf(a) - loadOf(b));
         for (const g of byLoad) {
           if (assigned >= availDays.length) break;
           if (wouldRun3(usedDays, g)) continue;
-          if (tryPlaceOnDay(g, true, startMin, endMin)) { assigned++; usedDays.add(g); }
+          if (tryPlaceOnDay(g, true, startMin, endMin, freeAltFallback)) { assigned++; usedDays.add(g); }
         }
       }
 
@@ -3777,7 +3866,7 @@
   window.impAiClearChat = function() {
     impAiHistory = [];
     document.getElementById('imp-ai-msgs').innerHTML =
-      '<div class="imp-ai-msg ai">Ciao! Sono l\'assistente AI per la gestione impianti. Posso analizzare slot, conflitti e suggerire ottimizzazioni. Come posso aiutarti?</div>';
+      '<div class="imp-ai-msg ai">Ciao! Dimmi cosa vuoi cambiare, quali vincoli hai, o chiedimi di analizzare la situazione attuale. Posso generare proposte applicabili direttamente.</div>';
   };
 
   function impAiBuildContext() {
@@ -3826,7 +3915,28 @@
     const addMsg = (role, content, extraClass) => {
       const div = document.createElement('div');
       div.className = 'imp-ai-msg ' + role + (extraClass ? ' ' + extraClass : '');
-      div.textContent = content;
+
+      // Rileva [PROPOSTA: {...}] nella risposta dell'AI
+      const propostaMatch = content.match(/\[PROPOSTA:\s*(\{[\s\S]*?\})\]/);
+      if (propostaMatch && role === 'ai') {
+        const cleanText = content.replace(/\[PROPOSTA:[\s\S]*?\]/g, '').trim();
+        div.textContent = cleanText;
+        try {
+          const dayAsgn = JSON.parse(propostaMatch[1]);
+          const sep = document.createElement('div');
+          sep.style.cssText = 'margin-top:8px;padding-top:8px;border-top:1px solid var(--border-soft);';
+          const btn = document.createElement('button');
+          btn.className = 'imp-btn';
+          btn.style.cssText = 'font-size:0.78rem;padding:5px 12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);';
+          btn.textContent = '✅ Applica questa proposta';
+          btn.onclick = () => impApplicaChatProposta(dayAsgn);
+          sep.appendChild(btn);
+          div.appendChild(sep);
+        } catch(_) { div.textContent = content; }
+      } else {
+        div.textContent = content;
+      }
+
       msgs.appendChild(div);
       msgs.scrollTop = msgs.scrollHeight;
       return div;
@@ -3857,6 +3967,70 @@
     }
   };
 
+  window.impApplicaChatProposta = function(dayAssignments) {
+    const giorni = [...document.querySelectorAll('.imp-giorno-cb:checked')].map(cb => parseInt(cb.value));
+    const oraInizio = document.getElementById('imp-gen-start').value || '16:00';
+    const oraFine   = document.getElementById('imp-gen-end').value   || '20:00';
+    if (!giorni.length) { impAlert('Seleziona almeno un giorno disponibile'); return; }
+    const cfgCorrente = impReadAnnateConfigFromDom();
+    if (!cfgCorrente.length) { impAlert('Aggiungi almeno una squadra nella tab Struttura'); return; }
+    if (!impState.config.campi.length) { impAlert('Configura prima i campi nel tab Struttura'); return; }
+
+    const cfgConChat = cfgCorrente.map(ac => {
+      const aiDays = dayAssignments[ac.nome];
+      if (!aiDays?.length) return ac;
+      return { ...ac, giorniPref: aiDays.filter(d2 => giorni.includes(d2)) };
+    });
+
+    const { slots, unscheduled } = impRunAlgoritmo({ giorni, oraInizio, oraFine, annateConfig: cfgConChat });
+    impPropostaGenerata = slots;
+
+    const preview = document.getElementById('imp-gen-preview');
+    const list    = document.getElementById('imp-gen-preview-list');
+    const unsched = document.getElementById('imp-gen-unscheduled');
+    preview.style.display = '';
+
+    const GIORNI_NOMI = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+    const byDay = {};
+    slots.forEach(s => { (byDay[s.giorno] = byDay[s.giorno]||[]).push(s); });
+    const order = [1,2,3,4,5,6,0];
+    list.innerHTML = order.filter(d2 => byDay[d2]).map(d2 => {
+      const ds = byDay[d2].sort((a,b)=>a.oraInizio.localeCompare(b.oraInizio));
+      return `<div style="margin-bottom:8px;"><strong style="font-size:0.78rem;color:var(--text-muted);text-transform:uppercase;">${GIORNI_NOMI[d2]}</strong><br>` +
+        ds.map(s => {
+          const campo = impState.config.campi.find(c=>c.id===s.campoId);
+          return `<span style="display:inline-block;margin:2px 4px 2px 0;font-size:0.8rem;background:var(--bg-panel);border:1px solid var(--border-soft);border-radius:6px;padding:2px 8px;">
+            ${s.oraInizio}–${s.oraFine} · <strong>${s.squadra}</strong> (${s.atletiCount}) · ${campo?.nome||'?'} Porz.${s.porzione}
+          </span>`;
+        }).join('') + '</div>';
+    }).join('') || '<div style="color:var(--text-muted);font-size:0.85rem;">Nessuno slot generabile.</div>';
+
+    const riepilogo = cfgConChat.map(ac => {
+      const richiesti = (Array.isArray(ac.giorniPref) && ac.giorniPref.length)
+        ? ac.giorniPref.filter(d2 => giorni.includes(d2)).length : giorni.length;
+      const cleanName = ac.nome.trim();
+      const assegnati = [...new Set(slots.filter(s=>s.squadra.replace(/\s*(⏱️|↗|📅)/g,'').trim()===cleanName).map(s=>s.giorno))].length;
+      const ok = assegnati >= richiesti;
+      return `<span style="display:inline-flex;align-items:center;gap:4px;margin:2px 4px 2px 0;font-size:0.78rem;
+        background:${ok?'#d1fae522':'#fee2e222'};border:1px solid ${ok?'#34d39944':'#f8717144'};
+        border-radius:6px;padding:2px 8px;color:${ok?'#6ee7b7':'#fca5a5'};">
+        ${ok?'✓':'⚠️'} <strong>${cleanName}</strong> ${assegnati}/${richiesti}gg
+      </span>`;
+    }).join('');
+
+    unsched.style.display = '';
+    unsched.style.background = 'transparent';
+    unsched.style.color = 'inherit';
+    unsched.style.padding = '6px 0 0';
+    unsched.innerHTML = `<div style="font-size:0.78rem;color:var(--accent);margin-bottom:4px;">💬 Proposta dalla chat AI — orari e campi assegnati dall'algoritmo (zero conflitti garantiti).</div>
+      <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:4px;">Riepilogo annate:</div>${riepilogo}` +
+      (unscheduled.length ? `<div style="margin-top:8px;padding:8px 10px;background:#fee2e2;border-radius:8px;font-size:0.82rem;color:#991b1b;">⚠️ Non pianificati:<br>${unscheduled.map(u=>`• ${u}`).join('<br>')}</div>` : '');
+
+    // Chiudi la chat e vai al tab Generazione
+    impAiToggle();
+    impSwitchTab('slots');
+  };
+
 })();
 </script>
 
@@ -3870,7 +4044,11 @@
     <button onclick="impAiToggle()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.1rem;padding:2px 7px;border-radius:5px;line-height:1;">✕</button>
   </div>
   <div id="imp-ai-msgs">
-    <div class="imp-ai-msg ai">Ciao! Sono l'assistente AI per la gestione impianti. Posso analizzare slot, conflitti e suggerire ottimizzazioni. Come posso aiutarti?</div>
+    <div class="imp-ai-msg ai">Ciao! Sono il tuo assistente per la pianificazione allenamenti. Posso:
+• Analizzare conflitti e problemi negli slot attuali
+• Proporre una nuova pianificazione (scrivimi i vincoli e ti genero un piano applicabile)
+• Rispondere a domande tipo "perché il 2011 è su A7?" o "come libero il giovedì?"
+• Ragionare insieme su modifiche — dimmi cosa vuoi cambiare!</div>
   </div>
   <div id="imp-ai-input-row">
     <textarea id="imp-ai-input" placeholder="Chiedi qualcosa sull'impianto…" rows="1"
