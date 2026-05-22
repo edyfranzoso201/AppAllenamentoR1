@@ -475,6 +475,52 @@
       align-items: flex-start !important;
     }
   }
+  /* ══ IMPIANTI ══════════════════════════════════════════════════ */
+  .imp-tab {
+    background: none; border: none; border-bottom: 2px solid transparent;
+    color: var(--text-muted); padding: 8px 16px; cursor: pointer;
+    font-size: 0.85rem; font-weight: 500; transition: all 0.2s;
+  }
+  .imp-tab:hover { color: var(--text-primary); }
+  .imp-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  .imp-campo-card {
+    display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+    border: 1px solid var(--border-soft); border-radius: 10px; margin-bottom: 8px;
+    background: var(--bg-card);
+  }
+  .imp-tipo-badge {
+    font-size: 0.72rem; font-weight: 700; padding: 2px 8px;
+    border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .imp-slot-card {
+    display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+    border: 1px solid var(--border-soft); border-radius: 10px; margin-bottom: 8px;
+    background: var(--bg-card); flex-wrap: wrap; transition: opacity 0.18s, box-shadow 0.18s;
+  }
+  .imp-slot-card.hl-dim { opacity: 0.15; }
+  .imp-slot-card.hl-sq1 { box-shadow: 0 0 0 2px #6366f1, 0 2px 10px #6366f140; }
+  .imp-slot-card.hl-sq2 { box-shadow: 0 0 0 2px #14b8a6, 0 2px 10px #14b8a640; }
+  .imp-slot-card.hl-ora { box-shadow: 0 0 0 2px #f59e0b, 0 2px 10px #f59e0b40; }
+  .imp-slot-card.hl-sq1.hl-ora { box-shadow: 0 0 0 2px #6366f1, 0 0 0 4px #f59e0b60; }
+  .imp-slot-card.hl-sq2.hl-ora { box-shadow: 0 0 0 2px #14b8a6, 0 0 0 4px #f59e0b60; }
+  /* ── AI Chat Panel ── */
+  #imp-ai-fab { position:fixed;bottom:28px;right:28px;z-index:1200;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:1.4rem;border:none;cursor:pointer;box-shadow:0 4px 20px #6366f155;display:none;align-items:center;justify-content:center;transition:transform 0.15s,box-shadow 0.15s; }
+  #imp-ai-fab:hover { transform:scale(1.1);box-shadow:0 6px 28px #6366f177; }
+  #imp-ai-panel { position:fixed;bottom:92px;right:28px;z-index:1201;width:370px;max-height:500px;background:var(--bg-card);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 40px #00000066;display:none;flex-direction:column;overflow:hidden; }
+  #imp-ai-header { display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--border-soft);background:var(--bg-panel);flex-shrink:0; }
+  #imp-ai-msgs { flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px;max-height:320px;min-height:80px; }
+  .imp-ai-msg { font-size:0.82rem;line-height:1.55;padding:8px 12px;border-radius:10px;max-width:90%;word-break:break-word; }
+  .imp-ai-msg.user { background:#6366f122;border:1px solid #6366f133;align-self:flex-end;border-bottom-right-radius:3px;color:var(--text-primary); }
+  .imp-ai-msg.ai   { background:var(--bg-panel);border:1px solid var(--border-soft);align-self:flex-start;border-bottom-left-radius:3px;color:var(--text-primary);white-space:pre-wrap; }
+  .imp-ai-msg.typing { color:var(--text-muted);font-style:italic; }
+  #imp-ai-input-row { display:flex;gap:6px;padding:10px 12px;border-top:1px solid var(--border-soft);flex-shrink:0;background:var(--bg-card); }
+  #imp-ai-input { flex:1;padding:8px 11px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.83rem;resize:none;min-height:36px;max-height:80px;font-family:inherit; }
+  .imp-btn { background: var(--accent); border: none; color: #fff; border-radius: 8px;
+    padding: 6px 14px; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
+  .imp-btn-danger { background: #ef4444; border: none; color: #fff; border-radius: 8px;
+    padding: 5px 10px; cursor: pointer; font-size: 0.78rem; }
+  .imp-btn-ghost { background: none; border: 1px solid var(--border-soft); color: var(--text-muted);
+    border-radius: 8px; padding: 5px 10px; cursor: pointer; font-size: 0.78rem; }
   </style>
 </head>
 <body>
@@ -539,6 +585,11 @@
     <div class="nav-item" id="nav-iscrizioni" data-section="iscrizioni" onclick="showSection('iscrizioni', this)" style="display:none;position:relative;">
       <span class="nav-icon">📋</span> Iscrizioni
       <span id="nav-iscr-badge" style="display:none;background:#ef4444;color:#fff;border-radius:10px;font-size:0.65rem;font-weight:700;padding:1px 7px;margin-left:auto;"></span>
+    </div>
+
+    <div class="nav-section-label" id="nav-label-impianti" style="display:none;">Impianti</div>
+    <div class="nav-item" id="nav-impianti" data-section="impianti" onclick="showSection('impianti', this)" style="display:none;">
+      <span class="nav-icon">🏟️</span> Gestione Impianti
     </div>
 
     <div class="nav-section-label">Comunicazione</div>
@@ -882,6 +933,294 @@
       <div id="bacheca-content" style="display:none"></div>
     </div>
 
+    <!-- IMPIANTI -->
+    <div class="section-panel" id="section-impianti">
+      <div class="section-title">🏟️ Gestione Impianti</div>
+      <div class="section-subtitle">Configurazione campi sportivi, spogliatoi e calendario occupazione</div>
+      <div id="imp-alert" style="display:none;padding:10px 14px;border-radius:8px;font-size:0.85rem;margin-bottom:12px;font-weight:500;"></div>
+
+      <!-- Tab bar -->
+      <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--border-soft);">
+        <button class="imp-tab active" id="imp-tab-struttura" onclick="impSwitchTab('struttura')">🏗️ Struttura</button>
+        <button class="imp-tab" id="imp-tab-slots" onclick="impSwitchTab('slots')">📅 Slot Settimanali</button>
+        <button class="imp-tab" id="imp-tab-eventi" onclick="impSwitchTab('eventi')">⚽ Partite &amp; Tornei</button>
+      </div>
+
+      <!-- ── TAB: STRUTTURA ── -->
+      <div id="imp-panel-struttura">
+        <div class="card" style="margin-bottom:16px;padding:16px 18px;">
+          <div style="font-weight:600;margin-bottom:12px;font-size:0.95rem;">🚿 Spogliatoi</div>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <label style="font-size:0.85rem;color:var(--text-muted);">Numero spogliatoi disponibili:</label>
+            <input type="number" id="imp-spogliatoi" min="0" max="20" value="0"
+              style="width:70px;padding:6px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.9rem;text-align:center;">
+            <button onclick="impSaveConfig()" class="imp-btn">💾 Salva</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:16px;padding:16px 18px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <div style="font-weight:600;font-size:0.95rem;">⚽ Campi Sportivi</div>
+            <button onclick="impShowCampoForm(null)" class="imp-btn">+ Aggiungi Campo</button>
+          </div>
+          <div id="imp-campi-list">
+            <div style="color:var(--text-muted);font-size:0.85rem;text-align:center;padding:20px;">Nessun campo configurato</div>
+          </div>
+        </div>
+
+        <!-- Configurazione allenamenti per annata -->
+        <div class="card" style="margin-top:16px;padding:16px 18px;" id="imp-annate-cfg-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <div style="font-weight:600;font-size:0.95rem;">📋 Configurazione Allenamenti per Annata</div>
+            <div style="display:flex;gap:8px;">
+              <button onclick="impAddAnnataRow()" class="imp-btn-ghost">+ Aggiungi</button>
+              <button onclick="impSaveAnnateConfig()" class="imp-btn">💾 Salva</button>
+            </div>
+          </div>
+          <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:12px;">Usato per la proposta automatica. Puoi inserire anche annate non ancora create nel sistema.</div>
+          <div style="display:grid;grid-template-columns:2fr 60px 150px 95px 95px 58px 52px 72px 45px 32px 32px;gap:6px;align-items:center;padding:0 2px;margin-bottom:4px;">
+            <div style="font-size:0.7rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Annata / Squadra</div>
+            <div style="font-size:0.7rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Atleti</div>
+            <div style="font-size:0.7rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Giorni Pref.</div>
+            <div style="font-size:0.7rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Campo</div>
+            <div style="font-size:0.7rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Campo Alt.</div>
+            <div style="font-size:0.7rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Min</div>
+            <div style="font-size:0.7rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Min Rid.</div>
+            <div style="font-size:0.7rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Fascia</div>
+            <div style="font-size:0.7rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;text-align:center;" title="Doccia post-allenamento (+30 min spogliatoio)">🚿</div>
+            <div style="font-size:0.7rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;text-align:center;" title="Gruppo allenamento — stessa lettera = giorni condivisi (es. A = Prima Squadra + Juniores)">🤝</div>
+            <div></div>
+          </div>
+          <div id="imp-annate-cfg-rows"></div>
+        </div>
+
+        <div id="imp-campo-form" class="card" style="display:none;margin-bottom:16px;padding:16px 18px;border:2px solid var(--accent);">
+          <div style="font-weight:600;margin-bottom:14px;" id="imp-campo-form-title">➕ Aggiungi Campo</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+            <div>
+              <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Tipo Campo</label>
+              <select id="imp-campo-tipo" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;">
+                <option value="a11">Campo a 11 (90×45m — max 55 atleti)</option>
+                <option value="a9">Campo a 9 (60×40m — max 35 atleti)</option>
+                <option value="a7">Campo a 7 (45×25m — max 25 atleti)</option>
+                <option value="a5">Campo a 5 (25×16m — max 15 atleti)</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Nome Campo</label>
+              <input type="text" id="imp-campo-nome" placeholder="es. Campo Principale"
+                style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;box-sizing:border-box;">
+            </div>
+          </div>
+          <input type="hidden" id="imp-campo-edit-id">
+          <div style="display:flex;gap:8px;">
+            <button onclick="impSaveCampo()" class="imp-btn">💾 Salva</button>
+            <button onclick="impHideCampoForm()" class="imp-btn-ghost">Annulla</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB: SLOT SETTIMANALI ── -->
+      <div id="imp-panel-slots" style="display:none;">
+
+        <!-- Genera proposta automatica -->
+        <div class="card" style="margin-bottom:16px;padding:16px 18px;border:1px solid var(--accent);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <div style="font-weight:600;font-size:0.95rem;">🤖 Genera Proposta Automatica</div>
+            <button onclick="impToggleGeneratore()" class="imp-btn-ghost" id="imp-gen-toggle">▼ Mostra parametri</button>
+          </div>
+          <div id="imp-generatore" style="display:none;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+              <div>
+                <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:6px;">Giorni disponibili</label>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                  <label style="font-size:0.82rem;display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" value="1" class="imp-giorno-cb" checked> Lun</label>
+                  <label style="font-size:0.82rem;display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" value="2" class="imp-giorno-cb" checked> Mar</label>
+                  <label style="font-size:0.82rem;display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" value="3" class="imp-giorno-cb" checked> Mer</label>
+                  <label style="font-size:0.82rem;display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" value="4" class="imp-giorno-cb" checked> Gio</label>
+                  <label style="font-size:0.82rem;display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" value="5" class="imp-giorno-cb" checked> Ven</label>
+                  <label style="font-size:0.82rem;display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" value="6" class="imp-giorno-cb"> Sab</label>
+                  <label style="font-size:0.82rem;display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" value="0" class="imp-giorno-cb"> Dom</label>
+                </div>
+              </div>
+              <div>
+                <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:6px;">Fascia oraria disponibile</label>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <input type="time" id="imp-gen-start" value="16:00" oninput="localStorage.setItem('imp_gen_start',this.value)" style="padding:6px 8px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;">
+                  <span style="color:var(--text-muted);">–</span>
+                  <input type="time" id="imp-gen-end" value="20:00" oninput="localStorage.setItem('imp_gen_end',this.value)" style="padding:6px 8px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;">
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <button onclick="impGeneraProposta()" class="imp-btn">⚡ Genera Proposta</button>
+              <span style="font-size:0.78rem;color:var(--text-muted);">Usa la configurazione annate nel tab Struttura</span>
+            </div>
+            <div style="margin-top:8px;font-size:0.75rem;color:var(--text-muted);background:var(--bg-input,var(--bg-panel));border-radius:6px;padding:6px 10px;display:inline-flex;align-items:center;gap:6px;">
+              🚿 Spogliatoio occupato: <strong>15'</strong> prima dell'allenamento &nbsp;·&nbsp; <strong>30'</strong> dopo (con doccia) &nbsp;·&nbsp; <strong>0'</strong> dopo (senza doccia)
+            </div>
+            <div id="imp-gen-preview" style="display:none;margin-top:14px;">
+              <div style="font-weight:600;font-size:0.88rem;margin-bottom:8px;">Anteprima proposta:</div>
+              <div id="imp-gen-preview-list"></div>
+              <div id="imp-gen-unscheduled" style="display:none;margin-top:8px;padding:10px;background:#fee2e2;border-radius:8px;font-size:0.82rem;color:#991b1b;"></div>
+              <div style="display:flex;gap:8px;margin-top:12px;">
+                <button onclick="impApplyProposta()" class="imp-btn">✅ Applica (sostituisce tutti gli slot)</button>
+                <button onclick="impApplyPropostaAppend()" class="imp-btn-ghost">➕ Aggiungi agli slot esistenti</button>
+                <button onclick="impResetPreview()" class="imp-btn-ghost">✕ Annulla</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:16px;padding:14px 18px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+            <div style="font-size:0.88rem;color:var(--text-muted);">Slot ricorrenti settimanali — allenamenti fissi stagionali</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button onclick="impSalvaBase()" class="imp-btn-ghost" style="font-size:0.78rem;" title="Salva la programmazione corrente come base di partenza">💾 Salva base</button>
+              <button onclick="impRipristinaBase()" class="imp-btn-ghost" style="font-size:0.78rem;" id="imp-btn-ripristina" title="Ripristina la base salvata">↩️ Ripristina base</button>
+              <button onclick="impClearSlots()" class="imp-btn-ghost" style="font-size:0.78rem;color:#ef4444;border-color:#ef444444;" title="Elimina tutti gli slot e ricomincia da zero">🗑️ Pulisci tutto</button>
+              <button onclick="impShowSlotForm(null)" class="imp-btn">+ Aggiungi Slot</button>
+            </div>
+          </div>
+        </div>
+        <div id="imp-highlight-bar"></div>
+        <div id="imp-slots-list"></div>
+
+        <div id="imp-slot-form" class="card" style="display:none;margin-bottom:16px;padding:16px 18px;border:2px solid var(--accent);">
+          <div style="font-weight:600;margin-bottom:14px;" id="imp-slot-form-title">➕ Aggiungi Slot</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+            <div>
+              <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Campo</label>
+              <select id="imp-slot-campo" onchange="impUpdatePorzioni()" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;"></select>
+            </div>
+            <div>
+              <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Porzione</label>
+              <select id="imp-slot-porzione" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;"></select>
+            </div>
+            <div>
+              <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Giorno</label>
+              <select id="imp-slot-giorno" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;">
+                <option value="1">Lunedì</option><option value="2">Martedì</option>
+                <option value="3">Mercoledì</option><option value="4">Giovedì</option>
+                <option value="5">Venerdì</option><option value="6">Sabato</option>
+                <option value="0">Domenica</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Squadra / Annata</label>
+              <input type="text" id="imp-slot-squadra" placeholder="es. Prima Squadra, 2011..."
+                style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;box-sizing:border-box;">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 80px auto;gap:8px;align-items:end;">
+              <div>
+                <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">N° Atleti</label>
+                <input type="number" id="imp-slot-atleti" min="0" max="99" value="0"
+                  style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">🚿 Spogl.</label>
+                <input type="number" id="imp-slot-spoglio" min="1" max="8" placeholder="Auto"
+                  style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;box-sizing:border-box;">
+              </div>
+              <div style="padding-bottom:8px;">
+                <label style="font-size:0.85rem;color:var(--text-primary);display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;">
+                  <input type="checkbox" id="imp-slot-doccia" checked style="width:15px;height:15px;accent-color:var(--accent-primary);"> Doccia
+                </label>
+              </div>
+            </div>
+            <div>
+              <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Ora inizio</label>
+              <input type="time" id="imp-slot-start"
+                style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;box-sizing:border-box;">
+            </div>
+            <div>
+              <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Ora fine</label>
+              <input type="time" id="imp-slot-end"
+                style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;box-sizing:border-box;">
+            </div>
+          </div>
+          <input type="hidden" id="imp-slot-edit-id">
+          <div style="margin-bottom:12px;">
+            <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">📝 Note</label>
+            <input type="text" id="imp-slot-note" placeholder="es. Allenatore assente, campo bagnato…" maxlength="120"
+              style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;box-sizing:border-box;">
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="impSaveSlot()" class="imp-btn">💾 Salva</button>
+            <button onclick="impHideSlotForm()" class="imp-btn-ghost">Annulla</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB: PARTITE & TORNEI ── -->
+      <div id="imp-panel-eventi" style="display:none;">
+        <div class="card" style="margin-bottom:16px;padding:14px 18px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:0.88rem;color:var(--text-muted);">Partite e tornei — bloccano il campo intero (non divisibile)</div>
+            <button onclick="impShowEventoForm(null)" class="imp-btn">+ Aggiungi</button>
+          </div>
+        </div>
+        <div id="imp-eventi-list"></div>
+
+        <div id="imp-evento-form" class="card" style="display:none;margin-bottom:16px;padding:16px 18px;border:2px solid #f59e0b;">
+          <div style="font-weight:600;margin-bottom:14px;" id="imp-evento-form-title">➕ Aggiungi Partita / Torneo</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+            <div>
+              <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Tipo</label>
+              <select id="imp-ev-tipo" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;">
+                <option value="partita">⚽ Partita di Campionato</option>
+                <option value="torneo">🏆 Torneo</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Data</label>
+              <input type="date" id="imp-ev-data"
+                style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;box-sizing:border-box;">
+            </div>
+            <div>
+              <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Campo</label>
+              <select id="imp-ev-campo" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;"></select>
+            </div>
+            <div>
+              <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Squadra di Casa</label>
+              <input type="text" id="imp-ev-squadra" placeholder="es. USD Lucignano 2013"
+                style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;box-sizing:border-box;">
+            </div>
+            <div>
+              <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Avversario</label>
+              <input type="text" id="imp-ev-avversario" placeholder="es. FC Esempio"
+                style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;box-sizing:border-box;">
+            </div>
+            <div>
+              <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Ora inizio</label>
+              <input type="time" id="imp-ev-start"
+                style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;box-sizing:border-box;">
+            </div>
+            <div>
+              <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Ora fine</label>
+              <input type="time" id="imp-ev-end"
+                style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;box-sizing:border-box;">
+            </div>
+            <div>
+              <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Spogliatoi ospite</label>
+              <input type="number" id="imp-ev-spogliatoi-ospite" min="0" max="5" value="1"
+                style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;box-sizing:border-box;">
+            </div>
+          </div>
+          <div style="margin-bottom:12px;">
+            <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Note</label>
+            <input type="text" id="imp-ev-note" placeholder="Note opzionali"
+              style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;box-sizing:border-box;">
+          </div>
+          <input type="hidden" id="imp-ev-edit-id">
+          <div style="display:flex;gap:8px;">
+            <button onclick="impSaveEvento()" class="imp-btn">💾 Salva</button>
+            <button onclick="impHideEventoForm()" class="imp-btn-ghost">Annulla</button>
+          </div>
+        </div>
+      </div>
+    </div><!-- /section-impianti -->
+
   </main>
 </div>
 
@@ -996,6 +1335,15 @@
     const canSeeIscrizioni = ['direttivo', 'dirigente', 'admin'].includes(role);
     const navIscr = document.getElementById('nav-iscrizioni');
     if (navIscr && canSeeIscrizioni) navIscr.style.display = '';
+
+    // Impianti: visibile a direttivo, dirigente, staff, admin (solo Platinum)
+    const canSeeImpianti = ['direttivo', 'dirigente', 'staff', 'admin'].includes(role);
+    if (canSeeImpianti) {
+      const navImp = document.getElementById('nav-impianti');
+      const navImpLabel = document.getElementById('nav-label-impianti');
+      if (navImp) navImp.style.display = '';
+      if (navImpLabel) navImpLabel.style.display = '';
+    }
 
     // Link registrazione: visibile a direttivo e admin
     if (['direttivo', 'admin'].includes(role)) {
@@ -1927,6 +2275,10 @@
     else if (name === 'gare')        initGare();
     else if (name === 'iscrizioni')  initIscrizioni();
     else if (name === 'bacheca')     initBacheca();
+    else if (name === 'impianti')    impInit();
+    const fab = document.getElementById('imp-ai-fab');
+    if (fab) fab.style.display = name === 'impianti' ? 'flex' : 'none';
+    if (name !== 'impianti') document.getElementById('imp-ai-panel').style.display = 'none';
   };
 
   // ══ Sidebar mobile ════════════════════════════════════════════
@@ -2187,6 +2539,1232 @@
   checkAuth();
 
 })();
+
+// ══ MODULO IMPIANTI ═══════════════════════════════════════════════════════
+(function() {
+  'use strict';
+
+  const CAMPO_INFO = {
+    a11: { label: 'Campo a 11', color: '#3b82f6', maxPorzioni: 3, maxAtleti: '45-55' },
+    a9:  { label: 'Campo a 9',  color: '#10b981', maxPorzioni: 2, maxAtleti: '25-35' },
+    a7:  { label: 'Campo a 7',  color: '#f59e0b', maxPorzioni: 2, maxAtleti: '20-25' },
+    a5:  { label: 'Campo a 5',  color: '#8b5cf6', maxPorzioni: 1, maxAtleti: '10-15' },
+  };
+  const GIORNI = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+
+  let impState = { config: { campi: [], spogliatoi: 0 }, slots: [], eventi: [] };
+  let impAnnate = [];
+  let impAnnateConfig = [];
+  let impPropostaGenerata = [];
+  let impLoaded = false;
+  let impHL = { squadra: [], ora: null }; // squadra = array max 2 per confronto
+
+  function impHeaders() {
+    return {
+      'Content-Type': 'application/json',
+      'x-auth-session': sessionStorage.getItem('gosport_auth_session') || '',
+      'x-auth-user':    sessionStorage.getItem('gosport_auth_user') || '',
+      'x-user-role':    sessionStorage.getItem('gosport_user_role') || '',
+      'x-society-id':   sessionStorage.getItem('gosport_society_id') || '',
+    };
+  }
+
+  function impUid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  function impAlert(msg, ok) {
+    const el = document.getElementById('imp-alert');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.background = ok ? '#dcfce7' : '#fee2e2';
+    el.style.color = ok ? '#166534' : '#991b1b';
+    el.style.display = 'block';
+    setTimeout(() => { el.style.display = 'none'; }, 3000);
+  }
+
+  window.impInit = async function() {
+    if (impLoaded) { impRenderAll(); return; }
+    try {
+      const [rCfg, rSlots, rEv, rAnn, rAnnCfg] = await Promise.all([
+        fetch('/api/data?action=impianti-config',        { headers: impHeaders() }),
+        fetch('/api/data?action=impianti-slots',         { headers: impHeaders() }),
+        fetch('/api/data?action=impianti-eventi',        { headers: impHeaders() }),
+        fetch('/api/data?action=impianti-annate',        { headers: impHeaders() }),
+        fetch('/api/data?action=impianti-annate-config', { headers: impHeaders() }),
+      ]);
+      const [dCfg, dSlots, dEv, dAnn, dAnnCfg] = await Promise.all([rCfg.json(), rSlots.json(), rEv.json(), rAnn.json(), rAnnCfg.json()]);
+      if (dCfg.success)    impState.config  = dCfg.config;
+      if (dSlots.success)  impState.slots   = dSlots.slots;
+      if (dEv.success)     impState.eventi  = dEv.eventi;
+      if (dAnn.success)    impAnnate        = dAnn.annate;
+      if (dAnnCfg.success) impAnnateConfig  = dAnnCfg.config;
+      impLoaded = true;
+      // Ripristina orari generatore salvati
+      const gs = localStorage.getItem('imp_gen_start'), ge = localStorage.getItem('imp_gen_end');
+      if (gs) { const el = document.getElementById('imp-gen-start'); if (el) el.value = gs; }
+      if (ge) { const el = document.getElementById('imp-gen-end');   if (el) el.value = ge; }
+      impRenderAll();
+    } catch(e) {
+      impAlert('Errore caricamento dati: ' + e.message);
+    }
+  };
+
+  function impRenderAll() {
+    impRenderStruttura();
+    impRenderAnnateConfig();
+    impRenderSlots();
+    impRenderEventi();
+  }
+
+  // ── Tab switching ──────────────────────────────────────────────
+  window.impSwitchTab = function(tab) {
+    ['struttura','slots','eventi'].forEach(t => {
+      document.getElementById('imp-panel-' + t).style.display = t === tab ? '' : 'none';
+      document.getElementById('imp-tab-' + t).classList.toggle('active', t === tab);
+    });
+  };
+
+  // ── STRUTTURA ─────────────────────────────────────────────────
+  function impRenderStruttura() {
+    document.getElementById('imp-spogliatoi').value = impState.config.spogliatoi || 0;
+    const campi = impState.config.campi || [];
+    const el = document.getElementById('imp-campi-list');
+    if (!campi.length) {
+      el.innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem;text-align:center;padding:20px;">Nessun campo configurato</div>';
+      return;
+    }
+    el.innerHTML = campi.map(c => {
+      const info = CAMPO_INFO[c.tipo] || {};
+      return `<div class="imp-campo-card">
+        <span class="imp-tipo-badge" style="background:${info.color}22;color:${info.color};">${info.label||c.tipo}</span>
+        <span style="font-weight:600;flex:1;">${c.nome}</span>
+        <span style="font-size:0.78rem;color:var(--text-muted);">max ${info.maxAtleti||'?'} atleti · max ${info.maxPorzioni||1} porz.</span>
+        <button onclick="impShowCampoForm('${c.id}')" class="imp-btn-ghost" style="font-size:0.75rem;">✏️</button>
+        <button onclick="impDeleteCampo('${c.id}')" class="imp-btn-danger" style="font-size:0.75rem;">🗑️</button>
+      </div>`;
+    }).join('');
+  }
+
+  window.impSaveConfig = async function() {
+    const spogliatoi = parseInt(document.getElementById('imp-spogliatoi').value) || 0;
+    impState.config.spogliatoi = spogliatoi;
+    try {
+      const r = await fetch('/api/data?action=impianti-config', {
+        method: 'POST', headers: impHeaders(),
+        body: JSON.stringify(impState.config)
+      });
+      const d = await r.json();
+      if (d.success) impAlert('Spogliatoi salvati ✓', true);
+      else impAlert(d.message || 'Errore salvataggio');
+    } catch(e) { impAlert('Errore: ' + e.message); }
+  };
+
+  window.impShowCampoForm = function(id) {
+    const form = document.getElementById('imp-campo-form');
+    const editId = document.getElementById('imp-campo-edit-id');
+    form.style.display = '';
+    if (id) {
+      const c = impState.config.campi.find(x => x.id === id);
+      if (c) {
+        document.getElementById('imp-campo-tipo').value = c.tipo;
+        document.getElementById('imp-campo-nome').value = c.nome;
+        editId.value = id;
+        document.getElementById('imp-campo-form-title').textContent = '✏️ Modifica Campo';
+      }
+    } else {
+      document.getElementById('imp-campo-tipo').value = 'a11';
+      document.getElementById('imp-campo-nome').value = '';
+      editId.value = '';
+      document.getElementById('imp-campo-form-title').textContent = '➕ Aggiungi Campo';
+    }
+    form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+
+  window.impHideCampoForm = function() {
+    document.getElementById('imp-campo-form').style.display = 'none';
+  };
+
+  window.impSaveCampo = async function() {
+    const tipo = document.getElementById('imp-campo-tipo').value;
+    const nome = document.getElementById('imp-campo-nome').value.trim();
+    const editId = document.getElementById('imp-campo-edit-id').value;
+    if (!nome) { impAlert('Inserisci un nome per il campo'); return; }
+    const campi = impState.config.campi;
+    if (editId) {
+      const idx = campi.findIndex(c => c.id === editId);
+      if (idx >= 0) campi[idx] = { ...campi[idx], tipo, nome };
+    } else {
+      campi.push({ id: impUid(), tipo, nome });
+    }
+    try {
+      const r = await fetch('/api/data?action=impianti-config', {
+        method: 'POST', headers: impHeaders(),
+        body: JSON.stringify(impState.config)
+      });
+      const d = await r.json();
+      if (d.success) { impAlert('Campo salvato ✓', true); impHideCampoForm(); impRenderStruttura(); impRefreshCampiSelects(); }
+      else impAlert(d.message || 'Errore salvataggio');
+    } catch(e) { impAlert('Errore: ' + e.message); }
+  };
+
+  window.impDeleteCampo = async function(id) {
+    if (!confirm('Eliminare questo campo? Anche gli slot associati rimarranno ma senza campo valido.')) return;
+    impState.config.campi = impState.config.campi.filter(c => c.id !== id);
+    try {
+      const r = await fetch('/api/data?action=impianti-config', {
+        method: 'POST', headers: impHeaders(),
+        body: JSON.stringify(impState.config)
+      });
+      const d = await r.json();
+      if (d.success) { impAlert('Campo eliminato ✓', true); impRenderStruttura(); impRefreshCampiSelects(); }
+      else impAlert(d.message || 'Errore');
+    } catch(e) { impAlert('Errore: ' + e.message); }
+  };
+
+  function impRefreshCampiSelects() {
+    const campi = impState.config.campi || [];
+    const opts = campi.map(c => `<option value="${c.id}">${c.nome} (${CAMPO_INFO[c.tipo]?.label||c.tipo})</option>`).join('');
+    const noCampi = '<option value="">— Nessun campo configurato —</option>';
+    const slotSel = document.getElementById('imp-slot-campo');
+    const evSel = document.getElementById('imp-ev-campo');
+    if (slotSel) slotSel.innerHTML = campi.length ? opts : noCampi;
+    if (evSel)   evSel.innerHTML   = campi.length ? opts : noCampi;
+    impUpdatePorzioni();
+  }
+
+  // ── Conflict detection ────────────────────────────────────────
+  function impTimeOverlap(a, b) {
+    if (!a.oraInizio || !a.oraFine || !b.oraInizio || !b.oraFine) return false;
+    return a.oraInizio < b.oraFine && b.oraInizio < a.oraFine;
+  }
+
+  // Finestra occupazione spogliatoio: -15 min prima, +30 min dopo (con doccia) o +0 (senza)
+  function impSpoglWindow(slot) {
+    const s = toMin(slot.oraInizio || '00:00') - 15;
+    const e = toMin(slot.oraFine   || '00:00') + (slot.doccia !== false ? 30 : 0);
+    return { s: Math.max(0, s), e };
+  }
+  function impSpoglOverlap(a, b) {
+    const wa = impSpoglWindow(a), wb = impSpoglWindow(b);
+    return wa.s < wb.e && wb.s < wa.e;
+  }
+  // Bin-packing: 1 annata sola ≤25 atleti, 2 annate condivise ≤20 totali — restituisce n° spogliatoi necessari
+  // Bin-packing temporale globale per un array di sessioni (un giorno).
+  // Restituisce Map<id, binNum>. Le sessioni non simultanee possono riusare lo stesso bin.
+  // Regole: max 2 sessioni in contemporanea per bin; se in due, atletiCount combinato ≤ 20.
+  function impSpoglGlobalAssign(sessions) {
+    const result = new Map();
+    const bins = []; // { num, slots: [] }
+    const getOrCreateBin = num => { let b = bins.find(x => x.num === num); if (!b) { b = {num, slots:[]}; bins.push(b); } return b; };
+    // Prima passata: pre-piazza i slot con spogliatoio manuale
+    for (const slot of sessions) {
+      if (slot.spogliatoio > 0) {
+        getOrCreateBin(slot.spogliatoio).slots.push(slot);
+        result.set(slot.id, slot.spogliatoio);
+      }
+    }
+    // Seconda passata: auto-assegnazione per i restanti, ordinati per finestra oraria
+    const auto = [...sessions].filter(s => !(s.spogliatoio > 0)).sort((a, b) => {
+      const wa = impSpoglWindow(a), wb = impSpoglWindow(b);
+      return wa.s - wb.s || (b.atletiCount||0) - (a.atletiCount||0);
+    });
+    for (const slot of auto) {
+      const wSlot = impSpoglWindow(slot);
+      const ac = slot.atletiCount || 0;
+      let placed = false;
+      const sortedBins = [...bins].sort((a, b) => a.num - b.num);
+      for (const bin of sortedBins) {
+        const ov = bin.slots.filter(bs => { const wb = impSpoglWindow(bs); return wSlot.s < wb.e && wb.s < wSlot.e; });
+        if (ov.length === 0) { bin.slots.push(slot); result.set(slot.id, bin.num); placed = true; break; }
+        if (ov.length === 1 && (ov[0].atletiCount||0) + ac <= 20) { bin.slots.push(slot); result.set(slot.id, bin.num); placed = true; break; }
+      }
+      if (!placed) {
+        const usedNums = new Set(bins.map(b => b.num));
+        let num = 1; while (usedNums.has(num)) num++;
+        bins.push({num, slots:[slot]}); result.set(slot.id, num);
+      }
+    }
+    return result;
+  }
+  // Versione semplificata (non temporale) usata solo nel generatore durante il piazzamento
+  function impSpoglNeeded(sessions) {
+    const sorted = [...sessions].sort((a, b) => (b.atletiCount||0) - (a.atletiCount||0));
+    const bins = [];
+    for (const s of sorted) {
+      const ac = s.atletiCount || 0;
+      let placed = false;
+      for (const bin of bins) {
+        if (bin.n === 1 && bin.t + ac <= 20) { bin.n = 2; bin.t += ac; placed = true; break; }
+      }
+      if (!placed) bins.push({ n: 1, t: ac });
+    }
+    return bins.length;
+  }
+
+  function impGetConflicts() {
+    const campoConflicts = new Set();
+    const spoglConflicts = new Set();
+    const slots = impState.slots || [];
+    const totSpogliatoi = parseInt(impState.config.spogliatoi) || 0;
+    const byDay = {};
+    slots.forEach(s => { (byDay[s.giorno] = byDay[s.giorno] || []).push(s); });
+    Object.values(byDay).forEach(daySlots => {
+      // Conflitti campo
+      for (let i = 0; i < daySlots.length; i++) {
+        for (let j = i + 1; j < daySlots.length; j++) {
+          const a = daySlots[i], b = daySlots[j];
+          if (!impTimeOverlap(a, b)) continue;
+          if (a.campoId && a.campoId === b.campoId && String(a.porzione) === String(b.porzione)) {
+            campoConflicts.add(a.id); campoConflicts.add(b.id);
+          }
+        }
+      }
+      // Conflitti spogliatoio — assegnazione globale temporalmente corretta
+      if (totSpogliatoi > 0) {
+        const seen = new Set();
+        const reps = [];
+        const repToIds = new Map();
+        for (const s of daySlots) {
+          if (seen.has(s.id)) continue;
+          const key = impSlotGroupKey(s);
+          const group = daySlots.filter(x => impSlotGroupKey(x) === key);
+          group.forEach(x => seen.add(x.id));
+          reps.push(s);
+          repToIds.set(s.id, group.map(x => x.id));
+        }
+        const assign = impSpoglGlobalAssign(reps);
+        reps.forEach(rep => {
+          if ((assign.get(rep.id) || 0) > totSpogliatoi)
+            repToIds.get(rep.id).forEach(id => spoglConflicts.add(id));
+        });
+      }
+    });
+    return { campoConflicts, spoglConflicts };
+  }
+
+  // ── SLOT SETTIMANALI ──────────────────────────────────────────
+  function impSlotGroupKey(s) {
+    const identity = s.annataId ? `ann:${s.annataId}` : `sq:${s.squadra||''}`;
+    return `${s.giorno}|${s.campoId||''}|${s.oraInizio||''}|${s.oraFine||''}|${identity}`;
+  }
+
+  function impFormatPorzioni(nums) {
+    if (!nums.length) return '';
+    const sorted = [...nums].sort((a,b) => a-b);
+    if (sorted.length === 1) return `Porz. ${sorted[0]}`;
+    const consecutive = sorted.every((v,i) => i === 0 || v === sorted[i-1]+1);
+    return consecutive ? `Porz. ${sorted[0]}-${sorted[sorted.length-1]}` : `Porz. ${sorted.join(', ')}`;
+  }
+
+  const impCleanSquadra = s => (s.squadra || '').replace(/\s*(⏱️|↗|📅)/g,'').trim();
+
+  function impRenderHighlightBar() {
+    const bar = document.getElementById('imp-highlight-bar');
+    if (!bar) return;
+    const slots = impState.slots || [];
+    if (!slots.length) { bar.innerHTML = ''; return; }
+    const squadre = [...new Set(slots.map(impCleanSquadra))].filter(Boolean).sort();
+    const ore = [...new Set(slots.map(s => s.oraInizio).filter(Boolean))].sort();
+    const SQ_COLORS = ['#6366f1','#14b8a6'];
+
+    const squadraChip = s => {
+      const idx = impHL.squadra.indexOf(s);
+      const active = idx >= 0;
+      const color = active ? SQ_COLORS[idx] : null;
+      const nextColor = !active && impHL.squadra.length < 2 ? SQ_COLORS[impHL.squadra.length] : SQ_COLORS[0];
+      const dot = active ? `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${color};margin-right:4px;"></span>` : '';
+      return `<button onclick="impToggleHL('squadra','${s.replace(/'/g,"\\'")}')" style="font-size:0.72rem;padding:2px 10px;border-radius:20px;cursor:pointer;border:1px solid;transition:all 0.15s;${active?`background:${color}22;border-color:${color};color:${color};font-weight:700;`:`background:transparent;color:var(--text-muted);border-color:var(--border-soft);`}">${dot}${s}</button>`;
+    };
+    const oraChip = o => {
+      const active = impHL.ora === o;
+      return `<button onclick="impToggleHL('ora','${o}')" style="font-size:0.72rem;padding:2px 10px;border-radius:20px;cursor:pointer;border:1px solid;transition:all 0.15s;${active?`background:#f59e0b22;border-color:#f59e0b;color:#f59e0b;font-weight:700;`:`background:transparent;color:var(--text-muted);border-color:var(--border-soft);`}">🕐 ${o}</button>`;
+    };
+    const anyActive = impHL.squadra.length > 0 || impHL.ora;
+    const legend = impHL.squadra.length > 0 ? impHL.squadra.map((s,i) =>
+      `<span style="font-size:0.7rem;display:inline-flex;align-items:center;gap:3px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${SQ_COLORS[i]};"></span>${s}</span>`
+    ).join(' vs ') : '';
+
+    bar.innerHTML = `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:5px;padding:6px 0 12px;">
+      <span style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-right:4px;">Evidenzia:</span>
+      ${squadre.map(squadraChip).join('')}
+      ${ore.length > 1 ? `<span style="display:inline-block;width:1px;height:14px;background:var(--border-soft);margin:0 3px;"></span>${ore.map(oraChip).join('')}` : ''}
+      ${anyActive ? `<button onclick="impClearHL()" style="font-size:0.72rem;padding:2px 9px;border-radius:20px;border:1px solid #ef444466;background:transparent;color:#ef4444;cursor:pointer;margin-left:2px;">✕</button>` : ''}
+      ${legend ? `<span style="font-size:0.7rem;color:var(--text-muted);margin-left:6px;">${legend}</span>` : ''}
+    </div>`;
+  }
+
+  function impApplyHighlight() {
+    const { squadra: hs, ora: ho } = impHL;
+    const anyActive = hs.length > 0 || ho;
+    document.querySelectorAll('.imp-slot-card[data-hl-sq]').forEach(card => {
+      card.classList.remove('hl-dim','hl-sq1','hl-sq2','hl-ora');
+      if (!anyActive) return;
+      const sq = card.dataset.hlSq;
+      const i1 = hs[0] && sq === hs[0];
+      const i2 = hs[1] && sq === hs[1];
+      const mO = !ho || card.dataset.hlOra === ho;
+      const mS = hs.length === 0 || i1 || i2;
+      if (mS && mO) {
+        if (i1) card.classList.add('hl-sq1');
+        if (i2) card.classList.add('hl-sq2');
+        if (mO && ho) card.classList.add('hl-ora');
+      } else {
+        card.classList.add('hl-dim');
+      }
+    });
+  }
+
+  window.impToggleHL = function(type, val) {
+    if (type === 'squadra') {
+      const idx = impHL.squadra.indexOf(val);
+      if (idx >= 0) impHL.squadra.splice(idx, 1);       // deseleziona
+      else if (impHL.squadra.length < 2) impHL.squadra.push(val); // aggiungi (max 2)
+      else { impHL.squadra.shift(); impHL.squadra.push(val); }     // sostituisci la prima se già 2
+    } else {
+      impHL[type] = impHL[type] === val ? null : val;
+    }
+    impRenderHighlightBar();
+    impApplyHighlight();
+  };
+  window.impClearHL = function() {
+    impHL = { squadra: [], ora: null };
+    impRenderHighlightBar();
+    impApplyHighlight();
+  };
+
+  function impRenderSlots() {
+    impAggiornaBtnRipristina();
+    const el = document.getElementById('imp-slots-list');
+    const slots = impState.slots || [];
+    if (!slots.length) {
+      el.innerHTML = '<div class="card" style="text-align:center;color:var(--text-muted);padding:28px;font-size:0.85rem;">Nessuno slot configurato</div>';
+      impRenderHighlightBar();
+      return;
+    }
+    const { campoConflicts, spoglConflicts } = impGetConflicts();
+    const byDay = {};
+    slots.forEach(s => { (byDay[s.giorno] = byDay[s.giorno] || []).push(s); });
+    const order = [1,2,3,4,5,6,0];
+    el.innerHTML = order.filter(d => byDay[d]).map(d => {
+      const daySlots = byDay[d].sort((a,b) => (a.oraInizio||'').localeCompare(b.oraInizio||''));
+
+      // Raggruppa porzioni della stessa squadra/orario/campo in un'unica riga
+      const seen = new Set();
+      const groups = [];
+      for (const s of daySlots) {
+        if (seen.has(s.id)) continue;
+        const key = impSlotGroupKey(s);
+        const group = daySlots.filter(x => impSlotGroupKey(x) === key);
+        group.forEach(x => seen.add(x.id));
+        groups.push(group);
+      }
+
+      // Assegnazione spogliatoi globale per il giorno (un rappresentante per gruppo)
+      const totSpogl = parseInt(impState.config.spogliatoi) || 0;
+      const spoglAssign = totSpogl > 0
+        ? impSpoglGlobalAssign(groups.map(g => g[0]))
+        : new Map();
+
+      return `<div style="margin-bottom:16px;">
+        <div style="font-size:0.78rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;padding:0 2px;">${GIORNI[d]}</div>
+        ${groups.map(group => {
+          const s = group[0];
+          const campo = impState.config.campi.find(c => c.id === s.campoId);
+          const info  = campo ? CAMPO_INFO[campo.tipo] : null;
+          const hasConflict = group.some(x => campoConflicts.has(x.id));
+          const hasSpogl    = group.some(x => spoglConflicts.has(x.id));
+          const annata = impAnnate.find(a => a.id === s.annataId);
+          const label  = annata ? `${annata.name} (${annata.atletiCount})` : (s.squadra || '—');
+          const porzLabel = impFormatPorzioni(group.map(x => x.porzione||1));
+          const spoglNum  = spoglAssign.get(s.id);
+          const docFlag   = s.doccia === false ? '🚫🚿' : '';
+          const borderColor = hasConflict ? '#ef4444' : hasSpogl ? '#f59e0b' : 'var(--border-soft)';
+          const warnings = [
+            hasConflict ? '<span style="font-size:0.72rem;background:#fee2e2;color:#dc2626;border-radius:4px;padding:1px 6px;font-weight:700;">⚠️ Campo occupato</span>' : '',
+            hasSpogl    ? '<span style="font-size:0.72rem;background:#fef3c7;color:#d97706;border-radius:4px;padding:1px 6px;font-weight:700;">⚠️ Spogliatoi insufficienti</span>' : '',
+          ].filter(Boolean).join(' ');
+          const groupIds = group.map(x => x.id).join(',');
+          const spoglBadge = spoglNum ? `<span style="font-size:0.72rem;background:#6366f122;color:#818cf8;border-radius:4px;padding:1px 7px;font-weight:600;" title="Spogliatoio assegnato">🚿 ${spoglNum}</span>` : '';
+          const noteTxt = s.note ? `<span style="font-size:0.72rem;color:var(--text-muted);font-style:italic;margin-left:6px;" title="${s.note.replace(/"/g,'&quot;')}">📝 ${s.note}</span>` : '';
+          const cleanSq = impCleanSquadra(s);
+          return `<div class="imp-slot-card" data-hl-sq="${cleanSq.replace(/"/g,'&quot;')}" data-hl-ora="${s.oraInizio||''}" style="border-color:${borderColor}${hasConflict||hasSpogl?';border-width:2px':''};">
+            <span style="font-size:0.82rem;font-weight:700;color:var(--text-muted);min-width:90px;">${s.oraInizio||'--:--'} – ${s.oraFine||'--:--'}</span>
+            ${info ? `<span class="imp-tipo-badge" style="background:${info.color}22;color:${info.color};">${campo.nome}</span>` : ''}
+            <span style="font-size:0.8rem;color:var(--text-muted);">${porzLabel}</span>
+            ${spoglBadge}
+            <span style="flex:1;font-weight:500;">${label}${docFlag ? ' '+docFlag : ''}${warnings?' '+warnings:''}${noteTxt}</span>
+            <button onclick="impShowSlotForm('${s.id}')" class="imp-btn-ghost" style="font-size:0.75rem;">✏️</button>
+            <button onclick="impDeleteSlotGroup('${groupIds}')" class="imp-btn-danger" style="font-size:0.75rem;">🗑️</button>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }).join('');
+    impRenderHighlightBar();
+    impApplyHighlight();
+  }
+
+  window.impUpdatePorzioni = function() {
+    const selCampo = document.getElementById('imp-slot-campo');
+    const selPorz  = document.getElementById('imp-slot-porzione');
+    if (!selCampo || !selPorz) return;
+    const campo = impState.config.campi.find(c => c.id === selCampo.value);
+    const max = campo ? (CAMPO_INFO[campo.tipo]?.maxPorzioni || 1) : 1;
+    const cur = parseInt(selPorz.value) || 1;
+    selPorz.innerHTML = Array.from({length: max}, (_, i) => `<option value="${i+1}"${cur===i+1?' selected':''}>Porzione ${i+1}${max===1?' (intero campo)':''}</option>`).join('');
+  };
+
+  window.impShowSlotForm = function(id) {
+    impRefreshCampiSelects();
+    const form = document.getElementById('imp-slot-form');
+    form.style.display = '';
+    if (id) {
+      const s = impState.slots.find(x => x.id === id);
+      if (s) {
+        document.getElementById('imp-slot-campo').value    = s.campoId || '';
+        impUpdatePorzioni();
+        document.getElementById('imp-slot-porzione').value = s.porzione || '1';
+        document.getElementById('imp-slot-giorno').value   = String(s.giorno ?? 1);
+        document.getElementById('imp-slot-squadra').value  = s.squadra || '';
+        document.getElementById('imp-slot-atleti').value   = s.atletiCount || 0;
+        document.getElementById('imp-slot-spoglio').value  = s.spogliatoio || '';
+        document.getElementById('imp-slot-doccia').checked = s.doccia !== false;
+        document.getElementById('imp-slot-start').value    = s.oraInizio || '';
+        document.getElementById('imp-slot-end').value      = s.oraFine || '';
+        document.getElementById('imp-slot-note').value     = s.note || '';
+        document.getElementById('imp-slot-edit-id').value  = id;
+        document.getElementById('imp-slot-form-title').textContent = '✏️ Modifica Slot';
+      }
+    } else {
+      document.getElementById('imp-slot-edit-id').value   = '';
+      document.getElementById('imp-slot-squadra').value   = '';
+      document.getElementById('imp-slot-atleti').value    = 0;
+      document.getElementById('imp-slot-spoglio').value   = '';
+      document.getElementById('imp-slot-doccia').checked  = true;
+      document.getElementById('imp-slot-start').value     = '';
+      document.getElementById('imp-slot-end').value       = '';
+      document.getElementById('imp-slot-note').value      = '';
+      document.getElementById('imp-slot-form-title').textContent = '➕ Aggiungi Slot';
+    }
+    form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+
+  window.impHideSlotForm = function() {
+    document.getElementById('imp-slot-form').style.display = 'none';
+  };
+
+  window.impSaveSlot = async function() {
+    const campoId    = document.getElementById('imp-slot-campo').value;
+    const porzione   = parseInt(document.getElementById('imp-slot-porzione').value) || 1;
+    const giorno     = parseInt(document.getElementById('imp-slot-giorno').value);
+    const squadra     = (document.getElementById('imp-slot-squadra').value || '').trim();
+    const atletiCount = parseInt(document.getElementById('imp-slot-atleti').value) || 0;
+    const spoglManuale = parseInt(document.getElementById('imp-slot-spoglio').value) || 0;
+    const doccia      = document.getElementById('imp-slot-doccia').checked;
+    const oraInizio  = document.getElementById('imp-slot-start').value;
+    const oraFine    = document.getElementById('imp-slot-end').value;
+    const editId     = document.getElementById('imp-slot-edit-id').value;
+    if (!campoId) { impAlert('Seleziona un campo'); return; }
+    if (!oraInizio || !oraFine) { impAlert('Inserisci ora inizio e fine'); return; }
+    const note = (document.getElementById('imp-slot-note').value || '').trim();
+    const slot = { id: editId || impUid(), campoId, porzione, giorno,
+      annataId: null,
+      squadra, atletiCount, doccia,
+      ...(spoglManuale > 0 ? { spogliatoio: spoglManuale } : {}),
+      ...(note ? { note } : {}),
+      oraInizio, oraFine };
+    try {
+      const r = await fetch('/api/data?action=impianti-slots', {
+        method: 'POST', headers: impHeaders(), body: JSON.stringify({ slot })
+      });
+      const d = await r.json();
+      if (d.success) {
+        impState.slots = d.slots;
+        impAlert('Slot salvato ✓', true);
+        impHideSlotForm();
+        impRenderSlots();
+      } else impAlert(d.message || 'Errore salvataggio');
+    } catch(e) { impAlert('Errore: ' + e.message); }
+  };
+
+  window.impDeleteSlot = async function(id) {
+    if (!confirm('Eliminare questo slot?')) return;
+    try {
+      const r = await fetch('/api/data?action=impianti-slots', {
+        method: 'POST', headers: impHeaders(), body: JSON.stringify({ deleteId: id })
+      });
+      const d = await r.json();
+      if (d.success) { impState.slots = d.slots; impAlert('Slot eliminato ✓', true); impRenderSlots(); }
+      else impAlert(d.message || 'Errore');
+    } catch(e) { impAlert('Errore: ' + e.message); }
+  };
+
+  window.impDeleteSlotGroup = async function(idsStr) {
+    const ids = idsStr.split(',');
+    const msg = ids.length > 1 ? `Eliminare questi ${ids.length} slot (stessa squadra)?` : 'Eliminare questo slot?';
+    if (!confirm(msg)) return;
+    try {
+      const remaining = impState.slots.filter(s => !ids.includes(s.id));
+      const r = await fetch('/api/data?action=impianti-slots', {
+        method: 'POST', headers: impHeaders(), body: JSON.stringify({ replaceAll: remaining })
+      });
+      const d = await r.json();
+      if (d.success) { impState.slots = d.slots; impAlert('Slot eliminati ✓', true); impRenderSlots(); }
+      else impAlert(d.message || 'Errore');
+    } catch(e) { impAlert('Errore: ' + e.message); }
+  };
+
+  // ── SALVA BASE / RIPRISTINA / PULISCI ────────────────────────
+  const IMP_BASE_KEY = 'imp_slots_base';
+
+  function impAggiornaBtnRipristina() {
+    const btn = document.getElementById('imp-btn-ripristina');
+    if (!btn) return;
+    const base = localStorage.getItem(IMP_BASE_KEY);
+    btn.disabled = !base;
+    btn.style.opacity = base ? '1' : '0.4';
+    btn.style.cursor  = base ? 'pointer' : 'default';
+  }
+
+  window.impSalvaBase = function() {
+    if (!impState.slots?.length) { impAlert('Nessuno slot da salvare'); return; }
+    localStorage.setItem(IMP_BASE_KEY, JSON.stringify(impState.slots));
+    impAggiornaBtnRipristina();
+    impAlert(`Base salvata (${impState.slots.length} slot) ✓`, true);
+  };
+
+  window.impRipristinaBase = async function() {
+    const raw = localStorage.getItem(IMP_BASE_KEY);
+    if (!raw) { impAlert('Nessuna base salvata'); return; }
+    if (!confirm('Sostituire tutti gli slot correnti con la base salvata?')) return;
+    const base = JSON.parse(raw);
+    const r = await fetch('/api/data?action=impianti-slots', {
+      method: 'POST', headers: impHeaders(), body: JSON.stringify({ replaceAll: base })
+    });
+    const d = await r.json();
+    if (d.success) { impState.slots = d.slots; impAlert('Base ripristinata ✓', true); impRenderSlots(); }
+    else impAlert(d.message || 'Errore ripristino');
+  };
+
+  window.impClearSlots = async function() {
+    if (!confirm('Eliminare tutti gli slot e ricominciare da zero?')) return;
+    const r = await fetch('/api/data?action=impianti-slots', {
+      method: 'POST', headers: impHeaders(), body: JSON.stringify({ replaceAll: [] })
+    });
+    const d = await r.json();
+    if (d.success) { impState.slots = []; impAlert('Programmazione azzerata ✓', true); impRenderSlots(); }
+    else impAlert(d.message || 'Errore');
+  };
+
+  // ── PARTITE & TORNEI ──────────────────────────────────────────
+  function impRenderEventi() {
+    const el = document.getElementById('imp-eventi-list');
+    const eventi = [...(impState.eventi || [])].sort((a,b) => (a.data||'').localeCompare(b.data||''));
+    if (!eventi.length) {
+      el.innerHTML = '<div class="card" style="text-align:center;color:var(--text-muted);padding:28px;font-size:0.85rem;">Nessuna partita o torneo programmato</div>';
+      return;
+    }
+    el.innerHTML = eventi.map(ev => {
+      const campo = impState.config.campi.find(c => c.id === ev.campoId);
+      const info  = campo ? CAMPO_INFO[campo.tipo] : null;
+      const dateIt = ev.data ? new Date(ev.data + 'T12:00:00').toLocaleDateString('it-IT', {weekday:'short',day:'2-digit',month:'short',year:'numeric'}) : '—';
+      const tipoBadge = ev.tipo === 'torneo'
+        ? `<span class="imp-tipo-badge" style="background:#fef3c722;color:#d97706;">🏆 Torneo</span>`
+        : `<span class="imp-tipo-badge" style="background:#fee2e222;color:#dc2626;">⚽ Partita</span>`;
+      return `<div class="imp-slot-card" style="border-left:3px solid ${ev.tipo==='torneo'?'#f59e0b':'#ef4444'};">
+        ${tipoBadge}
+        <span style="font-weight:600;font-size:0.85rem;">${dateIt}</span>
+        <span style="font-size:0.82rem;color:var(--text-muted);">${ev.oraInizio||''}${ev.oraFine?' – '+ev.oraFine:''}</span>
+        ${info ? `<span class="imp-tipo-badge" style="background:${info.color}22;color:${info.color};font-size:0.7rem;">${info.label}</span>` : ''}
+        <span style="flex:1;font-weight:500;">${ev.squadra||'—'} vs ${ev.avversario||'—'}</span>
+        <span style="font-size:0.78rem;color:var(--text-muted);">🚿 ospite: ${ev.spogliatoiOspite||0}</span>
+        <button onclick="impShowEventoForm('${ev.id}')" class="imp-btn-ghost" style="font-size:0.75rem;">✏️</button>
+        <button onclick="impDeleteEvento('${ev.id}')" class="imp-btn-danger" style="font-size:0.75rem;">🗑️</button>
+      </div>`;
+    }).join('');
+  }
+
+  window.impShowEventoForm = function(id) {
+    impRefreshCampiSelects();
+    const form = document.getElementById('imp-evento-form');
+    form.style.display = '';
+    if (id) {
+      const ev = impState.eventi.find(x => x.id === id);
+      if (ev) {
+        document.getElementById('imp-ev-tipo').value              = ev.tipo || 'partita';
+        document.getElementById('imp-ev-data').value              = ev.data || '';
+        document.getElementById('imp-ev-campo').value             = ev.campoId || '';
+        document.getElementById('imp-ev-squadra').value           = ev.squadra || '';
+        document.getElementById('imp-ev-avversario').value        = ev.avversario || '';
+        document.getElementById('imp-ev-start').value             = ev.oraInizio || '';
+        document.getElementById('imp-ev-end').value               = ev.oraFine || '';
+        document.getElementById('imp-ev-spogliatoi-ospite').value = ev.spogliatoiOspite ?? 1;
+        document.getElementById('imp-ev-note').value              = ev.note || '';
+        document.getElementById('imp-ev-edit-id').value           = id;
+        document.getElementById('imp-evento-form-title').textContent = '✏️ Modifica Evento';
+      }
+    } else {
+      ['imp-ev-data','imp-ev-squadra','imp-ev-avversario','imp-ev-start','imp-ev-end','imp-ev-note'].forEach(i => { const el = document.getElementById(i); if(el) el.value=''; });
+      document.getElementById('imp-ev-spogliatoi-ospite').value = 1;
+      document.getElementById('imp-ev-edit-id').value = '';
+      document.getElementById('imp-evento-form-title').textContent = '➕ Aggiungi Partita / Torneo';
+    }
+    form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+
+  window.impHideEventoForm = function() {
+    document.getElementById('imp-evento-form').style.display = 'none';
+  };
+
+  window.impSaveEvento = async function() {
+    const tipo    = document.getElementById('imp-ev-tipo').value;
+    const data    = document.getElementById('imp-ev-data').value;
+    const campoId = document.getElementById('imp-ev-campo').value;
+    const squadra = document.getElementById('imp-ev-squadra').value.trim();
+    const avversario = document.getElementById('imp-ev-avversario').value.trim();
+    const oraInizio  = document.getElementById('imp-ev-start').value;
+    const oraFine    = document.getElementById('imp-ev-end').value;
+    const spogliatoiOspite = parseInt(document.getElementById('imp-ev-spogliatoi-ospite').value) || 0;
+    const note    = document.getElementById('imp-ev-note').value.trim();
+    const editId  = document.getElementById('imp-ev-edit-id').value;
+    if (!data) { impAlert('Inserisci la data'); return; }
+    if (!campoId) { impAlert('Seleziona un campo'); return; }
+    const evento = { id: editId || impUid(), tipo, data, campoId, squadra, avversario, oraInizio, oraFine, spogliatoiOspite, note };
+    try {
+      const r = await fetch('/api/data?action=impianti-eventi', {
+        method: 'POST', headers: impHeaders(), body: JSON.stringify({ evento })
+      });
+      const d = await r.json();
+      if (d.success) {
+        impState.eventi = d.eventi;
+        impAlert('Evento salvato ✓', true);
+        impHideEventoForm();
+        impRenderEventi();
+      } else impAlert(d.message || 'Errore salvataggio');
+    } catch(e) { impAlert('Errore: ' + e.message); }
+  };
+
+  window.impDeleteEvento = async function(id) {
+    if (!confirm('Eliminare questo evento?')) return;
+    try {
+      const r = await fetch('/api/data?action=impianti-eventi', {
+        method: 'POST', headers: impHeaders(), body: JSON.stringify({ deleteId: id })
+      });
+      const d = await r.json();
+      if (d.success) { impState.eventi = d.eventi; impAlert('Evento eliminato ✓', true); impRenderEventi(); }
+      else impAlert(d.message || 'Errore');
+    } catch(e) { impAlert('Errore: ' + e.message); }
+  };
+
+  // ── CONFIGURAZIONE ANNATE (per auto-scheduling) ───────────────
+  const INP = 'width:100%;padding:6px 8px;border-radius:6px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.82rem;box-sizing:border-box;';
+
+  function impRenderAnnateConfig() {
+    const el = document.getElementById('imp-annate-cfg-rows');
+    if (!el) return;
+    if (!impAnnateConfig.length) {
+      el.innerHTML = '<div style="color:var(--text-muted);font-size:0.82rem;padding:8px 2px;">Nessuna riga. Clicca "+ Aggiungi" per inserire una squadra.</div>';
+      return;
+    }
+    el.innerHTML = impAnnateConfig.map(r => impAnnataRowHtml(r)).join('');
+  }
+
+  function impAnnataRowHtml(r) {
+    const tipiOpts = Object.entries(CAMPO_INFO).map(([k,v])=>`<option value="${k}"${r.campoTipo===k?' selected':''}>${v.label}</option>`).join('');
+    const tipiAltOpts = `<option value="">—</option>` + Object.entries(CAMPO_INFO).map(([k,v])=>`<option value="${k}"${r.campoTipoAlt===k?' selected':''}>${v.label}</option>`).join('');
+    const gp = Array.isArray(r.giorniPref) ? r.giorniPref : (Array.isArray(r.giorni) ? r.giorni : []);
+    const dayCbs = [[1,'L'],[2,'M'],[3,'M'],[4,'G'],[5,'V']].map(([v,l])=>
+      `<label style="font-size:0.74rem;cursor:pointer;display:inline-flex;align-items:center;gap:2px;"><input type="checkbox" value="${v}"${gp.includes(v)?' checked':''}> ${l}</label>`
+    ).join('');
+    const fasciaOpts = [
+      ['','— Lib.'],['prima','🌅 Prima'],['tarda','🌙 Tarda']
+    ].map(([v,l])=>`<option value="${v}"${r.fascia===v?' selected':''}>${l}</option>`).join('');
+    const docCh = r.doccia !== false ? 'checked' : '';
+    return `<div style="display:grid;grid-template-columns:2fr 60px 150px 95px 95px 58px 52px 72px 45px 32px 32px;gap:6px;align-items:center;margin-bottom:6px;" data-row-id="${r.id}">
+      <input type="text" value="${r.nome||''}" placeholder="es. Under 15, Prima Squadra" data-f="nome" style="${INP}">
+      <input type="number" value="${r.atletiCount||0}" min="1" max="200" data-f="atleti" style="${INP}text-align:center;">
+      <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;" data-f="giorniPref">${dayCbs}</div>
+      <select data-f="campoTipo" style="${INP}">${tipiOpts}</select>
+      <select data-f="campoTipoAlt" style="${INP}">${tipiAltOpts}</select>
+      <input type="number" value="${r.durata||90}" min="30" max="180" step="15" data-f="durata" style="${INP}text-align:center;">
+      <input type="number" value="${r.durataRid||''}" placeholder="—" min="30" max="180" step="15" data-f="durataRid" style="${INP}text-align:center;">
+      <select data-f="fascia" style="${INP}">${fasciaOpts}</select>
+      <div style="display:flex;justify-content:center;align-items:center;"><input type="checkbox" data-f="doccia" ${docCh} title="Doccia post-allenamento (+30 min spogliatoio)" style="width:16px;height:16px;cursor:pointer;"></div>
+      <input type="text" value="${r.coppiaCon||''}" maxlength="3" data-f="coppiaCon" title="Gruppo allenamento: stessa lettera = giorni condivisi (es. A per Prima Squadra e Juniores)" placeholder="—" style="${INP}text-align:center;padding:4px 2px;font-weight:700;font-size:0.82rem;">
+      <button onclick="impRemoveAnnataRow('${r.id}')" class="imp-btn-danger" style="padding:5px 8px;">🗑️</button>
+    </div>`;
+  }
+
+  window.impAddAnnataRow = function() {
+    impAnnateConfig.push({ id: impUid(), nome: '', atletiCount: 0, giorniPref: [1,3], campoTipo: 'a11', campoTipoAlt: '', durata: 90, durataRid: 0, fascia: '', doccia: true, coppiaCon: '' });
+    impRenderAnnateConfig();
+    document.getElementById('imp-annate-cfg-rows')?.lastElementChild?.querySelector('input')?.focus();
+  };
+
+  window.impRemoveAnnataRow = function(id) {
+    impAnnateConfig = impAnnateConfig.filter(r => r.id !== id);
+    impRenderAnnateConfig();
+  };
+
+  function impReadAnnateConfigFromDom() {
+    const rows = document.querySelectorAll('[data-row-id]');
+    return [...rows].map(row => {
+      const id = row.dataset.rowId;
+      const get = f => row.querySelector(`[data-f="${f}"]`)?.value || '';
+      const giorniPref = [...row.querySelectorAll('[data-f="giorniPref"] input:checked')].map(cb => parseInt(cb.value));
+      return {
+        id,
+        nome:        get('nome').trim(),
+        atletiCount: parseInt(get('atleti')) || 0,
+        giorniPref,
+        campoTipo:    get('campoTipo') || 'a11',
+        campoTipoAlt: get('campoTipoAlt') || '',
+        durata:       parseInt(get('durata')) || 90,
+        durataRid:    parseInt(get('durataRid')) || 0,
+        fascia:       get('fascia') || '',
+        doccia:       row.querySelector('[data-f="doccia"]')?.checked !== false,
+        coppiaCon:    get('coppiaCon').trim(),
+      };
+    }).filter(r => r.nome);
+  }
+
+  window.impSaveAnnateConfig = async function() {
+    impAnnateConfig = impReadAnnateConfigFromDom();
+    try {
+      const r = await fetch('/api/data?action=impianti-annate-config', {
+        method: 'POST', headers: impHeaders(), body: JSON.stringify({ config: impAnnateConfig })
+      });
+      const d = await r.json();
+      if (d.success) impAlert('Configurazione annate salvata ✓', true);
+      else impAlert(d.message || 'Errore salvataggio');
+    } catch(e) { impAlert('Errore: ' + e.message); }
+  };
+
+  // ── GENERATORE PROPOSTA ───────────────────────────────────────
+  // Capienza totale campo — somma atleti di tutte le squadre su quel campo/orario
+  const CAMPO_MAX = { a11: 55, a9: 35, a7: 25, a5: 15 };
+
+  function toMin(t) { const [h,m] = t.split(':').map(Number); return h*60+m; }
+  function toTime(m) { return `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`; }
+
+  window.impToggleGeneratore = function() {
+    const el = document.getElementById('imp-generatore');
+    const btn = document.getElementById('imp-gen-toggle');
+    const open = el.style.display !== 'none';
+    el.style.display = open ? 'none' : '';
+    btn.textContent = open ? '▼ Mostra parametri' : '▲ Nascondi';
+  };
+
+  window.impGeneraProposta = function() {
+    const giorni = [...document.querySelectorAll('.imp-giorno-cb:checked')].map(cb => parseInt(cb.value));
+    const oraInizio = document.getElementById('imp-gen-start').value || '16:00';
+    const oraFine   = document.getElementById('imp-gen-end').value   || '20:00';
+    if (!giorni.length) { impAlert('Seleziona almeno un giorno disponibile'); return; }
+    if (toMin(oraInizio) >= toMin(oraFine)) { impAlert('Orario fine deve essere dopo orario inizio'); return; }
+    // Leggi configurazione corrente dal DOM (anche se non salvata)
+    const cfgCorrente = impReadAnnateConfigFromDom();
+    if (!cfgCorrente.length) { impAlert('Aggiungi almeno una squadra nella Configurazione Allenamenti (tab Struttura)'); return; }
+    if (!impState.config.campi.length) { impAlert('Configura prima i campi nel tab Struttura'); return; }
+
+    const { slots, unscheduled } = impRunAlgoritmo({ giorni, oraInizio, oraFine, annateConfig: cfgCorrente });
+    impPropostaGenerata = slots;
+
+    const preview = document.getElementById('imp-gen-preview');
+    const list    = document.getElementById('imp-gen-preview-list');
+    const unsched = document.getElementById('imp-gen-unscheduled');
+    preview.style.display = '';
+
+    const GIORNI_NOMI = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+    const byDay = {};
+    slots.forEach(s => { (byDay[s.giorno] = byDay[s.giorno]||[]).push(s); });
+    const order = [1,2,3,4,5,6,0];
+    list.innerHTML = order.filter(d => byDay[d]).map(d => {
+      const ds = byDay[d].sort((a,b)=>a.oraInizio.localeCompare(b.oraInizio));
+      return `<div style="margin-bottom:8px;"><strong style="font-size:0.78rem;color:var(--text-muted);text-transform:uppercase;">${GIORNI_NOMI[d]}</strong><br>` +
+        ds.map(s => {
+          const campo = impState.config.campi.find(c=>c.id===s.campoId);
+          return `<span style="display:inline-block;margin:2px 4px 2px 0;font-size:0.8rem;background:var(--bg-panel);border:1px solid var(--border-soft);border-radius:6px;padding:2px 8px;">
+            ${s.oraInizio}–${s.oraFine} · <strong>${s.squadra}</strong> (${s.atletiCount}) · ${campo?.nome||'?'} Porz.${s.porzione}
+          </span>`;
+        }).join('') + '</div>';
+    }).join('') || '<div style="color:var(--text-muted);font-size:0.85rem;">Nessuno slot generabile con i parametri attuali.</div>';
+
+    // Riepilogo per annata: richiesto vs assegnato
+    const riepilogo = cfgCorrente.map(ac => {
+      const richiesti = (Array.isArray(ac.giorniPref) && ac.giorniPref.length)
+        ? ac.giorniPref.filter(d => giorni.includes(d)).length : giorni.length;
+      const cleanName = ac.nome.trim();
+      const assegnati = [...new Set(
+        slots.filter(s => s.squadra.replace(/\s*(⏱️|↗|📅)/g,'').trim() === cleanName).map(s => s.giorno)
+      )].length;
+      const ok = assegnati >= richiesti;
+      return `<span style="display:inline-flex;align-items:center;gap:4px;margin:2px 4px 2px 0;font-size:0.78rem;
+        background:${ok?'#d1fae522':'#fee2e222'};border:1px solid ${ok?'#34d39944':'#f8717144'};
+        border-radius:6px;padding:2px 8px;color:${ok?'#6ee7b7':'#fca5a5'};">
+        ${ok?'✓':'⚠️'} <strong>${cleanName}</strong> ${assegnati}/${richiesti}gg
+      </span>`;
+    }).join('');
+    unsched.style.display = '';
+    unsched.style.background = 'transparent';
+    unsched.style.color = 'inherit';
+    unsched.style.padding = '6px 0 0';
+    unsched.innerHTML = `<div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:4px;">Riepilogo annate:</div>${riepilogo}` +
+      (unscheduled.length ? `<div style="margin-top:8px;padding:8px 10px;background:#fee2e2;border-radius:8px;font-size:0.82rem;color:#991b1b;">⚠️ Non pianificati:<br>${unscheduled.map(u=>`• ${u}`).join('<br>')}</div>` : '');
+  };
+
+  function impRunAlgoritmo({ giorni, oraInizio, oraFine, annateConfig }) {
+    const generated = [];
+    const unscheduled = [];
+    const campi = impState.config.campi || [];
+    const totSpogliatoi = parseInt(impState.config.spogliatoi) || 0;
+    const startMin = toMin(oraInizio);
+    const endMin   = toMin(oraFine);
+
+    // ── Vincolo 1: fascia d'età (auto-detect dall'anno nel nome) ──────────
+    const groupOf = nome => {
+      const yrs = (nome.match(/\d{4}/g) || []).map(Number);
+      if (!yrs.length) return 'adulti';
+      const y = Math.min(...yrs);
+      if (y >= 2015) return 'piccoli';
+      if (y >= 2012) return 'medi';
+      if (y >= 2009) return 'grandi';
+      return 'adulti';
+    };
+    const assignedDays = new Map(); // nome → Set<giorno>
+
+    // ── Vincolo 2: max 2 giorni consecutivi ───────────────────────────────
+    const wouldRun3 = (used, g) => {
+      const arr = [...used, g].sort((a, b) => a - b);
+      for (let i = 0; i < arr.length - 2; i++)
+        if (arr[i+1] === arr[i]+1 && arr[i+2] === arr[i]+2) return true;
+      return false;
+    };
+
+    // Interleave days lo→hi→lo+1→hi-1→... to spread preferred days apart and avoid greedy consecutive traps
+    const spreadDays = arr => {
+      const s = [...arr].sort((a,b)=>a-b);
+      const r=[]; let lo=0, hi=s.length-1;
+      while(lo<=hi){ r.push(s[lo++]); if(lo<=hi) r.push(s[hi--]); }
+      return r;
+    };
+
+    // Ordina: prima fascia "prima" (bambini), poi libre, poi "tarda" (adulti)
+    // Così le squads del primo orario vengono piazzate prime → le squads tarda trovano
+    // già occupati gli spogliatoi e slittano da soli di 15' invece di comprimere l'orario
+    const fasciaRank = f => f === 'prima' ? 0 : f === 'tarda' ? 2 : 1;
+    const sorted = [...annateConfig].sort((a,b) => {
+      const fr = fasciaRank(a.fascia||'') - fasciaRank(b.fascia||'');
+      if (fr !== 0) return fr;
+      return (b.atletiCount||0) - (a.atletiCount||0);
+    });
+
+    const isPortionFree = (campoId, porzione, giorno, sT, eT) =>
+      !generated.some(s => s.campoId===campoId && s.porzione===porzione && s.giorno===giorno && s.oraInizio<eT && sT<s.oraFine);
+
+    for (const ac of sorted) {
+      const nome = ac.nome || '—';
+      const atletiCount = ac.atletiCount || 0;
+      const durata = ac.durata || 90;
+      const durataRid = ac.durataRid || 0;
+      const campoTipo = ac.campoTipo || 'a11';
+      const campoTipoAlt = ac.campoTipoAlt || '';
+      const fascia = ac.fascia || '';
+      const giorniPref = Array.isArray(ac.giorniPref) && ac.giorniPref.length ? ac.giorniPref : null;
+      const availDays = giorniPref ? giorniPref.filter(d => giorni.includes(d)) : giorni;
+
+      // Fascia oraria: Prima (bambini) = prima metà, Tarda (adulti) = seconda metà, Libera = tutto
+      const midMin = Math.floor((startMin + endMin) / 2);
+      const fStart = fascia === 'tarda' ? midMin  : startMin;
+      const fEnd   = fascia === 'prima' ? midMin  : endMin;
+
+      // Cascata campo: 1) campo pri + piena, 2) campo alt + piena, 3) campo pri + ridotta, 4) campo alt + ridotta
+      const attempts = [
+        { tipo: campoTipo,    dur: durata,    rid: false },
+        ...(campoTipoAlt ? [{ tipo: campoTipoAlt, dur: durata, rid: false }] : []),
+        ...(durataRid    ? [{ tipo: campoTipo,    dur: durataRid, rid: true  }] : []),
+        ...(campoTipoAlt && durataRid ? [{ tipo: campoTipoAlt, dur: durataRid, rid: true }] : []),
+      ];
+
+      const hasCampi = attempts.some(a => campi.some(c => c.tipo === a.tipo));
+      if (!hasCampi) {
+        unscheduled.push(`${nome}: nessun campo configurato (${CAMPO_INFO[campoTipo]?.label||campoTipo})`);
+        continue;
+      }
+
+      const loadOf = d => generated.filter(s => s.giorno === d).length;
+
+      const fallbackDays = giorni
+        .filter(d => !availDays.includes(d))
+        .sort((a, b) => loadOf(a) - loadOf(b));
+
+      // Vincolo 1: giorni già usati dalla stessa fascia d'età → mettili in cima
+      const myGroup = groupOf(nome);
+      const groupDays = new Set();
+      for (const [pNome, pDaySet] of assignedDays)
+        if (groupOf(pNome) === myGroup) pDaySet.forEach(d => groupDays.add(d));
+
+      // Vincolo 3 (gruppo allenamento): annate con lo stesso codice lettera condividono i giorni
+      const coppiaCode = (ac.coppiaCon || '').trim().toUpperCase();
+      const coppiaDays = new Set();
+      if (coppiaCode) {
+        for (const other of annateConfig) {
+          if (other.id === ac.id) continue;
+          if ((other.coppiaCon || '').trim().toUpperCase() === coppiaCode) {
+            const pDaySet = assignedDays.get(other.nome || '—');
+            if (pDaySet) pDaySet.forEach(d => coppiaDays.add(d));
+          }
+        }
+      }
+
+      const dedup = (arr) => [...new Set(arr)];
+
+      // Costruisce ordCandidates:
+      // — Con coppiaCon: alterna giorni-coppia e giorni-non-coppia (interleave) così
+      //   non vengono piazzati tutti i giorni-coppia di seguito creando 3 consecutivi
+      // — Senza coppiaCon: spread per età-gruppo + preferred + fallback
+      let ordCandidates;
+      if (coppiaDays.size > 0) {
+        const coppiaList    = spreadDays([...coppiaDays].filter(d => giorni.includes(d)));
+        const nonCoppiaAvail = spreadDays(availDays.filter(d => !coppiaDays.has(d)));
+        const nonCoppiaFb   = fallbackDays.filter(d => !coppiaDays.has(d));
+        const nonCoppiaList = [...nonCoppiaAvail, ...nonCoppiaFb];
+        const intl = [];
+        const mx = Math.max(coppiaList.length, nonCoppiaList.length);
+        for (let i = 0; i < mx; i++) {
+          if (i < coppiaList.length)    intl.push(coppiaList[i]);
+          if (i < nonCoppiaList.length) intl.push(nonCoppiaList[i]);
+        }
+        ordCandidates = dedup(intl);
+      } else {
+        ordCandidates = dedup([
+          ...spreadDays(availDays.filter(d =>  groupDays.has(d))),
+          ...spreadDays(availDays.filter(d => !groupDays.has(d))),
+          ...fallbackDays.filter(d =>  groupDays.has(d)),
+          ...fallbackDays.filter(d => !groupDays.has(d)),
+        ]);
+      }
+
+      // Conta quante volte questa annata è già stata messa sul campo alternativo
+      let altCampoUsed = 0;
+
+      const tryPlaceOnDay = (giorno, isFallback, tStart, tEnd) => {
+        for (const att of attempts) {
+          // Max 1 uso del campo alternativo per stagione (evita che grandi squadre A11
+          // finiscano spesso sul campo piccolo)
+          const isAlt = campoTipoAlt && att.tipo === campoTipoAlt;
+          if (isAlt && altCampoUsed >= 1) continue;
+          const cands = campi.filter(c => c.tipo === att.tipo);
+          if (!cands.length) continue;
+          const mxP      = CAMPO_INFO[att.tipo]?.maxPorzioni || 1;
+          const campoMax = CAMPO_MAX[att.tipo] || 999;
+          for (let t = tStart; t + att.dur <= tEnd; t += 15) {
+            const sT = toTime(t), eT = toTime(t + att.dur);
+            if (totSpogliatoi > 0) {
+              const preview = { oraInizio: sT, oraFine: eT, atletiCount, doccia: ac.doccia !== false };
+              const spoglOvl = generated.filter(s => s.giorno === giorno && impSpoglOverlap(s, preview));
+              if (impSpoglNeeded([preview, ...spoglOvl]) > totSpogliatoi) continue;
+            }
+            for (const campo of cands) {
+              const atletiGia = generated
+                .filter(s => s.campoId === campo.id && s.giorno === giorno && s.oraInizio < eT && sT < s.oraFine)
+                .reduce((sum, s) => sum + (s.atletiCount || 0), 0);
+              if (atletiGia + atletiCount > campoMax) continue;
+              for (let p = 1; p <= mxP; p++) {
+                if (!isPortionFree(campo.id, p, giorno, sT, eT)) continue;
+                let label = att.rid ? `${nome} ⏱️` : (att.tipo !== campoTipo ? `${nome} ↗` : nome);
+                if (isFallback) label += ' 📅';
+                generated.push({ id: impUid(), campoId: campo.id, porzione: p, giorno,
+                  annataId: null, squadra: label, atletiCount,
+                  doccia: ac.doccia !== false, oraInizio: sT, oraFine: eT });
+                if (isAlt) altCampoUsed++;
+                return true;
+              }
+            }
+          }
+        }
+        return false;
+      };
+
+      let assigned = 0;
+      const usedDays = new Set();
+
+      // Pass A: candidati ordinati (coppia→gruppo→preferred), interleaved, rispetta non-consecutivi, fascia
+      for (const g of ordCandidates) {
+        if (assigned >= availDays.length) break;
+        if (usedDays.has(g) || wouldRun3(usedDays, g)) continue;
+        if (tryPlaceOnDay(g, !availDays.includes(g), fStart, fEnd)) { assigned++; usedDays.add(g); }
+      }
+      // Pass A2: tutti i giorni per carico, ancora non-consecutivi, fascia — esaurisce opzioni prima di rilassare
+      if (assigned < availDays.length) {
+        const byLoad = [...giorni].filter(d => !usedDays.has(d)).sort((a, b) => loadOf(a) - loadOf(b));
+        for (const g of byLoad) {
+          if (assigned >= availDays.length) break;
+          if (wouldRun3(usedDays, g)) continue;
+          if (tryPlaceOnDay(g, !availDays.includes(g), fStart, fEnd)) { assigned++; usedDays.add(g); }
+        }
+      }
+      // Pass B: candidati ordinati, rilassa vincolo consecutivi (solo se A+A2 non bastano), mantiene fascia
+      if (assigned < availDays.length) {
+        for (const g of ordCandidates) {
+          if (assigned >= availDays.length) break;
+          if (usedDays.has(g)) continue;
+          if (tryPlaceOnDay(g, !availDays.includes(g), fStart, fEnd)) { assigned++; usedDays.add(g); }
+        }
+      }
+      // Pass C (last resort): tutti i giorni per carico, non-consecutivi, finestra piena
+      if (assigned < availDays.length && fascia) {
+        const byLoad = [...giorni].filter(d => !usedDays.has(d)).sort((a, b) => loadOf(a) - loadOf(b));
+        for (const g of byLoad) {
+          if (assigned >= availDays.length) break;
+          if (wouldRun3(usedDays, g)) continue;
+          if (tryPlaceOnDay(g, true, startMin, endMin)) { assigned++; usedDays.add(g); }
+        }
+      }
+      // Pass D (absolute fallback): nessun vincolo, finestra piena
+      if (assigned < availDays.length) {
+        const byLoad = [...giorni].filter(d => !usedDays.has(d)).sort((a, b) => loadOf(a) - loadOf(b));
+        for (const g of byLoad) {
+          if (assigned >= availDays.length) break;
+          if (tryPlaceOnDay(g, true, startMin, endMin)) { assigned++; usedDays.add(g); }
+        }
+      }
+
+      assignedDays.set(nome, new Set(usedDays));
+      if (assigned < availDays.length)
+        unscheduled.push(`${nome}: programmati ${assigned}/${availDays.length} giorni (mancano slot liberi)`);
+    }
+    return { slots: generated, unscheduled };
+  }
+
+  window.impResetPreview = function() {
+    impPropostaGenerata = [];
+    document.getElementById('imp-gen-preview').style.display = 'none';
+  };
+
+  async function impSalvaSlots(newSlots) {
+    try {
+      const r = await fetch('/api/data?action=impianti-slots', {
+        method: 'POST', headers: impHeaders(), body: JSON.stringify({ replaceAll: newSlots })
+      });
+      const d = await r.json();
+      if (d.success) { impState.slots = d.slots; impRenderSlots(); impResetPreview(); impAlert('Slot salvati ✓', true); }
+      else impAlert(d.message||'Errore salvataggio');
+    } catch(e) { impAlert('Errore: '+e.message); }
+  }
+
+  window.impApplyProposta = async function() {
+    if (!impPropostaGenerata.length) return;
+    if (!confirm(`Sostituire tutti gli ${impState.slots.length} slot esistenti con i ${impPropostaGenerata.length} generati?`)) return;
+    await impSalvaSlots(impPropostaGenerata);
+  };
+
+  window.impApplyPropostaAppend = async function() {
+    if (!impPropostaGenerata.length) return;
+    await impSalvaSlots([...impState.slots, ...impPropostaGenerata]);
+  };
+
+  // ── AI CHAT ──────────────────────────────────────────────────────
+  let impAiHistory = [];
+
+  window.impAiToggle = function() {
+    const panel = document.getElementById('imp-ai-panel');
+    panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
+  };
+
+  window.impAiClearChat = function() {
+    impAiHistory = [];
+    document.getElementById('imp-ai-msgs').innerHTML =
+      '<div class="imp-ai-msg ai">Ciao! Sono l\'assistente AI per la gestione impianti. Posso analizzare slot, conflitti e suggerire ottimizzazioni. Come posso aiutarti?</div>';
+  };
+
+  function impAiBuildContext() {
+    const { campoConflicts, spoglConflicts } = impGetConflicts();
+    return {
+      config: {
+        campi: impState.config.campi.map(c => ({ id: c.id, nome: c.nome, tipo: c.tipo, porzioni: c.porzioni })),
+        spogliatoi: impState.config.spogliatoi
+      },
+      annateConfig: impAnnateConfig.map(a => ({
+        nome: a.nome, atleti: a.atletiCount,
+        giorniPref: (a.giorniPref||[]).map(d => ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'][d]||d),
+        campo: a.campoTipo, durata: a.durata, fascia: a.fascia, coppiaCon: a.coppiaCon
+      })),
+      slots: impState.slots.map(s => {
+        const campo = impState.config.campi.find(c => c.id === s.campoId);
+        return {
+          squadra: s.squadra,
+          giorno: ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'][s.giorno] || s.giorno,
+          oraInizio: s.oraInizio, oraFine: s.oraFine,
+          campo: campo?.nome,
+          conflittoCampo: campoConflicts.has(s.id),
+          conflittoSpogliatoi: spoglConflicts.has(s.id)
+        };
+      }),
+      conflitti: { campo: campoConflicts.size, spogliatoi: spoglConflicts.size }
+    };
+  }
+
+  window.impAiSend = async function() {
+    const input = document.getElementById('imp-ai-input');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+
+    const msgs = document.getElementById('imp-ai-msgs');
+    const addMsg = (role, content, extraClass) => {
+      const div = document.createElement('div');
+      div.className = 'imp-ai-msg ' + role + (extraClass ? ' ' + extraClass : '');
+      div.textContent = content;
+      msgs.appendChild(div);
+      msgs.scrollTop = msgs.scrollHeight;
+      return div;
+    };
+
+    addMsg('user', text);
+    impAiHistory.push({ role: 'user', content: text });
+    const typing = addMsg('ai', '…', 'typing');
+
+    try {
+      const r = await fetch('/api/data?action=ai-chat', {
+        method: 'POST',
+        headers: impHeaders(),
+        body: JSON.stringify({ messages: impAiHistory, context: impAiBuildContext() })
+      });
+      const d = await r.json();
+      typing.remove();
+      if (d.success) {
+        addMsg('ai', d.reply);
+        impAiHistory.push({ role: 'assistant', content: d.reply });
+        if (impAiHistory.length > 20) impAiHistory.splice(0, 2);
+      } else {
+        addMsg('ai', '⚠️ ' + (d.message || 'Errore nella risposta AI'));
+      }
+    } catch(e) {
+      typing.remove();
+      addMsg('ai', '⚠️ Errore di connessione: ' + e.message);
+    }
+  };
+
+})();
 </script>
+
+<!-- ── AI Chat Panel (Gestione Impianti) ── -->
+<button id="imp-ai-fab" title="Assistente AI Impianti" onclick="impAiToggle()">🤖</button>
+<div id="imp-ai-panel">
+  <div id="imp-ai-header">
+    <span style="font-size:1rem;">🤖</span>
+    <span style="font-weight:600;font-size:0.88rem;flex:1;color:var(--text-primary);">Assistente Impianti AI</span>
+    <button onclick="impAiClearChat()" title="Nuova conversazione" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem;padding:2px 7px;border-radius:5px;">🗑️ Reset</button>
+    <button onclick="impAiToggle()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.1rem;padding:2px 7px;border-radius:5px;line-height:1;">✕</button>
+  </div>
+  <div id="imp-ai-msgs">
+    <div class="imp-ai-msg ai">Ciao! Sono l'assistente AI per la gestione impianti. Posso analizzare slot, conflitti e suggerire ottimizzazioni. Come posso aiutarti?</div>
+  </div>
+  <div id="imp-ai-input-row">
+    <textarea id="imp-ai-input" placeholder="Chiedi qualcosa sull'impianto…" rows="1"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();impAiSend();}"></textarea>
+    <button onclick="impAiSend()" class="imp-btn" style="padding:7px 13px;align-self:flex-end;flex-shrink:0;">➤</button>
+  </div>
+</div>
 </body>
 </html>

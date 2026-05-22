@@ -265,6 +265,159 @@ if (req.query?.action === 'alert-settings') {
   }
 }
 
+// ── Impianti: campi e spogliatoi (solo Platinum — ruoli direttivo/dirigente/staff/admin) ──
+function canImpianti(role) {
+  return ['admin','direttivo','dirigente','staff'].includes(String(role||'').toLowerCase());
+}
+
+if (req.query?.action === 'impianti-annate-config') {
+  const sid = (req.headers['x-society-id'] || '').trim();
+  if (!sid) return res.status(400).json({ success: false, message: 'societyId mancante' });
+  if (!session.isAuthenticated || !canImpianti(session.role))
+    return res.status(401).json({ success: false, message: 'Non autorizzato' });
+  if (req.method === 'GET') {
+    const cfg = (await kv.get(`society:${sid}:impianti:annate-config`)) || [];
+    return res.status(200).json({ success: true, config: cfg });
+  }
+  if (req.method === 'POST') {
+    const { config } = req.body || {};
+    await kv.set(`society:${sid}:impianti:annate-config`, Array.isArray(config) ? config : []);
+    return res.status(200).json({ success: true });
+  }
+}
+
+if (req.query?.action === 'impianti-annate') {
+  const sid = (req.headers['x-society-id'] || '').trim();
+  if (!sid) return res.status(400).json({ success: false, message: 'societyId mancante' });
+  if (!session.isAuthenticated || !canImpianti(session.role))
+    return res.status(401).json({ success: false, message: 'Non autorizzato' });
+  const allAnnate = (await kv.get('annate:list')) || [];
+  const societyAnnate = allAnnate.filter(a => !a.societyId || a.societyId === sid);
+  const withCounts = await Promise.all(societyAnnate.map(async a => {
+    const athletes = (await kv.get(`annate:${a.id}:athletes`)) || [];
+    return { id: a.id, name: a.name || a.id, atletiCount: athletes.filter(x => !x.isGuest).length };
+  }));
+  return res.status(200).json({ success: true, annate: withCounts });
+}
+
+if (req.query?.action === 'impianti-config') {
+  const sid = (req.headers['x-society-id'] || '').trim();
+  if (!sid) return res.status(400).json({ success: false, message: 'societyId mancante' });
+  if (!session.isAuthenticated || !canImpianti(session.role))
+    return res.status(401).json({ success: false, message: 'Non autorizzato' });
+  if (req.method === 'GET') {
+    const config = (await kv.get(`society:${sid}:impianti:config`)) || { campi: [], spogliatoi: 0 };
+    return res.status(200).json({ success: true, config });
+  }
+  if (req.method === 'POST') {
+    const { campi, spogliatoi } = req.body || {};
+    await kv.set(`society:${sid}:impianti:config`, {
+      campi: Array.isArray(campi) ? campi : [],
+      spogliatoi: Math.max(0, parseInt(spogliatoi) || 0)
+    });
+    return res.status(200).json({ success: true });
+  }
+}
+
+if (req.query?.action === 'impianti-slots') {
+  const sid = (req.headers['x-society-id'] || '').trim();
+  if (!sid) return res.status(400).json({ success: false, message: 'societyId mancante' });
+  if (!session.isAuthenticated || !canImpianti(session.role))
+    return res.status(401).json({ success: false, message: 'Non autorizzato' });
+  if (req.method === 'GET') {
+    const slots = (await kv.get(`society:${sid}:impianti:slots`)) || [];
+    return res.status(200).json({ success: true, slots });
+  }
+  if (req.method === 'POST') {
+    const { slot, deleteId, replaceAll } = req.body || {};
+    let slots = (await kv.get(`society:${sid}:impianti:slots`)) || [];
+    if (Array.isArray(replaceAll)) {
+      slots = replaceAll;
+    } else if (deleteId) {
+      slots = slots.filter(s => s.id !== deleteId);
+    } else if (slot && slot.id) {
+      const idx = slots.findIndex(s => s.id === slot.id);
+      if (idx >= 0) slots[idx] = slot; else slots.push(slot);
+    }
+    await kv.set(`society:${sid}:impianti:slots`, slots);
+    return res.status(200).json({ success: true, slots });
+  }
+}
+
+if (req.query?.action === 'impianti-eventi') {
+  const sid = (req.headers['x-society-id'] || '').trim();
+  if (!sid) return res.status(400).json({ success: false, message: 'societyId mancante' });
+  if (!session.isAuthenticated || !canImpianti(session.role))
+    return res.status(401).json({ success: false, message: 'Non autorizzato' });
+  if (req.method === 'GET') {
+    const eventi = (await kv.get(`society:${sid}:impianti:eventi`)) || [];
+    return res.status(200).json({ success: true, eventi });
+  }
+  if (req.method === 'POST') {
+    const { evento, deleteId } = req.body || {};
+    let eventi = (await kv.get(`society:${sid}:impianti:eventi`)) || [];
+    if (deleteId) {
+      eventi = eventi.filter(e => e.id !== deleteId);
+    } else if (evento && evento.id) {
+      const idx = eventi.findIndex(e => e.id === evento.id);
+      if (idx >= 0) eventi[idx] = evento; else eventi.push(evento);
+    }
+    await kv.set(`society:${sid}:impianti:eventi`, eventi);
+    return res.status(200).json({ success: true, eventi });
+  }
+}
+
+// ── AI Chat (Gemini) ─────────────────────────────────────────────────────
+if (req.query?.action === 'ai-chat') {
+  if (!session.isAuthenticated || !canImpianti(session.role))
+    return res.status(401).json({ success: false, message: 'Non autorizzato' });
+  if (req.method !== 'POST')
+    return res.status(405).json({ success: false, message: 'Method not allowed' });
+
+  const { messages, context } = req.body || {};
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return res.status(500).json({ success: false, message: 'API key non configurata' });
+
+  const systemPrompt = `Sei un assistente esperto di gestione impianti sportivi per la piattaforma GO Sport.
+Hai accesso ai dati in tempo reale dell'impianto e rispondi sempre in italiano in modo conciso e pratico.
+
+DATI IMPIANTO CORRENTI:
+${context ? JSON.stringify(context, null, 2) : 'Nessun dato disponibile'}
+
+Regole:
+- Rispondi in italiano
+- Sii conciso e diretto
+- Se rilevi conflitti o problemi negli slot, evidenziali
+- Se suggerisci cambiamenti, spiega il motivo
+- Per domande sui giorni usa: L=Lunedì M=Martedì Me=Mercoledì G=Giovedì V=Venerdì S=Sabato D=Domenica`;
+
+  const geminiMessages = (messages || []).map(m => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: m.content }]
+  }));
+
+  try {
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents: geminiMessages,
+          generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
+        })
+      }
+    );
+    const data = await resp.json();
+    if (!resp.ok) return res.status(500).json({ success: false, message: data.error?.message || 'Errore Gemini' });
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '(nessuna risposta)';
+    return res.status(200).json({ success: true, reply: text });
+  } catch(e) {
+    return res.status(500).json({ success: false, message: e.message });
+  }
+}
+
 // ── Senza annataId: dati globali / bacheca pubblica ──────────────────────
 if (!annataId) {
 if (req.method === 'GET') {
