@@ -3339,7 +3339,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 n:  sessionStorage.getItem('gosport_society_name')    || '',
                 hd: hasDashboard ? 'true' : '',
                 dr: sessionStorage.getItem('gosport_dashboard_role')  || '',
-                ex: (Date.now() + 8 * 60 * 60 * 1000).toString()
+                ex: (Date.now() + 8 * 60 * 60 * 1000).toString(),
+                ai: sessionStorage.getItem('gosport_ai_enabled')      || 'false'
             });
             return '/dashboard.html#' + p.toString();
         }

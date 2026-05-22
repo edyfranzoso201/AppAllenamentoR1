@@ -134,11 +134,13 @@ export default async function handler(req, res) {
       stored.lastAccess = new Date().toISOString();
       await kv.set(`licenze:${licenseKey}`, stored);
 
-      return res.status(200).json({ 
+      return res.status(200).json({
         valid: true,
         societyName: stored.societyName,
         societyId: stored.societyId,
         expiry: stored.expiry,
+        plan: stored.plan || 'silver',
+        aiEnabled: stored.aiEnabled === true,
         daysLeft: Math.ceil((new Date(stored.expiry) - new Date()) / (1000 * 60 * 60 * 24))
       });
     }
@@ -238,6 +240,19 @@ export default async function handler(req, res) {
     }
 
     // ==========================================
+    // ACTION: toggle-ai - Attiva/disattiva funzionalità AI per la licenza
+    // ==========================================
+    if (action === 'toggle-ai' && req.method === 'POST') {
+      const { licenseKey } = req.body;
+      if (!licenseKey) return res.status(400).json({ success: false, message: 'licenseKey obbligatorio' });
+      const stored = await kv.get(`licenze:${licenseKey}`);
+      if (!stored) return res.status(404).json({ success: false, message: 'Licenza non trovata' });
+      stored.aiEnabled = !stored.aiEnabled;
+      stored.updatedAt = new Date().toISOString();
+      await kv.set(`licenze:${licenseKey}`, stored);
+      return res.status(200).json({ success: true, aiEnabled: stored.aiEnabled });
+    }
+
     // ACTION: toggle-email-alerts - Attiva/disattiva alert email per licenza Platinum
     // ==========================================
     if (action === 'toggle-email-alerts' && req.method === 'POST') {

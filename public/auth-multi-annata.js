@@ -289,6 +289,7 @@
                         sessionStorage.setItem(SESSION_SOCIETY, result.societyId);
                         sessionStorage.setItem('gosport_license_status', JSON.stringify(result));
                         sessionStorage.setItem('gosport_license_plan', result.plan || 'platinum');
+                        sessionStorage.setItem('gosport_ai_enabled', result.aiEnabled ? 'true' : 'false');
                         if (result.societyName) sessionStorage.setItem('gosport_society_name', result.societyName);
 
                         const expiry = new Date(result.expiry + 'T00:00:00').toLocaleDateString('it-IT');

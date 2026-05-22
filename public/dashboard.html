@@ -1269,6 +1269,7 @@
         sessionStorage.setItem('gosport_has_dashboard',   'true');
         sessionStorage.setItem('gosport_dashboard_role',  p.get('dr') || '');
       }
+      sessionStorage.setItem('gosport_ai_enabled', p.get('ai') === 'true' ? 'true' : 'false');
       // Rimuove il hash dall'URL senza ricaricare la pagina
       history.replaceState(null, '', window.location.pathname);
     } catch(e) {}
@@ -2622,9 +2623,12 @@
     impRenderAnnateConfig();
     impRenderSlots();
     impRenderEventi();
-    const role = sessionStorage.getItem('gosport_user_role');
+    const role      = sessionStorage.getItem('gosport_user_role');
+    const aiEnabled = sessionStorage.getItem('gosport_ai_enabled') === 'true';
     const aib = document.getElementById('imp-ai-gen-btn');
-    if (aib) aib.style.display = role === 'admin' ? '' : 'none';
+    if (aib) aib.style.display = (role === 'admin' && aiEnabled) ? '' : 'none';
+    const fab = document.getElementById('imp-ai-fab');
+    if (fab) fab.style.display = aiEnabled ? '' : 'none';
   }
 
   // ── Tab switching ──────────────────────────────────────────────

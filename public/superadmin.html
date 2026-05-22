@@ -870,6 +870,14 @@ function renderTable(licenze) {
                     : '<span style="color:#4b5563;font-size:0.75rem">— solo Platinum</span>'
                 }
             </td>
+            <td style="text-align:center">
+                <button id="btn-ai-${safeKey}" onclick="toggleAI('${l.licenseKey}','${safeKey}')"
+                    style="border:none;border-radius:20px;padding:4px 12px;font-size:0.8rem;cursor:pointer;
+                    background:${l.aiEnabled ? '#6366f1' : '#374151'};
+                    color:${l.aiEnabled ? '#fff' : '#9ca3af'};">
+                    ${l.aiEnabled ? '🤖 ON' : '⏸ OFF'}
+                </button>
+            </td>
             <td>
                 <div class="actions-cell">
                     <button class="btn btn-warning btn-sm" onclick="openEdit('${l.licenseKey}')">✏️</button>
@@ -896,6 +904,7 @@ function renderTable(licenze) {
                     <th>Ultimo Accesso</th>
                     <th>Piano</th>
                     <th>Alert Email</th>
+                    <th>AI</th>
                     <th>Azioni</th>
                 </tr>
             </thead>
@@ -1199,6 +1208,30 @@ async function toggleEmailAlerts(licenseKey, safeKey) {
             btn.textContent = d.emailAlertsEnabled ? '✅ ON' : '⏸ OFF';
         }
         showToast(d.emailAlertsEnabled ? '✅ Alert email attivati' : '⏸ Alert email disattivati');
+    } catch(e) {
+        if (btn) { btn.disabled = false; btn.textContent = 'Errore'; }
+        showToast('❌ ' + e.message);
+    }
+}
+
+async function toggleAI(licenseKey, safeKey) {
+    const btn = document.getElementById(`btn-ai-${safeKey}`);
+    if (btn) { btn.disabled = true; btn.textContent = '...'; }
+    try {
+        const r = await fetch(`${API_BASE}/api/licenze?action=toggle-ai`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Super-Admin-Password': ADMIN_PWD },
+            body: JSON.stringify({ licenseKey })
+        });
+        const d = await r.json();
+        if (!d.success) throw new Error(d.message || 'Errore');
+        if (btn) {
+            btn.disabled = false;
+            btn.style.background = d.aiEnabled ? '#6366f1' : '#374151';
+            btn.style.color = d.aiEnabled ? '#fff' : '#9ca3af';
+            btn.textContent = d.aiEnabled ? '🤖 ON' : '⏸ OFF';
+        }
+        showToast(d.aiEnabled ? '🤖 AI attivata per questa licenza' : '⏸ AI disattivata per questa licenza');
     } catch(e) {
         if (btn) { btn.disabled = false; btn.textContent = 'Errore'; }
         showToast('❌ ' + e.message);
