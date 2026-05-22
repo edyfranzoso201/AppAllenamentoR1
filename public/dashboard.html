@@ -3449,7 +3449,19 @@
         })
       });
       const d = await r.json();
-      if (!d.success) { impAlert('Errore AI: ' + (d.message || 'Risposta non valida')); return; }
+      if (!d.success) {
+        const preview2 = document.getElementById('imp-gen-preview');
+        const list2 = document.getElementById('imp-gen-preview-list');
+        const unsched2 = document.getElementById('imp-gen-unscheduled');
+        preview2.style.display = '';
+        list2.innerHTML = '';
+        unsched2.style.display = '';
+        unsched2.style.background = '#fee2e2';
+        unsched2.style.color = '#991b1b';
+        unsched2.style.padding = '10px';
+        unsched2.innerHTML = `<strong>❌ Errore AI:</strong><br><span style="font-size:0.8rem;word-break:break-all;">${d.message || 'Risposta non valida'}</span>`;
+        return;
+      }
 
       const slots = (d.slots || []).map(s => {
         const campo = impState.config.campi.find(c =>

@@ -476,7 +476,7 @@ Rispondi SOLO con JSON valido, zero testo aggiuntivo:
 giorno: 0=Dom 1=Lun 2=Mar 3=Mer 4=Gio 5=Ven 6=Sab`;
 
   const MODELS = ['gemini-2.5-flash-preview-05-20','gemini-2.5-flash','gemini-2.0-flash-lite','gemini-2.0-flash'];
-  let lastErr = 'Nessun modello disponibile';
+  const modelErrors = [];
   for (const model of MODELS) {
     try {
       const resp = await fetch(
@@ -486,12 +486,15 @@ giorno: 0=Dom 1=Lun 2=Mar 3=Mer 4=Gio 5=Ven 6=Sab`;
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.2, maxOutputTokens: 4096 }
+            generationConfig: { temperature: 0.2, maxOutputTokens: 2048, responseMimeType: 'application/json' }
           })
         }
       );
       const data = await resp.json();
-      if (!resp.ok) { lastErr = data.error?.message || `Errore ${model}`; continue; }
+      if (!resp.ok) {
+        modelErrors.push(`${model}: ${data.error?.message || resp.status}`);
+        continue;
+      }
       let raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       // Estrai JSON da eventuale markdown code block
       const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
@@ -500,15 +503,20 @@ giorno: 0=Dom 1=Lun 2=Mar 3=Mer 4=Gio 5=Ven 6=Sab`;
       if (start >= 0 && end > start) raw = raw.slice(start, end + 1);
       let parsed;
       try { parsed = JSON.parse(raw); } catch(e) {
-        lastErr = 'Risposta AI non valida (JSON malformato): ' + e.message; continue;
+        modelErrors.push(`${model}: JSON malformato — ${e.message}`);
+        continue;
       }
       const slots = parsed.slots || parsed;
-      if (!Array.isArray(slots) || !slots.length)
-        { lastErr = 'AI non ha generato slot validi'; continue; }
-      return res.status(200).json({ success: true, slots });
-    } catch(e) { lastErr = e.message; }
+      if (!Array.isArray(slots) || !slots.length) {
+        modelErrors.push(`${model}: nessuno slot generato`);
+        continue;
+      }
+      return res.status(200).json({ success: true, slots, model });
+    } catch(e) {
+      modelErrors.push(`${model}: ${e.message}`);
+    }
   }
-  return res.status(500).json({ success: false, message: lastErr });
+  return res.status(500).json({ success: false, message: modelErrors.join(' | ') || 'Nessun modello disponibile' });
 }
 
 // ── Senza annataId: dati globali / bacheca pubblica ──────────────────────
