@@ -1057,6 +1057,7 @@
             </div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
               <button onclick="impGeneraProposta()" class="imp-btn">⚡ Genera Proposta</button>
+              <button onclick="impGeneraConAI()" class="imp-btn" id="imp-ai-gen-btn" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);">🤖 Genera con AI</button>
               <span style="font-size:0.78rem;color:var(--text-muted);">Usa la configurazione annate nel tab Struttura</span>
             </div>
             <div style="margin-top:8px;font-size:0.75rem;color:var(--text-muted);background:var(--bg-input,var(--bg-panel));border-radius:6px;padding:6px 10px;display:inline-flex;align-items:center;gap:6px;">
@@ -3422,6 +3423,82 @@
     unsched.style.padding = '6px 0 0';
     unsched.innerHTML = `<div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:4px;">Riepilogo annate:</div>${riepilogo}` +
       (unscheduled.length ? `<div style="margin-top:8px;padding:8px 10px;background:#fee2e2;border-radius:8px;font-size:0.82rem;color:#991b1b;">⚠️ Non pianificati:<br>${unscheduled.map(u=>`• ${u}`).join('<br>')}</div>` : '');
+  };
+
+  window.impGeneraConAI = async function() {
+    const giorni = [...document.querySelectorAll('.imp-giorno-cb:checked')].map(cb => parseInt(cb.value));
+    const oraInizio = document.getElementById('imp-gen-start').value || '16:00';
+    const oraFine   = document.getElementById('imp-gen-end').value   || '20:00';
+    if (!giorni.length) { impAlert('Seleziona almeno un giorno disponibile'); return; }
+    const cfgCorrente = impReadAnnateConfigFromDom();
+    if (!cfgCorrente.length) { impAlert('Aggiungi almeno una squadra nella Configurazione Allenamenti (tab Struttura)'); return; }
+    if (!impState.config.campi.length) { impAlert('Configura prima i campi nel tab Struttura'); return; }
+
+    const btn = document.getElementById('imp-ai-gen-btn');
+    const origTxt = btn.textContent;
+    btn.disabled = true; btn.textContent = '⏳ AI elabora...';
+
+    try {
+      const r = await fetch('/api/data?action=ai-optimize', {
+        method: 'POST', headers: impHeaders(),
+        body: JSON.stringify({
+          giorni, oraInizio, oraFine,
+          annateConfig: cfgCorrente,
+          campi: impState.config.campi,
+          spogliatoi: impState.config.spogliatoi
+        })
+      });
+      const d = await r.json();
+      if (!d.success) { impAlert('Errore AI: ' + (d.message || 'Risposta non valida')); return; }
+
+      const slots = (d.slots || []).map(s => {
+        const campo = impState.config.campi.find(c =>
+          c.nome === s.campoNome ||
+          c.nome.toLowerCase() === (s.campoNome || '').toLowerCase() ||
+          c.nome.toLowerCase().includes((s.campoNome || '').toLowerCase())
+        );
+        if (!campo) return null;
+        return {
+          id: impUid(), campoId: campo.id, porzione: s.porzione || 1,
+          giorno: s.giorno, annataId: null, squadra: s.squadra,
+          atletiCount: s.atletiCount || 0, doccia: true,
+          oraInizio: s.oraInizio, oraFine: s.oraFine
+        };
+      }).filter(Boolean);
+
+      if (!slots.length) { impAlert('AI non ha generato slot validi per i campi configurati'); return; }
+      impPropostaGenerata = slots;
+
+      const preview = document.getElementById('imp-gen-preview');
+      const list    = document.getElementById('imp-gen-preview-list');
+      const unsched = document.getElementById('imp-gen-unscheduled');
+      preview.style.display = '';
+
+      const GIORNI_NOMI = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+      const byDay = {};
+      slots.forEach(s => { (byDay[s.giorno] = byDay[s.giorno] || []).push(s); });
+      const order = [1,2,3,4,5,6,0];
+      list.innerHTML = order.filter(d2 => byDay[d2]).map(d2 => {
+        const ds = byDay[d2].sort((a, b) => a.oraInizio.localeCompare(b.oraInizio));
+        return `<div style="margin-bottom:8px;"><strong style="font-size:0.78rem;color:var(--text-muted);text-transform:uppercase;">${GIORNI_NOMI[d2]}</strong><br>` +
+          ds.map(s => {
+            const campo = impState.config.campi.find(c => c.id === s.campoId);
+            return `<span style="display:inline-block;margin:2px 4px 2px 0;font-size:0.8rem;background:var(--bg-panel);border:1px solid var(--border-soft);border-radius:6px;padding:2px 8px;">
+              ${s.oraInizio}–${s.oraFine} · <strong>${s.squadra}</strong> (${s.atletiCount}) · ${campo?.nome || '?'} Porz.${s.porzione}
+            </span>`;
+          }).join('') + '</div>';
+      }).join('') || '<div style="color:var(--text-muted);font-size:0.85rem;">Nessuno slot generato dall\'AI.</div>';
+
+      unsched.style.display = '';
+      unsched.style.background = 'transparent';
+      unsched.style.color = 'inherit';
+      unsched.style.padding = '6px 0 0';
+      unsched.innerHTML = `<div style="font-size:0.78rem;color:var(--accent);margin-bottom:4px;">🤖 Piano generato da AI — controlla e applica</div>`;
+    } catch(e) {
+      impAlert('Errore: ' + e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = origTxt;
+    }
   };
 
   function impRunAlgoritmo({ giorni, oraInizio, oraFine, annateConfig }) {

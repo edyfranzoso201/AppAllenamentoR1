@@ -426,6 +426,91 @@ Regole:
   return res.status(500).json({ success: false, message: lastErr });
 }
 
+if (req.query?.action === 'ai-optimize') {
+  if (!session.isAuthenticated || !canImpianti(session.role))
+    return res.status(401).json({ success: false, message: 'Non autorizzato' });
+  if (req.method !== 'POST')
+    return res.status(405).json({ success: false, message: 'Method not allowed' });
+
+  const { giorni, oraInizio, oraFine, annateConfig, campi, spogliatoi } = req.body || {};
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return res.status(500).json({ success: false, message: 'API key non configurata' });
+
+  const toMin = t => { const [h,m]=(t||'0:0').split(':').map(Number); return h*60+m; };
+  const toTime = m => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
+  const GIORNI_NOMI = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+  const CAMPO_MAX   = { a11:55, a9:35, a7:25, a5:15 };
+  const midMin = Math.floor((toMin(oraInizio) + toMin(oraFine)) / 2);
+
+  const campiDesc = (campi||[]).map(c =>
+    `"${c.nome}" tipo:${c.tipo} porzioni:${c.porzioni||1} capienza:${CAMPO_MAX[c.tipo]||50}atleti`
+  ).join(' | ');
+
+  const annateDesc = (annateConfig||[]).map(a =>
+    `Nome:"${a.nome}" Atleti:${a.atletiCount||a.atleti||0} Campo:${a.campoTipo||a.campo} CampoAlt:${a.campoTipoAlt||'—'} Durata:${a.durata}min GiorniPref:[${(a.giorniPref||[]).map(d=>GIORNI_NOMI[d]||d).join(',')}] Fascia:${a.fascia||'libera'} CoppiaCon:"${a.coppiaCon||''}" Doccia:${a.doccia!==false}`
+  ).join('\n');
+
+  const prompt = `Sei un esperto di pianificazione oraria per impianti sportivi italiani.
+Genera un piano settimanale COMPLETO di allenamenti rispettando tutti i vincoli.
+
+CAMPI: ${campiDesc}
+SPOGLIATOI TOTALI: ${spogliatoi||0}
+ORARIO: ${oraInizio}–${oraFine}, giorni disponibili: ${(giorni||[]).map(d=>GIORNI_NOMI[d]).join(',')}
+Fascia "prima"=${oraInizio}–${toTime(midMin)} | Fascia "tarda"=${toTime(midMin)}–${oraFine} | "libera"=tutto
+
+SQUADRE DA PIANIFICARE:
+${annateDesc}
+
+VINCOLI OBBLIGATORI (rispettali tutti):
+1. MAI 3 giorni consecutivi per la stessa squadra (es. Mar+Mer+Gio vietato)
+2. Ogni squadra deve allenarsi per tanti giorni quanti sono in GiorniPref (solo quelli disponibili)
+3. Capienza campo: somma atletiCount contemporanei sullo stesso campo/porzione/orario ≤ max
+4. Spogliatoi: squadre con orari sovrapposti (±15min) non superano ${spogliatoi||0} contemporaneamente
+5. Fascia "prima": orario nella prima metà; "tarda": seconda metà; "libera": qualsiasi
+6. CoppiaCon: squadre con stesso codice preferiscono gli stessi giorni
+7. Usa campo alternativo (CampoAlt) al massimo 1 volta a settimana per squadra
+8. Squadre della stessa fascia d'età (anno nel nome simile) condividono i giorni quando possibile
+
+Rispondi SOLO con JSON valido, zero testo aggiuntivo:
+{"slots":[{"campoNome":"NOME_ESATTO","porzione":1,"giorno":1,"squadra":"NOME","atletiCount":0,"oraInizio":"HH:MM","oraFine":"HH:MM"},...]}
+giorno: 0=Dom 1=Lun 2=Mar 3=Mer 4=Gio 5=Ven 6=Sab`;
+
+  const MODELS = ['gemini-2.5-flash-preview-05-20','gemini-2.5-flash','gemini-2.0-flash-lite','gemini-2.0-flash'];
+  let lastErr = 'Nessun modello disponibile';
+  for (const model of MODELS) {
+    try {
+      const resp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.2, maxOutputTokens: 4096 }
+          })
+        }
+      );
+      const data = await resp.json();
+      if (!resp.ok) { lastErr = data.error?.message || `Errore ${model}`; continue; }
+      let raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      // Estrai JSON da eventuale markdown code block
+      const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (match) raw = match[1].trim();
+      const start = raw.indexOf('{'), end = raw.lastIndexOf('}');
+      if (start >= 0 && end > start) raw = raw.slice(start, end + 1);
+      let parsed;
+      try { parsed = JSON.parse(raw); } catch(e) {
+        lastErr = 'Risposta AI non valida (JSON malformato): ' + e.message; continue;
+      }
+      const slots = parsed.slots || parsed;
+      if (!Array.isArray(slots) || !slots.length)
+        { lastErr = 'AI non ha generato slot validi'; continue; }
+      return res.status(200).json({ success: true, slots });
+    } catch(e) { lastErr = e.message; }
+  }
+  return res.status(500).json({ success: false, message: lastErr });
+}
+
 // ── Senza annataId: dati globali / bacheca pubblica ──────────────────────
 if (!annataId) {
 if (req.method === 'GET') {
