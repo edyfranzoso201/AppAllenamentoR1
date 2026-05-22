@@ -521,15 +521,12 @@ giorno: 0=Dom 1=Lun 2=Mar 3=Mer 4=Gio 5=Ven 6=Sab`;
         modelErrors.push(`${model}: ${data.error?.message || resp.status}`);
         continue;
       }
-      let raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      // Estrai JSON da eventuale markdown code block
-      const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
-      if (match) raw = match[1].trim();
-      const start = raw.indexOf('{'), end = raw.lastIndexOf('}');
-      if (start >= 0 && end > start) raw = raw.slice(start, end + 1);
+      const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       let parsed;
       try { parsed = JSON.parse(raw); } catch(e) {
-        modelErrors.push(`${model}: JSON malformato — ${e.message}`);
+        const pos = parseInt((e.message.match(/position (\d+)/)||[])[1]||0);
+        const snippet = raw.substring(Math.max(0,pos-30), Math.min(raw.length,pos+30));
+        modelErrors.push(`${model}: ${e.message} | raw[${pos}]: "${snippet}"`);
         continue;
       }
       const slots = parsed.slots || parsed;
