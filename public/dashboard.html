@@ -524,7 +524,12 @@
     padding: 5px 10px; cursor: pointer; font-size: 0.78rem; }
   .imp-btn-ghost { background: none; border: 1px solid var(--border-soft); color: var(--text-muted);
     border-radius: 8px; padding: 5px 10px; cursor: pointer; font-size: 0.78rem; }
+  .imp-chart-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .imp-chart-card { background:var(--bg-panel); border:1px solid var(--border-soft); border-radius:12px; padding:16px; }
+  .imp-chart-title { font-size:0.82rem; font-weight:600; color:var(--text-muted); margin-bottom:10px; text-transform:uppercase; letter-spacing:.5px; }
+  @media(max-width:700px){ .imp-chart-grid { grid-template-columns:1fr; } }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -947,6 +952,7 @@
         <button class="imp-tab active" id="imp-tab-struttura" onclick="impSwitchTab('struttura')">🏗️ Struttura</button>
         <button class="imp-tab" id="imp-tab-slots" onclick="impSwitchTab('slots')">📅 Slot Settimanali</button>
         <button class="imp-tab" id="imp-tab-eventi" onclick="impSwitchTab('eventi')">⚽ Partite &amp; Tornei</button>
+        <button class="imp-tab" id="imp-tab-analisi" onclick="impSwitchTab('analisi')">📊 Analisi</button>
       </div>
 
       <!-- ── TAB: STRUTTURA ── -->
@@ -1221,6 +1227,36 @@
           <div style="display:flex;gap:8px;">
             <button onclick="impSaveEvento()" class="imp-btn">💾 Salva</button>
             <button onclick="impHideEventoForm()" class="imp-btn-ghost">Annulla</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB: ANALISI SATURAZIONE ── -->
+      <div id="imp-panel-analisi" style="display:none;">
+        <div class="imp-chart-grid">
+          <div class="imp-chart-card">
+            <div class="imp-chart-title">Ore per campo per giorno</div>
+            <canvas id="imp-chart-c1" height="220"></canvas>
+          </div>
+          <div class="imp-chart-card">
+            <div class="imp-chart-title">Sessioni per fascia oraria</div>
+            <canvas id="imp-chart-c2" height="220"></canvas>
+          </div>
+          <div class="imp-chart-card">
+            <div class="imp-chart-title">Squadre per giorno</div>
+            <canvas id="imp-chart-c3" height="220"></canvas>
+          </div>
+          <div class="imp-chart-card">
+            <div class="imp-chart-title">Utilizzo per tipo campo</div>
+            <canvas id="imp-chart-c4" height="220"></canvas>
+          </div>
+          <div class="imp-chart-card">
+            <div class="imp-chart-title">Ore totali per giorno</div>
+            <canvas id="imp-chart-c5" height="220"></canvas>
+          </div>
+          <div class="imp-chart-card">
+            <div class="imp-chart-title">Carico spogliatoi per fascia oraria</div>
+            <canvas id="imp-chart-c6" height="220"></canvas>
           </div>
         </div>
       </div>
@@ -2566,6 +2602,7 @@
   let impHL = { squadra: [], ora: null, campo: null }; // squadra = array max 2 per confronto
   let impFilterSquadre = new Set(); // squadre selezionate (vuoto = tutte)
   let impFilterOrari   = new Set(); // fasce orarie selezionate (vuoto = tutte)
+  let _impCharts       = {};        // istanze Chart.js per analisi saturazione
 
   function impHeaders() {
     return {
@@ -2633,11 +2670,134 @@
 
   // ── Tab switching ──────────────────────────────────────────────
   window.impSwitchTab = function(tab) {
-    ['struttura','slots','eventi'].forEach(t => {
+    ['struttura','slots','eventi','analisi'].forEach(t => {
       document.getElementById('imp-panel-' + t).style.display = t === tab ? '' : 'none';
       document.getElementById('imp-tab-' + t).classList.toggle('active', t === tab);
     });
+    if (tab === 'analisi') impRenderAnalisi();
   };
+
+  // ── ANALISI SATURAZIONE ───────────────────────────────────────
+  function impRenderAnalisi() {
+    if (typeof Chart === 'undefined') return;
+
+    const slots   = impState.slots  || [];
+    const campi   = impState.config.campi || [];
+    const totSpog = parseInt(impState.config.spogliatoi) || 0;
+    const GIORNI  = ['lunedi','martedi','mercoledi','giovedi','venerdi','sabato','domenica'];
+    const GIORNI_LABELS = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
+
+    // Durata in ore di uno slot
+    const durH = s => {
+      const d = toMin(s.oraFine || '00:00') - toMin(s.oraInizio || '00:00');
+      return Math.max(0, d) / 60;
+    };
+
+    // Fasce orarie 1h dalle 07 alle 23
+    const FASCE = [];
+    for (let h = 7; h < 23; h++) FASCE.push(h);
+    const fasciaLabel = h => `${String(h).padStart(2,'0')}:00`;
+
+    // helper: ricrea un chart distruggendo il precedente
+    const darkScales = { x: { ticks: { color: '#aaa', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,.07)' } }, y: { ticks: { color: '#aaa', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,.07)' } } };
+    const mkChart = (id, type, data, options) => {
+      if (_impCharts[id]) _impCharts[id].destroy();
+      const ctx = document.getElementById(id);
+      if (!ctx) return;
+      const usesScales = type !== 'doughnut' && type !== 'pie';
+      const base = { responsive: true, plugins: { legend: { labels: { color: '#ccc', font: { size: 11 } } } }, ...(usesScales ? { scales: darkScales } : {}) };
+      _impCharts[id] = new Chart(ctx, { type, data, options: { ...base, ...options } });
+    };
+
+    // ── C1: Ore per campo per giorno (grouped bar) ────────────────
+    const campoColors = ['#6366f1','#f59e0b','#10b981','#ef4444','#3b82f6','#ec4899','#84cc16'];
+    const c1Datasets = campi.map((c, ci) => ({
+      label: c.nome || c.tipo,
+      data: GIORNI.map(g => {
+        return slots.filter(s => s.giorno === g && s.campoId === c.id).reduce((sum, s) => sum + durH(s), 0);
+      }),
+      backgroundColor: campoColors[ci % campoColors.length] + 'cc',
+      borderColor: campoColors[ci % campoColors.length],
+      borderWidth: 1,
+      borderRadius: 4,
+    }));
+    mkChart('imp-chart-c1', 'bar', { labels: GIORNI_LABELS, datasets: c1Datasets }, {
+      plugins: { legend: { labels: { color: '#ccc', font: { size: 10 } } } },
+      scales: { x: { stacked: false, ticks: { color: '#aaa', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,.07)' } }, y: { ticks: { color: '#aaa', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,.07)' } } }
+    });
+
+    // ── C2: Sessioni per fascia oraria (bar colorato per saturazione) ─
+    const c2Data = FASCE.map(h => {
+      return slots.filter(s => {
+        const start = toMin(s.oraInizio || '00:00');
+        const end   = toMin(s.oraFine   || '00:00');
+        return start < (h + 1) * 60 && end > h * 60;
+      }).length;
+    });
+    const maxSess = Math.max(1, ...c2Data);
+    const c2Colors = c2Data.map(v => {
+      const ratio = v / maxSess;
+      if (ratio >= 0.75) return '#ef4444cc';
+      if (ratio >= 0.45) return '#f59e0bcc';
+      return '#10b981cc';
+    });
+    mkChart('imp-chart-c2', 'bar', {
+      labels: FASCE.map(fasciaLabel),
+      datasets: [{ label: 'Sessioni', data: c2Data, backgroundColor: c2Colors, borderRadius: 4 }]
+    }, { plugins: { legend: { display: false } } });
+
+    // ── C3: Squadre per giorno (bar) ──────────────────────────────
+    const c3Data = GIORNI.map(g => new Set(slots.filter(s => s.giorno === g).map(s => s.squadra || s.annataId)).size);
+    mkChart('imp-chart-c3', 'bar', {
+      labels: GIORNI_LABELS,
+      datasets: [{ label: 'Squadre', data: c3Data, backgroundColor: '#6366f1cc', borderRadius: 4 }]
+    }, { plugins: { legend: { display: false } } });
+
+    // ── C4: Utilizzo per tipo campo (doughnut) ────────────────────
+    const tipiMap = {};
+    slots.forEach(s => {
+      const campo = campi.find(c => c.id === s.campoId);
+      const tipo  = campo ? (campo.tipo || 'altro') : 'altro';
+      tipiMap[tipo] = (tipiMap[tipo] || 0) + durH(s);
+    });
+    const tipiLabels = Object.keys(tipiMap);
+    const tipiVals   = tipiLabels.map(t => +tipiMap[t].toFixed(1));
+    mkChart('imp-chart-c4', 'doughnut', {
+      labels: tipiLabels,
+      datasets: [{ data: tipiVals, backgroundColor: campoColors.slice(0, tipiLabels.length).map(c => c + 'cc'), borderColor: '#1a1f2e', borderWidth: 2 }]
+    }, { scales: undefined });
+
+    // ── C5: Ore totali per giorno (bar colorato) ──────────────────
+    const c5Data = GIORNI.map(g => +slots.filter(s => s.giorno === g).reduce((sum, s) => sum + durH(s), 0).toFixed(1));
+    const maxOre = Math.max(1, ...c5Data);
+    const c5Colors = c5Data.map(v => {
+      const r = v / maxOre;
+      if (r >= 0.8) return '#ef4444cc';
+      if (r >= 0.5) return '#f59e0bcc';
+      return '#6366f1cc';
+    });
+    mkChart('imp-chart-c5', 'bar', {
+      labels: GIORNI_LABELS,
+      datasets: [{ label: 'Ore', data: c5Data, backgroundColor: c5Colors, borderRadius: 4 }]
+    }, { plugins: { legend: { display: false } } });
+
+    // ── C6: Carico spogliatoi per fascia oraria (bar + linea) ─────
+    const c6Spog = FASCE.map(h => {
+      const active = slots.filter(s => {
+        const w = impSpoglWindow(s);
+        return w.s < (h + 1) * 60 && w.e > h * 60;
+      });
+      return active.length; // ogni squadra usa 1 spogliatoio
+    });
+    mkChart('imp-chart-c6', 'bar', {
+      labels: FASCE.map(fasciaLabel),
+      datasets: [
+        { type: 'bar',  label: 'Spogliatoi usati', data: c6Spog, backgroundColor: '#f59e0bcc', borderRadius: 4 },
+        { type: 'line', label: `Disponibili (${totSpog})`, data: FASCE.map(() => totSpog),
+          borderColor: '#ef4444', borderDash: [6,3], borderWidth: 2, pointRadius: 0, fill: false, tension: 0 }
+      ]
+    }, {});
+  }
 
   // ── STRUTTURA ─────────────────────────────────────────────────
   function impRenderStruttura() {
