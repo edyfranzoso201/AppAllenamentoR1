@@ -2684,7 +2684,7 @@
     const slots   = impState.slots  || [];
     const campi   = impState.config.campi || [];
     const totSpog = parseInt(impState.config.spogliatoi) || 0;
-    const GIORNI  = ['lunedi','martedi','mercoledi','giovedi','venerdi','sabato','domenica'];
+    const GIORNI  = [1, 2, 3, 4, 5, 6, 7]; // 1=Lun … 7=Dom (stessi valori del select)
     const GIORNI_LABELS = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
 
     // Durata in ore di uno slot
@@ -2714,7 +2714,7 @@
     const c1Datasets = campi.map((c, ci) => ({
       label: c.nome || c.tipo,
       data: GIORNI.map(g => {
-        return slots.filter(s => s.giorno === g && s.campoId === c.id).reduce((sum, s) => sum + durH(s), 0);
+        return slots.filter(s => s.giorno == g && s.campoId === c.id).reduce((sum, s) => sum + durH(s), 0);
       }),
       backgroundColor: campoColors[ci % campoColors.length] + 'cc',
       borderColor: campoColors[ci % campoColors.length],
@@ -2747,7 +2747,7 @@
     }, { plugins: { legend: { display: false } } });
 
     // ── C3: Squadre per giorno (bar) ──────────────────────────────
-    const c3Data = GIORNI.map(g => new Set(slots.filter(s => s.giorno === g).map(s => s.squadra || s.annataId)).size);
+    const c3Data = GIORNI.map(g => new Set(slots.filter(s => s.giorno == g).map(s => s.squadra || s.annataId)).size);
     mkChart('imp-chart-c3', 'bar', {
       labels: GIORNI_LABELS,
       datasets: [{ label: 'Squadre', data: c3Data, backgroundColor: '#6366f1cc', borderRadius: 4 }]
@@ -2768,7 +2768,7 @@
     }, { scales: undefined });
 
     // ── C5: Ore totali per giorno (bar colorato) ──────────────────
-    const c5Data = GIORNI.map(g => +slots.filter(s => s.giorno === g).reduce((sum, s) => sum + durH(s), 0).toFixed(1));
+    const c5Data = GIORNI.map(g => +slots.filter(s => s.giorno == g).reduce((sum, s) => sum + durH(s), 0).toFixed(1));
     const maxOre = Math.max(1, ...c5Data);
     const c5Colors = c5Data.map(v => {
       const r = v / maxOre;
