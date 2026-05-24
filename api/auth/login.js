@@ -211,6 +211,8 @@ export default async function handler(req, res) {
               valid: true,
               societyName: license.societyName,
               expiry: license.expiry,
+              plan: license.plan || 'platinum',
+              aiEnabled: license.aiEnabled === true,
               daysLeft: Math.ceil((new Date(license.expiry) - new Date()) / (1000 * 60 * 60 * 24))
             };
             license.lastAccess = new Date().toISOString();

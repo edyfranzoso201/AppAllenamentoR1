@@ -556,6 +556,8 @@
                             // Salva nome società per display nella dashboard
                             const sName = result.licenseStatus.societyName || result.societyName || '';
                             if (sName) sessionStorage.setItem('gosport_society_name', sName);
+                            // Salva flag AI abilitata (dal login endpoint)
+                            sessionStorage.setItem('gosport_ai_enabled', result.licenseStatus.aiEnabled ? 'true' : 'false');
                         }
 
                         const expiry = Date.now() + (8 * 60 * 60 * 1000);
