@@ -1331,7 +1331,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <label>Ora *</label>
                     <input type="time" id="gare-ora" value="14:30">
                 </div>
-                <div class="gare-form-group">
+                <div class="gare-form-group" id="gf-tipo-wrap">
                     <label>Casa / Fuori Casa *</label>
                     <select id="gare-tipo" onchange="gareAggiornaCampi()">
                         <option value="casa">🏠 In Casa (campo Fabbrichette)</option>
@@ -1349,6 +1349,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <option value="torneo">⚽ Torneo / Coppa</option>
                         <option value="amichevole">🤝 Amichevole</option>
                         <option value="altro">📋 Altro</option>
+                        <option value="varie">🎉 Varie / Comunicazioni</option>
                     </select>
                 </div>
                 <div class="gare-form-group" id="gf-competizione-wrap">
@@ -1434,6 +1435,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="gare-col-title fuori"><i class="bi bi-bus-front-fill"></i> Gare Fuori Casa</div>
                 <div id="gare-lista-fuori"><div class="gare-empty">Nessuna gara fuori casa questa settimana.</div></div>
             </div>
+            <div class="gare-col">
+                <div class="gare-col-title" style="background:#16a34a;color:#fff;border:1px solid #15803d;"><i class="bi bi-calendar-event-fill"></i> Varie / Comunicazioni</div>
+                <div id="gare-lista-varie"><div class="gare-empty">Nessun evento varie questa settimana.</div></div>
+            </div>
         </div>
 
         <div class="gare-export-panel" id="gare-export-panel" style="display:none;margin-top:14px;">
@@ -1465,6 +1470,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
                 <button class="btn-gare-dl-img" onclick="gareDownloadPNG()"><i class="bi bi-download"></i> Scarica PNG</button>
                 <button class="btn-gare-dl-pdf" onclick="gareDownloadPDF()"><i class="bi bi-file-pdf"></i> Scarica PDF</button>
+                <button class="btn-gare-dl-img" onclick="gareDownloadPoster()" style="background:#16a34a;border-color:#16a34a;" title="Poster scuro stile moderno per genitori"><i class="bi bi-image-fill"></i> Poster Genitori</button>
                 <button class="btn-gare-dl-img" onclick="gareInviaBacheca()" style="background:#3b82f6;border-color:#3b82f6;"><i class="bi bi-megaphone-fill"></i> Invia in Bacheca</button>
             </div>
             <canvas id="gare-canvas" style="display:none;"></canvas>
@@ -2565,16 +2571,20 @@ function _gareRender() {
         return g.data >= lunStr && g.data <= domStr && g.data >= oggi;
     });
 
-    var casa  = gareSett.filter(function(g){ return g.tipo === 'casa'; });
-    var fuori = gareSett.filter(function(g){ return g.tipo === 'fuori'; });
+    var casa  = gareSett.filter(function(g){ return g.tipo === 'casa'  && g.tipoComp !== 'varie'; });
+    var fuori = gareSett.filter(function(g){ return g.tipo === 'fuori' && g.tipoComp !== 'varie'; });
+    var varie = gareSett.filter(function(g){ return g.tipoComp === 'varie' || g.tipo === 'varie'; });
 
     document.getElementById('gare-lista-casa').innerHTML  = _gareRenderColonna(casa,  'casa');
     document.getElementById('gare-lista-fuori').innerHTML = _gareRenderColonna(fuori, 'fuori');
+    document.getElementById('gare-lista-varie').innerHTML = _gareRenderColonna(varie, 'varie');
 }
 
 function _gareRenderColonna(lista, tipo) {
     if (!lista.length) {
-        var msg = tipo === 'casa' ? 'Nessuna gara in casa questa settimana.' : 'Nessuna gara fuori casa questa settimana.';
+        var msg = tipo === 'casa'  ? 'Nessuna gara in casa questa settimana.'
+                : tipo === 'fuori' ? 'Nessuna gara fuori casa questa settimana.'
+                : 'Nessun evento varie questa settimana.';
         return '<div class="gare-empty">' + msg + '</div>';
     }
     var gruppi = {};
@@ -2632,6 +2642,22 @@ function _gareRenderColonna(lista, tipo) {
                     html += '🏆 Ore ' + g.torneo.premiazione.ora + ' — ' + (g.torneo.premiazione.label||'PREMIAZIONE FINALE');
                     html += '</div>';
                 }
+            } else if (g.tipoComp === 'varie') {
+                // ── Render VARIE ──
+                html += '<div class="gare-block' + (isSel ? ' selected' : '') + '" id="gb-' + g.id + '">';
+                html += '<div class="gare-row-time">';
+                html += '<span class="gare-ora">' + g.ora + '</span>';
+                html += '<span class="gare-comp">🎉 ' + compLabel + '</span>' + editBtn;
+                html += '</div>';
+                if (g.competizione) {
+                    html += '<div style="text-align:center;padding:10px 12px;background:#0a1f0e;color:#4ade80;font-weight:700;font-size:0.9rem;">' + g.competizione + '</div>';
+                }
+                if (g.note) {
+                    html += '<div class="gare-row-note"><i class="bi bi-info-circle-fill"></i> ' + g.note + '</div>';
+                }
+                if (g.campo) {
+                    html += '<div class="gare-row-note" style="color:#94a3b8;"><i class="bi bi-geo-alt-fill"></i> ' + g.campo + '</div>';
+                }
             } else {
                 // ── Render GARA NORMALE ──
                 var teamCasa   = tipo === 'casa' ? nomeSoc : (g.avversaria || '?');
@@ -2682,9 +2708,11 @@ window.gareOpenForm = function() {
     document.getElementById('gare-campo').value = '';
     document.getElementById('gare-note').value = '';
     document.getElementById('gare-edit-id').value = '';
-    // Reset sezione torneo
+    // Reset sezione torneo / varie
     document.getElementById('gare-torneo-section').style.display = 'none';
     document.getElementById('gf-squadra-avv-wrap').style.display = '';
+    var _tipoW = document.getElementById('gf-tipo-wrap');
+    if (_tipoW) _tipoW.style.display = '';
     document.getElementById('torneo-matches-list').innerHTML = '';
     document.getElementById('gare-torneo-info').value = '';
     document.getElementById('gare-torneo-premiazione-ora').value = '';
@@ -2756,6 +2784,15 @@ window.gareSalva = async function() {
         } else {
             _gare.push(gara);
         }
+    } else if (tipoComp === 'varie') {
+        var gara = { id: editId || ('gara_'+Date.now()), data:data, ora:ora, tipo:'varie',
+                     tipoComp:'varie', categoria:cat, competizione:comp, campo:campo, note:note };
+        if (editId) {
+            var idx = _gare.findIndex(function(g){ return g.id === editId; });
+            if (idx >= 0) _gare[idx] = gara;
+        } else {
+            _gare.push(gara);
+        }
     } else {
         // Gara normale
         var avv = document.getElementById('gare-squadra-avv').value;
@@ -2796,13 +2833,22 @@ window.gareEdit = function(id) {
     if (g.tipoComp === 'torneo' && g.torneo) {
         document.getElementById('gare-torneo-section').style.display = '';
         document.getElementById('gf-squadra-avv-wrap').style.display = 'none';
+        var _tipoW = document.getElementById('gf-tipo-wrap');
+        if (_tipoW) _tipoW.style.display = '';
         document.getElementById('gare-torneo-info').value = g.torneo.info || '';
         document.getElementById('gare-torneo-premiazione-ora').value = (g.torneo.premiazione && g.torneo.premiazione.ora) || '';
         document.getElementById('gare-torneo-premiazione-label').value = (g.torneo.premiazione && g.torneo.premiazione.label) || '';
         torneoSetMatches(g.torneo.partite || []);
+    } else if (g.tipoComp === 'varie') {
+        document.getElementById('gare-torneo-section').style.display = 'none';
+        document.getElementById('gf-squadra-avv-wrap').style.display = 'none';
+        var _tipoW = document.getElementById('gf-tipo-wrap');
+        if (_tipoW) _tipoW.style.display = 'none';
     } else {
         document.getElementById('gare-torneo-section').style.display = 'none';
         document.getElementById('gf-squadra-avv-wrap').style.display = '';
+        var _tipoW = document.getElementById('gf-tipo-wrap');
+        if (_tipoW) _tipoW.style.display = '';
         document.getElementById('gare-squadra-avv').value = g.avversaria || '';
     }
     document.getElementById('gare-form-card').style.display = '';
@@ -3138,17 +3184,24 @@ var _torneoMatchCount = 0;
 
 window.gareTipoCompChange = function() {
     var tipo = document.getElementById('gare-tipo-comp').value;
-    var sec  = document.getElementById('gare-torneo-section');
-    var avvW = document.getElementById('gf-squadra-avv-wrap');
+    var sec   = document.getElementById('gare-torneo-section');
+    var avvW  = document.getElementById('gf-squadra-avv-wrap');
+    var tipoW = document.getElementById('gf-tipo-wrap');
     if (tipo === 'torneo') {
         sec.style.display = '';
-        avvW.style.display = 'none'; // Nel torneo non ha senso "avversaria"
+        avvW.style.display = 'none';
+        if (tipoW) tipoW.style.display = '';
         if (document.getElementById('torneo-matches-list').children.length === 0) {
-            torneoAddMatch(); // Aggiungi una riga di default
+            torneoAddMatch();
         }
+    } else if (tipo === 'varie') {
+        sec.style.display = 'none';
+        avvW.style.display = 'none';
+        if (tipoW) tipoW.style.display = 'none';
     } else {
         sec.style.display = 'none';
         avvW.style.display = '';
+        if (tipoW) tipoW.style.display = '';
     }
 };
 
@@ -3257,13 +3310,14 @@ function _gareRenderExportList(){
     var h='',lastDay='';
     lista.forEach(function(g){
         if(g.data!==lastDay){lastDay=g.data;h+='<div style="color:#60a5fa;font-size:0.75rem;font-weight:700;padding:6px 4px 3px;border-top:1px solid #1e293b;margin-top:4px;text-transform:uppercase;">'+_gareGiornoLabel(g.data)+'</div>';}
-        var sel=_gareSelected.indexOf(g.id)>=0,tipo=g.tipo==='casa'?'Casa':'Fuori';
+        var sel=_gareSelected.indexOf(g.id)>=0;
+        var tipoLabel=g.tipoComp==='varie'?'Varie':g.tipo==='casa'?'Casa':'Fuori';
         h+='<div data-gid="'+g.id+'" onclick="gareToggleSel(\''+g.id+'\')" style="display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:5px;cursor:pointer;background:'+(sel?'#0d1b2a':'transparent')+';margin-bottom:2px;">';
         h+='<input type="checkbox" '+(sel?'checked':'')+' style="accent-color:#60a5fa;cursor:pointer;" onclick="event.stopPropagation();gareToggleSel(\''+g.id+'\')">';
         h+='<span style="color:#f59e0b;font-size:0.75rem;min-width:44px;">'+g.ora+'</span>';
-        h+='<span style="font-size:0.75rem;min-width:44px;">['+tipo+']</span>';
+        h+='<span style="font-size:0.75rem;min-width:44px;">['+tipoLabel+']</span>';
         h+='<span style="color:#60a5fa;font-size:0.78rem;flex:1;">'+(g.categoria||'')+'</span>';
-        h+='<span style="color:#60a5fa;font-size:0.76rem;">'+(g.avversaria||'')+'</span></div>';
+        h+='<span style="color:#60a5fa;font-size:0.76rem;">'+(g.tipoComp==='varie'?(g.competizione||''):(g.avversaria||''))+'</span></div>';
     });
     box.innerHTML=h;_gareUpdateSelCount();
 }
@@ -3366,6 +3420,131 @@ function _gareDrawLocandina(tipo){
     ctx.fillText('(c) '+new Date().getFullYear()+' Sport Monitoring',W/2,cv.height-5);
     return cv;
 }
+
+// ── Poster-style locandina (dark background, per genitori) ────────────────
+function _gareDrawLocandinaPoster() {
+    var sel = _gare.filter(function(g){ return _gareSelected.indexOf(g.id) >= 0; })
+                   .sort(function(a,b){ return (a.data+a.ora).localeCompare(b.data+b.ora); });
+    var titolo = (document.getElementById('gare-export-titolo')||{}).value || 'GO SPORT GRUGLIASCO ASD';
+    if (!sel.length) { alert('Seleziona almeno una gara.'); return null; }
+
+    var ICON_MAP = { campionato:'🏆', torneo:'⚽', amichevole:'🤝', altro:'📋', varie:'🎉' };
+    var COLOR_MAP = { campionato:'#f59e0b', torneo:'#3b82f6', amichevole:'#22c55e', altro:'#8b5cf6', varie:'#ec4899' };
+    var MESI = ['GEN','FEB','MAR','APR','MAG','GIU','LUG','AGO','SET','OTT','NOV','DIC'];
+    var MESI_IT = ['gennaio','febbraio','marzo','aprile','maggio','giugno',
+                   'luglio','agosto','settembre','ottobre','novembre','dicembre'];
+
+    var W = 800, HEADER_H = 148, ROW_H = 82, FOOTER_H = 48;
+    var H = HEADER_H + sel.length * ROW_H + FOOTER_H;
+    var cv = document.getElementById('gare-canvas');
+    cv.width = W; cv.height = H;
+    var ctx = cv.getContext('2d');
+
+    // Background
+    ctx.fillStyle = '#0d1117'; ctx.fillRect(0, 0, W, H);
+    for (var gy = 0; gy < H; gy += 56) {
+        ctx.strokeStyle = 'rgba(16,185,129,0.04)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+    }
+
+    // Header
+    ctx.fillStyle = '#0a1f2e'; ctx.fillRect(0, 0, W, HEADER_H);
+    ctx.fillStyle = '#3b82f6'; ctx.fillRect(0, HEADER_H - 3, W, 3);
+
+    ctx.font = 'bold 50px Arial Black, Arial, sans-serif';
+    ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff';
+    ctx.fillText('CALENDARIO', W / 2, 66);
+
+    var d0 = _gareParseDate(sel[0].data);
+    var d1 = _gareParseDate(sel[sel.length-1].data);
+    var m0 = MESI_IT[d0.getMonth()].toUpperCase();
+    var m1 = MESI_IT[d1.getMonth()].toUpperCase();
+    var yr = d1.getFullYear();
+    var monthStr = (m0 === m1 ? m0 : m0 + '/' + m1) + ' ' + yr;
+    ctx.font = 'italic bold 26px Arial, sans-serif'; ctx.fillStyle = '#60a5fa';
+    ctx.fillText(monthStr, W / 2, 104);
+    ctx.font = '13px Arial, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.fillText(titolo, W / 2, 132);
+
+    // Event rows
+    sel.forEach(function(g, idx) {
+        var y = HEADER_H + idx * ROW_H;
+        var d = _gareParseDate(g.data);
+        var tc = g.tipoComp || 'campionato';
+        var color = COLOR_MAP[tc] || '#64748b';
+        var icon  = ICON_MAP[tc]  || '📅';
+
+        ctx.fillStyle = idx % 2 === 0 ? '#111827' : '#0f172a';
+        ctx.fillRect(0, y, W, ROW_H);
+
+        // Date box
+        var BOX_W = 70;
+        ctx.fillStyle = color; ctx.fillRect(0, y, BOX_W, ROW_H);
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 30px Arial, sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(String(d.getDate()), BOX_W / 2, y + 44);
+        ctx.fillStyle = 'rgba(255,255,255,0.82)'; ctx.font = 'bold 11px Arial, sans-serif';
+        ctx.fillText(MESI[d.getMonth()], BOX_W / 2, y + 64);
+
+        ctx.fillStyle = color; ctx.fillRect(BOX_W + 1, y, 2, ROW_H);
+
+        // Icon
+        ctx.font = '24px serif'; ctx.textAlign = 'right';
+        ctx.fillText(icon, W - 14, y + 40);
+
+        // Content
+        var CX = BOX_W + 14;
+        var maxW = W - BOX_W - 60;
+
+        // Time + tipo
+        ctx.font = 'bold 15px Arial, sans-serif'; ctx.textAlign = 'left'; ctx.fillStyle = '#ffffff';
+        var titleTxt = '';
+        if (tc === 'varie') {
+            titleTxt = g.competizione || g.categoria || 'Evento';
+        } else if (tc === 'torneo') {
+            titleTxt = (g.competizione || 'TORNEO') + (g.categoria ? ' — ' + g.categoria : '');
+        } else {
+            titleTxt = (g.categoria || '') + (g.competizione ? ' ' + g.competizione : '');
+        }
+        // Truncate if too long
+        while (ctx.measureText(titleTxt).width > maxW && titleTxt.length > 4) titleTxt = titleTxt.slice(0,-1);
+        ctx.fillText(titleTxt, CX, y + 30);
+
+        // Details line
+        var details = g.ora ? g.ora : '';
+        if (tc !== 'varie' && tc !== 'torneo') {
+            var opp = g.avversaria || '';
+            if (opp) details += (details ? '  •  ' : '') + (g.tipo === 'casa' ? 'vs ' : '@ ') + opp;
+        }
+        if (g.campo) details += (details ? '  •  ' : '') + g.campo;
+        if (g.note && tc === 'varie') details += (details ? '  •  ' : '') + g.note;
+        if (details) {
+            ctx.font = '12px Arial, sans-serif'; ctx.fillStyle = '#94a3b8';
+            ctx.fillText(details, CX, y + 56);
+        }
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(0, y + ROW_H - 1); ctx.lineTo(W, y + ROW_H - 1); ctx.stroke();
+    });
+
+    // Footer
+    var FY = HEADER_H + sel.length * ROW_H;
+    ctx.fillStyle = '#0a1f2e'; ctx.fillRect(0, FY, W, FOOTER_H);
+    ctx.fillStyle = '#3b82f6'; ctx.fillRect(0, FY, W, 2);
+    ctx.font = '11px Arial, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillText(titolo + ' • ' + new Date().getFullYear(), W / 2, FY + 28);
+
+    return cv;
+}
+window.gareDownloadPoster = function() {
+    var cv = _gareDrawLocandinaPoster();
+    if (!cv) return;
+    var a = document.createElement('a');
+    a.download = 'poster-calendario-' + _gareDateStr(new Date()) + '.png';
+    a.href = cv.toDataURL('image/png');
+    a.click();
+};
+
 window.gareInviaBacheca = async function() {
     var tipo = document.querySelector('.gare-export-tipo:checked')?.value || 'separato';
     var cv = _gareDrawLocandina(tipo);

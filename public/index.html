@@ -1381,10 +1381,36 @@
                        <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa Sezione"><i class="bi bi-printer-fill"></i></button>
                        <a href="#home-section" class="btn btn-sm btn-outline-secondary ms-1 no-print" title="Torna in Cima"><i class="bi bi-arrow-up-circle-fill"></i></a>
                   </div>
-                   <div class="col-md-4 d-flex justify-content-md-end no-print">
+                   <div class="col-md-4 d-flex justify-content-md-end gap-2 no-print">
                       <button class="btn btn-primary-custom" id="add-session-btn"><i class="bi bi-calendar-plus"></i> Pianifica Sessione</button>
+                      <button class="btn btn-secondary" id="poster-calendar-btn" onclick="window.togglePosterPanel()" title="Genera poster calendario per i genitori"><i class="bi bi-image-fill"></i> Poster</button>
                   </div>
               </div>
+
+              <!-- Pannello selezione eventi per poster -->
+              <div id="poster-panel" class="no-print" style="display:none;background:var(--bg-card,#1e293b);border:1px solid var(--border-color,#334155);border-radius:10px;padding:16px;margin-bottom:14px;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                      <h6 style="color:#60a5fa;margin:0;font-weight:700;"><i class="bi bi-image-fill"></i> Crea Poster Calendario</h6>
+                      <button onclick="window.togglePosterPanel()" style="background:none;border:none;color:#64748b;font-size:1.1rem;cursor:pointer;">✕</button>
+                  </div>
+                  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+                      <span style="color:#94a3b8;font-size:0.8rem;">Periodo:</span>
+                      <select id="poster-range" onchange="window.refreshPosterList()" style="background:#0d1b2a;border:1px solid #334155;color:#94a3b8;border-radius:6px;padding:4px 8px;font-size:0.78rem;">
+                          <option value="1">Questo mese</option>
+                          <option value="2" selected>Prossimi 2 mesi</option>
+                          <option value="3">Prossimi 3 mesi</option>
+                          <option value="99">Tutti</option>
+                      </select>
+                      <button onclick="window.posterSelectAll(true)" style="background:#0f172a;border:1px solid #334155;color:#60a5fa;border-radius:6px;padding:4px 10px;font-size:0.75rem;cursor:pointer;">Seleziona tutto</button>
+                      <button onclick="window.posterSelectAll(false)" style="background:#0f172a;border:1px solid #334155;color:#60a5fa;border-radius:6px;padding:4px 10px;font-size:0.75rem;cursor:pointer;">Nessuno</button>
+                      <span id="poster-sel-count" style="color:#94a3b8;font-size:0.75rem;margin-left:auto;">0 selezionati</span>
+                  </div>
+                  <div id="poster-event-list" style="max-height:260px;overflow-y:auto;border:1px solid #334155;border-radius:8px;padding:8px;background:#060f1e;margin-bottom:12px;font-size:0.78rem;"></div>
+                  <button onclick="window.generateCalendarPoster()" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:8px 20px;font-weight:700;cursor:pointer;font-size:0.85rem;">
+                      <i class="bi bi-download"></i> Genera e Scarica Poster PNG
+                  </button>
+              </div>
+
               <div class="row">
                   <div class="col-12 mt-3">
                       <div class="card calendar-card">
@@ -2348,6 +2374,7 @@
                                 <option value="Campionato">🏅 Campionato</option>
                                 <option value="Finale">🥇 Finale</option>
                                 <option value="Semifinale">🥈 Semifinale</option>
+                                <option value="Varie">🎉 Varie</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -2420,6 +2447,226 @@
     <!-- Script personalizzato -->
     <script src="script.js?v=1779500004"></script>
     <script>
+
+    // ========================================================================
+    // POSTER CALENDARIO — con selezione eventi
+    // ========================================================================
+
+    var _posterItems = []; // cache degli item visibili nel pannello
+
+    var _POSTER_ICON  = { Allenamento:'🏃', Partita:'⚽', Torneo:'🏆', Campionato:'🏅',
+                          Finale:'🥇', Semifinale:'🥈', Evento:'📅', Visita:'🏥',
+                          Varie:'🎉', Individual:'🏋️', match:'⚽', session:'🏃',
+                          'Allenamento Portieri':'🧤', 'Preparazione Atletica':'💪' };
+    var _POSTER_COLOR = { Allenamento:'#1e6fb5', Partita:'#1e6fb5', Torneo:'#1e6fb5',
+                          Campionato:'#1e6fb5', Finale:'#1e6fb5', Semifinale:'#1e6fb5',
+                          Evento:'#1e6fb5', Visita:'#1e6fb5', Varie:'#1e6fb5',
+                          Individual:'#1e6fb5', match:'#1e6fb5', session:'#1e6fb5',
+                          'Allenamento Portieri':'#1e6fb5', 'Preparazione Atletica':'#1e6fb5' };
+
+    function _posterGetAllItems() {
+        var items = [];
+        var today = new Date(); today.setHours(0,0,0,0);
+        var rangeMonths = parseInt((document.getElementById('poster-range')||{value:'2'}).value) || 2;
+        var cutoff = null;
+        if (rangeMonths < 99) {
+            cutoff = new Date(today.getFullYear(), today.getMonth() + rangeMonths + 1, 1);
+        }
+        function inRange(dateStr) {
+            var d = new Date(dateStr + 'T00:00:00');
+            if (d < today) return false;
+            if (cutoff && d >= cutoff) return false;
+            return true;
+        }
+
+        // 1. calendarEvents
+        var calEvts = window.calendarEvents || {};
+        Object.keys(calEvts).filter(inRange).forEach(function(dateStr) {
+            var ev = calEvts[dateStr]; if (!ev) return;
+            var details = (ev.time || '') + (ev.notes ? (ev.time ? '  •  ' : '') + ev.notes : '');
+            items.push({ id:'cal_'+dateStr, date:dateStr, title:ev.type||'Evento',
+                         subtitle:details, color:_POSTER_COLOR[ev.type]||'#64748b',
+                         icon:_POSTER_ICON[ev.type]||'📅', source:'cal' });
+        });
+
+        // 2. trainingSessions
+        var ts = window.trainingSessions || {};
+        Object.keys(ts).filter(inRange).forEach(function(dateStr) {
+            (ts[dateStr]||[]).forEach(function(s) {
+                var details = (s.time||'') + (s.location ? (s.time?'  •  ':'') + s.location : '');
+                if (s.note) details += (details?'  •  ':'') + s.note;
+                items.push({ id:'sess_'+s.id+'_'+dateStr, date:dateStr,
+                             title: s.title || 'Allenamento',
+                             subtitle: details,
+                             color: _POSTER_COLOR[s.type] || '#3b82f6',
+                             icon: _POSTER_ICON[s.type] || '🏃', source:'sess' });
+            });
+        });
+
+        // 3. matchResults
+        var mr = window.matchResults || {};
+        Object.values(mr).forEach(function(m) {
+            var dateStr = typeof m.date === 'string' ? m.date.substring(0,10)
+                        : new Date(m.date).toISOString().substring(0,10);
+            if (!inRange(dateStr)) return;
+            var opp = m.opponentName || '?';
+            var vsStr = m.location === 'home' ? 'vs ' + opp : '@ ' + opp;
+            var details = (m.time||'') + (m.venue ? (m.time?'  •  ':'') + m.venue : '');
+            items.push({ id:'match_'+m.id, date:dateStr, title:'Partita ' + vsStr,
+                         subtitle:details, color:'#22c55e', icon:'⚽', source:'match' });
+        });
+
+        items.sort(function(a,b){ return a.date.localeCompare(b.date); });
+        return items;
+    }
+
+    window.togglePosterPanel = function() {
+        var panel = document.getElementById('poster-panel');
+        if (!panel) return;
+        if (panel.style.display === 'none') {
+            panel.style.display = '';
+            window.refreshPosterList();
+            panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
+        } else {
+            panel.style.display = 'none';
+        }
+    };
+
+    window.refreshPosterList = function() {
+        _posterItems = _posterGetAllItems();
+        var box = document.getElementById('poster-event-list');
+        if (!box) return;
+        if (!_posterItems.length) {
+            box.innerHTML = '<div style="color:#94a3b8;padding:8px;">Nessun evento nel periodo selezionato.</div>';
+            _posterUpdateCount(); return;
+        }
+        var MESI_IT = ['gennaio','febbraio','marzo','aprile','maggio','giugno',
+                       'luglio','agosto','settembre','ottobre','novembre','dicembre'];
+        var lastDate = '';
+        var h = '';
+        _posterItems.forEach(function(item) {
+            if (item.date !== lastDate) {
+                lastDate = item.date;
+                var d = new Date(item.date + 'T00:00:00');
+                var label = d.getDate() + ' ' + MESI_IT[d.getMonth()] + ' ' + d.getFullYear();
+                h += '<div style="color:#60a5fa;font-weight:700;font-size:0.75rem;padding:6px 4px 2px;border-top:1px solid #1e293b;margin-top:4px;text-transform:uppercase;">' + label + '</div>';
+            }
+            var checked = 'checked'; // pre-seleziona tutto
+            h += '<div style="display:flex;align-items:center;gap:8px;padding:5px 4px;border-radius:5px;cursor:pointer;" onclick="this.querySelector(\'input\').click()">';
+            h += '<input type="checkbox" data-pid="'+item.id+'" '+checked+' onclick="event.stopPropagation();window._posterUpdateCount()" style="accent-color:#60a5fa;cursor:pointer;flex-shrink:0;">';
+            h += '<span style="font-size:14px;flex-shrink:0;">'+item.icon+'</span>';
+            h += '<span style="color:#e2e8f0;flex:1;line-height:1.3;">'+item.title+'</span>';
+            if (item.subtitle) h += '<span style="color:#64748b;font-size:0.7rem;white-space:nowrap;">'+item.subtitle+'</span>';
+            h += '</div>';
+        });
+        box.innerHTML = h;
+        _posterUpdateCount();
+    };
+
+    window._posterUpdateCount = function() {
+        var checked = document.querySelectorAll('#poster-event-list input[type=checkbox]:checked').length;
+        var el = document.getElementById('poster-sel-count');
+        if (el) el.textContent = checked + ' selezionat' + (checked === 1 ? 'o' : 'i');
+    };
+
+    window.posterSelectAll = function(val) {
+        document.querySelectorAll('#poster-event-list input[type=checkbox]').forEach(function(c){ c.checked = val; });
+        _posterUpdateCount();
+    };
+
+    window.generateCalendarPoster = function() {
+        var checkedIds = new Set();
+        document.querySelectorAll('#poster-event-list input[type=checkbox]:checked').forEach(function(c){ checkedIds.add(c.getAttribute('data-pid')); });
+        var sel = _posterItems.filter(function(it){ return checkedIds.has(it.id); });
+        if (!sel.length) { alert('Seleziona almeno un evento.'); return; }
+
+        var MESI = ['GEN','FEB','MAR','APR','MAG','GIU','LUG','AGO','SET','OTT','NOV','DIC'];
+        var MESI_IT = ['gennaio','febbraio','marzo','aprile','maggio','giugno',
+                       'luglio','agosto','settembre','ottobre','novembre','dicembre'];
+        var soc = sessionStorage.getItem('gosport_society_name') || 'GO SPORT';
+
+        var W = 800, HEADER_H = 140, ROW_H = 76, FOOTER_H = 44;
+        var H = HEADER_H + sel.length * ROW_H + FOOTER_H;
+        var cv = document.createElement('canvas');
+        cv.width = W; cv.height = H;
+        var ctx = cv.getContext('2d');
+
+        // Background
+        ctx.fillStyle = '#0d1117'; ctx.fillRect(0, 0, W, H);
+        for (var gy = 0; gy < H; gy += 56) {
+            ctx.strokeStyle = 'rgba(16,185,129,0.04)'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+        }
+
+        // Header
+        ctx.fillStyle = '#0a2217'; ctx.fillRect(0, 0, W, HEADER_H);
+        ctx.fillStyle = '#16a34a'; ctx.fillRect(0, HEADER_H - 3, W, 3);
+
+        ctx.font = 'bold 48px Arial Black, Arial, sans-serif';
+        ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff';
+        ctx.fillText('CALENDARIO', W / 2, 62);
+
+        var d0 = new Date(sel[0].date + 'T00:00:00');
+        var d1 = new Date(sel[sel.length - 1].date + 'T00:00:00');
+        var m0 = MESI_IT[d0.getMonth()].toUpperCase();
+        var m1 = MESI_IT[d1.getMonth()].toUpperCase();
+        var monthStr = (m0 === m1 ? m0 : m0 + '/' + m1) + ' ' + d1.getFullYear();
+        ctx.font = 'italic bold 26px Arial, sans-serif'; ctx.fillStyle = '#4ade80';
+        ctx.fillText(monthStr, W / 2, 98);
+        ctx.font = '13px Arial, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.45)';
+        ctx.fillText(soc, W / 2, 124);
+
+        // Rows
+        var BOX_W = 64;
+        sel.forEach(function(item, idx) {
+            var y = HEADER_H + idx * ROW_H;
+            var d = new Date(item.date + 'T00:00:00');
+
+            ctx.fillStyle = idx % 2 === 0 ? '#111827' : '#0f172a';
+            ctx.fillRect(0, y, W, ROW_H);
+
+            // Date box
+            ctx.fillStyle = item.color; ctx.fillRect(0, y, BOX_W, ROW_H);
+            ctx.fillStyle = '#ffffff'; ctx.font = 'bold 28px Arial, sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText(String(d.getDate()), BOX_W / 2, y + 40);
+            ctx.fillStyle = 'rgba(255,255,255,0.82)'; ctx.font = 'bold 10px Arial, sans-serif';
+            ctx.fillText(MESI[d.getMonth()], BOX_W / 2, y + 58);
+            ctx.fillStyle = item.color; ctx.fillRect(BOX_W + 1, y, 2, ROW_H);
+
+            // Icon
+            ctx.font = '22px serif'; ctx.textAlign = 'right';
+            ctx.fillText(item.icon, W - 14, y + 36);
+
+            // Title + details
+            var CX = BOX_W + 14, maxW = W - BOX_W - 60;
+            var titleTxt = item.title;
+            ctx.font = 'bold 15px Arial, sans-serif'; ctx.textAlign = 'left'; ctx.fillStyle = '#ffffff';
+            while (ctx.measureText(titleTxt).width > maxW && titleTxt.length > 4) titleTxt = titleTxt.slice(0,-1);
+            ctx.fillText(titleTxt, CX, y + 30);
+
+            if (item.subtitle) {
+                var subTxt = item.subtitle;
+                ctx.font = '12px Arial, sans-serif'; ctx.fillStyle = '#94a3b8';
+                while (ctx.measureText(subTxt).width > maxW + 40 && subTxt.length > 4) subTxt = subTxt.slice(0,-1);
+                ctx.fillText(subTxt, CX, y + 52);
+            }
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(0, y + ROW_H - 1); ctx.lineTo(W, y + ROW_H - 1); ctx.stroke();
+        });
+
+        // Footer
+        var FY = HEADER_H + sel.length * ROW_H;
+        ctx.fillStyle = '#0a2217'; ctx.fillRect(0, FY, W, FOOTER_H);
+        ctx.fillStyle = '#16a34a'; ctx.fillRect(0, FY, W, 2);
+        ctx.font = '11px Arial, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.fillText(soc + ' • ' + new Date().getFullYear(), W / 2, FY + 26);
+
+        var a = document.createElement('a');
+        a.download = 'poster-calendario-' + sel[0].date.substring(0, 7) + '.png';
+        a.href = cv.toDataURL('image/png');
+        a.click();
+    };
 
     // ========================================================================
     // BACKUP SYSTEM - VERSIONE CON RITARDO PER EVITARE CONFLITTI

@@ -697,7 +697,7 @@ if (themeBtn) {
 
     dates.forEach(d => {
       const e = events[d];
-      const eventIcon = e.type === 'Partita' ? '⚽' : e.type === 'Individual' ? '🏋️' : e.type === 'Torneo' ? '🏆' : e.type === 'Campionato' ? '🏅' : e.type === 'Finale' ? '🥇' : e.type === 'Semifinale' ? '🥈' : e.type === 'Evento' ? '📅' : e.type === 'Visita' ? '🏥' : '🏃';
+      const eventIcon = e.type === 'Partita' ? '⚽' : e.type === 'Individual' ? '🏋️' : e.type === 'Torneo' ? '🏆' : e.type === 'Campionato' ? '🏅' : e.type === 'Finale' ? '🥇' : e.type === 'Semifinale' ? '🥈' : e.type === 'Evento' ? '📅' : e.type === 'Visita' ? '🏥' : e.type === 'Varie' ? '🎉' : '🏃';
       const athleteLine = (e.type === 'Individual' && e.athleteName)
         ? `<br><span style="color:#a855f7;font-size:0.7rem;font-weight:600">${e.athleteName}</span>`
         : '';
@@ -1001,9 +1001,10 @@ window.editEvent = function(date) {
           <option value="Individual" ${event.type === 'Individual' ? 'selected' : ''}>🏋️ Individual</option>
           <option value="Evento" ${event.type === 'Evento' ? 'selected' : ''}>📅 Evento</option>
           <option value="Visita" ${event.type === 'Visita' ? 'selected' : ''}>🏥 Visita</option>
+          <option value="Varie" ${event.type === 'Varie' ? 'selected' : ''}>🎉 Varie</option>
         </select>
       </div>
-      
+
       <div style="margin-bottom:15px;">
         <label style="display:block;font-weight:600;color:#60a5fa;margin-bottom:6px;">Nota breve <span style="font-weight:400;font-size:0.85rem;">(opzionale)</span></label>
         <input id="edit-event-note" type="text" value="${event.note || ''}" placeholder="Es. Campo Paradiso" maxlength="120"
@@ -1200,6 +1201,7 @@ window.addEvent = function() {
           <option value="Individual">🏋️ Individual</option>
           <option value="Evento">📅 Evento</option>
           <option value="Visita">🏥 Visita</option>
+          <option value="Varie">🎉 Varie</option>
         </select>
       </div>
 
