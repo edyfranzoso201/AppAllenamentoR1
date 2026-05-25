@@ -2062,8 +2062,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }));
         
         combinedData.sort((a, b) => b.totale - a.totale);
-        
-        const labels = combinedData.map(d => d.name);
+
+        // Calcola totalDays: giorni del periodo con almeno 1 presenza valida
+        let _pctDates = [];
+        if (attendanceChartPeriod === 'daily') {
+            _pctDates = evaluations[date] ? [date] : [];
+        } else if (attendanceChartPeriod === 'monthly') {
+            const _m = date.substring(0, 7);
+            _pctDates = Object.keys(evaluations).filter(d => d.startsWith(_m));
+        } else if (attendanceChartPeriod === 'semester') {
+            const _sy = date.substring(0, 4), _smo = parseInt(date.substring(5, 7), 10);
+            const _s0 = `${_sy}-${_smo <= 6 ? '01' : '07'}-01`, _s1 = `${_sy}-12-31`;
+            _pctDates = Object.keys(evaluations).filter(d => d >= _s0 && d <= _s1);
+        } else if (attendanceChartPeriod === 'annual') {
+            const _ay = date.substring(0, 4);
+            _pctDates = Object.keys(evaluations).filter(d => d.startsWith(_ay));
+        } else {
+            const _w = getWeekRange(date);
+            _pctDates = Object.keys(evaluations).filter(d => d >= _w.start && d <= _w.end);
+        }
+        const totalDays = _pctDates.filter(d =>
+            Object.values(evaluations[d] || {}).some(ev => parseInt(ev['presenza-allenamento'], 10) > 0)
+        ).length;
+
+        const labels = combinedData.map(d => {
+            const pct = totalDays > 0 ? Math.round(d.presenze / totalDays * 100) : 0;
+            return [d.name, pct + '%'];
+        });
         const presenzeData = combinedData.map(d => d.presenze);
         const assenzeGiustificateData = combinedData.map(d => d.assenzeGiustificate);
         
@@ -2075,7 +2100,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const rawW = attWrapper ? attWrapper.offsetWidth : 0;
         const attW = isMobile ? Math.max(labels.length * 45, window.innerWidth - 40) 
                                : Math.max(rawW || 600, labels.length * 40, 400);
-        const attH = 300;
+        const attH = 320;
         attendanceCanvas.width = attW;
         attendanceCanvas.height = attH;
         attendanceCanvas.style.width = attW + 'px';
@@ -2113,10 +2138,23 @@ document.addEventListener('DOMContentLoaded', () => {
                         grid: { color: _chartGridColor() } 
                     }
                 },
-                plugins: { 
-                    legend: { 
-                        labels: { color: _chartTickColor() } 
-                    } 
+                plugins: {
+                    legend: {
+                        labels: { color: _chartTickColor() }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                const item = combinedData[ctx.dataIndex];
+                                if (!item) return '';
+                                if (ctx.dataset.label === 'Presenze') {
+                                    const pct = totalDays > 0 ? Math.round(item.presenze / totalDays * 100) : 0;
+                                    return ` Presenze: ${item.presenze}/${totalDays} (${pct}%)`;
+                                }
+                                return ` ${ctx.dataset.label}: ${ctx.parsed.y}`;
+                            }
+                        }
+                    }
                 }
             }
         });
