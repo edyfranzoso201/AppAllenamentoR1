@@ -1126,6 +1126,7 @@
               <div>
                 <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">N° Atleti</label>
                 <input type="number" id="imp-slot-atleti" min="0" max="99" value="0"
+                  oninput="impUpdatePorzioni()"
                   style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;box-sizing:border-box;">
               </div>
               <div>
@@ -2589,9 +2590,16 @@
   const CAMPO_INFO = {
     a11: { label: 'Campo a 11', color: '#3b82f6', maxPorzioni: 3, maxAtleti: '45-55' },
     a9:  { label: 'Campo a 9',  color: '#10b981', maxPorzioni: 2, maxAtleti: '25-35' },
-    a7:  { label: 'Campo a 7',  color: '#f59e0b', maxPorzioni: 2, maxAtleti: '20-25' },
+    a7:  { label: 'Campo a 7',  color: '#f59e0b', maxPorzioni: 2, maxAtleti: '20-25', sogliaCondivisione: 8 },
     a5:  { label: 'Campo a 5',  color: '#8b5cf6', maxPorzioni: 1, maxAtleti: '10-15' },
   };
+  // Calcola le porzioni effettive tenendo conto della soglia atleti per il tipo di campo
+  function campoMaxPorzioni(tipoId, atletiCount) {
+    const info = CAMPO_INFO[tipoId];
+    if (!info) return 1;
+    if (info.sogliaCondivisione !== undefined && atletiCount > info.sogliaCondivisione) return 1;
+    return info.maxPorzioni || 1;
+  }
   const GIORNI = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
 
   let impState = { config: { campi: [], spogliatoi: 0 }, slots: [], eventi: [] };
@@ -3239,13 +3247,18 @@
   }
 
   window.impUpdatePorzioni = function() {
-    const selCampo = document.getElementById('imp-slot-campo');
-    const selPorz  = document.getElementById('imp-slot-porzione');
+    const selCampo  = document.getElementById('imp-slot-campo');
+    const selPorz   = document.getElementById('imp-slot-porzione');
     if (!selCampo || !selPorz) return;
     const campo = impState.config.campi.find(c => c.id === selCampo.value);
-    const max = campo ? (CAMPO_INFO[campo.tipo]?.maxPorzioni || 1) : 1;
+    const atleti = parseInt(document.getElementById('imp-slot-atleti')?.value) || 0;
+    const max = campo ? campoMaxPorzioni(campo.tipo, atleti) : 1;
     const cur = parseInt(selPorz.value) || 1;
-    selPorz.innerHTML = Array.from({length: max}, (_, i) => `<option value="${i+1}"${cur===i+1?' selected':''}>Porzione ${i+1}${max===1?' (intero campo)':''}</option>`).join('');
+    const note = (campo && CAMPO_INFO[campo.tipo]?.sogliaCondivisione !== undefined && atleti > CAMPO_INFO[campo.tipo].sogliaCondivisione)
+      ? ' ⚠️ >8 atleti: campo intero' : '';
+    selPorz.innerHTML = Array.from({length: max}, (_, i) =>
+      `<option value="${i+1}"${cur===i+1?' selected':''}>Porzione ${i+1}${max===1?' (intero campo)':''}${i===0?note:''}</option>`
+    ).join('');
   };
 
   window.impShowSlotForm = function(id) {
@@ -3909,7 +3922,7 @@
           if (isAlt && !freeAlt && altCampoUsed >= maxAltUses) continue;
           const cands = campi.filter(c => c.tipo === att.tipo);
           if (!cands.length) continue;
-          const mxP      = CAMPO_INFO[att.tipo]?.maxPorzioni || 1;
+          const mxP      = campoMaxPorzioni(att.tipo, atletiCount);
           const campoMax = CAMPO_MAX[att.tipo] || 999;
           for (let t = tStart; t + att.dur <= tEnd; t += 15) {
             const sT = toTime(t), eT = toTime(t + att.dur);
