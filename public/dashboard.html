@@ -3207,9 +3207,21 @@
         ? impSpoglGlobalAssign(groups.map(g => g[0]))
         : new Map();
 
+      // Calcola indice fascia oraria per banding visivo
+      const FASCIA_COLORS = ['#6366f1','#10b981','#3b82f6','#8b5cf6','#06b6d4'];
+      const FASCIA_BGS    = ['rgba(99,102,241,.06)','rgba(16,185,129,.06)','rgba(59,130,246,.06)','rgba(139,92,246,.06)','rgba(6,182,212,.06)'];
+      let fasciaIdx = -1, fasciaEnd = '';
+      const groupFasce = groups.map(group => {
+        const oraI = group[0].oraInizio || '';
+        const oraF = group[0].oraFine   || '';
+        if (!fasciaEnd || oraI >= fasciaEnd) { fasciaIdx++; fasciaEnd = oraF; }
+        else if (oraF > fasciaEnd)           { fasciaEnd = oraF; }
+        return fasciaIdx;
+      });
+
       return `<div style="margin-bottom:16px;">
         <div style="font-size:0.78rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;padding:0 2px;">${GIORNI[d]}</div>
-        ${groups.map(group => {
+        ${groups.map((group, gi) => {
           const s = group[0];
           const campo = impState.config.campi.find(c => c.id === s.campoId);
           const info  = campo ? CAMPO_INFO[campo.tipo] : null;
@@ -3220,6 +3232,9 @@
           const porzLabel = impFormatPorzioni(group.map(x => x.porzione||1));
           const spoglNum  = spoglAssign.get(s.id);
           const docFlag   = s.doccia === false ? '🚫🚿' : '';
+          const fi = groupFasce[gi];
+          const fc  = FASCIA_COLORS[fi % FASCIA_COLORS.length];
+          const fbg = FASCIA_BGS[fi % FASCIA_BGS.length];
           const borderColor = hasConflict ? '#ef4444' : hasSpogl ? '#f59e0b' : 'var(--border-soft)';
           const warnings = [
             hasConflict ? '<span style="font-size:0.72rem;background:#fee2e2;color:#dc2626;border-radius:4px;padding:1px 6px;font-weight:700;">⚠️ Campo occupato</span>' : '',
@@ -3230,7 +3245,7 @@
           const noteTxt = s.note ? `<span style="font-size:0.72rem;color:var(--text-muted);font-style:italic;margin-left:6px;" title="${s.note.replace(/"/g,'&quot;')}">📝 ${s.note}</span>` : '';
           const cleanSq = impCleanSquadra(s);
           const campoNome = campo?.nome || '';
-          return `<div class="imp-slot-card" data-hl-sq="${cleanSq.replace(/"/g,'&quot;')}" data-hl-ora="${s.oraInizio||''}" data-hl-campo="${campoNome.replace(/"/g,'&quot;')}" style="border-color:${borderColor}${hasConflict||hasSpogl?';border-width:2px':''};">
+          return `<div class="imp-slot-card" data-hl-sq="${cleanSq.replace(/"/g,'&quot;')}" data-hl-ora="${s.oraInizio||''}" data-hl-campo="${campoNome.replace(/"/g,'&quot;')}" style="border-color:${borderColor}${hasConflict||hasSpogl?';border-width:2px':''};border-left:3px solid ${fc};background:${fbg};">
             <span style="font-size:0.82rem;font-weight:700;color:var(--text-muted);min-width:90px;">${s.oraInizio||'--:--'} – ${s.oraFine||'--:--'}</span>
             ${info ? `<span class="imp-tipo-badge" style="background:${info.color}22;color:${info.color};">${campo.nome}</span>` : ''}
             <span style="font-size:0.8rem;color:var(--text-muted);">${porzLabel}</span>
