@@ -2085,10 +2085,7 @@ document.addEventListener('DOMContentLoaded', () => {
             Object.values(evaluations[d] || {}).some(ev => parseInt(ev['presenza-allenamento'], 10) > 0)
         ).length;
 
-        const labels = combinedData.map(d => {
-            const pct = totalDays > 0 ? Math.round(d.presenze / totalDays * 100) : 0;
-            return [d.name, pct + '%'];
-        });
+        const labels = combinedData.map(d => d.name);
         const presenzeData = combinedData.map(d => d.presenze);
         const assenzeGiustificateData = combinedData.map(d => d.assenzeGiustificate);
         
@@ -2123,6 +2120,34 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 ]
             },
+            plugins: [{
+                afterDraw: function(chart) {
+                    var ctx = chart.ctx;
+                    var meta0 = chart.getDatasetMeta(0);
+                    var meta1 = chart.getDatasetMeta(1);
+                    combinedData.forEach(function(item, i) {
+                        var bar0 = meta0.data[i];
+                        if (!bar0) return;
+                        var bar1 = meta1 && meta1.data[i];
+                        var pct = totalDays > 0 ? Math.round(item.presenze / totalDays * 100) : 0;
+                        var topY = (bar1 && (assenzeGiustificateData[i] || 0) > 0) ? bar1.y : bar0.y;
+                        var totalH = bar0.base - topY;
+                        ctx.save();
+                        ctx.font = 'bold 11px Arial, sans-serif';
+                        ctx.textAlign = 'center';
+                        if (totalH >= 20) {
+                            ctx.fillStyle = 'rgba(255,255,255,0.95)';
+                            ctx.textBaseline = 'top';
+                            ctx.fillText(pct + '%', bar0.x, topY + 4);
+                        } else if (totalH > 0) {
+                            ctx.fillStyle = '#94a3b8';
+                            ctx.textBaseline = 'bottom';
+                            ctx.fillText(pct + '%', bar0.x, topY - 2);
+                        }
+                        ctx.restore();
+                    });
+                }
+            }],
             options: {
                 maintainAspectRatio: false,
                 responsive: false,
