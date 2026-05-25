@@ -3188,7 +3188,15 @@
     slots.forEach(s => { (byDay[s.giorno] = byDay[s.giorno] || []).push(s); });
     const order = [1,2,3,4,5,6,0];
     el.innerHTML = order.filter(d => byDay[d]).map(d => {
-      const daySlots = byDay[d].sort((a,b) => (a.oraInizio||'').localeCompare(b.oraInizio||''));
+      const CAMPO_SIZE_RANK = { a5: 0, a7: 1, a9: 2, a11: 3 };
+      const campoRank = s => {
+        const c = impState.config.campi.find(x => x.id === s.campoId);
+        return c ? (CAMPO_SIZE_RANK[c.tipo] ?? 99) : 99;
+      };
+      const daySlots = byDay[d].sort((a,b) => {
+        const tDiff = (a.oraInizio||'').localeCompare(b.oraInizio||'');
+        return tDiff !== 0 ? tDiff : campoRank(a) - campoRank(b);
+      });
 
       // Raggruppa porzioni della stessa squadra/orario/campo in un'unica riga
       const seen = new Set();
