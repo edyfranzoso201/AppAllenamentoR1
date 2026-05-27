@@ -4800,7 +4800,10 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
         }
     });
     function startPolling() {
+        // 5 minuti (era 5 sec = 312 comandi Redis/min → troppo costoso su Upstash free tier)
         pollingInterval = setInterval(async () => {
+            // Non aggiornare se il tab è in background
+            if (document.visibilityState !== 'visible') return;
             const currentDataSnapshot = JSON.stringify({ athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults });
             await loadData();
             const newDataSnapshot = JSON.stringify({ athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults });
@@ -4808,7 +4811,7 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
                 console.log("Dati aggiornati dal server. Ricarico l'interfaccia.");
                 updateAllUI();
             }
-        }, 5000);
+        }, 300000); // 5 minuti
     }
     async function initializeApp() {
         await loadData();
