@@ -1,0 +1,45 @@
+name: Daily Redis Backup
+
+on:
+  schedule:
+    # Ogni giorno alle 03:00 UTC (05:00 ora italiana)
+    - cron: '0 3 * * *'
+  workflow_dispatch: # permette avvio manuale dalla tab "Actions" su GitHub
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Fetch backup from API
+        run: |
+          DATE=$(date -u +%Y-%m-%d)
+          mkdir -p backups
+          HTTP_STATUS=$(curl -s -o backups/${DATE}.json -w "%{http_code}" \
+            -H "X-Backup-Token: ${{ secrets.BACKUP_SECRET }}" \
+            "https://app-allenamento-r1.vercel.app/api/data?action=backup")
+          echo "HTTP status: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "Backup failed with status $HTTP_STATUS"
+            cat backups/${DATE}.json
+            exit 1
+          fi
+          KEYS=$(cat backups/${DATE}.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('keysCount',0))")
+          echo "Backup OK: $KEYS keys exported"
+
+      - name: Commit backup
+        run: |
+          DATE=$(date -u +%Y-%m-%d)
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add backups/
+          git diff --staged --quiet && echo "No changes" || \
+            git commit -m "backup: Redis snapshot $DATE [skip ci]"
+          git push

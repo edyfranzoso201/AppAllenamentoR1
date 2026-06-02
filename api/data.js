@@ -226,6 +226,97 @@ function emailTemplate({ athleteName, societyName, tipo, scadenza, giorni }) {
 </div></body></html>`;
 }
 
+// ── BACKUP dati (admin per società, superadmin per tutto Redis) ──────────
+if (req.query?.action === 'backup') {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  const saKey = (req.headers['x-sa-key'] || '').trim();
+  const validSaKey = (process.env.SUPER_ADMIN_PASSWORD || '').trim();
+  const isSuperAdmin = validSaKey && saKey === validSaKey;
+
+  const isAdminSession = session.isAuthenticated && session.role === 'admin';
+  const backupToken = req.headers['x-backup-token'] || req.query.token;
+  const isValidToken = process.env.BACKUP_SECRET && backupToken === process.env.BACKUP_SECRET;
+
+  if (!isSuperAdmin && !isAdminSession && !isValidToken) {
+    return res.status(401).json({ error: 'Non autorizzato' });
+  }
+
+  async function scanKeys(pattern) {
+    const keys = [];
+    let cursor = 0;
+    do {
+      const [next, batch] = await kv.scan(cursor, { match: pattern, count: 200 });
+      cursor = parseInt(next, 10);
+      keys.push(...batch);
+    } while (cursor !== 0);
+    return keys;
+  }
+
+  async function mgetBatched(keys) {
+    const out = {};
+    for (let i = 0; i < keys.length; i += 50) {
+      const batch = keys.slice(i, i + 50);
+      const values = await kv.mget(...batch);
+      batch.forEach((k, idx) => { if (values[idx] !== null) out[k] = values[idx]; });
+    }
+    return out;
+  }
+
+  let exportData = {};
+  let scope;
+
+  if (isSuperAdmin || isValidToken) {
+    // Export completo
+    const allKeys = (await scanKeys('*')).filter(k =>
+      !k.startsWith('rl:') && !k.startsWith('session:') && !k.startsWith('ratelimit:')
+    );
+    exportData = await mgetBatched(allKeys);
+    scope = 'completo';
+  } else {
+    // Export per società
+    const sid = session.societyId;
+    if (!sid) return res.status(400).json({ error: 'societyId mancante' });
+    scope = sid;
+
+    const allAnnate = (await kv.get('annate:list')) || [];
+    const societyAnnate = allAnnate.filter(a => !a.societyId || a.societyId === sid);
+    exportData['annate:list'] = societyAnnate;
+
+    for (const ann of societyAnnate) {
+      const annKeys = await scanKeys(`annate:${ann.id}:*`);
+      Object.assign(exportData, await mgetBatched(annKeys));
+      const pushVal = await kv.get(`push:annata:${ann.id}:subs`);
+      if (pushVal) exportData[`push:annata:${ann.id}:subs`] = pushVal;
+    }
+
+    const socKeys = await scanKeys(`society:${sid}:*`);
+    Object.assign(exportData, await mgetBatched(socKeys));
+
+    const licKey = await kv.get(`licenze_society:${sid}`);
+    if (licKey) {
+      exportData[`licenze_society:${sid}`] = licKey;
+      const licData = await kv.get(`licenze:${licKey}`);
+      if (licData) exportData[`licenze:${licKey}`] = licData;
+    }
+
+    const allUsers = (await kv.get('auth:users')) || [];
+    const socUsers = allUsers.filter(u => u.societyId === sid);
+    exportData['auth:users'] = socUsers;
+    const uKeys = socUsers.map(u => `auth:user:${(u.username||'').toLowerCase()}`).filter(Boolean);
+    if (uKeys.length) Object.assign(exportData, await mgetBatched(uKeys));
+  }
+
+  const dateStr = new Date().toISOString();
+  if (!isValidToken) {
+    res.setHeader('Content-Disposition',
+      `attachment; filename="gosport-backup-${scope}-${dateStr.slice(0,10)}.json"`);
+  }
+  return res.status(200).json({
+    exportedAt: dateStr, scope, keysCount: Object.keys(exportData).length, data: exportData
+  });
+}
+
 // ── SUPERADMIN: banner config ────────────────────────────────────────────
 if (req.query?.action === 'superadmin-config') {
   const saKey = (req.headers['x-sa-key'] || '').trim();

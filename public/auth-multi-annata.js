@@ -1,4 +1,4 @@
-// auth-multi-annata.js - Sistema autenticazione con gestione annate - VERSIONE FINALE
+﻿// auth-multi-annata.js - Sistema autenticazione con gestione annate - VERSIONE FINALE
 (function() {
     'use strict';
 
@@ -19,6 +19,137 @@
     const LICENSE_VERIFIED = 'gosport_license_verified';
     const LICENSE_VERIFIED_EXPIRY = 'gosport_license_verified_expiry';
     const SESSION_SOCIETY = 'gosport_society_id'; // societyId della società loggata
+
+    // Chiavi da persistere in localStorage per sopravvivere alla chiusura del browser
+    var _PERSIST_KEYS = [
+        SESSION_KEY, SESSION_KEY + '_expiry', SESSION_TOKEN,
+        SESSION_USER, SESSION_USER_ROLE, SESSION_SOCIETY, SESSION_ANNATA,
+        'gosport_license_status', 'gosport_license_plan', 'gosport_ai_enabled',
+        'gosport_society_name', 'gosport_has_dashboard', 'gosport_dashboard_role', 'gosport_permissions'
+    ];
+
+    function saveSessionToLocal() {
+        _PERSIST_KEYS.forEach(function(key) {
+            var val = sessionStorage.getItem(key);
+            if (val !== null) localStorage.setItem('_p_' + key, val);
+            else localStorage.removeItem('_p_' + key);
+        });
+    }
+
+    function restoreSessionFromLocal() {
+        if (sessionStorage.getItem(SESSION_KEY) === 'true') return; // già in sessione
+        var ps = localStorage.getItem('_p_' + SESSION_KEY);
+        var pe = localStorage.getItem('_p_' + SESSION_KEY + '_expiry');
+        if (ps !== 'true' || !pe || Date.now() > parseInt(pe)) {
+            if (ps) _PERSIST_KEYS.forEach(function(k) { localStorage.removeItem('_p_' + k); });
+            return;
+        }
+        _PERSIST_KEYS.forEach(function(key) {
+            var val = localStorage.getItem('_p_' + key);
+            if (val !== null) sessionStorage.setItem(key, val);
+        });
+    }
+
+    // ── BACKUP MANAGER (IndexedDB, ultimi 7 backup) ──────────────────────────
+    var BackupManager = (function() {
+        var DB_NAME = 'gosport_backups', STORE = 'backups', MAX = 7;
+
+        function openDB() {
+            return new Promise(function(resolve, reject) {
+                var req = indexedDB.open(DB_NAME, 1);
+                req.onupgradeneeded = function(e) {
+                    var db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE))
+                        db.createObjectStore(STORE, { keyPath: 'id', autoIncrement: true });
+                };
+                req.onsuccess = function(e) { resolve(e.target.result); };
+                req.onerror   = function(e) { reject(e.target.error); };
+            });
+        }
+
+        async function getAll() {
+            var db = await openDB();
+            return new Promise(function(resolve, reject) {
+                var req = db.transaction(STORE, 'readonly').objectStore(STORE).getAll();
+                req.onsuccess = function() {
+                    resolve((req.result || []).sort(function(a, b) { return b.timestamp - a.timestamp; }));
+                };
+                req.onerror = function(e) { reject(e.target.error); };
+            });
+        }
+
+        async function save(jsonData, dateStr) {
+            var db = await openDB();
+            await new Promise(function(resolve, reject) {
+                var req = db.transaction(STORE, 'readwrite').objectStore(STORE).add({
+                    date: dateStr, timestamp: Date.now(),
+                    keysCount: jsonData.keysCount || 0,
+                    data: JSON.stringify(jsonData)
+                });
+                req.onsuccess = resolve;
+                req.onerror = function(e) { reject(e.target.error); };
+            });
+            // Rimuovi i più vecchi oltre MAX
+            var all = await getAll();
+            if (all.length > MAX) {
+                var db2 = await openDB();
+                await Promise.all(all.slice(MAX).map(function(item) {
+                    return new Promise(function(resolve, reject) {
+                        var req = db2.transaction(STORE, 'readwrite').objectStore(STORE).delete(item.id);
+                        req.onsuccess = resolve;
+                        req.onerror = function(e) { reject(e.target.error); };
+                    });
+                }));
+            }
+        }
+
+        function download(item) {
+            var blob = new Blob([item.data], { type: 'application/json' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'gosport-backup-' + item.date + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        return { getAll: getAll, save: save, download: download };
+    })();
+
+    async function autoBackupIfNeeded() {
+        var role = sessionStorage.getItem('gosport_user_role') || '';
+        if (role !== 'admin') return;
+        var today = new Date().toISOString().slice(0, 10);
+        if (localStorage.getItem('gosport_last_auto_backup') === today) return;
+        try {
+            var resp = await fetch('/api/data?action=backup', {
+                headers: {
+                    'X-Auth-Session': sessionStorage.getItem('gosport_auth_session') || '',
+                    'X-User-Role': role,
+                    'X-Society-Id': sessionStorage.getItem('gosport_society_id') || ''
+                }
+            });
+            if (!resp.ok) return;
+            var data = await resp.json();
+            await BackupManager.save(data, today);
+            localStorage.setItem('gosport_last_auto_backup', today);
+            console.log('✅ Backup automatico:', today);
+        } catch(e) {
+            console.warn('⚠️ Backup auto fallito:', e.message);
+        }
+    }
+
+    function scheduleMidnightBackup() {
+        var now = new Date();
+        var midnight = new Date(now);
+        midnight.setHours(24, 0, 5, 0);
+        setTimeout(async function() {
+            await autoBackupIfNeeded();
+            scheduleMidnightBackup();
+        }, midnight - now);
+    }
 
     // ==========================================
     // VERIFICA MODALITÀ GENITORE (SENZA AUTH)
@@ -48,7 +179,10 @@
             console.log('🔓 Modalità Genitore - Accesso libero');
             return; // Esci subito, lascia la pagina normale
         }
-        
+
+        // Ripristina sessione da localStorage se sessionStorage è vuoto (es. browser riaperto)
+        restoreSessionFromLocal();
+
         // Verifica immediata dello stato di autenticazione
         const session = sessionStorage.getItem(SESSION_KEY);
         const expiry = sessionStorage.getItem(SESSION_KEY + '_expiry');
@@ -119,6 +253,7 @@
             sessionStorage.removeItem(SESSION_ANNATA);
             sessionStorage.removeItem(SESSION_USER_ROLE);
             sessionStorage.removeItem(SESSION_SOCIETY);
+            _PERSIST_KEYS.forEach(function(key) { localStorage.removeItem('_p_' + key); });
         }
 
         // ==========================================
@@ -562,7 +697,8 @@
 
                         const expiry = Date.now() + (8 * 60 * 60 * 1000);
                         sessionStorage.setItem(SESSION_KEY + '_expiry', expiry.toString());
-                        
+                        saveSessionToLocal();
+
                         // Registra accesso — usa /api/log che non richiede annata
                         try {
                             fetch('/api/log', {
@@ -738,6 +874,7 @@
 
         function selectAnnata(annataId) {
             sessionStorage.setItem(SESSION_ANNATA, annataId);
+            saveSessionToLocal();
             window.location.reload();
         }
 
@@ -766,7 +903,7 @@ function showAdminPanel() {
                 </button>
             </div>
         </div>
-        
+
         <div style="background:rgba(30,41,59,0.95);padding:20px;border-radius:15px;margin-bottom:20px;border:1px solid rgba(96,165,250,0.2);">
             <div style="display:flex;gap:10px;">
                 <button id="tab-annate" class="tab-btn active" style="flex:1;background:linear-gradient(135deg,#3b82f6 0%,#3b82f6 100%);color:#ffffff;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
@@ -774,6 +911,9 @@ function showAdminPanel() {
                 </button>
                 <button id="tab-utenti" class="tab-btn" style="flex:1;background:#64748b;color:#64748b;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
                     👥 Gestione Utenti
+                </button>
+                <button id="tab-backup" class="tab-btn" style="flex:1;background:#64748b;color:#64748b;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
+                    💾 Backup
                 </button>
             </div>
         </div>
@@ -790,7 +930,8 @@ function showAdminPanel() {
     
     document.getElementById('tab-annate').addEventListener('click', () => switchTab('annate'));
     document.getElementById('tab-utenti').addEventListener('click', () => switchTab('utenti'));
-    
+    document.getElementById('tab-backup').addEventListener('click', () => switchTab('backup'));
+
     switchTab('annate');
 }
 
@@ -808,11 +949,94 @@ function switchTab(tabName) {
     
     if (tabName === 'annate') {
         showAnnatePanel();
+    } else if (tabName === 'backup') {
+        showBackupPanel();
     } else {
         showUtentiPanel();
     }
 }
 
+
+async function showBackupPanel() {
+    var contentArea = document.getElementById('content-area');
+    if (!contentArea) return;
+
+    contentArea.innerHTML = `
+        <div style="background:rgba(30,41,59,0.95);padding:30px;border-radius:15px;border:1px solid rgba(96,165,250,0.2);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+                <h2 style="color:#e2e8f0;margin:0;font-size:20px;">&#x1F4BE; Backup Dati</h2>
+                <button id="backup-now-btn" style="background:linear-gradient(135deg,#16a34a,#16a34a);color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;">
+                    &#x2B07;&#xFE0F; Salva Ora
+                </button>
+            </div>
+            <p style="color:#64748b;font-size:0.85rem;margin:0 0 20px 0;">
+                Il backup viene salvato automaticamente ogni giorno al login. Vengono conservati gli ultimi 7. Clicca <strong style="color:#60a5fa;">Scarica</strong> per salvare un file sul tuo PC.
+            </p>
+            <div id="backup-list" style="display:flex;flex-direction:column;gap:10px;">
+                <div style="text-align:center;padding:30px;color:#64748b;">&#x23F3; Caricamento...</div>
+            </div>
+        </div>
+    `;
+
+    async function renderList() {
+        var listDiv = document.getElementById('backup-list');
+        if (!listDiv) return;
+        var items = await BackupManager.getAll();
+        if (items.length === 0) {
+            listDiv.innerHTML = '<div style="text-align:center;padding:30px;color:#64748b;">Nessun backup salvato. Clicca "Salva Ora" per crearne uno.</div>';
+            return;
+        }
+        listDiv.innerHTML = '';
+        items.forEach(function(item, idx) {
+            var row = document.createElement('div');
+            row.style.cssText = 'background:#1e293b;padding:16px 20px;border-radius:10px;border:1px solid rgba(96,165,250,0.15);display:flex;justify-content:space-between;align-items:center;';
+            var d = new Date(item.timestamp);
+            var ora = d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+            row.innerHTML =
+                '<div>' +
+                    '<span style="color:#60a5fa;font-weight:600;margin-right:12px;">&#x1F4E6; ' + item.date + '</span>' +
+                    '<span style="color:#64748b;font-size:0.82rem;">' + ora + ' &nbsp;&middot;&nbsp; ' + (item.keysCount || '?') + ' chiavi</span>' +
+                    (idx === 0 ? ' <span style="background:#16a34a;color:#fff;font-size:0.72rem;padding:2px 8px;border-radius:10px;margin-left:8px;">più recente</span>' : '') +
+                '</div>' +
+                '<button style="background:#3b82f6;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">&#x2193; Scarica</button>';
+            row.querySelector('button').addEventListener('click', function() {
+                BackupManager.download(item);
+            });
+            listDiv.appendChild(row);
+        });
+    }
+
+    await renderList();
+
+    var nowBtn = document.getElementById('backup-now-btn');
+    if (nowBtn) {
+        nowBtn.addEventListener('click', async function() {
+            nowBtn.textContent = '⏳ Salvataggio...';
+            nowBtn.disabled = true;
+            try {
+                var resp = await fetch('/api/data?action=backup', {
+                    headers: {
+                        'X-Auth-Session': sessionStorage.getItem('gosport_auth_session') || '',
+                        'X-User-Role': sessionStorage.getItem('gosport_user_role') || '',
+                        'X-Society-Id': sessionStorage.getItem('gosport_society_id') || ''
+                    }
+                });
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                var data = await resp.json();
+                var today = new Date().toISOString().slice(0, 10);
+                await BackupManager.save(data, today);
+                localStorage.setItem('gosport_last_auto_backup', today);
+                nowBtn.textContent = '✅ Salvato!';
+                await renderList();
+                setTimeout(function() { nowBtn.textContent = '⬇️ Salva Ora'; nowBtn.disabled = false; }, 2000);
+            } catch(e) {
+                nowBtn.textContent = '❌ Errore';
+                nowBtn.disabled = false;
+                alert('Errore: ' + e.message);
+            }
+        });
+    }
+}
 // ==========================================
 // GESTIONE ANNATE
 // ==========================================
@@ -1409,7 +1633,7 @@ function showAdminPanel() {
                 </button>
             </div>
         </div>
-        
+
         <div style="background:rgba(30,41,59,0.95);padding:20px;border-radius:15px;margin-bottom:20px;border:1px solid rgba(96,165,250,0.2);">
             <div style="display:flex;gap:10px;">
                 <button id="tab-annate" class="tab-btn active" style="flex:1;background:linear-gradient(135deg,#3b82f6 0%,#3b82f6 100%);color:#ffffff;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
@@ -1417,6 +1641,9 @@ function showAdminPanel() {
                 </button>
                 <button id="tab-utenti" class="tab-btn" style="flex:1;background:#64748b;color:#64748b;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
                     👥 Gestione Utenti
+                </button>
+                <button id="tab-backup" class="tab-btn" style="flex:1;background:#64748b;color:#64748b;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
+                    💾 Backup
                 </button>
             </div>
         </div>
@@ -1433,7 +1660,8 @@ function showAdminPanel() {
     
     document.getElementById('tab-annate').addEventListener('click', () => switchTab('annate'));
     document.getElementById('tab-utenti').addEventListener('click', () => switchTab('utenti'));
-    
+    document.getElementById('tab-backup').addEventListener('click', () => switchTab('backup'));
+
     switchTab('annate');
 }
 
@@ -1451,6 +1679,8 @@ function switchTab(tabName) {
     
     if (tabName === 'annate') {
         showAnnatePanel();
+    } else if (tabName === 'backup') {
+        showBackupPanel();
     } else {
         showUtentiPanel();
     }
@@ -2365,6 +2595,10 @@ window.deleteUser = async function(username) {
             }
             setTimeout(() => applyRoleNavigation(), 150);
             if (isAdmin()) setTimeout(() => showLicenseBanner(), 1000);
+            // Backup automatico giornaliero + programma mezzanotte
+            if (isAdmin()) {
+                setTimeout(function() { autoBackupIfNeeded(); scheduleMidnightBackup(); }, 3000);
+            }
             window.getCurrentAnnata = getCurrentAnnata;
             window.getCurrentUser = getCurrentUser;
             window.getUserRole = getUserRole;
