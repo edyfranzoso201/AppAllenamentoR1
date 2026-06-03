@@ -1673,6 +1673,17 @@ async function loadMonitoring() {
             html += metricCard('✅', 'Deploy OK', vd.ok30 || 0, null, null, 999);
             html += metricCard('❌', 'Deploy falliti', vd.fail30 || 0, null, null, 1);
             html += '</div>';
+            // KV Store stats (comandi mensili Redis via Vercel Storage API)
+            if (vd.kvStore && vd.kvStore.commandsUsed !== null) {
+                html += '<div style="margin-bottom:10px;">';
+                html += '<div style="font-size:0.78rem;color:#7dd3fc;font-weight:600;margin-bottom:6px;">🗄️ Redis — Comandi mensili</div>';
+                html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
+                html += metricCard('⚡', 'Comandi / mese', vd.kvStore.commandsUsed, vd.kvStore.commandsLimit, null, 80);
+                html += metricCard('💾', 'Storage Redis', vd.kvStore.storageUsed, vd.kvStore.storageLimit, fmtBytes, 80);
+                html += '</div></div>';
+            } else if (vd.stores_raw_keys && vd.stores_raw_keys.length) {
+                html += '<div style="font-size:0.72rem;color:#475569;margin-bottom:8px;">Store keys: ' + vd.stores_raw_keys.join(', ') + '</div>';
+            }
             if (vd.lastDeploy) {
                 var ld = vd.lastDeploy;
                 var ldDate = new Date(ld.date).toLocaleString('it-IT');
@@ -1684,7 +1695,7 @@ async function loadMonitoring() {
                     (ld.commit ? '<div style="color:#475569;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + ld.commit.slice(0,60) + '</div>' : '') +
                 '</div>';
             }
-            html += '<div style="margin-top:8px;font-size:0.72rem;color:#334155;">📊 Bandwidth e invocazioni: ' +
+            html += '<div style="margin-top:8px;font-size:0.72rem;color:#334155;">📊 Bandwidth e Origin Transfer: ' +
                 '<a href="https://vercel.com/edys-projects-44112fd6/~/usage" target="_blank" style="color:#a78bfa;">vercel.com/usage</a>' +
             '</div>';
         }

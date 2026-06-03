@@ -362,7 +362,18 @@ if (req.query?.action === 'monitoring') {
 
   const out = { redis: null, vercel: null, errors: [] };
 
-  // ── Redis stats via existing KV credentials (no extra creds needed) ──────
+  // ── Redis: INFO + scan locale (scanKeys ridefinita localmente) ──────────
+  async function monScanKeys(pattern) {
+    const keys = [];
+    let cursor = 0;
+    do {
+      const [next, batch] = await kv.scan(cursor, { match: pattern, count: 200 });
+      cursor = parseInt(next, 10);
+      keys.push(...batch);
+    } while (cursor !== 0);
+    return keys;
+  }
+
   try {
     const kvUrl   = (process.env.KV_REST_API_URL || process.env.UPSTASH_KV_REST_API_URL || '').replace(/\/$/, '');
     const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_KV_REST_API_TOKEN;
@@ -385,11 +396,10 @@ if (req.query?.action === 'monitoring') {
       });
     }
 
-    // Conta le chiavi app reali (esclude sessioni/ratelimit)
-    const appKeys = (await scanKeys('*')).filter(k =>
+    const appKeys = (await monScanKeys('*')).filter(k =>
       !k.startsWith('rl:') && !k.startsWith('session:') && !k.startsWith('ratelimit:')
     );
-    const maxmem = parseInt(info.maxmemory || 0) || 268435456; // 256MB free tier
+    const maxmem = parseInt(info.maxmemory || 0) || 268435456;
     out.redis = {
       keys_total: dbsizeJson.result || 0,
       keys_app: appKeys.length,
@@ -406,27 +416,44 @@ if (req.query?.action === 'monitoring') {
     };
   } catch(e) { out.errors.push('Redis: ' + e.message); }
 
-  // ── Vercel: deployments recenti (usage dashboard non è API pubblica) ──────
+  // ── Vercel: deployments + prova Storage API per comandi Redis mensili ────
   const vToken = process.env.VERCEL_TOKEN;
   if (vToken) {
     try {
       const teamId = process.env.VERCEL_TEAM_ID || 'team_N703yzP0O3hsuLT1plfZhJ1S';
       const hdrV = { Authorization: `Bearer ${vToken}` };
       const since30 = Date.now() - 30 * 24 * 60 * 60 * 1000;
-      const r = await fetch(
-        `https://api.vercel.com/v6/deployments?teamId=${teamId}&since=${since30}&limit=100`,
-        { headers: hdrV }
-      );
-      const data = await r.json();
-      const deps = data.deployments || [];
+
+      const [rDeps, rStores] = await Promise.all([
+        fetch(`https://api.vercel.com/v6/deployments?teamId=${teamId}&since=${since30}&limit=100`, { headers: hdrV }),
+        fetch(`https://api.vercel.com/v1/storage/stores?teamId=${teamId}`, { headers: hdrV })
+      ]);
+      const [dataDeps, dataStores] = await Promise.all([rDeps.json(), rStores.json()]);
+
+      const deps = dataDeps.deployments || [];
       const ok   = deps.filter(d => d.state === 'READY').length;
       const fail = deps.filter(d => d.state === 'ERROR').length;
       const last = deps[0] || null;
+
+      // Cerca il KV store Upstash nella lista storage
+      const stores = dataStores.stores || dataStores.data || [];
+      const kvHost = (process.env.KV_REST_API_URL || process.env.UPSTASH_KV_REST_API_URL || '')
+        .replace('https://', '').split('/')[0];
+      const kvStore = stores.find(s => (s.dsn||s.url||'').includes(kvHost) || s.type === 'upstash-redis') || stores[0] || null;
+
       out.vercel = {
         total30: deps.length,
         ok30: ok,
         fail30: fail,
-        lastDeploy: last ? { date: last.created, state: last.state, commit: last.meta?.githubCommitMessage?.split('\n')[0] || '' } : null
+        lastDeploy: last ? { date: last.created, state: last.state, commit: last.meta?.githubCommitMessage?.split('\n')[0] || '' } : null,
+        kvStore: kvStore ? {
+          name: kvStore.name || kvStore.storeName || '—',
+          commandsUsed: kvStore.commandsUsed || kvStore.monthly_request_count || kvStore.requestCount || null,
+          commandsLimit: kvStore.commandsLimit || kvStore.max_monthly_request_count || 500000,
+          storageUsed: kvStore.storageUsed || kvStore.used_memory || kvStore.dataSize || null,
+          storageLimit: kvStore.storageLimit || kvStore.max_data_size || 268435456
+        } : null,
+        stores_raw_keys: stores.length ? Object.keys(stores[0]) : []
       };
     } catch(e) { out.errors.push('Vercel: ' + e.message); }
   } else {
