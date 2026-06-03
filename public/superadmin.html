@@ -1602,7 +1602,8 @@ function fmtNum(n) {
     return String(n);
 }
 function progressBar(used, limit, warnPct) {
-    var pct = limit ? Math.min(100, Math.round(used / limit * 100)) : 0;
+    if (!limit) return '';
+    var pct = Math.min(100, Math.round(used / limit * 100));
     var color = pct >= (warnPct || 80) ? '#ef4444' : pct >= 60 ? '#f59e0b' : '#10b981';
     return '<div style="background:#0f172a;border-radius:4px;height:8px;overflow:hidden;margin-top:6px;">' +
         '<div style="height:100%;width:' + pct + '%;background:' + color + ';border-radius:4px;transition:width .4s;"></div>' +
@@ -1610,13 +1611,13 @@ function progressBar(used, limit, warnPct) {
 }
 function metricCard(icon, label, used, limit, unitFn, warnPct) {
     var uFmt = unitFn ? unitFn(used) : fmtNum(used);
-    var lFmt = unitFn ? unitFn(limit) : fmtNum(limit);
+    var lFmt = limit ? (unitFn ? unitFn(limit) : fmtNum(limit)) : '—';
     return '<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:14px;">' +
         '<div style="font-size:0.75rem;color:#64748b;font-weight:600;margin-bottom:4px;">' + icon + ' ' + label + '</div>' +
         '<div style="font-size:1.1rem;font-weight:700;color:white;">' + uFmt +
             '<span style="font-size:0.75rem;color:#475569;font-weight:400;"> / ' + lFmt + '</span>' +
         '</div>' +
-        progressBar(used || 0, limit || 1, warnPct) +
+        progressBar(used || 0, limit || 0, warnPct) +
     '</div>';
 }
 
@@ -1673,17 +1674,25 @@ async function loadMonitoring() {
             html += metricCard('✅', 'Deploy OK', vd.ok30 || 0, null, null, 999);
             html += metricCard('❌', 'Deploy falliti', vd.fail30 || 0, null, null, 1);
             html += '</div>';
-            // KV Store stats (comandi mensili Redis via Vercel Storage API)
-            if (vd.kvStore && vd.kvStore.commandsUsed !== null) {
-                html += '<div style="margin-bottom:10px;">';
-                html += '<div style="font-size:0.78rem;color:#7dd3fc;font-weight:600;margin-bottom:6px;">🗄️ Redis — Comandi mensili</div>';
-                html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
-                html += metricCard('⚡', 'Comandi / mese', vd.kvStore.commandsUsed, vd.kvStore.commandsLimit, null, 80);
-                html += metricCard('💾', 'Storage Redis', vd.kvStore.storageUsed, vd.kvStore.storageLimit, fmtBytes, 80);
-                html += '</div></div>';
-            } else if (vd.stores_raw_keys && vd.stores_raw_keys.length) {
-                html += '<div style="font-size:0.72rem;color:#475569;margin-bottom:8px;">Store keys: ' + vd.stores_raw_keys.join(', ') + '</div>';
-            }
+            // Link diretti ai due dati critici non accessibili via API
+            html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">';
+            html += '<a href="https://console.upstash.com" target="_blank" style="text-decoration:none;">' +
+                '<div style="background:#0f172a;border:1px solid #334155;border-radius:10px;padding:14px;cursor:pointer;transition:border-color .2s;" onmouseover="this.style.borderColor=\'#7dd3fc\'" onmouseout="this.style.borderColor=\'#334155\'">' +
+                    '<div style="font-size:0.72rem;color:#64748b;font-weight:600;margin-bottom:4px;">⚡ Comandi Redis / mese</div>' +
+                    '<div style="font-size:1rem;font-weight:700;color:#7dd3fc;">Apri Upstash →</div>' +
+                    '<div style="font-size:0.7rem;color:#475569;margin-top:4px;">Usage tab → COMMANDS</div>' +
+                    '<div style="font-size:0.7rem;color:#475569;">Limite: 500K / mese</div>' +
+                '</div>' +
+            '</a>';
+            html += '<a href="https://vercel.com/edys-projects-44112fd6/~/usage" target="_blank" style="text-decoration:none;">' +
+                '<div style="background:#0f172a;border:1px solid #334155;border-radius:10px;padding:14px;cursor:pointer;transition:border-color .2s;" onmouseover="this.style.borderColor=\'#a78bfa\'" onmouseout="this.style.borderColor=\'#334155\'">' +
+                    '<div style="font-size:0.72rem;color:#64748b;font-weight:600;margin-bottom:4px;">🔀 Fast Origin Transfer</div>' +
+                    '<div style="font-size:1rem;font-weight:700;color:#a78bfa;">Apri Vercel →</div>' +
+                    '<div style="font-size:0.7rem;color:#475569;margin-top:4px;">Overview → Usage</div>' +
+                    '<div style="font-size:0.7rem;color:#475569;">Limite: 10 GB / mese</div>' +
+                '</div>' +
+            '</a>';
+            html += '</div>';
             if (vd.lastDeploy) {
                 var ld = vd.lastDeploy;
                 var ldDate = new Date(ld.date).toLocaleString('it-IT');
@@ -1695,9 +1704,6 @@ async function loadMonitoring() {
                     (ld.commit ? '<div style="color:#475569;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + ld.commit.slice(0,60) + '</div>' : '') +
                 '</div>';
             }
-            html += '<div style="margin-top:8px;font-size:0.72rem;color:#334155;">📊 Bandwidth e Origin Transfer: ' +
-                '<a href="https://vercel.com/edys-projects-44112fd6/~/usage" target="_blank" style="color:#a78bfa;">vercel.com/usage</a>' +
-            '</div>';
         }
         html += '</div>';
 
