@@ -1089,6 +1089,7 @@
               <button onclick="impSalvaBase()" class="imp-btn-ghost" style="font-size:0.78rem;" title="Salva la programmazione corrente come base di partenza">💾 Salva base</button>
               <button onclick="impRipristinaBase()" class="imp-btn-ghost" style="font-size:0.78rem;" id="imp-btn-ripristina" title="Ripristina la base salvata">↩️ Ripristina base</button>
               <button onclick="impClearSlots()" class="imp-btn-ghost" style="font-size:0.78rem;color:#ef4444;border-color:#ef444444;" title="Elimina tutti gli slot e ricomincia da zero">🗑️ Pulisci tutto</button>
+              <button onclick="impEsportaExcel()" class="imp-btn-ghost" style="font-size:0.78rem;color:#10b981;border-color:#10b98144;" title="Esporta programmazione in Excel">📊 Esporta Excel</button>
               <button onclick="impShowSlotForm(null)" class="imp-btn">+ Aggiungi Slot</button>
             </div>
           </div>
@@ -3424,6 +3425,87 @@
     const d = await r.json();
     if (d.success) { impState.slots = []; impAlert('Programmazione azzerata ✓', true); impRenderSlots(); }
     else impAlert(d.message || 'Errore');
+  };
+
+  // ── ESPORTA EXCEL (Slot Settimanali) ──────────────────────────
+  window.impEsportaExcel = function() {
+    const slots = impState.slots || [];
+    const campi = impState.config.campi || [];
+    if (!slots.length) { impAlert('Nessuno slot da esportare', false); return; }
+
+    const GIORNI_LABEL = { 1:'Lunedì', 2:'Martedì', 3:'Mercoledì', 4:'Giovedì', 5:'Venerdì', 6:'Sabato', 0:'Domenica' };
+    const TIPO_COLORS  = {
+      a11: { hdr:'#375623', hdrTxt:'#ffffff', sub:'#70ad47', subTxt:'#000000' },
+      a9:  { hdr:'#1e4d2b', hdrTxt:'#ffffff', sub:'#92d050', subTxt:'#000000' },
+      a7:  { hdr:'#1f3864', hdrTxt:'#ffffff', sub:'#00b0f0', subTxt:'#000000' },
+      a5:  { hdr:'#3b0764', hdrTxt:'#ffffff', sub:'#8b5cf6', subTxt:'#ffffff' }
+    };
+
+    // Raggruppa slot per campo fisico
+    const campiConSlots = campi.filter(c => slots.some(s => s.campoId === c.id));
+
+    // Crea lookup: campoId -> giorno -> "oraI-oraF" -> [squadre]
+    const lookup = {};
+    slots.forEach(s => {
+      const key = s.oraInizio + '-' + s.oraFine;
+      if (!lookup[s.campoId]) lookup[s.campoId] = {};
+      if (!lookup[s.campoId][s.giorno]) lookup[s.campoId][s.giorno] = {};
+      if (!lookup[s.campoId][s.giorno][key]) lookup[s.campoId][s.giorno][key] = [];
+      lookup[s.campoId][s.giorno][key].push(s.squadra);
+    });
+
+    const TD = 'border:1px solid #bbb;padding:6px 10px;font-family:Arial,sans-serif;font-size:10pt;';
+
+    let html = '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>';
+
+    campiConSlots.forEach(campo => {
+      const info   = CAMPO_INFO[campo.tipo] || { label: campo.tipo };
+      const colors = TIPO_COLORS[campo.tipo] || { hdr:'#333', hdrTxt:'#fff', sub:'#aaa', subTxt:'#000' };
+
+      // Giorni e time-slot attivi per questo campo
+      const cSlots  = slots.filter(s => s.campoId === campo.id);
+      const giorni  = [1,2,3,4,5,6,0].filter(g => cSlots.some(s => s.giorno === g));
+      const timeArr = [...new Set(cSlots.map(s => s.oraInizio + '-' + s.oraFine))].sort();
+
+      const colSpan = giorni.length + 1;
+
+      html += '<table style="border-collapse:collapse;margin-bottom:24px;">';
+
+      // Riga titolo campo
+      html += `<tr><td colspan="${colSpan}" style="${TD}background:${colors.hdr};color:${colors.hdrTxt};font-weight:bold;text-align:center;font-size:13pt;letter-spacing:0.5px;">${campo.nome} — ${info.label}</td></tr>`;
+
+      // Riga intestazione giorni
+      html += `<tr><td style="${TD}background:#ffff00;font-weight:bold;min-width:110px;"></td>`;
+      giorni.forEach(g => {
+        html += `<td style="${TD}background:#ffff00;font-weight:bold;text-align:center;min-width:130px;">${GIORNI_LABEL[g]}</td>`;
+      });
+      html += '</tr>';
+
+      // Righe dati
+      timeArr.forEach(ts => {
+        const [oI, oF] = ts.split('-');
+        const oraLabel = oI.replace(':','.') + '-' + oF.replace(':','.');
+        html += `<tr><td style="${TD}background:${colors.sub};color:${colors.subTxt};font-weight:bold;">${oraLabel}</td>`;
+        giorni.forEach(g => {
+          const teams = (lookup[campo.id]?.[g]?.[ts] || []).join(' - ');
+          html += `<td style="${TD}text-align:center;">${teams}</td>`;
+        });
+        html += '</tr>';
+      });
+
+      html += '</table>';
+    });
+
+    html += '</body></html>';
+
+    const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'slot-settimanali-' + new Date().toISOString().slice(0,10) + '.xls';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
   };
 
   // ── PARTITE & TORNEI ──────────────────────────────────────────
