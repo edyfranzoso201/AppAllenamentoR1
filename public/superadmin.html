@@ -1642,52 +1642,51 @@ async function loadMonitoring() {
             var hitRate  = hitTotal ? Math.round(db.keyspace_hits / hitTotal * 100) : 0;
             var uptimeDays = Math.floor((db.uptime_in_seconds || 0) / 86400);
             html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
-            html += metricCard('💾', 'Storage', db.used_memory || 0, db.maxmemory || 268435456, fmtBytes, 80);
-            html += metricCard('🔑', 'Chiavi totali', db.keys || 0, null, null, 999);
+            html += metricCard('🔑', 'Chiavi app', db.keys_app || 0, null, null, 999);
             html += metricCard('⚡', 'Comandi totali', db.total_commands_processed || 0, null, null, 999);
             html += metricCard('🎯', 'Hit rate cache', hitRate, 100, function(v){ return v + '%'; }, 30);
+            html += metricCard('🗂️', 'Chiavi totali DB', db.keys_total || 0, null, null, 999);
             html += '</div>';
             html += '<div style="margin-top:10px;font-size:0.75rem;color:#475569;">' +
                 'Redis v' + (db.redis_version || '—') +
                 ' &nbsp;|&nbsp; ' + (db.connected_clients || 0) + ' client connessi' +
                 ' &nbsp;|&nbsp; Uptime: ' + uptimeDays + 'g' +
                 ' &nbsp;|&nbsp; Ops/sec: ' + (db.instantaneous_ops_per_sec || 0) +
+            '</div>' +
+            '<div style="margin-top:6px;font-size:0.72rem;color:#334155;">⚠️ Comandi mensili e storage: vedi ' +
+                '<a href="https://console.upstash.com" target="_blank" style="color:#7dd3fc;">console.upstash.com</a>' +
             '</div>';
         }
         html += '</div>';
 
         // ── Vercel ─────────────────────────────────────────────────────────
         html += '<div>';
-        html += '<div style="font-weight:700;color:#a78bfa;font-size:0.88rem;margin-bottom:10px;">▲ Vercel Usage (30gg)</div>';
+        html += '<div style="font-weight:700;color:#a78bfa;font-size:0.88rem;margin-bottom:10px;">▲ Vercel Deployments (30gg)</div>';
         if (!d.vercel || d.vercel._missing) {
             html += '<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:14px;color:#f59e0b;font-size:0.82rem;">' +
                 '⚠️ Configura <code>VERCEL_TOKEN</code> nelle env Vercel.' +
             '</div>';
         } else {
-            // Cerca i dati in entrambe le risposte
-            var raw1 = d.vercel, raw2 = d.vercel2 || {};
-            var u = raw1.usage || raw1.data || raw1.metrics ||
-                    raw2.usage || raw2.data || raw2.metrics || null;
-
-            if (!u) {
-                // Mostra raw per debug
-                html += '<div style="background:#0f172a;border:1px solid #334155;border-radius:10px;padding:12px;font-size:0.75rem;color:#64748b;word-break:break-all;">' +
-                    '<div style="color:#f59e0b;margin-bottom:6px;">⚠️ Formato risposta non riconosciuto (status: ' + (d.vercel_status||'?') + ')</div>' +
-                    '<div style="color:#475569;margin-bottom:4px;">Endpoint 1 keys: <span style="color:#94a3b8">' + Object.keys(raw1).join(', ') + '</span></div>' +
-                    '<div style="color:#475569;">Endpoint 2 keys: <span style="color:#94a3b8">' + Object.keys(raw2).join(', ') + '</span></div>' +
+            var vd = d.vercel;
+            html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">';
+            html += metricCard('🚀', 'Deploy totali', vd.total30 || 0, null, null, 999);
+            html += metricCard('✅', 'Deploy OK', vd.ok30 || 0, null, null, 999);
+            html += metricCard('❌', 'Deploy falliti', vd.fail30 || 0, null, null, 1);
+            html += '</div>';
+            if (vd.lastDeploy) {
+                var ld = vd.lastDeploy;
+                var ldDate = new Date(ld.date).toLocaleString('it-IT');
+                var ldColor = ld.state === 'READY' ? '#10b981' : '#ef4444';
+                html += '<div style="background:#0f172a;border:1px solid #1e293b;border-radius:8px;padding:10px;font-size:0.78rem;">' +
+                    '<div style="color:#64748b;margin-bottom:3px;">Ultimo deploy</div>' +
+                    '<div style="color:' + ldColor + ';font-weight:600;">' + ld.state + '</div>' +
+                    '<div style="color:#94a3b8;margin-top:2px;">' + ldDate + '</div>' +
+                    (ld.commit ? '<div style="color:#475569;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + ld.commit.slice(0,60) + '</div>' : '') +
                 '</div>';
-            } else {
-                html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
-                var fi = u.serverlessFunctionExecution || u.functionInvocations || u.serverlessInvocations || {};
-                html += metricCard('⚙️', 'Funzioni', fi.used||fi.value||0, fi.limit||1000000, null, 80);
-                var er = u.edgeRequest || u.edgeRequests || {};
-                html += metricCard('🌐', 'Edge Request', er.used||er.value||0, er.limit||1000000, null, 80);
-                var bw = u.fastDataTransfer || u.bandwidthUsage || u.bandwidth || {};
-                html += metricCard('📡', 'Data Transfer', bw.used||bw.value||0, bw.limit||107374182400, fmtBytes, 80);
-                var ot = u.fastOriginTransfer || u.originTransfer || {};
-                html += metricCard('🔀', 'Origin Transfer', ot.used||ot.value||0, ot.limit||10737418240, fmtBytes, 80);
-                html += '</div>';
             }
+            html += '<div style="margin-top:8px;font-size:0.72rem;color:#334155;">📊 Bandwidth e invocazioni: ' +
+                '<a href="https://vercel.com/edys-projects-44112fd6/~/usage" target="_blank" style="color:#a78bfa;">vercel.com/usage</a>' +
+            '</div>';
         }
         html += '</div>';
 

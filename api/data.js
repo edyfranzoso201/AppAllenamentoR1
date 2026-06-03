@@ -385,9 +385,14 @@ if (req.query?.action === 'monitoring') {
       });
     }
 
+    // Conta le chiavi app reali (esclude sessioni/ratelimit)
+    const appKeys = (await scanKeys('*')).filter(k =>
+      !k.startsWith('rl:') && !k.startsWith('session:') && !k.startsWith('ratelimit:')
+    );
     const maxmem = parseInt(info.maxmemory || 0) || 268435456; // 256MB free tier
     out.redis = {
-      keys: dbsizeJson.result || 0,
+      keys_total: dbsizeJson.result || 0,
+      keys_app: appKeys.length,
       used_memory: parseInt(info.used_memory || 0),
       used_memory_human: info.used_memory_human || '—',
       maxmemory: maxmem,
@@ -401,22 +406,28 @@ if (req.query?.action === 'monitoring') {
     };
   } catch(e) { out.errors.push('Redis: ' + e.message); }
 
-  // ── Vercel Usage API ─────────────────────────────────────────────────────
+  // ── Vercel: deployments recenti (usage dashboard non è API pubblica) ──────
   const vToken = process.env.VERCEL_TOKEN;
   if (vToken) {
     try {
       const teamId = process.env.VERCEL_TEAM_ID || 'team_N703yzP0O3hsuLT1plfZhJ1S';
       const hdrV = { Authorization: `Bearer ${vToken}` };
-      // Try multiple endpoints to find where usage data lives
-      const [r1, r2] = await Promise.all([
-        fetch(`https://api.vercel.com/v2/teams/${teamId}/usage`, { headers: hdrV }),
-        fetch(`https://api.vercel.com/v2/usage?teamId=${teamId}`, { headers: hdrV })
-      ]);
-      const [d1, d2] = await Promise.all([r1.json(), r2.json()]);
-      out.vercel = d1;
-      out.vercel2 = d2;
-      out.vercel_status = r1.status;
-      out.vercel2_status = r2.status;
+      const since30 = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      const r = await fetch(
+        `https://api.vercel.com/v6/deployments?teamId=${teamId}&since=${since30}&limit=100`,
+        { headers: hdrV }
+      );
+      const data = await r.json();
+      const deps = data.deployments || [];
+      const ok   = deps.filter(d => d.state === 'READY').length;
+      const fail = deps.filter(d => d.state === 'ERROR').length;
+      const last = deps[0] || null;
+      out.vercel = {
+        total30: deps.length,
+        ok30: ok,
+        fail30: fail,
+        lastDeploy: last ? { date: last.created, state: last.state, commit: last.meta?.githubCommitMessage?.split('\n')[0] || '' } : null
+      };
     } catch(e) { out.errors.push('Vercel: ' + e.message); }
   } else {
     out.vercel = { _missing: true };
