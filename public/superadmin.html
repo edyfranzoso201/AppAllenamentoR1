@@ -533,6 +533,25 @@
         </div>
 
 
+        <!-- Backup & Ripristino Superadmin -->
+        <div class="section">
+            <div class="section-title">
+                💾 Backup &amp; Ripristino
+                <span style="background:#ef4444;color:#fff;font-size:0.65rem;font-weight:800;padding:2px 7px;border-radius:4px;letter-spacing:0.05em;margin-left:6px;">SUPERADMIN</span>
+            </div>
+            <p style="font-size:0.8rem;color:#64748b;margin-bottom:14px;">
+                Backup completo di tutti i dati Redis. Tenuti in locale gli ultimi 7 giornalieri. Il ripristino sovrascrive Redis con il file selezionato.
+            </p>
+            <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+                <button class="btn btn-primary btn-sm" onclick="saBackupDownload(this)">⬇️ Scarica Backup Ora</button>
+                <button class="btn btn-warning btn-sm" onclick="document.getElementById('restore-file-input').click()">📂 Ripristina da File</button>
+                <input type="file" id="restore-file-input" accept=".json" style="display:none" onchange="onRestoreFileSelected(this)">
+            </div>
+            <div id="sa-backup-list">
+                <div style="color:#64748b;font-size:0.85rem;">Caricamento...</div>
+            </div>
+        </div>
+
         <!-- Banner Globali Super Admin -->
         <div class="section" id="banner-section">
             <div class="section-title">📢 Banner Globali <span style="background:#f59e0b;color:#000;font-size:0.65rem;font-weight:800;padding:2px 7px;border-radius:4px;letter-spacing:0.05em;margin-left:6px;">SUPER ADMIN</span></div>
@@ -684,6 +703,29 @@
     </div>
 </div>
 
+<!-- Modal conferma ripristino -->
+<div class="modal-overlay" id="restore-modal">
+    <div class="modal-card">
+        <div class="modal-title">⚠️ Conferma Ripristino Redis</div>
+        <p style="color:#fca5a5;margin-bottom:12px;font-size:0.9rem;">
+            Stai per sovrascrivere <strong>tutti i dati Redis</strong> con il contenuto del file di backup.
+        </p>
+        <p style="color:#94a3b8;font-size:0.85rem;margin-bottom:4px;">
+            File: <strong id="restore-filename" style="color:white"></strong>
+        </p>
+        <p style="color:#94a3b8;font-size:0.85rem;margin-bottom:16px;">
+            Chiavi da ripristinare: <strong id="restore-keys-count" style="color:white"></strong>
+        </p>
+        <div style="background:#450a0a;border:1px solid #ef4444;border-radius:8px;padding:12px;margin-bottom:16px;font-size:0.82rem;color:#fca5a5;">
+            ⚠️ Questa operazione è irreversibile. I dati correnti su Redis verranno sovrascritti.
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeModal('restore-modal')">Annulla</button>
+            <button class="btn btn-danger" id="btn-confirm-restore" onclick="confirmRestore()">🔄 Ripristina</button>
+        </div>
+    </div>
+</div>
+
 <!-- Toast copia -->
 <div class="copy-toast" id="copy-toast">✅ Copiato!</div>
 
@@ -739,6 +781,7 @@ function doLogin() {
             document.getElementById('header-url').textContent = API_BASE;
             loadLicenze();
             loadBanners();
+            setTimeout(autoSABackupIfNeeded, 2000);
         } else {
             showAlert('login-error', data.message || data.error || 'Password errata o errore di connessione');
         }
@@ -1531,6 +1574,172 @@ document.querySelectorAll('.modal-overlay').forEach(m => {
         if (e.target === m) m.classList.remove('open');
     });
 });
+
+// ── BACKUP SUPERADMIN (IndexedDB, 7 rolling) ─────────────────────────────
+var SABackupManager = (function() {
+    var DB_NAME = 'gosport_sa_backups', STORE = 'backups', MAX = 7;
+    function openDB() {
+        return new Promise(function(res, rej) {
+            var r = indexedDB.open(DB_NAME, 1);
+            r.onupgradeneeded = function(e) { e.target.result.createObjectStore(STORE, { autoIncrement: true }); };
+            r.onsuccess = function(e) { res(e.target.result); };
+            r.onerror = function(e) { rej(e.target.error); };
+        });
+    }
+    async function getAll() {
+        var db = await openDB();
+        return new Promise(function(res, rej) {
+            var items = [];
+            var r = db.transaction(STORE, 'readonly').objectStore(STORE).openCursor(null, 'prev');
+            r.onsuccess = function(e) {
+                var c = e.target.result;
+                if (c) { items.push(Object.assign({ id: c.primaryKey }, c.value)); c.continue(); }
+                else res(items);
+            };
+            r.onerror = function(e) { rej(e.target.error); };
+        });
+    }
+    async function save(jsonData, dateStr) {
+        var db = await openDB();
+        await new Promise(function(res) {
+            var s = db.transaction(STORE, 'readwrite').objectStore(STORE);
+            var r = s.add({ date: dateStr, keysCount: Object.keys((jsonData.data) || {}).length, json: jsonData });
+            r.onsuccess = res;
+        });
+        var all = await getAll();
+        if (all.length > MAX) {
+            var db2 = await openDB();
+            var t = db2.transaction(STORE, 'readwrite').objectStore(STORE);
+            all.slice(MAX).forEach(function(item) { t.delete(item.id); });
+        }
+    }
+    function download(item) {
+        var blob = new Blob([JSON.stringify(item.json, null, 2)], { type: 'application/json' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'gosport-sa-backup-' + (item.date || '').slice(0, 10) + '.json';
+        a.click();
+    }
+    return { getAll: getAll, save: save, download: download };
+})();
+
+var _saBackupItems = [];
+
+async function renderSABackupList() {
+    var el = document.getElementById('sa-backup-list');
+    if (!el) return;
+    try {
+        _saBackupItems = await SABackupManager.getAll();
+    } catch(e) { _saBackupItems = []; }
+    if (_saBackupItems.length === 0) {
+        el.innerHTML = '<div style="color:#64748b;font-size:0.85rem;padding:4px 0;">Nessun backup locale. Clicca "Scarica Backup Ora".</div>';
+        return;
+    }
+    el.innerHTML = _saBackupItems.map(function(item, i) {
+        return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #1e293b;">' +
+            '<span style="font-size:1.1rem;">📦</span>' +
+            '<div style="flex:1;">' +
+                '<div style="font-weight:600;color:white;font-size:0.88rem;">' +
+                    (item.date ? item.date.slice(0, 10) : '—') +
+                    '<span style="color:#64748b;font-weight:400;margin-left:6px;">' + (item.date ? item.date.slice(11, 16) : '') + '</span>' +
+                    (i === 0 ? '<span style="background:#064e3b;color:#10b981;font-size:0.7rem;padding:2px 7px;border-radius:10px;margin-left:6px;">più recente</span>' : '') +
+                '</div>' +
+                '<div style="font-size:0.78rem;color:#64748b;">' + (item.keysCount || 0) + ' chiavi Redis</div>' +
+            '</div>' +
+            '<button class="btn btn-ghost btn-sm" onclick="SABackupManager.download(_saBackupItems[' + i + '])">↓ Scarica</button>' +
+        '</div>';
+    }).join('');
+}
+
+async function saBackupDownload(btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳ Download...';
+    try {
+        var r = await fetch(API_BASE + '/api/data?action=backup', {
+            headers: { 'X-Sa-Key': ADMIN_PWD }
+        });
+        var data = await r.json();
+        if (!data.data) throw new Error(data.error || 'Errore backup');
+        var dateStr = new Date().toISOString();
+        await SABackupManager.save(data, dateStr);
+        SABackupManager.download({ json: data, date: dateStr });
+        localStorage.setItem('gosport_sa_last_auto_backup', dateStr.slice(0, 10));
+        await renderSABackupList();
+        showToast('✅ Backup scaricato e salvato localmente!');
+    } catch(e) {
+        showToast('❌ Errore: ' + e.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '⬇️ Scarica Backup Ora';
+    }
+}
+
+async function autoSABackupIfNeeded() {
+    var today = new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem('gosport_sa_last_auto_backup') === today) {
+        await renderSABackupList();
+        return;
+    }
+    try {
+        var r = await fetch(API_BASE + '/api/data?action=backup', {
+            headers: { 'X-Sa-Key': ADMIN_PWD }
+        });
+        var data = await r.json();
+        if (data.data) {
+            await SABackupManager.save(data, new Date().toISOString());
+            localStorage.setItem('gosport_sa_last_auto_backup', today);
+        }
+    } catch(e) { /* silent */ }
+    await renderSABackupList();
+}
+
+var _restorePayload = null;
+function onRestoreFileSelected(input) {
+    var file = input.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            var json = JSON.parse(e.target.result);
+            if (!json.data || typeof json.data !== 'object') throw new Error('File non valido o mancante di "data"');
+            _restorePayload = json;
+            document.getElementById('restore-filename').textContent = file.name;
+            document.getElementById('restore-keys-count').textContent = Object.keys(json.data).length;
+            document.getElementById('restore-modal').classList.add('open');
+        } catch(err) {
+            showToast('❌ File non valido: ' + err.message);
+        }
+        input.value = '';
+    };
+    reader.readAsText(file);
+}
+
+async function confirmRestore() {
+    if (!_restorePayload) return;
+    var btn = document.getElementById('btn-confirm-restore');
+    btn.disabled = true;
+    btn.textContent = '⏳ Ripristino in corso...';
+    try {
+        var r = await fetch(API_BASE + '/api/data?action=restore', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Sa-Key': ADMIN_PWD },
+            body: JSON.stringify({ data: _restorePayload.data, confirmToken: 'RESTORE_CONFIRMED' })
+        });
+        var d = await r.json();
+        closeModal('restore-modal');
+        if (d.success) {
+            showToast('✅ Ripristino completato: ' + d.keysRestored + ' chiavi scritte su Redis');
+        } else {
+            showToast('❌ Errore: ' + (d.error || 'Sconosciuto'));
+        }
+    } catch(e) {
+        showToast('❌ Errore di rete: ' + e.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '🔄 Ripristina';
+        _restorePayload = null;
+    }
+}
 
 // ── BANNER GLOBALI SUPER ADMIN ────────────────────────────────────────────────
 function initBannerSlider() {

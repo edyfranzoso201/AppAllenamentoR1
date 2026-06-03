@@ -317,6 +317,41 @@ if (req.query?.action === 'backup') {
   });
 }
 
+// ── RESTORE dati (solo superadmin) ───────────────────────────────────────
+if (req.query?.action === 'restore') {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const saKey = (req.headers['x-sa-key'] || '').trim();
+  const validSaKey = (process.env.SUPER_ADMIN_PASSWORD || '').trim();
+  if (!validSaKey || saKey !== validSaKey) {
+    return res.status(401).json({ error: 'Non autorizzato — solo superadmin' });
+  }
+
+  const { data, confirmToken } = req.body || {};
+  if (confirmToken !== 'RESTORE_CONFIRMED') {
+    return res.status(400).json({ error: 'Token di conferma mancante' });
+  }
+  if (!data || typeof data !== 'object') {
+    return res.status(400).json({ error: 'Payload data non valido' });
+  }
+
+  const keys = Object.keys(data);
+  if (keys.length === 0) return res.status(400).json({ error: 'Nessuna chiave da ripristinare' });
+
+  let keysRestored = 0;
+  const errors = [];
+  for (let i = 0; i < keys.length; i += 50) {
+    const batch = keys.slice(i, i + 50);
+    try {
+      await Promise.all(batch.map(k => kv.set(k, data[k])));
+      keysRestored += batch.length;
+    } catch(e) {
+      errors.push(`batch ${i}-${i+50}: ${e.message}`);
+    }
+  }
+  return res.status(200).json({ success: true, keysRestored, errors });
+}
+
 // ── SUPERADMIN: banner config ────────────────────────────────────────────
 if (req.query?.action === 'superadmin-config') {
   const saKey = (req.headers['x-sa-key'] || '').trim();
