@@ -3444,14 +3444,27 @@
     // Raggruppa slot per campo fisico
     const campiConSlots = campi.filter(c => slots.some(s => s.campoId === c.id));
 
-    // Crea lookup: campoId -> giorno -> "oraI-oraF" -> [squadre]
+    // Pre-calcola spogliatoi per ogni giorno
+    const spoglByDay = {};
+    [0,1,2,3,4,5,6].forEach(g => {
+      const daySlots = slots.filter(s => s.giorno === g);
+      if (daySlots.length) spoglByDay[g] = impSpoglGlobalAssign(daySlots);
+    });
+    const totSpog = parseInt(impState.config.spogliatoi) || 0;
+
+    // Crea lookup: campoId -> giorno -> "oraI-oraF" -> [{squadra, spoglNum, doccia}]
     const lookup = {};
     slots.forEach(s => {
       const key = s.oraInizio + '-' + s.oraFine;
       if (!lookup[s.campoId]) lookup[s.campoId] = {};
       if (!lookup[s.campoId][s.giorno]) lookup[s.campoId][s.giorno] = {};
       if (!lookup[s.campoId][s.giorno][key]) lookup[s.campoId][s.giorno][key] = [];
-      lookup[s.campoId][s.giorno][key].push(s.squadra);
+      const spoglNum = spoglByDay[s.giorno]?.get(s.id) || 0;
+      lookup[s.campoId][s.giorno][key].push({
+        squadra: s.squadra,
+        spogl: spoglNum,
+        doccia: s.doccia !== false
+      });
     });
 
     const TD = 'border:1px solid #bbb;padding:6px 10px;font-family:Arial,sans-serif;font-size:10pt;';
@@ -3487,11 +3500,21 @@
         const oraLabel = oI.replace(':','.') + '-' + oF.replace(':','.');
         html += `<tr><td style="${TD}background:${colors.sub};color:${colors.subTxt};font-weight:bold;">${oraLabel}</td>`;
         giorni.forEach(g => {
-          const teams = (lookup[campo.id]?.[g]?.[ts] || []).join(' - ');
-          html += `<td style="${TD}text-align:center;">${teams}</td>`;
+          const entries = lookup[campo.id]?.[g]?.[ts] || [];
+          const cellLines = entries.map(e => {
+            const docciaIcon = e.doccia ? '' : ' 🚫🚿';
+            const spoglLabel = e.spogl ? ` · S${e.spogl}` : '';
+            return e.squadra + spoglLabel + docciaIcon;
+          });
+          html += `<td style="${TD}text-align:center;">${cellLines.join('<br>')}</td>`;
         });
         html += '</tr>';
       });
+
+      // Riga totale spogliatoi disponibili
+      if (totSpog > 0) {
+        html += `<tr><td colspan="${colSpan}" style="${TD}background:#f0f0f0;font-size:9pt;color:#555;text-align:right;">🚿 Spogliatoi disponibili: ${totSpog}</td></tr>`;
+      }
 
       html += '</table>';
     });
