@@ -352,7 +352,7 @@ if (req.query?.action === 'restore') {
   return res.status(200).json({ success: true, keysRestored, errors });
 }
 
-// ── MONITORING: Upstash + Vercel usage (solo superadmin) ─────────────────
+// ── MONITORING: Redis INFO + Vercel usage (solo superadmin) ──────────────
 if (req.query?.action === 'monitoring') {
   const saKey = (req.headers['x-sa-key'] || '').trim();
   const validSaKey = (process.env.SUPER_ADMIN_PASSWORD || '').trim();
@@ -362,25 +362,44 @@ if (req.query?.action === 'monitoring') {
 
   const out = { redis: null, vercel: null, errors: [] };
 
-  // ── Upstash Management API ───────────────────────────────────────────────
-  const uEmail = process.env.UPSTASH_MGMT_EMAIL;
-  const uKey   = process.env.UPSTASH_MGMT_KEY;
-  if (uEmail && uKey) {
-    try {
-      const b64 = Buffer.from(`${uEmail}:${uKey}`).toString('base64');
-      const r = await fetch('https://api.upstash.com/v2/redis', {
-        headers: { Authorization: `Basic ${b64}` }
+  // ── Redis stats via existing KV credentials (no extra creds needed) ──────
+  try {
+    const kvUrl   = (process.env.KV_REST_API_URL || process.env.UPSTASH_KV_REST_API_URL || '').replace(/\/$/, '');
+    const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_KV_REST_API_TOKEN;
+    const hdr = { Authorization: `Bearer ${kvToken}` };
+
+    const [infoRes, dbsizeRes] = await Promise.all([
+      fetch(`${kvUrl}/info`, { headers: hdr }),
+      fetch(`${kvUrl}/dbsize`, { headers: hdr })
+    ]);
+    const infoJson   = await infoRes.json();
+    const dbsizeJson = await dbsizeRes.json();
+
+    const info = {};
+    if (typeof infoJson.result === 'string') {
+      infoJson.result.split('\r\n').forEach(line => {
+        if (line && !line.startsWith('#')) {
+          const idx = line.indexOf(':');
+          if (idx > 0) info[line.slice(0, idx).trim()] = line.slice(idx + 1).trim();
+        }
       });
-      const dbs = await r.json();
-      const kvHost = (process.env.KV_REST_API_URL || process.env.UPSTASH_KV_REST_API_URL || '')
-        .replace('https://', '').split('/')[0];
-      const db = (Array.isArray(dbs) ? dbs : []).find(d => d.endpoint === kvHost)
-        || (Array.isArray(dbs) && dbs.length ? dbs[0] : null);
-      out.redis = db;
-    } catch(e) { out.errors.push('Redis: ' + e.message); }
-  } else {
-    out.redis = { _missing: true };
-  }
+    }
+
+    const maxmem = parseInt(info.maxmemory || 0) || 268435456; // 256MB free tier
+    out.redis = {
+      keys: dbsizeJson.result || 0,
+      used_memory: parseInt(info.used_memory || 0),
+      used_memory_human: info.used_memory_human || '—',
+      maxmemory: maxmem,
+      total_commands_processed: parseInt(info.total_commands_processed || 0),
+      instantaneous_ops_per_sec: parseFloat(info.instantaneous_ops_per_sec || 0),
+      keyspace_hits: parseInt(info.keyspace_hits || 0),
+      keyspace_misses: parseInt(info.keyspace_misses || 0),
+      connected_clients: parseInt(info.connected_clients || 0),
+      uptime_in_seconds: parseInt(info.uptime_in_seconds || 0),
+      redis_version: info.redis_version || '—'
+    };
+  } catch(e) { out.errors.push('Redis: ' + e.message); }
 
   // ── Vercel Usage API ─────────────────────────────────────────────────────
   const vToken = process.env.VERCEL_TOKEN;

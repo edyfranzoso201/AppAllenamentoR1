@@ -1634,24 +1634,24 @@ async function loadMonitoring() {
         // ── Redis ──────────────────────────────────────────────────────────
         html += '<div>';
         html += '<div style="font-weight:700;color:#7dd3fc;font-size:0.88rem;margin-bottom:10px;">🗄️ Upstash Redis</div>';
-        if (!d.redis || d.redis._missing) {
-            html += '<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:14px;color:#f59e0b;font-size:0.82rem;">' +
-                '⚠️ Configura <code>UPSTASH_MGMT_EMAIL</code> e <code>UPSTASH_MGMT_KEY</code> nelle env Vercel.' +
-            '</div>';
+        if (!d.redis) {
+            html += '<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:14px;color:#ef4444;font-size:0.82rem;">❌ Errore lettura stats Redis</div>';
         } else {
             var db = d.redis;
-            var cmdUsed  = db.monthly_request_count || 0;
-            var cmdLimit = db.max_monthly_request_count || 500000;
-            var memUsed  = db.used_memory || 0;
-            var memLimit = db.max_data_size || 268435456;
+            var hitTotal = (db.keyspace_hits || 0) + (db.keyspace_misses || 0);
+            var hitRate  = hitTotal ? Math.round(db.keyspace_hits / hitTotal * 100) : 0;
+            var uptimeDays = Math.floor((db.uptime_in_seconds || 0) / 86400);
             html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
-            html += metricCard('⚡', 'Comandi / mese', cmdUsed, cmdLimit, null, 80);
-            html += metricCard('💾', 'Storage', memUsed, memLimit, fmtBytes, 80);
+            html += metricCard('💾', 'Storage', db.used_memory || 0, db.maxmemory || 268435456, fmtBytes, 80);
+            html += metricCard('🔑', 'Chiavi totali', db.keys || 0, null, null, 999);
+            html += metricCard('⚡', 'Comandi totali', db.total_commands_processed || 0, null, null, 999);
+            html += metricCard('🎯', 'Hit rate cache', hitRate, 100, function(v){ return v + '%'; }, 30);
             html += '</div>';
             html += '<div style="margin-top:10px;font-size:0.75rem;color:#475569;">' +
-                'DB: <span style="color:#94a3b8">' + (db.database_name || '—') + '</span> &nbsp;|&nbsp; ' +
-                'Regione: <span style="color:#94a3b8">' + (db.region || '—') + '</span> &nbsp;|&nbsp; ' +
-                'Stato: <span style="color:#10b981">' + (db.state || '—') + '</span>' +
+                'Redis v' + (db.redis_version || '—') +
+                ' &nbsp;|&nbsp; ' + (db.connected_clients || 0) + ' client connessi' +
+                ' &nbsp;|&nbsp; Uptime: ' + uptimeDays + 'g' +
+                ' &nbsp;|&nbsp; Ops/sec: ' + (db.instantaneous_ops_per_sec || 0) +
             '</div>';
         }
         html += '</div>';
