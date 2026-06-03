@@ -1380,8 +1380,8 @@
     const navIscr = document.getElementById('nav-iscrizioni');
     if (navIscr && canSeeIscrizioni) navIscr.style.display = '';
 
-    // Impianti: visibile a direttivo, dirigente, staff, admin (solo Platinum)
-    const canSeeImpianti = ['direttivo', 'dirigente', 'staff', 'admin'].includes(role);
+    // Impianti: visibile a direttivo, dirigente, staff, admin + ruoli interni dashboard
+    const canSeeImpianti = ['direttivo', 'dirigente', 'staff', 'admin', 'societa_l1', 'societa_l3', 'dirigente_l1'].includes(role);
     if (canSeeImpianti) {
       const navImp = document.getElementById('nav-impianti');
       const navImpLabel = document.getElementById('nav-label-impianti');

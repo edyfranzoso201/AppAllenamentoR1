@@ -502,9 +502,9 @@ if (req.query?.action === 'alert-settings') {
   }
 }
 
-// ── Impianti: campi e spogliatoi (solo Platinum — ruoli direttivo/dirigente/staff/admin) ──
+// ── Impianti: campi e spogliatoi (solo Platinum — ruoli direttivo/dirigente/staff/admin + ruoli interni dashboard) ──
 function canImpianti(role) {
-  return ['admin','direttivo','dirigente','staff'].includes(String(role||'').toLowerCase());
+  return ['admin','direttivo','dirigente','staff','societa_l1','societa_l3','dirigente_l1'].includes(String(role||'').toLowerCase());
 }
 
 if (req.query?.action === 'impianti-annate-config') {
