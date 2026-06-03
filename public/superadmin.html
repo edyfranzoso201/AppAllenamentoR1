@@ -400,6 +400,17 @@
             </div>
         </div>
 
+        <!-- Monitoraggio Upstash + Vercel -->
+        <div class="section" id="monitoring-section">
+            <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+                <span>📊 Monitoraggio Infrastruttura</span>
+                <button class="btn btn-ghost btn-sm" onclick="loadMonitoring()">🔄 Aggiorna</button>
+            </div>
+            <div id="monitoring-content">
+                <div style="color:#64748b;font-size:0.85rem;">Caricamento...</div>
+            </div>
+        </div>
+
         <!-- Genera nuova licenza -->
         <div class="section">
             <div class="section-title">➕ Genera Nuova Licenza</div>
@@ -781,6 +792,7 @@ function doLogin() {
             document.getElementById('header-url').textContent = API_BASE;
             loadLicenze();
             loadBanners();
+            loadMonitoring();
             setTimeout(autoSABackupIfNeeded, 2000);
         } else {
             showAlert('login-error', data.message || data.error || 'Password errata o errore di connessione');
@@ -1574,6 +1586,115 @@ document.querySelectorAll('.modal-overlay').forEach(m => {
         if (e.target === m) m.classList.remove('open');
     });
 });
+
+// ── MONITORAGGIO Upstash + Vercel ────────────────────────────────────────
+function fmtBytes(b) {
+    if (!b) return '0 B';
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+    if (b < 1073741824) return (b/1048576).toFixed(1) + ' MB';
+    return (b/1073741824).toFixed(2) + ' GB';
+}
+function fmtNum(n) {
+    if (!n && n !== 0) return '—';
+    if (n >= 1000000) return (n/1000000).toFixed(2) + 'M';
+    if (n >= 1000) return (n/1000).toFixed(1) + 'K';
+    return String(n);
+}
+function progressBar(used, limit, warnPct) {
+    var pct = limit ? Math.min(100, Math.round(used / limit * 100)) : 0;
+    var color = pct >= (warnPct || 80) ? '#ef4444' : pct >= 60 ? '#f59e0b' : '#10b981';
+    return '<div style="background:#0f172a;border-radius:4px;height:8px;overflow:hidden;margin-top:6px;">' +
+        '<div style="height:100%;width:' + pct + '%;background:' + color + ';border-radius:4px;transition:width .4s;"></div>' +
+        '</div><div style="font-size:0.72rem;color:#64748b;margin-top:3px;">' + pct + '% utilizzato</div>';
+}
+function metricCard(icon, label, used, limit, unitFn, warnPct) {
+    var uFmt = unitFn ? unitFn(used) : fmtNum(used);
+    var lFmt = unitFn ? unitFn(limit) : fmtNum(limit);
+    return '<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:14px;">' +
+        '<div style="font-size:0.75rem;color:#64748b;font-weight:600;margin-bottom:4px;">' + icon + ' ' + label + '</div>' +
+        '<div style="font-size:1.1rem;font-weight:700;color:white;">' + uFmt +
+            '<span style="font-size:0.75rem;color:#475569;font-weight:400;"> / ' + lFmt + '</span>' +
+        '</div>' +
+        progressBar(used || 0, limit || 1, warnPct) +
+    '</div>';
+}
+
+async function loadMonitoring() {
+    var el = document.getElementById('monitoring-content');
+    if (!el) return;
+    el.innerHTML = '<div style="color:#64748b;font-size:0.85rem;">⏳ Caricamento dati infrastruttura...</div>';
+    try {
+        var r = await fetch(API_BASE + '/api/data?action=monitoring', {
+            headers: { 'X-Sa-Key': ADMIN_PWD }
+        });
+        var d = await r.json();
+        var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">';
+
+        // ── Redis ──────────────────────────────────────────────────────────
+        html += '<div>';
+        html += '<div style="font-weight:700;color:#7dd3fc;font-size:0.88rem;margin-bottom:10px;">🗄️ Upstash Redis</div>';
+        if (!d.redis || d.redis._missing) {
+            html += '<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:14px;color:#f59e0b;font-size:0.82rem;">' +
+                '⚠️ Configura <code>UPSTASH_MGMT_EMAIL</code> e <code>UPSTASH_MGMT_KEY</code> nelle env Vercel.' +
+            '</div>';
+        } else {
+            var db = d.redis;
+            var cmdUsed  = db.monthly_request_count || 0;
+            var cmdLimit = db.max_monthly_request_count || 500000;
+            var memUsed  = db.used_memory || 0;
+            var memLimit = db.max_data_size || 268435456;
+            html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
+            html += metricCard('⚡', 'Comandi / mese', cmdUsed, cmdLimit, null, 80);
+            html += metricCard('💾', 'Storage', memUsed, memLimit, fmtBytes, 80);
+            html += '</div>';
+            html += '<div style="margin-top:10px;font-size:0.75rem;color:#475569;">' +
+                'DB: <span style="color:#94a3b8">' + (db.database_name || '—') + '</span> &nbsp;|&nbsp; ' +
+                'Regione: <span style="color:#94a3b8">' + (db.region || '—') + '</span> &nbsp;|&nbsp; ' +
+                'Stato: <span style="color:#10b981">' + (db.state || '—') + '</span>' +
+            '</div>';
+        }
+        html += '</div>';
+
+        // ── Vercel ─────────────────────────────────────────────────────────
+        html += '<div>';
+        html += '<div style="font-weight:700;color:#a78bfa;font-size:0.88rem;margin-bottom:10px;">▲ Vercel Usage (30gg)</div>';
+        if (!d.vercel || d.vercel._missing) {
+            html += '<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:14px;color:#f59e0b;font-size:0.82rem;">' +
+                '⚠️ Configura <code>VERCEL_TOKEN</code> nelle env Vercel.' +
+            '</div>';
+        } else {
+            // Prova diversi formati risposta Vercel
+            var u = d.vercel.usage || d.vercel.data || d.vercel;
+            html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
+            // Function invocations
+            var fi = u.serverlessFunctionExecution || u.functionInvocations || u.edgeFunctionInvocations || {};
+            html += metricCard('⚙️', 'Funzioni', fi.used||fi.value||0, fi.limit||1000000, null, 80);
+            // Edge requests
+            var er = u.edgeRequest || u.edgeRequests || {};
+            html += metricCard('🌐', 'Edge Request', er.used||er.value||0, er.limit||1000000, null, 80);
+            // Bandwidth
+            var bw = u.fastDataTransfer || u.bandwidthUsage || u.bandwidth || {};
+            html += metricCard('📡', 'Data Transfer', bw.used||bw.value||0, bw.limit||107374182400, fmtBytes, 80);
+            // Origin transfer
+            var ot = u.fastOriginTransfer || u.originTransfer || {};
+            html += metricCard('🔀', 'Origin Transfer', ot.used||ot.value||0, ot.limit||10737418240, fmtBytes, 80);
+            html += '</div>';
+        }
+        html += '</div>';
+
+        html += '</div>';
+
+        // Errori
+        if (d.errors && d.errors.length) {
+            html += '<div style="margin-top:12px;font-size:0.78rem;color:#ef4444;">⚠️ ' + d.errors.join(' — ') + '</div>';
+        }
+        html += '<div style="margin-top:10px;font-size:0.72rem;color:#334155;">Aggiornato: ' + new Date().toLocaleTimeString('it-IT') + '</div>';
+        el.innerHTML = html;
+    } catch(e) {
+        el.innerHTML = '<div style="color:#ef4444;font-size:0.85rem;">❌ Errore: ' + e.message + '</div>';
+    }
+}
 
 // ── BACKUP SUPERADMIN (IndexedDB, 7 rolling) ─────────────────────────────
 var SABackupManager = (function() {

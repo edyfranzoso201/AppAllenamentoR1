@@ -352,6 +352,53 @@ if (req.query?.action === 'restore') {
   return res.status(200).json({ success: true, keysRestored, errors });
 }
 
+// ── MONITORING: Upstash + Vercel usage (solo superadmin) ─────────────────
+if (req.query?.action === 'monitoring') {
+  const saKey = (req.headers['x-sa-key'] || '').trim();
+  const validSaKey = (process.env.SUPER_ADMIN_PASSWORD || '').trim();
+  if (!validSaKey || saKey !== validSaKey) {
+    return res.status(401).json({ error: 'Non autorizzato' });
+  }
+
+  const out = { redis: null, vercel: null, errors: [] };
+
+  // ── Upstash Management API ───────────────────────────────────────────────
+  const uEmail = process.env.UPSTASH_MGMT_EMAIL;
+  const uKey   = process.env.UPSTASH_MGMT_KEY;
+  if (uEmail && uKey) {
+    try {
+      const b64 = Buffer.from(`${uEmail}:${uKey}`).toString('base64');
+      const r = await fetch('https://api.upstash.com/v2/redis', {
+        headers: { Authorization: `Basic ${b64}` }
+      });
+      const dbs = await r.json();
+      const kvHost = (process.env.KV_REST_API_URL || process.env.UPSTASH_KV_REST_API_URL || '')
+        .replace('https://', '').split('/')[0];
+      const db = (Array.isArray(dbs) ? dbs : []).find(d => d.endpoint === kvHost)
+        || (Array.isArray(dbs) && dbs.length ? dbs[0] : null);
+      out.redis = db;
+    } catch(e) { out.errors.push('Redis: ' + e.message); }
+  } else {
+    out.redis = { _missing: true };
+  }
+
+  // ── Vercel Usage API ─────────────────────────────────────────────────────
+  const vToken = process.env.VERCEL_TOKEN;
+  if (vToken) {
+    try {
+      const teamId = process.env.VERCEL_TEAM_ID || 'team_N703yzP0O3hsuLT1plfZhJ1S';
+      const r = await fetch(`https://api.vercel.com/v2/teams/${teamId}/usage`, {
+        headers: { Authorization: `Bearer ${vToken}` }
+      });
+      out.vercel = await r.json();
+    } catch(e) { out.errors.push('Vercel: ' + e.message); }
+  } else {
+    out.vercel = { _missing: true };
+  }
+
+  return res.status(200).json(out);
+}
+
 // ── SUPERADMIN: banner config ────────────────────────────────────────────
 if (req.query?.action === 'superadmin-config') {
   const saKey = (req.headers['x-sa-key'] || '').trim();
