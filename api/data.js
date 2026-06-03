@@ -406,10 +406,17 @@ if (req.query?.action === 'monitoring') {
   if (vToken) {
     try {
       const teamId = process.env.VERCEL_TEAM_ID || 'team_N703yzP0O3hsuLT1plfZhJ1S';
-      const r = await fetch(`https://api.vercel.com/v2/teams/${teamId}/usage`, {
-        headers: { Authorization: `Bearer ${vToken}` }
-      });
-      out.vercel = await r.json();
+      const hdrV = { Authorization: `Bearer ${vToken}` };
+      // Try multiple endpoints to find where usage data lives
+      const [r1, r2] = await Promise.all([
+        fetch(`https://api.vercel.com/v2/teams/${teamId}/usage`, { headers: hdrV }),
+        fetch(`https://api.vercel.com/v2/usage?teamId=${teamId}`, { headers: hdrV })
+      ]);
+      const [d1, d2] = await Promise.all([r1.json(), r2.json()]);
+      out.vercel = d1;
+      out.vercel2 = d2;
+      out.vercel_status = r1.status;
+      out.vercel2_status = r2.status;
     } catch(e) { out.errors.push('Vercel: ' + e.message); }
   } else {
     out.vercel = { _missing: true };

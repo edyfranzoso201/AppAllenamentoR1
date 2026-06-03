@@ -1664,22 +1664,30 @@ async function loadMonitoring() {
                 '⚠️ Configura <code>VERCEL_TOKEN</code> nelle env Vercel.' +
             '</div>';
         } else {
-            // Prova diversi formati risposta Vercel
-            var u = d.vercel.usage || d.vercel.data || d.vercel;
-            html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
-            // Function invocations
-            var fi = u.serverlessFunctionExecution || u.functionInvocations || u.edgeFunctionInvocations || {};
-            html += metricCard('⚙️', 'Funzioni', fi.used||fi.value||0, fi.limit||1000000, null, 80);
-            // Edge requests
-            var er = u.edgeRequest || u.edgeRequests || {};
-            html += metricCard('🌐', 'Edge Request', er.used||er.value||0, er.limit||1000000, null, 80);
-            // Bandwidth
-            var bw = u.fastDataTransfer || u.bandwidthUsage || u.bandwidth || {};
-            html += metricCard('📡', 'Data Transfer', bw.used||bw.value||0, bw.limit||107374182400, fmtBytes, 80);
-            // Origin transfer
-            var ot = u.fastOriginTransfer || u.originTransfer || {};
-            html += metricCard('🔀', 'Origin Transfer', ot.used||ot.value||0, ot.limit||10737418240, fmtBytes, 80);
-            html += '</div>';
+            // Cerca i dati in entrambe le risposte
+            var raw1 = d.vercel, raw2 = d.vercel2 || {};
+            var u = raw1.usage || raw1.data || raw1.metrics ||
+                    raw2.usage || raw2.data || raw2.metrics || null;
+
+            if (!u) {
+                // Mostra raw per debug
+                html += '<div style="background:#0f172a;border:1px solid #334155;border-radius:10px;padding:12px;font-size:0.75rem;color:#64748b;word-break:break-all;">' +
+                    '<div style="color:#f59e0b;margin-bottom:6px;">⚠️ Formato risposta non riconosciuto (status: ' + (d.vercel_status||'?') + ')</div>' +
+                    '<div style="color:#475569;margin-bottom:4px;">Endpoint 1 keys: <span style="color:#94a3b8">' + Object.keys(raw1).join(', ') + '</span></div>' +
+                    '<div style="color:#475569;">Endpoint 2 keys: <span style="color:#94a3b8">' + Object.keys(raw2).join(', ') + '</span></div>' +
+                '</div>';
+            } else {
+                html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
+                var fi = u.serverlessFunctionExecution || u.functionInvocations || u.serverlessInvocations || {};
+                html += metricCard('⚙️', 'Funzioni', fi.used||fi.value||0, fi.limit||1000000, null, 80);
+                var er = u.edgeRequest || u.edgeRequests || {};
+                html += metricCard('🌐', 'Edge Request', er.used||er.value||0, er.limit||1000000, null, 80);
+                var bw = u.fastDataTransfer || u.bandwidthUsage || u.bandwidth || {};
+                html += metricCard('📡', 'Data Transfer', bw.used||bw.value||0, bw.limit||107374182400, fmtBytes, 80);
+                var ot = u.fastOriginTransfer || u.originTransfer || {};
+                html += metricCard('🔀', 'Origin Transfer', ot.used||ot.value||0, ot.limit||10737418240, fmtBytes, 80);
+                html += '</div>';
+            }
         }
         html += '</div>';
 
