@@ -40,6 +40,8 @@ function getPermissions(role) {
   switch(role) {
     case 'admin':
       return { canEditGeneral: true, canViewGPS: true, canEditGPS: true, isAdmin: true, isDashboard: false };
+    case 'coach_l0':
+      return { canEditGeneral: true, canViewGPS: true, canEditGPS: true, isAdmin: false, isDashboard: true };
     case 'coach_l1':
       return { canEditGeneral: true, canViewGPS: true, canEditGPS: true, isAdmin: false, isDashboard: false };
     case 'coach_l2':

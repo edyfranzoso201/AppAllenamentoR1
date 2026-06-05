@@ -655,6 +655,7 @@
             <label>Ruolo</label>
             <select id="edit-user-role" style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid #334155;background:#1e293b;color:#e2e8f0;">
                 <option value="admin">👑 Admin</option>
+                <option value="coach_l0">🏆 Coach L0 (L1 + Dashboard)</option>
                 <option value="coach_l1">🥇 Coach L1</option>
                 <option value="coach_l2">🥈 Coach L2</option>
                 <option value="coach_l3">🥉 Coach L3</option>
@@ -1436,7 +1437,7 @@ function renderUsers(users) {
     (allLicenze || []).forEach(l => { if (l.societyId) societyMap[l.societyId] = l.societyName; });
     const rows = users.map(u => {
         const roleLabels = {
-            admin:'👑 Admin', coach_l1:'🥇 C-L1', coach_l2:'🥈 C-L2', coach_l3:'🥉 C-L3',
+            admin:'👑 Admin', coach_l0:'🏆 C-L0', coach_l1:'🥇 C-L1', coach_l2:'🥈 C-L2', coach_l3:'🥉 C-L3',
             coach_readonly:'👁️ Read-only', dirigente_l1:'🏅 D-L1', dirigente_l2:'📂 D-L2',
             dirigente_l3:'📋 D-L3', dirigente_l4:'📋 D-L4', societa_l1:'🏛️ Soc-L1', societa_l3:'🏢 Soc-L3',
             direttivo:'🏛️ Direttivo (A1)', dirigente:'📋 Dirigente (A2)', staff:'👥 Staff (A3)'

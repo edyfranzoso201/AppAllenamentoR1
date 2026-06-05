@@ -24,7 +24,7 @@ function setCors(req, res) {
 // Ruoli validi accettati dal sistema
 const VALID_ROLES = [
   'admin',
-  'coach_l1', 'coach_l2', 'coach_l3', 'coach_readonly',
+  'coach_l0', 'coach_l1', 'coach_l2', 'coach_l3', 'coach_readonly',
   'dirigente_l1', 'dirigente_l2', 'dirigente_l3', 'dirigente_l4',
   'societa_l1', 'societa_l2', 'societa_l3',
   // Ruoli Dashboard (accesso solo licenza Platinum)

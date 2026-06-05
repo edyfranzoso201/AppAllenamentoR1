@@ -666,6 +666,9 @@
                             sessionStorage.setItem('gosport_has_dashboard', 'true');
                             sessionStorage.setItem('gosport_dashboard_role', _origRole);
                             sessionStorage.setItem('gosport_permissions', JSON.stringify(DASHBOARD_APP_PERMS[_appRole]));
+                        } else if (_origRole === 'coach_l0') {
+                            sessionStorage.setItem('gosport_has_dashboard', 'true');
+                            sessionStorage.setItem('gosport_dashboard_role', _origRole);
                         } else {
                             sessionStorage.removeItem('gosport_has_dashboard');
                             sessionStorage.removeItem('gosport_dashboard_role');
@@ -909,10 +912,10 @@ function showAdminPanel() {
                 <button id="tab-annate" class="tab-btn active" style="flex:1;background:linear-gradient(135deg,#3b82f6 0%,#3b82f6 100%);color:#ffffff;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
                     📅 Gestione Annate e Gruppi
                 </button>
-                <button id="tab-utenti" class="tab-btn" style="flex:1;background:#64748b;color:#64748b;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
+                <button id="tab-utenti" class="tab-btn" style="flex:1;background:#334155;color:#e2e8f0;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
                     👥 Gestione Utenti
                 </button>
-                <button id="tab-backup" class="tab-btn" style="flex:1;background:#64748b;color:#64748b;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
+                <button id="tab-backup" class="tab-btn" style="flex:1;background:#334155;color:#e2e8f0;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
                     💾 Backup
                 </button>
             </div>
@@ -942,8 +945,8 @@ function switchTab(tabName) {
             tab.style.background = 'linear-gradient(135deg,#3b82f6 0%,#3b82f6 100%)';
             tab.style.color = '#fff';
         } else {
-            tab.style.background = '#64748b';
-            tab.style.color = '#64748b';
+            tab.style.background = '#334155';
+            tab.style.color = '#e2e8f0';
         }
     });
     
@@ -1482,6 +1485,7 @@ async function showUserModal(userData = null) {
                     <select id="user-role" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#ffffff;box-sizing:border-box;" required>
                         <!-- supercoach nascosto -->
                         <option value="admin" ${userData?.role === 'admin' ? 'selected' : ''}>👑 ADMIN</option>
+                        <option value="coach_l0" ${userData?.role === 'coach_l0' ? 'selected' : ''}>🏆 Coach L0 (Edit + GPS + Dashboard)</option>
                         <option value="coach_l1" ${userData?.role === 'coach_l1' ? 'selected' : ''}>🥇 Coach L1 (Edit + GPS)</option>
                         <option value="coach_l2" ${userData?.role === 'coach_l2' ? 'selected' : ''}>🥈 Coach L2 (Edit, GPS View)</option>
                         <option value="coach_l3" ${userData?.role === 'coach_l3' ? 'selected' : ''}>🥉 Coach L3 (Read + GPS View)</option>
@@ -1639,10 +1643,10 @@ function showAdminPanel() {
                 <button id="tab-annate" class="tab-btn active" style="flex:1;background:linear-gradient(135deg,#3b82f6 0%,#3b82f6 100%);color:#ffffff;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
                     📅 Gestione Annate e Gruppi
                 </button>
-                <button id="tab-utenti" class="tab-btn" style="flex:1;background:#64748b;color:#64748b;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
+                <button id="tab-utenti" class="tab-btn" style="flex:1;background:#334155;color:#e2e8f0;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
                     👥 Gestione Utenti
                 </button>
-                <button id="tab-backup" class="tab-btn" style="flex:1;background:#64748b;color:#64748b;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
+                <button id="tab-backup" class="tab-btn" style="flex:1;background:#334155;color:#e2e8f0;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;">
                     💾 Backup
                 </button>
             </div>
@@ -1672,8 +1676,8 @@ function switchTab(tabName) {
             tab.style.background = 'linear-gradient(135deg,#3b82f6 0%,#3b82f6 100%)';
             tab.style.color = '#fff';
         } else {
-            tab.style.background = '#64748b';
-            tab.style.color = '#64748b';
+            tab.style.background = '#334155';
+            tab.style.color = '#e2e8f0';
         }
     });
     
@@ -2131,6 +2135,7 @@ async function showUserModal(userData = null) {
                     <select id="user-role" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#ffffff;box-sizing:border-box;" required>
                         <!-- supercoach nascosto -->
                         <option value="admin" ${userData?.role === 'admin' ? 'selected' : ''}>👑 ADMIN</option>
+                        <option value="coach_l0" ${userData?.role === 'coach_l0' ? 'selected' : ''}>🏆 Coach L0 (Edit + GPS + Dashboard)</option>
                         <option value="coach_l1" ${userData?.role === 'coach_l1' ? 'selected' : ''}>🥇 Coach L1 (Edit + GPS)</option>
                         <option value="coach_l2" ${userData?.role === 'coach_l2' ? 'selected' : ''}>🥈 Coach L2 (Edit, GPS View)</option>
                         <option value="coach_l3" ${userData?.role === 'coach_l3' ? 'selected' : ''}>🥉 Coach L3 (Read + GPS View)</option>
