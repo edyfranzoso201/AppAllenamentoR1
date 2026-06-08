@@ -1482,8 +1482,9 @@
                 <div class="col-md-2 col-sm-4">
                     <input type="number" id="squad-filter-number" class="form-control form-control-sm" placeholder="N° maglia" min="1" max="99" oninput="renderAthletes()">
                 </div>
-                <div class="col-md-2 col-sm-2 d-flex align-items-center">
-                    <button class="btn btn-sm btn-outline-secondary w-100" onclick="document.getElementById('squad-filter-name').value='';document.getElementById('squad-filter-role').value='';document.getElementById('squad-filter-number').value='';renderAthletes();" title="Azzera filtri"><i class="bi bi-x-circle"></i> Reset</button>
+                <div class="col-md-2 col-sm-2 d-flex align-items-center gap-1">
+                    <button class="btn btn-sm btn-outline-secondary flex-fill" onclick="document.getElementById('squad-filter-name').value='';document.getElementById('squad-filter-role').value='';document.getElementById('squad-filter-number').value='';renderAthletes();" title="Azzera filtri"><i class="bi bi-x-circle"></i> Reset</button>
+                    <button class="btn btn-sm btn-outline-warning" id="toggle-archive-btn" onclick="toggleArchiveView()" title="Mostra/nascondi atleti archiviati"><i class="bi bi-archive"></i></button>
                 </div>
             </div>
             <div class="row" id="athlete-grid"></div>
