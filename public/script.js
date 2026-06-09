@@ -675,11 +675,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const updateHomePage = () => {
         // ✅ Conta solo atleti NON ospiti nel conteggio principale
-        const officialAthletes = athletes.filter(a => !a.isGuest && !a.isStaff);
+        const officialAthletes = athletes.filter(a => !a.isGuest && !a.isStaff && !a.archived);
         elements.homeTotalAthletes.textContent = officialAthletes.length;
 
         // Aggiorna box Staff Tecnico
-        const staffMembers = athletes.filter(a => a.isStaff && !a.isGuest);
+        const staffMembers = athletes.filter(a => a.isStaff && !a.isGuest && !a.archived);
         if (elements.homeTotalStaff) {
             elements.homeTotalStaff.textContent = staffMembers.length;
         }
