@@ -3387,7 +3387,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return {
             items: materialeItems,
             assignments: materialeData,
-            athletes: (window.athletes || []).filter(function(a) { return !a.isGuest; })
+            athletes: (window.athletes || []).filter(function(a) { return !a.archived; })
         };
     };
 
@@ -3402,36 +3402,41 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (!items.length) { alert('Nessuna colonna materiale configurata.'); return; }
 
-        // Riga intestazione
-        var header = ['Atleta', 'Ruolo'].concat(items.map(function(it){ return it.name || it; }));
+        // Riga intestazione: Atleta | N° Maglia | Ruolo | [Articolo | Nota Articolo ...]
+        var header = ['Atleta', 'N° Maglia', 'Ruolo'];
+        items.forEach(function(it) {
+            var name = it.name || it;
+            header.push(name);
+            header.push(name + ' — Nota');
+        });
 
         // Righe atleti + staff
         var rows = athletes.map(function(a) {
             var aId   = String(a.id);
             var aData = assigns[aId] || {};
-            var row   = [a.name || '', a.role || (a.isStaff ? 'Staff' : '')];
+            var numero = (aData._numero || '');
+            var row   = [a.name || '', numero, a.role || (a.isStaff ? 'Staff' : '')];
             items.forEach(function(it) {
-                var key  = (typeof it === 'string') ? it : (it.name || String(it));
+                var key   = (typeof it === 'string') ? it : (it.name || String(it));
                 var entry = aData[key] || {};
-                // Mostra status + taglia se presenti
-                var val = entry.status || '';
+                var val   = entry.status || '';
                 if (entry.taglia) val += (val ? ' ' : '') + 'T.' + entry.taglia;
                 if (entry.qty && entry.qty > 1) val += ' x' + entry.qty;
                 row.push(val);
+                row.push(entry.nota || '');
             });
             return row;
         });
 
         // Separa Atleti e Staff in due fogli
-        var atleti  = athletes.filter(function(a){ return !a.isStaff; });
-        var staff   = athletes.filter(function(a){ return  a.isStaff; });
-
         var wsAData = [header].concat(rows.filter(function(r, i){ return !athletes[i].isStaff; }));
         var wsSData = [header].concat(rows.filter(function(r, i){ return  athletes[i].isStaff; }));
 
         var wsA = XLSX.utils.aoa_to_sheet(wsAData.length > 1 ? wsAData : [header]);
         var wsS = XLSX.utils.aoa_to_sheet(wsSData.length > 1 ? wsSData : [header]);
-        wsA['!cols'] = wsS['!cols'] = header.map(function(h, i){ return { wch: i < 2 ? 22 : 16 }; });
+        wsA['!cols'] = wsS['!cols'] = header.map(function(h, i){
+            return { wch: i === 0 ? 22 : i === 1 ? 10 : i === 2 ? 18 : (i % 2 === 1 ? 22 : 14) };
+        });
 
         var wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, wsA, 'Atleti');
