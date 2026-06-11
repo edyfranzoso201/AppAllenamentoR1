@@ -9,7 +9,7 @@ const kv = createClient({
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Society-Id, X-Auth-Session, X-Auth-User, X-User-Role, X-Annata-Id');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Society-Id');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
@@ -18,20 +18,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Autenticazione: serve un token di sessione valido (creato dal login).
-    const token = String(req.headers['x-auth-session'] || '').trim();
-    if (!token || token === 'true') {
-      return res.status(401).json({ success: false, message: 'Non autorizzato' });
-    }
-    const sess = await kv.get(`session:${token}`);
-    if (!sess) {
-      return res.status(401).json({ success: false, message: 'Sessione non valida o scaduta' });
-    }
-
     const annate = (await kv.get('annate:list')) || [];
 
-    // societyId dalla SESSIONE (non dall'header, falsificabile): ognuno vede solo le proprie annate.
-    const societyId = sess.societyId || null;
+    // Legge societyId dall'header (aggiunto automaticamente dal fetch interceptor)
+    const societyId = req.headers['x-society-id'];
 
     let filtered;
     if (societyId) {
