@@ -1375,6 +1375,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (filterNumber && String(a.number) !== filterNumber) return false;
             return true;
         });
+        const sortBy = document.getElementById('squad-sort')?.value || 'none';
+        filteredAthletes.sort((a, b) => {
+            // Ospiti sempre in fondo
+            if (!!a.isGuest !== !!b.isGuest) return a.isGuest ? 1 : -1;
+            if (sortBy === 'name')   return (a.name || '').localeCompare(b.name || '', 'it');
+            if (sortBy === 'number') return (parseInt(a.number) || 999) - (parseInt(b.number) || 999);
+            if (sortBy === 'role')   return (a.role || '').localeCompare(b.role || '', 'it');
+            return 0;
+        });
         filteredAthletes.forEach(athlete => {
             let statusIcon = '';
             if (athlete.scadenzaVisita) {
