@@ -722,7 +722,10 @@
                         
                         errorDiv.textContent = '✅ Login effettuato!';
                         errorDiv.style.color = '#16a34a';
-                        
+
+                        // Installa SUBITO l'interceptor così le chiamate post-login
+                        // (es. /api/annate/list in loadUserAnnate) inviano il token di sessione.
+                        setupFetchInterceptor();
                         setTimeout(() => proceedAfterLogin(), 500);
                     } else {
                         errorDiv.textContent = '❌ Credenziali non valide';
