@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   // CORS Headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Society-Id, X-Auth-Session, X-Auth-User, X-User-Role, X-Annata-Id');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -18,13 +18,23 @@ export default async function handler(req, res) {
 
   // Solo GET consentito
   if (req.method !== 'GET') {
-    return res.status(405).json({ 
+    return res.status(405).json({
       success: false,
-      message: 'Method not allowed. Use GET.' 
+      message: 'Method not allowed. Use GET.'
     });
   }
 
   try {
+    // Autenticazione: serve un token di sessione valido (creato dal login).
+    const token = String(req.headers['x-auth-session'] || '').trim();
+    if (!token || token === 'true') {
+      return res.status(401).json({ success: false, message: 'Non autorizzato' });
+    }
+    const sess = await kv.get(`session:${token}`);
+    if (!sess) {
+      return res.status(401).json({ success: false, message: 'Sessione non valida o scaduta' });
+    }
+
     const { username } = req.query;
 
     if (!username) {
@@ -32,6 +42,12 @@ export default async function handler(req, res) {
         success: false,
         message: 'Parametro "username" obbligatorio'
       });
+    }
+
+    // Anti-IDOR: puoi richiedere solo le TUE annate, a meno che tu sia admin.
+    const isAdmin = String(sess.role || '').toLowerCase() === 'admin';
+    if (!isAdmin && String(username).toLowerCase() !== String(sess.username || '').toLowerCase()) {
+      return res.status(403).json({ success: false, message: 'Non autorizzato' });
     }
 
     // Recupera lista utenti
