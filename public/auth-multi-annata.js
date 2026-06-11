@@ -2452,7 +2452,9 @@ window.deleteUser = async function(username) {
             const societyId = sessionStorage.getItem(SESSION_SOCIETY);
             const currentUser = getCurrentUser();
             const currentRole = getUserRole();
-            const session = sessionStorage.getItem(SESSION_KEY);
+            // Invia il token di sessione reale (validato server-side contro KV).
+            // Fallback al vecchio flag 'true' finché il server accetta entrambi (transizione).
+            const session = sessionStorage.getItem(SESSION_TOKEN) || sessionStorage.getItem(SESSION_KEY);
 
             if (currentAnnata) {
                 if (isHeaders) options.headers.set('X-Annata-Id', currentAnnata);

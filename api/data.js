@@ -20,9 +20,24 @@ res.setHeader('Access-Control-Allow-Origin', originToSet);
 res.setHeader('Vary', 'Origin');
 }
 
-function getSessionInfo(req) {
+async function getSessionInfo(req) {
+const rawAuth = String(req.headers['x-auth-session'] || '').trim();
+let authed = false;
+if (rawAuth === 'true') {
+// Compatibilità legacy durante la transizione: vecchio flag booleano.
+// Da rimuovere quando tutti i client inviano il token di sessione reale.
+authed = true;
+} else if (rawAuth) {
+// Percorso sicuro: valida il token di sessione reale contro KV (creato dal login, TTL 8h).
+try {
+const sessionData = await kv.get(`session:${rawAuth}`);
+if (sessionData) authed = true;
+} catch (e) {
+console.warn('Errore lookup sessione:', e?.message || e);
+}
+}
 return {
-isAuthenticated: (req.headers['x-auth-session'] || '') === 'true',
+isAuthenticated: authed,
 role: String(req.headers['x-user-role'] || '').trim(),
 username: String(req.headers['x-auth-user'] || '').trim(),
 societyId: String(req.headers['x-society-id'] || '').trim()
@@ -46,7 +61,7 @@ res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
 if (req.method === 'OPTIONS') return res.status(200).end();
 
 try {
-const session = getSessionInfo(req);
+const session = await getSessionInfo(req);
 
 const rawAnnata = req.headers['x-annata-id'] || req.headers['X-Annata-Id'] || '';
 const annataId = String(rawAnnata).split(',')[0].trim();
