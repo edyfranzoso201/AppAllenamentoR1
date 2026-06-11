@@ -3045,7 +3045,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ===== MODULO GESTIONE MATERIALE — due tabelle separate =====
 (function() {
     var DEFAULT_ITEMS = ['Maglia Blu','Pantaloncino Blu','Calzettone Blu','Maglia Rossa','Pantaloncino Rosso','Calzettone Rosso','Maglia Riscaldamento','Pallone'];
-    var TAGLIE = ['','6','8','10','12','14','S','M','L','XL','2XL','3XL'];
+    var TAGLIE = ['','6','8','10','12','14','S','M','L','XL','2XL','3XL','23-26 (n°5)','27-30 (n°6)','31-34 (n°7)','35-38 (n°8)','39-42 (n°9)','43-46 (n°10)','47-49 (n°11)'];
     var materialeItems = DEFAULT_ITEMS.slice();
     var materialeData  = {};   // { pid: { _numero: "16", "Maglia Blu": { status, qty, taglia } } }
     var materialeLoaded = false;
@@ -3241,7 +3241,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var tA = document.getElementById('materiale-table-atleti');
         var tS = document.getElementById('materiale-table-staff');
         if (!tA || !tS) return;
-        var all = (window.athletes || []).filter(function(a) { return !a.isGuest; });
+        var all = (window.athletes || []).filter(function(a) { return !a.archived; });
         var atleti = all.filter(function(a) { return !a.isStaff; });
         var staff  = all.filter(function(a) { return  a.isStaff; });
         var perm = getMatPerm();
