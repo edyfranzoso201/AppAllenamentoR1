@@ -22,25 +22,24 @@ res.setHeader('Vary', 'Origin');
 
 async function getSessionInfo(req) {
 const rawAuth = String(req.headers['x-auth-session'] || '').trim();
-let authed = false;
-if (rawAuth === 'true') {
-// Compatibilità legacy durante la transizione: vecchio flag booleano.
-// Da rimuovere quando tutti i client inviano il token di sessione reale.
-authed = true;
-} else if (rawAuth) {
-// Percorso sicuro: valida il token di sessione reale contro KV (creato dal login, TTL 8h).
+const empty = { isAuthenticated: false, role: '', username: '', societyId: '' };
+// Serve un token di sessione reale (creato dal login, TTL 8h). Niente più flag 'true'.
+if (!rawAuth || rawAuth === 'true') return empty;
+let sessionData = null;
 try {
-const sessionData = await kv.get(`session:${rawAuth}`);
-if (sessionData) authed = true;
+sessionData = await kv.get(`session:${rawAuth}`);
 } catch (e) {
 console.warn('Errore lookup sessione:', e?.message || e);
+return empty;
 }
-}
+if (!sessionData) return empty;
+// Ruolo/utente/società vengono dalla sessione salvata server-side, NON dagli header
+// del client (che sarebbero falsificabili). Questo impedisce l'escalation di privilegi.
 return {
-isAuthenticated: authed,
-role: String(req.headers['x-user-role'] || '').trim(),
-username: String(req.headers['x-auth-user'] || '').trim(),
-societyId: String(req.headers['x-society-id'] || '').trim()
+isAuthenticated: true,
+role: String(sessionData.role || '').trim(),
+username: String(sessionData.username || '').trim(),
+societyId: String(sessionData.societyId || '').trim()
 };
 }
 
