@@ -831,6 +831,25 @@ const isCalendarResponsePost = req.method === 'POST' &&
 if (!session.isAuthenticated && !isParentMode && !isCalendarResponsePost) {
 return res.status(401).json({ success: false, message: 'Accesso non autorizzato. Effettua il login.' });
 }
+
+// ── Isolamento multi-società ────────────────────────────────────────────────
+// Un utente autenticato può accedere solo alle annate della PROPRIA società.
+// Impedisce di leggere/scrivere dati di un'altra società cambiando X-Annata-Id.
+// I genitori (parentMode / calendarResponse) non hanno sessione → saltano il check.
+if (session.isAuthenticated) {
+const annateList = (await kv.get('annate:list')) || [];
+const annataMeta = annateList.find(a => String(a.id) === annataId);
+if (annataMeta) {
+const annataSoc = annataMeta.societyId || null;
+const userSoc = session.societyId || null;
+if (annataSoc !== userSoc) {
+console.warn(`⛔ Accesso annata negato: user=${session.username} soc=${userSoc} → annata=${annataId} soc=${annataSoc}`);
+return res.status(403).json({ success: false, message: 'Accesso negato: annata di un\'altra società' });
+}
+}
+// Annata non presente in annate:list (orfana): consentita — nessun dato cross-società da proteggere.
+}
+
 const prefix = `annate:${annataId}`;
 
 // ── PostImages lazy ───────────────────────────────────────────────────────
