@@ -3089,13 +3089,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function getEntry(pid, item) {
         var raw = (materialeData[pid] || {})[item];
-        if (!raw) return { status: '', qty: 1, taglia: '' };
-        if (typeof raw === 'string') return { status: raw, qty: 1, taglia: '' };
-        return { status: raw.status || '', qty: raw.qty || 1, taglia: raw.taglia || '' };
+        if (!raw) return { status: '', qty: 1, taglia: '', nota: '' };
+        if (typeof raw === 'string') return { status: raw, qty: 1, taglia: '', nota: '' };
+        return { status: raw.status || '', qty: raw.qty || 1, taglia: raw.taglia || '', nota: raw.nota || '' };
     }
-    function setEntry(pid, item, status, qty, taglia) {
+    function setEntry(pid, item, status, qty, taglia, nota) {
         if (!materialeData[pid]) materialeData[pid] = {};
-        materialeData[pid][item] = { status: status, qty: Math.max(1, parseInt(qty)||1), taglia: taglia || '' };
+        materialeData[pid][item] = { status: status, qty: Math.max(1, parseInt(qty)||1), taglia: taglia || '', nota: nota !== undefined ? nota : '' };
     }
     function getNumero(pid) {
         return (materialeData[pid] || {})._numero || '';
@@ -3199,6 +3199,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         html += '</select>';
                     }
+                    // Nota (sempre visibile in modalità editabile)
+                    html += '<input type="text" placeholder="Nota..." value="' + esc(entry.nota) + '" maxlength="120" ';
+                    html += 'data-pid="' + esc(pid) + '" data-item="' + esc(itm) + '" onchange="window.matNota(this)" ';
+                    html += 'style="width:100%;background:var(--bg-card);border:1px solid #334155;color:#94a3b8;border-radius:5px;padding:2px 6px;font-size:0.72rem;margin-top:4px;" class="no-print">';
                     html += '</div>';
                 } else {
                     // Sola lettura
@@ -3209,6 +3213,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     html += '</span>';
                     if (showQty && entry.taglia) {
                         html += '<span style="color:#64748b;font-size:0.72rem;">Taglia: ' + esc(entry.taglia) + '</span>';
+                    }
+                    if (entry.nota) {
+                        html += '<span style="color:#64748b;font-size:0.72rem;font-style:italic;margin-top:2px;">' + esc(entry.nota) + '</span>';
                     }
                     html += '</div>';
                 }
@@ -3261,7 +3268,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var item = btn.getAttribute('data-item');
         var entry = getEntry(pid, item);
         var newSt = nextStatus(entry.status);
-        setEntry(pid, item, newSt, newSt==='' ? 1 : entry.qty, entry.taglia);
+        setEntry(pid, item, newSt, newSt==='' ? 1 : entry.qty, entry.taglia, entry.nota);
         renderMateriale(); saveMateriale();
     };
     window.matQty = function(input) {
@@ -3269,14 +3276,21 @@ document.addEventListener('DOMContentLoaded', function() {
         var item = input.getAttribute('data-item');
         var entry = getEntry(pid, item);
         if (entry.status==='') return;
-        setEntry(pid, item, entry.status, input.value, entry.taglia);
+        setEntry(pid, item, entry.status, input.value, entry.taglia, entry.nota);
         saveMateriale();
     };
     window.matTaglia = function(sel) {
         var pid = sel.getAttribute('data-pid');
         var item = sel.getAttribute('data-item');
         var entry = getEntry(pid, item);
-        setEntry(pid, item, entry.status, entry.qty, sel.value);
+        setEntry(pid, item, entry.status, entry.qty, sel.value, entry.nota);
+        saveMateriale();
+    };
+    window.matNota = function(input) {
+        var pid = input.getAttribute('data-pid');
+        var item = input.getAttribute('data-item');
+        var entry = getEntry(pid, item);
+        setEntry(pid, item, entry.status, entry.qty, entry.taglia, input.value.trim());
         saveMateriale();
     };
     window.matNumero = function(input) {
@@ -3287,13 +3301,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Alias compatibilità
     window.materaileCycleStatus = function(pid, item) {
         var entry = getEntry(pid, item);
-        setEntry(pid, item, nextStatus(entry.status), entry.qty, entry.taglia);
+        setEntry(pid, item, nextStatus(entry.status), entry.qty, entry.taglia, entry.nota);
         renderMateriale(); saveMateriale();
     };
     window.materialeSetQty = function(pid, item, qty) {
         var entry = getEntry(pid, item);
         if (entry.status==='') return;
-        setEntry(pid, item, entry.status, qty, entry.taglia);
+        setEntry(pid, item, entry.status, qty, entry.taglia, entry.nota);
         saveMateriale();
     };
     window.materialeAddItem = function() {
