@@ -3422,7 +3422,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 var val   = entry.status || '';
                 if (entry.taglia) val += (val ? ' ' : '') + 'T.' + entry.taglia;
                 if (entry.qty && entry.qty > 1) val += ' x' + entry.qty;
-                row.push(val);
+                row.push(val === '' ? '\\' : val);
                 row.push(entry.nota || '');
             });
             return row;
