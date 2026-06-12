@@ -1469,7 +1469,9 @@
   function authHeaders(annataId) {
     const h = {
       'Content-Type': 'application/json',
-      'x-auth-session': sessionStorage.getItem(SESSION_KEY) || '',
+      // Token di sessione reale (validato server-side). Il vecchio flag 'true'
+      // (SESSION_KEY) non è più accettato dagli endpoint protetti.
+      'x-auth-session': sessionStorage.getItem(SESSION_TOKEN) || sessionStorage.getItem(SESSION_KEY) || '',
       'x-auth-user':    sessionStorage.getItem(SESSION_USER) || '',
       'x-user-role':    sessionStorage.getItem(SESSION_USER_ROLE) || '',
       'x-society-id':   sessionStorage.getItem(SESSION_SOCIETY) || '',
@@ -2616,7 +2618,8 @@
   function impHeaders() {
     return {
       'Content-Type': 'application/json',
-      'x-auth-session': sessionStorage.getItem('gosport_auth_session') || '',
+      // Token di sessione reale (non il flag legacy 'true', che il server rifiuta)
+      'x-auth-session': sessionStorage.getItem(SESSION_TOKEN) || sessionStorage.getItem('gosport_auth_session') || '',
       'x-auth-user':    sessionStorage.getItem('gosport_auth_user') || '',
       'x-user-role':    sessionStorage.getItem('gosport_user_role') || '',
       'x-society-id':   sessionStorage.getItem('gosport_society_id') || '',
