@@ -499,7 +499,9 @@ if (req.query?.action === 'superadmin-config') {
 
 // ── Alert settings per società (usato da pannello admin) ────────────────
 if (req.query?.action === 'alert-settings') {
-  const sid = (req.headers['x-society-id'] || '').trim();
+  // GET: lettura (anche senza sessione) → usa l'header. POST (scrittura): la società
+  // è SEMPRE quella della sessione, così un utente non può scrivere su un'altra società.
+  const sid = resolveSocietyId(req, session);
   if (!sid) return res.status(400).json({ success: false, message: 'societyId obbligatorio' });
   if (req.method === 'GET') {
     const s = (await kv.get(`society:${sid}:alertSettings`)) || { visitaDays: 60, tesseraDays: 15 };
@@ -521,11 +523,19 @@ function canImpianti(role) {
   return ['admin','direttivo','dirigente','staff','societa_l1','societa_l3','dirigente_l1'].includes(String(role||'').toLowerCase());
 }
 
+// Isolamento società: per un utente autenticato la società è SEMPRE quella della
+// sessione (server-side), mai l'header X-Society-Id che il client può falsificare.
+// Impedisce che un utente di una società legga/scriva config impianti/alert di un'altra.
+function resolveSocietyId(req, session) {
+  if (session.isAuthenticated && session.societyId) return session.societyId;
+  return String(req.headers['x-society-id'] || '').trim();
+}
+
 if (req.query?.action === 'impianti-annate-config') {
-  const sid = (req.headers['x-society-id'] || '').trim();
-  if (!sid) return res.status(400).json({ success: false, message: 'societyId mancante' });
   if (!session.isAuthenticated || !canImpianti(session.role))
     return res.status(401).json({ success: false, message: 'Non autorizzato' });
+  const sid = resolveSocietyId(req, session);
+  if (!sid) return res.status(400).json({ success: false, message: 'societyId mancante' });
   if (req.method === 'GET') {
     const cfg = (await kv.get(`society:${sid}:impianti:annate-config`)) || [];
     return res.status(200).json({ success: true, config: cfg });
@@ -538,10 +548,10 @@ if (req.query?.action === 'impianti-annate-config') {
 }
 
 if (req.query?.action === 'impianti-annate') {
-  const sid = (req.headers['x-society-id'] || '').trim();
-  if (!sid) return res.status(400).json({ success: false, message: 'societyId mancante' });
   if (!session.isAuthenticated || !canImpianti(session.role))
     return res.status(401).json({ success: false, message: 'Non autorizzato' });
+  const sid = resolveSocietyId(req, session);
+  if (!sid) return res.status(400).json({ success: false, message: 'societyId mancante' });
   const allAnnate = (await kv.get('annate:list')) || [];
   const societyAnnate = allAnnate.filter(a => !a.societyId || a.societyId === sid);
   const withCounts = await Promise.all(societyAnnate.map(async a => {
@@ -552,10 +562,10 @@ if (req.query?.action === 'impianti-annate') {
 }
 
 if (req.query?.action === 'impianti-config') {
-  const sid = (req.headers['x-society-id'] || '').trim();
-  if (!sid) return res.status(400).json({ success: false, message: 'societyId mancante' });
   if (!session.isAuthenticated || !canImpianti(session.role))
     return res.status(401).json({ success: false, message: 'Non autorizzato' });
+  const sid = resolveSocietyId(req, session);
+  if (!sid) return res.status(400).json({ success: false, message: 'societyId mancante' });
   if (req.method === 'GET') {
     const config = (await kv.get(`society:${sid}:impianti:config`)) || { campi: [], spogliatoi: 0 };
     return res.status(200).json({ success: true, config });
@@ -571,10 +581,10 @@ if (req.query?.action === 'impianti-config') {
 }
 
 if (req.query?.action === 'impianti-slots') {
-  const sid = (req.headers['x-society-id'] || '').trim();
-  if (!sid) return res.status(400).json({ success: false, message: 'societyId mancante' });
   if (!session.isAuthenticated || !canImpianti(session.role))
     return res.status(401).json({ success: false, message: 'Non autorizzato' });
+  const sid = resolveSocietyId(req, session);
+  if (!sid) return res.status(400).json({ success: false, message: 'societyId mancante' });
   if (req.method === 'GET') {
     const slots = (await kv.get(`society:${sid}:impianti:slots`)) || [];
     return res.status(200).json({ success: true, slots });
@@ -596,10 +606,10 @@ if (req.query?.action === 'impianti-slots') {
 }
 
 if (req.query?.action === 'impianti-eventi') {
-  const sid = (req.headers['x-society-id'] || '').trim();
-  if (!sid) return res.status(400).json({ success: false, message: 'societyId mancante' });
   if (!session.isAuthenticated || !canImpianti(session.role))
     return res.status(401).json({ success: false, message: 'Non autorizzato' });
+  const sid = resolveSocietyId(req, session);
+  if (!sid) return res.status(400).json({ success: false, message: 'societyId mancante' });
   if (req.method === 'GET') {
     const eventi = (await kv.get(`society:${sid}:impianti:eventi`)) || [];
     return res.status(200).json({ success: true, eventi });
