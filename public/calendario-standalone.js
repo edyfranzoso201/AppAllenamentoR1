@@ -122,7 +122,11 @@ async function load() {
       _authHeaders['x-society-id']   = sessionStorage.getItem('gosport_society_id')   || '';
     } catch (e) { /* sessionStorage non disponibile (es. iframe sandbox) */ }
 
-  const response = await fetch('/api/data?parentMode=1', {
+  // Invia athleteId del link così il server (parentMode non autenticato) restituisce
+  // SOLO questo atleta e non l'intera rosa.
+  const _parentAthleteId = new URLSearchParams(window.location.search).get('athleteId') || '';
+  const _parentModeUrl = '/api/data?parentMode=1' + (_parentAthleteId ? '&athleteId=' + encodeURIComponent(_parentAthleteId) : '');
+  const response = await fetch(_parentModeUrl, {
     cache: 'no-store',
     headers: Object.assign({
     'Content-Type': 'application/json',
