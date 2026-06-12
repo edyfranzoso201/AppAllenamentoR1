@@ -41,26 +41,43 @@ function hashPassword(password) {
 export default async function handler(req, res) {
   setCors(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Society-Id, X-Super-Admin-Password');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Society-Id, X-Super-Admin-Password, X-Auth-Session, X-Auth-User, X-User-Role');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // Il superadmin può passare societyId esplicitamente nel body
   const superAdminPwd = req.headers['x-super-admin-password'] || null;
   const SUPER_PWD = process.env.SUPER_ADMIN_PASSWORD;
   if (!SUPER_PWD) return res.status(500).json({ success: false, message: 'Configurazione server incompleta' });
   const isSuperAdmin = superAdminPwd === SUPER_PWD;
-  const societyId = req.headers['x-society-id'] || (req.body && req.body.societyId) || null;
 
   try {
+    // ── Autenticazione ──────────────────────────────────────────────────────
+    // Superadmin (password) → agisce su qualsiasi società (societyId dal body).
+    // Altrimenti serve un token di sessione valido con ruolo ADMIN: gestisce SOLO
+    // gli utenti della PROPRIA società (societyId dalla SESSIONE, non dall'header
+    // che sarebbe falsificabile). Impedisce account takeover via X-Society-Id.
+    let societyId;
+    if (isSuperAdmin) {
+      societyId = req.headers['x-society-id'] || (req.body && req.body.societyId) || null;
+    } else {
+      const token = String(req.headers['x-auth-session'] || '').trim();
+      if (!token || token === 'true') {
+        return res.status(401).json({ success: false, message: 'Non autorizzato' });
+      }
+      const sess = await kv.get(`session:${token}`);
+      if (!sess) {
+        return res.status(401).json({ success: false, message: 'Sessione non valida o scaduta' });
+      }
+      if (String(sess.role || '').toLowerCase() !== 'admin') {
+        return res.status(403).json({ success: false, message: 'Solo gli admin possono gestire gli utenti' });
+      }
+      societyId = sess.societyId || null;
+    }
+
     // ==========================================
     // GET — Lista utenti
     // ==========================================
     if (req.method === 'GET') {
-      if (!isSuperAdmin && !societyId) {
-        return res.status(401).json({ success: false, message: 'Non autorizzato' });
-      }
-
       const users = (await kv.get('auth:users')) || [];
 
       // Superadmin vede tutti gli utenti; altrimenti filtra per societyId
@@ -148,8 +165,8 @@ export default async function handler(req, res) {
           return res.status(404).json({ success: false, message: 'Utente non trovato' });
         }
 
-        // Sicurezza: un utente di una società non può modificare utenti di un'altra
-        if (!isSuperAdmin && societyId && users[idx].societyId && users[idx].societyId !== societyId) {
+        // Sicurezza: un admin di società può modificare SOLO utenti della propria società.
+        if (!isSuperAdmin && (users[idx].societyId || null) !== (societyId || null)) {
           return res.status(403).json({ success: false, message: 'Non autorizzato' });
         }
 
@@ -197,7 +214,7 @@ export default async function handler(req, res) {
           return res.status(404).json({ success: false, message: 'Utente non trovato' });
         }
 
-        if (!isSuperAdmin && societyId && target.societyId && target.societyId !== societyId) {
+        if (!isSuperAdmin && (target.societyId || null) !== (societyId || null)) {
           return res.status(403).json({ success: false, message: 'Non autorizzato' });
         }
 
