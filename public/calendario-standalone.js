@@ -116,7 +116,9 @@ async function load() {
     // ma il pattern e' lo stesso usato da data-adapter-multi-annata.js.
     const _authHeaders = {};
     try {
-      _authHeaders['x-auth-session'] = sessionStorage.getItem('gosport_auth_session') || '';
+      // Invia il TOKEN di sessione reale (non il vecchio flag 'true', rifiutato dal server
+      // dopo l'hardening auth) così il coach autenticato riceve la rosa intera.
+      _authHeaders['x-auth-session'] = sessionStorage.getItem('gosport_session_token') || sessionStorage.getItem('gosport_auth_session') || '';
       _authHeaders['x-auth-user']    = sessionStorage.getItem('gosport_auth_user')    || '';
       _authHeaders['x-user-role']    = sessionStorage.getItem('gosport_user_role')    || '';
       _authHeaders['x-society-id']   = sessionStorage.getItem('gosport_society_id')   || '';
@@ -196,7 +198,7 @@ async function markAbsence(athleteId, date, currentStatus) {
     // Carica i dati correnti
     const _authH = {};
     try {
-      _authH['x-auth-session'] = sessionStorage.getItem('gosport_auth_session') || '';
+      _authH['x-auth-session'] = sessionStorage.getItem('gosport_session_token') || sessionStorage.getItem('gosport_auth_session') || '';
       _authH['x-auth-user']    = sessionStorage.getItem('gosport_auth_user')    || '';
       _authH['x-user-role']    = sessionStorage.getItem('gosport_user_role')    || '';
       _authH['x-society-id']   = sessionStorage.getItem('gosport_society_id')   || '';
