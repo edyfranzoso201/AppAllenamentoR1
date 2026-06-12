@@ -13,17 +13,6 @@ let isParentView = false;
 let currentAthleteId = null;
 let currentAnnataId = null;
 
-// La pagina calendario si apre in una scheda separata (target=_blank): il ripristino
-// sessione di auth-multi-annata.js può tenere un token vecchio. Qui forziamo l'uso del
-// token di sessione PIÙ RECENTE salvato in localStorage all'ultimo login (se presente).
-// Per i genitori (non loggati) localStorage non ha il token → nessun effetto.
-try {
-  const _freshTok = localStorage.getItem('_p_gosport_session_token');
-  if (_freshTok && _freshTok !== sessionStorage.getItem('gosport_session_token')) {
-    sessionStorage.setItem('gosport_session_token', _freshTok);
-  }
-} catch (e) { /* storage non disponibile */ }
-
 /**
  * Controlla se un evento è entro 72 ore
  */
@@ -127,19 +116,13 @@ async function load() {
     // ma il pattern e' lo stesso usato da data-adapter-multi-annata.js.
     const _authHeaders = {};
     try {
-      // Invia il TOKEN di sessione reale (non il vecchio flag 'true', rifiutato dal server
-      // dopo l'hardening auth) così il coach autenticato riceve la rosa intera.
-      _authHeaders['x-auth-session'] = sessionStorage.getItem('gosport_session_token') || sessionStorage.getItem('gosport_auth_session') || '';
+      _authHeaders['x-auth-session'] = sessionStorage.getItem('gosport_auth_session') || '';
       _authHeaders['x-auth-user']    = sessionStorage.getItem('gosport_auth_user')    || '';
       _authHeaders['x-user-role']    = sessionStorage.getItem('gosport_user_role')    || '';
       _authHeaders['x-society-id']   = sessionStorage.getItem('gosport_society_id')   || '';
     } catch (e) { /* sessionStorage non disponibile (es. iframe sandbox) */ }
 
-  // Invia athleteId del link così il server (parentMode non autenticato) restituisce
-  // SOLO questo atleta e non l'intera rosa.
-  const _parentAthleteId = new URLSearchParams(window.location.search).get('athleteId') || '';
-  const _parentModeUrl = '/api/data?parentMode=1' + (_parentAthleteId ? '&athleteId=' + encodeURIComponent(_parentAthleteId) : '');
-  const response = await fetch(_parentModeUrl, {
+  const response = await fetch('/api/data?parentMode=1', {
     cache: 'no-store',
     headers: Object.assign({
     'Content-Type': 'application/json',
@@ -209,7 +192,7 @@ async function markAbsence(athleteId, date, currentStatus) {
     // Carica i dati correnti
     const _authH = {};
     try {
-      _authH['x-auth-session'] = sessionStorage.getItem('gosport_session_token') || sessionStorage.getItem('gosport_auth_session') || '';
+      _authH['x-auth-session'] = sessionStorage.getItem('gosport_auth_session') || '';
       _authH['x-auth-user']    = sessionStorage.getItem('gosport_auth_user')    || '';
       _authH['x-user-role']    = sessionStorage.getItem('gosport_user_role')    || '';
       _authH['x-society-id']   = sessionStorage.getItem('gosport_society_id')   || '';

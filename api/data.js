@@ -885,19 +885,6 @@ kv.get(`${prefix}:convBg2`),
 kv.get(`${prefix}:athleteDocs`)  // ← documenti caricati dai genitori
 ]);
 
-// Scoping genitore: una richiesta NON autenticata (genitore via link) vede SOLO
-// l'atleta indicato nel link (?athleteId). Nessun athleteId → nessuna rosa.
-// Un coach autenticato in parentMode vede la rosa intera (già isolata per società).
-const _reqAthleteId = String(req.query.athleteId || '').trim();
-let _athletesOut = (athletes || []).map(a => ({
-id: a.id,
-name: a.name,
-ruolo: a.ruolo || a.role || ''
-}));
-if (!session.isAuthenticated) {
-_athletesOut = _reqAthleteId ? _athletesOut.filter(a => String(a.id) === _reqAthleteId) : [];
-}
-
 return res.status(200).json({
 calendarEvents: calendarEvents || {},
 calendarResponses: calendarResponses || {},
@@ -905,7 +892,11 @@ teamName: teamName || 'GO SPORT',
 convSettings: convSettings || {},
 convBg:  convBg  || null,
 convBg2: convBg2 || null,
-athletes: _athletesOut,
+athletes: (athletes || []).map(a => ({
+id: a.id,
+name: a.name,
+ruolo: a.ruolo || a.role || ''
+})),
 posts: posts || [],
 globalPosts: globalPosts || [],
 documents: (documents || []).filter(d => (d.visibility || []).includes('pubblica')),
