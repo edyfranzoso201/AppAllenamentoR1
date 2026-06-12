@@ -14,7 +14,7 @@ function generateAnnataId() {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Society-Id');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Society-Id, X-Auth-Session, X-Auth-User, X-User-Role');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
@@ -25,7 +25,19 @@ export default async function handler(req, res) {
   try {
     const { action, id, nome, dataInizio, dataFine, descrizione } = req.body;
 
-    const societyId = req.headers['x-society-id'] || null;
+    // ── Autenticazione ──────────────────────────────────────────────────────
+    // Serve un token di sessione valido; la società viene dalla SESSIONE (non
+    // dall'header, falsificabile). Impedisce creazione/modifica/cancellazione
+    // di annate senza login e la manipolazione di annate di altre società.
+    const token = String(req.headers['x-auth-session'] || '').trim();
+    if (!token || token === 'true') {
+      return res.status(401).json({ success: false, message: 'Non autorizzato' });
+    }
+    const sess = await kv.get(`session:${token}`);
+    if (!sess) {
+      return res.status(401).json({ success: false, message: 'Sessione non valida o scaduta' });
+    }
+    const societyId = sess.societyId || null;
 
     if (!action) {
       return res.status(400).json({ success: false, message: 'Parametro "action" obbligatorio (create, update, delete)' });
