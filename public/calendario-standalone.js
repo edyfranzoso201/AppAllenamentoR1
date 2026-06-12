@@ -13,6 +13,17 @@ let isParentView = false;
 let currentAthleteId = null;
 let currentAnnataId = null;
 
+// La pagina calendario si apre in una scheda separata (target=_blank): il ripristino
+// sessione di auth-multi-annata.js può tenere un token vecchio. Qui forziamo l'uso del
+// token di sessione PIÙ RECENTE salvato in localStorage all'ultimo login (se presente).
+// Per i genitori (non loggati) localStorage non ha il token → nessun effetto.
+try {
+  const _freshTok = localStorage.getItem('_p_gosport_session_token');
+  if (_freshTok && _freshTok !== sessionStorage.getItem('gosport_session_token')) {
+    sessionStorage.setItem('gosport_session_token', _freshTok);
+  }
+} catch (e) { /* storage non disponibile */ }
+
 /**
  * Controlla se un evento è entro 72 ore
  */
