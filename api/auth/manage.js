@@ -1,6 +1,6 @@
 // api/auth/manage.js - Gestione utenti (create, update, delete, list)
 import { createClient } from '@vercel/kv';
-import crypto from 'crypto';
+import { hashPasswordScrypt } from './_password.js';
 
 const kv = createClient({
   url: process.env.UPSTASH_KV_REST_API_URL || process.env.KV_REST_API_URL,
@@ -38,10 +38,8 @@ const VALID_ROLES = [
   'staff',      // A3 — Staff (Dirigenti + Allenatori)
 ];
 
-// SHA256 — stesso metodo usato da api/auth/login.js
-function hashPassword(password) {
-  return crypto.createHash('sha256').update(password).digest('hex');
-}
+// Hashing password centralizzato in ./_password.js (scrypt salato).
+const hashPassword = hashPasswordScrypt;
 
 export default async function handler(req, res) {
   setCors(req, res);

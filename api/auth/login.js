@@ -1,6 +1,7 @@
 // api/auth/login.js - Login con verifica automatica licenza
 import { createClient } from '@vercel/kv';
 import crypto from 'crypto';
+import { verifyPassword, hashPasswordScrypt } from './_password.js';
 
 const kv = createClient({
   url: process.env.UPSTASH_KV_REST_API_URL || process.env.KV_REST_API_URL,
@@ -26,19 +27,8 @@ function setCors(req, res) {
   res.setHeader('Vary', 'Origin');
 }
 
-function hashPassword(password) {
-  return crypto.createHash('sha256').update(password).digest('hex');
-}
-
-// Hash legacy (base64) — usato SOLO per migrare le vecchie password
-function hashPasswordLegacy(password) {
-  return Buffer.from(password).toString('base64');
-}
-
-// Riconosce se un hash è SHA256 (64 caratteri hex) o base64 (legacy)
-function isLegacyHash(hash) {
-  return hash && !/^[0-9a-f]{64}$/.test(hash);
-}
+// L'hashing/verifica password vive in ./_password.js (scrypt salato + legacy
+// SHA256/base64 con migrazione lazy). Importati: verifyPassword, hashPasswordScrypt.
 
 // Restituisce i permessi in base al ruolo
 function getPermissions(role) {
@@ -136,21 +126,10 @@ export default async function handler(req, res) {
     }
 
     // ── Verifica password con migrazione automatica ──────────────
-    const passwordHashSHA256 = hashPassword(password);
-    const passwordHashLegacy = hashPasswordLegacy(password);
-
-    let passwordOk = false;
-    let needsMigration = false;
-
-    if (user.password === passwordHashSHA256) {
-      // Password già in SHA256 — ok
-      passwordOk = true;
-    } else if (isLegacyHash(user.password) && user.password === passwordHashLegacy) {
-      // Password ancora in base64 legacy — ok ma migriamo subito a SHA256
-      passwordOk = true;
-      needsMigration = true;
-      console.log(`   🔄 Migrazione password a SHA256 per: ${username}`);
-    }
+    // verifyPassword gestisce scrypt (nuovo) + SHA256/base64 (legacy).
+    // needsMigration=true quando la password era valida ma in formato legacy:
+    // la risalviamo in scrypt (lazy migration), così il parco si aggiorna.
+    const { ok: passwordOk, needsMigration } = verifyPassword(password, user.password);
 
     if (!passwordOk) {
       console.log(`   ❌ Password errata per ${username}`);
@@ -164,19 +143,32 @@ export default async function handler(req, res) {
       });
     }
 
-    // Migrazione automatica: risalva la password in SHA256
+    // Migrazione automatica: risalva la password in scrypt (salt random).
+    // Va aggiornata SIA la lista auth:users SIA la chiave individuale
+    // auth:user:<lower> (il login fa lookup O(1) da quella chiave: se non la
+    // migrassi, al prossimo login rileggerebbe ancora l'hash legacy).
     if (needsMigration) {
       try {
+        const newHash = hashPasswordScrypt(password);
+        const lower = username.toLowerCase();
         const allUsers = (await kv.get('auth:users')) || [];
         const idx = allUsers.findIndex(u => u.username === username);
+        const ops = [];
         if (idx !== -1) {
-          allUsers[idx].password = passwordHashSHA256;
-          await kv.set('auth:users', allUsers);
-          console.log(`   ✅ Password migrata a SHA256 per: ${username}`);
+          allUsers[idx].password = newHash;
+          ops.push(kv.set('auth:users', allUsers));
         }
+        // Aggiorna anche la chiave individuale (se esiste)
+        const indUser = await kv.get(`auth:user:${lower}`);
+        if (indUser) {
+          indUser.password = newHash;
+          ops.push(kv.set(`auth:user:${lower}`, indUser));
+        }
+        await Promise.all(ops);
+        console.log(`   ✅ Password migrata a scrypt per: ${username}`);
       } catch(e) {
         // Migrazione fallita — non blocca il login
-        console.warn(`   ⚠️ Migrazione SHA256 fallita per ${username}:`, e.message);
+        console.warn(`   ⚠️ Migrazione scrypt fallita per ${username}:`, e.message);
       }
     }
 

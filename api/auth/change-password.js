@@ -1,6 +1,6 @@
 // api/auth/change-password.js — cambio password self-service
 import { createClient } from '@vercel/kv';
-import crypto from 'crypto';
+import { verifyPassword, hashPasswordScrypt } from './_password.js';
 
 const kv = createClient({
   url: process.env.UPSTASH_KV_REST_API_URL || process.env.KV_REST_API_URL,
@@ -25,17 +25,7 @@ function setCors(req, res) {
   res.setHeader('Vary', 'Origin');
 }
 
-function hashPassword(password) {
-  return crypto.createHash('sha256').update(password).digest('hex');
-}
-
-function hashPasswordLegacy(password) {
-  return Buffer.from(password).toString('base64');
-}
-
-function isLegacyHash(hash) {
-  return hash && !/^[0-9a-f]{64}$/.test(hash);
-}
+// Hashing/verifica password centralizzati in ./_password.js (scrypt + legacy).
 
 export default async function handler(req, res) {
   setCors(req, res);
@@ -85,17 +75,16 @@ export default async function handler(req, res) {
       return res.status(404).json({ success: false, message: 'Utente non trovato' });
     }
 
-    // Verifica password attuale (SHA256 e legacy base64)
-    const passwordOk =
-      user.password === hashPassword(currentPassword) ||
-      (isLegacyHash(user.password) && user.password === hashPasswordLegacy(currentPassword));
+    // Verifica password attuale (scrypt + legacy SHA256/base64)
+    const { ok: passwordOk } = verifyPassword(currentPassword, user.password);
 
     if (!passwordOk) {
       return res.status(401).json({ success: false, message: 'Password attuale non corretta' });
     }
 
-    // Aggiorna in entrambe le strutture KV (array + chiave individuale)
-    const newHash = hashPassword(newPassword);
+    // La nuova password è sempre salvata in scrypt salato.
+    // Aggiorna in entrambe le strutture KV (array + chiave individuale).
+    const newHash = hashPasswordScrypt(newPassword);
     const allUsers = (await kv.get('auth:users')) || [];
     const idx = allUsers.findIndex(u => u.username === username);
     if (idx !== -1) {
