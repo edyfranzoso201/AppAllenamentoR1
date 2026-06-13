@@ -399,11 +399,11 @@ window.showHistory = function(athleteId, date) {
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
             <div style="flex:1;min-width:150px;">
               <strong style="color:${color};font-size:1rem;">${icon} ${entry.status}</strong>
-              <span style="margin-left:10px;color:#64748b;font-size:0.85rem;">${byIcon} ${byText}</span>
+              <span style="margin-left:10px;color:#94a3b8;font-size:0.85rem;">${byIcon} ${byText}</span>
             </div>
-            <span style="color:#64748b;font-size:0.8rem;white-space:nowrap;">${dateStr}</span>
+            <span style="color:#94a3b8;font-size:0.8rem;white-space:nowrap;">${dateStr}</span>
           </div>
-          ${entry.note ? `<div style="margin-top:8px;color:#64748b;font-size:0.85rem;font-style:italic;padding:8px;background:rgba(255,255,255,0.08);border-radius:4px;">${entry.note}</div>` : ''}
+          ${entry.note ? `<div style="margin-top:8px;color:#94a3b8;font-size:0.85rem;font-style:italic;padding:8px;background:rgba(255,255,255,0.08);border-radius:4px;">${entry.note}</div>` : ''}
         </div>
       `;
     });
@@ -421,7 +421,7 @@ window.showHistory = function(athleteId, date) {
             <span>Storico Modifiche</span>
           </h3>
           <button onclick="this.closest('[style*=fixed]').remove()" 
-            style="background:none;border:none;font-size:2rem;cursor:pointer;color:#64748b;line-height:1;padding:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:background 0.2s;"
+            style="background:none;border:none;font-size:2rem;cursor:pointer;color:#94a3b8;line-height:1;padding:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:background 0.2s;"
             onmouseover="this.style.background='#1a3a5f'"
             onmouseout="this.style.background='none'">×</button>
         </div>
@@ -441,14 +441,14 @@ window.showHistory = function(athleteId, date) {
         </div>
         
         <div style="margin-bottom:20px;padding:12px;background:${currentBg};border-radius:8px;border:2px solid ${currentColor};">
-          <div style="font-size:0.85rem;color:#64748b;margin-bottom:5px;">Stato attuale:</div>
+          <div style="font-size:0.85rem;color:#94a3b8;margin-bottom:5px;">Stato attuale:</div>
           <div style="font-size:1.1rem;font-weight:700;color:${currentColor};">
             ${currentStatus === 'Assente' ? '❌ ASSENTE' : '✅ PRESENTE'}
           </div>
         </div>
         
         <div style="margin-bottom:15px;">
-          <div style="color:#64748b;font-size:0.9rem;margin-bottom:10px;">
+          <div style="color:#94a3b8;font-size:0.9rem;margin-bottom:10px;">
             <strong>📜 Cronologia delle modifiche</strong>
             <span style="margin-left:8px;padding:2px 8px;background:#1a3a5f;border-radius:12px;font-size:0.75rem;">${history.length}</span>
           </div>
@@ -559,9 +559,9 @@ async function render(loadedData) {
         ? `<span style="background:#f59e0b;color:#000;border-radius:4px;padding:1px 6px;font-size:0.75rem;">Staff</span>`
         : `<span style="background:#3b82f6;color:#ffffff;border-radius:4px;padding:1px 6px;font-size:0.75rem;">Atleta</span>`;
       _h += `<tr>`;
-      _h += `<td style="color:#64748b;">${i+1}</td>`;
+      _h += `<td style="color:#94a3b8;">${i+1}</td>`;
       _h += `<td style="color:#60a5fa;font-weight:600;">${a.name} ${badge}</td>`;
-      _h += `<td style="color:#64748b;font-size:0.85rem;">${ruolo}</td>`;
+      _h += `<td style="color:#94a3b8;font-size:0.85rem;">${ruolo}</td>`;
       _h += `<td class="text-center"><button class="btn btn-sm btn-primary link-presenze-btn" data-athlete-id="${a.id}" data-athlete-name="${a.name.replace(/"/g,'&quot;')}"><i class="bi bi-link-45deg"></i> Link Presenze</button></td>`;
       _h += `</tr>`;
     });
@@ -829,7 +829,7 @@ visibleAthletes.forEach((a, i) => {
       if (status === 'Assente') {
         h += `background:#450a0a;color:#d90429;font-weight:bold;border-left:3px solid #d90429;">❌ Assente`;
       } else {
-        h += `color:#64748b;">—`;
+        h += `color:#94a3b8;">—`;
       }
       
       // ICONA STORICO (se esiste)
@@ -1465,7 +1465,7 @@ async function loadBachecaGenitori(cachedData) {
           📎 Carica Documenti
         </button>
       </div>
-      <div id="bacheca-genitori-list" style="color:#64748b;font-size:0.85rem;">
+      <div id="bacheca-genitori-list" style="color:#94a3b8;font-size:0.85rem;">
         Caricamento comunicati...
       </div>
     </div>`;
@@ -1563,7 +1563,7 @@ if (currentAthleteId && mat.items && mat.assignments) {
   } catch(e) {
     console.warn('[Bacheca Genitori] errore:', e);
     const list = document.getElementById('bacheca-genitori-list');
-    if (list) list.innerHTML = '<span style="color:#64748b;">Nessun comunicato disponibile.</span>';
+    if (list) list.innerHTML = '<span style="color:#94a3b8;">Nessun comunicato disponibile.</span>';
   }
 }
 
@@ -1576,7 +1576,7 @@ function renderDocumentiGenitori(docs) {
     h += '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#0f172a;border-radius:8px;margin-bottom:8px;">';
     h += '<i class="bi bi-file-earmark-text-fill" style="color:#60a5fa;font-size:1.2rem;flex-shrink:0;"></i>';
     h += '<div style="flex:1;"><div style="color:#e2e8f0;font-weight:600;font-size:0.9rem;">' + doc.name + '</div>';
-    if (doc.desc) h += '<div style="color:#64748b;font-size:0.78rem;">' + doc.desc + '</div></div>';
+    if (doc.desc) h += '<div style="color:#94a3b8;font-size:0.78rem;">' + doc.desc + '</div></div>';
     h += '</div><a href="' + doc.url + '" target="_blank" style="background:#1a3a5f;color:#60a5fa;border-radius:5px;padding:5px 10px;font-size:0.78rem;text-decoration:none;flex-shrink:0;white-space:nowrap;"><i class="bi bi-box-arrow-up-right"></i> Apri</a>';
     h += '</div>';
   });
@@ -1590,7 +1590,7 @@ function renderBachecaGenitori(posts, images) {
 
   if (!posts.length) {
     list.innerHTML = `
-      <div style="text-align:center;padding:24px 0;color:#64748b;">
+      <div style="text-align:center;padding:24px 0;color:#94a3b8;">
         <div style="font-size:2rem;opacity:0.4;">📢</div>
         <p style="margin-top:8px;font-size:0.85rem;">Nessun comunicato pubblicato.</p>
       </div>`;
@@ -1951,7 +1951,7 @@ window._renderParentDocsSection = function(athleteId, annataId, allDocs) {
       html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(59,90,157,0.4);flex-wrap:wrap;">'
         + '<div style="flex:1;min-width:0;">'
         + '<div style="color:#e2e8f0;font-size:0.88rem;font-weight:600;">' + dt.label + '</div>'
-        + '<div style="color:#64748b;font-size:0.75rem;">Caricato il ' + date + '</div>'
+        + '<div style="color:#94a3b8;font-size:0.75rem;">Caricato il ' + date + '</div>'
         + html_nota
         + '</div>'
         + '<a href="' + doc.url + '" target="_blank" '
@@ -1963,7 +1963,7 @@ window._renderParentDocsSection = function(athleteId, annataId, allDocs) {
   });
 
   if (!hasAny) {
-    html += '<p style="color:#64748b;font-size:0.85rem;margin:0;">Nessun documento caricato. Clicca "Gestisci / Aggiungi" per aggiungerne.</p>';
+    html += '<p style="color:#94a3b8;font-size:0.85rem;margin:0;">Nessun documento caricato. Clicca "Gestisci / Aggiungi" per aggiungerne.</p>';
   }
   html += '</div>';
   container.innerHTML = html;
@@ -2196,7 +2196,7 @@ window._showDocUploadPanel = function(athleteId, annataId, existingDocs) {
     + '<li>Clicca <strong style="color:#e2e8f0;">Copia link</strong></li>'
     + '<li>Incolla il link qui sotto nel campo corretto</li>'
     + '</ol>'
-    + '<p style="color:#64748b;font-size:0.75rem;margin:8px 0 0 0;">💡 Il file rimane su Google Drive, qui salviamo solo il link.</p>'
+    + '<p style="color:#94a3b8;font-size:0.75rem;margin:8px 0 0 0;">💡 Il file rimane su Google Drive, qui salviamo solo il link.</p>'
     + '</div>';
 
   // Riepilogo documenti già caricati
@@ -2211,7 +2211,7 @@ window._showDocUploadPanel = function(athleteId, annataId, existingDocs) {
         html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">'
           + '<span style="color:#e2e8f0;font-size:0.82rem;flex:1;">' + dt.label + '</span>'
           + '<a href="' + doc.url + '" target="_blank" style="color:#60a5fa;font-size:0.78rem;text-decoration:none;">🔗 Apri</a>'
-          + '<span style="color:#64748b;font-size:0.72rem;">' + date + '</span>'
+          + '<span style="color:#94a3b8;font-size:0.72rem;">' + date + '</span>'
           + '<button onclick="window._deleteAthleteDoc(\'' + athleteId + '\',\'' + annataId + '\',\'' + dt.key + '\')" '
           + 'style="background:#450a0a;color:#d90429;border:1px solid #d90429;border-radius:4px;padding:2px 8px;font-size:0.72rem;cursor:pointer;">🗑️ Elimina</button>'
           + '</div>';

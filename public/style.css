@@ -772,7 +772,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 /* Star Style */
 .rating-star {
     font-size: 2rem;
-    color: #495057;
+    color: #94a3b8;
     cursor: pointer;
     transition: all 0.2s ease;
     user-select: none;
@@ -862,7 +862,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 
 .rating-empty-state i {
     font-size: 4rem;
-    color: #6c757d;
+    color: #9ca3af;
     margin-bottom: 1rem;
 }
 

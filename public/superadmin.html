@@ -45,7 +45,7 @@
         }
         .login-subtitle {
             font-size: 0.85rem;
-            color: #64748b;
+            color: #94a3b8;
             margin-bottom: 28px;
         }
 
@@ -69,7 +69,7 @@
         }
         .header-logo { font-size: 1.5rem; }
         .header-title { font-weight: 700; font-size: 1.1rem; color: white; }
-        .header-subtitle { font-size: 0.75rem; color: #64748b; }
+        .header-subtitle { font-size: 0.75rem; color: #94a3b8; }
 
         /* ===== LAYOUT ===== */
         .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
@@ -89,7 +89,7 @@
             text-align: center;
         }
         .stat-number { font-size: 2rem; font-weight: 700; color: white; }
-        .stat-label { font-size: 0.78rem; color: #64748b; margin-top: 4px; }
+        .stat-label { font-size: 0.78rem; color: #94a3b8; margin-top: 4px; }
 
         /* ===== FORM NUOVA LICENZA ===== */
         .section {
@@ -202,7 +202,7 @@
         th {
             text-align: left;
             padding: 10px 12px;
-            color: #64748b;
+            color: #94a3b8;
             font-weight: 600;
             font-size: 0.75rem;
             text-transform: uppercase;
@@ -226,7 +226,7 @@
         .badge-green { background: #064e3b; color: #10b981; }
         .badge-red { background: #450a0a; color: #ef4444; }
         .badge-yellow { background: #422006; color: #f59e0b; }
-        .badge-gray { background: #1e293b; color: #64748b; }
+        .badge-gray { background: #1e293b; color: #94a3b8; }
 
         .key-mono {
             font-family: 'Courier New', monospace;
@@ -287,7 +287,7 @@
         .empty-state {
             text-align: center;
             padding: 40px;
-            color: #64748b;
+            color: #94a3b8;
         }
         .empty-state div:first-child { font-size: 2.5rem; margin-bottom: 8px; }
 
@@ -407,7 +407,7 @@
                 <button class="btn btn-ghost btn-sm" onclick="loadMonitoring()">🔄 Aggiorna</button>
             </div>
             <div id="monitoring-content">
-                <div style="color:#64748b;font-size:0.85rem;">Caricamento...</div>
+                <div style="color:#94a3b8;font-size:0.85rem;">Caricamento...</div>
             </div>
         </div>
 
@@ -490,7 +490,7 @@
                             <input type="password" id="new-admin-password" placeholder="Password sicura" autocomplete="new-password">
                         </div>
                     </div>
-                    <div style="font-size:11px;color:#64748b;margin-bottom:12px;">
+                    <div style="font-size:11px;color:#94a3b8;margin-bottom:12px;">
                         Il societyId verrà assegnato automaticamente dalla licenza appena creata.<br>
                         L'utente avrà ruolo Admin e accesso a tutte le annate della società.
                     </div>
@@ -550,7 +550,7 @@
                 💾 Backup &amp; Ripristino
                 <span style="background:#ef4444;color:#fff;font-size:0.65rem;font-weight:800;padding:2px 7px;border-radius:4px;letter-spacing:0.05em;margin-left:6px;">SUPERADMIN</span>
             </div>
-            <p style="font-size:0.8rem;color:#64748b;margin-bottom:14px;">
+            <p style="font-size:0.8rem;color:#94a3b8;margin-bottom:14px;">
                 Backup completo di tutti i dati Redis. Tenuti in locale gli ultimi 7 giornalieri. Il ripristino sovrascrive Redis con il file selezionato.
             </p>
             <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
@@ -559,7 +559,7 @@
                 <input type="file" id="restore-file-input" accept=".json" style="display:none" onchange="onRestoreFileSelected(this)">
             </div>
             <div id="sa-backup-list">
-                <div style="color:#64748b;font-size:0.85rem;">Caricamento...</div>
+                <div style="color:#94a3b8;font-size:0.85rem;">Caricamento...</div>
             </div>
         </div>
 
@@ -574,7 +574,7 @@
                     <span style="position:absolute;cursor:pointer;inset:0;background:#334155;border-radius:26px;transition:.3s;" id="sa-slider"></span>
                 </label>
             </div>
-            <p style="font-size:0.72rem;color:#64748b;margin-bottom:16px;">Se disattivati, i 2 banner globali non vengono mostrati in nessuna società.</p>
+            <p style="font-size:0.72rem;color:#94a3b8;margin-bottom:16px;">Se disattivati, i 2 banner globali non vengono mostrati in nessuna società.</p>
 
             <div id="banner-slots"></div>
 
@@ -648,7 +648,7 @@
             <input type="text" id="edit-user-username-display" disabled style="opacity:0.5">
         </div>
         <div class="form-group" style="margin-bottom:14px">
-            <label>Nuova Password <small style="color:#64748b">(lascia vuoto per non modificare)</small></label>
+            <label>Nuova Password <small style="color:#94a3b8">(lascia vuoto per non modificare)</small></label>
             <input type="password" id="edit-user-new-password" placeholder="Nuova password..." autocomplete="new-password">
         </div>
         <div class="form-group" style="margin-bottom:4px">
@@ -896,7 +896,7 @@ function renderTable(licenze) {
         return `<tr id="row-${safeKey}">
             <td>
                 <div style="font-weight:600;color:white">${l.societyName}</div>
-                <div style="font-size:0.75rem;color:#64748b">${l.email}</div>
+                <div style="font-size:0.75rem;color:#94a3b8">${l.email}</div>
             </td>
             <td>
                 <span class="key-mono" onclick="copyText('${l.licenseKey}')" title="Clicca per copiare">
@@ -910,7 +910,7 @@ function renderTable(licenze) {
             <td><span class="badge ${badgeClass}">${badge}</span></td>
             <td>
                 <div>${lastAccessFormatted}</div>
-                <div style="font-size:0.72rem;color:#64748b">Creata: ${createdFormatted}</div>
+                <div style="font-size:0.72rem;color:#94a3b8">Creata: ${createdFormatted}</div>
             </td>
             <td>
                 ${l.plan === 'platinum' ? '<span class="badge" style="background:#7c3aed;color:#ede9fe">💎 Platinum</span>' : l.plan === 'gold' ? '<span class="badge" style="background:#b45309;color:#fef3c7">🥇 Gold</span>' : '<span class="badge" style="background:#374151;color:#d1d5db">🥈 Silver</span>'}
@@ -1032,7 +1032,7 @@ async function toggleDetails(licenseKey, societyId, safeKey) {
                 </div>
                 <table style="width:100%;border-collapse:collapse;font-size:0.8rem">
                     <thead>
-                        <tr style="background:#1e293b;color:#64748b;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em">
+                        <tr style="background:#1e293b;color:#94a3b8;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em">
                             <th style="padding:6px 12px;text-align:left">Annata</th>
                             <th style="padding:6px 12px;text-align:center">⚽ Atleti</th>
                             <th style="padding:6px 12px;text-align:center">👔 Staff</th>
@@ -1451,7 +1451,7 @@ function renderUsers(users) {
         return `<tr>
             <td>
                 <div style="font-weight:600;color:white">${u.username}</div>
-                <div style="font-size:0.75rem;color:#64748b">${u.email || '—'}</div>
+                <div style="font-size:0.75rem;color:#94a3b8">${u.email || '—'}</div>
             </td>
             <td><span class="badge badge-gray">${roleLabel}</span></td>
             <td>${fullName}</td>
@@ -1608,13 +1608,13 @@ function progressBar(used, limit, warnPct) {
     var color = pct >= (warnPct || 80) ? '#ef4444' : pct >= 60 ? '#f59e0b' : '#10b981';
     return '<div style="background:#0f172a;border-radius:4px;height:8px;overflow:hidden;margin-top:6px;">' +
         '<div style="height:100%;width:' + pct + '%;background:' + color + ';border-radius:4px;transition:width .4s;"></div>' +
-        '</div><div style="font-size:0.72rem;color:#64748b;margin-top:3px;">' + pct + '% utilizzato</div>';
+        '</div><div style="font-size:0.72rem;color:#94a3b8;margin-top:3px;">' + pct + '% utilizzato</div>';
 }
 function metricCard(icon, label, used, limit, unitFn, warnPct) {
     var uFmt = unitFn ? unitFn(used) : fmtNum(used);
     var lFmt = limit ? (unitFn ? unitFn(limit) : fmtNum(limit)) : '—';
     return '<div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:14px;">' +
-        '<div style="font-size:0.75rem;color:#64748b;font-weight:600;margin-bottom:4px;">' + icon + ' ' + label + '</div>' +
+        '<div style="font-size:0.75rem;color:#94a3b8;font-weight:600;margin-bottom:4px;">' + icon + ' ' + label + '</div>' +
         '<div style="font-size:1.1rem;font-weight:700;color:white;">' + uFmt +
             '<span style="font-size:0.75rem;color:#475569;font-weight:400;"> / ' + lFmt + '</span>' +
         '</div>' +
@@ -1625,7 +1625,7 @@ function metricCard(icon, label, used, limit, unitFn, warnPct) {
 async function loadMonitoring() {
     var el = document.getElementById('monitoring-content');
     if (!el) return;
-    el.innerHTML = '<div style="color:#64748b;font-size:0.85rem;">⏳ Caricamento dati infrastruttura...</div>';
+    el.innerHTML = '<div style="color:#94a3b8;font-size:0.85rem;">⏳ Caricamento dati infrastruttura...</div>';
     try {
         var r = await fetch(API_BASE + '/api/data?action=monitoring', {
             headers: { 'X-Sa-Key': ADMIN_PWD }
@@ -1679,7 +1679,7 @@ async function loadMonitoring() {
             html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">';
             html += '<a href="https://console.upstash.com/vercel/kv/c3c898c4-4a21-4a67-8601-d24085c46c91" target="_blank" style="text-decoration:none;">' +
                 '<div style="background:#0f172a;border:1px solid #334155;border-radius:10px;padding:14px;cursor:pointer;transition:border-color .2s;" onmouseover="this.style.borderColor=\'#7dd3fc\'" onmouseout="this.style.borderColor=\'#334155\'">' +
-                    '<div style="font-size:0.72rem;color:#64748b;font-weight:600;margin-bottom:4px;">⚡ Comandi Redis / mese</div>' +
+                    '<div style="font-size:0.72rem;color:#94a3b8;font-weight:600;margin-bottom:4px;">⚡ Comandi Redis / mese</div>' +
                     '<div style="font-size:1rem;font-weight:700;color:#7dd3fc;">Apri Upstash →</div>' +
                     '<div style="font-size:0.7rem;color:#475569;margin-top:4px;">Usage tab → COMMANDS</div>' +
                     '<div style="font-size:0.7rem;color:#475569;">Limite: 500K / mese</div>' +
@@ -1687,7 +1687,7 @@ async function loadMonitoring() {
             '</a>';
             html += '<a href="https://vercel.com/edys-projects-44112fd6/~/usage" target="_blank" style="text-decoration:none;">' +
                 '<div style="background:#0f172a;border:1px solid #334155;border-radius:10px;padding:14px;cursor:pointer;transition:border-color .2s;" onmouseover="this.style.borderColor=\'#a78bfa\'" onmouseout="this.style.borderColor=\'#334155\'">' +
-                    '<div style="font-size:0.72rem;color:#64748b;font-weight:600;margin-bottom:4px;">🔀 Fast Origin Transfer</div>' +
+                    '<div style="font-size:0.72rem;color:#94a3b8;font-weight:600;margin-bottom:4px;">🔀 Fast Origin Transfer</div>' +
                     '<div style="font-size:1rem;font-weight:700;color:#a78bfa;">Apri Vercel →</div>' +
                     '<div style="font-size:0.7rem;color:#475569;margin-top:4px;">Overview → Usage</div>' +
                     '<div style="font-size:0.7rem;color:#475569;">Limite: 10 GB / mese</div>' +
@@ -1699,7 +1699,7 @@ async function loadMonitoring() {
                 var ldDate = new Date(ld.date).toLocaleString('it-IT');
                 var ldColor = ld.state === 'READY' ? '#10b981' : '#ef4444';
                 html += '<div style="background:#0f172a;border:1px solid #1e293b;border-radius:8px;padding:10px;font-size:0.78rem;">' +
-                    '<div style="color:#64748b;margin-bottom:3px;">Ultimo deploy</div>' +
+                    '<div style="color:#94a3b8;margin-bottom:3px;">Ultimo deploy</div>' +
                     '<div style="color:' + ldColor + ';font-weight:600;">' + ld.state + '</div>' +
                     '<div style="color:#94a3b8;margin-top:2px;">' + ldDate + '</div>' +
                     (ld.commit ? '<div style="color:#475569;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + ld.commit.slice(0,60) + '</div>' : '') +
@@ -1778,7 +1778,7 @@ async function renderSABackupList() {
         _saBackupItems = await SABackupManager.getAll();
     } catch(e) { _saBackupItems = []; }
     if (_saBackupItems.length === 0) {
-        el.innerHTML = '<div style="color:#64748b;font-size:0.85rem;padding:4px 0;">Nessun backup locale. Clicca "Scarica Backup Ora".</div>';
+        el.innerHTML = '<div style="color:#94a3b8;font-size:0.85rem;padding:4px 0;">Nessun backup locale. Clicca "Scarica Backup Ora".</div>';
         return;
     }
     el.innerHTML = _saBackupItems.map(function(item, i) {
@@ -1787,10 +1787,10 @@ async function renderSABackupList() {
             '<div style="flex:1;">' +
                 '<div style="font-weight:600;color:white;font-size:0.88rem;">' +
                     (item.date ? item.date.slice(0, 10) : '—') +
-                    '<span style="color:#64748b;font-weight:400;margin-left:6px;">' + (item.date ? item.date.slice(11, 16) : '') + '</span>' +
+                    '<span style="color:#94a3b8;font-weight:400;margin-left:6px;">' + (item.date ? item.date.slice(11, 16) : '') + '</span>' +
                     (i === 0 ? '<span style="background:#064e3b;color:#10b981;font-size:0.7rem;padding:2px 7px;border-radius:10px;margin-left:6px;">più recente</span>' : '') +
                 '</div>' +
-                '<div style="font-size:0.78rem;color:#64748b;">' + (item.keysCount || 0) + ' chiavi Redis</div>' +
+                '<div style="font-size:0.78rem;color:#94a3b8;">' + (item.keysCount || 0) + ' chiavi Redis</div>' +
             '</div>' +
             '<button class="btn btn-ghost btn-sm" onclick="SABackupManager.download(_saBackupItems[' + i + '])">↓ Scarica</button>' +
         '</div>';
@@ -1905,7 +1905,7 @@ function renderBannerSlots(cfg) {
         const s = (cfg && cfg[i]) || {};
         html += `
         <div style="background:#0f172a;border:1px solid #334155;border-radius:10px;padding:16px;margin-bottom:14px;">
-            <div style="font-weight:700;color:#93c5fd;margin-bottom:10px;">🖼️ Banner ${i+1} <span style="color:#64748b;font-size:0.75rem;font-weight:400;">(${i===0?'primo':'secondo'} a comparire)</span></div>
+            <div style="font-weight:700;color:#93c5fd;margin-bottom:10px;">🖼️ Banner ${i+1} <span style="color:#94a3b8;font-size:0.75rem;font-weight:400;">(${i===0?'primo':'secondo'} a comparire)</span></div>
             <label style="display:block;font-size:0.78rem;color:#94a3b8;margin-bottom:4px;">URL Immagine (Google Drive o link diretto)</label>
             <input type="text" id="sa-img-${i}" value="${s.img||''}" placeholder="https://drive.google.com/file/d/..." oninput="bPreview(${i})"
                 style="width:100%;background:#1e293b;border:1px solid #334155;border-radius:7px;color:#e2e8f0;padding:9px 12px;font-size:0.85rem;outline:none;margin-bottom:8px;">

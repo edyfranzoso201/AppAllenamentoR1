@@ -1109,28 +1109,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="col-md-8">
                     <div class="row g-2">
                         <div class="col-6"><div style="background:var(--bg-primary);border-radius:8px;padding:12px 16px;">
-                            <div style="color:#64748b;font-size:0.75rem;">PACCHETTO</div>
+                            <div style="color:#94a3b8;font-size:0.75rem;">PACCHETTO</div>
                             <div style="color:var(--text-primary);font-weight:600;">${conf.label}</div>
                         </div></div>
                         <div class="col-6"><div style="background:var(--bg-primary);border-radius:8px;padding:12px 16px;">
-                            <div style="color:#64748b;font-size:0.75rem;">PERIODO</div>
+                            <div style="color:#94a3b8;font-size:0.75rem;">PERIODO</div>
                             <div style="color:var(--text-primary);font-weight:600;font-size:0.85rem;">${startFmt} → ${endFmt}</div>
                         </div></div>
                         <div class="col-4"><div style="background:var(--bg-primary);border-radius:8px;padding:12px 16px;text-align:center;">
                             <div style="color:#16a34a;font-size:1.8rem;font-weight:700;">${present}</div>
-                            <div style="color:#64748b;font-size:0.72rem;">LEZIONI FATTE</div>
+                            <div style="color:#94a3b8;font-size:0.72rem;">LEZIONI FATTE</div>
                         </div></div>
                         <div class="col-4"><div style="background:var(--bg-primary);border-radius:8px;padding:12px 16px;text-align:center;">
                             <div style="color:#d90429;font-size:1.8rem;font-weight:700;">${absent}</div>
-                            <div style="color:#64748b;font-size:0.72rem;">CON ASSENZA</div>
+                            <div style="color:#94a3b8;font-size:0.72rem;">CON ASSENZA</div>
                         </div></div>
                         <div class="col-4"><div style="background:var(--bg-primary);border-radius:8px;padding:12px 16px;text-align:center;">
                             <div style="color:#60a5fa;font-size:1.8rem;font-weight:700;">${remaining}</div>
-                            <div style="color:#64748b;font-size:0.72rem;">RESIDUE</div>
+                            <div style="color:#94a3b8;font-size:0.72rem;">RESIDUE</div>
                         </div></div>
                         <div class="col-12"><div style="background:var(--bg-primary);border-radius:8px;padding:10px 16px;">
                             <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-                                <span style="color:#64748b;font-size:0.75rem;">AVANZAMENTO</span>
+                                <span style="color:#94a3b8;font-size:0.75rem;">AVANZAMENTO</span>
                                 <span style="color:var(--text-primary);font-size:0.75rem;">${pct}%</span>
                             </div>
                             <div style="background:var(--bg-panel);border-radius:4px;height:8px;">
@@ -1457,7 +1457,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${athlete.isViceCaptain ? '<i class="bi bi-star-half" style="color:#f59e0b;font-size:0.75rem;margin-left:2px;"></i>' : ''}
                             ${athlete.isStaff ? '<span style="font-size:0.7rem;background:#f59e0b;color:#000;border-radius:3px;padding:1px 5px;margin-left:4px;">Staff</span>' : ''}
                         </div>
-                        <div style="font-size:0.75rem;color:#64748b;">${athlete.role || ''}</div>
+                        <div style="font-size:0.75rem;color:#94a3b8;">${athlete.role || ''}</div>
                         ${athlete.uscitaAutonoma ? '<div style="font-size:0.65rem;background:#fed7aa;color:#92400e;border-radius:3px;padding:1px 5px;margin-top:2px;display:inline-block;">🚶 uscita autonoma ✅</div>' : ''}
                         ${athlete.infortunato ? `<div style="font-size:0.65rem;background:#fee2e2;color:#991b1b;border-radius:3px;padding:1px 5px;margin-top:2px;display:inline-block;">🤕 Infortunato${athlete.dataRientro ? ' • ' + new Date(athlete.dataRientro + 'T00:00:00').toLocaleDateString('it-IT', {day:'2-digit',month:'2-digit'}) : ''}</div>` : ''}
                     </div>
@@ -5812,7 +5812,7 @@ window._checkPendingAthleteDocs = async function() {
             + names + '. '
             + '<a href="/calendario.html" style="color:#22c55e;font-weight:700;">Vai a Documenti Atleti →</a>'
             + '</span>'
-            + '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:1.1rem;">✕</button>';
+            + '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:1.1rem;">✕</button>';
 
         var homeSection = document.getElementById('home-section');
         if (homeSection) {

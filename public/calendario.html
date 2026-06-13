@@ -1228,7 +1228,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 ✕ Rimuovi
                             </button>
                         </div>
-                        <div style="color:#64748b;font-size:0.75rem;margin-top:4px;">
+                        <div style="color:#94a3b8;font-size:0.75rem;margin-top:4px;">
                             💡 Google Drive: apri file → Condividi → "Chiunque con il link" → copia link → sostituisci
                             <code style="color:#60a5fa;">/view?usp=sharing</code> con
                             <code style="color:#60a5fa;">/preview</code> oppure usa
@@ -1512,14 +1512,14 @@ document.addEventListener('DOMContentLoaded', function() {
                             <i class="bi bi-plus-circle"></i> Aggiungi
                         </button>
                     </div>
-                    <p style="color:#64748b;font-size:0.75rem;margin:0;">
+                    <p style="color:#94a3b8;font-size:0.75rem;margin:0;">
                         💡 File su Google Drive con condivisione "Chiunque con il link". Per immagini: <code style="color:#60a5fa;">https://drive.google.com/uc?id=ID_FILE</code>
                     </p>
                 </div>
 
                 <!-- Lista documenti -->
                 <div id="doc-list">
-                    <div style="color:#64748b;text-align:center;padding:30px;">
+                    <div style="color:#94a3b8;text-align:center;padding:30px;">
                         <i class="bi bi-folder2-open" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
                         Caricamento...
                     </div>
@@ -1542,7 +1542,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </button>
                 </div>
                 <div id="athlete-docs-table-container">
-                    <p style="color:#64748b;font-size:0.85rem;">Caricamento...</p>
+                    <p style="color:#94a3b8;font-size:0.85rem;">Caricamento...</p>
                 </div>
             </div>
         </div>
@@ -1578,10 +1578,10 @@ window.toggleCalendario=function(){
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-<script src="/auth-multi-annata.js?v=1779786420"></script>
+<script src="/auth-multi-annata.js?v=1779800000"></script>
 <script src="/data-adapter-multi-annata.js"></script>
 <script src="/presenza-calendar-mode.js"></script>
-<script src="/calendario-standalone.js?v=1779786420"></script>
+<script src="/calendario-standalone.js?v=1779800000"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════
 // ████  BACHECA  ████
@@ -1698,7 +1698,7 @@ var _DOC_TYPES_COACH = [
 window._loadAthleteDocsTab = async function() {
     var container = document.getElementById('athlete-docs-table-container');
     if (!container) return;
-    container.innerHTML = '<p style="color:#64748b;">Caricamento...</p>';
+    container.innerHTML = '<p style="color:#94a3b8;">Caricamento...</p>';
     try {
         var aid = _bAnnataId();
         var res = await fetch('/api/data', { cache: 'no-store', headers: { 'x-annata-id': aid } });
@@ -1708,7 +1708,7 @@ window._loadAthleteDocsTab = async function() {
         var docs = d.athleteDocs || {};
 
         if (!athletes.length) {
-            container.innerHTML = '<p style="color:#64748b;">Nessun atleta trovato.</p>';
+            container.innerHTML = '<p style="color:#94a3b8;">Nessun atleta trovato.</p>';
             return;
         }
 
@@ -1733,7 +1733,7 @@ window._loadAthleteDocsTab = async function() {
                     var dlLog = doc.downloadLog;
                     var dlInfo = dlLog
                         ? '<div style="font-size:0.68rem;color:#22c55e;margin-top:2px;">↓ ' + dlLog.user + ' ' + new Date(dlLog.at).toLocaleDateString('it-IT') + ' ' + new Date(dlLog.at).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}) + '</div>'
-                        : '<div style="font-size:0.68rem;color:#64748b;margin-top:2px;">Non scaricato</div>';
+                        : '<div style="font-size:0.68rem;color:#94a3b8;margin-top:2px;">Non scaricato</div>';
                     var notaInfo = doc.nota ? '<div style="font-size:0.68rem;color:#94a3b8;margin-top:1px;">📝 ' + doc.nota + '</div>' : '';
                     html += '<td style="padding:9px 12px;text-align:center;border-bottom:1px solid rgba(59,90,157,0.3);">'
                         + '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">'
@@ -1744,12 +1744,12 @@ window._loadAthleteDocsTab = async function() {
                         + '<button onclick="window._coachDeleteDoc(\'' + String(a.id) + '\',\'' + dt.key + '\',\'' + aid + '\')" '
                         + 'style="background:#450a0a;color:#d90429;border:1px solid #d90429;border-radius:4px;padding:3px 7px;font-size:0.75rem;cursor:pointer;" title="Elimina">🗑️</button>'
                         + '</div>'
-                        + '<div style="font-size:0.68rem;color:#64748b;">Caric. ' + uploadDate + '</div>'
+                        + '<div style="font-size:0.68rem;color:#94a3b8;">Caric. ' + uploadDate + '</div>'
                         + notaInfo
                         + dlInfo
                         + '</div></td>';
                 } else {
-                    html += '<td style="padding:9px 12px;text-align:center;color:#64748b;border-bottom:1px solid rgba(59,90,157,0.3);">—</td>';
+                    html += '<td style="padding:9px 12px;text-align:center;color:#94a3b8;border-bottom:1px solid rgba(59,90,157,0.3);">—</td>';
                 }
             });
             html += '</tr>';
@@ -1759,7 +1759,7 @@ window._loadAthleteDocsTab = async function() {
 
         var total = athletes.length;
         var withAny = athletes.filter(function(a) { return Object.keys(docs[String(a.id)] || {}).length > 0; }).length;
-        html = '<p style="color:#64748b;font-size:0.8rem;margin-bottom:8px;">Atleti con almeno un documento: '
+        html = '<p style="color:#94a3b8;font-size:0.8rem;margin-bottom:8px;">Atleti con almeno un documento: '
             + '<strong style="color:#22c55e;">' + withAny + '</strong> / ' + total + '</p>' + html;
 
         container.innerHTML = html;
@@ -2630,7 +2630,7 @@ function _gareRenderColonna(lista, tipo) {
                     html += '<div class="gare-team">';
                     html += '<div class="gare-team-logo">🏠</div>';
                     html += '<div class="gare-team-name">' + (p.casa||'—') + '</div></div>';
-                    if (p.ora) html += '<div style="font-size:0.7rem;color:#64748b;flex-shrink:0;">' + p.ora + '</div>';
+                    if (p.ora) html += '<div style="font-size:0.7rem;color:#94a3b8;flex-shrink:0;">' + p.ora + '</div>';
                     html += '<div class="gare-vs">VS</div>';
                     html += '<div class="gare-team fuori">';
                     html += '<div class="gare-team-logo">🚌</div>';
@@ -3747,7 +3747,7 @@ function docRender() {
     if (adminPanel) adminPanel.style.display = canEdit ? '' : 'none';
 
     if (!_docs.length) {
-        container.innerHTML = '<div style="color:#64748b;text-align:center;padding:30px;">'
+        container.innerHTML = '<div style="color:#94a3b8;text-align:center;padding:30px;">'
             + '<i class="bi bi-folder2-open" style="font-size:2rem;display:block;margin-bottom:8px;"></i>'
             + 'Nessun documento presente. Aggiungi il primo documento!</div>';
         return;

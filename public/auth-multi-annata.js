@@ -365,13 +365,13 @@
                 <div style="text-align:center;margin-bottom:28px">
                     <div style="font-size:3rem;margin-bottom:8px">⚽</div>
                     <h1 style="color:white;margin:0 0 4px 0;font-size:1.5rem;font-weight:700">Sport Monitoring</h1>
-                    <p style="color:#64748b;margin:0;font-size:0.85rem">Attivazione Licenza</p>
+                    <p style="color:#94a3b8;margin:0;font-size:0.85rem">Attivazione Licenza</p>
                 </div>
 
                 <div id="license-alert" style="padding:10px 14px;border-radius:8px;font-size:0.85rem;margin-bottom:16px;${errorMessage ? '' : 'display:none'}background:#450a0a;border:1px solid #d90429;color:#d90429">${errorMessage || ''}</div>
 
                 <div style="margin-bottom:14px">
-                    <label style="display:block;font-size:0.8rem;color:#64748b;font-weight:600;margin-bottom:6px">
+                    <label style="display:block;font-size:0.8rem;color:#94a3b8;font-weight:600;margin-bottom:6px">
                         📧 Email Amministratore
                     </label>
                     <input type="email" id="license-email" value="${savedEmail}"
@@ -380,7 +380,7 @@
                 </div>
 
                 <div style="margin-bottom:20px">
-                    <label style="display:block;font-size:0.8rem;color:#64748b;font-weight:600;margin-bottom:6px">
+                    <label style="display:block;font-size:0.8rem;color:#94a3b8;font-weight:600;margin-bottom:6px">
                         🔑 Chiave Licenza
                     </label>
                     <input type="text" id="license-key" value="${savedKey}"
@@ -393,7 +393,7 @@
                     🔓 Attiva Licenza
                 </button>
 
-                <p style="text-align:center;font-size:0.75rem;color:#64748b;margin-top:16px;margin-bottom:0">
+                <p style="text-align:center;font-size:0.75rem;color:#94a3b8;margin-top:16px;margin-bottom:0">
                     Non hai una licenza? Contatta Sport Monitoring per acquistarla.
                 </p>
             `;
@@ -581,7 +581,7 @@
                 <div style="text-align:center;margin-bottom:30px;">
                     <div style="font-size:48px;margin-bottom:10px;">🏃‍♂️</div>
                     <h1 style="color:#60a5fa;margin:0 0 10px 0;font-size:28px;font-weight:700;">SPORT MONITORING</h1>
-                    <p style="color:#64748b;margin:0;">Sport Monitoring</p>
+                    <p style="color:#94a3b8;margin:0;">Sport Monitoring</p>
                 </div>
                 
                 <form id="login-form" style="display:flex;flex-direction:column;gap:20px;">
@@ -614,7 +614,7 @@
                                 type="button"
                                 onclick="(function(){var f=document.getElementById('password');var b=document.getElementById('toggle-pwd-btn');if(f.type==='password'){f.type='text';b.textContent='🙈';}else{f.type='password';b.textContent='👁';}})()"
                                 id="toggle-pwd-btn"
-                                style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#64748b;cursor:pointer;font-size:18px;padding:4px;line-height:1;"
+                                style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#94a3b8;cursor:pointer;font-size:18px;padding:4px;line-height:1;"
                                 title="Mostra/Nascondi password"
                             >👁</button>
                         </div>
@@ -633,7 +633,7 @@
                 </form>
                 
                 <div style="margin-top:30px;padding-top:20px;border-top:1px solid rgba(96,165,250,0.2);">
-                    <p style="color:#64748b;font-size:13px;text-align:center;margin:0;">
+                    <p style="color:#94a3b8;font-size:13px;text-align:center;margin:0;">
                         👤 Sei un genitore?<br>
                         Usa il link ricevuto dal coach
                     </p>
@@ -776,12 +776,12 @@
                 <div style="text-align:center;margin-bottom:30px;">
                     <div style="font-size:48px;margin-bottom:10px;">📅</div>
                     <h1 style="color:#60a5fa;margin:0 0 10px 0;font-size:28px;font-weight:700;">Seleziona Annata</h1>
-                    <p style="color:#64748b;margin:0;">Bentornato, <strong style="color:#60a5fa;">${username}</strong></p>
+                    <p style="color:#94a3b8;margin:0;">Bentornato, <strong style="color:#60a5fa;">${username}</strong></p>
                     ${role === 'admin' ? '<p style="color:#f59e0b;margin:5px 0 0 0;font-size:13px;">👑 Modalità Amministratore</p>' : ''}
                 </div>
                 
                 <div id="annate-list" style="display:flex;flex-direction:column;gap:15px;margin-bottom:20px;">
-                    <div style="text-align:center;color:#64748b;padding:40px;">
+                    <div style="text-align:center;color:#94a3b8;padding:40px;">
                         <div style="font-size:32px;margin-bottom:10px;">⏳</div>
                         <p>Caricamento annate...</p>
                     </div>
@@ -850,7 +850,7 @@
                 
                 if (annate.length === 0) {
                     listDiv.innerHTML = `
-                        <div style="text-align:center;color:#64748b;padding:40px;">
+                        <div style="text-align:center;color:#94a3b8;padding:40px;">
                             <div style="font-size:32px;margin-bottom:10px;">📭</div>
                             <p>Nessuna annata disponibile</p>
                             <p style="font-size:13px;margin-top:10px;">Contatta l'amministratore</p>
@@ -867,7 +867,7 @@
                     
                     annataCard.innerHTML = `
                         <h3 style="color:#60a5fa;margin:0 0 8px 0;font-size:20px;">${annata.nome}</h3>
-                        <p style="color:#64748b;margin:0;font-size:14px;">📅 ${annata.dataInizio} - ${annata.dataFine}</p>
+                        <p style="color:#94a3b8;margin:0;font-size:14px;">📅 ${annata.dataInizio} - ${annata.dataFine}</p>
                     `;
                     
                     annataCard.onmouseover = function() {
@@ -922,7 +922,7 @@ function showAdminPanel() {
             <div style="display:flex;justify-content:space-between;align-items:center;">
                 <div>
                     <h1 style="color:#60a5fa;margin:0 0 5px 0;font-size:28px;font-weight:700;">⚙️ Pannello Amministratore</h1>
-                    <p style="color:#64748b;margin:0;">Gestione Utenti, Annate e Gruppi</p>
+                    <p style="color:#94a3b8;margin:0;">Gestione Utenti, Annate e Gruppi</p>
                 </div>
                 <button id="back-btn" style="background:#64748b;color:#ffffff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px;">
                     ← Torna Indietro
@@ -995,11 +995,11 @@ async function showBackupPanel() {
                     &#x2B07;&#xFE0F; Salva Ora
                 </button>
             </div>
-            <p style="color:#64748b;font-size:0.85rem;margin:0 0 20px 0;">
+            <p style="color:#94a3b8;font-size:0.85rem;margin:0 0 20px 0;">
                 Il backup viene salvato automaticamente ogni giorno al login. Vengono conservati gli ultimi 7. Clicca <strong style="color:#60a5fa;">Scarica</strong> per salvare un file sul tuo PC.
             </p>
             <div id="backup-list" style="display:flex;flex-direction:column;gap:10px;">
-                <div style="text-align:center;padding:30px;color:#64748b;">&#x23F3; Caricamento...</div>
+                <div style="text-align:center;padding:30px;color:#94a3b8;">&#x23F3; Caricamento...</div>
             </div>
         </div>
     `;
@@ -1009,7 +1009,7 @@ async function showBackupPanel() {
         if (!listDiv) return;
         var items = await BackupManager.getAll();
         if (items.length === 0) {
-            listDiv.innerHTML = '<div style="text-align:center;padding:30px;color:#64748b;">Nessun backup salvato. Clicca "Salva Ora" per crearne uno.</div>';
+            listDiv.innerHTML = '<div style="text-align:center;padding:30px;color:#94a3b8;">Nessun backup salvato. Clicca "Salva Ora" per crearne uno.</div>';
             return;
         }
         listDiv.innerHTML = '';
@@ -1021,7 +1021,7 @@ async function showBackupPanel() {
             row.innerHTML =
                 '<div>' +
                     '<span style="color:#60a5fa;font-weight:600;margin-right:12px;">&#x1F4E6; ' + item.date + '</span>' +
-                    '<span style="color:#64748b;font-size:0.82rem;">' + ora + ' &nbsp;&middot;&nbsp; ' + (item.keysCount || '?') + ' chiavi</span>' +
+                    '<span style="color:#94a3b8;font-size:0.82rem;">' + ora + ' &nbsp;&middot;&nbsp; ' + (item.keysCount || '?') + ' chiavi</span>' +
                     (idx === 0 ? ' <span style="background:#16a34a;color:#fff;font-size:0.72rem;padding:2px 8px;border-radius:10px;margin-left:8px;">più recente</span>' : '') +
                 '</div>' +
                 '<button style="background:#3b82f6;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">&#x2193; Scarica</button>';
@@ -1078,7 +1078,7 @@ async function showAnnatePanel() {
                 </button>
             </div>
             <div id="annate-list-admin" style="display:flex;flex-direction:column;gap:15px;">
-                <div style="text-align:center;padding:40px;color:#64748b;">
+                <div style="text-align:center;padding:40px;color:#94a3b8;">
                     <div style="font-size:32px;margin-bottom:10px;">⏳</div>
                     <p>Caricamento...</p>
                 </div>
@@ -1103,7 +1103,7 @@ async function loadAnnateList() {
         
         if (annate.length === 0) {
             listDiv.innerHTML = `
-                <div style="text-align:center;padding:40px;color:#64748b;">
+                <div style="text-align:center;padding:40px;color:#94a3b8;">
                     <div style="font-size:32px;margin-bottom:10px;">📭</div>
                     <p>Nessuna annata trovata</p>
                 </div>
@@ -1137,9 +1137,9 @@ async function loadAnnateList() {
                 <div style="display:flex;justify-content:space-between;align-items:start;">
                     <div style="flex:1;">
                         <h3 style="color:#60a5fa;margin:0 0 8px 0;font-size:18px;">${annata.nome}</h3>
-                        <p style="color:#64748b;margin:0 0 5px 0;font-size:14px;">📅 ${annata.dataInizio} - ${annata.dataFine}</p>
-                        <p style="color:#64748b;margin:0;font-size:14px;">👥 ${athletesCount} atleti</p>
-                        ${annata.descrizione ? `<p style="color:#64748b;margin:10px 0 0 0;font-size:13px;">${annata.descrizione}</p>` : ''}
+                        <p style="color:#94a3b8;margin:0 0 5px 0;font-size:14px;">📅 ${annata.dataInizio} - ${annata.dataFine}</p>
+                        <p style="color:#94a3b8;margin:0;font-size:14px;">👥 ${athletesCount} atleti</p>
+                        ${annata.descrizione ? `<p style="color:#94a3b8;margin:10px 0 0 0;font-size:13px;">${annata.descrizione}</p>` : ''}
                     </div>
                     <div style="display:flex;gap:10px;">
                         <button onclick="editAnnata('${annata.id}')" style="background:#3b82f6;color:#ffffff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">
@@ -1340,7 +1340,7 @@ async function showUtentiPanel() {
                 </button>
             </div>
             <div id="users-list-admin" style="display:flex;flex-direction:column;gap:15px;">
-                <div style="text-align:center;padding:40px;color:#64748b;">
+                <div style="text-align:center;padding:40px;color:#94a3b8;">
                     <div style="font-size:32px;margin-bottom:10px;">⏳</div>
                     <p>Caricamento...</p>
                 </div>
@@ -1374,7 +1374,7 @@ async function loadUsersList() {
         const users = data.users || [];
         
         if (users.length === 0) {
-            listDiv.innerHTML = `<div style="text-align:center;padding:40px;color:#64748b;"><p>Nessun utente</p></div>`;
+            listDiv.innerHTML = `<div style="text-align:center;padding:40px;color:#94a3b8;"><p>Nessun utente</p></div>`;
             return;
         }
         
@@ -1417,10 +1417,10 @@ async function loadUsersList() {
                                 ${roleIcon} ${roleName}
                             </span>
                         </div>
-                        <p style="color:#64748b;margin:0;font-size:14px;">📧 ${user.email || 'N/A'}</p>
-                        ${(user.nome || user.cognome) ? `<p style="color:#64748b;margin:3px 0 0 0;font-size:14px;">👤 ${[user.nome, user.cognome].filter(Boolean).join(' ')}</p>` : ''}
-                        ${user.note ? `<p style="color:#64748b;margin:3px 0 0 0;font-size:14px;">📝 ${user.note}</p>` : ''}
-                        <p style="color:#64748b;margin:5px 0 0 0;font-size:14px;">📅 Annate: ${annateText}</p>
+                        <p style="color:#94a3b8;margin:0;font-size:14px;">📧 ${user.email || 'N/A'}</p>
+                        ${(user.nome || user.cognome) ? `<p style="color:#94a3b8;margin:3px 0 0 0;font-size:14px;">👤 ${[user.nome, user.cognome].filter(Boolean).join(' ')}</p>` : ''}
+                        ${user.note ? `<p style="color:#94a3b8;margin:3px 0 0 0;font-size:14px;">📝 ${user.note}</p>` : ''}
+                        <p style="color:#94a3b8;margin:5px 0 0 0;font-size:14px;">📅 Annate: ${annateText}</p>
                     </div>
                     <div style="display:flex;gap:10px;">
                         <button onclick="editUser('${user.username}')" style="background:#3b82f6;color:#ffffff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">
@@ -1484,7 +1484,7 @@ async function showUserModal(userData = null) {
                         style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#ffffff;box-sizing:border-box;" 
                         ${!isEdit ? 'required' : ''} 
                     />
-                    ${isEdit ? '<small style="color:#64748b;font-size:12px;">Compila solo se vuoi cambiare la password</small>' : ''}
+                    ${isEdit ? '<small style="color:#94a3b8;font-size:12px;">Compila solo se vuoi cambiare la password</small>' : ''}
                 </div>
                 <div>
                     <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Email</label>
@@ -1526,7 +1526,7 @@ async function showUserModal(userData = null) {
                 <div id="annate-container" style="display:${userData?.role !== 'admin' || !userData ? 'block' : 'none'};">
                     <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:8px;">Annate</label>
                     <div style="max-height:200px;overflow-y:auto;border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:10px;background:#0f172a;display:flex;flex-direction:column;gap:5px;">
-                        ${annateCheckboxes || '<p style="color:#64748b;margin:0;text-align:center;">Nessuna annata</p>'}
+                        ${annateCheckboxes || '<p style="color:#94a3b8;margin:0;text-align:center;">Nessuna annata</p>'}
                     </div>
                 </div>
                 <div style="display:flex;gap:10px;margin-top:10px;">
@@ -1655,7 +1655,7 @@ function showAdminPanel() {
             <div style="display:flex;justify-content:space-between;align-items:center;">
                 <div>
                     <h1 style="color:#60a5fa;margin:0 0 5px 0;font-size:28px;font-weight:700;">⚙️ Pannello Amministratore</h1>
-                    <p style="color:#64748b;margin:0;">Gestione Utenti, Annate e Gruppi</p>
+                    <p style="color:#94a3b8;margin:0;">Gestione Utenti, Annate e Gruppi</p>
                 </div>
                 <button id="back-btn" style="background:#64748b;color:#ffffff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px;">
                     ← Torna Indietro
@@ -1730,7 +1730,7 @@ async function showAnnatePanel() {
                 </button>
             </div>
             <div id="annate-list-admin" style="display:flex;flex-direction:column;gap:15px;">
-                <div style="text-align:center;padding:40px;color:#64748b;">
+                <div style="text-align:center;padding:40px;color:#94a3b8;">
                     <div style="font-size:32px;margin-bottom:10px;">⏳</div>
                     <p>Caricamento...</p>
                 </div>
@@ -1755,7 +1755,7 @@ async function loadAnnateList() {
         
         if (annate.length === 0) {
             listDiv.innerHTML = `
-                <div style="text-align:center;padding:40px;color:#64748b;">
+                <div style="text-align:center;padding:40px;color:#94a3b8;">
                     <div style="font-size:32px;margin-bottom:10px;">📭</div>
                     <p>Nessuna annata trovata</p>
                 </div>
@@ -1789,9 +1789,9 @@ async function loadAnnateList() {
                 <div style="display:flex;justify-content:space-between;align-items:start;">
                     <div style="flex:1;">
                         <h3 style="color:#60a5fa;margin:0 0 8px 0;font-size:18px;">${annata.nome}</h3>
-                        <p style="color:#64748b;margin:0 0 5px 0;font-size:14px;">📅 ${annata.dataInizio} - ${annata.dataFine}</p>
-                        <p style="color:#64748b;margin:0;font-size:14px;">👥 ${athletesCount} atleti</p>
-                        ${annata.descrizione ? `<p style="color:#64748b;margin:10px 0 0 0;font-size:13px;">${annata.descrizione}</p>` : ''}
+                        <p style="color:#94a3b8;margin:0 0 5px 0;font-size:14px;">📅 ${annata.dataInizio} - ${annata.dataFine}</p>
+                        <p style="color:#94a3b8;margin:0;font-size:14px;">👥 ${athletesCount} atleti</p>
+                        ${annata.descrizione ? `<p style="color:#94a3b8;margin:10px 0 0 0;font-size:13px;">${annata.descrizione}</p>` : ''}
                     </div>
                     <div style="display:flex;gap:10px;">
                         <button onclick="editAnnata('${annata.id}')" style="background:#3b82f6;color:#ffffff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">
@@ -1992,7 +1992,7 @@ async function showUtentiPanel() {
                 </button>
             </div>
             <div id="users-list-admin" style="display:flex;flex-direction:column;gap:15px;">
-                <div style="text-align:center;padding:40px;color:#64748b;">
+                <div style="text-align:center;padding:40px;color:#94a3b8;">
                     <div style="font-size:32px;margin-bottom:10px;">⏳</div>
                     <p>Caricamento...</p>
                 </div>
@@ -2026,7 +2026,7 @@ async function loadUsersList() {
         const users = data.users || [];
         
         if (users.length === 0) {
-            listDiv.innerHTML = `<div style="text-align:center;padding:40px;color:#64748b;"><p>Nessun utente</p></div>`;
+            listDiv.innerHTML = `<div style="text-align:center;padding:40px;color:#94a3b8;"><p>Nessun utente</p></div>`;
             return;
         }
         
@@ -2069,10 +2069,10 @@ async function loadUsersList() {
                                 ${roleIcon} ${roleName}
                             </span>
                         </div>
-                        <p style="color:#64748b;margin:0;font-size:14px;">📧 ${user.email || 'N/A'}</p>
-                        ${(user.nome || user.cognome) ? `<p style="color:#64748b;margin:3px 0 0 0;font-size:14px;">👤 ${[user.nome, user.cognome].filter(Boolean).join(' ')}</p>` : ''}
-                        ${user.note ? `<p style="color:#64748b;margin:3px 0 0 0;font-size:14px;">📝 ${user.note}</p>` : ''}
-                        <p style="color:#64748b;margin:5px 0 0 0;font-size:14px;">📅 Annate: ${annateText}</p>
+                        <p style="color:#94a3b8;margin:0;font-size:14px;">📧 ${user.email || 'N/A'}</p>
+                        ${(user.nome || user.cognome) ? `<p style="color:#94a3b8;margin:3px 0 0 0;font-size:14px;">👤 ${[user.nome, user.cognome].filter(Boolean).join(' ')}</p>` : ''}
+                        ${user.note ? `<p style="color:#94a3b8;margin:3px 0 0 0;font-size:14px;">📝 ${user.note}</p>` : ''}
+                        <p style="color:#94a3b8;margin:5px 0 0 0;font-size:14px;">📅 Annate: ${annateText}</p>
                     </div>
                     <div style="display:flex;gap:10px;">
                         <button onclick="editUser('${user.username}')" style="background:#3b82f6;color:#ffffff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">
@@ -2136,7 +2136,7 @@ async function showUserModal(userData = null) {
                         style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#ffffff;box-sizing:border-box;" 
                         ${!isEdit ? 'required' : ''} 
                     />
-                    ${isEdit ? '<small style="color:#64748b;font-size:12px;">Compila solo se vuoi cambiare la password</small>' : ''}
+                    ${isEdit ? '<small style="color:#94a3b8;font-size:12px;">Compila solo se vuoi cambiare la password</small>' : ''}
                 </div>
                 <div>
                     <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Email</label>
@@ -2178,7 +2178,7 @@ async function showUserModal(userData = null) {
                 <div id="annate-container" style="display:${userData?.role !== 'admin' || !userData ? 'block' : 'none'};">
                     <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:8px;">Annate</label>
                     <div style="max-height:200px;overflow-y:auto;border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:10px;background:#0f172a;display:flex;flex-direction:column;gap:5px;">
-                        ${annateCheckboxes || '<p style="color:#64748b;margin:0;text-align:center;">Nessuna annata</p>'}
+                        ${annateCheckboxes || '<p style="color:#94a3b8;margin:0;text-align:center;">Nessuna annata</p>'}
                     </div>
                 </div>
                 <div style="display:flex;gap:10px;margin-top:10px;">

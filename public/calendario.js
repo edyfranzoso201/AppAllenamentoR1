@@ -359,7 +359,7 @@ window.showResponsesReport = async function() {
             html += `</div>`;
             
             if (respondedCount > 0) {
-                html += '<div style="font-size:13px;color:#64748b;">';
+                html += '<div style="font-size:13px;color:#94a3b8;">';
                 Object.entries(dateResponses).forEach(([aid, resp]) => {
                     const athlete = athletes.find(a => a.id == aid);
                     const icon = resp.presenza === 'Si' ? '✅' : '❌';
