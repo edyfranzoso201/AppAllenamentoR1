@@ -56,6 +56,24 @@ function isValidId(value) {
 return /^[a-z0-9_-]+$/i.test(String(value || '').trim());
 }
 
+// Nome squadra ISOLATO per società: ricavato dal societyName della licenza
+// della società indicata. Questo evita che il nome sia condiviso tra società
+// (la vecchia chiave global:teamName era unica per tutti). Fallback in ordine:
+// societyName licenza → global:teamName (retrocompat mono-società) → generico.
+async function resolveTeamName(societyId) {
+  try {
+    if (societyId) {
+      const licKey = await kv.get(`licenze_society:${societyId}`);
+      if (licKey) {
+        const lic = await kv.get(`licenze:${licKey}`);
+        if (lic && lic.societyName) return lic.societyName;
+      }
+    }
+  } catch (e) { /* fallback sotto */ }
+  const legacy = await kv.get('global:teamName');
+  return legacy || 'La mia squadra';
+}
+
 function canWrite(role) {
 return ['admin', 'coach', 'coachl1', 'coachl2'].includes(String(role || '').toLowerCase());
 }
@@ -904,6 +922,18 @@ return res.status(403).json({ success: false, message: 'Accesso negato: annata d
 
 const prefix = `annate:${annataId}`;
 
+// Nome squadra isolato per società: societyId dalla sessione (coach) o
+// dall'annata (genitori senza sessione). Risolto una volta, usato nei GET.
+let _tnSocietyId = session.societyId || null;
+if (!_tnSocietyId) {
+  try {
+    const _al = (await kv.get('annate:list')) || [];
+    const _am = _al.find(a => String(a.id) === annataId);
+    _tnSocietyId = _am ? (_am.societyId || null) : null;
+  } catch (e) { /* niente */ }
+}
+const resolvedTeamName = await resolveTeamName(_tnSocietyId);
+
 // ── PostImages lazy ───────────────────────────────────────────────────────
 if (req.method === 'GET' && req.query && req.query.action === 'postImages') {
 const [ps, gps] = await Promise.all([
@@ -920,10 +950,9 @@ return res.status(200).json({ success: true, postImages });
 
 // ── Risposta ridotta per genitori ────────────────────────────────────────
 if (isParentMode) {
-const [calendarEvents, calendarResponses, teamName, convSettings, athletes, posts, globalPosts, documents, materiale, bachecaConfig, superadminBanners, convBg, convBg2, athleteDocs] = await Promise.all([
+const [calendarEvents, calendarResponses, convSettings, athletes, posts, globalPosts, documents, materiale, bachecaConfig, superadminBanners, convBg, convBg2, athleteDocs] = await Promise.all([
 kv.get(`${prefix}:calendarEvents`),
 kv.get(`${prefix}:calendarResponses`),
-kv.get('global:teamName'),
 kv.get(`${prefix}:convSettings`),
 kv.get(`${prefix}:athletes`),
 kv.get(`${prefix}:posts`),
@@ -940,7 +969,7 @@ kv.get(`${prefix}:athleteDocs`)  // ← documenti caricati dai genitori
 return res.status(200).json({
 calendarEvents: calendarEvents || {},
 calendarResponses: calendarResponses || {},
-teamName: teamName || 'La mia squadra',
+teamName: resolvedTeamName,
 convSettings: convSettings || {},
 convBg:  convBg  || null,
 convBg2: convBg2 || null,
@@ -999,7 +1028,7 @@ const [
 athletes, evaluations, gpsData, awards, trainingSessions,
 formationData, matchResults, calendarEvents, calendarResponses,
 materiale, pagamenti, pagVoci, pagLabels, convocazioni, convSettings,
-convBg, convBg2, posts, globalPosts, teamName, individualPassword,
+convBg, convBg2, posts, globalPosts, individualPassword,
 ratingSheets, documents, athleteDocs, bachecaConfig, superadminBanners
 ] = await Promise.all([
 kv.get(`${prefix}:athletes`),
@@ -1021,7 +1050,6 @@ kv.get(`${prefix}:convBg`),
 kv.get(`${prefix}:convBg2`),
 kv.get(`${prefix}:posts`),
 kv.get('global:posts'),
-kv.get('global:teamName'),
 kv.get(`${prefix}:individualPassword`),
 kv.get(`${prefix}:ratingSheets`),
 kv.get(`${prefix}:documents`),
@@ -1051,7 +1079,7 @@ convBg2: convBg2 || null,
 posts: posts || [],
 globalPosts: globalPosts || [],
 postImages: {},
-teamName: teamName || 'La mia squadra',
+teamName: resolvedTeamName,
 individualPassword: individualPassword || '1234',
 ratingSheets: ratingSheets || {},
 documents: documents || [],
