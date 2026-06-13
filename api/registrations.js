@@ -16,6 +16,23 @@ function kvKey(societyId) {
   return `registrations:${societyId}`;
 }
 
+// Rate-limit semplice basato su KV (stesso pattern di api/auth/login.js).
+// Ritorna il numero di tentativi nella finestra corrente.
+async function incrementRateLimit(key, maxAttempts, windowSec) {
+  const existing = (await kv.get(key)) || { attempts: 0, resetAt: 0 };
+  const attempts = existing.attempts + 1;
+  const resetAt = attempts >= maxAttempts ? Date.now() + windowSec * 1000 : existing.resetAt;
+  await kv.set(key, { attempts, resetAt });
+  await kv.expire(key, windowSec + 60);
+  return attempts;
+}
+
+function clientIp(req) {
+  const xff = req.headers['x-forwarded-for'];
+  if (xff) return String(xff).split(',')[0].trim();
+  return req.headers['x-real-ip'] || req.socket?.remoteAddress || 'unknown';
+}
+
 export default async function handler(req, res) {
   setCors(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -47,6 +64,20 @@ export default async function handler(req, res) {
         return res.status(404).json({ success: false, message: 'Società non trovata' });
       }
 
+      // Rate-limit anti-spam: l'endpoint è pubblico (nessun login). Limita per IP
+      // (max 8 invii / 10 min) e per società (max 40 invii / 10 min) per evitare
+      // che chi conosce un societyId valido riempia il database di iscrizioni fasulle.
+      const RL_WINDOW = 600; // 10 minuti
+      const ipKey  = `rl:reg:ip:${clientIp(req)}`;
+      const socKey = `rl:reg:soc:${societyId}`;
+      const [ipAttempts, socAttempts] = await Promise.all([
+        incrementRateLimit(ipKey, 8, RL_WINDOW),
+        incrementRateLimit(socKey, 40, RL_WINDOW),
+      ]);
+      if (ipAttempts > 8 || socAttempts > 40) {
+        return res.status(429).json({ success: false, message: 'Troppe richieste, riprova tra qualche minuto' });
+      }
+
       const existing = (await kv.get(kvKey(societyId))) || [];
       const newEntry = {
         id: crypto.randomUUID(),
@@ -75,22 +106,23 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, id: newEntry.id });
     }
 
-    // ── Da qui: richiede sessione attiva ─────────────────────────────────
-    const sessionToken = req.headers['x-auth-session'];
-    const societyId    = req.headers['x-society-id'];
+    // ── Da qui: richiede sessione attiva (token reale validato in KV) ────
+    const sessionToken = String(req.headers['x-auth-session'] || '').trim();
 
-    if (!sessionToken || !societyId) {
+    // Niente più scorciatoia 'true': serve un token di sessione reale.
+    if (!sessionToken || sessionToken === 'true') {
       return res.status(401).json({ success: false, message: 'Autenticazione richiesta' });
     }
+    const session = await kv.get(`session:${sessionToken}`);
+    if (!session) {
+      return res.status(401).json({ success: false, message: 'Sessione scaduta' });
+    }
 
-    // Supporta sia il token KV (dashboard) che l'auth semplice 'true' (index.html/data.js)
-    const simpleAuth = sessionToken === 'true';
-    let session = null;
-    if (!simpleAuth) {
-      session = await kv.get(`session:${sessionToken}`);
-      if (!session) {
-        return res.status(401).json({ success: false, message: 'Sessione scaduta' });
-      }
+    // La società è SEMPRE quella della sessione (server-side), non l'header
+    // falsificabile. Impedisce di leggere/gestire le iscrizioni di un'altra società.
+    const societyId = String(session.societyId || req.headers['x-society-id'] || '').trim();
+    if (!societyId) {
+      return res.status(400).json({ success: false, message: 'Società non determinata' });
     }
 
     // ── LIST (accessibile anche con auth semplice, sola lettura) ─────────
@@ -115,7 +147,7 @@ export default async function handler(req, res) {
         ...reg,
         status: 'accepted',
         respondedAt: new Date().toISOString(),
-        respondedBy: session ? session.username : (req.headers['x-auth-user'] || 'utente'),
+        respondedBy: session.username || 'utente',
         annataId: annataId || null,
       };
       await kv.set(kvKey(societyId), all);
@@ -188,7 +220,7 @@ export default async function handler(req, res) {
         ...all[idx],
         status: 'rejected',
         respondedAt: new Date().toISOString(),
-        respondedBy: session ? session.username : (req.headers['x-auth-user'] || 'utente'),
+        respondedBy: session.username || 'utente',
       };
       await kv.set(kvKey(societyId), all);
       return res.status(200).json({ success: true });
