@@ -398,6 +398,20 @@ function formatDateTime(dateStr) {
        + ' ' + d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
 }
 
+// ── Escape HTML (anti-XSS): neutralizza i caratteri speciali nei dati utente ──
+// Usata su titolo/testo dei post (contenuto inserito dagli utenti, mostrato
+// in una pagina PUBBLICA senza login). Senza questo, un titolo tipo
+// "<img src=x onerror=alert(1)>" eseguirebbe codice su chiunque apra la bacheca.
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // ── Caricamento post ─────────────────────────────────────────────────────
 (async function() {
   try {
@@ -448,20 +462,33 @@ function formatDateTime(dateStr) {
       return;
     }
 
+    // NB: titolo/testo passano per escapeHtml() perché sono dati inseriti dagli
+    // utenti e questa pagina è pubblica. L'URL immagine NON viene concatenato
+    // nell'HTML: l'<img> è creato senza src e popolato dopo via setDriveImg()
+    // (assegnazione a img.src, canale che non può iniettare markup).
     var h = '';
-    posts.forEach(function(p) {
+    posts.forEach(function(p, idx) {
       var img = images[p.id] || '';
       var dt  = formatDateTime(p.date);
       h += '<div class="post-card' + (p.pinned?' pinned':'') + '">';
-      if (img) h += '<img class="post-img" src="'+img+'" alt="" onclick="this.classList.toggle(\'expanded\')">';
+      if (img) h += '<img class="post-img" data-img-idx="'+idx+'" alt="" onclick="this.classList.toggle(\'expanded\')">';
       h += '<div class="post-body">';
       if (p.pinned) h += '<div class="pin-badge">📌 In evidenza</div>';
-      h += '<div class="post-title">' + (p.title||'') + '</div>';
-      if (p.text) h += '<div class="post-text">' + p.text + '</div>';
-      h += '<div class="post-date">' + dt + '</div>';
+      h += '<div class="post-title">' + escapeHtml(p.title||'') + '</div>';
+      if (p.text) h += '<div class="post-text">' + escapeHtml(p.text) + '</div>';
+      h += '<div class="post-date">' + escapeHtml(dt) + '</div>';
       h += '</div></div>';
     });
     box.innerHTML = h;
+
+    // Popola le immagini dei post via DOM (src impostato da setDriveImg, con
+    // gestione fallback Drive identica ai banner sponsor)
+    posts.forEach(function(p, idx) {
+      var img = images[p.id] || '';
+      if (!img) return;
+      var el = box.querySelector('img.post-img[data-img-idx="'+idx+'"]');
+      if (el) setDriveImg(el, img);
+    });
 
   } catch(e) {
     document.getElementById('posts-container').innerHTML = '<div class="empty"><p>Errore caricamento.</p></div>';
