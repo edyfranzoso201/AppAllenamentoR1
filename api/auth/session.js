@@ -42,6 +42,9 @@ export default async function handler(req, res) {
       if (!data) {
         return res.status(200).json({ valid: false });
       }
+      // TTL scorrevole: ogni verifica di una sessione valida rinnova la
+      // scadenza a 8 ore da ora. Le sessioni inattive >8h scadono comunque.
+      await kv.expire(`session:${token}`, 8 * 60 * 60);
       return res.status(200).json({
         valid: true,
         username: data.username,

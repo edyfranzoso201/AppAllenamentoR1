@@ -37,6 +37,8 @@ export default async function handler(req, res) {
     if (!sess) {
       return res.status(401).json({ success: false, message: 'Sessione non valida o scaduta' });
     }
+    // TTL scorrevole: rinnova la scadenza della sessione a 8h da ora (soft)
+    try { await kv.expire(`session:${token}`, 8 * 60 * 60); } catch (e) { /* non bloccante */ }
     const societyId = sess.societyId || null;
 
     if (!action) {

@@ -10,7 +10,12 @@ const kv = createClient({
 async function getLogSession(req) {
   const token = String(req.headers['x-auth-session'] || '').trim();
   if (!token || token === 'true') return null;
-  try { return await kv.get(`session:${token}`); } catch { return null; }
+  try {
+    const sess = await kv.get(`session:${token}`);
+    // TTL scorrevole: rinnova la scadenza della sessione a 8h da ora (soft)
+    if (sess) { try { await kv.expire(`session:${token}`, 8 * 60 * 60); } catch (e) { /* non bloccante */ } }
+    return sess;
+  } catch { return null; }
 }
 
 export default async function handler(req, res) {

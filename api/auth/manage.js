@@ -68,6 +68,8 @@ export default async function handler(req, res) {
       if (!sess) {
         return res.status(401).json({ success: false, message: 'Sessione non valida o scaduta' });
       }
+      // TTL scorrevole: rinnova la scadenza della sessione a 8h da ora (soft)
+      try { await kv.expire(`session:${token}`, 8 * 60 * 60); } catch (e) { /* non bloccante */ }
       if (String(sess.role || '').toLowerCase() !== 'admin') {
         return res.status(403).json({ success: false, message: 'Solo gli admin possono gestire gli utenti' });
       }

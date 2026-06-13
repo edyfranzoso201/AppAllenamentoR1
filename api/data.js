@@ -33,6 +33,10 @@ console.warn('Errore lookup sessione:', e?.message || e);
 return empty;
 }
 if (!sessionData) return empty;
+// TTL scorrevole: ogni chiamata API con sessione valida rinnova la scadenza a
+// 8h da ora, così l'utente attivo non viene disconnesso mentre lavora. Le
+// sessioni inattive >8h scadono comunque. Soft: un errore qui non blocca la richiesta.
+try { await kv.expire(`session:${rawAuth}`, 8 * 60 * 60); } catch (e) { /* non bloccante */ }
 // Ruolo/utente/società vengono dalla sessione salvata server-side, NON dagli header
 // del client (che sarebbero falsificabili). Questo impedisce l'escalation di privilegi.
 return {

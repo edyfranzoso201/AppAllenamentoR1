@@ -117,6 +117,8 @@ export default async function handler(req, res) {
     if (!session) {
       return res.status(401).json({ success: false, message: 'Sessione scaduta' });
     }
+    // TTL scorrevole: rinnova la scadenza della sessione a 8h da ora (soft)
+    try { await kv.expire(`session:${sessionToken}`, 8 * 60 * 60); } catch (e) { /* non bloccante */ }
 
     // La società è SEMPRE quella della sessione (server-side), non l'header
     // falsificabile. Impedisce di leggere/gestire le iscrizioni di un'altra società.

@@ -65,6 +65,8 @@ export default async function handler(req, res) {
     if (!session) {
       return res.status(401).json({ success: false, message: 'Sessione scaduta, effettua nuovamente il login' });
     }
+    // TTL scorrevole: rinnova la scadenza della sessione a 8h da ora (soft)
+    try { await kv.expire(`session:${sessionToken}`, 8 * 60 * 60); } catch (e) { /* non bloccante */ }
     const username = session.username;
 
     // Carica l'utente dal KV
