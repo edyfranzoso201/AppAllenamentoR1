@@ -1581,7 +1581,7 @@
       tableCard.style.display = 'block';
 
     } catch (e) {
-      statsEl.innerHTML = `<div class="placeholder-box" style="grid-column:1/-1"><div class="ph-icon">⚠️</div><div class="ph-title">Errore caricamento</div><div class="ph-sub">${e.message}</div></div>`;
+      statsEl.innerHTML = `<div class="placeholder-box" style="grid-column:1/-1"><div class="ph-icon">⚠️</div><div class="ph-title">Errore caricamento</div><div class="ph-sub">${esc(e.message)}</div></div>`;
     }
   }
 
@@ -1891,7 +1891,7 @@
       loading.style.display = 'none';
       if (content) content.style.display = 'block';
     } catch(e) {
-      loading.innerHTML = `<div style="color:#ef4444">⚠️ ${e.message}</div>`;
+      loading.innerHTML = `<div style="color:#ef4444">⚠️ ${esc(e.message)}</div>`;
     }
   };
 
@@ -1998,7 +1998,7 @@
       loading.style.display = 'none';
       if (content) content.style.display = 'block';
     } catch(e) {
-      loading.innerHTML = `<div style="color:#ef4444">⚠️ ${e.message}</div>`;
+      loading.innerHTML = `<div style="color:#ef4444">⚠️ ${esc(e.message)}</div>`;
     }
   };
 
@@ -2105,7 +2105,7 @@
       loading.style.display = 'none';
       if (content) content.style.display = 'block';
     } catch(e) {
-      loading.innerHTML = `<div style="color:#ef4444">⚠️ ${e.message}</div>`;
+      loading.innerHTML = `<div style="color:#ef4444">⚠️ ${esc(e.message)}</div>`;
     }
   };
 
@@ -2235,7 +2235,7 @@
       }
       if (content) content.style.display = 'block';
     } catch(e) {
-      loading.innerHTML = `<div style="color:#ef4444">⚠️ ${e.message}</div>`;
+      loading.innerHTML = `<div style="color:#ef4444">⚠️ ${esc(e.message)}</div>`;
     }
   };
 
@@ -2303,7 +2303,7 @@
         }
       }
     } catch(e) {
-      if (loading) loading.innerHTML = `<div style="color:#ef4444">⚠️ ${e.message}</div>`;
+      if (loading) loading.innerHTML = `<div style="color:#ef4444">⚠️ ${esc(e.message)}</div>`;
     }
   };
 
@@ -2408,7 +2408,7 @@
       // Nascondi popup se zero pendenti
       if (!counts.pending) document.getElementById('iscr-popup-home').style.display = 'none';
     } catch(e) {
-      document.getElementById('iscr-list').innerHTML = `<div style="color:#ef4444;padding:20px">❌ Errore: ${e.message}</div>`;
+      document.getElementById('iscr-list').innerHTML = `<div style="color:#ef4444;padding:20px">❌ Errore: ${esc(e.message)}</div>`;
     } finally {
       document.getElementById('iscr-loading').style.display = 'none';
     }
@@ -2430,7 +2430,7 @@
     if (!filtered.length) { list.innerHTML = ''; empty.style.display = ''; return; }
     empty.style.display = 'none';
 
-    const annateOpts = _iscrAnnate.map(a => `<option value="${a.id}">${a.nome || a.id}</option>`).join('');
+    const annateOpts = _iscrAnnate.map(a => `<option value="${esc(a.id)}">${esc(a.nome || a.id)}</option>`).join('');
 
     list.innerHTML = filtered.map(reg => {
       const dataInvio = new Date(reg.submittedAt).toLocaleString('it-IT');
@@ -2461,7 +2461,7 @@
         respondedInfo = `<div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">
           ${reg.status === 'accepted' ? '✅ Accettata' : '❌ Rifiutata'} da <strong>${esc(reg.respondedBy || '—')}</strong>
           il ${new Date(reg.respondedAt).toLocaleString('it-IT')}
-          ${reg.annataId ? ` — Annata: ${_iscrAnnate.find(a=>a.id===reg.annataId)?.nome || reg.annataId}` : ''}
+          ${reg.annataId ? ` — Annata: ${esc(_iscrAnnate.find(a=>a.id===reg.annataId)?.nome || reg.annataId)}` : ''}
         </div>`;
       }
 
@@ -2514,7 +2514,8 @@
   }
 
   function esc(s) {
-    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    // Anti-XSS: copre testo E attributi (apici inclusi) per i dati utente
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
 
   window.accettaIscrizione = async function accettaIscrizione(id) {
@@ -2911,7 +2912,7 @@
 
   function impRefreshCampiSelects() {
     const campi = impState.config.campi || [];
-    const opts = campi.map(c => `<option value="${c.id}">${c.nome} (${CAMPO_INFO[c.tipo]?.label||c.tipo})</option>`).join('');
+    const opts = campi.map(c => `<option value="${esc(c.id)}">${esc(c.nome)} (${CAMPO_INFO[c.tipo]?.label||c.tipo})</option>`).join('');
     const noCampi = '<option value="">— Nessun campo configurato —</option>';
     const slotSel = document.getElementById('imp-slot-campo');
     const evSel = document.getElementById('imp-ev-campo');
@@ -3260,7 +3261,7 @@
           const campoNome = campo?.nome || '';
           return `<div class="imp-slot-card" data-hl-sq="${cleanSq.replace(/"/g,'&quot;')}" data-hl-ora="${s.oraInizio||''}" data-hl-campo="${campoNome.replace(/"/g,'&quot;')}" style="border-color:${borderColor}${hasConflict||hasSpogl?';border-width:2px':''};border-left:3px solid ${fc};background:${fbg};">
             <span style="font-size:0.82rem;font-weight:700;color:var(--text-muted);min-width:90px;">${s.oraInizio||'--:--'} – ${s.oraFine||'--:--'}</span>
-            ${info ? `<span class="imp-tipo-badge" style="background:${info.color}22;color:${info.color};">${campo.nome}</span>` : ''}
+            ${info ? `<span class="imp-tipo-badge" style="background:${info.color}22;color:${info.color};">${esc(campo.nome)}</span>` : ''}
             <span style="font-size:0.8rem;color:var(--text-muted);">${porzLabel}</span>
             ${spoglBadge}
             <span style="flex:1;font-weight:500;">${label}${docFlag ? ' '+docFlag : ''}${warnings?' '+warnings:''}${noteTxt}</span>
@@ -3489,7 +3490,7 @@
       html += '<table style="border-collapse:collapse;margin-bottom:24px;">';
 
       // Riga titolo campo
-      html += `<tr><td colspan="${colSpan}" style="${TD}background:${colors.hdr};color:${colors.hdrTxt};font-weight:bold;text-align:center;font-size:13pt;letter-spacing:0.5px;">${campo.nome} — ${info.label}</td></tr>`;
+      html += `<tr><td colspan="${colSpan}" style="${TD}background:${colors.hdr};color:${colors.hdrTxt};font-weight:bold;text-align:center;font-size:13pt;letter-spacing:0.5px;">${esc(campo.nome)} — ${info.label}</td></tr>`;
 
       // Riga intestazione giorni
       html += `<tr><td style="${TD}background:#ffff00;font-weight:bold;min-width:110px;"></td>`;
@@ -3780,7 +3781,7 @@
       return `<span style="display:inline-flex;align-items:center;gap:4px;margin:2px 4px 2px 0;font-size:0.78rem;
         background:${ok?'#d1fae522':'#fee2e222'};border:1px solid ${ok?'#34d39944':'#f8717144'};
         border-radius:6px;padding:2px 8px;color:${ok?'#6ee7b7':'#fca5a5'};">
-        ${ok?'✓':'⚠️'} <strong>${cleanName}</strong> ${assegnati}/${richiesti}gg
+        ${ok?'✓':'⚠️'} <strong>${esc(cleanName)}</strong> ${assegnati}/${richiesti}gg
       </span>`;
     }).join('');
     unsched.style.display = '';
@@ -3788,7 +3789,7 @@
     unsched.style.color = 'inherit';
     unsched.style.padding = '6px 0 0';
     unsched.innerHTML = `<div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:4px;">Riepilogo annate:</div>${riepilogo}` +
-      (unscheduled.length ? `<div style="margin-top:8px;padding:8px 10px;background:#fee2e2;border-radius:8px;font-size:0.82rem;color:#991b1b;">⚠️ Non pianificati:<br>${unscheduled.map(u=>`• ${u}`).join('<br>')}</div>` : '');
+      (unscheduled.length ? `<div style="margin-top:8px;padding:8px 10px;background:#fee2e2;border-radius:8px;font-size:0.82rem;color:#991b1b;">⚠️ Non pianificati:<br>${unscheduled.map(u=>`• ${esc(u)}`).join('<br>')}</div>` : '');
   };
 
   window.impGeneraConAI = async function() {
@@ -3826,8 +3827,8 @@
         unsched2.style.background = '#fee2e2';
         unsched2.style.color = '#991b1b';
         unsched2.style.padding = '10px';
-        const debugInfo = d.debug_snippet ? `<br><small style="opacity:0.7;">snippet: "${d.debug_snippet}" (raw len: ${d.debug_raw_len})</small>` : '';
-        unsched2.innerHTML = `<strong>❌ Errore AI:</strong><br><span style="font-size:0.8rem;word-break:break-all;">${d.message || 'Risposta non valida'}</span>${debugInfo}`;
+        const debugInfo = d.debug_snippet ? `<br><small style="opacity:0.7;">snippet: "${esc(d.debug_snippet)}" (raw len: ${esc(d.debug_raw_len)})</small>` : '';
+        unsched2.innerHTML = `<strong>❌ Errore AI:</strong><br><span style="font-size:0.8rem;word-break:break-all;">${esc(d.message || 'Risposta non valida')}</span>${debugInfo}`;
         return;
       }
 
@@ -3875,7 +3876,7 @@
         return `<span style="display:inline-flex;align-items:center;gap:4px;margin:2px 4px 2px 0;font-size:0.78rem;
           background:${ok?'#d1fae522':'#fee2e222'};border:1px solid ${ok?'#34d39944':'#f8717144'};
           border-radius:6px;padding:2px 8px;color:${ok?'#6ee7b7':'#fca5a5'};">
-          ${ok?'✓':'⚠️'} <strong>${cleanName}</strong> ${assegnati}/${richiesti}gg
+          ${ok?'✓':'⚠️'} <strong>${esc(cleanName)}</strong> ${assegnati}/${richiesti}gg
         </span>`;
       }).join('');
 
@@ -3888,7 +3889,7 @@
         : '';
       unsched.innerHTML = `<div style="font-size:0.78rem;color:var(--accent);margin-bottom:4px;">🤖 AI ha scelto i giorni — orari e campi assegnati dall'algoritmo (zero conflitti garantiti).</div>
         ${suppNote}<div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:4px;">Riepilogo annate:</div>${riepilogo}` +
-        (unscheduled.length ? `<div style="margin-top:8px;padding:8px 10px;background:#fee2e2;border-radius:8px;font-size:0.82rem;color:#991b1b;">⚠️ Non pianificati:<br>${unscheduled.map(u=>`• ${u}`).join('<br>')}</div>` : '');
+        (unscheduled.length ? `<div style="margin-top:8px;padding:8px 10px;background:#fee2e2;border-radius:8px;font-size:0.82rem;color:#991b1b;">⚠️ Non pianificati:<br>${unscheduled.map(u=>`• ${esc(u)}`).join('<br>')}</div>` : '');
     } catch(e) {
       impAlert('Errore: ' + e.message);
     } finally {
@@ -4323,7 +4324,7 @@
       return `<span style="display:inline-flex;align-items:center;gap:4px;margin:2px 4px 2px 0;font-size:0.78rem;
         background:${ok?'#d1fae522':'#fee2e222'};border:1px solid ${ok?'#34d39944':'#f8717144'};
         border-radius:6px;padding:2px 8px;color:${ok?'#6ee7b7':'#fca5a5'};">
-        ${ok?'✓':'⚠️'} <strong>${cleanName}</strong> ${assegnati}/${richiesti}gg
+        ${ok?'✓':'⚠️'} <strong>${esc(cleanName)}</strong> ${assegnati}/${richiesti}gg
       </span>`;
     }).join('');
 
@@ -4333,7 +4334,7 @@
     unsched.style.padding = '6px 0 0';
     unsched.innerHTML = `<div style="font-size:0.78rem;color:var(--accent);margin-bottom:4px;">💬 Proposta dalla chat AI — orari e campi assegnati dall'algoritmo (zero conflitti garantiti).</div>
       <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:4px;">Riepilogo annate:</div>${riepilogo}` +
-      (unscheduled.length ? `<div style="margin-top:8px;padding:8px 10px;background:#fee2e2;border-radius:8px;font-size:0.82rem;color:#991b1b;">⚠️ Non pianificati:<br>${unscheduled.map(u=>`• ${u}`).join('<br>')}</div>` : '');
+      (unscheduled.length ? `<div style="margin-top:8px;padding:8px 10px;background:#fee2e2;border-radius:8px;font-size:0.82rem;color:#991b1b;">⚠️ Non pianificati:<br>${unscheduled.map(u=>`• ${esc(u)}`).join('<br>')}</div>` : '');
 
     // Chiudi la chat e vai al tab Generazione
     impAiToggle();

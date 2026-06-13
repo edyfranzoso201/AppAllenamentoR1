@@ -21,6 +21,21 @@ function toLocalDateISO(dateInput) {
 function generateId() {
     return crypto.randomUUID();
 }
+// ── Escape HTML (anti-XSS) ────────────────────────────────────────────────
+// Neutralizza i caratteri speciali nei dati inseriti dagli utenti (nomi atleti,
+// ruoli, motivazioni premi, avversari, link...) prima di concatenarli in
+// innerHTML. Senza questo, un nome tipo "<img src=x onerror=alert(1)>" o un
+// link tipo "');evil()//" eseguirebbe codice nella sessione di altri coach.
+// Copre sia contenuto testuale sia valori dentro attributi src/onclick (apici).
+function escapeHtml(s) {
+    if (s == null) return '';
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
 // ==========================================
 // GUARD: Verifica annata selezionata
 // ==========================================
@@ -622,7 +637,7 @@ document.addEventListener('DOMContentLoaded', () => {
         jersey.dataset.athleteId = athlete.id;
         jersey.dataset.role = athlete.role;
         const jerseyColor = athlete.role.toLowerCase().includes('portiere') ? '#E8C135' : '#1e5095';
-        jersey.innerHTML = `<div class="jersey-body" style="--jersey-color: ${jerseyColor}; background-color: ${jerseyColor};"><span class="jersey-number">${athlete.number}</span></div><span class="player-name">${athlete.name}</span>`;
+        jersey.innerHTML = `<div class="jersey-body" style="--jersey-color: ${jerseyColor}; background-color: ${jerseyColor};"><span class="jersey-number">${athlete.number}</span></div><span class="player-name">${escapeHtml(athlete.name)}</span>`;
         return jersey;
     };
     const createTokenElement = (type, id) => {
@@ -665,9 +680,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!placedAthleteIds.has(String(athlete.id))) {
                 const today = new Date(); today.setHours(0, 0, 0, 0); const isExpired = athlete.scadenzaVisita && new Date(athlete.scadenzaVisita) < today;
                 const availablePlayer = document.createElement('div'); availablePlayer.className = 'list-group-item d-flex justify-content-between align-items-center available-player p-2'; availablePlayer.dataset.athleteId = athlete.id;
-                if (athlete.infortunato) { availablePlayer.classList.add('disabled'); availablePlayer.title = 'Infortunato' + (athlete.dataRientro ? ' — Rientro: ' + new Date(athlete.dataRientro + 'T00:00:00').toLocaleDateString('it-IT') : ''); availablePlayer.innerHTML = `<span><strong>${athlete.number}.</strong> ${athlete.name}</span><span class="badge bg-warning text-dark">🤕</span>`; }
-                else if (isExpired) { availablePlayer.classList.add('disabled'); availablePlayer.title = 'Visita medica scaduta. Atleta non schierabile.'; availablePlayer.innerHTML = `<span><strong>${athlete.number}.</strong> ${athlete.name}</span><span class="badge bg-danger"><i class="bi bi-lock-fill"></i></span>`; }
-                else { availablePlayer.innerHTML = `<span><strong>${athlete.number}.</strong> ${athlete.name}</span><span class="badge bg-secondary">${athlete.role.substring(0,3)}</span>`; }
+                if (athlete.infortunato) { availablePlayer.classList.add('disabled'); availablePlayer.title = 'Infortunato' + (athlete.dataRientro ? ' — Rientro: ' + new Date(athlete.dataRientro + 'T00:00:00').toLocaleDateString('it-IT') : ''); availablePlayer.innerHTML = `<span><strong>${athlete.number}.</strong> ${escapeHtml(athlete.name)}</span><span class="badge bg-warning text-dark">🤕</span>`; }
+                else if (isExpired) { availablePlayer.classList.add('disabled'); availablePlayer.title = 'Visita medica scaduta. Atleta non schierabile.'; availablePlayer.innerHTML = `<span><strong>${athlete.number}.</strong> ${escapeHtml(athlete.name)}</span><span class="badge bg-danger"><i class="bi bi-lock-fill"></i></span>`; }
+                else { availablePlayer.innerHTML = `<span><strong>${athlete.number}.</strong> ${escapeHtml(athlete.name)}</span><span class="badge bg-secondary">${escapeHtml(athlete.role.substring(0,3))}</span>`; }
                 elements.availableList.appendChild(availablePlayer);
             }
         });
@@ -702,11 +717,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (futureSessions.length > 0) {
             const nextSession = futureSessions[0];
             const sessionDate = new Date(nextSession.date);
-            elements.homeNextSession.innerHTML = `<h5 class="card-title text-muted">PROSSIMA SESSIONE</h5><h6 class="mb-1">${nextSession.title}</h6><p class="mb-0">${sessionDate.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}</p><p class="mb-0 text-muted">${nextSession.time ? `Ore: ${nextSession.time}` : ''} ${nextSession.location ? `@ ${nextSession.location}` : ''}</p>`;
+            elements.homeNextSession.innerHTML = `<h5 class="card-title text-muted">PROSSIMA SESSIONE</h5><h6 class="mb-1">${escapeHtml(nextSession.title)}</h6><p class="mb-0">${sessionDate.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}</p><p class="mb-0 text-muted">${nextSession.time ? `Ore: ${escapeHtml(nextSession.time)}` : ''} ${nextSession.location ? `@ ${escapeHtml(nextSession.location)}` : ''}</p>`;
         } else {
             elements.homeNextSession.innerHTML = `<h5 class="card-title text-muted">PROSSIMA SESSIONE</h5><p class="text-muted">Nessuna sessione pianificata</p>`;
         }
-        const now = new Date(); const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`; const monthlyScores = {}; athletes.forEach(a => monthlyScores[a.id] = { name: a.name, score: 0 }); Object.entries(evaluations).forEach(([dateStr, dailyEvals]) => { if (dateStr.startsWith(currentMonthStr)) { Object.entries(dailyEvals).forEach(([athleteId, evaluation]) => { if (monthlyScores[athleteId]) { monthlyScores[athleteId].score += calculateAthleteScore(evaluation); } }); } }); const sortedAthletes = Object.values(monthlyScores).sort((a, b) => b.score - a.score); if (sortedAthletes.length > 0 && sortedAthletes[0].score > 0) { const maxScore = sortedAthletes[0].score; const topPerformers = sortedAthletes.filter(athlete => athlete.score === maxScore); const names = topPerformers.map(p => p.name).join('<br>'); elements.homeTopPerformer.innerHTML = `<h5 class="card-title text-muted">TOP PERFORMER MENSILE</h5><h6 class="mb-1">${names}</h6><p class="mb-0 text-muted">Punteggio: ${maxScore}</p><i class="bi bi-trophy-fill mt-2" style="font-size: 1.5rem; color: var(--gold-star);"></i>`; }
+        const now = new Date(); const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`; const monthlyScores = {}; athletes.forEach(a => monthlyScores[a.id] = { name: a.name, score: 0 }); Object.entries(evaluations).forEach(([dateStr, dailyEvals]) => { if (dateStr.startsWith(currentMonthStr)) { Object.entries(dailyEvals).forEach(([athleteId, evaluation]) => { if (monthlyScores[athleteId]) { monthlyScores[athleteId].score += calculateAthleteScore(evaluation); } }); } }); const sortedAthletes = Object.values(monthlyScores).sort((a, b) => b.score - a.score); if (sortedAthletes.length > 0 && sortedAthletes[0].score > 0) { const maxScore = sortedAthletes[0].score; const topPerformers = sortedAthletes.filter(athlete => athlete.score === maxScore); const names = topPerformers.map(p => escapeHtml(p.name)).join('<br>'); elements.homeTopPerformer.innerHTML = `<h5 class="card-title text-muted">TOP PERFORMER MENSILE</h5><h6 class="mb-1">${names}</h6><p class="mb-0 text-muted">Punteggio: ${maxScore}</p><i class="bi bi-trophy-fill mt-2" style="font-size: 1.5rem; color: var(--gold-star);"></i>`; }
         else { elements.homeTopPerformer.innerHTML = `<h5 class="card-title text-muted">TOP PERFORMER MENSILE</h5><p class="text-muted">Nessuna valutazione</p>`; }
     };
     // Pulsante "Password Individual" — solo admin, in Azioni Rapide Home
@@ -959,7 +974,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentVal = sel.value;
             const firstOpt = id !== 'ind-athlete-1-selector' ? '<option value="">-- Nessun confronto --</option>' : '<option value="">-- Seleziona atleta --</option>';
             sel.innerHTML = firstOpt + withPkg.map(a =>
-                `<option value="${a.id}">${a.name}</option>`
+                `<option value="${a.id}">${escapeHtml(a.name)}</option>`
             ).join('');
             if (currentVal) sel.value = currentVal;
         });
@@ -1470,7 +1485,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     : '';
                 const uscitaBadge = athlete.uscitaAutonoma ? '<span style="font-size:0.62rem;background:#fed7aa;color:#92400e;border-radius:3px;padding:1px 5px;margin-left:4px;vertical-align:middle;">🚶✅</span>' : '';
                 const infortunatoBadge = athlete.infortunato ? `<span style="font-size:0.62rem;background:#fee2e2;color:#991b1b;border-radius:3px;padding:1px 5px;margin-left:4px;vertical-align:middle;">🤕${athlete.dataRientro ? ' ' + new Date(athlete.dataRientro + 'T00:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}) : ''}</span>` : '';
-                card.innerHTML = `<div class="card ${cardClass}" style="${indBorder}${cardBg}"><div class="card-body athlete-card-clickable" data-athlete-id="${athlete.id}"><img src="${athlete.avatar || defaultAvatar}" onerror="this.src='${defaultAvatar}'" alt="${athlete.name}" class="athlete-avatar me-3"><div><h5 class="card-title">${athlete.name} ${athlete.isCaptain ? '<i class="bi bi-star-fill is-captain"></i>' : ''} ${vcIcon}${uscitaBadge}${infortunatoBadge}</h5><p class="card-text text-muted">${athlete.role}</p>${indBadge}</div><div class="shirt-number">${athlete.number}</div>${statusIcon}</div><div class="card-actions no-print"><button class="btn btn-sm btn-outline-light rating-btn" title="Pagelle" data-athlete-id="${athlete.id}"><i class="bi bi-clipboard-check"></i></button><button class="btn btn-sm btn-outline-light gps-btn" title="Dati Performance" data-athlete-id="${athlete.id}"><i class="bi bi-person-fill-gear"></i></button><button class="btn btn-sm btn-outline-light parent-btn" title="Anagrafica Genitori" data-athlete-id="${athlete.id}"><i class="bi bi-people-fill"></i></button><button class="btn btn-sm btn-outline-light individual-btn" title="Pacchetto Individual" data-athlete-id="${athlete.id}" style="${athlete.individualPackage?.type ? 'color:#f59e0b;border-color:#f59e0b;' : ''}"><i class="bi bi-person-fill-up"></i></button>${athlete.certLink ? `<button class="btn btn-sm btn-outline-light cert-btn" title="Apri Certificato Medico" onclick="window.open('${athlete.certLink}','_blank')"><i class="bi bi-file-earmark-medical-fill" style="color:#16a34a;"></i></button>` : ""}<button class="btn btn-sm btn-outline-light edit-btn" title="Modifica Atleta" data-athlete-id="${athlete.id}"><i class="bi bi-pencil-fill"></i></button>${athlete.archived ? `<button class="btn btn-sm btn-outline-success restore-btn" title="Ripristina in rosa" data-athlete-id="${athlete.id}"><i class="bi bi-arrow-counterclockwise"></i></button>` : `<button class="btn btn-sm btn-outline-warning archive-btn" title="Archivia" data-athlete-id="${athlete.id}"><i class="bi bi-archive-fill"></i></button>`}<button class="btn btn-sm btn-outline-light delete-btn" title="Elimina definitivamente" data-athlete-id="${athlete.id}"><i class="bi bi-trash-fill"></i></button></div></div>`;
+                card.innerHTML = `<div class="card ${cardClass}" style="${indBorder}${cardBg}"><div class="card-body athlete-card-clickable" data-athlete-id="${athlete.id}"><img src="${escapeHtml(athlete.avatar || defaultAvatar)}" onerror="this.src='${defaultAvatar}'" alt="${escapeHtml(athlete.name)}" class="athlete-avatar me-3"><div><h5 class="card-title">${escapeHtml(athlete.name)} ${athlete.isCaptain ? '<i class="bi bi-star-fill is-captain"></i>' : ''} ${vcIcon}${uscitaBadge}${infortunatoBadge}</h5><p class="card-text text-muted">${escapeHtml(athlete.role)}</p>${indBadge}</div><div class="shirt-number">${athlete.number}</div>${statusIcon}</div><div class="card-actions no-print"><button class="btn btn-sm btn-outline-light rating-btn" title="Pagelle" data-athlete-id="${athlete.id}"><i class="bi bi-clipboard-check"></i></button><button class="btn btn-sm btn-outline-light gps-btn" title="Dati Performance" data-athlete-id="${athlete.id}"><i class="bi bi-person-fill-gear"></i></button><button class="btn btn-sm btn-outline-light parent-btn" title="Anagrafica Genitori" data-athlete-id="${athlete.id}"><i class="bi bi-people-fill"></i></button><button class="btn btn-sm btn-outline-light individual-btn" title="Pacchetto Individual" data-athlete-id="${athlete.id}" style="${athlete.individualPackage?.type ? 'color:#f59e0b;border-color:#f59e0b;' : ''}"><i class="bi bi-person-fill-up"></i></button>${athlete.certLink ? `<button class="btn btn-sm btn-outline-light cert-btn" title="Apri Certificato Medico" onclick="window.open('${escapeHtml(athlete.certLink)}','_blank')"><i class="bi bi-file-earmark-medical-fill" style="color:#16a34a;"></i></button>` : ""}<button class="btn btn-sm btn-outline-light edit-btn" title="Modifica Atleta" data-athlete-id="${athlete.id}"><i class="bi bi-pencil-fill"></i></button>${athlete.archived ? `<button class="btn btn-sm btn-outline-success restore-btn" title="Ripristina in rosa" data-athlete-id="${athlete.id}"><i class="bi bi-arrow-counterclockwise"></i></button>` : `<button class="btn btn-sm btn-outline-warning archive-btn" title="Archivia" data-athlete-id="${athlete.id}"><i class="bi bi-archive-fill"></i></button>`}<button class="btn btn-sm btn-outline-light delete-btn" title="Elimina definitivamente" data-athlete-id="${athlete.id}"><i class="bi bi-trash-fill"></i></button></div></div>`;
             }
             elements.athleteGrid.appendChild(card);
             // FIX v1.5.21: applica colore background dopo appendChild (override Bootstrap vars)
@@ -1693,7 +1708,7 @@ document.addEventListener('DOMContentLoaded', () => {
         aggregati.forEach(agg => {
             const athlete = athletes.find(a => String(a.id) === agg.athleteId);
             const row = document.createElement('tr');
-            row.innerHTML = `<td>${athlete ? athlete.name : 'N/D'}</td>`
+            row.innerHTML = `<td>${athlete ? escapeHtml(athlete.name) : 'N/D'}</td>`
                 + `<td><strong>${agg.yellow}</strong></td>`
                 + `<td><strong>${agg.red}</strong></td>`
                 + `<td>${new Date(agg.lastDate).toLocaleDateString('it-IT', {day: '2-digit', month: 'short'})}</td>`
@@ -1854,7 +1869,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.matchOpponentFilter.innerHTML = `<option value="all">Tutti gli avversari</option>`;
         opponents.sort().forEach(opp => {
             const selected = opp === opponentFilter ? 'selected' : '';
-            elements.matchOpponentFilter.innerHTML += `<option value="${opp}" ${selected}>${opp}</option>`;
+            elements.matchOpponentFilter.innerHTML += `<option value="${escapeHtml(opp)}" ${selected}>${escapeHtml(opp)}</option>`;
         });
     };
     // Ri-espone chartInstances su window dopo ogni update (per applyChartTheme)
@@ -2426,7 +2441,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 const dateObj = new Date(award.date);
                 const formattedDate = !isNaN(dateObj) ? dateObj.toLocaleDateString('it-IT') : 'Data non disponibile';
-                awardCard.innerHTML = `<div class="card-body p-2"><img src="${athlete.avatar || defaultAvatar}" onerror="this.src='${defaultAvatar}'" alt="${athlete.name}" class="award-avatar mx-auto mb-2 rounded-circle"><h6 class="mb-1" style="font-size: 0.9rem;">${athlete.name}</h6><p class="mb-0" style="font-size: 0.8rem; color: #000;">${formattedDate}</p><small>${award.reason}</small><i class="bi bi-award-fill mt-2" style="font-size: 1.5rem;"></i></div>`;
+                awardCard.innerHTML = `<div class="card-body p-2"><img src="${escapeHtml(athlete.avatar || defaultAvatar)}" onerror="this.src='${defaultAvatar}'" alt="${escapeHtml(athlete.name)}" class="award-avatar mx-auto mb-2 rounded-circle"><h6 class="mb-1" style="font-size: 0.9rem;">${escapeHtml(athlete.name)}</h6><p class="mb-0" style="font-size: 0.8rem; color: #000;">${formattedDate}</p><small>${escapeHtml(award.reason)}</small><i class="bi bi-award-fill mt-2" style="font-size: 1.5rem;"></i></div>`;
                 elements.hallOfFameContainer.appendChild(awardCard);
             }
         });
@@ -2472,7 +2487,7 @@ document.addEventListener('DOMContentLoaded', () => {
         performanceSelections.forEach((selection, index) => {
             const selectorRow = document.createElement('div');
             selectorRow.className = 'row g-2 align-items-end mb-2';
-            selectorRow.innerHTML = `<div class="col-12 col-md-6"><label class="form-label">Atleta ${index + 1}:</label><select class="form-select athlete-selector" data-index="${index}"><option value="">Seleziona atleta...</option>${athletes.map(a => `<option value="${a.id}" ${selection.athleteId == a.id ? 'selected' : ''}>${a.name}</option>`).join('')}</select></div><div class="col-10 col-md-5"><label class="form-label">Sessione:</label><select class="form-select date-selector" data-index="${index}"><option value="">Seleziona sessione...</option></select></div><div class="col-2 col-md-1 d-flex align-items-end"><button class="btn btn-outline-danger btn-sm remove-selector w-100" data-index="${index}" ${performanceSelections.length <= 2 ? 'disabled' : ''}><i class="bi bi-trash"></i></button></div>`;
+            selectorRow.innerHTML = `<div class="col-12 col-md-6"><label class="form-label">Atleta ${index + 1}:</label><select class="form-select athlete-selector" data-index="${index}"><option value="">Seleziona atleta...</option>${athletes.map(a => `<option value="${a.id}" ${selection.athleteId == a.id ? 'selected' : ''}>${escapeHtml(a.name)}</option>`).join('')}</select></div><div class="col-10 col-md-5"><label class="form-label">Sessione:</label><select class="form-select date-selector" data-index="${index}"><option value="">Seleziona sessione...</option></select></div><div class="col-2 col-md-1 d-flex align-items-end"><button class="btn btn-outline-danger btn-sm remove-selector w-100" data-index="${index}" ${performanceSelections.length <= 2 ? 'disabled' : ''}><i class="bi bi-trash"></i></button></div>`;
             elements.performanceSelectorsContainer.appendChild(selectorRow);
             // Colore tema chiaro sui selects creati dinamicamente
             if (document.documentElement.classList.contains('theme-light')) {
@@ -2579,7 +2594,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.exportButtonsContainer.innerHTML = `<button class="btn btn-success btn-sm" id="export-excel"><i class="bi bi-file-excel"></i> Excel</button><button class="btn btn-danger btn-sm" id="export-pdf"><i class="bi bi-file-pdf"></i> PDF</button>`;
     };
     const populateAnalysisSelectors = () => {
-        const athleteOptions = athletes.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+        const athleteOptions = athletes.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
         elements.trendAthleteSelector.innerHTML = `<option value="">Seleziona atleta...</option>${athleteOptions}`;
         elements.radarAthleteSelector1.innerHTML = `<option value="">Seleziona atleta...</option>${athleteOptions}`;
         elements.radarAthleteSelector2.innerHTML = `<option value="">Nessun confronto</option>${athleteOptions}`;
@@ -4853,21 +4868,21 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
         const container = document.getElementById('scorers-container');
         const div = document.createElement('div');
         div.className = 'd-flex gap-2 align-items-center';
-        div.innerHTML = `<select class="form-select form-select-sm scorer-athlete" required><option value="">Seleziona atleta...</option>${athletes.map(a => `<option value="${a.id}" ${scorer.athleteId == a.id ? 'selected' : ''}>${a.name}</option>`).join('')}</select><input type="number" class="form-control form-control-sm scorer-minute" placeholder="Min" min="1" style="width: 80px;" value="${scorer.minute || ''}" required><button type="button" class="btn btn-sm btn-outline-danger remove-row-btn"><i class="bi bi-trash"></i></button>`;
+        div.innerHTML = `<select class="form-select form-select-sm scorer-athlete" required><option value="">Seleziona atleta...</option>${athletes.map(a => `<option value="${a.id}" ${scorer.athleteId == a.id ? 'selected' : ''}>${escapeHtml(a.name)}</option>`).join('')}</select><input type="number" class="form-control form-control-sm scorer-minute" placeholder="Min" min="1" style="width: 80px;" value="${scorer.minute || ''}" required><button type="button" class="btn btn-sm btn-outline-danger remove-row-btn"><i class="bi bi-trash"></i></button>`;
         container.appendChild(div);
     };
     const addAssistInput = (assist = {}) => {
         const container = document.getElementById('assists-container');
         const div = document.createElement('div');
         div.className = 'd-flex gap-2 align-items-center';
-        div.innerHTML = `<select class="form-select form-select-sm assist-athlete" required><option value="">Seleziona atleta...</option>${athletes.map(a => `<option value="${a.id}" ${assist.athleteId == a.id ? 'selected' : ''}>${a.name}</option>`).join('')}</select><input type="number" class="form-control form-control-sm assist-minute" placeholder="Min" min="1" style="width: 80px;" value="${assist.minute || ''}" required><button type="button" class="btn btn-sm btn-outline-danger remove-row-btn"><i class="bi bi-trash"></i></button>`;
+        div.innerHTML = `<select class="form-select form-select-sm assist-athlete" required><option value="">Seleziona atleta...</option>${athletes.map(a => `<option value="${a.id}" ${assist.athleteId == a.id ? 'selected' : ''}>${escapeHtml(a.name)}</option>`).join('')}</select><input type="number" class="form-control form-control-sm assist-minute" placeholder="Min" min="1" style="width: 80px;" value="${assist.minute || ''}" required><button type="button" class="btn btn-sm btn-outline-danger remove-row-btn"><i class="bi bi-trash"></i></button>`;
         container.appendChild(div);
     };
     const addCardInput = (card = {}) => {
         const container = document.getElementById('cards-container');
         const div = document.createElement('div');
         div.className = 'd-flex gap-2 align-items-center';
-        div.innerHTML = `<select class="form-select form-select-sm card-athlete" required><option value="">Seleziona atleta...</option>${athletes.map(a => `<option value="${a.id}" ${card.athleteId == a.id ? 'selected' : ''}>${a.name}</option>`).join('')}</select><select class="form-select form-select-sm card-type" style="width: 120px;" required><option value="yellow" ${card.type === 'yellow' ? 'selected' : ''}>Giallo</option><option value="red" ${card.type === 'red' ? 'selected' : ''}>Rosso</option></select><input type="number" class="form-control form-control-sm card-minute" placeholder="Min" min="1" style="width: 80px;" value="${card.minute || ''}" required><button type="button" class="btn btn-sm btn-outline-danger remove-row-btn"><i class="bi bi-trash"></i></button>`;
+        div.innerHTML = `<select class="form-select form-select-sm card-athlete" required><option value="">Seleziona atleta...</option>${athletes.map(a => `<option value="${a.id}" ${card.athleteId == a.id ? 'selected' : ''}>${escapeHtml(a.name)}</option>`).join('')}</select><select class="form-select form-select-sm card-type" style="width: 120px;" required><option value="yellow" ${card.type === 'yellow' ? 'selected' : ''}>Giallo</option><option value="red" ${card.type === 'red' ? 'selected' : ''}>Rosso</option></select><input type="number" class="form-control form-control-sm card-minute" placeholder="Min" min="1" style="width: 80px;" value="${card.minute || ''}" required><button type="button" class="btn btn-sm btn-outline-danger remove-row-btn"><i class="bi bi-trash"></i></button>`;
         container.appendChild(div);
     };
     elements.addMatchBtn.addEventListener('click', () => openMatchResultModal());

@@ -155,7 +155,7 @@ async function load() {
     render(data);
   } catch (e) {
     console.error('[CALENDARIO] ❌ Errore caricamento:', e);
-    document.getElementById('calendar').innerHTML = `<div class="alert alert-danger">Errore: ${e.message}</div>`;
+    document.getElementById('calendar').innerHTML = `<div class="alert alert-danger">Errore: ${String(e.message||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`;
   }
 }
 

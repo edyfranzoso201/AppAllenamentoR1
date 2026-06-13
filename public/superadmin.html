@@ -1423,7 +1423,7 @@ async function loadUsers() {
         allUsers = data.users || [];
         renderUsers(allUsers);
     } catch(e) {
-        container.innerHTML = `<div class="empty-state"><div>❌</div><div>Errore: ${e.message}</div></div>`;
+        container.innerHTML = `<div class="empty-state"><div>❌</div><div>Errore: ${String(e.message||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div>`;
     }
 }
 

@@ -12,6 +12,13 @@
     const SESSION_ANNATA = 'gosport_current_annata';
     const SESSION_USER_ROLE = 'gosport_user_role';
 
+    // Anti-XSS: neutralizza HTML nei testi inseriti in innerHTML (es. messaggi
+    // d'errore che possono contenere stringhe provenienti dal server).
+    function escapeHtml(s) {
+        if (s == null) return '';
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
     // Chiavi localStorage per la licenza (persistente tra sessioni)
     const LICENSE_KEY = 'gosport_license_key';
     const LICENSE_EMAIL = 'gosport_license_email';
@@ -1136,7 +1143,7 @@ async function loadAnnateList() {
             listDiv.appendChild(card);
         }
     } catch (error) {
-        listDiv.innerHTML = `<div style="text-align:center;padding:40px;color:#d90429;"><p>Errore: ${error.message}</p></div>`;
+        listDiv.innerHTML = `<div style="text-align:center;padding:40px;color:#d90429;"><p>Errore: ${escapeHtml(error.message)}</p></div>`;
     }
 }
 
@@ -1418,7 +1425,7 @@ async function loadUsersList() {
             listDiv.appendChild(card);
         });
     } catch (error) {
-        listDiv.innerHTML = `<div style="text-align:center;padding:40px;color:#d90429;"><p>Errore: ${error.message}</p></div>`;
+        listDiv.innerHTML = `<div style="text-align:center;padding:40px;color:#d90429;"><p>Errore: ${escapeHtml(error.message)}</p></div>`;
     }
 }
 
@@ -1786,7 +1793,7 @@ async function loadAnnateList() {
             listDiv.appendChild(card);
         }
     } catch (error) {
-        listDiv.innerHTML = `<div style="text-align:center;padding:40px;color:#d90429;"><p>Errore: ${error.message}</p></div>`;
+        listDiv.innerHTML = `<div style="text-align:center;padding:40px;color:#d90429;"><p>Errore: ${escapeHtml(error.message)}</p></div>`;
     }
 }
 
@@ -2068,7 +2075,7 @@ async function loadUsersList() {
             listDiv.appendChild(card);
         });
     } catch (error) {
-        listDiv.innerHTML = `<div style="text-align:center;padding:40px;color:#d90429;"><p>Errore: ${error.message}</p></div>`;
+        listDiv.innerHTML = `<div style="text-align:center;padding:40px;color:#d90429;"><p>Errore: ${escapeHtml(error.message)}</p></div>`;
     }
 }
 

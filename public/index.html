@@ -2452,10 +2452,10 @@
     
     <!-- Multi-annata system - ORDINE IMPORTANTE! -->
     <script src="data-adapter-multi-annata.js?v=1779700000"></script>
-    <script src="auth-multi-annata.js?v=1779700010"></script>
+    <script src="auth-multi-annata.js?v=1779700020"></script>
 
     <!-- Script personalizzato -->
-    <script src="script.js?v=1779700000"></script>
+    <script src="script.js?v=1779700020"></script>
     <script>
 
     // ========================================================================
@@ -3568,7 +3568,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
         } catch(e) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#d90429;padding:20px;">❌ Errore: ${e.message}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#d90429;padding:20px;">❌ Errore: ${esc(e.message)}</td></tr>`;
         }
     };
 
