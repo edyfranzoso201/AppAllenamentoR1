@@ -1,6 +1,6 @@
 {
   "name": "Sport Monitoring — Gestione Squadra",
-  "short_name": "SP",
+  "short_name": "SM",
   "description": "Gestione atleti, allenamenti, presenze, valutazioni e comunicazioni per società sportive.",
   "start_url": "/index.html",
   "scope": "/",
