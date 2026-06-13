@@ -10,6 +10,18 @@ const END = new Date('2026-06-30');
 let events = {};
 let athletes = [];
 let isParentView = false;
+
+// Autorizzazione lato UI per le azioni distruttive sugli eventi. La sicurezza
+// REALE è server-side: /api/data accetta scritture solo con sessione valida +
+// canWrite(role) ['admin','coach','coachl1','coachl2']. Qui evitiamo solo di
+// far partire azioni che l'utente non dovrebbe vedere. Stesso set di ruoli
+// usato per Gare/Documenti in questo file. Sostituisce la vecchia (e inutile)
+// password hardcoded '1234'.
+function _canManageEvents() {
+  var role = '';
+  try { role = sessionStorage.getItem('gosport_user_role') || ''; } catch (e) {}
+  return ['admin', 'coach_l1', 'coach_l2'].indexOf(role) >= 0;
+}
 let currentAthleteId = null;
 let currentAnnataId = null;
 
@@ -956,10 +968,9 @@ window.deleteEvent = async function(date) {
     weekday: 'long', day: 'numeric', month: 'long' 
   });
   
-  var _doPwd1 = prompt('🔐 Elimina evento del ' + dateFormatted + '\nPassword:');
-  if (_doPwd1 === null) return;
-  if (_doPwd1 !== '1234') { alert('❌ Password errata.'); return; }
-  
+  if (!_canManageEvents()) { alert('⛔ Non hai i permessi per eliminare gli eventi.'); return; }
+  if (!confirm('Eliminare l\'evento del ' + dateFormatted + '?\nL\'operazione è irreversibile.')) return;
+
   try {
     const annataId = currentAnnataId || 
                      sessionStorage.getItem('gosport_current_annata') ||
@@ -1368,9 +1379,8 @@ window.showResponses = function() {
 
 // Funzione per il pulsante "Elimina Vecchi"
 window.deleteOldEvents = async function() {
-  var _doPwd2 = prompt('🔐 Elimina TUTTI gli eventi passati e le relative presenze/assenze.\nPassword:');
-  if (_doPwd2 === null) return;
-  if (_doPwd2 !== '1234') { alert('❌ Password errata.'); return; }
+  if (!_canManageEvents()) { alert('⛔ Non hai i permessi per eliminare gli eventi.'); return; }
+  if (!confirm('⚠️ Eliminare TUTTI gli eventi passati e le relative presenze/assenze?\nL\'operazione è irreversibile.')) return;
 
   try {
     const today = new Date().toISOString().split('T')[0];

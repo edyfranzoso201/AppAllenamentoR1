@@ -1578,10 +1578,10 @@ window.toggleCalendario=function(){
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-<script src="/auth-multi-annata.js?v=1779700020"></script>
+<script src="/auth-multi-annata.js?v=1779786420"></script>
 <script src="/data-adapter-multi-annata.js"></script>
 <script src="/presenza-calendar-mode.js"></script>
-<script src="/calendario-standalone.js?v=1779700020"></script>
+<script src="/calendario-standalone.js?v=1779786420"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════
 // ████  BACHECA  ████
@@ -2933,9 +2933,10 @@ window.gareDelSquadra = async function(nome) {
 
 // ── AZZERA TUTTE LE GARE ────────────────────────────────────────────────
 window.gareAzzeraAll = async function() {
-    var pwd = prompt('Inserisci la password per azzerare tutte le gare:');
-    if (pwd === null) return;
-    if (pwd !== '1234') { alert('Password errata.'); return; }
+    // Gate ruolo lato UI (sicurezza reale server-side su /api/data). Sostituisce
+    // la vecchia password hardcoded '1234'. Stesso set di ruoli delle Gare.
+    var _azRole = sessionStorage.getItem('gosport_user_role') || '';
+    if (['admin','coach_l1','coach_l2'].indexOf(_azRole) < 0) { alert('⛔ Non hai i permessi per azzerare le gare.'); return; }
     if (!confirm('Sei sicuro di voler eliminare TUTTE le gare? Operazione irreversibile.')) return;
     _gare = [];
     await _gareSaveGare();

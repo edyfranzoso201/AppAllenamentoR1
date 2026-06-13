@@ -9,6 +9,7 @@
     let ratingSheets = {};
     let ratingSheetModal;
     let ratingListModal;
+    let _radarChart = null; // istanza Chart.js del radar (va distrutta a ogni re-render)
     
     // Inizializzazione quando il DOM è pronto
     document.addEventListener('DOMContentLoaded', function() {
@@ -173,13 +174,22 @@
                 </div>
             `;
         } else {
-            // Mostra le pagelle
+            // Mostra le pagelle. In cima un radar (spider) che sintetizza il
+            // profilo dell'atleta: ultima pagella vs media storica.
             let html = `
                 <div class="col-12 mb-3">
-                    <h5>${athlete.name} - Storico Pagelle</h5>
+                    <h5>${escHtml(athlete.name)} - Storico Pagelle</h5>
                     <button class="btn btn-sm btn-primary" onclick="window.openNewRatingSheet('${athleteId}')">
                         <i class="bi bi-plus-circle"></i> Nuova Pagella
                     </button>
+                </div>
+                <div class="col-12 mb-4">
+                    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:12px;max-width:420px;margin:0 auto;">
+                        <div style="text-align:center;font-size:0.82rem;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.04em;">
+                            <i class="bi bi-radar"></i> Profilo valutazioni
+                        </div>
+                        <canvas id="rating-radar-canvas" height="260"></canvas>
+                    </div>
                 </div>
             `;
             
@@ -218,8 +228,9 @@
             });
             
             container.innerHTML = html;
+            renderRatingRadar(sheets);
         }
-        
+
         ratingListModal.show();
     }
     
@@ -409,6 +420,93 @@
         const values = Object.values(ratings).filter(v => v > 0);
         if (values.length === 0) return 0;
         return values.reduce((a, b) => a + b, 0) / values.length;
+    }
+
+    // Escape HTML minimale (coerente con escapeHtml() del resto dell'app)
+    function escHtml(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    // Disegna il radar (spider) del profilo valutazioni dell'atleta.
+    // Asse: 4 categorie su scala 0-5. Mostra l'ULTIMA pagella e, se ce n'è
+    // più di una, anche la MEDIA storica come confronto. Riusa Chart.js (già
+    // caricato in index.html da cdn.jsdelivr.net, consentito dalla CSP).
+    function renderRatingRadar(sheets) {
+        const canvas = document.getElementById('rating-radar-canvas');
+        if (!canvas || typeof Chart === 'undefined' || !sheets || !sheets.length) return;
+
+        // Distruggi l'istanza precedente: il modal si riapre più volte e Chart.js
+        // lascerebbe il canvas "occupato" generando errori al secondo render.
+        if (_radarChart) { try { _radarChart.destroy(); } catch (e) {} _radarChart = null; }
+
+        const CATS = [
+            { key: 'tecnica',         label: 'Tecnica' },
+            { key: 'tattica',         label: 'Tattica' },
+            { key: 'fisico',          label: 'Fisico' },
+            { key: 'comportamentale', label: 'Comportamento' }
+        ];
+
+        // sheets è già ordinato per data desc: [0] = più recente
+        const last = sheets[0].ratings || {};
+        const lastData = CATS.map(c => Number(last[c.key]) || 0);
+
+        // Media storica per categoria (su tutte le pagelle che hanno quel voto > 0)
+        const avgData = CATS.map(c => {
+            const vals = sheets.map(s => Number((s.ratings || {})[c.key]) || 0).filter(v => v > 0);
+            if (!vals.length) return 0;
+            return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
+        });
+
+        const datasets = [{
+            label: 'Ultima pagella',
+            data: lastData,
+            fill: true,
+            backgroundColor: 'rgba(25,135,84,0.25)',   // verde brand #198754
+            borderColor: '#198754',
+            borderWidth: 2,
+            pointBackgroundColor: '#198754',
+            pointRadius: 3
+        }];
+
+        // Confronto con la media solo se c'è più di una pagella (altrimenti
+        // sarebbero identiche e fuorvianti).
+        if (sheets.length > 1) {
+            datasets.push({
+                label: 'Media storica',
+                data: avgData,
+                fill: true,
+                backgroundColor: 'rgba(96,165,250,0.12)', // azzurro tenue
+                borderColor: '#60a5fa',
+                borderWidth: 1.5,
+                borderDash: [5, 4],
+                pointBackgroundColor: '#60a5fa',
+                pointRadius: 2
+            });
+        }
+
+        _radarChart = new Chart(canvas.getContext('2d'), {
+            type: 'radar',
+            data: { labels: CATS.map(c => c.label), datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        min: 0, max: 5,
+                        ticks: { stepSize: 1, color: '#64748b', backdropColor: 'transparent', font: { size: 10 } },
+                        grid: { color: 'rgba(255,255,255,0.10)' },
+                        angleLines: { color: 'rgba(255,255,255,0.10)' },
+                        pointLabels: { color: '#cbd5e1', font: { size: 12 } }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#cbd5e1', boxWidth: 14, font: { size: 11 } } },
+                    tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.formattedValue} / 5` } }
+                }
+            }
+        });
     }
     
     // Genera HTML stelle

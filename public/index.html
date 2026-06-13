@@ -2459,7 +2459,7 @@
     
     <!-- Multi-annata system - ORDINE IMPORTANTE! -->
     <script src="data-adapter-multi-annata.js?v=1779700000"></script>
-    <script src="auth-multi-annata.js?v=1779700020"></script>
+    <script src="auth-multi-annata.js?v=1779786420"></script>
 
     <!-- Script personalizzato -->
     <script src="script.js?v=1779700020"></script>
@@ -2910,7 +2910,7 @@
         </div>
     </div>
 </div>
-<script src="pagelle.js?v=1779700000"></script>
+<script src="pagelle.js?v=1779786420"></script>
 <script>
 (function() {
     function handleWeeklyVisibility() {
@@ -4014,12 +4014,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!_pagEditId || !_pagEditVoce) return;
         var person = (window.athletes||[]).find(function(a){ return String(a.id)===_pagEditId; });
         var nome = person ? person.name : _pagEditId;
-        var pwd = prompt('🔐 Inserisci la password per eliminare il pagamento di ' + nome + ':');
-        if (pwd === null) return; // annullato
-        if (pwd !== '1234') {
-            alert('❌ Password non corretta.');
-            return;
-        }
+        // Gate ruolo lato UI (sicurezza reale server-side su /api/data).
+        // Sostituisce la password hardcoded '1234'. Stessi ruoli dei pulsanti
+        // default pagamenti (_pagEditRoles).
+        var _pdRole = sessionStorage.getItem('gosport_user_role') || '';
+        if (['admin','dirigente_l1'].indexOf(_pdRole) < 0) { alert('⛔ Non hai i permessi per eliminare i pagamenti.'); return; }
         if (!confirm('⚠️ Eliminare il pagamento "' + (PAG_LABELS[_pagEditVoce]||_pagEditVoce) + '" di ' + nome + '? L\'operazione è irreversibile.')) return;
         if (_pagData[_pagEditId]) {
             delete _pagData[_pagEditId][_pagEditVoce];
@@ -4033,12 +4032,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ── Reset tutti i pagamenti della stagione (con password) ────
     window.pagResetAll = function() {
-        var pwd = prompt('🔐 Inserisci la password per resettare TUTTI i pagamenti della stagione:');
-        if (pwd === null) return;
-        if (pwd !== '1234') {
-            alert('❌ Password non corretta.');
-            return;
-        }
+        // Gate ruolo lato UI (sicurezza reale server-side su /api/data).
+        var _prRole = sessionStorage.getItem('gosport_user_role') || '';
+        if (['admin','dirigente_l1'].indexOf(_prRole) < 0) { alert('⛔ Non hai i permessi per resettare i pagamenti.'); return; }
         if (!confirm('⚠️ ATTENZIONE: elimina TUTTI i pagamenti della stagione. Operazione IRREVERSIBILE. Confermi?')) return;
         _pagData = {};
         window._pagData = _pagData;

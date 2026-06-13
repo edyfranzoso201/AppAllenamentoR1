@@ -19,6 +19,17 @@
         return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
     }
 
+    // Autorizzazione lato UI per le azioni amministrative distruttive (elimina
+    // annata/utente). La sicurezza REALE è server-side: /api/annate/manage e
+    // /api/auth/manage validano la sessione e richiedono ruolo admin. Qui
+    // evitiamo solo di far partire azioni non consentite e sostituiamo la
+    // vecchia password hardcoded '1234' (inutile, leggibile nel sorgente).
+    function _isAdminRole() {
+        var role = '';
+        try { role = sessionStorage.getItem(SESSION_USER_ROLE) || ''; } catch (e) {}
+        return role === 'admin';
+    }
+
     // Chiavi localStorage per la licenza (persistente tra sessioni)
     const LICENSE_KEY = 'gosport_license_key';
     const LICENSE_EMAIL = 'gosport_license_email';
@@ -1292,7 +1303,8 @@ window.editAnnata = async function(annataId) {
 };
 
 window.deleteAnnata = async function(annataId, nomeAnnata) {
-    var _pA = prompt('🔐 Elimina annata: ' + nomeAnnata + '\nPassword:'); if (_pA === null) return; if (_pA !== '1234') { alert('❌ Password errata.'); return; }
+    if (!_isAdminRole()) { alert('⛔ Solo un amministratore può eliminare un\'annata.'); return; }
+    if (!confirm('⚠️ Eliminare l\'annata "' + nomeAnnata + '" e TUTTI i suoi dati (atleti, valutazioni, eventi)?\nL\'operazione è IRREVERSIBILE.')) return;
     
     try {
         const _sid = sessionStorage.getItem('gosport_society_id');
@@ -1605,7 +1617,8 @@ window.editUser = async function(username) {
 };
 
 window.deleteUser = async function(username) {
-    var _pU = prompt('🔐 Elimina utente: ' + username + '\nPassword:'); if (_pU === null) return; if (_pU !== '1234') { alert('❌ Password errata.'); return; }
+    if (!_isAdminRole()) { alert('⛔ Solo un amministratore può eliminare un utente.'); return; }
+    if (!confirm('⚠️ Eliminare l\'utente "' + username + '"?\nL\'operazione è irreversibile.')) return;
     
     try {
         const _sid2 = sessionStorage.getItem('gosport_society_id');
@@ -1942,7 +1955,8 @@ window.editAnnata = async function(annataId) {
 };
 
 window.deleteAnnata = async function(annataId, nomeAnnata) {
-    var _pA = prompt('🔐 Elimina annata: ' + nomeAnnata + '\nPassword:'); if (_pA === null) return; if (_pA !== '1234') { alert('❌ Password errata.'); return; }
+    if (!_isAdminRole()) { alert('⛔ Solo un amministratore può eliminare un\'annata.'); return; }
+    if (!confirm('⚠️ Eliminare l\'annata "' + nomeAnnata + '" e TUTTI i suoi dati (atleti, valutazioni, eventi)?\nL\'operazione è IRREVERSIBILE.')) return;
     
     try {
         const _sid = sessionStorage.getItem('gosport_society_id');
@@ -2255,7 +2269,8 @@ window.editUser = async function(username) {
 };
 
 window.deleteUser = async function(username) {
-    var _pU = prompt('🔐 Elimina utente: ' + username + '\nPassword:'); if (_pU === null) return; if (_pU !== '1234') { alert('❌ Password errata.'); return; }
+    if (!_isAdminRole()) { alert('⛔ Solo un amministratore può eliminare un utente.'); return; }
+    if (!confirm('⚠️ Eliminare l\'utente "' + username + '"?\nL\'operazione è irreversibile.')) return;
     
     try {
         const _sid2 = sessionStorage.getItem('gosport_society_id');
