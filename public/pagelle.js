@@ -188,7 +188,9 @@
                         <div style="text-align:center;font-size:0.82rem;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.04em;">
                             <i class="bi bi-radar"></i> Profilo valutazioni
                         </div>
-                        <canvas id="rating-radar-canvas" height="260"></canvas>
+                        <div style="position:relative;height:300px;width:100%;">
+                            <canvas id="rating-radar-canvas"></canvas>
+                        </div>
                     </div>
                 </div>
             `;
@@ -228,7 +230,11 @@
             });
             
             container.innerHTML = html;
-            renderRatingRadar(sheets);
+            // Disegna il radar DOPO che il modal è visibile: se il contenitore è
+            // ancora display:none (dimensioni 0) Chart.js sbaglia il primo layout.
+            ratingListModal.show();
+            requestAnimationFrame(() => renderRatingRadar(sheets));
+            return;
         }
 
         ratingListModal.show();
