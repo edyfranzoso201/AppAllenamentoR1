@@ -586,7 +586,7 @@
         }
 
         var avg = calculateAverageRating(sheet.ratings);
-        var teamName = (window._appData && window._appData.teamName) || 'GO SPORT';
+        var teamName = (window._appData && window._appData.teamName) || 'La mia squadra';
 
         // Genera HTML stelle in formato unicode (★ piene + ☆ vuote)
         function starsText(n) {

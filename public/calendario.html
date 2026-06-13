@@ -2596,7 +2596,7 @@ function _gareRenderColonna(lista, tipo) {
     var html = '';
 
     // Recupera nome squadra di casa dalle impostazioni
-    var nomeSoc = (window._appData && window._appData.societyName) ? window._appData.societyName : 'GO SPORT';
+    var nomeSoc = (window._appData && window._appData.societyName) ? window._appData.societyName : 'La mia squadra';
 
     giorni.forEach(function(data) {
         var gList = gruppi[data].sort(function(a,b){ return a.ora.localeCompare(b.ora); });
@@ -3368,8 +3368,8 @@ function _gareDrawLocandina(tipo){
                 ctx.fillText((g.categoria||'')+(g.competizione?' ('+g.competizione+')':''),x+72,y+19);y+=TH;
                 ctx.fillStyle='#f0f1f2';ctx.fillRect(x,y,w,MH);
                 // Render squadre con VS blu al centro
-                var teamA = g.tipo==='casa' ? (window._appData&&window._appData.societyName?window._appData.societyName:'GO SPORT') : (g.avversaria||'?');
-                var teamB = g.tipo==='casa' ? (g.avversaria||'?') : (window._appData&&window._appData.societyName?window._appData.societyName:'GO SPORT');
+                var teamA = g.tipo==='casa' ? (window._appData&&window._appData.societyName?window._appData.societyName: 'La mia squadra') : (g.avversaria||'?');
+                var teamB = g.tipo==='casa' ? (g.avversaria||'?') : (window._appData&&window._appData.societyName?window._appData.societyName: 'La mia squadra');
                 var vsW = ctx.measureText(' VS ').width + 20;
                 var teamW = (w - vsW - 20) / 2;
                 ctx.font='bold 13px Arial,sans-serif';

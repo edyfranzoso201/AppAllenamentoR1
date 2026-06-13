@@ -5494,7 +5494,7 @@ window.printPagamentiDedicato = function() {
     var tS = document.getElementById('pag-table-staff');
     if (!tA || !tS) { alert('Tabelle pagamenti non trovate.'); return; }
 
-    var teamName = (window._appData && window._appData.teamName) || 'GO SPORT';
+    var teamName = (window._appData && window._appData.teamName) || 'La mia squadra';
     var dataStampa = new Date().toLocaleDateString('it-IT');
 
     // Funzione per estrarre HTML "pulito" da una tabella (rimuove pulsanti, sticky, colori scuri)
@@ -5581,7 +5581,7 @@ window.printMaterialiDedicato = function() {
     var tS = document.getElementById('materiale-table-staff');
     if (!tA || !tS) { alert('Tabelle materiali non trovate.'); return; }
 
-    var teamName = (window._appData && window._appData.teamName) || 'GO SPORT';
+    var teamName = (window._appData && window._appData.teamName) || 'La mia squadra';
     var dataStampa = new Date().toLocaleDateString('it-IT');
 
     // Trasforma una tabella DOM in HTML pulito per stampa.

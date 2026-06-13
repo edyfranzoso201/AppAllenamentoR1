@@ -851,7 +851,7 @@ Esempio: {"U2010":[1,3,5],"U2011":[2,4,6]}`;
 if (!annataId) {
 if (req.method === 'GET') {
 const globalPosts = (await kv.get('global:posts')) || [];
-const teamName = (await kv.get('global:teamName')) || 'GO SPORT';
+const teamName = (await kv.get('global:teamName')) || 'La mia squadra';
 const bachecaConfig = (await kv.get('global:bachecaConfig')) || {};
 const superadminBanners = (await kv.get('global:superadminBanners')) || {};
 const postImages = {};
@@ -940,7 +940,7 @@ kv.get(`${prefix}:athleteDocs`)  // ← documenti caricati dai genitori
 return res.status(200).json({
 calendarEvents: calendarEvents || {},
 calendarResponses: calendarResponses || {},
-teamName: teamName || 'GO SPORT',
+teamName: teamName || 'La mia squadra',
 convSettings: convSettings || {},
 convBg:  convBg  || null,
 convBg2: convBg2 || null,
@@ -1051,7 +1051,7 @@ convBg2: convBg2 || null,
 posts: posts || [],
 globalPosts: globalPosts || [],
 postImages: {},
-teamName: teamName || 'GO SPORT',
+teamName: teamName || 'La mia squadra',
 individualPassword: individualPassword || '1234',
 ratingSheets: ratingSheets || {},
 documents: documents || [],
