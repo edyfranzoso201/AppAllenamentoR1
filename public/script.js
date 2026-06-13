@@ -4153,6 +4153,100 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
             sessioniRows.sort((a, b) => (a.Data > b.Data ? -1 : 1));
             if (sessioniRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sessioniRows), 'Sessioni');
 
+            // Helper: nome atleta da id (usato dai fogli sotto)
+            const _athName = (id) => {
+                const a = (d.athletes || []).find(x => String(x.id) === String(id));
+                return a ? a.name : String(id);
+            };
+
+            // Sheet 6: Pagamenti — pagamenti[athleteId][voce] = {base, discount, installments:[{amount,dueDate,paid}]}
+            const pagRows = [];
+            const pagLabels = d.pagLabels || {};
+            for (const [aid, voci] of Object.entries(d.pagamenti || {})) {
+                for (const [voce, dett] of Object.entries(voci || {})) {
+                    if (!dett || typeof dett !== 'object') continue;
+                    const rate = Array.isArray(dett.installments) ? dett.installments : [];
+                    if (rate.length === 0) {
+                        pagRows.push({
+                            'Atleta': _athName(aid),
+                            'Voce': pagLabels[voce] || voce,
+                            'Importo Base (€)': dett.base ?? '',
+                            'Sconto': dett.discount ? `${dett.discount}${dett.discountType === 'percent' ? '%' : '€'}` : '',
+                            'Rata': '', 'Importo Rata (€)': '', 'Scadenza': '', 'Pagata': ''
+                        });
+                    } else {
+                        rate.forEach((r, ri) => {
+                            pagRows.push({
+                                'Atleta': _athName(aid),
+                                'Voce': pagLabels[voce] || voce,
+                                'Importo Base (€)': dett.base ?? '',
+                                'Sconto': dett.discount ? `${dett.discount}${dett.discountType === 'percent' ? '%' : '€'}` : '',
+                                'Rata': ri + 1,
+                                'Importo Rata (€)': r.amount ?? '',
+                                'Scadenza': r.dueDate || '',
+                                'Pagata': r.paid ? 'SI' : 'NO'
+                            });
+                        });
+                    }
+                }
+            }
+            if (pagRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(pagRows), 'Pagamenti');
+
+            // Sheet 7: Materiale — materiale.assignments[athleteId][itemId] = {status, qty, taglia, nota}
+            const matItems = (d.materiale && Array.isArray(d.materiale.items)) ? d.materiale.items : [];
+            const matItemTitle = (id) => {
+                const it = matItems.find(x => String(x.id) === String(id));
+                return it ? (it.title || it.id) : String(id);
+            };
+            const matRows = [];
+            const matAssign = (d.materiale && d.materiale.assignments) ? d.materiale.assignments : {};
+            for (const [aid, items] of Object.entries(matAssign)) {
+                for (const [itemId, entry] of Object.entries(items || {})) {
+                    if (itemId === '_numero') continue; // campo speciale (numero maglia)
+                    if (!entry || typeof entry !== 'object') continue;
+                    matRows.push({
+                        'Atleta': _athName(aid),
+                        'Materiale': matItemTitle(itemId),
+                        'Stato': entry.status || '',
+                        'Quantità': entry.qty ?? '',
+                        'Taglia': entry.taglia || '',
+                        'Note': entry.nota || ''
+                    });
+                }
+            }
+            if (matRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(matRows), 'Materiale');
+
+            // Sheet 8: Convocazioni — array di {data, tipo, avversario, luogo, ritrovo, inizio, categoria, note, atletiIds, staffIds}
+            const convRows = (d.convocazioni || []).map(c => ({
+                'Data': c.data || '',
+                'Tipo': c.tipo || '',
+                'Avversario': c.avversario || '',
+                'Categoria': c.categoria || '',
+                'Luogo': c.luogo || '',
+                'Ritrovo': c.ritrovo || '',
+                'Inizio': c.inizio || '',
+                'N. Convocati': Array.isArray(c.atletiIds) ? c.atletiIds.length : '',
+                'Convocati': Array.isArray(c.atletiIds) ? c.atletiIds.map(_athName).join(', ') : '',
+                'Note': c.note || ''
+            }));
+            convRows.sort((a, b) => (a.Data > b.Data ? -1 : 1));
+            if (convRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(convRows), 'Convocazioni');
+
+            // Sheet 9: Hall of Fame / Premi — awards[athleteId] o awards[id] = {reason, date,...}
+            const awardRows = [];
+            for (const [key, aw] of Object.entries(d.awards || {})) {
+                const list = Array.isArray(aw) ? aw : [aw];
+                list.forEach(a => {
+                    if (!a || typeof a !== 'object') return;
+                    awardRows.push({
+                        'Atleta': _athName(a.athleteId || key),
+                        'Motivazione': a.reason || '',
+                        'Data': a.date || ''
+                    });
+                });
+            }
+            if (awardRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(awardRows), 'Hall of Fame');
+
             if (wb.SheetNames.length === 0) { alert('⚠️ Nessun dato da esportare.'); return; }
 
             const timestamp = new Date().toISOString().split('T')[0];

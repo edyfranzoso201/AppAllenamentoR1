@@ -919,6 +919,35 @@ setTimeout(() => {
 
 
 
+// ── Push notifiche eventi (annullamento / modifica sessione) ──────────────
+// Invia una notifica push ai subscriber dell'annata corrente. Richiede una
+// sessione reale (token validato in KV lato server); se l'utente non ne ha
+// una valida l'endpoint risponde 401 e la push viene semplicemente saltata.
+// Fail-silent: un errore qui non deve mai bloccare il salvataggio dell'evento.
+function _pushNotifyEvento(title, body) {
+  try {
+    var aid = currentAnnataId ||
+              sessionStorage.getItem('gosport_current_annata') ||
+              localStorage.getItem('currentAnnata') || '';
+    if (!aid) return;
+    var tok  = sessionStorage.getItem('gosport_session_token') || '';
+    if (!tok || tok === 'true') return; // niente token reale → niente push
+    var role = sessionStorage.getItem('gosport_user_role') || '';
+    fetch('/api/data?action=push-send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Auth-Session': tok, 'X-Annata-Id': aid, 'X-User-Role': role },
+      body: JSON.stringify({ title: title, body: body, url: '/calendario.html?annata=' + aid, annataId: aid })
+    }).catch(function(){});
+  } catch (e) { /* fail-silent */ }
+}
+
+// Formatta una data ISO (yyyy-mm-dd) come "lun 8 set"
+function _pushFmtDate(iso) {
+  try {
+    return new Date(iso + 'T00:00:00').toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
+  } catch (e) { return iso; }
+}
+
 window.deleteEvent = async function(date) {
   const event = events[date];
   if (!event) return;
@@ -952,6 +981,11 @@ window.deleteEvent = async function(date) {
     });
 
     if (saveResponse.ok) {
+      // Notifica i genitori/atleti dell'annullamento (evita viaggi a vuoto)
+      _pushNotifyEvento(
+        '❌ Evento annullato',
+        (event.type || 'Evento') + ' del ' + _pushFmtDate(date) + (event.time ? ' (' + event.time + ')' : '') + ' è stato annullato.'
+      );
       alert('✅ Evento eliminato!');
       location.reload();
     } else {
@@ -1090,6 +1124,15 @@ window.editEvent = function(date) {
       });
       
       if (saveResponse.ok) {
+        // Notifica solo se è cambiato qualcosa di rilevante per chi partecipa
+        // (data, orario o tipo): un edit della sola nota non disturba nessuno.
+        var _changed = (newDate !== date) || (newTime !== (event.time || '')) || (newType !== (event.type || ''));
+        if (_changed) {
+          _pushNotifyEvento(
+            '✏️ Evento aggiornato',
+            (newType || 'Evento') + ' ora ' + _pushFmtDate(newDate) + (newTime ? ' ore ' + newTime : '') + '. Controlla il calendario.'
+          );
+        }
         alert('✅ Evento aggiornato!');
         modal.remove();
         location.reload();

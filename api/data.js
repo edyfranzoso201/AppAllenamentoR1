@@ -199,15 +199,19 @@ if (req.query?.action === 'cron-remind' && req.method === 'GET') {
         const athletes = (await kv.get(`annate:${annata.id}:athletes`)) || [];
         for (const athlete of athletes) {
           if (athlete.isGuest) continue;
+
+          const fmtDate = iso => new Date(iso + 'T00:00:00').toLocaleDateString('it-IT', { day:'2-digit', month:'long', year:'numeric' });
+          const visitaDue  = athlete.scadenzaVisita === visitaAlertStr;
+          const tesseraDue = athlete.scadenzaTessera === tesseraAlertStr;
+
+          // ── Email (richiede almeno un indirizzo) ────────────────────────
           const emails = [];
           if (athlete.email) emails.push(athlete.email);
           if (athlete.parents?.parent1?.email) emails.push(athlete.parents.parent1.email);
           if (athlete.parents?.parent2?.email && athlete.parents.parent2.email !== athlete.parents?.parent1?.email) emails.push(athlete.parents.parent2.email);
           if (!emails.length) continue;
 
-          const fmtDate = iso => new Date(iso + 'T00:00:00').toLocaleDateString('it-IT', { day:'2-digit', month:'long', year:'numeric' });
-
-          if (athlete.scadenzaVisita === visitaAlertStr) {
+          if (visitaDue) {
             try {
               await transporter.sendMail({
                 from: `"Sport Monitoring" <${process.env.GMAIL_USER}>`,
@@ -218,7 +222,7 @@ if (req.query?.action === 'cron-remind' && req.method === 'GET') {
               emailsSent++;
             } catch(e) { console.error('[cron-email] Errore visita:', e.message); }
           }
-          if (athlete.scadenzaTessera === tesseraAlertStr) {
+          if (tesseraDue) {
             try {
               await transporter.sendMail({
                 from: `"Sport Monitoring" <${process.env.GMAIL_USER}>`,
