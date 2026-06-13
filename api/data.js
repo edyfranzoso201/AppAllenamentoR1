@@ -70,14 +70,32 @@ return res.status(400).json({ success: false, message: 'Formato annataId non val
 }
 
 // ── PUSH: subscribe ────────────────────────────────────────────────────────
+// Endpoint pubblico (genitori/bacheca senza login): non richiede auth, ma è
+// indurito contro abusi — id annata valido, annata esistente, endpoint https,
+// e cap sul numero di sottoscrizioni per annata per evitare di gonfiare il KV.
 if (req.query?.action === 'push-subscribe' && req.method === 'POST') {
   const { subscription, annataId: subAnnataId } = req.body || {};
   if (!subAnnataId || !subscription?.endpoint) {
     return res.status(400).json({ success: false, message: 'Dati mancanti' });
   }
+  if (!isValidId(subAnnataId)) {
+    return res.status(400).json({ success: false, message: 'annataId non valido' });
+  }
+  // L'endpoint push deve essere un URL https (web push valido)
+  if (typeof subscription.endpoint !== 'string' || !subscription.endpoint.startsWith('https://')) {
+    return res.status(400).json({ success: false, message: 'subscription non valida' });
+  }
+  // L'annata deve esistere: niente liste push per annate inventate
+  const pushAnnateList = (await kv.get('annate:list')) || [];
+  if (!pushAnnateList.some(a => String(a.id) === String(subAnnataId))) {
+    return res.status(404).json({ success: false, message: 'Annata non trovata' });
+  }
   const key = `push:annata:${subAnnataId}:subs`;
   const subs = (await kv.get(key)) || [];
   if (!subs.find(s => s.endpoint === subscription.endpoint)) {
+    if (subs.length >= 2000) {
+      return res.status(429).json({ success: false, message: 'Limite sottoscrizioni raggiunto' });
+    }
     subs.push(subscription);
     await kv.set(key, subs);
     const annateList = (await kv.get('push:annate')) || [];
@@ -920,6 +938,9 @@ athleteDocs: athleteDocs || {}  // ← incluso nella risposta
 }
 
 // ── Gare ─────────────────────────────────────────────────────────────────
+// GET pubblico per design: i genitori vedono il calendario gare dal link
+// calendario senza login. Il societyId è validato (isValidId) e non enumerabile;
+// dati a bassa sensibilità (calendario partite). La POST resta protetta (canWrite).
 if (req.query && req.query.action === 'gare') {
 const sid = req.query.societyId || (req.body && req.body.societyId) || session.societyId || null;
 
