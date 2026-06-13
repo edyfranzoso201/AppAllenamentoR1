@@ -34,12 +34,32 @@ jobs:
           KEYS=$(cat backups/${DATE}.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('keysCount',0))")
           echo "Backup OK: $KEYS keys exported"
 
+      - name: Rotate old backups (keep last 14 days)
+        run: |
+          # Mantiene solo i 14 snapshot piu' recenti per evitare che il repo
+          # cresca all'infinito (~8 MB/giorno). I piu' vecchi vengono rimossi.
+          RETENTION=14
+          cd backups
+          COUNT=$(ls -1 *.json 2>/dev/null | wc -l)
+          echo "Snapshot presenti: $COUNT (retention: $RETENTION)"
+          if [ "$COUNT" -gt "$RETENTION" ]; then
+            # ordina per nome (le date YYYY-MM-DD si ordinano cronologicamente)
+            # e rimuove tutti tranne gli ultimi RETENTION
+            ls -1 *.json | sort | head -n -"$RETENTION" | while read -r OLD; do
+              echo "Rimuovo backup vecchio: $OLD"
+              rm -f "$OLD"
+            done
+          else
+            echo "Nessuna rotazione necessaria"
+          fi
+
       - name: Commit backup
         run: |
           DATE=$(date -u +%Y-%m-%d)
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add backups/
+          # -A raccoglie sia il nuovo snapshot sia le rimozioni della rotazione
+          git add -A backups/
           git diff --staged --quiet && echo "No changes" || \
             git commit -m "backup: Redis snapshot $DATE [skip ci]"
           git push
