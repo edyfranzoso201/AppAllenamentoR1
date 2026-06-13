@@ -1,7 +1,7 @@
-// Service Worker — GO Sport Web Push
+// Service Worker — Sport Monitoring Web Push
 self.addEventListener('push', event => {
     const data = event.data ? event.data.json() : {};
-    const title = data.title || 'GO Sport';
+    const title = data.title || 'Sport Monitoring';
     const options = {
         body: data.body || '',
         icon: '/favicon.svg',

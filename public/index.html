@@ -2462,7 +2462,7 @@
     <script src="auth-multi-annata.js?v=1779800000"></script>
 
     <!-- Script personalizzato -->
-    <script src="script.js?v=1779800000"></script>
+    <script src="script.js?v=1779801000"></script>
     <script>
 
     // ========================================================================
@@ -4424,7 +4424,7 @@ document.addEventListener('DOMContentLoaded', function() {
         alert('✅ Convocazione salvata!');
         // Invia push notification a tutti i subscriber della società
         window.gsPushSend({
-            title: '📣 Convocazione GO Sport',
+            title: '📣 Convocazione Sport Monitoring',
             body: (conv.tipo || 'Convocazione') + (conv.avversario ? ' — ' + conv.avversario : '') + (conv.data ? ' · ' + new Date(conv.data + 'T00:00:00').toLocaleDateString('it-IT', {day:'2-digit', month:'short'}) : ''),
             url: '/'
         });
@@ -5528,7 +5528,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
 </div>
 
 <script>
-// ── Web Push — GO Sport ────────────────────────────────────────────────────
+// ── Web Push — Sport Monitoring ─────────────────────────────────────────────
 (function() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 

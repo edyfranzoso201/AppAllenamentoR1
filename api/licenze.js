@@ -1,4 +1,4 @@
-// api/licenze.js - Gestione licenze GO Sport
+// api/licenze.js - Gestione licenze Sport Monitoring
 // Questo endpoint gestisce la creazione, verifica e revoca delle licenze
 
 import { createClient } from '@vercel/kv';

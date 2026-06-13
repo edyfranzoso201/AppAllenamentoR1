@@ -129,7 +129,7 @@ if (req.query?.action === 'push-send' && req.method === 'POST') {
     process.env.VAPID_PUBLIC_KEY,
     process.env.VAPID_PRIVATE_KEY
   );
-  const payload = JSON.stringify({ title: title || 'GO Sport', body: body || '', url: url || '/' });
+  const payload = JSON.stringify({ title: title || 'Sport Monitoring', body: body || '', url: url || '/' });
   const results = await Promise.allSettled(subs.map(s => webpush.sendNotification(s, payload)));
   const valid = subs.filter((_, i) => !(results[i].status === 'rejected' && results[i].reason?.statusCode === 410));
   if (valid.length !== subs.length) await kv.set(`push:annata:${aid}:subs`, valid);
@@ -172,7 +172,7 @@ if (req.query?.action === 'cron-remind' && req.method === 'GET') {
       if (!sessionsTomorrow.length) continue;
       const session0 = sessionsTomorrow[0];
       const payload = JSON.stringify({
-        title: '📅 Promemoria GO Sport',
+        title: '📅 Promemoria Sport Monitoring',
         body: `Domani: ${session0.title || 'Sessione'}${session0.time ? ' ore ' + session0.time : ''}${session0.location ? ' @ ' + session0.location : ''}`,
         url: '/'
       });
@@ -682,7 +682,7 @@ if (req.query?.action === 'ai-chat') {
   if (!apiKey) return res.status(500).json({ success: false, message: 'API key non configurata' });
 
   const GIORNI_NOMI_CHAT = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
-  const systemPrompt = `Sei un assistente esperto di pianificazione allenamenti per la piattaforma GO Sport.
+  const systemPrompt = `Sei un assistente esperto di pianificazione allenamenti per la piattaforma Sport Monitoring.
 Rispondi SEMPRE in italiano, in modo diretto e pratico. Puoi fare domande di chiarimento, proporre varianti e ragionare insieme all'utente.
 
 DATI IMPIANTO CORRENTI:
