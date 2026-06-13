@@ -16,8 +16,13 @@ function setCors(req, res) {
     'http://localhost:3001',
     'http://127.0.0.1:3000'
   ];
-  const originToSet = allowed.includes(origin) ? origin : allowed[0];
-  res.setHeader('Access-Control-Allow-Origin', originToSet);
+  // Setta Allow-Origin SOLO per origini in whitelist. Per un'origine
+  // sconosciuta non settiamo l'header: il browser blocca la richiesta
+  // cross-origin. Le richieste senza header Origin (same-origin, cron,
+  // server-to-server) non sono soggette a CORS e passano comunque.
+  if (origin && allowed.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
   res.setHeader('Vary', 'Origin');
 }
 

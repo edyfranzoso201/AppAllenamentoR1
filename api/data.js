@@ -15,8 +15,13 @@ const allowed = [
 'http://localhost:3001',
 'http://127.0.0.1:3000'
 ];
-const originToSet = allowed.includes(origin) ? origin : allowed[0];
-res.setHeader('Access-Control-Allow-Origin', originToSet);
+// Setta Allow-Origin SOLO per origini in whitelist. Per un'origine
+// sconosciuta non settiamo l'header: il browser blocca la richiesta
+// cross-origin. Le richieste senza header Origin (same-origin, cron,
+// server-to-server, backup bot) non sono soggette a CORS e passano comunque.
+if (origin && allowed.includes(origin)) {
+res.setHeader('Access-Control-Allow-Origin', origin);
+}
 res.setHeader('Vary', 'Origin');
 }
 
@@ -133,9 +138,18 @@ if (req.query?.action === 'push-send' && req.method === 'POST') {
 
 // ── PUSH: cron reminder (chiamato da Vercel Cron ogni mattina) ─────────────
 if (req.query?.action === 'cron-remind' && req.method === 'GET') {
-  const secret = process.env.CRON_SECRET || 'gs_cron_2026';
-  const authOk = req.headers['authorization'] === `Bearer ${secret}`
-              || req.query.token === secret;
+  // S7: CRON_SECRET obbligatorio — niente più default hardcoded debole.
+  // Se manca l'env var, l'endpoint è disabilitato (fail-closed) invece di
+  // accettare un secret prevedibile.
+  const secret = process.env.CRON_SECRET;
+  if (!secret) {
+    console.error('[cron-remind] CRON_SECRET non configurato — endpoint disabilitato');
+    return res.status(503).json({ success: false, message: 'Cron non configurato' });
+  }
+  // S8: il secret si accetta SOLO dall'header Authorization (canale usato da
+  // Vercel Cron). Niente più ?token= in query string, che finirebbe nei log
+  // di accesso / cronologia URL.
+  const authOk = req.headers['authorization'] === `Bearer ${secret}`;
   if (!authOk) {
     return res.status(401).json({ success: false, message: 'Non autorizzato' });
   }

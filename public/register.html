@@ -277,6 +277,7 @@
     I dati forniti in questo modulo saranno trattati esclusivamente dalla società sportiva per finalità
     di gestione dell'iscrizione, nel rispetto del Reg. UE 2016/679 (GDPR).<br><br>
     I dati non verranno ceduti a terzi né utilizzati per finalità commerciali.
+    <div style="margin-top:10px;font-size:0.72rem;opacity:0.7;" id="informativa-versione-label"></div>
     <div class="privacy-switch-row">
       <span class="switch-label">Ho letto e accetto l'informativa privacy e le modalità di accesso sopra descritte <span class="req">*</span></span>
       <label class="switch">
@@ -346,6 +347,15 @@
 const params = new URLSearchParams(location.search);
 const SOCIETY_ID = params.get('sid') || '';
 const API_BASE = '';
+
+// Versione dell'informativa privacy. INCREMENTARE ogni volta che cambia il
+// TESTO dell'informativa qui sotto: così sappiamo quale versione ha accettato
+// ciascun iscritto (accountability art. 7 GDPR). Mostrata anche all'utente.
+const INFORMATIVA_VERSIONE = '1.0';
+(function() {
+  var lbl = document.getElementById('informativa-versione-label');
+  if (lbl) lbl.textContent = 'Informativa privacy versione ' + INFORMATIVA_VERSIONE;
+})();
 
 let societyName = '';
 
@@ -447,10 +457,24 @@ async function submitForm() {
 
   const uscitaAutonoma = !isAdult && document.getElementById('uscita-autonoma').checked;
 
+  // Prova del consenso (art. 7 GDPR): registriamo COSA è stato accettato,
+  // QUANDO e su QUALE versione dell'informativa. Il timestamp definitivo e
+  // l'IP vengono riconfermati lato server. I campi piatti (privacyAccepted,
+  // consensoFoto, uscitaAutonoma) restano per retrocompatibilità.
+  const _consentTs = new Date().toISOString();
+  const consensi = {
+    informativaVersione: INFORMATIVA_VERSIONE,
+    dataConsenso: _consentTs,
+    privacy: { accettato: true,         data: _consentTs },
+    foto:    { accettato: !!consensoFoto, data: _consentTs },
+    uscita:  { accettato: !!uscitaAutonoma, data: _consentTs, applicabile: !isAdult }
+  };
+
   let body = {
     societyId: SOCIETY_ID, nome, cognome, dataNascita, isAdult,
     sesso, luogoNascita: comune + ' (' + provincia + ')',
-    privacyAccepted: true, consensoFoto, uscitaAutonoma
+    privacyAccepted: true, consensoFoto, uscitaAutonoma,
+    consensi
   };
 
   const isCFValid = (cf) => {

@@ -49,7 +49,8 @@ export default async function handler(req, res) {
       const body = req.body || {};
       const { societyId, nome, cognome, dataNascita, isAdult,
               email, cellulare, codiceFiscale, codiceFiscaleAtleta,
-              genitore, privacyAccepted, sesso, luogoNascita, indirizzo, consensoFoto, uscitaAutonoma } = body;
+              genitore, privacyAccepted, sesso, luogoNascita, indirizzo, consensoFoto, uscitaAutonoma,
+              consensi } = body;
 
       if (!societyId || !nome || !cognome || !dataNascita) {
         return res.status(400).json({ success: false, message: 'Dati obbligatori mancanti' });
@@ -79,11 +80,28 @@ export default async function handler(req, res) {
       }
 
       const existing = (await kv.get(kvKey(societyId))) || [];
+
+      // Prova del consenso (art. 7 GDPR). Il timestamp e l'IP di prova sono
+      // riconfermati QUI lato server (non ci fidiamo del client): il client
+      // indica versione informativa e quali consensi, il server "sigilla" con
+      // data e IP affidabili. Retrocompatibile: se il client non manda
+      // `consensi`, lo ricostruiamo dai campi piatti.
+      const serverTs = new Date().toISOString();
+      const cIn = (consensi && typeof consensi === 'object') ? consensi : {};
+      const consensiRecord = {
+        informativaVersione: String(cIn.informativaVersione || 'n/d'),
+        dataConsenso: serverTs,
+        ip: clientIp(req),
+        privacy: { accettato: true,              data: serverTs },
+        foto:    { accettato: !!consensoFoto,     data: serverTs },
+        uscita:  { accettato: !!uscitaAutonoma,   data: serverTs, applicabile: !isAdult },
+      };
+
       const newEntry = {
         id: crypto.randomUUID(),
         societyId,
         status: 'pending',
-        submittedAt: new Date().toISOString(),
+        submittedAt: serverTs,
         nome: nome.trim(),
         cognome: cognome.trim(),
         dataNascita,
@@ -99,6 +117,7 @@ export default async function handler(req, res) {
         codiceFiscaleAtleta: !isAdult ? (codiceFiscaleAtleta || '').trim() : '',
         genitore: !isAdult ? (genitore || {}) : null,
         privacyAccepted: true,
+        consensi: consensiRecord,
       };
 
       await kv.set(kvKey(societyId), [newEntry, ...existing]);
@@ -197,6 +216,9 @@ export default async function handler(req, res) {
             parents,
             uscitaAutonoma: reg.uscitaAutonoma || false,
             consensoFoto:   reg.consensoFoto   || false,
+            // Propaga la prova del consenso all'atleta: deve sopravvivere
+            // anche se in futuro l'iscrizione originale viene cancellata.
+            consensi:       reg.consensi || null,
           };
           athletes.push(newAthlete);
           await kv.set(`${prefix}:athletes`, athletes);

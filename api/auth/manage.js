@@ -16,8 +16,13 @@ function setCors(req, res) {
     'http://localhost:3001',
     'http://127.0.0.1:3000'
   ];
-  const originToSet = allowed.includes(origin) ? origin : allowed[0];
-  res.setHeader('Access-Control-Allow-Origin', originToSet);
+  // Setta Allow-Origin SOLO per origini in whitelist. Per un'origine
+  // sconosciuta non settiamo l'header: il browser blocca la richiesta
+  // cross-origin. Le richieste senza header Origin (same-origin, cron,
+  // server-to-server) non sono soggette a CORS e passano comunque.
+  if (origin && allowed.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
   res.setHeader('Vary', 'Origin');
 }
 
@@ -123,8 +128,15 @@ export default async function handler(req, res) {
           return res.status(400).json({ success: false, message: 'Username e password obbligatori' });
         }
 
-        // Controlla duplicati (case-insensitive)
-        if (users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
+        // Normalizza UNA volta: il record e la chiave individuale devono usare
+        // la stessa base (trim) per non creare disallineamenti lista↔chiave.
+        const usernameTrim = String(username).trim();
+        if (!usernameTrim) {
+          return res.status(400).json({ success: false, message: 'Username non valido' });
+        }
+
+        // Controlla duplicati (case-insensitive + trim, coerente con la DELETE)
+        if (users.find(u => String(u.username || '').trim().toLowerCase() === usernameTrim.toLowerCase())) {
           return res.status(400).json({ success: false, message: 'Username già esistente' });
         }
 
@@ -133,7 +145,7 @@ export default async function handler(req, res) {
         }
 
         const newUser = {
-          username:  username.trim(),
+          username:  usernameTrim,
           password:  hashPassword(password),
           email:     (email     || '').trim(),
           nome:      (nome      || '').trim(),
@@ -149,7 +161,7 @@ export default async function handler(req, res) {
         users.push(newUser);
         await Promise.all([
           kv.set('auth:users', users),
-          kv.set(`auth:user:${username.toLowerCase()}`, newUser),
+          kv.set(`auth:user:${usernameTrim.toLowerCase()}`, newUser),
         ]);
 
         console.log(`✅ Utente creato: ${username} (${newUser.role}) societyId=${societyId}`);
@@ -162,7 +174,9 @@ export default async function handler(req, res) {
           return res.status(400).json({ success: false, message: 'Username obbligatorio' });
         }
 
-        const idx = users.findIndex(u => u.username === username);
+        // Match case-insensitive + trim (coerente con CREATE/DELETE)
+        const updUnameLower = String(username).trim().toLowerCase();
+        const idx = users.findIndex(u => String(u.username || '').trim().toLowerCase() === updUnameLower);
         if (idx === -1) {
           return res.status(404).json({ success: false, message: 'Utente non trovato' });
         }
@@ -193,7 +207,9 @@ export default async function handler(req, res) {
         users[idx] = updated;
         await Promise.all([
           kv.set('auth:users', users),
-          kv.set(`auth:user:${username.toLowerCase()}`, updated),
+          // Usa l'username del record trovato (non l'input) per non creare una
+          // chiave con casing diverso da quella esistente.
+          kv.set(`auth:user:${String(updated.username || '').trim().toLowerCase()}`, updated),
         ]);
 
         console.log(`✅ Utente aggiornato: ${username} (${updated.role})`);
@@ -211,7 +227,12 @@ export default async function handler(req, res) {
           return res.status(403).json({ success: false, message: 'Non puoi eliminare l\'utente admin principale' });
         }
 
-        const target = users.find(u => u.username === username);
+        // Match case-insensitive: la CREATE controlla i duplicati in modo
+        // case-insensitive, quindi anche la DELETE deve esserlo, altrimenti un
+        // record con casing diverso resterebbe "fantasma" (cancellato all'occhio
+        // ma ancora presente → "username già esistente" alla ricreazione).
+        const unameLower = String(username).trim().toLowerCase();
+        const target = users.find(u => String(u.username || '').trim().toLowerCase() === unameLower);
         if (!target) {
           return res.status(404).json({ success: false, message: 'Utente non trovato' });
         }
@@ -220,13 +241,18 @@ export default async function handler(req, res) {
           return res.status(403).json({ success: false, message: 'Non autorizzato' });
         }
 
-        const updated = users.filter(u => u.username !== username);
+        // Rimuove TUTTE le occorrenze (difensivo: eventuali duplicati storici)
+        // confrontando in modo case-insensitive + trim.
+        const updated = users.filter(u => String(u.username || '').trim().toLowerCase() !== unameLower);
         await Promise.all([
           kv.set('auth:users', updated),
-          kv.del(`auth:user:${username.toLowerCase()}`),
+          // Pulisce sia la chiave normalizzata sia quella basata sull'username
+          // così com'è arrivato (per coprire chiavi legacy non normalizzate).
+          kv.del(`auth:user:${unameLower}`),
+          kv.del(`auth:user:${String(username).toLowerCase()}`),
         ]);
 
-        console.log(`✅ Utente eliminato: ${username}`);
+        console.log(`✅ Utente eliminato: ${username} (rimosse ${users.length - updated.length} occorrenze)`);
         return res.status(200).json({ success: true, message: 'Utente eliminato con successo' });
       }
 
