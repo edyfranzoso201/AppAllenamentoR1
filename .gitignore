@@ -2,6 +2,7 @@
 .env*.local
 .graphify_python
 graphify-out/
+backups/
 CLAUDE.md
 .claude/
 node_modules/

@@ -298,6 +298,90 @@ function emailTemplate({ athleteName, societyName, tipo, scadenza, giorni }) {
 </div></body></html>`;
 }
 
+// ── BACKUP-STORE: snapshot completo su Vercel Blob (privato) ─────────────
+// Chiamato dalla GitHub Action notturna. Sostituisce il vecchio backup che
+// committava i .json nel repo (dati di minori in git → rischio GDPR).
+// Lo snapshot completo viene gzippato e caricato su Blob come
+// backups/YYYY-MM-DD.json.gz, poi si ruotano i blob più vecchi di RETENTION
+// giorni. Protetto da BACKUP_SECRET (header o query). Auth Blob via OIDC.
+if (req.query?.action === 'backup-store') {
+  if (req.method !== 'POST' && req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+  const tok = req.headers['x-backup-token'] || req.query.token;
+  if (!process.env.BACKUP_SECRET || tok !== process.env.BACKUP_SECRET) {
+    return res.status(401).json({ error: 'Non autorizzato' });
+  }
+
+  const scanAll = async (pattern) => {
+    const keys = []; let cursor = 0;
+    do {
+      const [next, batch] = await kv.scan(cursor, { match: pattern, count: 200 });
+      cursor = parseInt(next, 10); keys.push(...batch);
+    } while (cursor !== 0);
+    return keys;
+  };
+  const mgetAll = async (keys) => {
+    const out = {};
+    for (let i = 0; i < keys.length; i += 50) {
+      const batch = keys.slice(i, i + 50);
+      const values = await kv.mget(...batch);
+      batch.forEach((k, idx) => { if (values[idx] !== null) out[k] = values[idx]; });
+    }
+    return out;
+  };
+
+  try {
+    // Export completo (escludendo chiavi volatili), come il backup superadmin.
+    const allKeys = (await scanAll('*')).filter(k =>
+      !k.startsWith('rl:') && !k.startsWith('session:') && !k.startsWith('ratelimit:')
+    );
+    const exportData = await mgetAll(allKeys);
+    const dateStr = new Date().toISOString();
+    const payload = JSON.stringify({
+      exportedAt: dateStr, scope: 'completo',
+      keysCount: Object.keys(exportData).length, data: exportData
+    });
+
+    // Comprimi (gzip): lo snapshot non compresso è ~8MB, gzip lo riduce molto.
+    const gz = gzipSync(Buffer.from(payload, 'utf8'));
+
+    const { put, list, del } = await import('@vercel/blob');
+    const RETENTION_DAYS = 14;
+    const fileName = `backups/${dateStr.slice(0, 10)}.json.gz`;
+
+    // Carica lo snapshot. access:'private' → l'URL è .private.blob...
+    // e richiede un token per essere letto: i dati di minori NON sono
+    // accessibili pubblicamente via URL. Nome deterministico (una entry/giorno).
+    const blob = await put(fileName, gz, {
+      access: 'private',
+      contentType: 'application/gzip',
+      addRandomSuffix: false,
+      allowOverwrite: true,
+    });
+
+    // Rotazione: elimina i blob più vecchi di RETENTION_DAYS.
+    let removed = 0;
+    try {
+      const cutoff = Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000;
+      const { blobs } = await list({ prefix: 'backups/' });
+      const toDelete = blobs
+        .filter(b => new Date(b.uploadedAt).getTime() < cutoff)
+        .map(b => b.url);
+      if (toDelete.length) { await del(toDelete); removed = toDelete.length; }
+    } catch (e) { console.warn('[backup-store] rotazione fallita:', e.message); }
+
+    console.log(`✅ backup-store: ${fileName} (${gz.length} byte gz, ${Object.keys(exportData).length} chiavi), rimossi ${removed} vecchi`);
+    return res.status(200).json({
+      success: true, file: fileName, bytesGz: gz.length,
+      keysCount: Object.keys(exportData).length, rotated: removed, url: blob.url
+    });
+  } catch (e) {
+    console.error('❌ backup-store error:', e);
+    return res.status(500).json({ error: 'Backup fallito', detail: e.message });
+  }
+}
+
 // ── BACKUP dati (admin per società, superadmin per tutto Redis) ──────────
 if (req.query?.action === 'backup') {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });

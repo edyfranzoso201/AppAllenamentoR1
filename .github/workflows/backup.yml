@@ -9,57 +9,22 @@ on:
 jobs:
   backup:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          ref: main
-
-      - name: Fetch backup from API
+      - name: Trigger backup su Vercel Blob (storage privato)
         run: |
-          DATE=$(date -u +%Y-%m-%d)
-          mkdir -p backups
-          HTTP_STATUS=$(curl -s -o backups/${DATE}.json -w "%{http_code}" \
+          # Lo snapshot completo viene generato, gzippato e caricato su
+          # Vercel Blob (store privato) dall'endpoint server-side. NON viene
+          # piu' committato nel repo (i dati di minori non finiscono in git).
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
             -H "X-Backup-Token: ${{ secrets.BACKUP_SECRET }}" \
-            "https://app-allenamento-r1.vercel.app/api/data?action=backup")
-          echo "HTTP status: $HTTP_STATUS"
-          if [ "$HTTP_STATUS" != "200" ]; then
-            echo "Backup failed with status $HTTP_STATUS"
-            cat backups/${DATE}.json
+            "https://app-allenamento-r1.vercel.app/api/data?action=backup-store")
+          BODY=$(echo "$RESPONSE" | head -n -1)
+          STATUS=$(echo "$RESPONSE" | tail -n 1)
+          echo "HTTP status: $STATUS"
+          echo "Response: $BODY"
+          if [ "$STATUS" != "200" ]; then
+            echo "::error::Backup fallito con status $STATUS"
             exit 1
           fi
-          KEYS=$(cat backups/${DATE}.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('keysCount',0))")
-          echo "Backup OK: $KEYS keys exported"
-
-      - name: Rotate old backups (keep last 14 days)
-        run: |
-          # Mantiene solo i 14 snapshot piu' recenti per evitare che il repo
-          # cresca all'infinito (~8 MB/giorno). I piu' vecchi vengono rimossi.
-          RETENTION=14
-          cd backups
-          COUNT=$(ls -1 *.json 2>/dev/null | wc -l)
-          echo "Snapshot presenti: $COUNT (retention: $RETENTION)"
-          if [ "$COUNT" -gt "$RETENTION" ]; then
-            # ordina per nome (le date YYYY-MM-DD si ordinano cronologicamente)
-            # e rimuove tutti tranne gli ultimi RETENTION
-            ls -1 *.json | sort | head -n -"$RETENTION" | while read -r OLD; do
-              echo "Rimuovo backup vecchio: $OLD"
-              rm -f "$OLD"
-            done
-          else
-            echo "Nessuna rotazione necessaria"
-          fi
-
-      - name: Commit backup
-        run: |
-          DATE=$(date -u +%Y-%m-%d)
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          # -A raccoglie sia il nuovo snapshot sia le rimozioni della rotazione
-          git add -A backups/
-          git diff --staged --quiet && echo "No changes" || \
-            git commit -m "backup: Redis snapshot $DATE [skip ci]"
-          git push
+          echo "✅ Backup su Vercel Blob completato"
