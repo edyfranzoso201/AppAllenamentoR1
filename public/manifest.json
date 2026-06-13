@@ -1,0 +1,20 @@
+{
+  "name": "Sport Monitoring — Gestione Squadra",
+  "short_name": "SP",
+  "description": "Gestione atleti, allenamenti, presenze, valutazioni e comunicazioni per società sportive.",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#060f1e",
+  "theme_color": "#198754",
+  "lang": "it",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
