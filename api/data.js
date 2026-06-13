@@ -350,15 +350,23 @@ if (req.query?.action === 'backup-store') {
     const RETENTION_DAYS = 14;
     const fileName = `backups/${dateStr.slice(0, 10)}.json.gz`;
 
-    // Carica lo snapshot. access:'private' → l'URL è .private.blob...
-    // e richiede un token per essere letto: i dati di minori NON sono
-    // accessibili pubblicamente via URL. Nome deterministico (una entry/giorno).
-    const blob = await put(fileName, gz, {
-      access: 'private',
-      contentType: 'application/gzip',
-      addRandomSuffix: false,
-      allowOverwrite: true,
-    });
+    // La RISERVATEZZA dipende dallo STORE (creato come Private): qualunque blob
+    // al suo interno richiede comunque un token per essere letto, anche se
+    // put() viene chiamato con access:'public'. Il parametro `access` è solo
+    // un'etichetta richiesta dal SDK e varia tra versioni (le più vecchie
+    // accettano solo 'public'). Proviamo 'private' e, se il SDK lo rifiuta,
+    // ricadiamo su 'public' — la protezione resta garantita dallo store Private.
+    const putOpts = { contentType: 'application/gzip', addRandomSuffix: false, allowOverwrite: true };
+    let blob;
+    try {
+      blob = await put(fileName, gz, { ...putOpts, access: 'private' });
+    } catch (e) {
+      if (/access must be/i.test(String(e?.message || ''))) {
+        blob = await put(fileName, gz, { ...putOpts, access: 'public' });
+      } else {
+        throw e;
+      }
+    }
 
     // Rotazione: elimina i blob più vecchi di RETENTION_DAYS.
     let removed = 0;
