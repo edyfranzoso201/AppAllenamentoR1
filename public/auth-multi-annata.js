@@ -124,9 +124,11 @@
         var today = new Date().toISOString().slice(0, 10);
         if (localStorage.getItem('gosport_last_auto_backup') === today) return;
         try {
+            // Token di sessione reale: il vecchio flag 'true' (SESSION_KEY) non è più
+            // accettato dall'endpoint backup → senza questo il backup auto dava 401.
             var resp = await fetch('/api/data?action=backup', {
                 headers: {
-                    'X-Auth-Session': sessionStorage.getItem('gosport_auth_session') || '',
+                    'X-Auth-Session': sessionStorage.getItem(SESSION_TOKEN) || sessionStorage.getItem(SESSION_KEY) || '',
                     'X-User-Role': role,
                     'X-Society-Id': sessionStorage.getItem('gosport_society_id') || ''
                 }

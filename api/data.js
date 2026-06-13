@@ -314,8 +314,10 @@ if (req.query?.action === 'backup') {
       if (licData) exportData[`licenze:${licKey}`] = licData;
     }
 
+    // Account della società. Includo anche quelli senza societyId (legacy/orfani),
+    // coerente col filtro delle annate sopra, per non perderli dal backup.
     const allUsers = (await kv.get('auth:users')) || [];
-    const socUsers = allUsers.filter(u => u.societyId === sid);
+    const socUsers = allUsers.filter(u => !u.societyId || u.societyId === sid);
     exportData['auth:users'] = socUsers;
     const uKeys = socUsers.map(u => `auth:user:${(u.username||'').toLowerCase()}`).filter(Boolean);
     if (uKeys.length) Object.assign(exportData, await mgetBatched(uKeys));
