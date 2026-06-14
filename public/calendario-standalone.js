@@ -717,6 +717,10 @@ if (themeBtn) {
       
       const editBtn = !isParentView ? `<button onclick="editEvent('${d}')" class="btn btn-sm btn-warning ms-1" style="padding:0.1rem 0.3rem;font-size:0.6rem;color:#ffffff;" title="Modifica evento"><i class="bi bi-pencil"></i></button>` : '';
       const deleteBtn = !isParentView ? `<button onclick="deleteEvent('${d}')" class="btn btn-sm btn-danger ms-1" style="padding:0.1rem 0.3rem;font-size:0.6rem;color:#ffffff;" title="Elimina evento"><i class="bi bi-trash"></i></button>` : '';
+      // Sollecita: push a tutta l'annata per ricordare di segnalare le assenze
+      // per QUESTO evento (mirato al singolo silenzioso non è possibile: le push
+      // sono per-annata). Solo coach.
+      const solleciBtn = !isParentView ? `<button onclick="window.sollecitaPresenze('${d}')" class="btn btn-sm btn-info ms-1" style="padding:0.1rem 0.3rem;font-size:0.6rem;color:#ffffff;" title="Sollecita conferma presenze (push a tutti)"><i class="bi bi-megaphone"></i></button>` : '';
 
       const thColor = isLightNow ? '#000000 !important' : '#ffffff !important';
       let thBg = '';
@@ -727,7 +731,7 @@ if (themeBtn) {
       }
       
       h += `<th class="text-center" style="color:${thColor}${thBg}">
-        <small>${eventIcon} ${e.type}${athleteLine}${noteLine}<br>${e.time}${editBtn}${deleteBtn}</small>
+        <small>${eventIcon} ${e.type}${athleteLine}${noteLine}<br>${e.time}${editBtn}${deleteBtn}${solleciBtn}</small>
       </th>`;
     });
     h += `</tr>`;
@@ -824,12 +828,19 @@ visibleAthletes.forEach((a, i) => {
       
     } else {
       // ===== MODALITÀ COACH =====
+      // Tre stati (Fase 2): distinguere chi ha confermato presenza, chi ha
+      // segnalato assenza, e chi NON ha mai aperto il link (statusRecord null).
+      // statusRecord === null  → ⚪ nessuna risposta (link mai aperto)
+      // status === 'Assente'   → 🔴 assenza segnalata
+      // altrimenti (record c'è)→ 🟢 presenza confermata
       h += `<td class="text-center" style="position:relative;`;
-      
+
       if (status === 'Assente') {
-        h += `background:#450a0a;color:#d90429;font-weight:bold;border-left:3px solid #d90429;">❌ Assente`;
+        h += `background:#450a0a;color:#d90429;font-weight:bold;border-left:3px solid #d90429;">🔴 Assente`;
+      } else if (statusRecord) {
+        h += `background:#052e16;color:#4ade80;font-weight:600;border-left:3px solid #16a34a;">🟢 Presente`;
       } else {
-        h += `color:#94a3b8;">—`;
+        h += `color:#94a3b8;" title="Nessuna risposta — link mai aperto">⚪ —`;
       }
       
       // ICONA STORICO (se esiste)
@@ -959,6 +970,47 @@ function _pushFmtDate(iso) {
     return new Date(iso + 'T00:00:00').toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
   } catch (e) { return iso; }
 }
+
+// Sollecita la conferma presenze per un evento: push insistente a TUTTI i
+// subscriber dell'annata (il sollecito al singolo silenzioso non è possibile —
+// le push sono per-annata). A differenza di _pushNotifyEvento, dà feedback
+// esplicito al coach (conferma invio / avviso se manca la sessione).
+window.sollecitaPresenze = async function(date) {
+  var ev = (typeof events !== 'undefined' && events[date]) ? events[date] : null;
+  var tipo = ev ? (ev.type || 'Evento') : 'Evento';
+  var quando = _pushFmtDate(date) + (ev && ev.time ? ' ore ' + ev.time : '');
+
+  if (!confirm('📣 Inviare a TUTTI i genitori dell\'annata un sollecito a confermare le presenze per:\n\n' + tipo + ' — ' + quando + '\n\n(La notifica arriva a chi ha attivato le notifiche.)')) return;
+
+  var aid = currentAnnataId || sessionStorage.getItem('gosport_current_annata') || localStorage.getItem('currentAnnata') || '';
+  var tok = sessionStorage.getItem('gosport_session_token') || '';
+  if (!aid) { alert('❌ Nessuna annata selezionata.'); return; }
+  if (!tok || tok === 'true') { alert('⛔ Sessione non valida: rifai il login per inviare solleciti.'); return; }
+  var role = sessionStorage.getItem('gosport_user_role') || '';
+
+  try {
+    var res = await fetch('/api/data?action=push-send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Auth-Session': tok, 'X-Annata-Id': aid, 'X-User-Role': role },
+      body: JSON.stringify({
+        title: '⚠️ Conferma la presenza',
+        body: tipo + ' ' + quando + ': segnala SUBITO eventuali assenze. Gli allenatori stanno preparando le convocazioni.',
+        url: '/calendario.html?annata=' + aid,
+        annataId: aid
+      })
+    });
+    var data = await res.json().catch(function(){ return {}; });
+    if (res.ok && data.success) {
+      alert('✅ Sollecito inviato a ' + (data.sent != null ? data.sent : '?') + ' dispositivi.');
+    } else if (res.status === 401) {
+      alert('⛔ Non autorizzato: rifai il login.');
+    } else {
+      alert('❌ Invio non riuscito (HTTP ' + res.status + ').');
+    }
+  } catch (e) {
+    alert('❌ Errore di rete: ' + e.message);
+  }
+};
 
 window.deleteEvent = async function(date) {
   const event = events[date];
