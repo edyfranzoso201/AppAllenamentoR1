@@ -273,7 +273,106 @@ if (req.query?.action === 'cron-remind' && req.method === 'GET') {
     console.error('❌ Errore email alerts:', emailErr.message);
   }
 
+  // ── Alert 57h prima delle PARTITE (campionato/tornei) ────────────────────
+  // Rete di sicurezza per la gara: il promemoria del lunedì può essere troppo
+  // lontano da una partita del weekend. Gira ogni giorno (cron-remind 6:00 UTC):
+  // beccando la finestra ~48-72h prende la partita di domenica al run del venerdì.
+  try {
+    if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+      const MATCH_TYPES = ['Partita', 'Campionato', 'Torneo', 'Finale', 'Semifinale'];
+      const nowMs = Date.now();
+      const H48 = 48 * 60 * 60 * 1000, H72 = 72 * 60 * 60 * 1000;
+      const { default: wp } = await import('web-push');
+      wp.setVapidDetails(`mailto:${process.env.VAPID_EMAIL || 'admin@gosport.app'}`, process.env.VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY);
+
+      const annateList2 = (await kv.get('push:annate')) || [];
+      for (const aid of annateList2) {
+        const subs = (await kv.get(`push:annata:${aid}:subs`)) || [];
+        if (!subs.length) continue;
+        const events = (await kv.get(`annate:${aid}:calendarEvents`)) || {};
+        for (const [dateStr, ev] of Object.entries(events)) {
+          if (!ev || !MATCH_TYPES.includes(ev.type)) continue;
+          // Data+ora evento (mezzogiorno se manca l'ora, per stare nella finestra)
+          const evMs = new Date(`${dateStr}T${ev.time && /^\d{1,2}:\d{2}/.test(ev.time) ? ev.time.slice(0,5) : '12:00'}:00`).getTime();
+          if (isNaN(evMs)) continue;
+          const delta = evMs - nowMs;
+          if (delta < H48 || delta > H72) continue; // solo finestra ~48-72h
+          const giorno = new Date(dateStr + 'T00:00:00').toLocaleDateString('it-IT', { weekday:'long', day:'numeric', month:'long' });
+          const payload = JSON.stringify({
+            title: '⚽ Partita in arrivo — conferma la presenza',
+            body: `${ev.type}${ev.note ? ' ' + ev.note : ''} ${giorno}${ev.time ? ' ore ' + ev.time : ''}. Segnala subito eventuali assenze!`,
+            url: '/calendario.html'
+          });
+          const r = await Promise.allSettled(subs.map(s => wp.sendNotification(s, payload)));
+          const valid = subs.filter((_, i) => !(r[i].status === 'rejected' && r[i].reason?.statusCode === 410));
+          if (valid.length !== subs.length) await kv.set(`push:annata:${aid}:subs`, valid);
+          totalSent += r.filter(x => x.status === 'fulfilled').length;
+        }
+      }
+    }
+  } catch(matchErr) {
+    console.error('❌ Errore alert 57h partita:', matchErr.message);
+  }
+
   return res.status(200).json({ success: true, totalSent });
+}
+
+// ── PRESENCE-REMIND: promemoria settimanale "segnala le assenze" ───────────
+// Chiamato dai cron del LUNEDÌ (slot=morning 07:00 UTC, slot=evening 18:00 UTC).
+// Manda una push a tutta l'annata SOLO se ci sono eventi nella settimana
+// corrente (lun-dom). Mattina = gentile, sera = insistente. Spinge i genitori
+// a segnalare le assenze prima che il coach prepari le convocazioni.
+if (req.query?.action === 'cron-presence-remind' && req.method === 'GET') {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return res.status(503).json({ success: false, message: 'Cron non configurato' });
+  if (req.headers['authorization'] !== `Bearer ${secret}`) {
+    return res.status(401).json({ success: false, message: 'Non autorizzato' });
+  }
+
+  const slot = req.query.slot === 'evening' ? 'evening' : 'morning';
+
+  // Finestra settimana corrente (lun-dom) in date ISO YYYY-MM-DD.
+  const now = new Date();
+  const dow = now.getUTCDay();            // 0=dom..6=sab
+  const daysSinceMon = (dow + 6) % 7;     // lun=0
+  const monday = new Date(now); monday.setUTCDate(now.getUTCDate() - daysSinceMon);
+  const weekDates = new Set();
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday); d.setUTCDate(monday.getUTCDate() + i);
+    weekDates.add(d.toISOString().split('T')[0]);
+  }
+
+  let totalSent = 0, annateNotified = 0;
+  if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+    const { default: webpush } = await import('web-push');
+    webpush.setVapidDetails(
+      `mailto:${process.env.VAPID_EMAIL || 'admin@gosport.app'}`,
+      process.env.VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY
+    );
+
+    const payload = JSON.stringify(slot === 'evening'
+      ? { title: '⚠️ ULTIMO PROMEMORIA della settimana', body: 'Hai segnalato le assenze? Gli allenatori stanno preparando le convocazioni.', url: '/calendario.html' }
+      : { title: '📅 Nuova settimana!', body: 'Controlla gli impegni e segnala eventuali assenze ad allenamenti e partite.', url: '/calendario.html' }
+    );
+
+    const annateList = (await kv.get('push:annate')) || [];
+    for (const aid of annateList) {
+      const subs = (await kv.get(`push:annata:${aid}:subs`)) || [];
+      if (!subs.length) continue;
+      // SOLO se ci sono eventi in questa settimana per l'annata.
+      const events = (await kv.get(`annate:${aid}:calendarEvents`)) || {};
+      const hasEventThisWeek = Object.keys(events).some(dateStr => weekDates.has(dateStr));
+      if (!hasEventThisWeek) continue;
+
+      const results = await Promise.allSettled(subs.map(s => webpush.sendNotification(s, payload)));
+      const valid = subs.filter((_, i) => !(results[i].status === 'rejected' && results[i].reason?.statusCode === 410));
+      if (valid.length !== subs.length) await kv.set(`push:annata:${aid}:subs`, valid);
+      totalSent += results.filter(r => r.status === 'fulfilled').length;
+      annateNotified++;
+    }
+  }
+  console.log(`✅ cron-presence-remind (${slot}): ${totalSent} push a ${annateNotified} annate`);
+  return res.status(200).json({ success: true, slot, totalSent, annateNotified });
 }
 
 function emailTemplate({ athleteName, societyName, tipo, scadenza, giorni }) {

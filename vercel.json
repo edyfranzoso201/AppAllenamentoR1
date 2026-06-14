@@ -3,6 +3,14 @@
     {
       "path": "/api/data?action=cron-remind",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/data?action=cron-presence-remind&slot=morning",
+      "schedule": "0 7 * * 1"
+    },
+    {
+      "path": "/api/data?action=cron-presence-remind&slot=evening",
+      "schedule": "0 18 * * 1"
     }
   ],
   "headers": [
