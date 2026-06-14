@@ -587,8 +587,14 @@ async function render(loadedData) {
   if (athleteIdParam) {
     isParentView = true;
     currentAthleteId = athleteIdParam;
-    
+
     console.log('[PRESENZA] 🔓 Modalità Genitore:', athleteIdParam);
+
+    // Registra l'APERTURA del link come "presente" per gli eventi entro 7 giorni
+    // che non hanno ancora una risposta. Così il coach distingue chi ha aperto
+    // (🟢) da chi non ha mai guardato (⚪). Soft/background: non blocca la vista,
+    // non sovrascrive assenze/presenze già segnalate, non tocca eventi passati.
+    try { registraAperturaGenitore(athleteIdParam); } catch (e) { /* soft */ }
     
     // NASCONDI tutti i pulsanti del coach in modalità genitore
     const coachButtons = document.querySelectorAll('#add-btn, #generate-btn, #import-btn, #responses-btn, #delete-btn');
@@ -969,6 +975,72 @@ function _pushFmtDate(iso) {
   try {
     return new Date(iso + 'T00:00:00').toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
   } catch (e) { return iso; }
+}
+
+// Registra l'apertura del link genitore come "presente" (default opt-out reso
+// esplicito): per gli eventi da oggi a +7 giorni SENZA risposta, crea un record
+// status 'Presente'. NON sovrascrive assenze/presenze già presenti, NON tocca
+// eventi passati o oltre 7gg. Fire-and-forget: GET fresco → modifica → POST,
+// senza reload. Errori soft (la vista del genitore non deve mai rompersi).
+async function registraAperturaGenitore(athleteId) {
+  try {
+    const annataId = await getAnnataId();
+    if (!annataId) return;
+
+    const _authH = {};
+    try {
+      _authH['x-auth-session'] = sessionStorage.getItem('gosport_auth_session') || '';
+      _authH['x-auth-user']    = sessionStorage.getItem('gosport_auth_user')    || '';
+      _authH['x-user-role']    = sessionStorage.getItem('gosport_user_role')    || '';
+      _authH['x-society-id']   = sessionStorage.getItem('gosport_society_id')   || '';
+    } catch (e) {}
+
+    const resp = await fetch('/api/data?parentMode=1', {
+      cache: 'no-store',
+      headers: Object.assign({ 'Content-Type': 'application/json', 'X-Annata-Id': annataId }, _authH)
+    });
+    if (!resp.ok) return;
+    const result = await resp.json();
+    const data = result.data || result;
+
+    const evts = data.calendarEvents || {};
+    if (!data.calendarResponses) data.calendarResponses = {};
+
+    // Finestra: da oggi (incluso) a +7 giorni
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const limit = new Date(today); limit.setDate(today.getDate() + 7);
+    const aidStr = String(athleteId);
+    const nowIso = new Date().toISOString();
+    let changed = 0;
+
+    for (const dateStr of Object.keys(evts)) {
+      const evDate = new Date(dateStr + 'T00:00:00');
+      if (isNaN(evDate.getTime()) || evDate < today || evDate > limit) continue;
+
+      if (!data.calendarResponses[dateStr]) data.calendarResponses[dateStr] = {};
+      const existing = data.calendarResponses[dateStr][aidStr];
+      // Salta se c'è GIÀ una risposta (assenza o presenza): rispetta la scelta.
+      if (existing && (typeof existing === 'object' ? existing.status : existing)) continue;
+
+      data.calendarResponses[dateStr][aidStr] = {
+        status: 'Presente',
+        lastModified: nowIso,
+        modifiedBy: 'genitore-apertura',
+        history: [{ timestamp: nowIso, status: 'Presente', by: 'genitore-apertura', note: 'Apertura link' }]
+      };
+      changed++;
+    }
+
+    if (!changed) return;
+    await fetch('/api/data', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json', 'X-Annata-Id': annataId }, _authH),
+      body: JSON.stringify({ calendarResponses: data.calendarResponses })
+    });
+    console.log(`[PRESENZA] 🟢 Apertura registrata: ${changed} eventi marcati presente`);
+  } catch (e) {
+    console.warn('[PRESENZA] registraAperturaGenitore soft-fail:', e.message);
+  }
 }
 
 // Sollecita la conferma presenze per un evento: push insistente a TUTTI i
