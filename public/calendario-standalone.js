@@ -726,7 +726,7 @@ if (themeBtn) {
       // Sollecita: push a tutta l'annata per ricordare di segnalare le assenze
       // per QUESTO evento (mirato al singolo silenzioso non è possibile: le push
       // sono per-annata). Solo coach.
-      const solleciBtn = !isParentView ? `<button onclick="window.sollecitaPresenze('${d}')" class="btn btn-sm btn-info ms-1" style="padding:0.1rem 0.3rem;font-size:0.6rem;color:#ffffff;" title="Sollecita conferma presenze (push a tutti)"><i class="bi bi-megaphone"></i></button>` : '';
+      const solleciBtn = !isParentView ? `<button onclick="window.sollecitaPresenze('${d}')" class="btn btn-sm btn-info ms-1" style="padding:0.1rem 0.3rem;font-size:0.6rem;color:#ffffff;" title="Sollecita conferma presenze (push a tutti)">📣</button>` : '';
 
       const thColor = isLightNow ? '#000000 !important' : '#ffffff !important';
       let thBg = '';
