@@ -670,10 +670,14 @@ document.addEventListener('DOMContentLoaded', () => {
               ov.querySelector('#mc-appello').style.display = 'block';
               renderAppello(ov.querySelector('#mc-appello-list'));
             } else if (act === 'calendario') {
-              // Calendario Squadra = pagina separata con le presenze dai genitori
-              salvaAppello(true);
-              chiudiModalitaCampo();
-              window.open('/calendario.html', '_blank');
+              // Calendario Squadra = pagina separata (calendario.html) con le
+              // presenze dai genitori. Apro nella STESSA scheda: col tasto
+              // Indietro del browser si torna all'app (dove c'è il ⚡).
+              // Salvo prima l'appello, poi navigo (await per non perdere dati).
+              (async () => {
+                await salvaAppello(true);
+                window.location.href = '/calendario.html';
+              })();
             } else {
               // Apri la tab interna corrispondente e chiudi la modalità campo
               salvaAppello(true);
@@ -703,7 +707,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fab.title = 'Modalità Campo';
         fab.textContent = '⚡';
         fab.className = 'no-print';
-        fab.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:15000;width:56px;height:56px;border-radius:50%;border:none;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-size:1.6rem;box-shadow:0 6px 18px rgba(0,0,0,0.3);cursor:pointer;';
+        fab.style.cssText = 'position:fixed;right:16px;bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:18000;width:58px;height:58px;border-radius:50%;border:2px solid #fff;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-size:1.7rem;box-shadow:0 6px 20px rgba(0,0,0,0.4);cursor:pointer;';
         fab.onclick = () => window.openModalitaCampo();
         document.body.appendChild(fab);
       }
