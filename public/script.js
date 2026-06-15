@@ -533,6 +533,37 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
+      // Azzera SOLO il campo presenza-allenamento di oggi per tutti gli atleti
+      // (caso: appello aperto/salvato per sbaglio in un giorno senza allenamento).
+      // Preserva gli altri campi della valutazione; se il record resta vuoto lo
+      // rimuove. Distruttivo → con conferma.
+      async function azzeraPresenzeOggi(container) {
+        const date = todayStr();
+        const dataIt = new Date(date + 'T00:00:00').toLocaleDateString('it-IT');
+        if (!confirm('🗑️ Azzerare le PRESENZE di oggi (' + dataIt + ') per tutti gli atleti?\n\nSi usa se hai aperto l\'appello per sbaglio in un giorno senza allenamento.\nGli altri dati di valutazione restano. Operazione irreversibile.')) return;
+        const giorno = evaluations[date];
+        if (giorno) {
+          Object.keys(giorno).forEach(aid => {
+            const ev = giorno[aid];
+            if (ev && typeof ev === 'object' && ev['presenza-allenamento'] != null) {
+              delete ev['presenza-allenamento'];
+              // Se non resta nessun altro campo significativo, rimuovi il record.
+              if (Object.keys(ev).length === 0) delete giorno[aid];
+            }
+          });
+          if (Object.keys(giorno).length === 0) delete evaluations[date];
+        }
+        try {
+          await saveData();
+          appelloDirty = false;
+          if (typeof updateAllUI === 'function') updateAllUI();
+          if (container) renderAppello(container); // ridisegna: tutti tornano "Presente" preset
+          alert('✅ Presenze di oggi azzerate.');
+        } catch (e) {
+          alert('❌ Errore: ' + (e.message || e));
+        }
+      }
+
       function renderAppello(container) {
         const date = todayStr();
         const oggiEval = (evaluations[date]) || {};
@@ -670,6 +701,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button id="mc-appello-back" title="Torna ai riquadri" style="background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:2px solid #fff;border-radius:50%;width:44px;height:44px;font-size:1.3rem;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.2);">⚡</button>
                 <button id="mc-appello-save" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:800;cursor:pointer;">💾 Salva</button>
               </div>
+              <button id="mc-appello-reset" style="width:100%;background:#fff;color:#dc2626;border:1px solid #fecaca;border-radius:8px;padding:8px;font-weight:600;font-size:0.85rem;cursor:pointer;margin-bottom:10px;">🗑️ Azzera presenze di oggi (aperto per sbaglio?)</button>
               <div id="mc-appello-list"></div>
             </div>
           </div>`;
@@ -709,6 +741,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ov.querySelector('#mc-home').style.display = 'block';
         };
         ov.querySelector('#mc-appello-save').onclick = () => salvaAppello(false);
+        ov.querySelector('#mc-appello-reset').onclick = () => azzeraPresenzeOggi(ov.querySelector('#mc-appello-list'));
       };
 
       // Pulsante flottante "⚡ Campo" sempre disponibile: riapre la Modalità
