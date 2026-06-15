@@ -580,14 +580,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
           const openMenu = () => {
             longFired = true;
-            const scelte = [['3','Presente / Giustificato'],['2','Ritardo lieve'],['1','Ritardo forte'],['0','Assente']];
-            const cur = appelloStato[aid];
-            const txt = 'Stato per questo atleta:\n' + scelte.map((s,i)=>`${i+1}) ${s[1]}`).join('\n') + '\n\n(attuale: ' + PRES_MAP[cur].label + ')';
-            const pick = prompt(txt, '');
-            if (pick && scelte[parseInt(pick)-1]) {
-              appelloStato[aid] = scelte[parseInt(pick)-1][0];
+            // Menu a BOTTONI tappabili (no prompt): overlay centrato con le 4
+            // scelte colorate + giustificato. Un tap sceglie e chiude.
+            const nome = (row.querySelector('span:nth-child(2)')||{}).textContent || '';
+            const scelte = [
+              ['3','🟢 Presente',        '#16a34a'],
+              ['3','🔵 Giustificato',    '#2563eb'],
+              ['2','🟡 Ritardo lieve',   '#ca8a04'],
+              ['1','🟠 Ritardo forte',   '#ea580c'],
+              ['0','🔴 Assente',         '#dc2626'],
+            ];
+            const back = document.createElement('div');
+            back.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:21000;display:flex;align-items:center;justify-content:center;padding:20px;';
+            let inner = `<div style="background:#fff;border-radius:14px;padding:16px;max-width:340px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,0.3);">
+              <div style="font-weight:800;color:#0f172a;margin-bottom:12px;text-align:center;">${escapeHtml(nome)}</div>`;
+            scelte.forEach((s,i) => {
+              inner += `<button data-val="${s[0]}" style="display:block;width:100%;margin-bottom:8px;padding:14px;border:none;border-radius:10px;background:${s[2]};color:#fff;font-weight:700;font-size:1.05rem;cursor:pointer;">${s[1]}</button>`;
+            });
+            inner += `<button data-cancel="1" style="display:block;width:100%;margin-top:4px;padding:12px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#475569;font-weight:700;cursor:pointer;">Annulla</button></div>`;
+            back.innerHTML = inner;
+            document.body.appendChild(back);
+            back.addEventListener('click', (e) => {
+              const b = e.target.closest('button');
+              if (!b) { if (e.target === back) back.remove(); return; }
+              if (b.getAttribute('data-cancel')) { back.remove(); return; }
+              appelloStato[aid] = b.getAttribute('data-val');
               aggiornaRiga(row); markDirty();
-            }
+              back.remove();
+            });
           };
 
           // Tap singolo (mouse)
@@ -628,8 +648,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <div id="mc-home">
               <button class="mc-tile" data-act="appello" style="width:100%;text-align:left;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;border-radius:14px;padding:22px;margin-bottom:12px;font-size:1.3rem;font-weight:800;cursor:pointer;">📋 Appello Rapido<div style="font-size:0.85rem;font-weight:500;opacity:0.9;margin-top:4px;">Presenze di oggi in un tap</div></button>
               <button class="mc-tile" data-act="squadra" style="width:100%;text-align:left;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:14px;padding:22px;margin-bottom:12px;font-size:1.3rem;font-weight:800;cursor:pointer;">👥 Squadra<div style="font-size:0.85rem;font-weight:500;color:#64748b;margin-top:4px;">Schede e valutazioni atleti</div></button>
-              <button class="mc-tile" data-act="valutazioni" style="width:100%;text-align:left;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:14px;padding:22px;margin-bottom:12px;font-size:1.3rem;font-weight:800;cursor:pointer;">⭐ Valutazioni<div style="font-size:0.85rem;font-weight:500;color:#64748b;margin-top:4px;">Report valutazioni</div></button>
-              <button class="mc-tile" data-act="calendario" style="width:100%;text-align:left;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:14px;padding:22px;margin-bottom:12px;font-size:1.3rem;font-weight:800;cursor:pointer;">📅 Calendario presenze<div style="font-size:0.85rem;font-weight:500;color:#64748b;margin-top:4px;">Verifica assenze genitori</div></button>
+              <button class="mc-tile" data-act="presenze" style="width:100%;text-align:left;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:14px;padding:22px;margin-bottom:12px;font-size:1.3rem;font-weight:800;cursor:pointer;">📊 Presenze<div style="font-size:0.85rem;font-weight:500;color:#64748b;margin-top:4px;">Grafici e report presenze</div></button>
+              <button class="mc-tile" data-act="calendario" style="width:100%;text-align:left;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:14px;padding:22px;margin-bottom:12px;font-size:1.3rem;font-weight:800;cursor:pointer;">📅 Calendario Squadra<div style="font-size:0.85rem;font-weight:500;color:#64748b;margin-top:4px;">Presenze segnalate dai genitori</div></button>
             </div>
             <div id="mc-appello" style="display:none;">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
@@ -649,13 +669,18 @@ document.addEventListener('DOMContentLoaded', () => {
               ov.querySelector('#mc-home').style.display = 'none';
               ov.querySelector('#mc-appello').style.display = 'block';
               renderAppello(ov.querySelector('#mc-appello-list'));
+            } else if (act === 'calendario') {
+              // Calendario Squadra = pagina separata con le presenze dai genitori
+              salvaAppello(true);
+              chiudiModalitaCampo();
+              window.open('/calendario.html', '_blank');
             } else {
-              // Apri la tab corrispondente e chiudi la modalità campo
+              // Apri la tab interna corrispondente e chiudi la modalità campo
               salvaAppello(true);
               chiudiModalitaCampo();
               const tab = act === 'squadra' ? 'squadra-section'
-                        : act === 'valutazioni' ? 'report-valutazioni-section'
-                        : 'calendario-section';
+                        : act === 'presenze' ? 'report-presenze-section'
+                        : 'squadra-section';
               if (typeof switchTab === 'function') switchTab(tab);
               else if (typeof window.switchTab === 'function') window.switchTab(tab);
             }
@@ -667,6 +692,23 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         ov.querySelector('#mc-appello-save').onclick = () => salvaAppello(false);
       };
+
+      // Pulsante flottante "⚡ Campo" sempre disponibile: riapre la Modalità
+      // Campo da qualsiasi tab con un tap (così non devi tornare in Home).
+      function ensureFab() {
+        if (document.getElementById('mc-fab')) return;
+        const fab = document.createElement('button');
+        fab.id = 'mc-fab';
+        fab.type = 'button';
+        fab.title = 'Modalità Campo';
+        fab.textContent = '⚡';
+        fab.className = 'no-print';
+        fab.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:15000;width:56px;height:56px;border-radius:50%;border:none;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-size:1.6rem;box-shadow:0 6px 18px rgba(0,0,0,0.3);cursor:pointer;';
+        fab.onclick = () => window.openModalitaCampo();
+        document.body.appendChild(fab);
+      }
+      if (document.body) ensureFab();
+      else document.addEventListener('DOMContentLoaded', ensureFab);
     })();
     const migrateGpsData = () => {
         for (const athleteId in gpsData) {
