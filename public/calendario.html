@@ -4290,13 +4290,14 @@ window._showImgLightbox = function(src) {
   try {
     if (sessionStorage.getItem('gosport_campo_mode') !== '1') return;
   } catch(e) { return; }
-  var fab = document.createElement('button');
-  fab.type = 'button';
+  // Uso un LINK <a> (non un button JS): la navigazione funziona anche se
+  // un errore JS della pagina bloccasse gli handler. href assoluto a index.
+  var fab = document.createElement('a');
+  fab.href = '/index.html?campo=1';
   fab.title = 'Torna a Modalità Campo';
   fab.textContent = '⚡';
   fab.className = 'no-print';
-  fab.style.cssText = 'position:fixed;right:16px;bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:18000;width:58px;height:58px;border-radius:50%;border:2px solid #fff;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-size:1.7rem;box-shadow:0 6px 20px rgba(0,0,0,0.4);cursor:pointer;';
-  fab.onclick = function(){ window.location.href = '/index.html?campo=1'; };
+  fab.style.cssText = 'position:fixed;right:16px;bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:18000;width:58px;height:58px;border-radius:50%;border:2px solid #fff;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-size:1.7rem;box-shadow:0 6px 20px rgba(0,0,0,0.4);cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;';
   document.body.appendChild(fab);
 })();
 </script>

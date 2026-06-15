@@ -667,7 +667,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <div id="mc-appello" style="display:none;">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <button id="mc-appello-back" style="background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;">⚡ Modalità Campo</button>
+                <button id="mc-appello-back" title="Torna ai riquadri" style="background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:2px solid #fff;border-radius:50%;width:44px;height:44px;font-size:1.3rem;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.2);">⚡</button>
                 <button id="mc-appello-save" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:800;cursor:pointer;">💾 Salva</button>
               </div>
               <div id="mc-appello-list"></div>
