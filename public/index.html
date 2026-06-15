@@ -2471,7 +2471,7 @@
     <script src="auth-multi-annata.js?v=1779800000"></script>
 
     <!-- Script personalizzato -->
-    <script src="script.js?v=1781130000"></script>
+    <script src="script.js?v=1781140000"></script>
     <script>
 
     // ========================================================================
@@ -2952,6 +2952,13 @@ function switchTab(sectionId) {
     // Banner scadenze: solo sulla Home
     var _ac = document.getElementById('alerts-container');
     if (_ac) _ac.style.display = (sectionId === 'home-section') ? '' : 'none';
+
+    // Modalità Campo: tornando in Home termino la sessione campo (il ⚡ non
+    // serve in Home). In altre tab aggiorno la visibilità del ⚡.
+    try {
+        if (sectionId === 'home-section') sessionStorage.removeItem('gosport_campo_mode');
+        if (typeof window.mcRefreshFab === 'function') window.mcRefreshFab();
+    } catch (e) {}
 
     // confronto-squadra: SOLO con GPS su desktop — usa setProperty per sovrascrivere !important
     var confronto = document.getElementById('confronto-squadra-section');

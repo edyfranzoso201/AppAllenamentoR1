@@ -725,18 +725,38 @@ document.addEventListener('DOMContentLoaded', () => {
         fab.onclick = () => window.openModalitaCampo();
         document.body.appendChild(fab);
       }
-      // Il FAB appare SOLO se la sessione campo è attiva (cioè hai aperto la
-      // Modalità Campo e non sei ancora uscito). All'avvio in Home senza averla
-      // aperta → niente ⚡. Tornando da Squadra/Presenze → il flag è ancora attivo.
+      function removeFab() { const f = document.getElementById('mc-fab'); if (f) f.remove(); }
+
+      // Regola del ⚡: appare SOLO se (a) sessione campo attiva E (b) NON sei in
+      // Home. In Home non serve (c'è il pulsante verde) e va tolto. Chiamata a
+      // ogni cambio tab. Aperta in altre tab dalla Modalità Campo → ⚡ visibile.
+      function refreshFab() {
+        let attivo = false;
+        try { attivo = sessionStorage.getItem('gosport_campo_mode') === '1'; } catch (e) {}
+        const home = document.getElementById('home-section');
+        const inHome = home && (home.classList.contains('tab-active') || home.classList.contains('active'));
+        if (attivo && !inHome) ensureFab(); else removeFab();
+      }
+      // Espongo per richiamarla dal cambio tab (switchTab è in index.html).
+      window.mcRefreshFab = refreshFab;
+
       function initFabIfCampo() {
-        try { if (sessionStorage.getItem('gosport_campo_mode') === '1') ensureFab(); } catch (e) {}
         // Se torno da calendario.html col ⚡ (?campo=1), riapro la Modalità Campo.
+        // Retry: openModalitaCampo potrebbe non essere ancora pronta all'avvio.
         try {
           if (new URLSearchParams(location.search).get('campo') === '1') {
-            history.replaceState(null, '', location.pathname); // pulisce l'URL
-            setTimeout(() => window.openModalitaCampo(), 300);
+            history.replaceState(null, '', location.pathname);
+            try { sessionStorage.setItem('gosport_campo_mode', '1'); } catch (e) {}
+            let tries = 0;
+            const tryOpen = () => {
+              if (typeof window.openModalitaCampo === 'function') { window.openModalitaCampo(); return; }
+              if (tries++ < 30) setTimeout(tryOpen, 150);
+            };
+            tryOpen();
+            return;
           }
         } catch (e) {}
+        refreshFab();
       }
       if (document.body) initFabIfCampo();
       else document.addEventListener('DOMContentLoaded', initFabIfCampo);
