@@ -1536,11 +1536,14 @@ window.pianificaRicorrente = function() {
     if (!from || !to || from > to) { alert('⚠️ Periodo non valido (controlla le date Da/A).'); return; }
 
     // Calcola tutte le date nei giorni scelti, dentro il periodo.
+    // Formato YYYY-MM-DD dai componenti LOCALI (NON toLocalDateISO: quella vive
+    // in script.js, non caricato qui → causava un crash silenzioso).
+    const fmt = dt => dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
     const dateList = [];
     let d = new Date(from + 'T00:00:00');
     const end = new Date(to + 'T00:00:00');
     while (d <= end) {
-      if (giorniSel.includes(d.getDay())) dateList.push(toLocalDateISO(d));
+      if (giorniSel.includes(d.getDay())) dateList.push(fmt(d));
       d.setDate(d.getDate() + 1);
     }
     if (!dateList.length) { alert('Nessuna data trovata per i giorni scelti nel periodo.'); return; }
