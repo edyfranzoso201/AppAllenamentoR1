@@ -1468,10 +1468,110 @@ window.generatePresenceLink = function(athleteId, athleteName) {
   };
 };
 
-async function genTraining() {
-  // Implementazione generazione allenamenti
-  alert('Funzione non implementata in questa versione');
-}
+// Pianificazione RICORRENTE: crea allenamenti (o altri eventi) ripetuti su un
+// periodo lungo scegliendo giorni della settimana + orario. Sostituisce il
+// vecchio stub "Genera". Gestione conflitti: chiede conferma se sovrascrive.
+async function genTraining() { window.pianificaRicorrente(); }
+
+window.pianificaRicorrente = function() {
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;overflow-y:auto;';
+  const oggi = new Date();
+  const inizio = oggi.toISOString().split('T')[0];
+  const fineDef = new Date(oggi.getFullYear(), oggi.getMonth() + 3, oggi.getDate()).toISOString().split('T')[0];
+  const giorni = [['1','Lun'],['2','Mar'],['3','Mer'],['4','Gio'],['5','Ven'],['6','Sab'],['0','Dom']];
+
+  modal.innerHTML = `
+    <div style="background:#0f172a;padding:26px;border-radius:15px;max-width:460px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.7);border:1px solid #1a3a5f;">
+      <h3 style="margin:0 0 18px 0;color:#e2e8f0;">🔁 Pianifica ricorrente</h3>
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-weight:600;color:#60a5fa;margin-bottom:6px;">Giorni della settimana:</label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          ${giorni.map(g => `<label style="display:flex;align-items:center;gap:4px;background:#060f1e;border:1px solid #1a3a5f;border-radius:8px;padding:7px 10px;color:#e2e8f0;cursor:pointer;font-size:0.9rem;"><input type="checkbox" class="pr-day" value="${g[0]}"> ${g[1]}</label>`).join('')}
+        </div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-weight:600;color:#60a5fa;margin-bottom:6px;">Tipo:</label>
+        <select id="pr-type" style="width:100%;padding:10px;border:1px solid #1a3a5f;border-radius:8px;color:#e2e8f0;background:#060f1e;">
+          <option value="Allenamento">🏃 Allenamento</option>
+          <option value="Partita">⚽ Partita</option>
+          <option value="Torneo">🏆 Torneo</option>
+          <option value="Visita">🏥 Visita</option>
+          <option value="Varie">🎉 Varie</option>
+        </select>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-weight:600;color:#60a5fa;margin-bottom:6px;">Orario (es. 18:00-19:30):</label>
+        <input id="pr-time" type="text" placeholder="18:00-19:30" style="width:100%;padding:10px;border:1px solid #1a3a5f;border-radius:8px;color:#e2e8f0;background:#060f1e;box-sizing:border-box;">
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-weight:600;color:#60a5fa;margin-bottom:6px;">Nota breve (opzionale):</label>
+        <input id="pr-note" type="text" maxlength="120" placeholder="Es. Campo Paradiso" style="width:100%;padding:10px;border:1px solid #1a3a5f;border-radius:8px;color:#e2e8f0;background:#060f1e;box-sizing:border-box;">
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:20px;">
+        <div style="flex:1;"><label style="display:block;font-weight:600;color:#60a5fa;margin-bottom:6px;">Da:</label>
+          <input id="pr-from" type="date" value="${inizio}" style="width:100%;padding:10px;border:1px solid #1a3a5f;border-radius:8px;color:#e2e8f0;background:#060f1e;box-sizing:border-box;"></div>
+        <div style="flex:1;"><label style="display:block;font-weight:600;color:#60a5fa;margin-bottom:6px;">A:</label>
+          <input id="pr-to" type="date" value="${fineDef}" style="width:100%;padding:10px;border:1px solid #1a3a5f;border-radius:8px;color:#e2e8f0;background:#060f1e;box-sizing:border-box;"></div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button id="pr-go" style="flex:1;background:#16a34a;color:#fff;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:700;">✅ Genera</button>
+        <button id="pr-cancel" style="flex:1;background:#64748b;color:#fff;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:700;">Annulla</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.querySelector('#pr-cancel').onclick = () => modal.remove();
+  modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+
+  modal.querySelector('#pr-go').onclick = async function() {
+    const giorniSel = Array.from(modal.querySelectorAll('.pr-day:checked')).map(c => parseInt(c.value, 10));
+    const type = modal.querySelector('#pr-type').value;
+    const time = modal.querySelector('#pr-time').value.trim();
+    const note = modal.querySelector('#pr-note').value.trim();
+    const from = modal.querySelector('#pr-from').value;
+    const to = modal.querySelector('#pr-to').value;
+
+    if (!giorniSel.length) { alert('⚠️ Seleziona almeno un giorno della settimana.'); return; }
+    if (!time) { alert('⚠️ Inserisci un orario.'); return; }
+    if (!from || !to || from > to) { alert('⚠️ Periodo non valido (controlla le date Da/A).'); return; }
+
+    // Calcola tutte le date nei giorni scelti, dentro il periodo.
+    const dateList = [];
+    let d = new Date(from + 'T00:00:00');
+    const end = new Date(to + 'T00:00:00');
+    while (d <= end) {
+      if (giorniSel.includes(d.getDay())) dateList.push(toLocalDateISO(d));
+      d.setDate(d.getDate() + 1);
+    }
+    if (!dateList.length) { alert('Nessuna data trovata per i giorni scelti nel periodo.'); return; }
+
+    try {
+      const annataId = currentAnnataId || sessionStorage.getItem('gosport_current_annata') || localStorage.getItem('currentAnnata');
+      const resp = await fetch('/api/data', { method: 'GET', headers: { 'Content-Type': 'application/json', 'X-Annata-Id': annataId } });
+      const rawData = await resp.json();
+      const calendarEvents = (rawData.data || rawData).calendarEvents || {};
+
+      // Conflitti: date che hanno GIÀ un evento.
+      const conflitti = dateList.filter(dt => calendarEvents[dt]);
+      let sovrascrivi = true;
+      if (conflitti.length) {
+        sovrascrivi = confirm(`⚠️ ${conflitti.length} giorni hanno GIÀ un evento (es. ${conflitti.slice(0,3).join(', ')}${conflitti.length>3?'…':''}).\n\nOK = sovrascrivi anche quei giorni\nAnnulla = salta quei giorni (mantieni gli eventi esistenti)`);
+      }
+      const daCreare = sovrascrivi ? dateList : dateList.filter(dt => !calendarEvents[dt]);
+      if (!daCreare.length) { alert('Nessun nuovo evento da creare (tutti i giorni erano occupati).'); modal.remove(); return; }
+
+      if (!confirm(`Sto per creare ${daCreare.length} eventi "${type}" (${time}) nel periodo.\nConfermi?`)) return;
+
+      daCreare.forEach(dt => { calendarEvents[dt] = { type, time, ...(note ? { note } : {}) }; });
+
+      const save = await fetch('/api/data', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Annata-Id': annataId }, body: JSON.stringify({ calendarEvents }) });
+      if (save.ok) { alert(`✅ Creati ${daCreare.length} eventi!`); modal.remove(); location.reload(); }
+      else alert('❌ Errore nel salvataggio.');
+    } catch (e) {
+      alert('❌ Errore: ' + e.message);
+    }
+  };
+};
 
 window.markAbsence = markAbsence;
 // Funzione per il pulsante "Nuovo"
