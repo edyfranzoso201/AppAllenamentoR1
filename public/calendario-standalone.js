@@ -873,13 +873,52 @@ visibleAthletes.forEach((a, i) => {
     h += `<div style="margin-top:12px;padding:14px;background:${isLightNow ? '#e8eef5' : '#0d1b2a'};border:1px solid ${isLightNow ? '#9aa5b0' : '#3b5a9d'};border-radius:8px;color:${isLightNow ? '#1a3a5f' : '#60a5fa'};font-size:0.85rem;">`;
     h += `<strong>ℹ️ Istruzioni:</strong> Usa i pulsanti per segnalare assenze. Predefinito: "Presente".`;
     h += `</div>`;
-
+    // Aggiungi al calendario personale (Google/Apple): feed live aggiornato.
+    h += `<div style="margin-top:10px;text-align:center;">
+            <button id="ical-add-btn" style="background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;border-radius:10px;padding:12px 18px;font-weight:700;font-size:0.95rem;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+              📅 Aggiungi al mio calendario
+            </button>
+            <div style="font-size:0.75rem;color:${isLightNow ? '#475569' : '#94a3b8'};margin-top:6px;">Allenamenti e partite sul tuo Google/Apple Calendar, sempre aggiornati.</div>
+          </div>`;
   }
   
       el.innerHTML = h; // ← dopo questa riga
 
 // ✅ METTI IL SETTIMEOUT QUI
 setTimeout(() => {
+    // Pulsante "Aggiungi al mio calendario" (vista genitore): chiede al server
+    // il link feed firmato (HMAC) e lo offre da abbonare su Google/Apple.
+    var _icalBtn = document.getElementById('ical-add-btn');
+    if (_icalBtn) {
+      _icalBtn.onclick = async function() {
+        try {
+          var aid = currentAthleteId || new URLSearchParams(location.search).get('athleteId') || '';
+          var annata = currentAnnataId || sessionStorage.getItem('gosport_current_annata') || new URLSearchParams(location.search).get('annata') || '';
+          if (!aid || !annata) { alert('Dati atleta non disponibili.'); return; }
+          _icalBtn.disabled = true; _icalBtn.textContent = '⏳ Genero il link...';
+          var r = await fetch('/api/ical?action=link&a=' + encodeURIComponent(aid) + '&annata=' + encodeURIComponent(annata));
+          var data = await r.json();
+          _icalBtn.disabled = false; _icalBtn.textContent = '📅 Aggiungi al mio calendario';
+          if (!r.ok || !data.webcal) { alert('❌ Impossibile generare il link calendario.'); return; }
+          // webcal:// apre direttamente il dialog "abbonati" su Google/Apple.
+          // Mostro anche il link https da copiare come fallback.
+          if (confirm('📅 Aggiungere allenamenti e partite al tuo calendario?\n\nPremi OK per abbonarti (Google/Apple Calendar).\nIl calendario si aggiornerà da solo.')) {
+            window.location.href = data.webcal;
+            // Fallback: dopo un attimo, se non si apre, offro il copia-link.
+            setTimeout(function() {
+              if (confirm('Se il calendario non si è aperto, premi OK per COPIARE il link da incollare manualmente nel tuo calendario.')) {
+                navigator.clipboard && navigator.clipboard.writeText(data.url);
+                alert('🔗 Link copiato:\n' + data.url + '\n\nIncollalo nel tuo calendario (Google: "Aggiungi calendario da URL").');
+              }
+            }, 2500);
+          }
+        } catch (e) {
+          _icalBtn.disabled = false; _icalBtn.textContent = '📅 Aggiungi al mio calendario';
+          alert('❌ Errore: ' + e.message);
+        }
+      };
+    }
+
     const isLightNow = document.documentElement.classList.contains('theme-light')
                     || document.body.classList.contains('theme-light');
 
