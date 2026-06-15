@@ -1079,7 +1079,9 @@ async function registraAperturaGenitore(athleteId) {
 // Offre: Google (URL diretto di abbonamento), App calendario (webcal per
 // Apple/Outlook), Copia link (incollare ovunque).
 window._showIcalPanel = function(httpsUrl, webcalUrl) {
-  var googleUrl = 'https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(httpsUrl);
+  // Google Calendar: il parametro cid DEVE usare webcal:// (NON https://),
+  // altrimenti apre Google ma non precompila il calendario (bug noto Google).
+  var googleUrl = 'https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(webcalUrl);
   var old = document.getElementById('ical-panel'); if (old) old.remove();
   var back = document.createElement('div');
   back.id = 'ical-panel';
@@ -1090,8 +1092,8 @@ window._showIcalPanel = function(httpsUrl, webcalUrl) {
       '<div style="font-size:0.85rem;color:#475569;margin-bottom:16px;">Allenamenti e partite, sempre aggiornati. Scegli il tuo calendario:</div>' +
       '<a href="' + googleUrl + '" target="_blank" rel="noopener" style="display:block;text-align:center;background:#1a73e8;color:#fff;text-decoration:none;border-radius:10px;padding:13px;font-weight:700;margin-bottom:10px;">📆 Google Calendar</a>' +
       '<a href="' + webcalUrl + '" style="display:block;text-align:center;background:#000;color:#fff;text-decoration:none;border-radius:10px;padding:13px;font-weight:700;margin-bottom:10px;">🍎 Apple / app calendario</a>' +
-      '<button id="ical-copy" style="display:block;width:100%;text-align:center;background:#f1f5f9;color:#0f172a;border:1px solid #cbd5e1;border-radius:10px;padding:13px;font-weight:700;cursor:pointer;margin-bottom:10px;">🔗 Copia link (Outlook/altri)</button>' +
-      '<div style="font-size:0.75rem;color:#64748b;margin-bottom:14px;">Per Outlook/altri: copia il link e usa "Aggiungi calendario da Internet/URL".</div>' +
+      '<button id="ical-copy" style="display:block;width:100%;text-align:center;background:#f1f5f9;color:#0f172a;border:1px solid #cbd5e1;border-radius:10px;padding:13px;font-weight:700;cursor:pointer;margin-bottom:10px;">🔗 Copia link</button>' +
+      '<div style="font-size:0.75rem;color:#64748b;margin-bottom:14px;line-height:1.5;">Se Google non aggiunge da solo: <b>Copia link</b>, poi in Google Calendar → <b>+ accanto a "Altri calendari" → Da URL</b> → incolla. (Aggiornamento automatico, fino a 24h.)</div>' +
       '<button id="ical-close" style="display:block;width:100%;background:none;border:none;color:#64748b;font-weight:600;cursor:pointer;padding:6px;">Chiudi</button>' +
     '</div>';
   document.body.appendChild(back);
