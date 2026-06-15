@@ -1,6 +1,7 @@
 // api/data.js - VERSIONE SICURA BASE
 import { createClient } from '@vercel/kv';
 import { gzipSync } from 'zlib';
+import crypto from 'crypto';
 
 const kv = createClient({
 url: process.env.UPSTASH_KV_REST_API_URL || process.env.KV_REST_API_URL,
@@ -74,6 +75,22 @@ async function resolveTeamName(societyId) {
   return legacy || 'La mia squadra';
 }
 
+// ── iCal feed helpers (integrati qui per non superare il limite di funzioni
+//    serverless del piano Hobby; logica originariamente in api/ical.js) ──────
+function icalSecret() { return process.env.ICAL_SECRET || process.env.BACKUP_SECRET || ''; }
+function icalSign(athleteId, annataId) {
+  return crypto.createHmac('sha256', icalSecret()).update(`${athleteId}:${annataId}`).digest('hex').substring(0, 32);
+}
+function icalEsc(s) {
+  return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+}
+function icalParseTime(t) {
+  const m = String(t || '').match(/(\d{1,2}):(\d{2})/g) || [];
+  const toHHMMSS = hm => hm.replace(':', '').padStart(4, '0') + '00';
+  return { start: m[0] ? toHHMMSS(m[0]) : '180000', end: m[1] ? toHHMMSS(m[1]) : null };
+}
+const ICAL_TYPE_ICON = { Allenamento:'🏃', Partita:'⚽', Torneo:'🏆', Campionato:'🏅', Finale:'🥇', Semifinale:'🥈', Individual:'🏋️', Visita:'🏥', Evento:'📅', Varie:'🎉' };
+
 function canWrite(role) {
 return ['admin', 'coach', 'coachl1', 'coachl2'].includes(String(role || '').toLowerCase());
 }
@@ -85,6 +102,72 @@ res.setHeader('Access-Control-Allow-Headers',
 res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
 
 if (req.method === 'OPTIONS') return res.status(200).end();
+
+// ── iCal feed (pubblico, protetto da firma HMAC) — PRIMA dell'auth ─────────
+// ?action=ical&sub=link&a=<id>&annata=<id>  → link feed firmato (per genitore)
+// ?action=ical&a=<id>&annata=<id>&sig=<HMAC> → .ics live (per Google/Apple)
+if (req.query?.action === 'ical') {
+  const aId = String(req.query.a || '').trim();
+  const annId = String(req.query.annata || '').trim();
+  if (!aId || !annId || !isValidId(annId)) return res.status(400).json({ error: 'Parametri non validi' });
+  if (!icalSecret()) return res.status(503).json({ error: 'Feed non configurato' });
+
+  if (req.query.sub === 'link') {
+    const sig = icalSign(aId, annId);
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    const base = `${host}/api/data?action=ical&a=${encodeURIComponent(aId)}&annata=${encodeURIComponent(annId)}&sig=${sig}`;
+    return res.status(200).json({ url: `https://${base}`, webcal: `webcal://${base}` });
+  }
+
+  // Verifica firma (timing-safe)
+  const got = String(req.query.sig || '').trim();
+  const exp = icalSign(aId, annId);
+  const ga = Buffer.from(got), gb = Buffer.from(exp);
+  if (ga.length !== gb.length || !crypto.timingSafeEqual(ga, gb)) {
+    return res.status(403).json({ error: 'Firma non valida' });
+  }
+
+  const [evRaw, respRaw, annListRaw] = await Promise.all([
+    kv.get(`annate:${annId}:calendarEvents`),
+    kv.get(`annate:${annId}:calendarResponses`),
+    kv.get('annate:list'),
+  ]);
+  const evs = evRaw || {}, resp = respRaw || {};
+  const annata = (annListRaw || []).find(x => String(x.id) === annId);
+  const calName = `${(annata && (annata.nome || annata.label)) || 'Squadra'} — Calendario`;
+  const nowStamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  let ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Sport Monitoring//Calendario//IT\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\n'
+    + `X-WR-CALNAME:${icalEsc(calName)}\r\nX-WR-TIMEZONE:Europe/Rome\r\n`;
+  Object.keys(evs).sort().forEach(date => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+    const ev = evs[date];
+    if (!ev || !ev.type) return;
+    const rec = resp[date] && (resp[date][aId] || resp[date][String(aId)]);
+    const status = rec ? (typeof rec === 'object' ? rec.status : rec) : null;
+    if (status === 'Assente') return; // esclude le assenze segnalate
+    const { start, end } = icalParseTime(ev.time);
+    const d = date.replace(/-/g, '');
+    const icon = ICAL_TYPE_ICON[ev.type] || '📌';
+    const summary = `${icon} ${ev.type}${ev.note ? ' — ' + ev.note : ''}`;
+    const desc = [];
+    if (ev.time) desc.push(`Orario: ${ev.time}`);
+    if (ev.note) desc.push(ev.note);
+    if (ev.athleteName) desc.push(`Atleta: ${ev.athleteName}`);
+    ics += 'BEGIN:VEVENT\r\n'
+      + `UID:${date}-${aId}-${annId}@sportmonitoring\r\n`
+      + `DTSTAMP:${nowStamp}\r\n`
+      + `DTSTART;TZID=Europe/Rome:${d}T${start}\r\n`
+      + (end ? `DTEND;TZID=Europe/Rome:${d}T${end}\r\n` : '')
+      + `SUMMARY:${icalEsc(summary)}\r\n`
+      + (desc.length ? `DESCRIPTION:${icalEsc(desc.join('\n'))}\r\n` : '')
+      + 'STATUS:CONFIRMED\r\nEND:VEVENT\r\n';
+  });
+  ics += 'END:VCALENDAR\r\n';
+  res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+  res.setHeader('Content-Disposition', 'inline; filename="calendario.ics"');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  return res.status(200).send(ics);
+}
 
 try {
 const session = await getSessionInfo(req);

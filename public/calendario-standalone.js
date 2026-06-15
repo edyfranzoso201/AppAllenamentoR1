@@ -896,7 +896,7 @@ setTimeout(() => {
           var annata = currentAnnataId || sessionStorage.getItem('gosport_current_annata') || new URLSearchParams(location.search).get('annata') || '';
           if (!aid || !annata) { alert('Dati atleta non disponibili.'); return; }
           _icalBtn.disabled = true; _icalBtn.textContent = '⏳ Genero il link...';
-          var r = await fetch('/api/ical?action=link&a=' + encodeURIComponent(aid) + '&annata=' + encodeURIComponent(annata));
+          var r = await fetch('/api/data?action=ical&sub=link&a=' + encodeURIComponent(aid) + '&annata=' + encodeURIComponent(annata));
           var data = await r.json();
           _icalBtn.disabled = false; _icalBtn.textContent = '📅 Aggiungi al mio calendario';
           if (!r.ok || !data.webcal) { alert('❌ Impossibile generare il link calendario.'); return; }
