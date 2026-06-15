@@ -717,7 +717,15 @@
     // ── Gestione Tema Scuro/Chiaro ─────────────────────────────────
     // Applica subito su <html> (body non ancora disponibile nel <head>)
     (function() {
-        var saved = localStorage.getItem('gosport_theme') || 'dark';
+        // Su MOBILE, se l'utente non ha ancora scelto un tema, parti in CHIARO
+        // (meglio leggibile al sole in campo). Su desktop resta scuro. Se invece
+        // una preferenza è già salvata, viene sempre rispettata.
+        var saved = localStorage.getItem('gosport_theme');
+        if (!saved) {
+            var isMobile = (('ontouchstart' in window) || navigator.maxTouchPoints > 0)
+                        && window.matchMedia('(max-width: 820px)').matches;
+            saved = isMobile ? 'light' : 'dark';
+        }
         if (saved === 'light') {
             document.documentElement.classList.add('theme-light');
             document.documentElement.setAttribute('data-bs-theme', 'light');
@@ -1271,6 +1279,7 @@
                         <div class="card-body" id="home-quick-actions">
                             <h5 class="card-title text-muted">AZIONI RAPIDE</h5>
                             <div class="d-grid gap-2 w-100 no-print">
+                                <button class="btn btn-lg" id="quick-modalita-campo-btn" onclick="window.openModalitaCampo()" style="background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-weight:700;font-size:1.1rem;padding:14px;">⚡ Modalità Campo</button>
                                 <button class="btn btn-primary-custom" id="quick-add-athlete-btn"><i class="bi bi-person-plus-fill"></i> Aggiungi Atleta</button>
                                 <button class="btn btn-warning" id="quick-add-staff-btn" style="color:#000;"><i class="bi bi-person-badge-fill"></i> Aggiungi Staff</button>
                                 <button class="btn btn-secondary" id="quick-plan-session-btn"><i class="bi bi-calendar-plus"></i> Pianifica Sessione</button>
@@ -2462,7 +2471,7 @@
     <script src="auth-multi-annata.js?v=1779800000"></script>
 
     <!-- Script personalizzato -->
-    <script src="script.js?v=1779802000"></script>
+    <script src="script.js?v=1781100000"></script>
     <script>
 
     // ========================================================================
