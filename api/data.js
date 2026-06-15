@@ -356,6 +356,85 @@ if (req.query?.action === 'cron-remind' && req.method === 'GET') {
     console.error('❌ Errore email alerts:', emailErr.message);
   }
 
+  // ── R3: gestione link certificato medico (dato sanitario minore) ─────────
+  // Il genitore carica il link Drive del certificato (athleteDocs[id].certificato).
+  // Per limitare l'esposizione: dopo 60gg dall'upload il LINK viene RIMOSSO
+  // (resta uploadedAt/nota → "consegnato il [data], link rimosso"). Qualche
+  // giorno prima parte un promemoria alla società per scaricarlo in tempo.
+  try {
+    const REMOVE_DAYS = 60;          // dopo quanti giorni si azzera il link
+    const REMIND_DAYS_BEFORE = 7;    // promemoria N giorni prima della rimozione
+    const nowMs = Date.now();
+    const DAY = 24 * 60 * 60 * 1000;
+
+    const { createTransport: ctR3 } = await import('nodemailer');
+    const transR3 = ctR3({ service: 'gmail', auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS } });
+
+    const licKeysR3 = await kv.smembers('licenze:index');
+    const annateR3 = (await kv.get('annate:list')) || [];
+
+    for (const licKey of (licKeysR3 || [])) {
+      const lic = await kv.get(`licenze:${licKey}`);
+      if (!lic || !lic.active) continue;
+      const socAnnate = annateR3.filter(a => !a.societyId || a.societyId === lic.societyId);
+      const inScadenza = []; // certificati il cui link sta per essere rimosso
+
+      for (const annata of socAnnate) {
+        const docsKey = `annate:${annata.id}:athleteDocs`;
+        const allDocs = await kv.get(docsKey);
+        if (!allDocs || typeof allDocs !== 'object') continue;
+        let dirty = false;
+
+        for (const aid of Object.keys(allDocs)) {
+          const cert = allDocs[aid] && allDocs[aid].certificato;
+          if (!cert || !cert.url || !cert.uploadedAt) continue;
+          const ageMs = nowMs - new Date(cert.uploadedAt).getTime();
+          if (isNaN(ageMs)) continue;
+          const ageDays = ageMs / DAY;
+
+          if (ageDays >= REMOVE_DAYS) {
+            // Rimuove SOLO il link, conserva la prova di consegna.
+            cert.url = '';
+            cert.linkRemovedAt = new Date().toISOString();
+            dirty = true;
+          } else if (ageDays >= (REMOVE_DAYS - REMIND_DAYS_BEFORE) && !cert.remindSent) {
+            // Promemoria una sola volta (flag remindSent).
+            const giorniRimasti = Math.max(1, Math.ceil(REMOVE_DAYS - ageDays));
+            inScadenza.push({ aid, giorni: giorniRimasti });
+            cert.remindSent = true;
+            dirty = true;
+          }
+        }
+        if (dirty) { try { await kv.set(docsKey, allDocs); } catch(e) { console.error('[cron-r3] save athleteDocs:', e.message); } }
+      }
+
+      // Un solo promemoria raggruppato per società (se ci sono certificati in scadenza).
+      if (inScadenza.length && lic.email) {
+        try {
+          await transR3.sendMail({
+            from: `"Sport Monitoring" <${process.env.GMAIL_USER}>`,
+            to: lic.email,
+            subject: `📄 Certificati medici da scaricare (${inScadenza.length})`,
+            html: `<!DOCTYPE html><html><body style="font-family:sans-serif;background:#f1f5f9;padding:24px;">
+<div style="max-width:480px;margin:0 auto;background:#fff;border-radius:12px;padding:28px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+  <div style="text-align:center;margin-bottom:16px;"><span style="font-size:2rem;">⚽</span>
+  <h2 style="margin:8px 0 4px;color:#0f172a;font-size:1.15rem;">Sport Monitoring</h2>
+  <div style="color:#64748b;font-size:0.85rem;">${lic.societyName || ''}</div></div>
+  <hr style="border:none;border-top:1px solid #e2e8f0;margin:14px 0;">
+  <p style="color:#1e293b;">Ci sono <strong>${inScadenza.length} certificati medici</strong> il cui link di download verrà <strong>rimosso a breve</strong> (per tutela dei dati sanitari dei minori).</p>
+  <p style="color:#374151;font-size:0.9rem;">Accedi all'app e <strong>scarica i certificati</strong> ancora disponibili prima della rimozione del link.</p>
+  <div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:12px 16px;margin:16px 0;color:#92400e;font-size:0.85rem;">Dopo la rimozione resterà solo la data di consegna; per un nuovo download dovrai richiedere il link al genitore.</div>
+  <hr style="border:none;border-top:1px solid #e2e8f0;margin:16px 0;">
+  <p style="color:#94a3b8;font-size:0.72rem;text-align:center;">Messaggio automatico da Sport Monitoring. Non rispondere.</p>
+</div></body></html>`
+          });
+        } catch(e) { console.error('[cron-r3] email promemoria:', e.message); }
+      }
+    }
+  } catch(r3Err) {
+    console.error('❌ Errore R3 certificati:', r3Err.message);
+  }
+
   // ── Alert 57h prima delle PARTITE (campionato/tornei) ────────────────────
   // Rete di sicurezza per la gara: il promemoria del lunedì può essere troppo
   // lontano da una partita del weekend. Gira ogni giorno (cron-remind 6:00 UTC):
