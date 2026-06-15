@@ -517,7 +517,18 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       async function salvaAppello(silent) {
-        if (!appelloDirty) { if (!silent) chiudiModalitaCampo(); return; }
+        // silent=true → backup automatico (idle/uscita): salva solo se ci sono
+        //   modifiche, per non fare scritture inutili.
+        // silent=false → pulsante "Salva" esplicito: scrive SEMPRE lo stato
+        //   corrente (anche se non hai toccato nessuno: "tutti presenti"
+        //   confermati è una scelta valida). Senza questo, premendo Salva senza
+        //   toccare nulla non si salvava niente.
+        if (silent && !appelloDirty) return;
+        // Niente atleti in lista (es. rosa vuota) → niente da salvare.
+        if (!appelloStato || Object.keys(appelloStato).length === 0) {
+          if (!silent) chiudiModalitaCampo();
+          return;
+        }
         const date = todayStr();
         if (!evaluations[date]) evaluations[date] = {};
         // Scrive SOLO presenza-allenamento, preservando gli altri campi esistenti.
@@ -526,10 +537,16 @@ document.addEventListener('DOMContentLoaded', () => {
           evaluations[date][aid] = { ...prev, 'presenza-allenamento': appelloStato[aid] };
         });
         try {
-          await saveData();
+          // saveData ritorna true/false (non lancia): controllo l'esito reale.
+          const ok = await saveData();
+          if (ok === false) {
+            if (!silent) alert('❌ Salvataggio non riuscito. Controlla la connessione e che l\'annata sia selezionata.');
+            return;
+          }
           appelloDirty = false;
           if (!silent) {
             if (typeof updateAllUI === 'function') updateAllUI();
+            alert('✅ Presenze salvate.');
             chiudiModalitaCampo();
           }
         } catch (e) {
