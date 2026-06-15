@@ -727,6 +727,8 @@ if (themeBtn) {
       // per QUESTO evento (mirato al singolo silenzioso non è possibile: le push
       // sono per-annata). Solo coach.
       const solleciBtn = !isParentView ? `<button onclick="window.sollecitaPresenze('${d}')" class="btn btn-sm btn-info ms-1" style="padding:0.1rem 0.3rem;font-size:0.6rem;color:#ffffff;" title="Sollecita conferma presenze (push a tutti)">📣</button>` : '';
+      // Genitore: aggiungi QUESTO evento al calendario (immediato, no attesa feed).
+      const addCalBtn = isParentView ? `<button onclick="window.addSingleEventToCalendar('${d}')" class="btn btn-sm ms-1" style="padding:0.1rem 0.4rem;font-size:0.7rem;background:#16a34a;color:#fff;border:none;border-radius:5px;" title="Aggiungi questo evento al calendario">📅</button>` : '';
 
       const thColor = isLightNow ? '#000000 !important' : '#ffffff !important';
       let thBg = '';
@@ -737,7 +739,7 @@ if (themeBtn) {
       }
       
       h += `<th class="text-center" style="color:${thColor}${thBg}">
-        <small>${eventIcon} ${e.type}${athleteLine}${noteLine}<br>${e.time}${editBtn}${deleteBtn}${solleciBtn}</small>
+        <small>${eventIcon} ${e.type}${athleteLine}${noteLine}<br>${e.time}${editBtn}${deleteBtn}${solleciBtn}${addCalBtn}</small>
       </th>`;
     });
     h += `</tr>`;
@@ -1078,6 +1080,66 @@ async function registraAperturaGenitore(athleteId) {
 // di Windows su webcal:// (Google Calendar è web, non un'app installata).
 // Offre: Google (URL diretto di abbonamento), App calendario (webcal per
 // Apple/Outlook), Copia link (incollare ovunque).
+// Aggiungi un SINGOLO evento al calendario (immediato, nessun feed/attesa).
+// Apre Google col modulo evento precompilato, o scarica un .ics per Apple/altri.
+window.addSingleEventToCalendar = function(date) {
+  var e = (typeof events !== 'undefined' && events[date]) ? events[date] : null;
+  if (!e) { alert('Evento non trovato.'); return; }
+  // Parsing orario "HH:MM" o "HH:MM-HH:MM"
+  var times = String(e.time || '').match(/(\d{1,2}):(\d{2})/g) || [];
+  function hhmm(s){ return s ? s.replace(':','') + '00' : '180000'; }
+  var startT = hhmm(times[0]);
+  // se manca la fine, +90 minuti di default
+  var endT;
+  if (times[1]) { endT = hhmm(times[1]); }
+  else {
+    var h = parseInt((times[0]||'18:00').split(':')[0],10);
+    var m = parseInt((times[0]||'18:00').split(':')[1],10);
+    var tot = h*60 + m + 90; endT = String(Math.floor(tot/60)%24).padStart(2,'0') + String(tot%60).padStart(2,'0') + '00';
+  }
+  var d = date.replace(/-/g,'');
+  var titolo = (e.type || 'Evento') + (e.note ? ' — ' + e.note : '');
+  var dettagli = [];
+  if (e.time) dettagli.push('Orario: ' + e.time);
+  if (e.note) dettagli.push(e.note);
+  var detStr = dettagli.join('\\n');
+
+  // Google: link diretto al modulo evento precompilato (l'utente preme Salva).
+  var googleEvt = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+    + '&text=' + encodeURIComponent(titolo)
+    + '&dates=' + d + 'T' + startT + '/' + d + 'T' + endT
+    + '&details=' + encodeURIComponent(dettagli.join('\n'))
+    + '&ctz=Europe/Rome';
+
+  // Apple/altri: data-URI di un .ics con un solo VEVENT (download → apri).
+  var icsEsc = function(s){ return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n'); };
+  var ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Sport Monitoring//Evento//IT\r\n'
+    + 'BEGIN:VEVENT\r\n'
+    + 'UID:' + d + '-single@sportmonitoring\r\n'
+    + 'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z\r\n'
+    + 'DTSTART;TZID=Europe/Rome:' + d + 'T' + startT + '\r\n'
+    + 'DTEND;TZID=Europe/Rome:' + d + 'T' + endT + '\r\n'
+    + 'SUMMARY:' + icsEsc(titolo) + '\r\n'
+    + (detStr ? 'DESCRIPTION:' + icsEsc(dettagli.join('\n')) + '\r\n' : '')
+    + 'END:VEVENT\r\nEND:VCALENDAR\r\n';
+  var icsHref = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+
+  var old = document.getElementById('ical-panel'); if (old) old.remove();
+  var back = document.createElement('div');
+  back.id = 'ical-panel';
+  back.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:21000;display:flex;align-items:center;justify-content:center;padding:18px;';
+  back.innerHTML =
+    '<div style="background:#fff;color:#0f172a;border-radius:14px;max-width:380px;width:100%;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,0.35);">' +
+      '<div style="font-weight:800;font-size:1.05rem;margin-bottom:4px;">📅 ' + icsEsc(titolo) + '</div>' +
+      '<div style="font-size:0.85rem;color:#475569;margin-bottom:16px;">' + new Date(date+'T00:00:00').toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'}) + (e.time?' · '+e.time:'') + '</div>' +
+      '<a href="' + googleEvt + '" target="_blank" rel="noopener" style="display:block;text-align:center;background:#1a73e8;color:#fff;text-decoration:none;border-radius:10px;padding:13px;font-weight:700;margin-bottom:10px;">📆 Aggiungi a Google</a>' +
+      '<a href="' + icsHref + '" download="evento.ics" style="display:block;text-align:center;background:#000;color:#fff;text-decoration:none;border-radius:10px;padding:13px;font-weight:700;margin-bottom:14px;">🍎 Apple / altri (scarica)</a>' +
+      '<button id="ical-close" style="display:block;width:100%;background:none;border:none;color:#64748b;font-weight:600;cursor:pointer;padding:6px;">Chiudi</button>' +
+    '</div>';
+  document.body.appendChild(back);
+  back.addEventListener('click', function(ev){ if (ev.target === back || ev.target.id === 'ical-close') back.remove(); });
+};
+
 window._showIcalPanel = function(httpsUrl, webcalUrl) {
   // Google Calendar: il parametro cid DEVE usare webcal:// (NON https://),
   // altrimenti apre Google ma non precompila il calendario (bug noto Google).
