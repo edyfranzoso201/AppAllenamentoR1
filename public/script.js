@@ -488,7 +488,11 @@ document.addEventListener('DOMContentLoaded', () => {
         '1': { label: 'Ritardo forte', bg: '#ea580c', fg: '#fff' },
         '0': { label: 'Assente',       bg: '#dc2626', fg: '#fff' },
       };
-      const todayStr = () => new Date().toISOString().split('T')[0];
+      // Data di OGGI in formato locale (come tutto il resto dell'app, via
+      // toLocalDateISO). NON usare toISOString() che dà la data UTC: di sera/notte
+      // in Italia differisce di un giorno → l'appello salverebbe su una data e il
+      // pannello valutazioni leggerebbe un'altra ("non risulta niente").
+      const todayStr = () => toLocalDateISO(new Date());
 
       // Stato locale dell'appello: { athleteId: '3'|'2'|'1'|'0' }. Si salva solo
       // su Salva o backup (dirty flag), MAI a ogni tap → niente raffica chiamate.
