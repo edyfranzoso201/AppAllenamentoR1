@@ -725,6 +725,29 @@ document.addEventListener('DOMContentLoaded', () => {
         fab.onclick = () => window.openModalitaCampo();
         document.body.appendChild(fab);
       }
+
+      // Barra fissa "⚡ Modalità Campo" in alto, SOLO su smartphone: raggiungibile
+      // senza scrollare (su mobile le Azioni Rapide finiscono in fondo alla Home).
+      // Su desktop NON appare (lì c'è già il pulsante nelle Azioni Rapide).
+      function ensureTopBar() {
+        const isMobile = window.matchMedia('(max-width: 820px)').matches;
+        let bar = document.getElementById('mc-topbar');
+        if (!isMobile) { if (bar) bar.style.display = 'none'; return; }
+        if (!bar) {
+          bar = document.createElement('button');
+          bar.id = 'mc-topbar';
+          bar.type = 'button';
+          bar.className = 'no-print';
+          bar.innerHTML = '⚡ Modalità Campo';
+          bar.style.cssText = 'position:fixed;top:56px;left:0;right:0;z-index:1040;border:none;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-weight:800;font-size:1.05rem;padding:12px;box-shadow:0 2px 8px rgba(0,0,0,0.25);cursor:pointer;';
+          bar.onclick = () => window.openModalitaCampo();
+          document.body.appendChild(bar);
+          // Spinge giù il contenuto così la barra non copre la prima riga.
+          const main = document.querySelector('main.container-fluid');
+          if (main) main.style.paddingTop = '48px';
+        }
+        bar.style.display = 'block';
+      }
       function removeFab() { const f = document.getElementById('mc-fab'); if (f) f.remove(); }
 
       // Regola del ⚡: appare SOLO se (a) sessione campo attiva E (b) NON sei in
@@ -758,8 +781,14 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {}
         refreshFab();
       }
-      if (document.body) initFabIfCampo();
-      else document.addEventListener('DOMContentLoaded', initFabIfCampo);
+      function initCampoUI() {
+        ensureTopBar();      // scorciatoia mobile sempre presente
+        initFabIfCampo();    // FAB contestuale + eventuale ?campo=1
+      }
+      if (document.body) initCampoUI();
+      else document.addEventListener('DOMContentLoaded', initCampoUI);
+      // Se ruoti il telefono / cambi viewport, riadatta la barra mobile.
+      window.addEventListener('resize', ensureTopBar);
     })();
     const migrateGpsData = () => {
         for (const athleteId in gpsData) {
