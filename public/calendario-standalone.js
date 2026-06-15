@@ -899,19 +899,11 @@ setTimeout(() => {
           var r = await fetch('/api/data?action=ical&sub=link&a=' + encodeURIComponent(aid) + '&annata=' + encodeURIComponent(annata));
           var data = await r.json();
           _icalBtn.disabled = false; _icalBtn.textContent = '📅 Aggiungi al mio calendario';
-          if (!r.ok || !data.webcal) { alert('❌ Impossibile generare il link calendario.'); return; }
-          // webcal:// apre direttamente il dialog "abbonati" su Google/Apple.
-          // Mostro anche il link https da copiare come fallback.
-          if (confirm('📅 Aggiungere allenamenti e partite al tuo calendario?\n\nPremi OK per abbonarti (Google/Apple Calendar).\nIl calendario si aggiornerà da solo.')) {
-            window.location.href = data.webcal;
-            // Fallback: dopo un attimo, se non si apre, offro il copia-link.
-            setTimeout(function() {
-              if (confirm('Se il calendario non si è aperto, premi OK per COPIARE il link da incollare manualmente nel tuo calendario.')) {
-                navigator.clipboard && navigator.clipboard.writeText(data.url);
-                alert('🔗 Link copiato:\n' + data.url + '\n\nIncollalo nel tuo calendario (Google: "Aggiungi calendario da URL").');
-              }
-            }, 2500);
-          }
+          if (!r.ok || !data.url) { alert('❌ Impossibile generare il link calendario.'); return; }
+          // Pannello con opzioni chiare. NON lancio webcal:// a forza (su PC apre
+          // un menu confuso "scegli app" senza Google, che è web). Offro: Google
+          // (URL diretto di abbonamento), Apple/app (webcal), copia link.
+          window._showIcalPanel(data.url, data.webcal);
         } catch (e) {
           _icalBtn.disabled = false; _icalBtn.textContent = '📅 Aggiungi al mio calendario';
           alert('❌ Errore: ' + e.message);
@@ -1081,6 +1073,37 @@ async function registraAperturaGenitore(athleteId) {
     console.warn('[PRESENZA] registraAperturaGenitore soft-fail:', e.message);
   }
 }
+
+// Pannello "Aggiungi al calendario" con opzioni chiare. Evita il menu confuso
+// di Windows su webcal:// (Google Calendar è web, non un'app installata).
+// Offre: Google (URL diretto di abbonamento), App calendario (webcal per
+// Apple/Outlook), Copia link (incollare ovunque).
+window._showIcalPanel = function(httpsUrl, webcalUrl) {
+  var googleUrl = 'https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(httpsUrl);
+  var old = document.getElementById('ical-panel'); if (old) old.remove();
+  var back = document.createElement('div');
+  back.id = 'ical-panel';
+  back.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:21000;display:flex;align-items:center;justify-content:center;padding:18px;';
+  back.innerHTML =
+    '<div style="background:#fff;color:#0f172a;border-radius:14px;max-width:420px;width:100%;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,0.35);">' +
+      '<div style="font-weight:800;font-size:1.1rem;margin-bottom:4px;">📅 Aggiungi al tuo calendario</div>' +
+      '<div style="font-size:0.85rem;color:#475569;margin-bottom:16px;">Allenamenti e partite, sempre aggiornati. Scegli il tuo calendario:</div>' +
+      '<a href="' + googleUrl + '" target="_blank" rel="noopener" style="display:block;text-align:center;background:#1a73e8;color:#fff;text-decoration:none;border-radius:10px;padding:13px;font-weight:700;margin-bottom:10px;">📆 Google Calendar</a>' +
+      '<a href="' + webcalUrl + '" style="display:block;text-align:center;background:#000;color:#fff;text-decoration:none;border-radius:10px;padding:13px;font-weight:700;margin-bottom:10px;">🍎 Apple / app calendario</a>' +
+      '<button id="ical-copy" style="display:block;width:100%;text-align:center;background:#f1f5f9;color:#0f172a;border:1px solid #cbd5e1;border-radius:10px;padding:13px;font-weight:700;cursor:pointer;margin-bottom:10px;">🔗 Copia link (Outlook/altri)</button>' +
+      '<div style="font-size:0.75rem;color:#64748b;margin-bottom:14px;">Per Outlook/altri: copia il link e usa "Aggiungi calendario da Internet/URL".</div>' +
+      '<button id="ical-close" style="display:block;width:100%;background:none;border:none;color:#64748b;font-weight:600;cursor:pointer;padding:6px;">Chiudi</button>' +
+    '</div>';
+  document.body.appendChild(back);
+  back.addEventListener('click', function(e){
+    if (e.target === back || e.target.id === 'ical-close') { back.remove(); return; }
+    if (e.target.id === 'ical-copy') {
+      if (navigator.clipboard) navigator.clipboard.writeText(httpsUrl);
+      e.target.textContent = '✅ Link copiato!';
+      setTimeout(function(){ e.target.textContent = '🔗 Copia link (Outlook/altri)'; }, 2000);
+    }
+  });
+};
 
 // Sollecita la conferma presenze per un evento: push insistente a TUTTI i
 // subscriber dell'annata (il sollecito al singolo silenzioso non è possibile —
