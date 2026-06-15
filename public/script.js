@@ -628,13 +628,27 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       }
 
+      // Chiude solo l'overlay (la "sessione campo" resta attiva → il ⚡ permane,
+      // così tornando da Squadra/Presenze/Calendario puoi riaprire la Modalità).
       function chiudiModalitaCampo() {
         const ov = document.getElementById('modalita-campo-overlay');
         if (ov) ov.remove();
       }
 
-      // Apre la schermata Modalità Campo (3 riquadri + accesso appello)
+      // "Esci" vero: termina la sessione campo → il ⚡ sparisce.
+      function uscireModalitaCampo() {
+        try { sessionStorage.removeItem('gosport_campo_mode'); } catch (e) {}
+        chiudiModalitaCampo();
+        const fab = document.getElementById('mc-fab');
+        if (fab) fab.remove();
+      }
+
+      // Apre la schermata Modalità Campo (riquadri + accesso appello).
+      // Attiva la "sessione campo": da qui in poi il ⚡ appare ovunque
+      // (anche in calendario.html, via flag in sessionStorage) finché non esci.
       window.openModalitaCampo = function() {
+        try { sessionStorage.setItem('gosport_campo_mode', '1'); } catch (e) {}
+        ensureFab();
         chiudiModalitaCampo();
         const ov = document.createElement('div');
         ov.id = 'modalita-campo-overlay';
@@ -653,7 +667,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <div id="mc-appello" style="display:none;">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <button id="mc-appello-back" style="background:#e2e8f0;border:none;border-radius:8px;padding:8px 14px;font-weight:700;cursor:pointer;color:#0f172a;">← Indietro</button>
+                <button id="mc-appello-back" style="background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;">⚡ Modalità Campo</button>
                 <button id="mc-appello-save" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:800;cursor:pointer;">💾 Salva</button>
               </div>
               <div id="mc-appello-list"></div>
@@ -661,7 +675,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>`;
         document.body.appendChild(ov);
 
-        ov.querySelector('#mc-close').onclick = () => { salvaAppello(true); chiudiModalitaCampo(); };
+        ov.querySelector('#mc-close').onclick = () => { salvaAppello(true); uscireModalitaCampo(); };
         ov.querySelectorAll('.mc-tile').forEach(t => {
           t.onclick = () => {
             const act = t.getAttribute('data-act');
@@ -711,8 +725,21 @@ document.addEventListener('DOMContentLoaded', () => {
         fab.onclick = () => window.openModalitaCampo();
         document.body.appendChild(fab);
       }
-      if (document.body) ensureFab();
-      else document.addEventListener('DOMContentLoaded', ensureFab);
+      // Il FAB appare SOLO se la sessione campo è attiva (cioè hai aperto la
+      // Modalità Campo e non sei ancora uscito). All'avvio in Home senza averla
+      // aperta → niente ⚡. Tornando da Squadra/Presenze → il flag è ancora attivo.
+      function initFabIfCampo() {
+        try { if (sessionStorage.getItem('gosport_campo_mode') === '1') ensureFab(); } catch (e) {}
+        // Se torno da calendario.html col ⚡ (?campo=1), riapro la Modalità Campo.
+        try {
+          if (new URLSearchParams(location.search).get('campo') === '1') {
+            history.replaceState(null, '', location.pathname); // pulisce l'URL
+            setTimeout(() => window.openModalitaCampo(), 300);
+          }
+        } catch (e) {}
+      }
+      if (document.body) initFabIfCampo();
+      else document.addEventListener('DOMContentLoaded', initFabIfCampo);
     })();
     const migrateGpsData = () => {
         for (const athleteId in gpsData) {

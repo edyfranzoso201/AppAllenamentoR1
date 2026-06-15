@@ -4282,5 +4282,23 @@ window._showImgLightbox = function(src) {
   };
 })();
 </script>
+<script>
+// ⚡ FAB "torna alla Modalità Campo": appare SOLO se la sessione campo è attiva
+// (flag in sessionStorage, impostato da index.html quando apri la Modalità).
+// Riporta a index.html con ?campo=1 che riapre automaticamente la Modalità Campo.
+(function(){
+  try {
+    if (sessionStorage.getItem('gosport_campo_mode') !== '1') return;
+  } catch(e) { return; }
+  var fab = document.createElement('button');
+  fab.type = 'button';
+  fab.title = 'Torna a Modalità Campo';
+  fab.textContent = '⚡';
+  fab.className = 'no-print';
+  fab.style.cssText = 'position:fixed;right:16px;bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:18000;width:58px;height:58px;border-radius:50%;border:2px solid #fff;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-size:1.7rem;box-shadow:0 6px 20px rgba(0,0,0,0.4);cursor:pointer;';
+  fab.onclick = function(){ window.location.href = '/index.html?campo=1'; };
+  document.body.appendChild(fab);
+})();
+</script>
 </body>
 </html>
