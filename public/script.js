@@ -1633,6 +1633,242 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // ── CAMBIO STAGIONE: archivio + reset + export/import ────────────────────
+    // Headers auth completi (come saveAlertSettings) per gli endpoint protetti.
+    const _seasonHeaders = (json) => {
+        const h = {
+            'X-Society-Id': sessionStorage.getItem('gosport_society_id') || '',
+            'X-Annata-Id': sessionStorage.getItem('gosport_current_annata') || '',
+            'X-Auth-Session': sessionStorage.getItem('gosport_session_token') || '',
+            'X-Auth-User': sessionStorage.getItem('gosport_auth_user') || '',
+            'X-User-Role': sessionStorage.getItem('gosport_user_role') || ''
+        };
+        if (json) h['Content-Type'] = 'application/json';
+        return h;
+    };
+    const _seasonDate = (iso) => {
+        if (!iso) return '—';
+        const d = new Date(iso);
+        return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('it-IT', { day:'2-digit', month:'2-digit', year:'numeric' });
+    };
+    const _seasonAthName = (id) => {
+        const a = (athletes || []).find(x => String(x.id) === String(id));
+        return a ? (a.name || `${a.cognome||''} ${a.nome||''}`.trim() || String(id)) : String(id);
+    };
+
+    // Carica e renderizza l'elenco degli archivi disponibili
+    window.loadSeasonArchives = async () => {
+        const box = document.getElementById('season-archive-list');
+        if (!box) return;
+        box.innerHTML = '<p class="text-muted">Caricamento…</p>';
+        try {
+            const r = await fetch('/api/data?action=season-archive', { headers: _seasonHeaders(false) });
+            const d = await r.json();
+            if (!r.ok || !d.success) { box.innerHTML = '<p class="text-danger">Errore nel caricamento archivi.</p>'; return; }
+            const archives = d.archives || [];
+            if (!archives.length) {
+                box.innerHTML = '<p class="text-muted">Nessuna stagione archiviata. Usa "Inizia nuova stagione" per crearne una.</p>';
+                return;
+            }
+            box.innerHTML = archives.map(a => {
+                const c = a.counts || {};
+                return `<div class="border rounded p-2 mb-2 d-flex flex-wrap align-items-center gap-2">
+                    <div class="flex-grow-1">
+                        <strong><i class="bi bi-archive"></i> Stagione ${escapeHtml(a.label)}</strong>
+                        <div class="small text-muted">Archiviata il ${_seasonDate(a.archivedAt)} · cancellazione automatica il <strong>${_seasonDate(a.expiresAt)}</strong></div>
+                        <div class="small text-muted">⚽ ${c.matchResults||0} partite · 👥 ${c.calendarResponses||0} giorni presenze · 🏆 ${c.awards||0} premi · 📅 ${c.calendarEvents||0} eventi</div>
+                    </div>
+                    <div class="d-flex gap-1 flex-wrap">
+                        <button class="btn btn-sm btn-outline-primary" onclick="window.viewSeasonArchive('${encodeURIComponent(a.label)}')"><i class="bi bi-eye"></i> Vedi</button>
+                        <button class="btn btn-sm btn-outline-success" onclick="window.exportSeasonArchive('${encodeURIComponent(a.label)}')"><i class="bi bi-download"></i> Backup</button>
+                    </div>
+                </div>`;
+            }).join('');
+        } catch(e) {
+            box.innerHTML = '<p class="text-danger">Errore di rete.</p>';
+        }
+    };
+
+    // Recupera il dettaglio completo di un archivio dal server
+    const _fetchSeasonArchive = async (label) => {
+        const r = await fetch('/api/data?action=season-archive&label=' + encodeURIComponent(label), { headers: _seasonHeaders(false) });
+        const d = await r.json();
+        if (!r.ok || !d.success) throw new Error(d.message || 'Archivio non trovato');
+        return d.archive;
+    };
+
+    // Visualizza il dettaglio (sola lettura). Usato sia per gli archivi su server
+    // sia per un file importato (oggetto passato direttamente).
+    window.viewSeasonArchive = async (labelEnc) => {
+        const label = decodeURIComponent(labelEnc);
+        try {
+            const entry = await _fetchSeasonArchive(label);
+            _renderSeasonArchiveDetail(entry, false);
+        } catch(e) {
+            alert('❌ ' + e.message);
+        }
+    };
+
+    function _renderSeasonArchiveDetail(entry, imported) {
+        const wrap = document.getElementById('season-archive-detail');
+        if (!wrap || !entry) return;
+        const d = entry.data || {};
+        const rows = [];
+        // Partite
+        const mr = d.matchResults || {};
+        const partite = Object.keys(mr).length;
+        // Premi
+        const awardItems = [];
+        for (const [key, aw] of Object.entries(d.awards || {})) {
+            const list = Array.isArray(aw) ? aw : [aw];
+            list.forEach(a => { if (a && typeof a === 'object') awardItems.push({ ath: _seasonAthName(a.athleteId || key), reason: a.reason || '', date: a.date || key }); });
+        }
+        // Eventi calendario
+        const eventi = Object.keys(d.calendarEvents || {}).length;
+        // Giorni con presenze
+        const giorniPres = Object.keys(d.calendarResponses || {}).length;
+
+        const awardHtml = awardItems.length
+            ? '<ul class="mb-0 small">' + awardItems.map(a => `<li><strong>${escapeHtml(a.ath)}</strong>${a.reason ? ' — ' + escapeHtml(a.reason) : ''} <span class="text-muted">(${escapeHtml(a.date)})</span></li>`).join('') + '</ul>'
+            : '<span class="text-muted small">Nessun premio.</span>';
+
+        wrap.innerHTML = `<div class="card chart-card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-eye"></i> Stagione ${escapeHtml(entry.label)}
+                    ${imported ? '<span class="badge bg-info ms-2">importata (sola visualizzazione)</span>' : ''}
+                </h5>
+                <p class="small text-muted">Archiviata il ${_seasonDate(entry.archivedAt)}. Sola lettura.</p>
+                <div class="row g-2 text-center mb-3">
+                    <div class="col"><div class="border rounded p-2"><div class="h4 mb-0">${partite}</div><small class="text-muted">Partite</small></div></div>
+                    <div class="col"><div class="border rounded p-2"><div class="h4 mb-0">${giorniPres}</div><small class="text-muted">Giorni presenze</small></div></div>
+                    <div class="col"><div class="border rounded p-2"><div class="h4 mb-0">${awardItems.length}</div><small class="text-muted">Premi</small></div></div>
+                    <div class="col"><div class="border rounded p-2"><div class="h4 mb-0">${eventi}</div><small class="text-muted">Eventi</small></div></div>
+                </div>
+                <h6><i class="bi bi-award-fill" style="color:#ea580c;"></i> Hall of Fame</h6>
+                ${awardHtml}
+                <div class="mt-3">
+                    <button class="btn btn-sm btn-outline-success" onclick="window.exportSeasonArchiveObj()"><i class="bi bi-download"></i> Scarica questo archivio</button>
+                </div>
+            </div>
+        </div>`;
+        wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        // tieni l'oggetto corrente per l'export del dettaglio visualizzato
+        window._currentSeasonArchive = entry;
+    }
+
+    // Costruisce un workbook Excel da un archivio di stagione
+    function _seasonArchiveToWorkbook(entry) {
+        const d = entry.data || {};
+        const wb = XLSX.utils.book_new();
+        // Premi
+        const awardRows = [];
+        for (const [key, aw] of Object.entries(d.awards || {})) {
+            const list = Array.isArray(aw) ? aw : [aw];
+            list.forEach(a => { if (a && typeof a === 'object') awardRows.push({ 'Atleta': _seasonAthName(a.athleteId || key), 'Motivazione': a.reason || '', 'Data': a.date || key }); });
+        }
+        if (awardRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(awardRows), 'Hall of Fame');
+        // Eventi calendario
+        const evRows = Object.entries(d.calendarEvents || {}).map(([date, ev]) => ({
+            'Data': date, 'Tipo': (ev && ev.type) || '', 'Orario': (ev && ev.time) || '', 'Note': (ev && ev.note) || ''
+        }));
+        if (evRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(evRows), 'Calendario');
+        // Presenze
+        const presRows = [];
+        for (const [date, byAth] of Object.entries(d.calendarResponses || {})) {
+            if (byAth && typeof byAth === 'object') {
+                for (const [aid, rec] of Object.entries(byAth)) {
+                    presRows.push({ 'Data': date, 'Atleta': _seasonAthName(aid), 'Stato': typeof rec === 'object' ? (rec.status||'') : rec });
+                }
+            }
+        }
+        if (presRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(presRows), 'Presenze');
+        // Risultati partite (marcatori/cartellini/assist)
+        const matchRows = [];
+        for (const [mid, m] of Object.entries(d.matchResults || {})) {
+            if (!m || typeof m !== 'object') continue;
+            ['scorers','cards','assists'].forEach(list => {
+                (m[list]||[]).forEach(x => matchRows.push({
+                    'Partita': mid, 'Tipo': list === 'scorers' ? 'Gol' : list === 'cards' ? ('Cartellino '+(x.tipo||'')) : 'Assist',
+                    'Atleta': _seasonAthName(x.athleteId), 'Min': x.min || ''
+                }));
+            });
+        }
+        if (matchRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(matchRows), 'Risultati');
+        return wb;
+    }
+
+    // Scarica un archivio (dal server) come JSON + Excel
+    window.exportSeasonArchive = async (labelEnc) => {
+        const label = decodeURIComponent(labelEnc);
+        try {
+            const entry = await _fetchSeasonArchive(label);
+            _downloadSeasonArchive(entry);
+        } catch(e) { alert('❌ ' + e.message); }
+    };
+    // Scarica l'archivio attualmente visualizzato (anche se importato)
+    window.exportSeasonArchiveObj = () => {
+        if (window._currentSeasonArchive) _downloadSeasonArchive(window._currentSeasonArchive);
+    };
+    function _downloadSeasonArchive(entry) {
+        const safe = String(entry.label || 'stagione').replace(/[^\w.\-]/g, '_');
+        // JSON
+        const blob = new Blob([JSON.stringify(entry, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `SportMonitoring_Stagione_${safe}.json`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        // Excel
+        try {
+            const wb = _seasonArchiveToWorkbook(entry);
+            if (wb.SheetNames.length) XLSX.writeFile(wb, `SportMonitoring_Stagione_${safe}.xlsx`);
+        } catch(e) { console.error('[season export xlsx]', e); }
+    }
+
+    // Inizia nuova stagione: archivia + azzera (con conferma forte)
+    window.startNewSeason = async () => {
+        const fb = document.getElementById('season-reset-feedback');
+        const input = document.getElementById('season-label-input');
+        const label = (input?.value || '').trim();
+        if (!label) { if (fb) { fb.style.color = '#ef4444'; fb.textContent = 'Inserisci l\'etichetta (es. 2025-26)'; } return; }
+        if (!confirm(`Stai per ARCHIVIARE e AZZERARE la stagione "${label}".\n\nVerranno spostati in archivio e azzerati:\n• Risultati partite (marcatori, cartellini, assist)\n• Presenze\n• Hall of Fame (premi)\n• Calendario eventi\n\nLa rosa atleti, i pagamenti e i certificati NON vengono toccati.\nL'archivio si conserva 1 anno, poi viene cancellato in automatico.\n\nProcedere?`)) return;
+        if (fb) { fb.style.color = '#64748b'; fb.textContent = 'Archiviazione in corso…'; }
+        try {
+            const r = await fetch('/api/data?action=season-reset', {
+                method: 'POST', headers: _seasonHeaders(true), body: JSON.stringify({ label })
+            });
+            const d = await r.json();
+            if (!r.ok || !d.success) { if (fb) { fb.style.color = '#ef4444'; fb.textContent = '✗ ' + (d.message || 'Errore'); } return; }
+            if (fb) { fb.style.color = '#22c55e'; fb.textContent = '✓ Stagione archiviata'; }
+            if (input) input.value = '';
+            // Ricarica i dati correnti (ora azzerati) e l'elenco archivi
+            if (typeof loadData === 'function') { try { await loadData(); } catch(_){} }
+            if (window.updateAllUI) window.updateAllUI();
+            window.loadSeasonArchives();
+        } catch(e) {
+            if (fb) { fb.style.color = '#ef4444'; fb.textContent = '✗ Errore di rete'; }
+        }
+    };
+
+    // Importa un file di backup .json → visualizza in memoria (NON salva nel server)
+    window.importSeasonArchive = (event) => {
+        const file = event?.target?.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const entry = JSON.parse(e.target.result);
+                if (!entry || !entry.data || !entry.label) throw new Error('File non valido: non sembra un backup di stagione.');
+                _renderSeasonArchiveDetail(entry, true);
+            } catch(err) {
+                alert('❌ ' + (err.message || 'File non leggibile'));
+            }
+            if (event.target) event.target.value = '';
+        };
+        reader.readAsText(file);
+    };
+
     window.exportFIGCCSV = function() {
         const annataId = sessionStorage.getItem('gosport_current_annata') || '';
         const annataLabel = annataId.replace(/_/g, ' ') || 'squadra';

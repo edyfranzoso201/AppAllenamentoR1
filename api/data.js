@@ -214,12 +214,13 @@ async function purgeAthlete(prefix, athleteId) {
 
 // Log adempimento art. 17 SENZA dati personali: solo data/annata/conteggio.
 // Serve come prova documentale che l'oblio per retention è stato applicato.
-async function logRetentionPurge(annataId, count) {
+// `extra` (opz.) aggiunge campi non personali, es. {kind:'season', label:'2025-26'}.
+async function logRetentionPurge(annataId, count, extra) {
   if (!count) return;
   try {
     const key = 'gdpr:retention-log';
     const log = (await kv.get(key)) || [];
-    log.push({ date: new Date().toISOString().split('T')[0], annataId: String(annataId), count });
+    log.push({ date: new Date().toISOString().split('T')[0], annataId: String(annataId), count, ...(extra || {}) });
     // tieni le ultime 500 righe per non far crescere all'infinito
     await kv.set(key, log.slice(-500));
   } catch (e) { console.error('[retention-log]', e?.message || e); }
@@ -365,6 +366,92 @@ if (req.query?.action === 'purge-athlete' && req.method === 'POST') {
     console.error('[purge-athlete]', e?.message || e);
     return res.status(500).json({ success: false, message: 'Errore cancellazione' });
   }
+}
+
+// ── CAMBIO STAGIONE: reset + archivio ────────────────────────────────────────
+// Le 4 categorie "di stagione" (risultati partite, presenze, hall of fame,
+// calendario) vengono copiate in annate:<id>:archive[<label>] con archivedAt
+// (timer di conservazione 1 anno), poi le chiavi correnti vengono AZZERATE.
+// La rosa atleti, pagamenti, certificati, pagelle e GPS restano intatti.
+// Niente nuovo file serverless: tutto passa da data.js (limite Hobby 12 route).
+const SEASON_KEYS = ['matchResults', 'calendarResponses', 'awards', 'calendarEvents'];
+
+if (req.query?.action === 'season-reset' && req.method === 'POST') {
+  if (!session.isAuthenticated || !canWrite(session.role)) {
+    return res.status(403).json({ success: false, message: 'Permesso negato' });
+  }
+  if (!annataId || !isValidId(annataId)) {
+    return res.status(400).json({ success: false, message: 'annataId non valido' });
+  }
+  // Etichetta stagione che si sta chiudendo (es. "2025-26"). Validata e usata
+  // come chiave dell'archivio: deve essere leggibile e priva di caratteri strani.
+  const label = String((req.body && req.body.label) || '').trim();
+  if (!label || !/^[\w .\-\/]{1,40}$/.test(label)) {
+    return res.status(400).json({ success: false, message: 'Etichetta stagione non valida (es. "2025-26")' });
+  }
+  try {
+    const prefix = `annate:${annataId}`;
+    // Snapshot delle 4 categorie correnti
+    const snapshot = {};
+    for (const k of SEASON_KEYS) {
+      snapshot[k] = (await kv.get(`${prefix}:${k}`)) || {};
+    }
+    const archive = (await kv.get(`${prefix}:archive`)) || {};
+    if (archive[label]) {
+      return res.status(409).json({ success: false, message: `Esiste già un archivio "${label}". Usa un'etichetta diversa.` });
+    }
+    archive[label] = {
+      label,
+      archivedAt: new Date().toISOString(),
+      data: snapshot,
+    };
+    await kv.set(`${prefix}:archive`, archive);
+    // Azzera le 4 categorie correnti (la nuova stagione parte pulita)
+    const writes = SEASON_KEYS.map(k => kv.set(`${prefix}:${k}`, {}));
+    await Promise.all(writes);
+    return res.status(200).json({ success: true, label, archivedAt: archive[label].archivedAt });
+  } catch (e) {
+    console.error('[season-reset]', e?.message || e);
+    return res.status(500).json({ success: false, message: 'Errore reset stagione' });
+  }
+}
+
+// ── CAMBIO STAGIONE: lettura archivi (sola lettura) ──────────────────────────
+// ?action=season-archive            → lista archivi (label, date, conteggi)
+// ?action=season-archive&label=...  → dettaglio completo di una stagione
+if (req.query?.action === 'season-archive' && req.method === 'GET') {
+  if (!session.isAuthenticated) {
+    return res.status(401).json({ success: false, message: 'Non autorizzato' });
+  }
+  if (!annataId || !isValidId(annataId)) {
+    return res.status(400).json({ success: false, message: 'annataId non valido' });
+  }
+  const RETENTION_DAYS = 365, DAY = 24 * 60 * 60 * 1000;
+  const archive = (await kv.get(`annate:${annataId}:archive`)) || {};
+  const wantLabel = String(req.query.label || '').trim();
+  if (wantLabel) {
+    const entry = archive[wantLabel];
+    if (!entry) return res.status(404).json({ success: false, message: 'Archivio non trovato' });
+    return res.status(200).json({ success: true, archive: entry });
+  }
+  // Lista sintetica: per ogni stagione, conteggi + data prevista cancellazione
+  const list = Object.values(archive).map(entry => {
+    const d = entry.data || {};
+    const archMs = new Date(entry.archivedAt).getTime();
+    const expiresAt = isNaN(archMs) ? null : new Date(archMs + RETENTION_DAYS * DAY).toISOString();
+    return {
+      label: entry.label,
+      archivedAt: entry.archivedAt,
+      expiresAt,
+      counts: {
+        matchResults: d.matchResults ? Object.keys(d.matchResults).length : 0,
+        calendarResponses: d.calendarResponses ? Object.keys(d.calendarResponses).length : 0,
+        awards: d.awards ? Object.keys(d.awards).length : 0,
+        calendarEvents: d.calendarEvents ? Object.keys(d.calendarEvents).length : 0,
+      },
+    };
+  }).sort((a, b) => String(b.archivedAt).localeCompare(String(a.archivedAt)));
+  return res.status(200).json({ success: true, archives: list });
 }
 
 // ── PUSH: send ─────────────────────────────────────────────────────────────
@@ -620,6 +707,81 @@ if (req.query?.action === 'cron-remind' && req.method === 'GET') {
     }
   } catch(retErr) {
     console.error('❌ Errore R2 retention:', retErr.message);
+  }
+
+  // ── CAMBIO STAGIONE: retention archivi (preavviso 15gg + cancellazione 365gg)
+  // Ogni archivio di stagione (annate:<id>:archive[<label>]) vive 1 anno dalla
+  // sua data di archiviazione. A 15 giorni dalla scadenza manda UNA push di
+  // preavviso (flag preavvisoInviato); a scadenza cancella l'archivio, manda una
+  // push di conferma e registra il log GDPR (senza dati personali). Entrambe le
+  // notifiche citano stagione + annata + cosa contiene → autoesplicative.
+  try {
+    if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+      const ARCH_RETENTION_DAYS = 365;
+      const PREAVVISO_DAYS = 15;
+      const DAY_ARCH = 24 * 60 * 60 * 1000;
+      const nowMsArch = Date.now();
+      const annateListArch = (await kv.get('annate:list')) || [];
+      const { default: webpushA } = await import('web-push');
+      webpushA.setVapidDetails(
+        `mailto:${process.env.VAPID_EMAIL || 'admin@gosport.app'}`,
+        process.env.VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY
+      );
+
+      const sendArchPush = async (aid, title, body) => {
+        const subs = (await kv.get(`push:annata:${aid}:subs`)) || [];
+        if (!subs.length) return 0;
+        const payload = JSON.stringify({ title, body, url: '/' });
+        const r = await Promise.allSettled(subs.map(s => webpushA.sendNotification(s, payload)));
+        const valid = subs.filter((_, i) => !(r[i].status === 'rejected' && r[i].reason?.statusCode === 410));
+        if (valid.length !== subs.length) await kv.set(`push:annata:${aid}:subs`, valid);
+        return r.filter(x => x.status === 'fulfilled').length;
+      };
+
+      for (const annata of annateListArch) {
+        const aid = annata.id;
+        const nomeAnnata = annata.nome || annata.label || annata.name || `annata ${aid}`;
+        const archive = (await kv.get(`annate:${aid}:archive`)) || {};
+        let dirty = false;
+
+        for (const label of Object.keys(archive)) {
+          const entry = archive[label];
+          const archMs = entry && entry.archivedAt ? new Date(entry.archivedAt).getTime() : NaN;
+          if (isNaN(archMs)) continue;
+          const ageMs = nowMsArch - archMs;
+          const expireMs = ARCH_RETENTION_DAYS * DAY_ARCH;
+
+          // 1) SCADUTO → cancella + push conferma + log GDPR
+          if (ageMs >= expireMs) {
+            delete archive[label];
+            dirty = true;
+            totalSent += await sendArchPush(aid,
+              '🗂️ Archivio stagione eliminato',
+              `La stagione ${label} (${nomeAnnata}) è stata cancellata automaticamente: era in archivio da oltre 1 anno (conservazione GDPR scaduta). Rimossi: risultati partite, presenze, hall of fame e calendario.`
+            );
+            await logRetentionPurge(aid, 1, { kind: 'season', label });
+            console.log(`🗑️ [retention-archivio] annata ${aid}: archivio "${label}" cancellato (>${ARCH_RETENTION_DAYS}gg)`);
+            continue;
+          }
+
+          // 2) IN SCADENZA tra <=15gg → push preavviso UNA volta sola
+          const giorniRimasti = Math.ceil((expireMs - ageMs) / DAY_ARCH);
+          if (giorniRimasti <= PREAVVISO_DAYS && !entry.preavvisoInviato) {
+            totalSent += await sendArchPush(aid,
+              '⏳ Archivio stagione in scadenza',
+              `La stagione ${label} (${nomeAnnata}) sarà cancellata tra ${giorniRimasti} ${giorniRimasti === 1 ? 'giorno' : 'giorni'}. Contiene risultati partite, presenze, hall of fame e calendario. Se vuoi conservarla, aprila in "Stagioni passate" e scarica il backup prima di quella data.`
+            );
+            entry.preavvisoInviato = true;
+            dirty = true;
+            console.log(`⏳ [retention-archivio] annata ${aid}: preavviso archivio "${label}" (${giorniRimasti}gg)`);
+          }
+        }
+
+        if (dirty) await kv.set(`annate:${aid}:archive`, archive);
+      }
+    }
+  } catch(archErr) {
+    console.error('❌ Errore retention archivi stagione:', archErr.message);
   }
 
   // ── Alert 57h prima delle PARTITE (campionato/tornei) ────────────────────

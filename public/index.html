@@ -576,6 +576,7 @@
     .tab-nav-btn[data-tab="pagamenti-section"].active{background:linear-gradient(135deg,#4ade80,#16a34a) !important;}
     .tab-nav-btn[data-tab="convocazioni-section"].active{background:linear-gradient(135deg,#f87171,#dc2626) !important;}
     .tab-nav-btn[data-tab="accessi-section"].active{background:linear-gradient(135deg,#94a3b8,#475569) !important;}
+    .tab-nav-btn[data-tab="stagioni-section"].active{background:linear-gradient(135deg,#a78bfa,#6d28d9) !important;}
     /* Tema chiaro */
     html.theme-light .tab-nav-btn, body.theme-light .tab-nav-btn {
         background: rgba(255,255,255,0.8);
@@ -1216,6 +1217,7 @@
             <button class="tab-nav-btn" data-tab="convocazioni-section" onclick="switchTab('convocazioni-section')"><i class="bi bi-megaphone-fill"></i><span class="tab-label"> Convocazioni</span></button>
             <button class="tab-nav-btn admin-only" data-tab="accessi-section" onclick="switchTab('accessi-section')" style="display:none;"><i class="bi bi-clock-history"></i><span class="tab-label"> Accessi</span></button>
             <button class="tab-nav-btn admin-only" data-tab="alert-settings-section" onclick="switchTab('alert-settings-section')" style="display:none;"><i class="bi bi-bell-fill"></i><span class="tab-label"> Alert</span></button>
+            <button class="tab-nav-btn admin-only" data-tab="stagioni-section" onclick="switchTab('stagioni-section')" style="display:none;"><i class="bi bi-archive-fill"></i><span class="tab-label"> Stagioni</span></button>
         </div>
         <!-- Riga admin mobile: in fondo alla tendina, solo su mobile -->
         <div id="app-header-mobile" class="d-lg-none"
@@ -2367,6 +2369,59 @@
             </div>
         </div>
 
+        <!-- ── Stagioni passate (solo admin): cambio stagione + archivio ── -->
+        <div id="stagioni-section" class="tab-section row my-4 admin-only" style="display:none;">
+            <div class="col-12 mb-3">
+                <h2 class="main-title mb-0"><i class="bi bi-archive-fill" style="color:#7c3aed;"></i> Stagioni passate</h2>
+                <p class="text-muted mt-2" style="font-size:0.88rem;">
+                    A inizio stagione puoi <strong>azzerare</strong> risultati partite, presenze, Hall of Fame e calendario: i dati vengono spostati in archivio (la rosa atleti, i pagamenti e i certificati <strong>restano</strong>).<br>
+                    Ogni archivio si conserva <strong>1 anno</strong>, poi viene cancellato in automatico (con preavviso push a 15 giorni). Scarica il backup se vuoi tenerlo per sempre.
+                </p>
+            </div>
+
+            <!-- Azione: inizia nuova stagione -->
+            <div class="col-12 col-lg-5 mb-3">
+                <div class="card chart-card border-warning">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-arrow-repeat" style="color:#d97706;"></i> Inizia nuova stagione</h5>
+                        <p class="text-muted" style="font-size:0.85rem;">Archivia la stagione corrente e riparti pulito. Operazione importante: chiede conferma.</p>
+                        <div class="mb-3">
+                            <label class="form-label">Etichetta della stagione che stai chiudendo</label>
+                            <input type="text" class="form-control" id="season-label-input" maxlength="40" placeholder="es. 2025-26">
+                            <small class="text-muted">Serve a identificare l'archivio (es. "2025-26").</small>
+                        </div>
+                        <button class="btn btn-warning" onclick="window.startNewSeason()">
+                            <i class="bi bi-box-arrow-in-down"></i> Archivia e azzera stagione
+                        </button>
+                        <span id="season-reset-feedback" class="ms-2 small"></span>
+                    </div>
+                </div>
+
+                <!-- Importa per visualizzare (in memoria, no salvataggio) -->
+                <div class="card chart-card mt-3">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-folder2-open" style="color:#0891b2;"></i> Importa archivio per visualizzare</h5>
+                        <p class="text-muted" style="font-size:0.85rem;">Carica un file di backup (.json) scaricato in precedenza: lo visualizzi qui sotto in sola lettura, <strong>senza</strong> rimetterlo nel sistema.</p>
+                        <input type="file" class="form-control" id="season-import-input" accept="application/json,.json" onchange="window.importSeasonArchive(event)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Elenco archivi -->
+            <div class="col-12 col-lg-7 mb-3">
+                <div class="card chart-card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-clock-history" style="color:#7c3aed;"></i> Archivi disponibili</h5>
+                        <div id="season-archive-list" class="mt-2">
+                            <p class="text-muted">Caricamento…</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Vista dettaglio archivio (sola lettura) -->
+                <div id="season-archive-detail" class="mt-3"></div>
+            </div>
+        </div>
+
     </main>
     <footer class="bg-dark-blue py-3 mt-5 no-print">
         <div class="container text-center">
@@ -3022,6 +3077,12 @@ function switchTab(sectionId) {
     if (sectionId === 'accessi-section') {
         setTimeout(function() {
             if (window.loadAccessLog) window.loadAccessLog();
+        }, 100);
+    }
+    // Se si va al tab Stagioni passate, carica gli archivi
+    if (sectionId === 'stagioni-section') {
+        setTimeout(function() {
+            if (window.loadSeasonArchives) window.loadSeasonArchives();
         }, 100);
     }
 }
