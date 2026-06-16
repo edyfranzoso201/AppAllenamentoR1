@@ -95,6 +95,136 @@ function canWrite(role) {
 return ['admin', 'coach', 'coachl1', 'coachl2'].includes(String(role || '').toLowerCase());
 }
 
+// ── R2: cancellazione atleta che propaga (GDPR art. 17) ───────────────────────
+// Le strutture per-atleta sono chiavi Redis SEPARATE: una delete fatta solo
+// lato client (che carica/salva un sottoinsieme) lascerebbe dati orfani in
+// ratingSheets, pagamenti, athleteDocs, materiale.assignments, convocazioni.
+// purgeAthlete() rimuove l'atleta da TUTTE le chiavi del prefix, lato server,
+// in modo affidabile. Usata sia dalla delete manuale (action=purge-athlete)
+// sia dal cron di retention (auto-oblio dopo 12 mesi di archiviazione).
+// Ritorna true se l'atleta era presente ed è stato rimosso.
+async function purgeAthlete(prefix, athleteId) {
+  const aid = String(athleteId);
+  if (!aid) return false;
+
+  const athletes = (await kv.get(`${prefix}:athletes`)) || [];
+  const existed = athletes.some(a => String(a.id) === aid);
+  const writes = [];
+
+  // 1. anagrafica (include individualPackage, parents, scadenze: tutto dentro l'oggetto)
+  const newAthletes = athletes.filter(a => String(a.id) !== aid);
+  writes.push(kv.set(`${prefix}:athletes`, newAthletes));
+
+  // 2. mappe {date:{id:...}} → cancella la voce dell'atleta in ogni data
+  for (const k of ['evaluations', 'calendarResponses']) {
+    const obj = await kv.get(`${prefix}:${k}`);
+    if (obj && typeof obj === 'object') {
+      let dirty = false;
+      for (const date of Object.keys(obj)) {
+        if (obj[date] && typeof obj[date] === 'object' && aid in obj[date]) {
+          delete obj[date][aid]; dirty = true;
+        }
+      }
+      if (dirty) writes.push(kv.set(`${prefix}:${k}`, obj));
+    }
+  }
+
+  // 3. mappe {id:...} → cancella la chiave dell'atleta
+  for (const k of ['gpsData', 'ratingSheets', 'pagamenti', 'athleteDocs']) {
+    const obj = await kv.get(`${prefix}:${k}`);
+    if (obj && typeof obj === 'object' && aid in obj) {
+      delete obj[aid];
+      writes.push(kv.set(`${prefix}:${k}`, obj));
+    }
+  }
+
+  // 4. awards {date:[{athleteId}]} → filtra
+  const awards = await kv.get(`${prefix}:awards`);
+  if (awards && typeof awards === 'object') {
+    let dirty = false;
+    for (const date of Object.keys(awards)) {
+      if (Array.isArray(awards[date])) {
+        const before = awards[date].length;
+        awards[date] = awards[date].filter(a => String(a.athleteId) !== aid);
+        if (awards[date].length !== before) dirty = true;
+      }
+    }
+    if (dirty) writes.push(kv.set(`${prefix}:awards`, awards));
+  }
+
+  // 5. matchResults {matchId:{scorers,cards,assists}} → filtra ogni lista
+  const matchResults = await kv.get(`${prefix}:matchResults`);
+  if (matchResults && typeof matchResults === 'object') {
+    let dirty = false;
+    for (const mid of Object.keys(matchResults)) {
+      const m = matchResults[mid];
+      if (!m || typeof m !== 'object') continue;
+      for (const list of ['scorers', 'cards', 'assists']) {
+        if (Array.isArray(m[list])) {
+          const before = m[list].length;
+          m[list] = m[list].filter(x => String(x.athleteId) !== aid);
+          if (m[list].length !== before) dirty = true;
+        }
+      }
+    }
+    if (dirty) writes.push(kv.set(`${prefix}:matchResults`, matchResults));
+  }
+
+  // 6. formationData {starters,bench,tokens} → filtra per athleteId
+  const formationData = await kv.get(`${prefix}:formationData`);
+  if (formationData && typeof formationData === 'object') {
+    let dirty = false;
+    for (const list of ['starters', 'bench', 'tokens']) {
+      if (Array.isArray(formationData[list])) {
+        const before = formationData[list].length;
+        formationData[list] = formationData[list].filter(p => String(p.athleteId) !== aid);
+        if (formationData[list].length !== before) dirty = true;
+      }
+    }
+    if (dirty) writes.push(kv.set(`${prefix}:formationData`, formationData));
+  }
+
+  // 7. materiale.assignments {id:{...}} → cancella la chiave dell'atleta
+  const materiale = await kv.get(`${prefix}:materiale`);
+  if (materiale && typeof materiale === 'object' && materiale.assignments && aid in materiale.assignments) {
+    delete materiale.assignments[aid];
+    writes.push(kv.set(`${prefix}:materiale`, materiale));
+  }
+
+  // 8. convocazioni [{atletiIds,staffIds}] → rimuovi l'id dalle liste
+  const convocazioni = await kv.get(`${prefix}:convocazioni`);
+  if (Array.isArray(convocazioni)) {
+    let dirty = false;
+    for (const c of convocazioni) {
+      if (!c || typeof c !== 'object') continue;
+      for (const list of ['atletiIds', 'staffIds']) {
+        if (Array.isArray(c[list])) {
+          const before = c[list].length;
+          c[list] = c[list].filter(x => String(x) !== aid);
+          if (c[list].length !== before) dirty = true;
+        }
+      }
+    }
+    if (dirty) writes.push(kv.set(`${prefix}:convocazioni`, convocazioni));
+  }
+
+  await Promise.all(writes);
+  return existed;
+}
+
+// Log adempimento art. 17 SENZA dati personali: solo data/annata/conteggio.
+// Serve come prova documentale che l'oblio per retention è stato applicato.
+async function logRetentionPurge(annataId, count) {
+  if (!count) return;
+  try {
+    const key = 'gdpr:retention-log';
+    const log = (await kv.get(key)) || [];
+    log.push({ date: new Date().toISOString().split('T')[0], annataId: String(annataId), count });
+    // tieni le ultime 500 righe per non far crescere all'infinito
+    await kv.set(key, log.slice(-500));
+  } catch (e) { console.error('[retention-log]', e?.message || e); }
+}
+
 export default async function handler(req, res) {
 setCors(req, res);
 res.setHeader('Access-Control-Allow-Headers',
@@ -212,6 +342,29 @@ if (req.query?.action === 'push-subscribe' && req.method === 'POST') {
     if (!annateList.includes(subAnnataId)) { annateList.push(subAnnataId); await kv.set('push:annate', annateList); }
   }
   return res.status(200).json({ success: true });
+}
+
+// ── R2: cancellazione atleta che propaga (GDPR art. 17) ──────────────────────
+// Cancella un atleta da TUTTE le chiavi del prefix lato server (no orfani).
+// Solo ruoli con permesso di scrittura. annataId dall'header (X-Annata-Id).
+if (req.query?.action === 'purge-athlete' && req.method === 'POST') {
+  if (!session.isAuthenticated || !canWrite(session.role)) {
+    return res.status(403).json({ success: false, message: 'Permesso negato' });
+  }
+  if (!annataId || !isValidId(annataId)) {
+    return res.status(400).json({ success: false, message: 'annataId non valido' });
+  }
+  const athleteId = String((req.body && req.body.athleteId) || '').trim();
+  if (!athleteId) {
+    return res.status(400).json({ success: false, message: 'athleteId mancante' });
+  }
+  try {
+    const removed = await purgeAthlete(`annate:${annataId}`, athleteId);
+    return res.status(200).json({ success: true, removed });
+  } catch (e) {
+    console.error('[purge-athlete]', e?.message || e);
+    return res.status(500).json({ success: false, message: 'Errore cancellazione' });
+  }
 }
 
 // ── PUSH: send ─────────────────────────────────────────────────────────────
@@ -433,6 +586,40 @@ if (req.query?.action === 'cron-remind' && req.method === 'GET') {
     }
   } catch(r3Err) {
     console.error('❌ Errore R3 certificati:', r3Err.message);
+  }
+
+  // ── R2: auto-oblio atleti archiviati (GDPR art. 17 — limitazione conservazione)
+  // Un atleta archiviato (archived:true + archivedAt) viene CANCELLATO in modo
+  // completo dopo RETENTION_DAYS dall'archiviazione. I backup giornalieri si
+  // auto-smaltiscono con la rotazione già attiva → entro pochi giorni il dato
+  // sparisce anche da lì. Viene registrata una riga di log SENZA dati personali.
+  try {
+    const RETENTION_DAYS = 365;        // 12 mesi: copre la stagione + margine
+    const nowMsRet = Date.now();
+    const DAY_RET = 24 * 60 * 60 * 1000;
+    const annateRet = (await kv.get('annate:list')) || [];
+
+    for (const annata of annateRet) {
+      const prefix = `annate:${annata.id}`;
+      const athletesRet = (await kv.get(`${prefix}:athletes`)) || [];
+      const daCancellare = athletesRet.filter(a =>
+        a && a.archived && a.archivedAt &&
+        !isNaN(new Date(a.archivedAt).getTime()) &&
+        (nowMsRet - new Date(a.archivedAt).getTime()) >= RETENTION_DAYS * DAY_RET
+      );
+      let purged = 0;
+      for (const a of daCancellare) {
+        try {
+          if (await purgeAthlete(prefix, a.id)) purged++;
+        } catch(e) { console.error('[cron-retention] purge:', e.message); }
+      }
+      if (purged) {
+        await logRetentionPurge(annata.id, purged);
+        console.log(`🗑️ [retention] annata ${annata.id}: ${purged} atleti cancellati (>${RETENTION_DAYS}gg in archivio)`);
+      }
+    }
+  } catch(retErr) {
+    console.error('❌ Errore R2 retention:', retErr.message);
   }
 
   // ── Alert 57h prima delle PARTITE (campionato/tornei) ────────────────────

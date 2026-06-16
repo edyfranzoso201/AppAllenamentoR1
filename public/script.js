@@ -3588,7 +3588,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('athlete-guest').checked = false;
         athleteModal.show();
     });
-    elements.athleteGrid.addEventListener('click', (e) => {
+    elements.athleteGrid.addEventListener('click', async (e) => {
         const card = e.target.closest('[data-athlete-id]');
         if (!card) return;
         const athleteId = card.dataset.athleteId;
@@ -3703,21 +3703,40 @@ document.addEventListener('DOMContentLoaded', () => {
             athleteModal.show();
         }
         else if (e.target.closest('.archive-btn')) {
-            if (confirm(`Archiviare ${athlete.name}? L'atleta verrà nascosto dalla rosa ma tutti i dati saranno conservati.`)) {
+            if (confirm(`Archiviare ${athlete.name}? L'atleta verrà nascosto dalla rosa ma tutti i dati saranno conservati.\n\nNota: gli atleti archiviati vengono cancellati automaticamente dopo 12 mesi (norme privacy/GDPR).`)) {
                 const idx = athletes.findIndex(a => String(a.id) === athleteId);
-                if (idx !== -1) { athletes[idx] = { ...athletes[idx], archived: true }; saveData(); renderAthletes(); }
+                // archivedAt: da qui parte il conteggio dei 12 mesi per l'auto-oblio (R2/art.17)
+                if (idx !== -1) { athletes[idx] = { ...athletes[idx], archived: true, archivedAt: new Date().toISOString() }; saveData(); renderAthletes(); }
             }
         }
         else if (e.target.closest('.restore-btn')) {
             const idx = athletes.findIndex(a => String(a.id) === athleteId);
-            if (idx !== -1) { athletes[idx] = { ...athletes[idx], archived: false }; saveData(); renderAthletes(); }
+            // ripristino in rosa: azzera archivedAt così il timer di retention si ferma
+            if (idx !== -1) { const { archivedAt, ...rest } = athletes[idx]; athletes[idx] = { ...rest, archived: false }; saveData(); renderAthletes(); }
         }
         else if (e.target.closest('.delete-btn')) {
-            if (confirm(`Sei sicuro di voler eliminare ${athlete.name}? Tutti i suoi dati storici verranno rimossi.`)) {
-                athletes = athletes.filter(a => a.id.toString() !== athleteId);
-                for (const date in evaluations) {
-                    delete evaluations[date][athleteId];
+            if (confirm(`Sei sicuro di voler eliminare ${athlete.name}? Tutti i suoi dati storici verranno rimossi.\n\nLa cancellazione è definitiva e propaga a presenze, pagelle, pagamenti, certificati, formazioni e convocazioni (GDPR art. 17).`)) {
+                // R2: la cancellazione completa avviene LATO SERVER (purge-athlete),
+                // perché molte strutture per-atleta (ratingSheets, pagamenti, athleteDocs,
+                // materiale, convocazioni) sono chiavi Redis separate che il client non
+                // riscrive → pulirle solo qui lascerebbe dati orfani.
+                const annataId = sessionStorage.getItem('gosport_current_annata') ||
+                                 localStorage.getItem('currentAnnata');
+                try {
+                    const resp = await fetch('/api/data?action=purge-athlete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-Annata-Id': annataId },
+                        body: JSON.stringify({ athleteId })
+                    });
+                    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                } catch (err) {
+                    console.error('Errore cancellazione atleta:', err);
+                    alert('⚠️ Errore durante la cancellazione. Riprova.');
+                    return;
                 }
+                // Allinea lo stato locale e ricarica dal server per riflettere il purge completo.
+                athletes = athletes.filter(a => a.id.toString() !== athleteId);
+                for (const date in evaluations) { delete evaluations[date][athleteId]; }
                 delete gpsData[athleteId];
                 for (const date in awards) {
                     awards[date] = awards[date].filter(a => a.athleteId.toString() !== athleteId);
@@ -3727,7 +3746,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     matchResults[matchId].cards = matchResults[matchId].cards.filter(c => String(c.athleteId) !== athleteId);
                     matchResults[matchId].assists = matchResults[matchId].assists.filter(a => String(a.athleteId) !== athleteId);
                 });
-                saveData();
                 updateAllUI();
             }
         }
