@@ -467,6 +467,34 @@ if (req.query?.action === 'season-archive' && req.method === 'GET') {
   return res.status(200).json({ success: true, archives: list });
 }
 
+// ── PASSWORD INDIVIDUAL: cambio sicuro (verifica vecchia lato server) ────────
+// Per cambiare serve conoscere la password ATTUALE: il server la verifica e solo
+// allora salva la nuova. La password attuale non viene MAI restituita al client
+// da questo endpoint. Solo admin autenticato.
+if (req.query?.action === 'change-individual-pwd' && req.method === 'POST') {
+  if (!session.isAuthenticated || String(session.role).toLowerCase() !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Permesso negato' });
+  }
+  if (!annataId || !isValidId(annataId)) {
+    return res.status(400).json({ success: false, message: 'annataId non valido' });
+  }
+  const oldPassword = String((req.body && req.body.oldPassword) || '');
+  const newPassword = String((req.body && req.body.newPassword) || '').trim();
+  if (!newPassword) {
+    return res.status(400).json({ success: false, message: 'Nuova password mancante' });
+  }
+  if (newPassword.length < 4) {
+    return res.status(400).json({ success: false, message: 'La nuova password deve avere almeno 4 caratteri' });
+  }
+  // Password attuale: quella salvata, o '1234' di default se mai impostata.
+  const current = (await kv.get(`annate:${annataId}:individualPassword`)) || '1234';
+  if (oldPassword !== current) {
+    return res.status(401).json({ success: false, message: 'Password attuale errata' });
+  }
+  await kv.set(`annate:${annataId}:individualPassword`, newPassword);
+  return res.status(200).json({ success: true });
+}
+
 // ── PUSH: send ─────────────────────────────────────────────────────────────
 if (req.query?.action === 'push-send' && req.method === 'POST') {
   if (!session.isAuthenticated) {

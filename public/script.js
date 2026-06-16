@@ -1132,19 +1132,35 @@ document.addEventListener('DOMContentLoaded', () => {
         var role = sessionStorage.getItem('gosport_user_role') || '';
         if (role === 'admin') btn.style.display = '';
         btn.addEventListener('click', async function() {
-            var newPwd = prompt('🔐 Cambia Password Sessioni Individual\nPassword attuale: ' + _individualPassword + '\n\nInserisci la nuova password:');
+            // 1) Password ATTUALE: serve a dimostrare di averne il diritto. Non
+            //    viene mai mostrata (il server la verifica). Default storico: 1234.
+            var oldPwd = prompt('🔐 Cambia Password Sessioni Individual\n\nInserisci la password ATTUALE\n(se non l\'hai mai cambiata è: 1234):');
+            if (oldPwd === null) return; // Annulla
+            // 2) Nuova password + conferma
+            var newPwd = prompt('Inserisci la NUOVA password (min. 4 caratteri):');
             if (!newPwd || !newPwd.trim()) return;
-            var confirm2 = prompt('Conferma nuova password:');
-            if (newPwd.trim() !== confirm2) { alert('❌ Le password non corrispondono.'); return; }
-            _individualPassword = newPwd.trim();
-            sessionStorage.setItem('gosport_individual_pwd', _individualPassword);
+            if (newPwd.trim().length < 4) { alert('❌ La nuova password deve avere almeno 4 caratteri.'); return; }
+            var confirm2 = prompt('Conferma la NUOVA password:');
+            if (newPwd.trim() !== (confirm2 || '').trim()) { alert('❌ Le password non corrispondono.'); return; }
             var annataId = sessionStorage.getItem('gosport_current_annata') || '';
-            await fetch('/api/data', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Annata-Id': annataId },
-                body: JSON.stringify({ individualPassword: _individualPassword })
-            });
-            alert('✅ Password Individual aggiornata!');
+            try {
+                var resp = await fetch('/api/data?action=change-individual-pwd', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Annata-Id': annataId },
+                    body: JSON.stringify({ oldPassword: oldPwd, newPassword: newPwd.trim() })
+                });
+                var data = await resp.json().catch(function(){ return {}; });
+                if (!resp.ok || !data.success) {
+                    alert('❌ ' + (data.message || 'Errore nel cambio password') + '.');
+                    return;
+                }
+                // Allineo la copia locale usata per lo sblocco delle sessioni Individual
+                _individualPassword = newPwd.trim();
+                sessionStorage.setItem('gosport_individual_pwd', _individualPassword);
+                alert('✅ Password Individual aggiornata!');
+            } catch (e) {
+                alert('❌ Errore di rete nel cambio password.');
+            }
         });
     })();
 
