@@ -1217,7 +1217,7 @@
             <button class="tab-nav-btn" data-tab="convocazioni-section" onclick="switchTab('convocazioni-section')"><i class="bi bi-megaphone-fill"></i><span class="tab-label"> Convocazioni</span></button>
             <button class="tab-nav-btn admin-only" data-tab="accessi-section" onclick="switchTab('accessi-section')" style="display:none;"><i class="bi bi-clock-history"></i><span class="tab-label"> Accessi</span></button>
             <button class="tab-nav-btn admin-only" data-tab="alert-settings-section" onclick="switchTab('alert-settings-section')" style="display:none;"><i class="bi bi-bell-fill"></i><span class="tab-label"> Alert</span></button>
-            <button class="tab-nav-btn admin-only" data-tab="stagioni-section" onclick="switchTab('stagioni-section')" style="display:none;"><i class="bi bi-archive-fill"></i><span class="tab-label"> Stagioni</span></button>
+            <button class="tab-nav-btn season-only" data-tab="stagioni-section" onclick="switchTab('stagioni-section')" style="display:none;"><i class="bi bi-archive-fill"></i><span class="tab-label"> Stagioni</span></button>
         </div>
         <!-- Riga admin mobile: in fondo alla tendina, solo su mobile -->
         <div id="app-header-mobile" class="d-lg-none"
@@ -2370,7 +2370,7 @@
         </div>
 
         <!-- ── Stagioni passate (solo admin): cambio stagione + archivio ── -->
-        <div id="stagioni-section" class="tab-section row my-4 admin-only" style="display:none;">
+        <div id="stagioni-section" class="tab-section row my-4 season-only" style="display:none;">
             <div class="col-12 mb-3">
                 <h2 class="main-title mb-0"><i class="bi bi-archive-fill" style="color:#7c3aed;"></i> Stagioni passate</h2>
                 <p class="text-muted mt-2" style="font-size:0.88rem;">
@@ -3556,6 +3556,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 var acBtn = document.querySelector('[data-tab="accessi-section"]');
                 if (acBtn) acBtn.style.display = 'none';
             }
+        }
+        // Tab "Stagioni" (cambio stagione): SOLO admin, dirigente (D-L1), coach_l1 (C-L1).
+        // Difesa lato UI; l'endpoint season-reset verifica comunque il ruolo lato server.
+        var _r = String(getUserRole() || '').toLowerCase().replace(/_/g, '');
+        if (['admin', 'dirigente', 'coachl1'].includes(_r)) {
+            document.querySelectorAll('.season-only').forEach(function(el){ el.style.display = ''; });
         }
     }
 

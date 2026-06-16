@@ -95,6 +95,14 @@ function canWrite(role) {
 return ['admin', 'coach', 'coachl1', 'coachl2'].includes(String(role || '').toLowerCase());
 }
 
+// Il cambio stagione è un'operazione delicata (archivia + azzera): consentita
+// SOLO ad admin, dirigente (D-L1) e coach_l1 (C-L1). Normalizza il ruolo
+// rimuovendo underscore così matcha sia 'coach_l1' sia 'coachl1'.
+function canSeasonReset(role) {
+const r = String(role || '').toLowerCase().replace(/_/g, '');
+return ['admin', 'dirigente', 'coachl1'].includes(r);
+}
+
 // ── R2: cancellazione atleta che propaga (GDPR art. 17) ───────────────────────
 // Le strutture per-atleta sono chiavi Redis SEPARATE: una delete fatta solo
 // lato client (che carica/salva un sottoinsieme) lascerebbe dati orfani in
@@ -380,8 +388,8 @@ if (req.query?.action === 'purge-athlete' && req.method === 'POST') {
 const SEASON_KEYS = ['matchResults', 'calendarResponses', 'awards', 'calendarEvents', 'evaluations', 'trainingSessions'];
 
 if (req.query?.action === 'season-reset' && req.method === 'POST') {
-  if (!session.isAuthenticated || !canWrite(session.role)) {
-    return res.status(403).json({ success: false, message: 'Permesso negato' });
+  if (!session.isAuthenticated || !canSeasonReset(session.role)) {
+    return res.status(403).json({ success: false, message: 'Permesso negato: solo Admin, Dirigente (D-L1) e Coach L1 (C-L1)' });
   }
   if (!annataId || !isValidId(annataId)) {
     return res.status(400).json({ success: false, message: 'annataId non valido' });
