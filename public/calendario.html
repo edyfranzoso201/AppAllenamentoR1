@@ -22,10 +22,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <!-- PWA: rende la pagina genitore installabile ("Aggiungi a Home"). Quando
-         il genitore aggiunge dalla SUA pagina, il telefono salva l'URL completo
-         (col suo athleteId) → l'icona apre la pagina del suo figlio. -->
-    <link rel="manifest" href="/manifest.json">
+    <!-- PWA "Aggiungi a Home" per la pagina genitore: NIENTE manifest qui.
+         Il manifest ha start_url=/index.html → se collegato, "Aggiungi a Home"
+         aprirebbe la HOME invece della pagina del figlio. Senza manifest, il
+         telefono salva l'URL CORRENTE (con athleteId) → l'icona apre la pagina
+         giusta. I meta apple-mobile sotto danno lo schermo intero senza forzare
+         lo start_url. (Un manifest dinamico per-genitore sarebbe complesso e
+         problematico su iOS — scartato.) -->
     <link rel="apple-touch-icon" href="/favicon.svg">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
