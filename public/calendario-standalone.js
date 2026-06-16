@@ -11,6 +11,14 @@ let events = {};
 let athletes = [];
 let isParentView = false;
 
+// PWA "Aggiungi a Home": cattura l'evento Android di installazione assistita.
+// Va registrato il prima possibile (l'evento parte all'avvio).
+let _deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();           // niente prompt automatico: lo lanciamo noi al click
+  _deferredInstallPrompt = e;
+});
+
 // Autorizzazione lato UI per le azioni distruttive sugli eventi. La sicurezza
 // REALE è server-side: /api/data accetta scritture solo con sessione valida +
 // canWrite(role) ['admin','coach','coachl1','coachl2']. Qui evitiamo solo di
@@ -882,12 +890,42 @@ visibleAthletes.forEach((a, i) => {
             </button>
             <div style="font-size:0.75rem;color:${isLightNow ? '#475569' : '#94a3b8'};margin-top:6px;">Allenamenti e partite sul tuo Google/Apple Calendar, sempre aggiornati.</div>
           </div>`;
+    // Aggiungi l'icona dell'app alla schermata Home del telefono (apre questa
+    // pagina personale del figlio). Su Android usa il prompt nativo; su iPhone
+    // mostra le istruzioni (Condividi → Aggiungi a Home).
+    h += `<div style="margin-top:10px;text-align:center;">
+            <button id="add-home-btn" style="background:${isLightNow ? '#1a3a5f' : '#1e293b'};color:#fff;border:1px solid ${isLightNow ? '#1a3a5f' : '#3b5a9d'};border-radius:10px;padding:11px 18px;font-weight:700;font-size:0.9rem;cursor:pointer;">
+              📌 Aggiungi l'app alla schermata Home
+            </button>
+            <div style="font-size:0.75rem;color:${isLightNow ? '#475569' : '#94a3b8'};margin-top:6px;">Apri la pagina di tuo figlio con un tap, come un'app.</div>
+          </div>`;
   }
   
       el.innerHTML = h; // ← dopo questa riga
 
 // ✅ METTI IL SETTIMEOUT QUI
 setTimeout(() => {
+    // Pulsante "Aggiungi alla schermata Home" (vista genitore).
+    var _homeBtn = document.getElementById('add-home-btn');
+    if (_homeBtn) {
+      _homeBtn.onclick = async function() {
+        // Android/Chrome: prompt di installazione nativo se disponibile.
+        if (_deferredInstallPrompt) {
+          _deferredInstallPrompt.prompt();
+          try { await _deferredInstallPrompt.userChoice; } catch (e) {}
+          _deferredInstallPrompt = null;
+          return;
+        }
+        // iPhone (Safari) o browser senza prompt: istruzioni manuali.
+        var ua = navigator.userAgent || '';
+        var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        var msg = isIOS
+          ? '📌 Per aggiungere l\'app alla Home (iPhone/iPad):\n\n1. Tocca il pulsante CONDIVIDI ⬆️ (in basso in Safari)\n2. Scorri e tocca "Aggiungi a Home" / "Add to Home Screen"\n3. Conferma\n\nL\'icona aprirà direttamente questa pagina.'
+          : '📌 Per aggiungere l\'app alla Home:\n\n1. Apri il menu del browser (⋮ in alto a destra)\n2. Tocca "Aggiungi a schermata Home" / "Installa app"\n3. Conferma\n\nL\'icona aprirà direttamente questa pagina.';
+        alert(msg);
+      };
+    }
+
     // Pulsante "Aggiungi al mio calendario" (vista genitore): chiede al server
     // il link feed firmato (HMAC) e lo offre da abbonare su Google/Apple.
     var _icalBtn = document.getElementById('ical-add-btn');
