@@ -1840,12 +1840,15 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const d = await r.json();
             if (!r.ok || !d.success) { if (fb) { fb.style.color = '#ef4444'; fb.textContent = '✗ ' + (d.message || 'Errore'); } return; }
-            if (fb) { fb.style.color = '#22c55e'; fb.textContent = '✓ Stagione archiviata'; }
             if (input) input.value = '';
-            // Ricarica i dati correnti (ora azzerati) e l'elenco archivi
-            if (typeof loadData === 'function') { try { await loadData(); } catch(_){} }
-            if (window.updateAllUI) window.updateAllUI();
-            window.loadSeasonArchives();
+            // L'azzeramento è già avvenuto lato server. Ricarico l'INTERA pagina:
+            // le tab "di stagione" (Risultati, Calendario, Presenze, Hall of Fame)
+            // sono renderizzate da funzioni dedicate non tutte coperte da updateAllUI,
+            // quindi un reload completo è l'unico modo affidabile per mostrare lo
+            // stato pulito senza lasciare dati "fantasma" in memoria.
+            if (fb) { fb.style.color = '#22c55e'; fb.textContent = '✓ Stagione archiviata — ricarico…'; }
+            alert(`✅ Stagione "${label}" archiviata e azzerata.\n\nLa pagina verrà ricaricata per mostrare la nuova stagione pulita.`);
+            location.reload();
         } catch(e) {
             if (fb) { fb.style.color = '#ef4444'; fb.textContent = '✗ Errore di rete'; }
         }
