@@ -476,6 +476,24 @@ document.addEventListener('DOMContentLoaded', () => {
     // Rendi saveData disponibile globalmente per calendario-admin.js e parent-view.js
     window.saveData = saveData;
 
+    // ── PWA "Aggiungi a Home" (coach) ─────────────────────────────────────────
+    // index.html ha già manifest + service worker (URL fisso, va bene). Qui solo
+    // il pulsante: Android usa il prompt nativo, iPhone mostra le istruzioni.
+    window.addEventListener('beforeinstallprompt', function(e) { e.preventDefault(); window._deferredInstallPrompt = e; });
+    window.aggiungiAHome = async function() {
+      if (window._deferredInstallPrompt) {
+        window._deferredInstallPrompt.prompt();
+        try { await window._deferredInstallPrompt.userChoice; } catch (e) {}
+        window._deferredInstallPrompt = null;
+        return;
+      }
+      var ua = navigator.userAgent || '';
+      var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      alert(isIOS
+        ? '📌 Per aggiungere l\'app alla Home (iPhone/iPad):\n\n1. Tocca CONDIVIDI ⬆️ (in basso in Safari)\n2. "Aggiungi a Home" / "Add to Home Screen"\n3. Conferma'
+        : '📌 Per aggiungere l\'app alla Home:\n\n1. Menu del browser (⋮ in alto a destra)\n2. "Aggiungi a schermata Home" / "Installa app"\n3. Conferma');
+    };
+
     // ── MODALITÀ CAMPO + APPELLO RAPIDO ───────────────────────────────────────
     // Definita qui dentro per avere accesso a evaluations/athletes/saveData in
     // scope. Esposta su window per il pulsante in Home. Vedi memoria modalita-campo.
