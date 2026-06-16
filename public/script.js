@@ -1676,7 +1676,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="flex-grow-1">
                         <strong><i class="bi bi-archive"></i> Stagione ${escapeHtml(a.label)}</strong>
                         <div class="small text-muted">Archiviata il ${_seasonDate(a.archivedAt)} · cancellazione automatica il <strong>${_seasonDate(a.expiresAt)}</strong></div>
-                        <div class="small text-muted">⚽ ${c.matchResults||0} partite · 👥 ${c.calendarResponses||0} giorni presenze · 🏆 ${c.awards||0} premi · 📅 ${c.calendarEvents||0} eventi</div>
+                        <div class="small text-muted">⚽ ${c.matchResults||0} partite · 📅 ${c.calendarEvents||0} eventi · 🏃 ${c.trainingSessions||0} allenamenti · 📋 ${c.evaluations||0} giorni valutazioni · 🏆 ${c.awards||0} premi</div>
                     </div>
                     <div class="d-flex gap-1 flex-wrap">
                         <button class="btn btn-sm btn-outline-primary" onclick="window.viewSeasonArchive('${encodeURIComponent(a.label)}')"><i class="bi bi-eye"></i> Vedi</button>
@@ -1725,8 +1725,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         // Eventi calendario
         const eventi = Object.keys(d.calendarEvents || {}).length;
-        // Giorni con presenze
+        // Giorni con presenze a calendario (RSVP)
         const giorniPres = Object.keys(d.calendarResponses || {}).length;
+        // Giorni con valutazioni (= presenze allenamento) e allenamenti programmati
+        const giorniVal = Object.keys(d.evaluations || {}).length;
+        const allenamenti = Object.keys(d.trainingSessions || {}).length;
 
         const awardHtml = awardItems.length
             ? '<ul class="mb-0 small">' + awardItems.map(a => `<li><strong>${escapeHtml(a.ath)}</strong>${a.reason ? ' — ' + escapeHtml(a.reason) : ''} <span class="text-muted">(${escapeHtml(a.date)})</span></li>`).join('') + '</ul>'
@@ -1741,9 +1744,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p class="small text-muted">Archiviata il ${_seasonDate(entry.archivedAt)}. Sola lettura.</p>
                 <div class="row g-2 text-center mb-3">
                     <div class="col"><div class="border rounded p-2"><div class="h4 mb-0">${partite}</div><small class="text-muted">Partite</small></div></div>
-                    <div class="col"><div class="border rounded p-2"><div class="h4 mb-0">${giorniPres}</div><small class="text-muted">Giorni presenze</small></div></div>
-                    <div class="col"><div class="border rounded p-2"><div class="h4 mb-0">${awardItems.length}</div><small class="text-muted">Premi</small></div></div>
                     <div class="col"><div class="border rounded p-2"><div class="h4 mb-0">${eventi}</div><small class="text-muted">Eventi</small></div></div>
+                    <div class="col"><div class="border rounded p-2"><div class="h4 mb-0">${allenamenti}</div><small class="text-muted">Allenamenti</small></div></div>
+                    <div class="col"><div class="border rounded p-2"><div class="h4 mb-0">${giorniVal}</div><small class="text-muted">Gg valutazioni</small></div></div>
+                    <div class="col"><div class="border rounded p-2"><div class="h4 mb-0">${giorniPres}</div><small class="text-muted">Gg presenze</small></div></div>
+                    <div class="col"><div class="border rounded p-2"><div class="h4 mb-0">${awardItems.length}</div><small class="text-muted">Premi</small></div></div>
                 </div>
                 <h6><i class="bi bi-award-fill" style="color:#ea580c;"></i> Hall of Fame</h6>
                 ${awardHtml}
@@ -1795,6 +1800,25 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         if (matchRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(matchRows), 'Risultati');
+        // Valutazioni {date:{athleteId:{campo:voto}}} → una riga per atleta/data
+        const valRows = [];
+        for (const [date, byAth] of Object.entries(d.evaluations || {})) {
+            if (byAth && typeof byAth === 'object') {
+                for (const [aid, ev] of Object.entries(byAth)) {
+                    if (!ev || typeof ev !== 'object') continue;
+                    valRows.push({ 'Data': date, 'Atleta': _seasonAthName(aid), ...ev });
+                }
+            }
+        }
+        if (valRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(valRows), 'Valutazioni');
+        // Allenamenti programmati {date:[{...}]}
+        const trainRows = [];
+        for (const [date, sessions] of Object.entries(d.trainingSessions || {})) {
+            (Array.isArray(sessions) ? sessions : [sessions]).forEach(s => {
+                if (s && typeof s === 'object') trainRows.push({ 'Data': date, 'Titolo': s.title || '', 'Orario': s.time || '', 'Luogo': s.location || '' });
+            });
+        }
+        if (trainRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(trainRows), 'Allenamenti');
         return wb;
     }
 
@@ -1832,7 +1856,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const input = document.getElementById('season-label-input');
         const label = (input?.value || '').trim();
         if (!label) { if (fb) { fb.style.color = '#ef4444'; fb.textContent = 'Inserisci l\'etichetta (es. 2025-26)'; } return; }
-        if (!confirm(`Stai per ARCHIVIARE e AZZERARE la stagione "${label}".\n\nVerranno spostati in archivio e azzerati:\n• Risultati partite (marcatori, cartellini, assist)\n• Presenze\n• Hall of Fame (premi)\n• Calendario eventi\n\nLa rosa atleti, i pagamenti e i certificati NON vengono toccati.\nL'archivio si conserva 1 anno, poi viene cancellato in automatico.\n\nProcedere?`)) return;
+        if (!confirm(`Stai per ARCHIVIARE e AZZERARE la stagione "${label}".\n\nVerranno spostati in archivio e azzerati:\n• Risultati partite (marcatori, cartellini, assist)\n• Calendario eventi e allenamenti\n• Valutazioni e presenze agli allenamenti\n• Presenze a calendario\n• Hall of Fame (premi)\n\nLa rosa atleti, i pagamenti, i certificati e i dati GPS NON vengono toccati.\nL'archivio si conserva 1 anno, poi viene cancellato in automatico.\n\nProcedere?`)) return;
         if (fb) { fb.style.color = '#64748b'; fb.textContent = 'Archiviazione in corso…'; }
         try {
             const r = await fetch('/api/data?action=season-reset', {

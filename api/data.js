@@ -372,9 +372,12 @@ if (req.query?.action === 'purge-athlete' && req.method === 'POST') {
 // Le 4 categorie "di stagione" (risultati partite, presenze, hall of fame,
 // calendario) vengono copiate in annate:<id>:archive[<label>] con archivedAt
 // (timer di conservazione 1 anno), poi le chiavi correnti vengono AZZERATE.
-// La rosa atleti, pagamenti, certificati, pagelle e GPS restano intatti.
+// La rosa atleti, pagamenti, certificati e GPS restano intatti.
+// Le valutazioni (evaluations) includono il campo presenza-allenamento → il
+// report presenze allenamenti legge da lì, quindi vanno archiviate/azzerate
+// insieme; trainingSessions sono gli allenamenti a calendario.
 // Niente nuovo file serverless: tutto passa da data.js (limite Hobby 12 route).
-const SEASON_KEYS = ['matchResults', 'calendarResponses', 'awards', 'calendarEvents'];
+const SEASON_KEYS = ['matchResults', 'calendarResponses', 'awards', 'calendarEvents', 'evaluations', 'trainingSessions'];
 
 if (req.query?.action === 'season-reset' && req.method === 'POST') {
   if (!session.isAuthenticated || !canWrite(session.role)) {
@@ -448,6 +451,8 @@ if (req.query?.action === 'season-archive' && req.method === 'GET') {
         calendarResponses: d.calendarResponses ? Object.keys(d.calendarResponses).length : 0,
         awards: d.awards ? Object.keys(d.awards).length : 0,
         calendarEvents: d.calendarEvents ? Object.keys(d.calendarEvents).length : 0,
+        evaluations: d.evaluations ? Object.keys(d.evaluations).length : 0,
+        trainingSessions: d.trainingSessions ? Object.keys(d.trainingSessions).length : 0,
       },
     };
   }).sort((a, b) => String(b.archivedAt).localeCompare(String(a.archivedAt)));
