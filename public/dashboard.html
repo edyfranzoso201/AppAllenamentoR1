@@ -1363,11 +1363,16 @@
     document.getElementById('header-user-badge').textContent = '👤 ' + user;
     document.getElementById('header-role-badge').textContent = ROLE_LABELS[role] || role;
 
-    // Logo: nome società se disponibile, altrimenti "Sport Monitoring"
+    // Logo: nome società + nome piattaforma (coerenza brand). Se manca la
+    // società mostra solo "Sport Monitoring".
     const societyName = sessionStorage.getItem('gosport_society_name') || '';
     const logoEl = document.getElementById('header-logo');
     const displayName = societyName || 'Sport Monitoring';
-    if (logoEl) logoEl.textContent = '⚽ ' + displayName;
+    if (logoEl) {
+      logoEl.innerHTML = societyName
+        ? '⚽ ' + societyName + ' <span style="color:var(--text-muted);font-weight:500;">· Sport Monitoring</span>'
+        : '⚽ Sport Monitoring';
+    }
     document.title = 'Dashboard — ' + displayName;
 
     // Titolo header: "Dashboard" + ruolo in italiano
@@ -1576,14 +1581,17 @@
       `;
 
       // Tabella per annata (più recente prima)
+      // Numero leggibile: valori >0 col colore testo pieno, gli 0 in grigio
+      // comunque visibile (#94a3b8) invece del text-muted scurissimo.
+      const _num = (v) => `<td style="color:${(Number(v) > 0) ? 'var(--text-primary)' : '#94a3b8'}">${v}</td>`;
       tbody.innerHTML = results.map(r => `
         <tr>
           <td><strong>${r.ann.nome || r.ann.id}</strong></td>
           <td><span class="badge-pill badge-blue">${r.ufficiali}</span></td>
-          <td>${r.staff}</td>
-          <td>${r.allenatori}</td>
-          <td>${r.dirigenti}</td>
-          <td style="color:var(--text-muted)">${r.ospiti}</td>
+          ${_num(r.staff)}
+          ${_num(r.allenatori)}
+          ${_num(r.dirigenti)}
+          ${_num(r.ospiti)}
         </tr>
       `).join('');
 
