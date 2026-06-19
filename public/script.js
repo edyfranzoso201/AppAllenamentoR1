@@ -2860,10 +2860,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!attendanceCanvas) return;
         const attWrapper = document.getElementById('attendance-chart-wrapper') || attendanceCanvas.parentElement;
         const isMobile = window.innerWidth < 768;
-        const rawW = attWrapper ? attWrapper.offsetWidth : 0;
-        const attW = isMobile ? Math.max(labels.length * 45, window.innerWidth - 40) 
-                               : Math.max(rawW || 600, labels.length * 40, 400);
-        const attH = 320;
+        // Larghezza disponibile reale del contenitore (clientWidth = senza scrollbar).
+        const availW = attWrapper ? (attWrapper.clientWidth || attWrapper.offsetWidth) : 0;
+        // Su desktop: riempi SEMPRE tutta la larghezza disponibile (niente spazio
+        // bianco a destra). Su mobile: scroll orizzontale se gli atleti sono molti.
+        const attW = isMobile
+            ? Math.max(labels.length * 45, window.innerWidth - 40)
+            : Math.max(availW || 600, labels.length * 48, 400);
+        const attH = 340;
         attendanceCanvas.width = attW;
         attendanceCanvas.height = attH;
         attendanceCanvas.style.width = attW + 'px';
