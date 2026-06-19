@@ -210,6 +210,14 @@
         .calendar-table thead .sticky-col-1,
         .calendar-table thead .sticky-col-2,
         .calendar-table thead .sticky-col-3 { z-index: 30 !important; }
+        /* Colonne EVENTO (non fisse): larghezza definita così con pochi eventi
+           la tabella non si dilata lasciando enormi spazi vuoti. */
+        .calendar-table thead tr th:not(.sticky-col-1):not(.sticky-col-2):not(.sticky-col-3),
+        .calendar-table tbody tr td:not(.sticky-col-1):not(.sticky-col-2):not(.sticky-col-3) {
+            min-width: 120px; max-width: 150px; width: 130px;
+        }
+        /* La tabella non occupa per forza il 100%: con pochi eventi resta compatta */
+        .calendar-table { width: auto; }
 
         /* Tbody rows */
         .calendar-table tbody tr:nth-child(odd)  td { background: var(--bg-row-a); border-bottom: 1px solid #2d4a8a; }

@@ -558,8 +558,12 @@ async function render(loadedData) {
       el.innerHTML = `<div class="alert alert-info">Nessun evento nel calendario.</div>`;
       return;
     }
+    // Nessun evento: tabella COMPATTA e centrata (larghezza contenuta) invece di
+    // spalmarsi su tutta la pagina con enormi colonne vuote.
     let _h = `<div class="alert alert-info mb-3">Nessun evento nel calendario. Puoi comunque generare i link presenze per atleti e staff.</div>`;
-    _h += `<div class="table-responsive"><table class="table table-dark table-bordered table-sm">`;
+    _h += `<div class="table-responsive" style="max-width:720px;margin:0 auto;">`;
+    _h += `<table class="table table-dark table-bordered table-sm" style="margin-bottom:0;">`;
+    _h += `<colgroup><col style="width:48px;"><col><col style="width:120px;"><col style="width:160px;"></colgroup>`;
     _h += `<thead><tr><th>#</th><th>Nome</th><th>Ruolo</th><th class="text-center">Link Presenze</th></tr></thead><tbody>`;
     _noEvAtleti.forEach(function(a, i) {
       var ruolo = a.isStaff ? (a.role || 'Staff') : (a.role || 'Atleta');
