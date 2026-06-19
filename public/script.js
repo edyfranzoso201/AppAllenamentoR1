@@ -2882,7 +2882,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     {
                         label: 'Assenze Giustificate',
                         data: assenzeGiustificateData,
-                        backgroundColor: 'rgba(217, 4, 41, 0.8)'
+                        backgroundColor: 'rgba(217, 119, 6, 0.85)'
                     }
                 ]
             },
