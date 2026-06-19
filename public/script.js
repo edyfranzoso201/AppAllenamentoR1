@@ -3044,8 +3044,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const datasets = [{
             label: athlete1 ? athlete1.name : 'Atleta 1',
             data: athlete1Data,
-            backgroundColor: 'rgba(217, 4, 41, 0.8)',
-            borderColor: 'rgba(217, 4, 41, 1)',
+            backgroundColor: 'rgba(22, 163, 74, 0.8)',
+            borderColor: 'rgba(22, 163, 74, 1)',
             borderWidth: 2
         }];
         
