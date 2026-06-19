@@ -21,6 +21,8 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 .athlete-card-clickable { cursor: pointer; }
 .athlete-card-clickable:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(217, 4, 41, 0.2); border-color: var(--primary-red); }
 .athlete-avatar { width: 70px; height: 70px; border-radius: 50%; border: 3px solid var(--border-color); object-fit: cover; background-color: var(--secondary-blue); }
+/* Avatar con iniziali (quando manca la foto): stesso ingombro dell'avatar foto */
+.avatar-initials { display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 1.5rem; line-height: 1; flex-shrink: 0; text-transform: uppercase; }
 .athlete-card .card-title { font-size: 1.1rem; margin-bottom: 0.1rem; }
 .athlete-card .card-body { padding-bottom: 48px; }
 .shirt-number { font-size: 1.5rem; font-weight: bold; color: var(--text-light); background-color: var(--primary-red); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: absolute; top: 50%; right: 15px; transform: translateY(-50%); }
@@ -57,10 +59,12 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.session-allenamento { background-color: var(--primary-red); color: white; }
-.session-partita-casa { background-color: var(--primary-blue); color: white; }
-.session-partita-trasferta { background-color: var(--primary-red); color: white; }
-.session-partita-futura { background-color: #006400; color: white; } /* Verde scuro */
+/* Colori eventi calendario per TIPO (non più "tutto rosso"): allenamento=verde
+   (attività ordinaria), partita casa=blu, trasferta=viola, partita futura=ambra. */
+.session-allenamento { background-color: #16a34a; color: white; }        /* verde */
+.session-partita-casa { background-color: #2563eb; color: white; }       /* blu */
+.session-partita-trasferta { background-color: #7c3aed; color: white; }  /* viola */
+.session-partita-futura { background-color: #d97706; color: white; }     /* ambra */
 .deadline-status { font-size: 1.2rem; position: absolute; top: 50%; right: 70px; transform: translateY(-50%); }
 .text-purple { color: var(--custom-purple) !important; }
 .available-player.disabled { opacity: 0.5; cursor: not-allowed; background-color: #343a40 !important; }

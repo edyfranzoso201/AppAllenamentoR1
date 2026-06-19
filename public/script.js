@@ -37,6 +37,35 @@ function escapeHtml(s) {
         .replace(/'/g, '&#39;');
 }
 
+// Avatar con INIZIALI quando manca la foto: ricava 1-2 iniziali dal nome e uno
+// sfondo colorato stabile (hash del nome) → card distinguibili anche senza foto,
+// più professionale del cerchio vuoto uguale per tutti.
+function getInitials(name) {
+    const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return '?';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+function avatarColor(name) {
+    const palette = ['#2563eb','#16a34a','#d97706','#7c3aed','#db2777','#0891b2','#dc2626','#4f46e5','#0d9488','#ca8a04'];
+    let h = 0; const s = String(name || '');
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return palette[h % palette.length];
+}
+function initialsAvatarHtml(name, cssClass) {
+    return `<div class="${cssClass || 'athlete-avatar'} avatar-initials me-3" style="background:${avatarColor(name)};" aria-label="${escapeHtml(name)}">${escapeHtml(getInitials(name))}</div>`;
+}
+// Fallback robusto: se la foto avatar non carica, sostituisce l'<img> con il
+// cerchio iniziali (niente HTML annidato fragile dentro onerror).
+window.avatarFallback = function(img, name) {
+    const div = document.createElement('div');
+    div.className = (img.className || 'athlete-avatar') + ' avatar-initials';
+    div.style.background = avatarColor(name);
+    div.setAttribute('aria-label', name || '');
+    div.textContent = getInitials(name);
+    if (img.parentNode) img.parentNode.replaceChild(div, img);
+};
+
 // Nome della PROPRIA squadra/società da mostrare (es. risultati partita).
 // Catena di fallback: dati app (teamName) → nome società in sessione →
 // generico "La mia squadra". NON usare il brand app ("Sport Monitoring"):
@@ -2176,7 +2205,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     : '';
                 const uscitaBadge = athlete.uscitaAutonoma ? '<span style="font-size:0.62rem;background:#fed7aa;color:#92400e;border-radius:3px;padding:1px 5px;margin-left:4px;vertical-align:middle;">🚶✅</span>' : '';
                 const infortunatoBadge = athlete.infortunato ? `<span style="font-size:0.62rem;background:#fee2e2;color:#991b1b;border-radius:3px;padding:1px 5px;margin-left:4px;vertical-align:middle;">🤕${athlete.dataRientro ? ' ' + new Date(athlete.dataRientro + 'T00:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}) : ''}</span>` : '';
-                card.innerHTML = `<div class="card ${cardClass}" style="${indBorder}${cardBg}"><div class="card-body athlete-card-clickable" data-athlete-id="${athlete.id}"><img src="${escapeHtml(athlete.avatar || defaultAvatar)}" onerror="this.src='${defaultAvatar}'" alt="${escapeHtml(athlete.name)}" class="athlete-avatar me-3"><div><h5 class="card-title">${escapeHtml(athlete.name)} ${athlete.isCaptain ? '<i class="bi bi-star-fill is-captain"></i>' : ''} ${vcIcon}${uscitaBadge}${infortunatoBadge}</h5><p class="card-text text-muted">${escapeHtml(athlete.role)}</p>${indBadge}</div><div class="shirt-number">${athlete.number}</div>${statusIcon}</div><div class="card-actions no-print"><button class="btn btn-sm btn-outline-light rating-btn" title="Pagelle" data-athlete-id="${athlete.id}"><i class="bi bi-clipboard-check"></i></button><button class="btn btn-sm btn-outline-light gps-btn" title="Dati Performance" data-athlete-id="${athlete.id}"><i class="bi bi-person-fill-gear"></i></button><button class="btn btn-sm btn-outline-light parent-btn" title="Anagrafica Genitori" data-athlete-id="${athlete.id}"><i class="bi bi-people-fill"></i></button><button class="btn btn-sm btn-outline-light individual-btn" title="Pacchetto Individual" data-athlete-id="${athlete.id}" style="${athlete.individualPackage?.type ? 'color:#f59e0b;border-color:#f59e0b;' : ''}"><i class="bi bi-person-fill-up"></i></button>${athlete.certLink ? `<button class="btn btn-sm btn-outline-light cert-btn" title="Apri Certificato Medico" onclick="window.open('${escapeHtml(athlete.certLink)}','_blank')"><i class="bi bi-file-earmark-medical-fill" style="color:#16a34a;"></i></button>` : ""}<button class="btn btn-sm btn-outline-light edit-btn" title="Modifica Atleta" data-athlete-id="${athlete.id}"><i class="bi bi-pencil-fill"></i></button>${athlete.archived ? `<button class="btn btn-sm btn-outline-success restore-btn" title="Ripristina in rosa" data-athlete-id="${athlete.id}"><i class="bi bi-arrow-counterclockwise"></i></button>` : `<button class="btn btn-sm btn-outline-warning archive-btn" title="Archivia" data-athlete-id="${athlete.id}"><i class="bi bi-archive-fill"></i></button>`}<button class="btn btn-sm btn-outline-light delete-btn" title="Elimina definitivamente" data-athlete-id="${athlete.id}"><i class="bi bi-trash-fill"></i></button></div></div>`;
+                card.innerHTML = `<div class="card ${cardClass}" style="${indBorder}${cardBg}"><div class="card-body athlete-card-clickable" data-athlete-id="${athlete.id}">${athlete.avatar ? `<img src="${escapeHtml(athlete.avatar)}" onerror="window.avatarFallback(this, ${JSON.stringify(athlete.name || '').replace(/"/g, '&quot;')})" alt="${escapeHtml(athlete.name)}" class="athlete-avatar me-3">` : initialsAvatarHtml(athlete.name)}<div><h5 class="card-title">${escapeHtml(athlete.name)} ${athlete.isCaptain ? '<i class="bi bi-star-fill is-captain"></i>' : ''} ${vcIcon}${uscitaBadge}${infortunatoBadge}</h5><p class="card-text text-muted">${escapeHtml(athlete.role)}</p>${indBadge}</div><div class="shirt-number">${athlete.number}</div>${statusIcon}</div><div class="card-actions no-print"><button class="btn btn-sm btn-outline-light rating-btn" title="Pagelle" data-athlete-id="${athlete.id}"><i class="bi bi-clipboard-check"></i></button><button class="btn btn-sm btn-outline-light gps-btn" title="Dati Performance" data-athlete-id="${athlete.id}"><i class="bi bi-person-fill-gear"></i></button><button class="btn btn-sm btn-outline-light parent-btn" title="Anagrafica Genitori" data-athlete-id="${athlete.id}"><i class="bi bi-people-fill"></i></button><button class="btn btn-sm btn-outline-light individual-btn" title="Pacchetto Individual" data-athlete-id="${athlete.id}" style="${athlete.individualPackage?.type ? 'color:#f59e0b;border-color:#f59e0b;' : ''}"><i class="bi bi-person-fill-up"></i></button>${athlete.certLink ? `<button class="btn btn-sm btn-outline-light cert-btn" title="Apri Certificato Medico" onclick="window.open('${escapeHtml(athlete.certLink)}','_blank')"><i class="bi bi-file-earmark-medical-fill" style="color:#16a34a;"></i></button>` : ""}<button class="btn btn-sm btn-outline-light edit-btn" title="Modifica Atleta" data-athlete-id="${athlete.id}"><i class="bi bi-pencil-fill"></i></button>${athlete.archived ? `<button class="btn btn-sm btn-outline-success restore-btn" title="Ripristina in rosa" data-athlete-id="${athlete.id}"><i class="bi bi-arrow-counterclockwise"></i></button>` : `<button class="btn btn-sm btn-outline-warning archive-btn" title="Archivia" data-athlete-id="${athlete.id}"><i class="bi bi-archive-fill"></i></button>`}<button class="btn btn-sm btn-outline-light delete-btn" title="Elimina definitivamente" data-athlete-id="${athlete.id}"><i class="bi bi-trash-fill"></i></button></div></div>`;
             }
             elements.athleteGrid.appendChild(card);
             // FIX v1.5.21: applica colore background dopo appendChild (override Bootstrap vars)
