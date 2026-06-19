@@ -587,6 +587,21 @@ async function render(loadedData) {
         if (typeof window.generatePresenceLink === 'function') window.generatePresenceLink(aid, aname);
       });
     });
+    // Anche senza eventi, il coach deve vedere le altre tab (Bacheca, Gare,
+    // Documenti): non è vista genitore, quindi mostrale come nel ramo normale.
+    var _noEvIsParent = new URLSearchParams(window.location.search).get('athleteId');
+    if (!_noEvIsParent) {
+      if (typeof showBachecaTab === 'function') showBachecaTab();
+      var _noEvPlan = sessionStorage.getItem('gosport_license_plan') || 'platinum';
+      if (_noEvPlan === 'platinum' && typeof showDocumentiTab === 'function') {
+        var _noEvRole = sessionStorage.getItem('gosport_user_role') || '';
+        showDocumentiTab(['admin','coach_l1','coach_l2'].indexOf(_noEvRole) >= 0);
+      }
+      if (typeof showGareTab === 'function') {
+        var _noEvGareRole = sessionStorage.getItem('gosport_user_role') || '';
+        showGareTab(['admin','coach_l1','coach_l2'].indexOf(_noEvGareRole) >= 0);
+      }
+    }
     return;
   }
 
