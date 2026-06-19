@@ -2923,10 +2923,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         ticks: { color: _chartTickColor() }, 
                         grid: { color: _chartGridColor() } 
                     },
-                    x: { 
+                    x: {
                         stacked: true,
-                        ticks: { color: _chartTickColor() }, 
-                        grid: { color: _chartGridColor() } 
+                        ticks: { color: _chartTickColor(), minRotation: 90, maxRotation: 90, autoSkip: false },
+                        grid: { color: _chartGridColor() }
                     }
                 },
                 plugins: {
