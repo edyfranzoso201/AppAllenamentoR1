@@ -116,6 +116,15 @@
         border-color: #60a5fa !important;
     }
 
+    /* Home: empty-state compatto e centrato per card vuote (Prossima sessione,
+       Top performer) — invece di un grande vuoto, icona + messaggio + CTA. */
+    #home-next-session, #home-top-performer { display:flex; flex-direction:column; }
+    .home-empty-state {
+        flex:1; display:flex; flex-direction:column; align-items:center;
+        justify-content:center; text-align:center; padding:8px 4px;
+    }
+    .home-empty-icon { font-size:2rem; opacity:0.55; margin-bottom:6px; }
+
     /* Home: più stacco delle card dallo sfondo (bordo più chiaro + ombra) così
        non sono più "blu su blu su blu". Vale per le card della dashboard Home. */
     .summary-card {

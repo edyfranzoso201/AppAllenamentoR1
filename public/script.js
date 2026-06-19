@@ -1120,10 +1120,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const sessionDate = new Date(nextSession.date);
             elements.homeNextSession.innerHTML = `<h5 class="card-title text-muted">PROSSIMA SESSIONE</h5><h6 class="mb-1">${escapeHtml(nextSession.title)}</h6><p class="mb-0">${sessionDate.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}</p><p class="mb-0 text-muted">${nextSession.time ? `Ore: ${escapeHtml(nextSession.time)}` : ''} ${nextSession.location ? `@ ${escapeHtml(nextSession.location)}` : ''}</p>`;
         } else {
-            elements.homeNextSession.innerHTML = `<h5 class="card-title text-muted">PROSSIMA SESSIONE</h5><p class="text-muted">Nessuna sessione pianificata</p>`;
+            // Empty-state utile: invece di un grande vuoto, una CTA per pianificare.
+            elements.homeNextSession.innerHTML = `<h5 class="card-title text-muted">PROSSIMA SESSIONE</h5>
+                <div class="home-empty-state">
+                    <div class="home-empty-icon">📅</div>
+                    <p class="text-muted mb-2">Nessuna sessione pianificata</p>
+                    <button class="btn btn-sm btn-outline-light btn-qa no-print" onclick="document.getElementById('quick-plan-session-btn').click()"><i class="bi bi-calendar-plus"></i> Pianifica la prima sessione</button>
+                </div>`;
         }
         const now = new Date(); const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`; const monthlyScores = {}; athletes.forEach(a => monthlyScores[a.id] = { name: a.name, score: 0 }); Object.entries(evaluations).forEach(([dateStr, dailyEvals]) => { if (dateStr.startsWith(currentMonthStr)) { Object.entries(dailyEvals).forEach(([athleteId, evaluation]) => { if (monthlyScores[athleteId]) { monthlyScores[athleteId].score += calculateAthleteScore(evaluation); } }); } }); const sortedAthletes = Object.values(monthlyScores).sort((a, b) => b.score - a.score); if (sortedAthletes.length > 0 && sortedAthletes[0].score > 0) { const maxScore = sortedAthletes[0].score; const topPerformers = sortedAthletes.filter(athlete => athlete.score === maxScore); const names = topPerformers.map(p => escapeHtml(p.name)).join('<br>'); elements.homeTopPerformer.innerHTML = `<h5 class="card-title text-muted">TOP PERFORMER MENSILE</h5><h6 class="mb-1">${names}</h6><p class="mb-0 text-muted">Punteggio: ${maxScore}</p><i class="bi bi-trophy-fill mt-2" style="font-size: 1.5rem; color: var(--gold-star);"></i>`; }
-        else { elements.homeTopPerformer.innerHTML = `<h5 class="card-title text-muted">TOP PERFORMER MENSILE</h5><p class="text-muted">Nessuna valutazione</p>`; }
+        else { elements.homeTopPerformer.innerHTML = `<h5 class="card-title text-muted">TOP PERFORMER MENSILE</h5>
+                <div class="home-empty-state">
+                    <div class="home-empty-icon">🏆</div>
+                    <p class="text-muted mb-2">Nessuna valutazione questo mese</p>
+                    <button class="btn btn-sm btn-outline-light btn-qa no-print" onclick="switchTab('squadra-section')"><i class="bi bi-card-checklist"></i> Valuta gli atleti</button>
+                </div>`; }
     };
     // Pulsante "Password Individual" — solo admin, in Azioni Rapide Home
     (function() {
