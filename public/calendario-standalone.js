@@ -1158,6 +1158,8 @@ window.addSingleEventToCalendar = function(date) {
   var titolo = (e.type || 'Evento') + (e.note ? ' — ' + e.note : '');
   var dettagli = [];
   if (e.time) dettagli.push('Orario: ' + e.time);
+  if (e.ritrovo) dettagli.push('Ritrovo: ' + e.ritrovo);
+  if (e.indirizzo) dettagli.push('Indirizzo: ' + e.indirizzo);
   if (e.note) dettagli.push(e.note);
   var detStr = dettagli.join('\\n');
 
@@ -1363,13 +1365,31 @@ window.editEvent = function(date) {
           style="width:100%;padding:10px;border:1px solid #1a3a5f;border-radius:8px;font-size:1rem;color:#e2e8f0;background:#060f1e;box-sizing:border-box;" />
       </div>
 
-      <div style="margin-bottom:20px;">
-        <label style="display:block;font-weight:600;color:#60a5fa;margin-bottom:6px;">Orario (es. 18:00-19:30):</label>
-        <input id="edit-event-time" type="text" value="${event.time}" 
-          placeholder="es. 18:00-19:30"
-          style="width:100%;padding:10px;border:2px solid #e2e8f0;border-radius:8px;font-size:1rem;color:#e2e8f0;box-sizing:border-box;" />
+      <div style="margin-bottom:15px;display:flex;gap:12px;">
+        <div style="flex:1;">
+          <label style="display:block;font-weight:600;color:#60a5fa;margin-bottom:6px;">🕐 Ora inizio:</label>
+          <input id="edit-event-start" type="time" value="${(String(event.time||'').match(/(\d{1,2}:\d{2})/g)||[])[0]||''}"
+            style="width:100%;padding:10px;border:2px solid #e2e8f0;border-radius:8px;font-size:1rem;color:#e2e8f0;background:#060f1e;box-sizing:border-box;" />
+        </div>
+        <div style="flex:1;">
+          <label style="display:block;font-weight:600;color:#60a5fa;margin-bottom:6px;">🕐 Ora fine:</label>
+          <input id="edit-event-end" type="time" value="${(String(event.time||'').match(/(\d{1,2}:\d{2})/g)||[])[1]||''}"
+            style="width:100%;padding:10px;border:1px solid #1a3a5f;border-radius:8px;font-size:1rem;color:#e2e8f0;background:#060f1e;box-sizing:border-box;" />
+        </div>
       </div>
-      
+
+      <div style="margin-bottom:15px;">
+        <label style="display:block;font-weight:600;color:#60a5fa;margin-bottom:6px;">🕐 Ora di ritrovo <span style="font-weight:400;font-size:0.85rem;">(opzionale)</span></label>
+        <input id="edit-event-ritrovo" type="time" value="${event.ritrovo || ''}"
+          style="width:100%;padding:10px;border:1px solid #1a3a5f;border-radius:8px;font-size:1rem;color:#e2e8f0;background:#060f1e;box-sizing:border-box;" />
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <label style="display:block;font-weight:600;color:#60a5fa;margin-bottom:6px;">📍 Indirizzo <span style="font-weight:400;font-size:0.85rem;">(opzionale, non mostrato in calendario)</span></label>
+        <input id="edit-event-indirizzo" type="text" value="${(event.indirizzo || '').replace(/"/g,'&quot;')}" placeholder="Es. Via dello Sport 1, Milano" maxlength="200"
+          style="width:100%;padding:10px;border:1px solid #1a3a5f;border-radius:8px;font-size:1rem;color:#e2e8f0;background:#060f1e;box-sizing:border-box;" />
+      </div>
+
       <div style="display:flex;gap:10px;">
         <button id="edit-save-btn"
           style="flex:1;background:#16a34a;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;font-size:1rem;">
@@ -1385,27 +1405,37 @@ window.editEvent = function(date) {
 
   document.body.appendChild(modal);
   
-  // Focus sull'input orario
-  setTimeout(() => document.getElementById('edit-event-time').focus(), 100);
+  // Focus sull'ora di inizio
+  setTimeout(() => document.getElementById('edit-event-start').focus(), 100);
 
   // Handler salvataggio
   document.getElementById('edit-save-btn').onclick = async function() {
     const newDate = document.getElementById('edit-event-date').value;
     const newType = document.getElementById('edit-event-type').value;
-    const newTime = document.getElementById('edit-event-time').value.trim();
+    const startT = document.getElementById('edit-event-start').value;
+    const endT = document.getElementById('edit-event-end').value;
+    const newTime = startT && endT ? `${startT}-${endT}` : (startT || '');
+    const newRitrovo = document.getElementById('edit-event-ritrovo').value;
+    const newIndirizzo = document.getElementById('edit-event-indirizzo').value.trim();
     const newNote = (document.getElementById('edit-event-note') || {value:''}).value.trim();
-    
+
     if (!newDate) {
       alert('⚠️ Inserisci una data!');
       return;
     }
-    if (!newTime) {
-      alert('⚠️ Inserisci un orario!');
+    if (!startT) {
+      alert('⚠️ Inserisci almeno l\'ora di inizio!');
       return;
     }
-    
-    // Aggiorna evento
-    events[newDate] = { type: newType, time: newTime };
+
+    // Aggiorna evento (preserva ritrovo/indirizzo/note)
+    events[newDate] = {
+      type: newType,
+      time: newTime,
+      ...(newNote ? { note: newNote } : {}),
+      ...(newRitrovo ? { ritrovo: newRitrovo } : {}),
+      ...(newIndirizzo ? { indirizzo: newIndirizzo } : {})
+    };
     // Se la data è cambiata, elimina quella vecchia
     if (newDate !== date) {
       delete events[date];
@@ -1433,7 +1463,7 @@ window.editEvent = function(date) {
       }
       const newAthleteEl = document.getElementById('new-event-athlete');
       const newAthleteName = (newType === 'Individual' && newAthleteEl) ? newAthleteEl.value : '';
-      calendarEvents[newDate] = { type: newType, time: newTime, ...(newAthleteName ? { athleteName: newAthleteName } : {}), ...(newNote ? { note: newNote } : {}) };
+      calendarEvents[newDate] = { type: newType, time: newTime, ...(newAthleteName ? { athleteName: newAthleteName } : {}), ...(newNote ? { note: newNote } : {}), ...(newRitrovo ? { ritrovo: newRitrovo } : {}), ...(newIndirizzo ? { indirizzo: newIndirizzo } : {}) };
 
       const saveResponse = await fetch('/api/data', {
         method: 'POST',
@@ -1675,19 +1705,39 @@ window.addEvent = function() {
           style="width:100%;padding:10px;border:1px solid #1a3a5f;border-radius:8px;font-size:1rem;color:#e2e8f0;background:#060f1e;box-sizing:border-box;" />
       </div>
       
-      <div style="margin-bottom:20px;">
-        <label style="display:block;font-weight:600;color:#60a5fa;margin-bottom:6px;">Orario (es. 18:00-19:30):</label>
-        <div id="individual-athlete-group-new" style="display:none;margin-bottom:12px;">
-          <label style="display:block;font-weight:600;color:#60a5fa;margin-bottom:6px;">Atleta:</label>
-          <select id="new-event-athlete" style="width:100%;padding:10px;border:1px solid #1a3a5f;border-radius:8px;font-size:1rem;color:#e2e8f0;background:#060f1e;">
-            <option value="">-- Seleziona atleta --</option>
-            ${athletes.filter(a=>!a.isGuest).map(a=>`<option value="${a.name}">${a.name}</option>`).join('')}
-          </select>
-        </div>
-        <input id="new-event-time" type="text" placeholder="es. 18:00-19:30"
-          style="width:100%;padding:10px;border:2px solid #e2e8f0;border-radius:8px;font-size:1rem;color:#e2e8f0;box-sizing:border-box;" />
+      <div id="individual-athlete-group-new" style="display:none;margin-bottom:15px;">
+        <label style="display:block;font-weight:600;color:#60a5fa;margin-bottom:6px;">Atleta:</label>
+        <select id="new-event-athlete" style="width:100%;padding:10px;border:1px solid #1a3a5f;border-radius:8px;font-size:1rem;color:#e2e8f0;background:#060f1e;">
+          <option value="">-- Seleziona atleta --</option>
+          ${athletes.filter(a=>!a.isGuest).map(a=>`<option value="${a.name}">${a.name}</option>`).join('')}
+        </select>
       </div>
-      
+
+      <div style="margin-bottom:15px;display:flex;gap:12px;">
+        <div style="flex:1;">
+          <label style="display:block;font-weight:600;color:#60a5fa;margin-bottom:6px;">🕐 Ora inizio:</label>
+          <input id="new-event-start" type="time"
+            style="width:100%;padding:10px;border:2px solid #e2e8f0;border-radius:8px;font-size:1rem;color:#e2e8f0;background:#060f1e;box-sizing:border-box;" />
+        </div>
+        <div style="flex:1;">
+          <label style="display:block;font-weight:600;color:#60a5fa;margin-bottom:6px;">🕐 Ora fine:</label>
+          <input id="new-event-end" type="time"
+            style="width:100%;padding:10px;border:1px solid #1a3a5f;border-radius:8px;font-size:1rem;color:#e2e8f0;background:#060f1e;box-sizing:border-box;" />
+        </div>
+      </div>
+
+      <div style="margin-bottom:15px;">
+        <label style="display:block;font-weight:600;color:#60a5fa;margin-bottom:6px;">🕐 Ora di ritrovo <span style="font-weight:400;font-size:0.85rem;">(opzionale)</span></label>
+        <input id="new-event-ritrovo" type="time"
+          style="width:100%;padding:10px;border:1px solid #1a3a5f;border-radius:8px;font-size:1rem;color:#e2e8f0;background:#060f1e;box-sizing:border-box;" />
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <label style="display:block;font-weight:600;color:#60a5fa;margin-bottom:6px;">📍 Indirizzo <span style="font-weight:400;font-size:0.85rem;">(opzionale, non mostrato in calendario)</span></label>
+        <input id="new-event-indirizzo" type="text" placeholder="Es. Via dello Sport 1, Milano" maxlength="200"
+          style="width:100%;padding:10px;border:1px solid #1a3a5f;border-radius:8px;font-size:1rem;color:#e2e8f0;background:#060f1e;box-sizing:border-box;" />
+      </div>
+
       <div style="display:flex;gap:10px;">
         <button id="new-save-btn"
           style="flex:1;background:#16a34a;color:white;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;font-size:1rem;">
@@ -1702,7 +1752,7 @@ window.addEvent = function() {
   `;
   
   document.body.appendChild(modal);
-  setTimeout(() => document.getElementById('new-event-time').focus(), 100);
+  setTimeout(() => document.getElementById('new-event-start').focus(), 100);
 
   // Mostra campo atleta solo per Individual
   document.getElementById('new-event-type').addEventListener('change', function() {
@@ -1713,11 +1763,17 @@ window.addEvent = function() {
   document.getElementById('new-save-btn').onclick = async function() {
     const newDate = document.getElementById('new-event-date').value;
     const newType = document.getElementById('new-event-type').value;
-    const newTime = document.getElementById('new-event-time').value.trim();
+    const startT = document.getElementById('new-event-start').value;   // HH:MM o ''
+    const endT = document.getElementById('new-event-end').value;       // HH:MM o ''
+    // Ricostruisce il formato storico "HH:MM-HH:MM" (compatibile con calendario,
+    // iCal, push che leggono e.time). Solo inizio → "HH:MM".
+    const newTime = startT && endT ? `${startT}-${endT}` : (startT || '');
+    const newRitrovo = document.getElementById('new-event-ritrovo').value; // HH:MM o ''
+    const newIndirizzo = document.getElementById('new-event-indirizzo').value.trim();
     const newNote = (document.getElementById('new-event-note') || {value:''}).value.trim();
-    
+
     if (!newDate) { alert('⚠️ Inserisci una data!'); return; }
-    if (!newTime) { alert('⚠️ Inserisci un orario!'); return; }
+    if (!startT) { alert('⚠️ Inserisci almeno l\'ora di inizio!'); return; }
     
     try {
       const annataId = currentAnnataId || 
@@ -1731,7 +1787,13 @@ window.addEvent = function() {
       
       const rawData = await response.json();
       const calendarEvents = (rawData.data || rawData).calendarEvents || {};
-      calendarEvents[newDate] = { type: newType, time: newTime, ...(newNote ? { note: newNote } : {}) };
+      calendarEvents[newDate] = {
+        type: newType,
+        time: newTime,
+        ...(newNote ? { note: newNote } : {}),
+        ...(newRitrovo ? { ritrovo: newRitrovo } : {}),
+        ...(newIndirizzo ? { indirizzo: newIndirizzo } : {})
+      };
 
       console.log('[ADD EVENT] ✅ Aggiunto:', newDate, newType, newTime);
 
