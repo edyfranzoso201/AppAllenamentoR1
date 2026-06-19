@@ -92,6 +92,30 @@
     }
 
 
+    /* Azioni Rapide: pulsanti secondari outline tenue grigio-blu uniforme.
+       Un solo primario pieno (Modalità Campo); il rosso resta solo per azioni distruttive. */
+    .btn-qa {
+        background: rgba(30,41,59,0.55) !important;
+        border: 1px solid #3b5a9d !important;
+        color: #cbd5e1 !important;
+        font-weight: 500;
+        text-align: left;
+    }
+    .btn-qa:hover {
+        background: rgba(59,90,157,0.35) !important;
+        border-color: #60a5fa !important;
+        color: #ffffff !important;
+    }
+    html.theme-light .btn-qa, body.theme-light .btn-qa {
+        background: #f1f5f9 !important;
+        border: 1px solid #cbd5e1 !important;
+        color: #1e293b !important;
+    }
+    html.theme-light .btn-qa:hover, body.theme-light .btn-qa:hover {
+        background: #e2e8f0 !important;
+        border-color: #60a5fa !important;
+    }
+
     /* Home - tema scuro: testi leggibili in Staff e Statistiche */
     .summary-card small, .summary-card p.small,
     .summary-card .text-muted {
@@ -1281,18 +1305,20 @@
                         <div class="card-body" id="home-quick-actions">
                             <h5 class="card-title text-muted">AZIONI RAPIDE</h5>
                             <div class="d-grid gap-2 w-100 no-print">
+                                <!-- Azione PRIMARIA: unica piena (verde brand). Tutte le altre in stile outline tenue uniforme. -->
                                 <button class="btn btn-lg" id="quick-modalita-campo-btn" onclick="window.openModalitaCampo()" style="background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-weight:700;font-size:1.1rem;padding:14px;">⚡ Modalità Campo</button>
-                                <button class="btn btn-primary-custom" id="quick-add-athlete-btn"><i class="bi bi-person-plus-fill"></i> Aggiungi Atleta</button>
-                                <button class="btn btn-warning" id="quick-add-staff-btn" style="color:#000;"><i class="bi bi-person-badge-fill"></i> Aggiungi Staff</button>
-                                <button class="btn btn-secondary" id="quick-plan-session-btn"><i class="bi bi-calendar-plus"></i> Pianifica Sessione</button>
-                                <button class="btn btn-success" id="export-all-data-btn" title="Scarica backup completo dati"><i class="bi bi-download"></i> Backup Dati</button>
-                                <button class="btn btn-success" id="export-excel-btn" title="Scarica backup Excel"><i class="bi bi-file-earmark-excel"></i> Backup Excel</button>
-                                <button class="btn btn-secondary no-print" id="quick-add-home-btn" onclick="window.aggiungiAHome()" title="Aggiungi l'app alla schermata Home"><i class="bi bi-phone"></i> Aggiungi a Home</button>
+                                <button class="btn btn-outline-light btn-qa" id="quick-add-athlete-btn"><i class="bi bi-person-plus-fill"></i> Aggiungi Atleta</button>
+                                <button class="btn btn-outline-light btn-qa" id="quick-add-staff-btn"><i class="bi bi-person-badge-fill"></i> Aggiungi Staff</button>
+                                <button class="btn btn-outline-light btn-qa" id="quick-plan-session-btn"><i class="bi bi-calendar-plus"></i> Pianifica Sessione</button>
+                                <button class="btn btn-outline-light btn-qa" id="export-all-data-btn" title="Scarica backup completo dati"><i class="bi bi-download"></i> Backup Dati</button>
+                                <button class="btn btn-outline-light btn-qa" id="export-excel-btn" title="Scarica backup Excel"><i class="bi bi-file-earmark-excel"></i> Backup Excel</button>
+                                <button class="btn btn-outline-light btn-qa no-print" id="quick-add-home-btn" onclick="window.aggiungiAHome()" title="Aggiungi l'app alla schermata Home"><i class="bi bi-phone"></i> Aggiungi a Home</button>
+                                <button class="btn btn-outline-light btn-qa" id="restore-backup-btn" onclick="document.getElementById('import-file-input').click();"><i class="bi bi-upload"></i> Ripristina Backup</button>
+                                <button class="btn btn-outline-light btn-qa admin-only no-print" id="change-individual-pwd-btn" style="display:none;" title="Cambia password sessioni Individual"><i class="bi bi-key-fill"></i> Password Individual</button>
+                                <!-- Azione DISTRUTTIVA: unica in rosso -->
                                 <button class="btn btn-danger no-print" id="reset-annata-btn" style="display:none;" title="Azzera dati a fine annata">
                                     <i class="bi bi-trash3-fill"></i> Reset Fine Annata
                                 </button>
-                                <button class="btn btn-warning admin-only no-print" id="change-individual-pwd-btn" style="display:none;" title="Cambia password sessioni Individual"><i class="bi bi-key-fill"></i> Password Individual</button>
-                                <button class="btn btn-warning" id="restore-backup-btn" onclick="document.getElementById('import-file-input').click();"><i class="bi bi-upload"></i> Ripristina Backup</button>
                                 <input type="file" id="restore-file" accept=".json" style="display:none">
                                 <button class="btn btn-info no-print" id="push-subscribe-btn" onclick="window.gsPushSubscribe()" style="display:none;">
                                     <i class="bi bi-bell-fill"></i> <span id="push-btn-label">Attiva Notifiche</span>

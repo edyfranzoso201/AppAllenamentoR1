@@ -3589,30 +3589,50 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         elements.alertsContainer.innerHTML = '';
-        let alertHTML = '';
-        
-        if (expiredVisita.length > 0) {
-            alertHTML += `<div class="alert alert-danger alert-dismissible fade show" role="alert"><strong>VISITE MEDICHE SCADUTE!</strong> Atleti non idonei: ${expiredVisita.join(', ')}.<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>`;
-        }
-        if (warningVisita.length > 0) {
-            alertHTML += `<div class="alert alert-warning alert-dismissible fade show" role="alert"><strong>VISITE MEDICHE IN SCADENZA (meno di 3 mesi):</strong> ${warningVisita.join(', ')}.<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>`;
-        }
-        if (expiredTessera.length > 0) {
-            alertHTML += `<div class="alert alert-danger alert-dismissible fade show" role="alert"><strong>TESSERE GO SCADUTE!</strong> Atleti non tesserati: ${expiredTessera.join(', ')}.<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>`;
-        }
-        if (warningTessera.length > 0) {
-            alertHTML += `<div class="alert alert-warning alert-dismissible fade show" role="alert"><strong>TESSERE GO IN SCADENZA (meno di 1 mese):</strong> ${warningTessera.join(', ')}.<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>`;
-        }
-        if (expiredPagamenti.length > 0) {
-            alertHTML += `<div class="alert alert-danger alert-dismissible fade show" role="alert"><strong>💰 PAGAMENTI SCADUTI!</strong> Rate non pagate: ${expiredPagamenti.join(', ')}.<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>`;
-        }
-        if (warningPagamenti.length > 0) {
-            alertHTML += `<div class="alert alert-warning alert-dismissible fade show" role="alert"><strong>💰 PAGAMENTI IN SCADENZA (entro 2 settimane):</strong> ${warningPagamenti.join(', ')}.<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>`;
-        }
-        
-        if(alertHTML) {
-            elements.alertsContainer.innerHTML = alertHTML;
-        }
+
+        // Banner UNICO e compatto: una riga di "chip" contatori cliccabili.
+        // Click su un chip → espande/chiude la lista dei nomi relativi.
+        // Rosso = scaduti (urgente), ambra = in scadenza. Niente più 6 banderoni.
+        const esc = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const groups = [
+            { key: 'vis-exp', sev: 'exp', icon: '🩺', label: 'Visite scadute',        items: expiredVisita },
+            { key: 'vis-warn', sev: 'warn', icon: '🩺', label: 'Visite in scadenza',    items: warningVisita },
+            { key: 'tes-exp', sev: 'exp', icon: '🪪', label: 'Tessere scadute',        items: expiredTessera },
+            { key: 'tes-warn', sev: 'warn', icon: '🪪', label: 'Tessere in scadenza',   items: warningTessera },
+            { key: 'pag-exp', sev: 'exp', icon: '💰', label: 'Pagamenti scaduti',      items: expiredPagamenti },
+            { key: 'pag-warn', sev: 'warn', icon: '💰', label: 'Pagamenti in scadenza', items: warningPagamenti },
+        ].filter(g => g.items.length > 0);
+
+        if (groups.length === 0) return; // nessuna scadenza → nessun banner
+
+        const chip = (g) => {
+            const bg = g.sev === 'exp' ? '#7f1d1d' : '#78350f';
+            const bd = g.sev === 'exp' ? '#dc2626' : '#d97706';
+            return `<button type="button" class="gs-alert-chip" data-target="gsd-${g.key}"
+                style="background:${bg};border:1px solid ${bd};color:#fde8e8;border-radius:999px;padding:5px 12px;font-size:0.82rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+                ${g.icon} ${esc(g.label)} <span style="background:rgba(255,255,255,0.22);border-radius:999px;padding:0 7px;font-weight:700;">${g.items.length}</span></button>`;
+        };
+        const detail = (g) => `<div id="gsd-${g.key}" class="gs-alert-detail" style="display:none;font-size:0.85rem;color:#e2e8f0;padding:8px 4px 2px;line-height:1.6;">${g.items.map(esc).join(' · ')}</div>`;
+
+        const totExp = expiredVisita.length + expiredTessera.length + expiredPagamenti.length;
+        const headTxt = totExp > 0 ? '⚠️ Scadenze da gestire' : '🔔 Promemoria scadenze';
+
+        elements.alertsContainer.innerHTML = `
+            <div class="alert alert-dismissible fade show" role="alert"
+                 style="background:#1e293b;border:1px solid #334155;border-left:4px solid ${totExp>0?'#dc2626':'#d97706'};">
+                <div style="font-weight:700;margin-bottom:8px;color:#f1f5f9;">${headTxt}</div>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;">${groups.map(chip).join('')}</div>
+                ${groups.map(detail).join('')}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>`;
+
+        // Toggle espansione dei dettagli al click sul chip
+        elements.alertsContainer.querySelectorAll('.gs-alert-chip').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const d = document.getElementById(btn.getAttribute('data-target'));
+                if (d) d.style.display = d.style.display === 'none' ? 'block' : 'none';
+            });
+        });
     };
     const logout = () => { sessionStorage.removeItem('isAuthenticated'); updateAllUI(); };
     const syncAndUpdateEvaluationDate = (newDate) => {
