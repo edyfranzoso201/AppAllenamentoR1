@@ -2205,7 +2205,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     : '';
                 const uscitaBadge = athlete.uscitaAutonoma ? '<span style="font-size:0.62rem;background:#fed7aa;color:#92400e;border-radius:3px;padding:1px 5px;margin-left:4px;vertical-align:middle;">🚶✅</span>' : '';
                 const infortunatoBadge = athlete.infortunato ? `<span style="font-size:0.62rem;background:#fee2e2;color:#991b1b;border-radius:3px;padding:1px 5px;margin-left:4px;vertical-align:middle;">🤕${athlete.dataRientro ? ' ' + new Date(athlete.dataRientro + 'T00:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}) : ''}</span>` : '';
-                card.innerHTML = `<div class="card ${cardClass}" style="${indBorder}${cardBg}"><div class="card-body athlete-card-clickable" data-athlete-id="${athlete.id}">${athlete.avatar ? `<img src="${escapeHtml(athlete.avatar)}" onerror="window.avatarFallback(this, ${JSON.stringify(athlete.name || '').replace(/"/g, '&quot;')})" alt="${escapeHtml(athlete.name)}" class="athlete-avatar me-3">` : initialsAvatarHtml(athlete.name)}<div><h5 class="card-title">${escapeHtml(athlete.name)} ${athlete.isCaptain ? '<i class="bi bi-star-fill is-captain"></i>' : ''} ${vcIcon}${uscitaBadge}${infortunatoBadge}</h5><p class="card-text text-muted">${escapeHtml(athlete.role)}</p>${indBadge}</div><div class="shirt-number">${athlete.number}</div>${statusIcon}</div><div class="card-actions no-print"><button class="btn btn-sm btn-outline-light rating-btn" title="Pagelle" data-athlete-id="${athlete.id}"><i class="bi bi-clipboard-check"></i></button><button class="btn btn-sm btn-outline-light gps-btn" title="Dati Performance" data-athlete-id="${athlete.id}"><i class="bi bi-person-fill-gear"></i></button><button class="btn btn-sm btn-outline-light parent-btn" title="Anagrafica Genitori" data-athlete-id="${athlete.id}"><i class="bi bi-people-fill"></i></button><button class="btn btn-sm btn-outline-light individual-btn" title="Pacchetto Individual" data-athlete-id="${athlete.id}" style="${athlete.individualPackage?.type ? 'color:#f59e0b;border-color:#f59e0b;' : ''}"><i class="bi bi-person-fill-up"></i></button>${athlete.certLink ? `<button class="btn btn-sm btn-outline-light cert-btn" title="Apri Certificato Medico" onclick="window.open('${escapeHtml(athlete.certLink)}','_blank')"><i class="bi bi-file-earmark-medical-fill" style="color:#16a34a;"></i></button>` : ""}<button class="btn btn-sm btn-outline-light edit-btn" title="Modifica Atleta" data-athlete-id="${athlete.id}"><i class="bi bi-pencil-fill"></i></button>${athlete.archived ? `<button class="btn btn-sm btn-outline-success restore-btn" title="Ripristina in rosa" data-athlete-id="${athlete.id}"><i class="bi bi-arrow-counterclockwise"></i></button>` : `<button class="btn btn-sm btn-outline-warning archive-btn" title="Archivia" data-athlete-id="${athlete.id}"><i class="bi bi-archive-fill"></i></button>`}<button class="btn btn-sm btn-outline-light delete-btn" title="Elimina definitivamente" data-athlete-id="${athlete.id}"><i class="bi bi-trash-fill"></i></button></div></div>`;
+                card.innerHTML = `<div class="card ${cardClass}" style="${indBorder}${cardBg}"><div class="card-body athlete-card-clickable" data-athlete-id="${athlete.id}">${athlete.avatar ? `<img src="${escapeHtml(athlete.avatar)}" onerror="window.avatarFallback(this, ${JSON.stringify(athlete.name || '').replace(/"/g, '&quot;')})" alt="${escapeHtml(athlete.name)}" class="athlete-avatar me-3">` : initialsAvatarHtml(athlete.name)}<div><h5 class="card-title">${escapeHtml(athlete.name)} ${athlete.isCaptain ? '<i class="bi bi-star-fill is-captain"></i>' : ''} ${vcIcon}${uscitaBadge}${infortunatoBadge}</h5><p class="card-text text-muted">${escapeHtml(athlete.role)}</p>${indBadge}</div><div class="shirt-number">${athlete.number}</div>${statusIcon}</div><div class="card-actions no-print"><button class="btn btn-sm btn-outline-light rating-btn" title="Pagelle" data-athlete-id="${athlete.id}"><i class="bi bi-clipboard-check"></i></button><button class="btn btn-sm btn-outline-light gps-btn" title="Dati Performance" data-athlete-id="${athlete.id}"><i class="bi bi-person-fill-gear"></i></button><button class="btn btn-sm btn-outline-light individual-btn" title="Pacchetto Individual" data-athlete-id="${athlete.id}" style="${athlete.individualPackage?.type ? 'color:#f59e0b;border-color:#f59e0b;' : ''}"><i class="bi bi-person-fill-up"></i></button><div class="card-more-wrap"><button class="btn btn-sm btn-outline-light card-more-btn" title="Altre azioni" aria-label="Altre azioni"><i class="bi bi-three-dots"></i></button><div class="card-more-menu"><button class="btn btn-sm btn-outline-light parent-btn" data-athlete-id="${athlete.id}"><i class="bi bi-people-fill"></i> Genitori</button>${athlete.certLink ? `<button class="btn btn-sm btn-outline-light cert-btn" onclick="window.open('${escapeHtml(athlete.certLink)}','_blank')"><i class="bi bi-file-earmark-medical-fill" style="color:#16a34a;"></i> Certificato</button>` : ""}<button class="btn btn-sm btn-outline-light edit-btn" data-athlete-id="${athlete.id}"><i class="bi bi-pencil-fill"></i> Modifica</button>${athlete.archived ? `<button class="btn btn-sm btn-outline-success restore-btn" data-athlete-id="${athlete.id}"><i class="bi bi-arrow-counterclockwise"></i> Ripristina</button>` : `<button class="btn btn-sm btn-outline-warning archive-btn" data-athlete-id="${athlete.id}"><i class="bi bi-archive-fill"></i> Archivia</button>`}<button class="btn btn-sm btn-outline-danger delete-btn" data-athlete-id="${athlete.id}"><i class="bi bi-trash-fill"></i> Elimina</button></div></div></div></div>`;
             }
             elements.athleteGrid.appendChild(card);
             // FIX v1.5.21: applica colore background dopo appendChild (override Bootstrap vars)
@@ -3927,12 +3927,44 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('athlete-guest').checked = false;
         athleteModal.show();
     });
+    // Chiude il menu "⋯" delle card quando si clicca fuori da esso.
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.card-more-wrap')) {
+            document.querySelectorAll('.card-more-wrap.open').forEach(w => {
+                w.classList.remove('open');
+                const c = w.closest('.athlete-card'); if (c) c.style.overflow = '';
+            });
+        }
+    });
     elements.athleteGrid.addEventListener('click', async (e) => {
+        // Menu "⋯" azioni secondarie: apri/chiudi e non propagare ad altri handler.
+        const moreBtn = e.target.closest('.card-more-btn');
+        if (moreBtn) {
+            e.stopPropagation();
+            const wrap = moreBtn.closest('.card-more-wrap');
+            const wasOpen = wrap.classList.contains('open');
+            // chiudi tutti gli altri menu e ripristina il loro overflow
+            document.querySelectorAll('.card-more-wrap.open').forEach(w => {
+                w.classList.remove('open');
+                const c = w.closest('.athlete-card'); if (c) c.style.overflow = '';
+            });
+            if (!wasOpen) {
+                wrap.classList.add('open');
+                // fallback per browser senza :has() — mostra il menu fuori dalla card
+                const c = wrap.closest('.athlete-card'); if (c) c.style.overflow = 'visible';
+            }
+            return;
+        }
         const card = e.target.closest('[data-athlete-id]');
         if (!card) return;
         const athleteId = card.dataset.athleteId;
         const athlete = athletes.find(a => a.id.toString() === athleteId);
         if (!athlete) return;
+        // Dopo aver scelto un'azione dal menu, richiudilo.
+        document.querySelectorAll('.card-more-wrap.open').forEach(w => {
+            w.classList.remove('open');
+            const c = w.closest('.athlete-card'); if (c) c.style.overflow = '';
+        });
         if (e.target.closest('.parent-btn')) {
             openParentModal(athleteId);
         }
