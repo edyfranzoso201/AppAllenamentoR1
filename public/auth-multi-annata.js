@@ -572,16 +572,28 @@
         function showLoginScreen() {
             // Pulisci il body
             document.body.innerHTML = '';
-            document.body.style.cssText = 'margin:0;padding:0;font-family:system-ui;background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;';
-            
+            // index.html disegna un overlay opaco con body::before (z-index:-1) che
+            // coprirebbe lo sfondo a tema del login: lo spengo per questa schermata.
+            if (!document.getElementById('login-bg-fix')) {
+                const st = document.createElement('style');
+                st.id = 'login-bg-fix';
+                st.textContent = 'body.login-screen::before{display:none !important;}';
+                document.head.appendChild(st);
+            }
+            document.body.classList.add('login-screen');
+            // Sfondo a tema multi-sport con overlay scuro leggero per leggibilità della card.
+            // Card allineata verso il basso (flex-start + padding-top) così la parte
+            // alta dello sfondo — la pallavolista che salta — resta scoperta e visibile.
+            document.body.style.cssText = "margin:0;padding:0;font-family:system-ui;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding-top:14vh;box-sizing:border-box;background:linear-gradient(135deg,rgba(6,15,30,0.35),rgba(15,23,42,0.3)),url('/login-bg.jpg') center/cover no-repeat;background-color:#060f1e;";
+
             const container = document.createElement('div');
-            container.style.cssText = 'background:rgba(30,41,59,0.95);padding:40px;border-radius:15px;box-shadow:0 8px 32px rgba(0,0,0,0.5);max-width:400px;width:90%;border:1px solid rgba(96,165,250,0.2);';
+            // Card più compatta (padding e larghezza ridotti) + ombra profonda + bordo visibile: "stacca" sullo sfondo.
+            container.style.cssText = 'background:rgba(20,30,48,0.92);padding:30px 32px;border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,0.75), 0 0 0 1px rgba(96,165,250,0.15);max-width:370px;width:90%;border:1px solid rgba(96,165,250,0.35);backdrop-filter:blur(4px);';
             
             container.innerHTML = `
                 <div style="text-align:center;margin-bottom:30px;">
-                    <div style="font-size:48px;margin-bottom:10px;">🏃‍♂️</div>
-                    <h1 style="color:#60a5fa;margin:0 0 10px 0;font-size:28px;font-weight:700;">SPORT MONITORING</h1>
-                    <p style="color:#94a3b8;margin:0;">Sport Monitoring</p>
+                    <img src="/logo-sport-monitoring.png" alt="Sport Monitoring — Coach and society"
+                         style="width:140px;height:auto;margin:0 auto;display:block;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.4));">
                 </div>
                 
                 <form id="login-form" style="display:flex;flex-direction:column;gap:20px;">

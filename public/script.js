@@ -2837,12 +2837,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     {
                         label: 'Presenze',
                         data: presenzeData,
-                        backgroundColor: 'rgba(217, 4, 41, 0.8)'
+                        backgroundColor: 'rgba(22, 163, 74, 0.85)'
                     },
                     {
                         label: 'Assenze Giustificate',
                         data: assenzeGiustificateData,
-                        backgroundColor: 'rgba(0, 128, 0, 0.8)'
+                        backgroundColor: 'rgba(217, 4, 41, 0.8)'
                     }
                 ]
             },
