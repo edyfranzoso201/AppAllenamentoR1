@@ -2530,7 +2530,7 @@ document.addEventListener('DOMContentLoaded', () => {
             filteredMatches = filteredMatches.filter(m => m.opponentName === opponentFilter);
             labels = filteredMatches.map(m => new Date(m.date).toLocaleDateString('it-IT', {day:'2-digit', month:'short'}));
             datasets = [
-                { label: 'Vittorie', data: [], backgroundColor: '#d90429' },
+                { label: 'Vittorie', data: [], backgroundColor: '#16a34a' },
                 { label: 'Pareggi', data: [], backgroundColor: _chartParityColor() },
                 { label: 'Sconfitte', data: [], backgroundColor: '#64748b' },
             ];
@@ -2565,7 +2565,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             labels = Object.keys(resultsByPeriod).sort();
             datasets = [
-                { label: 'Vittorie', data: labels.map(l => resultsByPeriod[l].W), backgroundColor: '#d90429' },
+                { label: 'Vittorie', data: labels.map(l => resultsByPeriod[l].W), backgroundColor: '#16a34a' },
                 { label: 'Pareggi', data: labels.map(l => resultsByPeriod[l].D), backgroundColor: _chartParityColor() },
                 { label: 'Sconfitte', data: labels.map(l => resultsByPeriod[l].L), backgroundColor: '#64748b' },
             ];
@@ -2618,8 +2618,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 datasets: [{
                     label: 'Punteggio Medio',
                     data: teamDailyAvgScores,
-                    borderColor: 'rgba(217, 4, 41, 1)',
-                    backgroundColor: 'rgba(217, 4, 41, 0.2)',
+                    borderColor: 'rgba(22, 163, 74, 1)',
+                    backgroundColor: 'rgba(22, 163, 74, 0.2)',
                     tension: 0.3
                 }]
             },
@@ -2689,7 +2689,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 datasets: [{
                     label: 'Punteggio Totale',
                     data: scoresToShow.map(a=>a.score),
-                    backgroundColor: 'rgba(217, 4, 41, 0.8)'
+                    backgroundColor: 'rgba(22, 163, 74, 0.8)'
                 }]
             },
             options: {
@@ -3261,7 +3261,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const session = findSessionById(selection.sessionId);
                     return session ? (session[selectedMetric] || 0) : 0;
                 }),
-                backgroundColor: 'rgba(217, 4, 41, 0.8)'
+                backgroundColor: 'rgba(22, 163, 74, 0.8)'
             }]
         };
         if (chartInstances.performance) chartInstances.performance.destroy();
@@ -3369,7 +3369,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         const datasets = [
-            { label: gpsFieldsForDisplay[metric] || metric, data: athleteValues, borderColor: 'rgba(217, 4, 41, 1)', backgroundColor: 'rgba(217, 4, 41, 0.2)', tension: 0.3, fill: true },
+            { label: gpsFieldsForDisplay[metric] || metric, data: athleteValues, borderColor: 'rgba(22, 163, 74, 1)', backgroundColor: 'rgba(22, 163, 74, 0.2)', tension: 0.3, fill: true },
             { label: 'Media Squadra', data: teamAvgValues, borderColor: 'rgba(54, 162, 235, 1)', borderDash: [5, 5], fill: false, tension: 0.3 },
             { label: 'Max Squadra', data: teamMaxValues, borderColor: 'rgba(255, 206, 86, 1)', borderDash: [5, 5], fill: false, tension: 0.3 }
         ];
@@ -3540,7 +3540,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 datasets: [{
                     label: gpsFieldsForDisplay[metric],
                     data: chartData.map(d => d.value.toFixed(2)),
-                    backgroundColor: 'rgba(217, 4, 41, 0.8)'
+                    backgroundColor: 'rgba(22, 163, 74, 0.8)'
                 }]
             },
             options: {
