@@ -1240,6 +1240,63 @@
             <button onclick="impHideEventoForm()" class="imp-btn-ghost">Annulla</button>
           </div>
         </div>
+
+        <!-- ══ GESTORE TORNEI ══════════════════════════════════════════════ -->
+        <div class="card" style="margin:24px 0 16px;padding:14px 18px;border-left:4px solid var(--accent);">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+            <div>
+              <div style="font-weight:700;font-size:1rem;">🏆 Gestore Tornei</div>
+              <div style="font-size:0.82rem;color:var(--text-muted);">Crea tabelloni a eliminazione diretta con avanzamento automatico</div>
+            </div>
+            <button onclick="trnShowWizard()" class="imp-btn">+ Crea Torneo</button>
+          </div>
+        </div>
+
+        <!-- Wizard creazione torneo -->
+        <div id="trn-wizard" class="card" style="display:none;margin-bottom:16px;padding:18px;border:2px solid var(--accent);">
+          <div style="font-weight:700;margin-bottom:16px;font-size:1rem;">🏆 Nuovo Torneo</div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+            <div>
+              <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Nome torneo</label>
+              <input type="text" id="trn-nome" placeholder="es. Torneo Primavera 2026"
+                style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;box-sizing:border-box;">
+            </div>
+            <div>
+              <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Formato</label>
+              <select id="trn-formato" onchange="trnOnFormatoChange()"
+                style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;">
+                <option value="knockout">🏆 Eliminazione diretta</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="trn-ko-opts" style="margin-bottom:14px;">
+            <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:6px;">
+              <input type="checkbox" id="trn-terzo-posto" style="margin-right:6px;">Finale 3°/4° posto
+            </label>
+          </div>
+
+          <div style="margin-bottom:8px;">
+            <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">
+              Squadre partecipanti <span id="trn-squadre-count" style="color:var(--accent);font-weight:600;"></span>
+            </label>
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px;">Una squadra per riga. Per l'eliminazione diretta servono 2, 4, 8 o 16 squadre.</div>
+            <textarea id="trn-squadre" rows="6" placeholder="Squadra A&#10;Squadra B&#10;Squadra C&#10;Squadra D" oninput="trnUpdateCount()"
+              style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.9rem;box-sizing:border-box;font-family:inherit;"></textarea>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:6px;">
+            <button onclick="trnGenera()" class="imp-btn">⚡ Genera Tabellone</button>
+            <button onclick="trnHideWizard()" class="imp-btn-ghost">Annulla</button>
+          </div>
+        </div>
+
+        <!-- Lista tornei salvati -->
+        <div id="trn-list"></div>
+
+        <!-- Vista tabellone del torneo selezionato -->
+        <div id="trn-view" style="display:none;margin-top:16px;"></div>
       </div>
 
       <!-- ── TAB: ANALISI SATURAZIONE ── -->
@@ -2666,17 +2723,19 @@
   window.impInit = async function() {
     if (impLoaded) { impRenderAll(); return; }
     try {
-      const [rCfg, rSlots, rEv, rAnn, rAnnCfg] = await Promise.all([
+      const [rCfg, rSlots, rEv, rAnn, rAnnCfg, rTrn] = await Promise.all([
         fetch('/api/data?action=impianti-config',        { headers: impHeaders() }),
         fetch('/api/data?action=impianti-slots',         { headers: impHeaders() }),
         fetch('/api/data?action=impianti-eventi',        { headers: impHeaders() }),
         fetch('/api/data?action=impianti-annate',        { headers: impHeaders() }),
         fetch('/api/data?action=impianti-annate-config', { headers: impHeaders() }),
+        fetch('/api/data?action=impianti-tornei',        { headers: impHeaders() }),
       ]);
-      const [dCfg, dSlots, dEv, dAnn, dAnnCfg] = await Promise.all([rCfg.json(), rSlots.json(), rEv.json(), rAnn.json(), rAnnCfg.json()]);
+      const [dCfg, dSlots, dEv, dAnn, dAnnCfg, dTrn] = await Promise.all([rCfg.json(), rSlots.json(), rEv.json(), rAnn.json(), rAnnCfg.json(), rTrn.json()]);
       if (dCfg.success)    impState.config  = dCfg.config;
       if (dSlots.success)  impState.slots   = dSlots.slots;
       if (dEv.success)     impState.eventi  = dEv.eventi;
+      if (dTrn.success)    trnState         = dTrn.tornei || [];
       if (dAnn.success)    impAnnate        = dAnn.annate;
       if (dAnnCfg.success) impAnnateConfig  = dAnnCfg.config;
       impLoaded = true;
@@ -2695,6 +2754,7 @@
     impRenderAnnateConfig();
     impRenderSlots();
     impRenderEventi();
+    if (typeof trnRenderList === 'function') trnRenderList();
     const role      = sessionStorage.getItem('gosport_user_role');
     const aiEnabled = sessionStorage.getItem('gosport_ai_enabled') === 'true';
     const aib = document.getElementById('imp-ai-gen-btn');
@@ -3657,6 +3717,245 @@
       if (d.success) { impState.eventi = d.eventi; impAlert('Evento eliminato ✓', true); impRenderEventi(); }
       else impAlert(d.message || 'Errore');
     } catch(e) { impAlert('Errore: ' + e.message); }
+  };
+
+  // ══ GESTORE TORNEI (Fase 1: eliminazione diretta) ════════════════════════
+  let trnState = [];           // array di tornei caricati
+  let trnCurrentId = null;     // torneo attualmente visualizzato
+
+  function trnEsc(s){ return (window.esc || function(x){return String(x==null?'':x);})(s); }
+
+  window.trnShowWizard = function() {
+    document.getElementById('trn-wizard').style.display = '';
+    document.getElementById('trn-nome').value = '';
+    document.getElementById('trn-squadre').value = '';
+    document.getElementById('trn-terzo-posto').checked = false;
+    trnUpdateCount();
+    document.getElementById('trn-nome').focus();
+  };
+  window.trnHideWizard = function() { document.getElementById('trn-wizard').style.display = 'none'; };
+  window.trnOnFormatoChange = function() { /* Fase 2: mostrerà opzioni per girone/gironi */ };
+
+  window.trnUpdateCount = function() {
+    const n = trnParseSquadre().length;
+    const el = document.getElementById('trn-squadre-count');
+    if (el) el.textContent = n ? `(${n})` : '';
+  };
+  function trnParseSquadre() {
+    return (document.getElementById('trn-squadre').value || '')
+      .split('\n').map(s => s.trim()).filter(Boolean);
+  }
+
+  // Genera il tabellone a eliminazione diretta in modo DETERMINISTICO.
+  // Supporta 2/4/8/16 squadre. Round: ['Finale'] / ['Semifinali','Finale'] / ...
+  function trnRoundNames(nSquadre) {
+    const map = {
+      2:  ['Finale'],
+      4:  ['Semifinali', 'Finale'],
+      8:  ['Quarti', 'Semifinali', 'Finale'],
+      16: ['Ottavi', 'Quarti', 'Semifinali', 'Finale']
+    };
+    return map[nSquadre] || null;
+  }
+  function trnGenId() { return 't' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+  window.trnGenera = function() {
+    const nome = (document.getElementById('trn-nome').value || '').trim();
+    const squadre = trnParseSquadre();
+    const terzoPosto = document.getElementById('trn-terzo-posto').checked;
+    if (!nome) { impAlert('Inserisci il nome del torneo'); return; }
+    const rounds = trnRoundNames(squadre.length);
+    if (!rounds) { impAlert('Per l\'eliminazione diretta servono 2, 4, 8 o 16 squadre (ne hai ' + squadre.length + ')'); return; }
+
+    // Primo turno: accoppia 1ª vs ultima, 2ª vs penultima (seeding semplice)
+    const partite = [];
+    const primoRound = rounds[0];
+    for (let i = 0; i < squadre.length / 2; i++) {
+      partite.push({
+        id: trnGenId(), round: primoRound, roundIdx: 0, pos: i,
+        casa: squadre[i], ospite: squadre[squadre.length - 1 - i],
+        golCasa: null, golOspite: null
+      });
+    }
+    // Turni successivi: slot vuoti (riempiti dall'avanzamento automatico)
+    for (let r = 1; r < rounds.length; r++) {
+      const nMatch = squadre.length / Math.pow(2, r + 1);
+      for (let i = 0; i < nMatch; i++) {
+        partite.push({ id: trnGenId(), round: rounds[r], roundIdx: r, pos: i, casa: null, ospite: null, golCasa: null, golOspite: null });
+      }
+    }
+    // Finale 3°/4° posto (opzionale)
+    if (terzoPosto && squadre.length >= 4) {
+      partite.push({ id: trnGenId(), round: 'Finale 3°/4° posto', roundIdx: rounds.length - 1, pos: 1, terzoPosto: true, casa: null, ospite: null, golCasa: null, golOspite: null });
+    }
+
+    const torneo = { id: trnGenId(), nome, formato: 'knockout', squadre, partite, terzoPosto, rounds, createdAt: new Date().toISOString() };
+    trnSave(torneo, true);
+    trnHideWizard();
+  };
+
+  async function trnSave(torneo, openAfter) {
+    try {
+      const r = await fetch('/api/data?action=impianti-tornei', {
+        method: 'POST', headers: impHeaders(), body: JSON.stringify({ torneo })
+      });
+      const d = await r.json();
+      if (d.success) {
+        trnState = d.tornei;
+        trnRenderList();
+        if (openAfter) { trnCurrentId = torneo.id; trnRenderView(); }
+        impAlert('Torneo salvato ✓', true);
+      } else impAlert(d.message || 'Errore');
+    } catch(e) { impAlert('Errore: ' + e.message); }
+  }
+
+  window.trnDelete = async function(id) {
+    if (!confirm('Eliminare questo torneo?')) return;
+    try {
+      const r = await fetch('/api/data?action=impianti-tornei', {
+        method: 'POST', headers: impHeaders(), body: JSON.stringify({ deleteId: id })
+      });
+      const d = await r.json();
+      if (d.success) {
+        trnState = d.tornei;
+        if (trnCurrentId === id) { trnCurrentId = null; document.getElementById('trn-view').style.display = 'none'; }
+        trnRenderList();
+        impAlert('Torneo eliminato ✓', true);
+      } else impAlert(d.message || 'Errore');
+    } catch(e) { impAlert('Errore: ' + e.message); }
+  };
+
+  function trnRenderList() {
+    const el = document.getElementById('trn-list');
+    if (!el) return;
+    if (!trnState.length) { el.innerHTML = ''; return; }
+    el.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px;">' + trnState.map(t => {
+      const fatte = t.partite.filter(p => p.golCasa != null && p.golOspite != null).length;
+      const tot = t.partite.length;
+      return `<div class="card" style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;cursor:pointer;" onclick="trnOpen('${t.id}')">
+        <div>
+          <div style="font-weight:600;">🏆 ${trnEsc(t.nome)}</div>
+          <div style="font-size:0.78rem;color:var(--text-muted);">${t.squadre.length} squadre · eliminazione diretta · ${fatte}/${tot} partite giocate</div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button onclick="event.stopPropagation();trnOpen('${t.id}')" class="imp-btn-ghost" style="font-size:0.75rem;">👁️ Apri</button>
+          <button onclick="event.stopPropagation();trnDelete('${t.id}')" class="imp-btn-ghost" style="font-size:0.75rem;color:#ef4444;">🗑️</button>
+        </div>
+      </div>`;
+    }).join('') + '</div>';
+  }
+
+  window.trnOpen = function(id) { trnCurrentId = id; trnRenderView(); document.getElementById('trn-view').scrollIntoView({behavior:'smooth',block:'nearest'}); };
+
+  // Avanzamento automatico: per ogni partita conclusa, mette il vincitore nello
+  // slot del turno successivo. Per la finale 3°/4° mette i PERDENTI delle semifinali.
+  function trnAvanza(t) {
+    const byRound = {};
+    t.partite.forEach(p => { (byRound[p.roundIdx] = byRound[p.roundIdx] || []).push(p); });
+    const maxRound = Math.max(...t.partite.map(p => p.roundIdx));
+    for (let r = 0; r < maxRound; r++) {
+      const cur = (byRound[r] || []).filter(p => !p.terzoPosto).sort((a,b)=>a.pos-b.pos);
+      const next = (byRound[r+1] || []).filter(p => !p.terzoPosto).sort((a,b)=>a.pos-b.pos);
+      cur.forEach((p, i) => {
+        const w = trnVincitore(p);
+        const slot = next[Math.floor(i/2)];
+        if (slot) { if (i % 2 === 0) slot.casa = w; else slot.ospite = w; }
+      });
+    }
+    // Finale 3°/4°: perdenti delle semifinali
+    const terzo = t.partite.find(p => p.terzoPosto);
+    if (terzo) {
+      const semiIdx = (t.rounds || []).indexOf('Semifinali');
+      if (semiIdx >= 0) {
+        const semis = (byRound[semiIdx] || []).filter(p=>!p.terzoPosto).sort((a,b)=>a.pos-b.pos);
+        terzo.casa = trnPerdente(semis[0]);
+        terzo.ospite = trnPerdente(semis[1]);
+      }
+    }
+  }
+  function trnVincitore(p) {
+    if (p.golCasa == null || p.golOspite == null || !p.casa || !p.ospite) return null;
+    if (p.golCasa > p.golOspite) return p.casa;
+    if (p.golOspite > p.golCasa) return p.ospite;
+    return null; // pareggio: vincitore non determinato (servono rigori → Fase 2)
+  }
+  function trnPerdente(p) {
+    if (!p || p.golCasa == null || p.golOspite == null || !p.casa || !p.ospite) return null;
+    if (p.golCasa > p.golOspite) return p.ospite;
+    if (p.golOspite > p.golCasa) return p.casa;
+    return null;
+  }
+
+  function trnRenderView() {
+    const el = document.getElementById('trn-view');
+    const t = trnState.find(x => x.id === trnCurrentId);
+    if (!el || !t) { if (el) el.style.display = 'none'; return; }
+    el.style.display = '';
+    trnAvanza(t); // ricalcola gli slot in base ai risultati correnti
+
+    const rounds = t.rounds || [];
+    let cols = rounds.map((rn, ri) => {
+      const matches = t.partite.filter(p => p.roundIdx === ri && !p.terzoPosto).sort((a,b)=>a.pos-b.pos);
+      return `<div style="min-width:230px;flex-shrink:0;">
+        <div style="font-weight:700;color:var(--accent);text-align:center;margin-bottom:10px;font-size:0.85rem;text-transform:uppercase;letter-spacing:.5px;">${trnEsc(rn)}</div>
+        ${matches.map(p => trnMatchCard(t, p)).join('')}
+      </div>`;
+    }).join('');
+
+    const terzo = t.partite.find(p => p.terzoPosto);
+    let terzoHtml = terzo ? `<div style="margin-top:16px;max-width:260px;">
+      <div style="font-weight:700;color:#cd7f32;margin-bottom:8px;font-size:0.85rem;">🥉 Finale 3°/4° posto</div>
+      ${trnMatchCard(t, terzo)}</div>` : '';
+
+    // Campione (vincitore della finale)
+    const finale = t.partite.find(p => p.round === 'Finale' && !p.terzoPosto);
+    const campione = finale ? trnVincitore(finale) : null;
+    const champHtml = campione ? `<div style="margin-bottom:14px;padding:12px 18px;background:linear-gradient(135deg,#f59e0b22,#16a34a22);border:1px solid var(--accent);border-radius:10px;font-weight:700;">🏆 Campione: ${trnEsc(campione)}</div>` : '';
+
+    el.innerHTML = `<div class="card" style="padding:18px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+        <div style="font-weight:700;font-size:1.05rem;">🏆 ${trnEsc(t.nome)}</div>
+        <button onclick="document.getElementById('trn-view').style.display='none'" class="imp-btn-ghost" style="font-size:0.78rem;">✕ Chiudi</button>
+      </div>
+      ${champHtml}
+      <div style="display:flex;gap:18px;overflow-x:auto;padding-bottom:8px;align-items:flex-start;">${cols}</div>
+      ${terzoHtml}
+    </div>`;
+  }
+
+  function trnMatchCard(t, p) {
+    const tbd = '<span style="color:var(--text-muted);font-style:italic;">— da definire —</span>';
+    const w = trnVincitore(p);
+    const row = (team, gol, isCasa) => {
+      const name = team ? trnEsc(team) : tbd;
+      const isW = w && team === w;
+      return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:3px 0;${isW?'font-weight:700;color:#16a34a;':''}">
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${name}</span>
+        <input type="number" min="0" value="${gol==null?'':gol}" ${(!team)?'disabled':''}
+          data-trn-match="${p.id}" data-trn-side="${isCasa?'casa':'ospite'}"
+          onchange="trnSetGol(this)"
+          style="width:46px;text-align:center;padding:4px;border-radius:6px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;">
+      </div>`;
+    };
+    return `<div class="card" style="padding:10px 12px;margin-bottom:10px;border:1px solid var(--border-soft);">
+      ${row(p.casa, p.golCasa, true)}
+      ${row(p.ospite, p.golOspite, false)}
+    </div>`;
+  }
+
+  // Aggiorna un gol e salva (debounce leggero); poi ridisegna per avanzare.
+  let _trnSaveTimer = null;
+  window.trnSetGol = function(input) {
+    const t = trnState.find(x => x.id === trnCurrentId);
+    if (!t) return;
+    const p = t.partite.find(x => x.id === input.getAttribute('data-trn-match'));
+    if (!p) return;
+    const v = input.value === '' ? null : parseInt(input.value, 10);
+    if (input.getAttribute('data-trn-side') === 'casa') p.golCasa = v; else p.golOspite = v;
+    trnAvanza(t);
+    trnRenderView();
+    clearTimeout(_trnSaveTimer);
+    _trnSaveTimer = setTimeout(() => trnSave(t, false), 600);
   };
 
   // ── CONFIGURAZIONE ANNATE (per auto-scheduling) ───────────────

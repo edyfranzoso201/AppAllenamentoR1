@@ -1431,6 +1431,33 @@ if (req.query?.action === 'impianti-eventi') {
   }
 }
 
+// ── IMPIANTI: TORNEI (gestore tornei — eliminazione diretta, girone, ecc.) ───
+// Un torneo è un oggetto { id, nome, formato, squadre[], partite[], config }.
+// Tabellone e classifica si calcolano lato client in modo deterministico; qui
+// si fa solo storage (upsert/delete) come per gli eventi. Stesso file (12/12).
+if (req.query?.action === 'impianti-tornei') {
+  if (!session.isAuthenticated || !canImpianti(session.role))
+    return res.status(401).json({ success: false, message: 'Non autorizzato' });
+  const sid = resolveSocietyId(req, session);
+  if (!sid) return res.status(400).json({ success: false, message: 'societyId mancante' });
+  if (req.method === 'GET') {
+    const tornei = (await kv.get(`society:${sid}:impianti:tornei`)) || [];
+    return res.status(200).json({ success: true, tornei });
+  }
+  if (req.method === 'POST') {
+    const { torneo, deleteId } = req.body || {};
+    let tornei = (await kv.get(`society:${sid}:impianti:tornei`)) || [];
+    if (deleteId) {
+      tornei = tornei.filter(t => t.id !== deleteId);
+    } else if (torneo && torneo.id) {
+      const idx = tornei.findIndex(t => t.id === torneo.id);
+      if (idx >= 0) tornei[idx] = torneo; else tornei.push(torneo);
+    }
+    await kv.set(`society:${sid}:impianti:tornei`, tornei);
+    return res.status(200).json({ success: true, tornei });
+  }
+}
+
 // ── AI Chat (Gemini) ─────────────────────────────────────────────────────
 if (req.query?.action === 'ai-chat') {
   if (!session.isAuthenticated || !canImpianti(session.role))
