@@ -4053,7 +4053,10 @@
     el.innerHTML = `<div class="card" style="padding:18px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
         <div style="font-weight:700;font-size:1.05rem;">🏆 ${trnEsc(t.nome)}</div>
-        <button onclick="document.getElementById('trn-view').style.display='none'" class="imp-btn-ghost" style="font-size:0.78rem;">✕ Chiudi</button>
+        <div style="display:flex;gap:6px;">
+          <button onclick="trnLocandina('${t.id}')" class="imp-btn-ghost" style="font-size:0.78rem;">🖼️ Locandina</button>
+          <button onclick="document.getElementById('trn-view').style.display='none'" class="imp-btn-ghost" style="font-size:0.78rem;">✕ Chiudi</button>
+        </div>
       </div>
       ${champHtml}
       <div style="display:flex;gap:18px;overflow-x:auto;padding-bottom:8px;align-items:flex-start;">${cols}</div>
@@ -4068,21 +4071,26 @@
     const reg = t.regolamento
       ? `<details style="margin-bottom:14px;"><summary style="cursor:pointer;font-weight:600;color:var(--accent);">📋 Regolamento / Note</summary><div style="white-space:pre-wrap;font-size:0.85rem;color:var(--text-primary);padding:8px 4px;">${trnEsc(t.regolamento)}</div></details>`
       : '';
-    const clsRows = cls.map((r, i) => `<tr>
+    const clsRows = cls.map((r, i) => {
+      const dr = r.gf - r.gs;
+      const drCol = dr > 0 ? '#16a34a' : (dr < 0 ? '#ef4444' : 'var(--text-muted)');
+      return `<tr>
       <td style="color:var(--text-muted);">${i+1}</td>
       <td style="font-weight:600;text-align:left;">${trnEsc(r.s)}</td>
       <td style="font-weight:700;color:var(--accent);">${r.pti}</td>
-      <td>${r.g}</td><td>${r.v}</td><td>${r.n}</td><td>${r.p}</td>
-      <td>${r.gf}</td><td>${r.gs}</td><td>${(r.gf-r.gs>0?'+':'')+(r.gf-r.gs)}</td>
-    </tr>`).join('');
+      <td>${r.g}</td><td style="color:#16a34a;">${r.v}</td><td>${r.n}</td><td style="color:#ef4444;">${r.p}</td>
+      <td>${r.gf}</td><td>${r.gs}</td><td style="font-weight:700;color:${drCol};">${(dr>0?'+':'')+dr}</td>
+    </tr>`;}).join('');
     const classificaHtml = `<div style="overflow-x:auto;margin-bottom:18px;">
       <table style="width:100%;border-collapse:collapse;font-size:0.85rem;text-align:center;min-width:480px;">
         <thead><tr style="color:var(--text-muted);border-bottom:2px solid var(--accent);">
-          <th style="padding:6px 4px;">#</th><th style="text-align:left;">Squadra</th><th>Pti</th>
-          <th>G</th><th>V</th><th>N</th><th>P</th><th>GF</th><th>GS</th><th>DR</th>
+          <th style="padding:6px 4px;">#</th><th style="text-align:left;">Squadra</th><th title="Punti">Pti</th>
+          <th title="Giocate">G</th><th title="Vinte">V</th><th title="Nulle (pareggi)">N</th><th title="Perse">P</th>
+          <th title="Gol Fatti">GF</th><th title="Gol Subiti">GS</th><th title="Differenza Reti (criterio parità)" style="font-weight:700;">DR</th>
         </tr></thead>
         <tbody>${clsRows}</tbody>
       </table>
+      <div style="font-size:0.72rem;color:var(--text-muted);margin-top:6px;">In caso di parità: punti → scontri diretti → differenza reti (DR) → gol fatti (GF). GF=gol fatti · GS=gol subiti · DR=differenza reti.</div>
     </div>`;
 
     // Calendario per giornate
@@ -4116,7 +4124,10 @@
     el.innerHTML = `<div class="card" style="padding:18px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
         <div style="font-weight:700;font-size:1.05rem;">🔄 ${trnEsc(t.nome)} <span style="font-size:0.78rem;color:var(--text-muted);font-weight:400;">· girone${t.ritorno?' A/R':''}${t.faseFinale?' + finali':''} · ${t.squadre.length} squadre</span></div>
-        <button onclick="document.getElementById('trn-view').style.display='none'" class="imp-btn-ghost" style="font-size:0.78rem;">✕ Chiudi</button>
+        <div style="display:flex;gap:6px;">
+          <button onclick="trnLocandina('${t.id}')" class="imp-btn-ghost" style="font-size:0.78rem;">🖼️ Locandina</button>
+          <button onclick="document.getElementById('trn-view').style.display='none'" class="imp-btn-ghost" style="font-size:0.78rem;">✕ Chiudi</button>
+        </div>
       </div>
       ${reg}
       <div style="font-weight:700;margin-bottom:8px;">📊 Classifica</div>
@@ -4261,6 +4272,99 @@
     trnRenderView();
     clearTimeout(_trnSaveTimer);
     _trnSaveTimer = setTimeout(() => trnSave(t, false), 600);
+  };
+
+  // ── LOCANDINA: pagina web stampabile (sfondo società + titolo + contenuto) ──
+  // Apre una nuova finestra con una locandina autosufficiente: prima del torneo
+  // fa da "programma" (squadre, calendario, regolamento); a torneo concluso
+  // mostra classifica/tabellone con vincitore. Lo sfondo si carica al momento.
+  function trnFmtData(d, ora) {
+    if (!d) return '';
+    const dt = new Date(d + 'T00:00:00');
+    const s = isNaN(dt) ? d : dt.toLocaleDateString('it-IT', { weekday:'short', day:'2-digit', month:'2-digit' });
+    return s + (ora ? ' · ' + ora : '');
+  }
+  function trnLocandinaContenuto(t) {
+    const campoNome = id => { const c = (((impState||{}).config||{}).campi||[]).find(x=>x.id===id); return c?c.nome:''; };
+    if (t.formato === 'girone') {
+      trnAggiornaFinali(t);
+      const cls = trnClassifica(t);
+      const completo = trnGironeCompleto(t);
+      const clsRows = cls.map((r,i)=>`<tr><td>${i+1}</td><td style="text-align:left;font-weight:600;">${trnEsc(r.s)}</td><td><b>${r.pti}</b></td><td>${r.g}</td><td>${r.v}</td><td>${r.n}</td><td>${r.p}</td><td>${r.gf}</td><td>${r.gs}</td><td>${(r.gf-r.gs>0?'+':'')+(r.gf-r.gs)}</td></tr>`).join('');
+      const cal = t.partite.map(p=>`<div class="lc-match"><span>${trnEsc(p.casa)}</span><b>${p.golCasa!=null?p.golCasa+' - '+p.golOspite:'vs'}</b><span>${trnEsc(p.ospite)}</span><small>${trnFmtData(p.data,p.ora)}${campoNome(p.campoId)?' · '+trnEsc(campoNome(p.campoId)):''}</small></div>`).join('');
+      let finali = '';
+      if (t.faseFinale && completo && t.finali && t.finali.length) {
+        finali = '<h3>Fase finale</h3>' + t.finali.map(f=>`<div class="lc-match"><span>${trnEsc(f.casa)}</span><b>${f.golCasa!=null?f.golCasa+' - '+f.golOspite:'vs'}</b><span>${trnEsc(f.ospite)}</span><small>${trnEsc(f.label)} ${trnFmtData(f.data,f.ora)}</small></div>`).join('');
+        const fin = t.finali.find(f=>f.tipo==='finale'); const champ = fin?trnVincitore(fin):null;
+        if (champ) finali += `<div class="lc-champ">🏆 Vincitore: ${trnEsc(champ)}</div>`;
+      }
+      return `<h3>Classifica</h3>
+        <table class="lc-table"><thead><tr><th>#</th><th style="text-align:left;">Squadra</th><th>Pti</th><th>G</th><th>V</th><th>N</th><th>P</th><th>GF</th><th>GS</th><th>DR</th></tr></thead><tbody>${clsRows}</tbody></table>
+        <h3>Calendario</h3><div class="lc-cal">${cal}</div>${finali}`;
+    } else {
+      trnAvanza(t);
+      const rounds = t.rounds || [];
+      const cols = rounds.map((rn,ri)=>{
+        const ms = t.partite.filter(p=>p.roundIdx===ri && !p.terzoPosto).sort((a,b)=>a.pos-b.pos);
+        return `<div class="lc-round"><h4>${trnEsc(rn)}</h4>${ms.map(p=>`<div class="lc-match"><span>${trnEsc(p.casa)||'—'}</span><b>${p.golCasa!=null?p.golCasa+' - '+p.golOspite:'vs'}</b><span>${trnEsc(p.ospite)||'—'}</span><small>${trnFmtData(p.data,p.ora)}${campoNome(p.campoId)?' · '+trnEsc(campoNome(p.campoId)):''}</small></div>`).join('')}</div>`;
+      }).join('');
+      const terzo = t.partite.find(p=>p.terzoPosto);
+      const terzoH = terzo?`<div class="lc-round"><h4>3°/4° posto</h4><div class="lc-match"><span>${trnEsc(terzo.casa)||'—'}</span><b>${terzo.golCasa!=null?terzo.golCasa+' - '+terzo.golOspite:'vs'}</b><span>${trnEsc(terzo.ospite)||'—'}</span></div></div>`:'';
+      const fin = t.partite.find(p=>p.round==='Finale'&&!p.terzoPosto); const champ = fin?trnVincitore(fin):null;
+      const champH = champ?`<div class="lc-champ">🏆 Campione: ${trnEsc(champ)}</div>`:'';
+      return `<h3>Tabellone</h3>${champH}<div class="lc-bracket">${cols}${terzoH}</div>`;
+    }
+  }
+
+  window.trnLocandina = function(id) {
+    const t = trnState.find(x => x.id === id);
+    if (!t) return;
+    const societa = sessionStorage.getItem('gosport_society_name') || 'Sport Monitoring';
+    const reg = t.regolamento ? `<h3>Regolamento</h3><div class="lc-reg">${trnEsc(t.regolamento)}</div>` : '';
+    const contenuto = trnLocandinaContenuto(t);
+    const w = window.open('', '_blank');
+    if (!w) { impAlert('Abilita i popup per generare la locandina'); return; }
+    w.document.write(`<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"><title>Locandina — ${trnEsc(t.nome)}</title>
+    <style>
+      *{box-sizing:border-box;} body{margin:0;font-family:system-ui,Arial,sans-serif;background:#0f172a;color:#0f172a;}
+      .lc-toolbar{position:fixed;top:0;left:0;right:0;background:#1e293b;padding:10px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;z-index:10;}
+      .lc-toolbar button,.lc-toolbar label{background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:0.85rem;font-weight:600;}
+      .lc-toolbar .ghost{background:#475569;}
+      .lc-page{max-width:800px;margin:64px auto 24px;background:#fff;min-height:1000px;position:relative;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,0.5);}
+      .lc-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0.28;z-index:0;}
+      .lc-content{position:relative;z-index:1;padding:40px;}
+      .lc-title{text-align:center;font-size:2.4rem;font-weight:800;margin:0 0 4px;color:#0f172a;text-shadow:0 1px 0 #fff;}
+      .lc-sub{text-align:center;color:#334155;margin:0 0 24px;font-size:1rem;}
+      h3{border-bottom:2px solid #16a34a;padding-bottom:4px;margin:24px 0 10px;color:#0f172a;}
+      .lc-table{width:100%;border-collapse:collapse;text-align:center;font-size:0.9rem;}
+      .lc-table th{background:#16a34a;color:#fff;padding:6px;} .lc-table td{padding:5px;border-bottom:1px solid #e2e8f0;}
+      .lc-cal,.lc-bracket{display:flex;flex-wrap:wrap;gap:10px;} .lc-bracket{align-items:flex-start;}
+      .lc-round{flex:1;min-width:160px;} .lc-round h4{color:#16a34a;text-align:center;margin:0 0 6px;}
+      .lc-match{background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:8px 10px;margin-bottom:8px;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:150px;}
+      .lc-match span{font-weight:600;} .lc-match b{color:#16a34a;} .lc-match small{color:#64748b;font-size:0.72rem;}
+      .lc-champ{background:linear-gradient(135deg,#fbbf24,#16a34a);color:#fff;font-weight:800;text-align:center;padding:12px;border-radius:10px;margin:14px 0;font-size:1.2rem;}
+      .lc-reg{white-space:pre-wrap;font-size:0.9rem;color:#334155;background:#f8fafc;border-radius:8px;padding:12px;}
+      .lc-foot{text-align:center;color:#64748b;font-size:0.78rem;margin-top:24px;}
+      @media print{ .lc-toolbar{display:none;} .lc-page{margin:0;box-shadow:none;max-width:100%;} body{background:#fff;} }
+    </style></head><body>
+    <div class="lc-toolbar">
+      <label>🖼️ Carica sfondo<input type="file" accept="image/*" style="display:none" onchange="(function(f){if(!f)return;var r=new FileReader();r.onload=function(e){document.getElementById('lc-bg').style.backgroundImage='url('+e.target.result+')';};r.readAsDataURL(f);})(this.files[0])"></label>
+      <button onclick="window.print()">🖨️ Stampa / PDF</button>
+      <button class="ghost" onclick="window.close()">Chiudi</button>
+      <span style="color:#94a3b8;font-size:0.78rem;">Carica un'immagine come sfondo, poi Stampa → Salva come PDF</span>
+    </div>
+    <div class="lc-page">
+      <div class="lc-bg" id="lc-bg"></div>
+      <div class="lc-content">
+        <div class="lc-sub">${trnEsc(societa)}</div>
+        <h1 class="lc-title" contenteditable="true">${trnEsc(t.nome)}</h1>
+        <div class="lc-sub" contenteditable="true">${t.formato==='girone'?('Girone'+(t.ritorno?' andata/ritorno':'')+(t.faseFinale?' con fase finale':'')):'Eliminazione diretta'} · ${t.squadre.length} squadre</div>
+        ${contenuto}
+        ${reg}
+        <div class="lc-foot">Generato con Sport Monitoring</div>
+      </div>
+    </div></body></html>`);
+    w.document.close();
   };
 
   // ── CONFIGURAZIONE ANNATE (per auto-scheduling) ───────────────
