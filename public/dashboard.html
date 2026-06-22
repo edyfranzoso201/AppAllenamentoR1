@@ -4290,17 +4290,38 @@
         <h3>Calendario</h3><div class="lc-cal">${cal}</div>${finali}`;
     } else {
       trnAvanza(t);
-      const rounds = t.rounds || [];
-      const cols = rounds.map((rn,ri)=>{
-        const ms = t.partite.filter(p=>p.roundIdx===ri && !p.terzoPosto).sort((a,b)=>a.pos-b.pos);
-        return `<div class="lc-round"><h4>${trnEsc(rn)}</h4>${ms.map(p=>`<div class="lc-match"><span>${trnEsc(p.casa)||'—'}</span><b>${p.golCasa!=null?p.golCasa+' - '+p.golOspite:'vs'}</b><span>${trnEsc(p.ospite)||'—'}</span><small>${trnFmtData(p.data,p.ora)}${campoNome(p.campoId)?' · '+trnEsc(campoNome(p.campoId)):''}</small></div>`).join('')}</div>`;
-      }).join('');
-      const terzo = t.partite.find(p=>p.terzoPosto);
-      const terzoH = terzo?`<div class="lc-round"><h4>3°/4° posto</h4><div class="lc-match"><span>${trnEsc(terzo.casa)||'—'}</span><b>${terzo.golCasa!=null?terzo.golCasa+' - '+terzo.golOspite:'vs'}</b><span>${trnEsc(terzo.ospite)||'—'}</span></div></div>`:'';
       const fin = t.partite.find(p=>p.round==='Finale'&&!p.terzoPosto); const champ = fin?trnVincitore(fin):null;
       const champH = champ?`<div class="lc-champ">🏆 Campione: ${trnEsc(champ)}</div>`:'';
-      return `<h3>Tabellone</h3>${champH}<div class="lc-bracket">${cols}${terzoH}</div>`;
+      return `<h3>Tabellone</h3>${champH}${trnBracketHtml(t, campoNome)}`;
     }
+  }
+
+  // Diagramma ad ALBERO (bracket) con linee a graffa tra i turni — per la locandina.
+  // Una "graffa" connette ogni coppia di match al match del turno successivo.
+  function trnBracketHtml(t, campoNome) {
+    const rounds = t.rounds || [];
+    const matchBox = (p) => {
+      if (!p) return '<div class="bk-match bk-empty"></div>';
+      const w = trnVincitore(p);
+      const line = (team, gol) => `<div class="bk-team ${w&&team===w?'bk-win':''}"><span>${trnEsc(team)||'—'}</span><b>${gol!=null?gol:''}</b></div>`;
+      const meta = (p.data||p.ora) ? `<div class="bk-meta">${trnFmtData(p.data,p.ora)}${campoNome&&campoNome(p.campoId)?' · '+trnEsc(campoNome(p.campoId)):''}</div>` : '';
+      return `<div class="bk-match">${line(p.casa,p.golCasa)}${line(p.ospite,p.golOspite)}${meta}</div>`;
+    };
+    // Ogni colonna: i match del turno, distribuiti con spazio crescente + connettori
+    const cols = rounds.map((rn, ri) => {
+      const ms = t.partite.filter(p => p.roundIdx === ri && !p.terzoPosto).sort((a,b)=>a.pos-b.pos);
+      const cells = ms.map((p, i) => {
+        // connettore verso destra: presente tranne nell'ultima colonna
+        const conn = (ri < rounds.length - 1)
+          ? `<div class="bk-conn ${i%2===0?'bk-conn-down':'bk-conn-up'}"></div>` : '';
+        return `<div class="bk-cell">${matchBox(p)}${conn}</div>`;
+      }).join('');
+      return `<div class="bk-col"><div class="bk-round-title">${trnEsc(rn)}</div><div class="bk-col-inner">${cells}</div></div>`;
+    }).join('');
+    // 3°/4° posto come box separato sotto
+    const terzo = t.partite.find(p => p.terzoPosto);
+    const terzoH = terzo ? `<div style="margin-top:18px;"><div class="bk-round-title" style="color:#cd7f32;">3°/4° posto</div><div style="max-width:200px;">${matchBox(terzo)}</div></div>` : '';
+    return `<div class="bk-wrap">${cols}</div>${terzoH}`;
   }
 
   window.trnLocandina = function(id) {
@@ -4332,6 +4353,25 @@
       .lc-champ{background:linear-gradient(135deg,#fbbf24,#16a34a);color:#fff;font-weight:800;text-align:center;padding:12px;border-radius:10px;margin:14px 0;font-size:1.2rem;}
       .lc-reg{white-space:pre-wrap;font-size:0.9rem;color:#334155;background:#f8fafc;border-radius:8px;padding:12px;}
       .lc-foot{text-align:center;color:#64748b;font-size:0.78rem;margin-top:24px;}
+      /* ── Bracket ad albero con linee a graffa ── */
+      .bk-wrap{display:flex;gap:0;align-items:stretch;overflow-x:auto;padding:8px 0;}
+      .bk-col{display:flex;flex-direction:column;min-width:170px;}
+      .bk-round-title{text-align:center;font-weight:700;color:#16a34a;font-size:0.82rem;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+      .bk-col-inner{display:flex;flex-direction:column;justify-content:space-around;flex:1;}
+      .bk-cell{position:relative;display:flex;align-items:center;flex:1;}
+      .bk-match{background:#fff;border:2px solid #16a34a;border-radius:8px;overflow:hidden;width:150px;font-size:0.82rem;box-shadow:0 1px 4px rgba(0,0,0,0.1);}
+      .bk-match.bk-empty{border-style:dashed;border-color:#cbd5e1;min-height:46px;background:#f8fafc;}
+      .bk-team{display:flex;justify-content:space-between;padding:4px 8px;border-bottom:1px solid #e2e8f0;}
+      .bk-team:last-child{border-bottom:none;}
+      .bk-team b{color:#16a34a;} .bk-team.bk-win{background:#dcfce7;font-weight:800;}
+      .bk-meta{font-size:0.66rem;color:#64748b;text-align:center;padding:2px 4px;background:#f8fafc;}
+      /* connettori: trattino orizzontale verso destra + segmento verticale */
+      .bk-conn{position:absolute;right:-10px;width:10px;height:50%;border-right:2px solid #16a34a;}
+      .bk-conn-down{top:50%;border-top:2px solid #16a34a;}
+      .bk-conn-up{bottom:50%;border-bottom:2px solid #16a34a;}
+      /* trattino che entra nel match del turno successivo */
+      .bk-col:not(:first-child) .bk-match{position:relative;}
+      .bk-col:not(:first-child) .bk-match::before{content:'';position:absolute;left:-10px;top:50%;width:10px;border-top:2px solid #16a34a;}
       @media print{ .lc-toolbar{display:none;} .lc-page{margin:0;box-shadow:none;max-width:100%;} body{background:#fff;} }
     </style></head><body>
     <div class="lc-toolbar">
