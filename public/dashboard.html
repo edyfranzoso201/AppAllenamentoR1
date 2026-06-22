@@ -4078,14 +4078,28 @@
   function trnGironeMatchRow(t, p) {
     const giocata = p.golCasa != null && p.golOspite != null;
     const win = giocata && p.golCasa > p.golOspite, los = giocata && p.golCasa < p.golOspite;
-    return `<div class="card" style="padding:8px 12px;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
-      <span style="flex:1;text-align:right;${win?'font-weight:700;':los?'color:var(--text-muted);':''}">${trnEsc(p.casa)}</span>
-      <input type="number" min="0" value="${p.golCasa==null?'':p.golCasa}" data-trn-match="${p.id}" data-trn-side="casa" onchange="trnSetGol(this)"
-        style="width:42px;text-align:center;padding:4px;border-radius:6px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);">
-      <span style="color:var(--text-muted);">-</span>
-      <input type="number" min="0" value="${p.golOspite==null?'':p.golOspite}" data-trn-match="${p.id}" data-trn-side="ospite" onchange="trnSetGol(this)"
-        style="width:42px;text-align:center;padding:4px;border-radius:6px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);">
-      <span style="flex:1;text-align:left;${los?'font-weight:700;':win?'color:var(--text-muted);':''}">${trnEsc(p.ospite)}</span>
+    return `<div class="card" style="padding:8px 12px;margin-bottom:6px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="flex:1;text-align:right;${win?'font-weight:700;':los?'color:var(--text-muted);':''}">${trnEsc(p.casa)}</span>
+        <input type="number" min="0" value="${p.golCasa==null?'':p.golCasa}" data-trn-match="${p.id}" data-trn-side="casa" onchange="trnSetGol(this)"
+          style="width:42px;text-align:center;padding:4px;border-radius:6px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);">
+        <span style="color:var(--text-muted);">-</span>
+        <input type="number" min="0" value="${p.golOspite==null?'':p.golOspite}" data-trn-match="${p.id}" data-trn-side="ospite" onchange="trnSetGol(this)"
+          style="width:42px;text-align:center;padding:4px;border-radius:6px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);">
+        <span style="flex:1;text-align:left;${los?'font-weight:700;':win?'color:var(--text-muted);':''}">${trnEsc(p.ospite)}</span>
+      </div>
+      ${trnDataOraRow(p)}
+    </div>`;
+  }
+  // Riga data + ora gara (comune a girone ed eliminazione diretta)
+  function trnDataOraRow(p) {
+    return `<div style="display:flex;align-items:center;gap:8px;justify-content:center;margin-top:6px;font-size:0.78rem;color:var(--text-muted);">
+      <span>📅</span>
+      <input type="date" value="${p.data||''}" data-trn-match="${p.id}" data-trn-field="data" onchange="trnSetCampo(this)"
+        style="padding:3px 6px;border-radius:6px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.78rem;">
+      <span>🕐</span>
+      <input type="time" value="${p.ora||''}" data-trn-match="${p.id}" data-trn-field="ora" onchange="trnSetCampo(this)"
+        style="padding:3px 6px;border-radius:6px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.78rem;">
     </div>`;
   }
 
@@ -4103,9 +4117,12 @@
           style="width:46px;text-align:center;padding:4px;border-radius:6px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;">
       </div>`;
     };
+    // Data/ora solo se entrambe le squadre sono definite (non sui turni futuri vuoti)
+    const dataOra = (p.casa && p.ospite) ? trnDataOraRow(p) : '';
     return `<div class="card" style="padding:10px 12px;margin-bottom:10px;border:1px solid var(--border-soft);">
       ${row(p.casa, p.golCasa, true)}
       ${row(p.ospite, p.golOspite, false)}
+      ${dataOra}
     </div>`;
   }
 
@@ -4120,6 +4137,17 @@
     if (input.getAttribute('data-trn-side') === 'casa') p.golCasa = v; else p.golOspite = v;
     if (t.formato !== 'girone') trnAvanza(t);
     trnRenderView();
+    clearTimeout(_trnSaveTimer);
+    _trnSaveTimer = setTimeout(() => trnSave(t, false), 600);
+  };
+
+  // Imposta data/ora di una partita (non serve ridisegnare: salva e basta).
+  window.trnSetCampo = function(input) {
+    const t = trnState.find(x => x.id === trnCurrentId);
+    if (!t) return;
+    const p = t.partite.find(x => x.id === input.getAttribute('data-trn-match'));
+    if (!p) return;
+    p[input.getAttribute('data-trn-field')] = input.value || '';
     clearTimeout(_trnSaveTimer);
     _trnSaveTimer = setTimeout(() => trnSave(t, false), 600);
   };
