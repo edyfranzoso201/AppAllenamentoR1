@@ -4178,11 +4178,10 @@
     </div>`;
   }
 
-  // Anti-conflitto: data una gara con data+campo+orari, cerca sovrapposizioni con
-  // - altre gare di QUALSIASI torneo (stesso campo/giorno, orari che si accavallano)
-  // - eventi di Gestione Impianti (impState.eventi)
-  // - slot settimanali ricorrenti (impState.slots) sullo stesso giorno-settimana
-  // Ritorna una stringa descrittiva del conflitto, o null se libero.
+  // Anti-conflitto: una gara è in conflitto SOLO se si sovrappone a un'altra
+  // gara di un torneo sullo stesso campo e data (orari che si accavallano).
+  // Gli allenamenti ricorrenti e gli eventi NON contano: il torneo è un evento
+  // speciale che li sostituisce in quel giorno.
   function trnOverlap(s1, e1, s2, e2) {
     // orari "HH:MM"; se manca la fine, assume +90 min per il controllo
     const m = t => { if (!t) return null; const [h, mi] = t.split(':').map(Number); return h * 60 + mi; };
@@ -4196,26 +4195,14 @@
     if (!p.data || !p.ora || !p.campoId) return null;
     const campoNome = (((impState||{}).config||{}).campi || []).find(c => c.id === p.campoId);
     const cn = campoNome ? campoNome.nome : 'campo';
-    // 1) altre gare torneo
+    // SOLO altre gare di tornei (incluse le finali) sullo stesso campo/data/orari
     for (const t of trnState) {
-      for (const q of t.partite) {
+      const tutte = (t.partite || []).concat(t.finali || []);
+      for (const q of tutte) {
         if (q.id === p.id) continue;
         if (q.campoId === p.campoId && q.data === p.data && trnOverlap(p.ora, p.oraFine, q.ora, q.oraFine)) {
-          return `${cn}: sovrapposizione con ${q.casa||'?'}–${q.ospite||'?'} (${t.nome}) alle ${q.ora}`;
+          return `${cn}: sovrapposizione con ${q.casa||'?'}–${q.ospite||'?'} (${t.nome}) alle ${q.ora||'?'}`;
         }
-      }
-    }
-    // 2) eventi Gestione Impianti
-    for (const ev of (impState.eventi || [])) {
-      if (ev.campoId === p.campoId && ev.data === p.data && trnOverlap(p.ora, p.oraFine, ev.oraInizio, ev.oraFine)) {
-        return `${cn}: occupato da evento "${ev.squadra||ev.tipo||'evento'}" alle ${ev.oraInizio||''}`;
-      }
-    }
-    // 3) slot settimanali ricorrenti (stesso giorno della settimana)
-    const dow = new Date(p.data + 'T00:00:00').getDay(); // 0=dom
-    for (const s of (impState.slots || [])) {
-      if (s.campoId === p.campoId && Number(s.giorno) === dow && trnOverlap(p.ora, p.oraFine, s.oraInizio || s.start, s.oraFine || s.end)) {
-        return `${cn}: slot settimanale ricorrente in quel giorno/ora`;
       }
     }
     return null;
