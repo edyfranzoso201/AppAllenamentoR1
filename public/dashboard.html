@@ -2534,6 +2534,10 @@
     // Anti-XSS: copre testo E attributi (apici inclusi) per i dati utente
     return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
+  // Esposta anche globalmente come rete di sicurezza: alcune funzioni (es.
+  // impRefreshCampiSelects) la usano e devono restare robuste anche se lo scope
+  // della IIFE viene interrotto a runtime.
+  try { window.esc = window.esc || esc; } catch(_) {}
 
   window.accettaIscrizione = async function accettaIscrizione(id) {
     const annataId = document.getElementById('annata-sel-' + id)?.value || '';
@@ -2928,8 +2932,10 @@
   };
 
   function impRefreshCampiSelects() {
-    const campi = impState.config.campi || [];
-    const opts = campi.map(c => `<option value="${esc(c.id)}">${esc(c.nome)} (${CAMPO_INFO[c.tipo]?.label||c.tipo})</option>`).join('');
+    // Fallback robusto: usa esc locale se in scope, altrimenti window.esc.
+    const _esc = (typeof esc === 'function') ? esc : (window.esc || function(s){ return String(s==null?'':s); });
+    const campi = (impState && impState.config && impState.config.campi) || [];
+    const opts = campi.map(c => `<option value="${_esc(c.id)}">${_esc(c.nome)} (${CAMPO_INFO[c.tipo]?.label||c.tipo})</option>`).join('');
     const noCampi = '<option value="">— Nessun campo configurato —</option>';
     const slotSel = document.getElementById('imp-slot-campo');
     const evSel = document.getElementById('imp-ev-campo');
