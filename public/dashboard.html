@@ -1282,6 +1282,9 @@
             <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:6px;">
               <input type="checkbox" id="trn-ritorno" style="margin-right:6px;">Andata e ritorno (ogni squadra gioca 2 volte contro le altre)
             </label>
+            <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:6px;">
+              <input type="checkbox" id="trn-fase-finale" style="margin-right:6px;">Fase finale (a girone concluso: Finale 1ª-2ª + finalina 3ª-4ª)
+            </label>
           </div>
 
           <div style="margin-bottom:8px;">
@@ -3744,6 +3747,7 @@
     document.getElementById('trn-squadre').value = '';
     document.getElementById('trn-terzo-posto').checked = false;
     document.getElementById('trn-ritorno').checked = false;
+    document.getElementById('trn-fase-finale').checked = false;
     document.getElementById('trn-regolamento').value = '';
     document.getElementById('trn-formato').value = 'knockout';
     trnOnFormatoChange();
@@ -3848,6 +3852,8 @@
     if (squadre.length < 3) { impAlert('Per il girone servono almeno 3 squadre (ne hai ' + squadre.length + ')'); return; }
     if (squadre.length > 12) { impAlert('Troppe squadre per un girone unico (max 12). Per più squadre useremo "Gironi + finali" (in arrivo).'); return; }
     const ritorno = document.getElementById('trn-ritorno').checked;
+    const faseFinale = document.getElementById('trn-fase-finale').checked;
+    if (faseFinale && squadre.length < 4) { impAlert('Per la fase finale (1ª-2ª + 3ª-4ª) servono almeno 4 squadre'); return; }
     const giornate = trnRoundRobin(squadre, ritorno);
     const partite = [];
     giornate.forEach((gior, gi) => {
@@ -3855,7 +3861,7 @@
         partite.push({ id: trnGenId(), giornata: gi + 1, pos: pi, casa: m.casa, ospite: m.ospite, golCasa: null, golOspite: null });
       });
     });
-    const torneo = { id: trnGenId(), nome, formato: 'girone', squadre, partite, ritorno, regolamento, createdAt: new Date().toISOString() };
+    const torneo = { id: trnGenId(), nome, formato: 'girone', squadre, partite, ritorno, faseFinale, finali: [], regolamento, createdAt: new Date().toISOString() };
     trnSave(torneo, true);
     trnHideWizard();
   };
@@ -3896,6 +3902,31 @@
       if (g1 > g2) p1 += 3; else if (g2 > g1) p2 += 3; else { p1++; p2++; }
     });
     return p2 - p1; // se p1 maggiore, s1 va davanti (ritorna negativo)
+  }
+
+  // Gestione FASE FINALE del girone: quando TUTTE le gare del girone hanno un
+  // risultato, genera (o aggiorna) Finale (1ª vs 2ª) e finalina (3ª vs 4ª) dalla
+  // classifica. Finché il girone non è completo, niente finali (sarebbe prematuro).
+  function trnGironeCompleto(t) {
+    return t.partite.length > 0 && t.partite.every(p => p.golCasa != null && p.golOspite != null);
+  }
+  function trnAggiornaFinali(t) {
+    if (!t.faseFinale) return;
+    if (!t.finali) t.finali = [];
+    if (!trnGironeCompleto(t)) { t.finali = []; return; } // girone non finito → nessuna finale
+    const cls = trnClassifica(t);
+    const prime4 = cls.slice(0, 4).map(r => r.s);
+    if (prime4.length < 4) { t.finali = []; return; }
+    // conserva i risultati già inseriti nelle finali (match per "tipo")
+    const prev = {}; t.finali.forEach(f => prev[f.tipo] = f);
+    t.finali = [
+      { id: prev.finale ? prev.finale.id : trnGenId(), tipo: 'finale', label: '🏆 Finale (1ª-2ª)', casa: prime4[0], ospite: prime4[1],
+        golCasa: prev.finale ? prev.finale.golCasa : null, golOspite: prev.finale ? prev.finale.golOspite : null,
+        data: prev.finale?.data||'', ora: prev.finale?.ora||'', oraFine: prev.finale?.oraFine||'', campoId: prev.finale?.campoId||'' },
+      { id: prev.finalina ? prev.finalina.id : trnGenId(), tipo: 'finalina', label: '🥉 Finalina (3ª-4ª)', casa: prime4[2], ospite: prime4[3],
+        golCasa: prev.finalina ? prev.finalina.golCasa : null, golOspite: prev.finalina ? prev.finalina.golOspite : null,
+        data: prev.finalina?.data||'', ora: prev.finalina?.ora||'', oraFine: prev.finalina?.oraFine||'', campoId: prev.finalina?.campoId||'' }
+    ];
   }
 
   async function trnSave(torneo, openAfter) {
@@ -4030,8 +4061,9 @@
     </div>`;
   }
 
-  // Vista GIRONE: regolamento + classifica + calendario per giornate
+  // Vista GIRONE: regolamento + classifica + calendario + (eventuale) fase finale
   function trnRenderGirone(t, el) {
+    trnAggiornaFinali(t); // rigenera Finale/finalina se il girone è completo
     const cls = trnClassifica(t);
     const reg = t.regolamento
       ? `<details style="margin-bottom:14px;"><summary style="cursor:pointer;font-weight:600;color:var(--accent);">📋 Regolamento / Note</summary><div style="white-space:pre-wrap;font-size:0.85rem;color:var(--text-primary);padding:8px 4px;">${trnEsc(t.regolamento)}</div></details>`
@@ -4063,9 +4095,27 @@
         ${rows}</div>`;
     }).join('');
 
+    // Fase finale (se attiva)
+    let finaliHtml = '';
+    if (t.faseFinale) {
+      if (!trnGironeCompleto(t)) {
+        finaliHtml = `<div style="font-weight:700;margin:18px 0 8px;">🏆 Fase finale</div>
+          <div style="font-size:0.82rem;color:var(--text-muted);padding:8px 0;">Le finali (1ª-2ª e 3ª-4ª) verranno generate automaticamente quando tutte le partite del girone avranno un risultato.</div>`;
+      } else {
+        const finale = (t.finali || []).find(f => f.tipo === 'finale');
+        const finalina = (t.finali || []).find(f => f.tipo === 'finalina');
+        const champ = finale ? trnVincitore(finale) : null;
+        const champHtml = champ ? `<div style="margin:10px 0;padding:12px 18px;background:linear-gradient(135deg,#f59e0b22,#16a34a22);border:1px solid var(--accent);border-radius:10px;font-weight:700;">🏆 Vincitore torneo: ${trnEsc(champ)}</div>` : '';
+        finaliHtml = `<div style="font-weight:700;margin:18px 0 8px;">🏆 Fase finale</div>
+          ${champHtml}
+          ${finale ? `<div style="font-weight:600;color:var(--accent);font-size:0.82rem;margin-bottom:4px;">${finale.label}</div>${trnGironeMatchRow(t, finale)}` : ''}
+          ${finalina ? `<div style="font-weight:600;color:#cd7f32;font-size:0.82rem;margin:8px 0 4px;">${finalina.label}</div>${trnGironeMatchRow(t, finalina)}` : ''}`;
+      }
+    }
+
     el.innerHTML = `<div class="card" style="padding:18px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
-        <div style="font-weight:700;font-size:1.05rem;">🔄 ${trnEsc(t.nome)} <span style="font-size:0.78rem;color:var(--text-muted);font-weight:400;">· girone${t.ritorno?' A/R':''} · ${t.squadre.length} squadre</span></div>
+        <div style="font-weight:700;font-size:1.05rem;">🔄 ${trnEsc(t.nome)} <span style="font-size:0.78rem;color:var(--text-muted);font-weight:400;">· girone${t.ritorno?' A/R':''}${t.faseFinale?' + finali':''} · ${t.squadre.length} squadre</span></div>
         <button onclick="document.getElementById('trn-view').style.display='none'" class="imp-btn-ghost" style="font-size:0.78rem;">✕ Chiudi</button>
       </div>
       ${reg}
@@ -4073,6 +4123,7 @@
       ${classificaHtml}
       <div style="font-weight:700;margin-bottom:8px;">📅 Calendario</div>
       ${calHtml}
+      ${finaliHtml}
     </div>`;
   }
   function trnGironeMatchRow(t, p) {
@@ -4187,7 +4238,8 @@
   window.trnSetGol = function(input) {
     const t = trnState.find(x => x.id === trnCurrentId);
     if (!t) return;
-    const p = t.partite.find(x => x.id === input.getAttribute('data-trn-match'));
+    const mid = input.getAttribute('data-trn-match');
+    const p = t.partite.find(x => x.id === mid) || (t.finali || []).find(x => x.id === mid);
     if (!p) return;
     const v = input.value === '' ? null : parseInt(input.value, 10);
     if (input.getAttribute('data-trn-side') === 'casa') p.golCasa = v; else p.golOspite = v;
@@ -4202,7 +4254,8 @@
   window.trnSetCampo = function(input) {
     const t = trnState.find(x => x.id === trnCurrentId);
     if (!t) return;
-    const p = t.partite.find(x => x.id === input.getAttribute('data-trn-match'));
+    const mid = input.getAttribute('data-trn-match');
+    const p = t.partite.find(x => x.id === mid) || (t.finali || []).find(x => x.id === mid);
     if (!p) return;
     p[input.getAttribute('data-trn-field')] = input.value || '';
     trnRenderView();
