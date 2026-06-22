@@ -1267,6 +1267,7 @@
               <select id="trn-formato" onchange="trnOnFormatoChange()"
                 style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;">
                 <option value="knockout">🏆 Eliminazione diretta</option>
+                <option value="girone">🔄 Girone all'italiana</option>
               </select>
             </div>
           </div>
@@ -1277,13 +1278,25 @@
             </label>
           </div>
 
+          <div id="trn-girone-opts" style="margin-bottom:14px;display:none;">
+            <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:6px;">
+              <input type="checkbox" id="trn-ritorno" style="margin-right:6px;">Andata e ritorno (ogni squadra gioca 2 volte contro le altre)
+            </label>
+          </div>
+
           <div style="margin-bottom:8px;">
             <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">
               Squadre partecipanti <span id="trn-squadre-count" style="color:var(--accent);font-weight:600;"></span>
             </label>
-            <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px;">Una squadra per riga. Per l'eliminazione diretta servono 2, 4, 8 o 16 squadre.</div>
+            <div id="trn-squadre-hint" style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px;">Una squadra per riga. Per l'eliminazione diretta servono 2, 4, 8 o 16 squadre.</div>
             <textarea id="trn-squadre" rows="6" placeholder="Squadra A&#10;Squadra B&#10;Squadra C&#10;Squadra D" oninput="trnUpdateCount()"
               style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.9rem;box-sizing:border-box;font-family:inherit;"></textarea>
+          </div>
+
+          <div style="margin-bottom:8px;">
+            <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">📋 Regolamento / Note <span style="font-weight:400;">(opzionale — durata partite, criteri, sanzioni…)</span></label>
+            <textarea id="trn-regolamento" rows="3" placeholder="Es. Partite 2x20'. Classifica: punti, differenza reti, scontri diretti. Max 5 sostituzioni."
+              style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;box-sizing:border-box;font-family:inherit;"></textarea>
           </div>
 
           <div style="display:flex;gap:8px;margin-top:6px;">
@@ -3730,11 +3743,23 @@
     document.getElementById('trn-nome').value = '';
     document.getElementById('trn-squadre').value = '';
     document.getElementById('trn-terzo-posto').checked = false;
+    document.getElementById('trn-ritorno').checked = false;
+    document.getElementById('trn-regolamento').value = '';
+    document.getElementById('trn-formato').value = 'knockout';
+    trnOnFormatoChange();
     trnUpdateCount();
     document.getElementById('trn-nome').focus();
   };
   window.trnHideWizard = function() { document.getElementById('trn-wizard').style.display = 'none'; };
-  window.trnOnFormatoChange = function() { /* Fase 2: mostrerà opzioni per girone/gironi */ };
+  window.trnOnFormatoChange = function() {
+    const f = document.getElementById('trn-formato').value;
+    document.getElementById('trn-ko-opts').style.display = (f === 'knockout') ? '' : 'none';
+    document.getElementById('trn-girone-opts').style.display = (f === 'girone') ? '' : 'none';
+    const hint = document.getElementById('trn-squadre-hint');
+    if (hint) hint.textContent = (f === 'knockout')
+      ? "Una squadra per riga. Per l'eliminazione diretta servono 2, 4, 8 o 16 squadre."
+      : "Una squadra per riga. Per il girone bastano almeno 3 squadre (3-4 = triangolare/quadrangolare).";
+  };
 
   window.trnUpdateCount = function() {
     const n = trnParseSquadre().length;
@@ -3762,8 +3787,12 @@
   window.trnGenera = function() {
     const nome = (document.getElementById('trn-nome').value || '').trim();
     const squadre = trnParseSquadre();
-    const terzoPosto = document.getElementById('trn-terzo-posto').checked;
+    const formato = document.getElementById('trn-formato').value;
+    const regolamento = (document.getElementById('trn-regolamento').value || '').trim();
     if (!nome) { impAlert('Inserisci il nome del torneo'); return; }
+    if (formato === 'girone') { trnGeneraGirone(nome, squadre, regolamento); return; }
+    // ── eliminazione diretta ──
+    const terzoPosto = document.getElementById('trn-terzo-posto').checked;
     const rounds = trnRoundNames(squadre.length);
     if (!rounds) { impAlert('Per l\'eliminazione diretta servono 2, 4, 8 o 16 squadre (ne hai ' + squadre.length + ')'); return; }
 
@@ -3789,10 +3818,85 @@
       partite.push({ id: trnGenId(), round: 'Finale 3°/4° posto', roundIdx: rounds.length - 1, pos: 1, terzoPosto: true, casa: null, ospite: null, golCasa: null, golOspite: null });
     }
 
-    const torneo = { id: trnGenId(), nome, formato: 'knockout', squadre, partite, terzoPosto, rounds, createdAt: new Date().toISOString() };
+    const torneo = { id: trnGenId(), nome, formato: 'knockout', squadre, partite, terzoPosto, rounds, regolamento, createdAt: new Date().toISOString() };
     trnSave(torneo, true);
     trnHideWizard();
   };
+
+  // ── GIRONE all'italiana (round-robin, opz. andata/ritorno) ──────────────
+  function trnRoundRobin(squadre, ritorno) {
+    let teams = [...squadre];
+    if (teams.length % 2 !== 0) teams.push('__BYE__');
+    const n = teams.length, giornate = [];
+    for (let g = 0; g < n - 1; g++) {
+      const gior = [];
+      for (let i = 0; i < n / 2; i++) {
+        const a = teams[i], b = teams[n - 1 - i];
+        if (a !== '__BYE__' && b !== '__BYE__') gior.push(g % 2 === 0 ? { casa: a, ospite: b } : { casa: b, ospite: a });
+      }
+      giornate.push(gior);
+      teams.splice(1, 0, teams.pop());
+    }
+    if (ritorno) {
+      const and = giornate.map(g => g.map(m => ({ ...m })));
+      and.forEach(g => giornate.push(g.map(m => ({ casa: m.ospite, ospite: m.casa }))));
+    }
+    return giornate;
+  }
+
+  window.trnGeneraGirone = function(nome, squadre, regolamento) {
+    if (squadre.length < 3) { impAlert('Per il girone servono almeno 3 squadre (ne hai ' + squadre.length + ')'); return; }
+    if (squadre.length > 12) { impAlert('Troppe squadre per un girone unico (max 12). Per più squadre useremo "Gironi + finali" (in arrivo).'); return; }
+    const ritorno = document.getElementById('trn-ritorno').checked;
+    const giornate = trnRoundRobin(squadre, ritorno);
+    const partite = [];
+    giornate.forEach((gior, gi) => {
+      gior.forEach((m, pi) => {
+        partite.push({ id: trnGenId(), giornata: gi + 1, pos: pi, casa: m.casa, ospite: m.ospite, golCasa: null, golOspite: null });
+      });
+    });
+    const torneo = { id: trnGenId(), nome, formato: 'girone', squadre, partite, ritorno, regolamento, createdAt: new Date().toISOString() };
+    trnSave(torneo, true);
+    trnHideWizard();
+  };
+
+  // Classifica girone: punti(3/1/0) → diff reti → gol fatti → scontri diretti → nome
+  function trnClassifica(t) {
+    const tab = {};
+    t.squadre.forEach(s => tab[s] = { s, pti:0, g:0, v:0, n:0, p:0, gf:0, gs:0 });
+    t.partite.forEach(p => {
+      if (p.golCasa == null || p.golOspite == null) return;
+      const c = tab[p.casa], o = tab[p.ospite]; if (!c || !o) return;
+      c.g++; o.g++; c.gf += p.golCasa; c.gs += p.golOspite; o.gf += p.golOspite; o.gs += p.golCasa;
+      if (p.golCasa > p.golOspite) { c.v++; c.pti += 3; o.p++; }
+      else if (p.golCasa < p.golOspite) { o.v++; o.pti += 3; c.p++; }
+      else { c.n++; o.n++; c.pti++; o.pti++; }
+    });
+    const arr = Object.values(tab);
+    // scontri diretti tra squadre a pari punti: mini-classifica sui match diretti
+    arr.sort((a, b) => {
+      if (b.pti !== a.pti) return b.pti - a.pti;
+      const sd = trnScontriDiretti(t, a.s, b.s);
+      if (sd !== 0) return sd;
+      const dra = a.gf - a.gs, drb = b.gf - b.gs;
+      if (drb !== dra) return drb - dra;
+      if (b.gf !== a.gf) return b.gf - a.gf;
+      return a.s.localeCompare(b.s);
+    });
+    return arr;
+  }
+  function trnScontriDiretti(t, s1, s2) {
+    let p1 = 0, p2 = 0;
+    t.partite.forEach(p => {
+      if (p.golCasa == null || p.golOspite == null) return;
+      const coinvolge = (p.casa === s1 && p.ospite === s2) || (p.casa === s2 && p.ospite === s1);
+      if (!coinvolge) return;
+      const g1 = p.casa === s1 ? p.golCasa : p.golOspite;
+      const g2 = p.casa === s2 ? p.golCasa : p.golOspite;
+      if (g1 > g2) p1 += 3; else if (g2 > g1) p2 += 3; else { p1++; p2++; }
+    });
+    return p2 - p1; // se p1 maggiore, s1 va davanti (ritorna negativo)
+  }
 
   async function trnSave(torneo, openAfter) {
     try {
@@ -3832,10 +3936,12 @@
     el.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px;">' + trnState.map(t => {
       const fatte = t.partite.filter(p => p.golCasa != null && p.golOspite != null).length;
       const tot = t.partite.length;
+      const fmtLabel = t.formato === 'girone' ? ('girone' + (t.ritorno ? ' A/R' : '')) : 'eliminazione diretta';
+      const icona = t.formato === 'girone' ? '🔄' : '🏆';
       return `<div class="card" style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;cursor:pointer;" onclick="trnOpen('${t.id}')">
         <div>
-          <div style="font-weight:600;">🏆 ${trnEsc(t.nome)}</div>
-          <div style="font-size:0.78rem;color:var(--text-muted);">${t.squadre.length} squadre · eliminazione diretta · ${fatte}/${tot} partite giocate</div>
+          <div style="font-weight:600;">${icona} ${trnEsc(t.nome)}</div>
+          <div style="font-size:0.78rem;color:var(--text-muted);">${t.squadre.length} squadre · ${fmtLabel} · ${fatte}/${tot} partite giocate</div>
         </div>
         <div style="display:flex;gap:6px;">
           <button onclick="event.stopPropagation();trnOpen('${t.id}')" class="imp-btn-ghost" style="font-size:0.75rem;">👁️ Apri</button>
@@ -3891,6 +3997,7 @@
     const t = trnState.find(x => x.id === trnCurrentId);
     if (!el || !t) { if (el) el.style.display = 'none'; return; }
     el.style.display = '';
+    if (t.formato === 'girone') { trnRenderGirone(t, el); return; }
     trnAvanza(t); // ricalcola gli slot in base ai risultati correnti
 
     const rounds = t.rounds || [];
@@ -3923,6 +4030,65 @@
     </div>`;
   }
 
+  // Vista GIRONE: regolamento + classifica + calendario per giornate
+  function trnRenderGirone(t, el) {
+    const cls = trnClassifica(t);
+    const reg = t.regolamento
+      ? `<details style="margin-bottom:14px;"><summary style="cursor:pointer;font-weight:600;color:var(--accent);">📋 Regolamento / Note</summary><div style="white-space:pre-wrap;font-size:0.85rem;color:var(--text-primary);padding:8px 4px;">${trnEsc(t.regolamento)}</div></details>`
+      : '';
+    const clsRows = cls.map((r, i) => `<tr>
+      <td style="color:var(--text-muted);">${i+1}</td>
+      <td style="font-weight:600;text-align:left;">${trnEsc(r.s)}</td>
+      <td style="font-weight:700;color:var(--accent);">${r.pti}</td>
+      <td>${r.g}</td><td>${r.v}</td><td>${r.n}</td><td>${r.p}</td>
+      <td>${r.gf}</td><td>${r.gs}</td><td>${(r.gf-r.gs>0?'+':'')+(r.gf-r.gs)}</td>
+    </tr>`).join('');
+    const classificaHtml = `<div style="overflow-x:auto;margin-bottom:18px;">
+      <table style="width:100%;border-collapse:collapse;font-size:0.85rem;text-align:center;min-width:480px;">
+        <thead><tr style="color:var(--text-muted);border-bottom:2px solid var(--accent);">
+          <th style="padding:6px 4px;">#</th><th style="text-align:left;">Squadra</th><th>Pti</th>
+          <th>G</th><th>V</th><th>N</th><th>P</th><th>GF</th><th>GS</th><th>DR</th>
+        </tr></thead>
+        <tbody>${clsRows}</tbody>
+      </table>
+    </div>`;
+
+    // Calendario per giornate
+    const giornate = {};
+    t.partite.forEach(p => { (giornate[p.giornata] = giornate[p.giornata] || []).push(p); });
+    const calHtml = Object.keys(giornate).sort((a,b)=>a-b).map(gn => {
+      const rows = giornate[gn].sort((a,b)=>a.pos-b.pos).map(p => trnGironeMatchRow(t, p)).join('');
+      return `<div style="margin-bottom:14px;">
+        <div style="font-weight:700;color:var(--accent);font-size:0.85rem;margin-bottom:6px;">Giornata ${gn}</div>
+        ${rows}</div>`;
+    }).join('');
+
+    el.innerHTML = `<div class="card" style="padding:18px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+        <div style="font-weight:700;font-size:1.05rem;">🔄 ${trnEsc(t.nome)} <span style="font-size:0.78rem;color:var(--text-muted);font-weight:400;">· girone${t.ritorno?' A/R':''} · ${t.squadre.length} squadre</span></div>
+        <button onclick="document.getElementById('trn-view').style.display='none'" class="imp-btn-ghost" style="font-size:0.78rem;">✕ Chiudi</button>
+      </div>
+      ${reg}
+      <div style="font-weight:700;margin-bottom:8px;">📊 Classifica</div>
+      ${classificaHtml}
+      <div style="font-weight:700;margin-bottom:8px;">📅 Calendario</div>
+      ${calHtml}
+    </div>`;
+  }
+  function trnGironeMatchRow(t, p) {
+    const giocata = p.golCasa != null && p.golOspite != null;
+    const win = giocata && p.golCasa > p.golOspite, los = giocata && p.golCasa < p.golOspite;
+    return `<div class="card" style="padding:8px 12px;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+      <span style="flex:1;text-align:right;${win?'font-weight:700;':los?'color:var(--text-muted);':''}">${trnEsc(p.casa)}</span>
+      <input type="number" min="0" value="${p.golCasa==null?'':p.golCasa}" data-trn-match="${p.id}" data-trn-side="casa" onchange="trnSetGol(this)"
+        style="width:42px;text-align:center;padding:4px;border-radius:6px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);">
+      <span style="color:var(--text-muted);">-</span>
+      <input type="number" min="0" value="${p.golOspite==null?'':p.golOspite}" data-trn-match="${p.id}" data-trn-side="ospite" onchange="trnSetGol(this)"
+        style="width:42px;text-align:center;padding:4px;border-radius:6px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);">
+      <span style="flex:1;text-align:left;${los?'font-weight:700;':win?'color:var(--text-muted);':''}">${trnEsc(p.ospite)}</span>
+    </div>`;
+  }
+
   function trnMatchCard(t, p) {
     const tbd = '<span style="color:var(--text-muted);font-style:italic;">— da definire —</span>';
     const w = trnVincitore(p);
@@ -3952,7 +4118,7 @@
     if (!p) return;
     const v = input.value === '' ? null : parseInt(input.value, 10);
     if (input.getAttribute('data-trn-side') === 'casa') p.golCasa = v; else p.golOspite = v;
-    trnAvanza(t);
+    if (t.formato !== 'girone') trnAvanza(t);
     trnRenderView();
     clearTimeout(_trnSaveTimer);
     _trnSaveTimer = setTimeout(() => trnSave(t, false), 600);
