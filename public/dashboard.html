@@ -4377,56 +4377,79 @@
     if (!w) { impAlert('Abilita i popup per generare la locandina'); return; }
     w.document.write(`<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"><title>Locandina — ${trnEsc(t.nome)}</title>
     <style>
-      *{box-sizing:border-box;} body{margin:0;font-family:system-ui,Arial,sans-serif;background:#0f172a;color:#0f172a;}
-      .lc-toolbar{position:fixed;top:0;left:0;right:0;background:#1e293b;padding:10px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;z-index:10;}
-      .lc-toolbar button,.lc-toolbar label{background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:0.85rem;font-weight:600;}
+      :root{ --lc-accent:#16a34a; --lc-font:'Poppins',system-ui,sans-serif; --lc-title:2.8rem; --lc-bg-dim:0.15; }
+      *{box-sizing:border-box;} body{margin:0;font-family:var(--lc-font);background:#0b1220;color:#0f172a;}
+      .lc-toolbar{position:fixed;top:0;left:0;right:0;background:#111827;padding:8px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;z-index:10;box-shadow:0 2px 10px rgba(0,0,0,0.4);}
+      .lc-toolbar button,.lc-toolbar label{background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:7px 12px;cursor:pointer;font-size:0.82rem;font-weight:600;display:inline-flex;align-items:center;gap:6px;}
       .lc-toolbar .ghost{background:#475569;}
-      .lc-page{max-width:800px;margin:64px auto 24px;background:#fff;min-height:1100px;position:relative;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,0.5);}
-      .lc-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0.28;z-index:0;}
-      .lc-content{position:relative;z-index:1;padding:40px;min-height:1100px;display:flex;flex-direction:column;}
-      .lc-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;}
-      .lc-main h3{align-self:stretch;text-align:center;}
-      .lc-title{text-align:center;font-size:2.4rem;font-weight:800;margin:0 0 4px;color:#0f172a;text-shadow:0 1px 0 #fff;}
-      .lc-sub{text-align:center;color:#334155;margin:0 0 24px;font-size:1rem;}
-      h3{border-bottom:2px solid #16a34a;padding-bottom:4px;margin:24px 0 10px;color:#0f172a;}
+      .lc-toolbar .ctl{background:#1e293b;color:#cbd5e1;padding:5px 8px;border-radius:8px;display:inline-flex;align-items:center;gap:6px;font-size:0.76rem;}
+      .lc-toolbar .ctl input[type=range]{width:90px;} .lc-toolbar .ctl select{background:#0f172a;color:#fff;border:1px solid #334155;border-radius:6px;padding:3px;}
+      .lc-toolbar .ctl input[type=color]{width:30px;height:24px;border:none;background:none;cursor:pointer;}
+      .lc-page{max-width:820px;margin:60px auto 24px;background:#0f172a;min-height:1140px;position:relative;overflow:hidden;box-shadow:0 16px 50px rgba(0,0,0,0.6);border-radius:4px;}
+      /* sfondo VIVIDO: niente più opacità bassa, solo un velo scuro graduato per leggibilità in cima/fondo */
+      .lc-bg{position:absolute;inset:0;background-size:cover;background-position:center;z-index:0;}
+      .lc-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,12,24,calc(var(--lc-bg-dim) + 0.25)) 0%,rgba(8,12,24,var(--lc-bg-dim)) 35%,rgba(8,12,24,var(--lc-bg-dim)) 65%,rgba(8,12,24,calc(var(--lc-bg-dim) + 0.3)) 100%);}
+      .lc-content{position:relative;z-index:1;padding:36px 40px;min-height:1140px;display:flex;flex-direction:column;}
+      .lc-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
+      /* CARD opache sopra lo sfondo: leggibilità garantita */
+      .lc-card{background:rgba(255,255,255,0.94);border-radius:14px;padding:18px 22px;width:100%;max-width:560px;box-shadow:0 8px 28px rgba(0,0,0,0.35);backdrop-filter:blur(2px);}
+      .lc-head{text-align:center;margin-bottom:14px;}
+      .lc-society{display:inline-block;background:var(--lc-accent);color:#fff;font-weight:700;font-size:0.8rem;letter-spacing:1px;text-transform:uppercase;padding:4px 14px;border-radius:999px;}
+      .lc-title{text-align:center;font-family:var(--lc-font);font-size:var(--lc-title);font-weight:800;line-height:1.05;margin:10px 0 4px;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,0.6);}
+      .lc-sub{text-align:center;color:#e2e8f0;margin:0 0 6px;font-size:1rem;text-shadow:0 1px 6px rgba(0,0,0,0.6);}
+      h3{text-align:center;font-size:1.1rem;letter-spacing:.5px;text-transform:uppercase;padding-bottom:6px;margin:4px 0 12px;color:var(--lc-accent);border-bottom:3px solid var(--lc-accent);}
       .lc-table{width:100%;border-collapse:collapse;text-align:center;font-size:0.9rem;}
-      .lc-table th{background:#16a34a;color:#fff;padding:6px;} .lc-table td{padding:5px;border-bottom:1px solid #e2e8f0;}
-      .lc-cal,.lc-bracket{display:flex;flex-wrap:wrap;gap:10px;} .lc-bracket{align-items:flex-start;}
-      .lc-round{flex:1;min-width:160px;} .lc-round h4{color:#16a34a;text-align:center;margin:0 0 6px;}
-      .lc-match{background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:8px 10px;margin-bottom:8px;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:150px;}
-      .lc-match span{font-weight:600;} .lc-match b{color:#16a34a;} .lc-match small{color:#64748b;font-size:0.72rem;}
-      .lc-champ{background:linear-gradient(135deg,#fbbf24,#16a34a);color:#fff;font-weight:800;text-align:center;padding:12px;border-radius:10px;margin:14px 0;font-size:1.2rem;}
-      .lc-reg{white-space:pre-wrap;font-size:0.9rem;color:#334155;background:#f8fafc;border-radius:8px;padding:12px;}
-      .lc-foot{text-align:center;color:#64748b;font-size:0.78rem;padding-top:24px;}
-      /* ── Bracket VERTICALE: Finale in alto, poi Semifinali, poi Quarti ── */
+      .lc-table th{background:var(--lc-accent);color:#fff;padding:7px;} .lc-table td{padding:6px;border-bottom:1px solid #e2e8f0;}
+      .lc-table tr:nth-child(even) td{background:#f8fafc;}
+      .lc-cal{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}
+      .lc-match{background:#fff;border:1px solid #e2e8f0;border-left:4px solid var(--lc-accent);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:150px;}
+      .lc-match span{font-weight:600;} .lc-match b{color:var(--lc-accent);} .lc-match small{color:#64748b;font-size:0.72rem;}
+      .lc-reg{white-space:pre-wrap;font-size:0.9rem;color:#334155;}
+      .lc-foot{text-align:center;color:#e2e8f0;font-size:0.78rem;padding-top:20px;text-shadow:0 1px 4px rgba(0,0,0,0.6);}
+      /* ── Bracket VERTICALE ── */
       .bk-vert{display:flex;flex-direction:column;align-items:center;gap:0;width:100%;}
       .bk-vrow{display:flex;flex-direction:column;align-items:center;width:100%;}
-      .bk-vtitle{font-weight:700;color:#16a34a;font-size:0.82rem;text-transform:uppercase;letter-spacing:.5px;margin:14px 0 6px;text-align:center;}
+      .bk-vtitle{font-weight:700;color:var(--lc-accent);font-size:0.82rem;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 6px;text-align:center;}
       .bk-vmatches{display:flex;justify-content:center;flex-wrap:wrap;gap:14px;}
-      .bk-vconn{height:18px;width:2px;background:#16a34a;}
-      .bk-match{background:#fff;border:2px solid #16a34a;border-radius:8px;overflow:hidden;width:170px;font-size:0.82rem;box-shadow:0 1px 4px rgba(0,0,0,0.1);}
+      .bk-vconn{height:18px;width:3px;background:var(--lc-accent);border-radius:2px;}
+      .bk-match{background:#fff;border:2px solid var(--lc-accent);border-radius:10px;overflow:hidden;width:175px;font-size:0.82rem;box-shadow:0 2px 8px rgba(0,0,0,0.18);}
       .bk-match.bk-empty{border-style:dashed;border-color:#cbd5e1;min-height:46px;background:#f8fafc;}
-      .bk-team{display:flex;justify-content:space-between;padding:4px 8px;border-bottom:1px solid #e2e8f0;}
+      .bk-team{display:flex;justify-content:space-between;padding:5px 9px;border-bottom:1px solid #e2e8f0;}
       .bk-team:last-child{border-bottom:none;}
-      .bk-team b{color:#16a34a;} .bk-team.bk-win{background:#dcfce7;font-weight:800;}
+      .bk-team b{color:var(--lc-accent);} .bk-team.bk-win{background:color-mix(in srgb,var(--lc-accent) 18%,#fff);font-weight:800;}
       .bk-meta{font-size:0.66rem;color:#64748b;text-align:center;padding:2px 4px;background:#f8fafc;}
-      .bk-champ-top{background:linear-gradient(135deg,#fbbf24,#16a34a);color:#fff;font-weight:800;padding:8px 16px;border-radius:10px;margin-bottom:6px;}
-      @media print{ .lc-toolbar{display:none;} .lc-page{margin:0;box-shadow:none;max-width:100%;} body{background:#fff;} }
+      .bk-champ-top{background:linear-gradient(135deg,#fbbf24,var(--lc-accent));color:#fff;font-weight:800;padding:10px 20px;border-radius:999px;margin-bottom:8px;font-size:1.05rem;box-shadow:0 4px 14px rgba(0,0,0,0.3);}
+      @media print{ .lc-toolbar{display:none;} .lc-page{margin:0;box-shadow:none;max-width:100%;border-radius:0;} body{background:#fff;} }
     </style></head><body>
     <div class="lc-toolbar">
-      <label>🖼️ Carica sfondo<input type="file" accept="image/*" style="display:none" onchange="(function(f){if(!f)return;var r=new FileReader();r.onload=function(e){document.getElementById('lc-bg').style.backgroundImage='url('+e.target.result+')';};r.readAsDataURL(f);})(this.files[0])"></label>
+      <label>🖼️ Sfondo<input type="file" accept="image/*" style="display:none" onchange="(function(f){if(!f)return;var r=new FileReader();r.onload=function(e){document.getElementById('lc-bg').style.backgroundImage='url('+e.target.result+')';};r.readAsDataURL(f);})(this.files[0])"></label>
+      <span class="ctl">🎨<input type="color" value="#16a34a" oninput="document.documentElement.style.setProperty('--lc-accent',this.value)" title="Colore accenti"></span>
+      <span class="ctl">🔤<select onchange="document.documentElement.style.setProperty('--lc-font',this.value)" title="Font">
+        <option value="'Poppins',system-ui,sans-serif">Poppins</option>
+        <option value="'Bebas Neue',Impact,sans-serif">Bebas Neue</option>
+        <option value="'Oswald',sans-serif">Oswald</option>
+        <option value="'Montserrat',sans-serif">Montserrat</option>
+        <option value="Georgia,serif">Georgia</option>
+        <option value="system-ui,Arial,sans-serif">Sistema</option>
+      </select></span>
+      <span class="ctl">🔠<input type="range" min="1.8" max="4.5" step="0.1" value="2.8" oninput="document.documentElement.style.setProperty('--lc-title',this.value+'rem')" title="Dimensione titolo"></span>
+      <span class="ctl">🌑<input type="range" min="0" max="0.7" step="0.05" value="0.15" oninput="document.documentElement.style.setProperty('--lc-bg-dim',this.value)" title="Velo scuro sfondo"></span>
       <button onclick="window.print()">🖨️ Stampa / PDF</button>
       <button class="ghost" onclick="window.close()">Chiudi</button>
-      <span style="color:#94a3b8;font-size:0.78rem;">Carica un'immagine come sfondo, poi Stampa → Salva come PDF</span>
     </div>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Bebas+Neue&family=Oswald:wght@500;700&family=Montserrat:wght@600;800&display=swap" rel="stylesheet">
     <div class="lc-page">
       <div class="lc-bg" id="lc-bg"></div>
       <div class="lc-content">
-        <div class="lc-sub">${trnEsc(societa)}</div>
-        <h1 class="lc-title" contenteditable="true">${trnEsc(t.nome)}</h1>
-        <div class="lc-sub" contenteditable="true">${t.formato==='girone'?('Girone'+(t.ritorno?' andata/ritorno':'')+(t.faseFinale?' con fase finale':'')):'Eliminazione diretta'} · ${t.squadre.length} squadre</div>
-        ${reg}
-        <div class="lc-main">${contenuto}</div>
+        <div class="lc-main">
+          <div class="lc-head">
+            <span class="lc-society">${trnEsc(societa)}</span>
+            <h1 class="lc-title" contenteditable="true">${trnEsc(t.nome)}</h1>
+            <div class="lc-sub" contenteditable="true">${t.formato==='girone'?('Girone'+(t.ritorno?' andata/ritorno':'')+(t.faseFinale?' con fase finale':'')):'Eliminazione diretta'} · ${t.squadre.length} squadre</div>
+          </div>
+          ${reg ? `<div class="lc-card">${reg}</div>` : ''}
+          <div class="lc-card">${contenuto}</div>
+        </div>
         <div class="lc-foot">Generato con Sport Monitoring</div>
       </div>
     </div></body></html>`);
