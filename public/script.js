@@ -1,7 +1,7 @@
 
 function _chartParityColor() {
-    // FIX v1.5.21: colore pareggi verde, visibile in entrambi i temi
-    return '#22c55e';
+    // Pareggi in GRIGIO (verde riservato alle vittorie, rosso alle sconfitte)
+    return '#94a3b8';
 }
 
 // ── Colori grafici tema-aware (v1.5.0: tema chiaro reso più visibile) ─────────────────────────────────────
@@ -2262,7 +2262,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         sessionEl.className = 'calendar-session';
                         sessionEl.style.cssText = `background:${session.coachColor};color:var(--text-white);border-left:3px solid ${session.coachColor}dd;`;
                     } else {
-                        sessionEl.className = 'calendar-session session-allenamento';
+                        // Colore per TIPO evento: la classe .session-tipo-<Tipo> esiste in
+                        // style.css per i tipi noti; "Allenamento" (e tipi sconosciuti)
+                        // ricadono sul verde di .session-allenamento.
+                        const tipo = (session.type || session.title || '').split(' ')[0];
+                        const tipiNoti = ['Partita','Torneo','Campionato','Finale','Semifinale','Individual','Visita','Evento','Varie','Portieri','Atletica'];
+                        sessionEl.className = 'calendar-session ' + (tipiNoti.includes(tipo) ? 'session-tipo-' + tipo : 'session-allenamento');
                     }
                     const timeLabel = session.time ? ' (' + session.time + ')' : '';
                     sessionEl.textContent = session.title + timeLabel;
@@ -2532,7 +2537,7 @@ document.addEventListener('DOMContentLoaded', () => {
             datasets = [
                 { label: 'Vittorie', data: [], backgroundColor: '#16a34a' },
                 { label: 'Pareggi', data: [], backgroundColor: _chartParityColor() },
-                { label: 'Sconfitte', data: [], backgroundColor: '#64748b' },
+                { label: 'Sconfitte', data: [], backgroundColor: '#dc2626' },
             ];
             filteredMatches.forEach(match => {
                 const myScore = match.location === 'home' ? match.homeScore : match.awayScore;
@@ -2567,7 +2572,7 @@ document.addEventListener('DOMContentLoaded', () => {
             datasets = [
                 { label: 'Vittorie', data: labels.map(l => resultsByPeriod[l].W), backgroundColor: '#16a34a' },
                 { label: 'Pareggi', data: labels.map(l => resultsByPeriod[l].D), backgroundColor: _chartParityColor() },
-                { label: 'Sconfitte', data: labels.map(l => resultsByPeriod[l].L), backgroundColor: '#64748b' },
+                { label: 'Sconfitte', data: labels.map(l => resultsByPeriod[l].L), backgroundColor: '#dc2626' },
             ];
         }
         const data = { labels, datasets };
