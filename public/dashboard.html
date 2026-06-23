@@ -4319,10 +4319,10 @@
       const cls = trnClassifica(t);
       const completo = trnGironeCompleto(t);
       const clsRows = cls.map((r,i)=>`<tr><td>${i+1}</td><td style="text-align:left;font-weight:600;">${trnEsc(r.s)}</td><td><b>${r.pti}</b></td><td>${r.g}</td><td>${r.v}</td><td>${r.n}</td><td>${r.p}</td><td>${r.gf}</td><td>${r.gs}</td><td>${(r.gf-r.gs>0?'+':'')+(r.gf-r.gs)}</td></tr>`).join('');
-      const cal = t.partite.map(p=>`<div class="lc-match"><span>${trnEsc(p.casa)}</span><b>${p.golCasa!=null?p.golCasa+' - '+p.golOspite:'vs'}</b><span>${trnEsc(p.ospite)}</span><small>${trnFmtData(p.data,p.ora)}${campoNome(p.campoId)?' · '+trnEsc(campoNome(p.campoId)):''}</small></div>`).join('');
+      const cal = t.partite.map(p=>`<div class="lc-match"><span class="nm casa">${trnEsc(p.casa)}</span><span class="res">${p.golCasa!=null?p.golCasa+' - '+p.golOspite:'vs'}</span><span class="nm ospite">${trnEsc(p.ospite)}</span><small>${trnFmtData(p.data,p.ora)}${campoNome(p.campoId)?' · '+trnEsc(campoNome(p.campoId)):''}</small></div>`).join('');
       let finali = '';
       if (t.faseFinale && completo && t.finali && t.finali.length) {
-        finali = '<h3>Fase finale</h3>' + t.finali.map(f=>`<div class="lc-match"><span>${trnEsc(f.casa)}</span><b>${f.golCasa!=null?f.golCasa+' - '+f.golOspite:'vs'}</b><span>${trnEsc(f.ospite)}</span><small>${trnEsc(f.label)} ${trnFmtData(f.data,f.ora)}</small></div>`).join('');
+        finali = '<h3>Fase finale</h3>' + t.finali.map(f=>`<div class="lc-match"><span class="nm casa">${trnEsc(f.casa)}</span><span class="res">${f.golCasa!=null?f.golCasa+' - '+f.golOspite:'vs'}</span><span class="nm ospite">${trnEsc(f.ospite)}</span><small>${trnEsc(f.label)} ${trnFmtData(f.data,f.ora)}</small></div>`).join('');
         const fin = t.finali.find(f=>f.tipo==='finale'); const champ = fin?trnVincitore(fin):null;
         if (champ) finali += `<div class="lc-champ">🏆 Vincitore: ${trnEsc(champ)}</div>`;
       }
@@ -4342,9 +4342,14 @@
     const matchBox = (p) => {
       if (!p) return '<div class="bk-match bk-empty"></div>';
       const w = trnVincitore(p);
-      const line = (team, gol) => `<div class="bk-team ${w&&team===w?'bk-win':''}"><span>${trnEsc(team)||'—'}</span><b>${gol!=null?gol:''}</b></div>`;
       const meta = (p.data||p.ora) ? `<div class="bk-meta">${trnFmtData(p.data,p.ora)}${campoNome&&campoNome(p.campoId)?' · '+trnEsc(campoNome(p.campoId)):''}</div>` : '';
-      return `<div class="bk-match">${line(p.casa,p.golCasa)}${line(p.ospite,p.golOspite)}${meta}</div>`;
+      return `<div class="bk-match">
+        <div class="bk-row">
+          <div class="bk-side casa ${w&&p.casa===w?'bk-win':''}"><span class="nm">${trnEsc(p.casa)||'—'}</span><span class="gl">${p.golCasa!=null?p.golCasa:''}</span></div>
+          <div class="bk-vs">VS</div>
+          <div class="bk-side ospite ${w&&p.ospite===w?'bk-win':''}"><span class="gl">${p.golOspite!=null?p.golOspite:''}</span><span class="nm">${trnEsc(p.ospite)||'—'}</span></div>
+        </div>${meta}
+      </div>`;
     };
     // Campione in cima
     const fin = t.partite.find(p => p.round === 'Finale' && !p.terzoPosto);
@@ -4388,7 +4393,8 @@
       .lc-toolbar .ctl{background:#1e293b;color:#cbd5e1;padding:5px 8px;border-radius:8px;display:inline-flex;align-items:center;gap:6px;font-size:0.76rem;}
       .lc-toolbar .ctl input[type=range]{width:90px;} .lc-toolbar .ctl select{background:#0f172a;color:#fff;border:1px solid #334155;border-radius:6px;padding:3px;}
       .lc-toolbar .ctl input[type=color]{width:30px;height:24px;border:none;background:none;cursor:pointer;}
-      .lc-page{max-width:820px;margin:60px auto 24px;background:#0f172a;min-height:1140px;position:relative;overflow:hidden;box-shadow:0 16px 50px rgba(0,0,0,0.6);border-radius:4px;}
+      /* Formato A4 (210×297mm → rapporto 1:1.414). A schermo ~794×1123px @96dpi */
+      .lc-page{width:794px;max-width:96vw;aspect-ratio:210/297;margin:60px auto 24px;background:#0f172a;position:relative;overflow:hidden;box-shadow:0 16px 50px rgba(0,0,0,0.6);border-radius:4px;}
       /* sfondo VIVIDO: niente più opacità bassa, solo un velo scuro graduato per leggibilità in cima/fondo */
       .lc-bg{position:absolute;inset:0;background-size:cover;background-position:center;z-index:0;}
       .lc-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,12,24,calc(var(--lc-bg-dim) + 0.25)) 0%,rgba(8,12,24,var(--lc-bg-dim)) 35%,rgba(8,12,24,var(--lc-bg-dim)) 65%,rgba(8,12,24,calc(var(--lc-bg-dim) + 0.3)) 100%);}
@@ -4404,25 +4410,36 @@
       .lc-table{width:100%;border-collapse:collapse;text-align:center;font-size:var(--lc-body-size);color:var(--lc-body-color);}
       .lc-table th{background:var(--lc-accent);color:#fff;padding:7px;} .lc-table td{padding:6px;border-bottom:1px solid #e2e8f0;}
       .lc-table tr:nth-child(even) td{background:#f8fafc;}
-      .lc-cal{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}
-      .lc-match{background:#fff;border:1px solid #e2e8f0;border-left:4px solid var(--lc-accent);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:150px;font-size:var(--lc-body-size);color:var(--lc-body-color);}
-      .lc-match span{font-weight:600;} .lc-match b{color:var(--lc-accent);} .lc-match small{color:#64748b;font-size:0.72rem;}
+      .lc-cal{display:flex;flex-direction:column;gap:6px;}
+      /* Box calendario girone ORIZZONTALE: Casa  gol – gol  Ospite (+ meta a destra) */
+      .lc-match{background:#fff;border:1px solid #e2e8f0;border-left:4px solid var(--lc-accent);border-radius:8px;padding:6px 12px;display:flex;align-items:center;gap:8px;font-size:var(--lc-body-size);color:var(--lc-body-color);}
+      .lc-match .nm{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+      .lc-match .nm.casa{text-align:right;} .lc-match .nm.ospite{text-align:left;}
+      .lc-match .res{font-weight:800;color:var(--lc-accent);white-space:nowrap;padding:0 6px;}
+      .lc-match small{color:#64748b;font-size:0.7rem;white-space:nowrap;}
       .lc-reg{white-space:pre-wrap;font-size:var(--lc-body-size);color:var(--lc-body-color);}
       .lc-foot{text-align:center;color:#e2e8f0;font-size:0.78rem;padding-top:20px;text-shadow:0 1px 4px rgba(0,0,0,0.6);}
       /* ── Bracket VERTICALE ── */
       .bk-vert{display:flex;flex-direction:column;align-items:center;gap:0;width:100%;}
       .bk-vrow{display:flex;flex-direction:column;align-items:center;width:100%;}
       .bk-vtitle{font-weight:700;color:var(--lc-head-color);font-size:0.82rem;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 6px;text-align:center;}
-      .bk-vmatches{display:flex;justify-content:center;flex-wrap:wrap;gap:14px;}
-      .bk-vconn{height:18px;width:3px;background:var(--lc-accent);border-radius:2px;}
-      .bk-match{background:#fff;border:2px solid var(--lc-accent);border-radius:10px;overflow:hidden;width:175px;font-size:0.82rem;box-shadow:0 2px 8px rgba(0,0,0,0.18);}
-      .bk-match.bk-empty{border-style:dashed;border-color:#cbd5e1;min-height:46px;background:#f8fafc;}
-      .bk-team{display:flex;justify-content:space-between;padding:5px 9px;border-bottom:1px solid #e2e8f0;}
-      .bk-team:last-child{border-bottom:none;}
-      .bk-team b{color:var(--lc-accent);} .bk-team.bk-win{background:color-mix(in srgb,var(--lc-accent) 18%,#fff);font-weight:800;}
-      .bk-meta{font-size:0.66rem;color:#64748b;text-align:center;padding:2px 4px;background:#f8fafc;}
+      .bk-vmatches{display:flex;flex-direction:column;align-items:center;gap:8px;}
+      .bk-vconn{height:16px;width:3px;background:var(--lc-accent);border-radius:2px;}
+      /* Box match ORIZZONTALE: Casa  gol – gol  Ospite */
+      .bk-match{background:#fff;border:2px solid var(--lc-accent);border-radius:10px;overflow:hidden;width:330px;max-width:90%;font-size:var(--lc-body-size);box-shadow:0 2px 8px rgba(0,0,0,0.18);}
+      .bk-match.bk-empty{border-style:dashed;border-color:#cbd5e1;min-height:40px;background:#f8fafc;}
+      .bk-row{display:flex;align-items:stretch;}
+      .bk-side{flex:1;display:flex;align-items:center;gap:6px;padding:7px 10px;min-width:0;}
+      .bk-side.casa{justify-content:flex-end;text-align:right;}
+      .bk-side.ospite{justify-content:flex-start;}
+      .bk-side .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
+      .bk-side .gl{font-weight:800;color:var(--lc-accent);min-width:18px;text-align:center;}
+      .bk-side.bk-win{background:color-mix(in srgb,var(--lc-accent) 18%,#fff);}
+      .bk-vs{display:flex;align-items:center;justify-content:center;padding:0 8px;color:#94a3b8;font-size:0.7rem;font-weight:700;background:#f1f5f9;}
+      .bk-meta{font-size:0.66rem;color:#64748b;text-align:center;padding:2px 4px;background:#f8fafc;border-top:1px solid #e2e8f0;}
       .bk-champ-top{background:linear-gradient(135deg,#fbbf24,var(--lc-accent));color:#fff;font-weight:800;padding:10px 20px;border-radius:999px;margin-bottom:8px;font-size:1.05rem;box-shadow:0 4px 14px rgba(0,0,0,0.3);}
-      @media print{ .lc-toolbar{display:none;} .lc-page{margin:0;box-shadow:none;max-width:100%;border-radius:0;} body{background:#fff;} }
+      @page{ size:A4; margin:0; }
+      @media print{ .lc-toolbar{display:none;} .lc-page{margin:0;box-shadow:none;width:210mm;max-width:210mm;height:297mm;aspect-ratio:auto;border-radius:0;} .lc-content{min-height:297mm;} body{background:#fff;} }
     </style></head><body>
     <div class="lc-toolbar">
       <label>🖼️ Sfondo<input type="file" accept="image/*" style="display:none" onchange="(function(f){if(!f)return;var r=new FileReader();r.onload=function(e){document.getElementById('lc-bg').style.backgroundImage='url('+e.target.result+')';};r.readAsDataURL(f);})(this.files[0])"></label>
