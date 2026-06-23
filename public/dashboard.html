@@ -1308,6 +1308,45 @@
           </div>
         </div>
 
+        <!-- Pannello modifica torneo -->
+        <div id="trn-edit" class="card" style="display:none;margin-bottom:16px;padding:18px;border:2px solid #f59e0b;">
+          <div style="font-weight:700;margin-bottom:14px;font-size:1rem;">✏️ Modifica Torneo</div>
+          <input type="hidden" id="trn-edit-id">
+
+          <div style="margin-bottom:14px;">
+            <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Nome torneo</label>
+            <input type="text" id="trn-edit-nome"
+              style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;box-sizing:border-box;">
+          </div>
+
+          <div style="margin-bottom:14px;">
+            <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">📋 Regolamento / Note</label>
+            <textarea id="trn-edit-regolamento" rows="3"
+              style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;box-sizing:border-box;font-family:inherit;"></textarea>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-bottom:18px;">
+            <button onclick="trnSalvaModifiche()" class="imp-btn">💾 Salva modifiche</button>
+            <button onclick="document.getElementById('trn-edit').style.display='none'" class="imp-btn-ghost">Annulla</button>
+          </div>
+
+          <!-- Zona avanzata: modifiche che rigenerano il tabellone -->
+          <div style="border-top:1px solid var(--border-soft);padding-top:14px;">
+            <div style="font-weight:600;color:#ef4444;font-size:0.85rem;margin-bottom:6px;">⚠️ Modifiche strutturali (rigenerano il tabellone)</div>
+            <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:10px;">Cambiare le squadre o attivare la fase finale <b>rigenera</b> calendario/tabellone: i risultati già inseriti verranno persi. Usa solo se il torneo NON è ancora ufficializzato.</div>
+
+            <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:4px;">Squadre (una per riga) <span id="trn-edit-sq-count" style="color:var(--accent);"></span></label>
+            <textarea id="trn-edit-squadre" rows="5" oninput="trnEditUpdateCount()"
+              style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.9rem;box-sizing:border-box;font-family:inherit;"></textarea>
+
+            <label id="trn-edit-finale-wrap" style="font-size:0.8rem;color:var(--text-muted);display:none;margin:8px 0 6px;">
+              <input type="checkbox" id="trn-edit-fase-finale" style="margin-right:6px;">Fase finale (Finale 1ª-2ª + finalina 3ª-4ª)
+            </label>
+
+            <button onclick="trnRigenera()" class="imp-btn-danger" style="margin-top:10px;font-size:0.82rem;">🔄 Rigenera tabellone con queste squadre</button>
+          </div>
+        </div>
+
         <!-- Lista tornei salvati -->
         <div id="trn-list"></div>
 
@@ -4054,6 +4093,7 @@
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
         <div style="font-weight:700;font-size:1.05rem;">🏆 ${trnEsc(t.nome)}</div>
         <div style="display:flex;gap:6px;">
+          <button onclick="trnModifica('${t.id}')" class="imp-btn-ghost" style="font-size:0.78rem;">✏️ Modifica</button>
           <button onclick="trnLocandina('${t.id}')" class="imp-btn-ghost" style="font-size:0.78rem;">🖼️ Locandina</button>
           <button onclick="document.getElementById('trn-view').style.display='none'" class="imp-btn-ghost" style="font-size:0.78rem;">✕ Chiudi</button>
         </div>
@@ -4125,6 +4165,7 @@
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
         <div style="font-weight:700;font-size:1.05rem;">🔄 ${trnEsc(t.nome)} <span style="font-size:0.78rem;color:var(--text-muted);font-weight:400;">· girone${t.ritorno?' A/R':''}${t.faseFinale?' + finali':''} · ${t.squadre.length} squadre</span></div>
         <div style="display:flex;gap:6px;">
+          <button onclick="trnModifica('${t.id}')" class="imp-btn-ghost" style="font-size:0.78rem;">✏️ Modifica</button>
           <button onclick="trnLocandina('${t.id}')" class="imp-btn-ghost" style="font-size:0.78rem;">🖼️ Locandina</button>
           <button onclick="document.getElementById('trn-view').style.display='none'" class="imp-btn-ghost" style="font-size:0.78rem;">✕ Chiudi</button>
         </div>
@@ -4390,6 +4431,94 @@
       </div>
     </div></body></html>`);
     w.document.close();
+  };
+
+  // ── MODIFICA TORNEO ──────────────────────────────────────────────────────
+  window.trnModifica = function(id) {
+    const t = trnState.find(x => x.id === id);
+    if (!t) return;
+    document.getElementById('trn-edit-id').value = t.id;
+    document.getElementById('trn-edit-nome').value = t.nome || '';
+    document.getElementById('trn-edit-regolamento').value = t.regolamento || '';
+    document.getElementById('trn-edit-squadre').value = (t.squadre || []).join('\n');
+    // L'opzione fase finale ha senso solo per il girone
+    const finaleWrap = document.getElementById('trn-edit-finale-wrap');
+    finaleWrap.style.display = (t.formato === 'girone') ? '' : 'none';
+    document.getElementById('trn-edit-fase-finale').checked = !!t.faseFinale;
+    trnEditUpdateCount();
+    document.getElementById('trn-edit').style.display = '';
+    document.getElementById('trn-edit').scrollIntoView({ behavior:'smooth', block:'nearest' });
+  };
+  window.trnEditUpdateCount = function() {
+    const n = (document.getElementById('trn-edit-squadre').value || '').split('\n').map(s=>s.trim()).filter(Boolean).length;
+    const el = document.getElementById('trn-edit-sq-count');
+    if (el) el.textContent = n ? `(${n})` : '';
+  };
+
+  // Modifica NON distruttiva: solo nome + regolamento. Le partite restano.
+  window.trnSalvaModifiche = function() {
+    const t = trnState.find(x => x.id === document.getElementById('trn-edit-id').value);
+    if (!t) return;
+    const nome = (document.getElementById('trn-edit-nome').value || '').trim();
+    if (!nome) { impAlert('Il nome non può essere vuoto'); return; }
+    t.nome = nome;
+    t.regolamento = (document.getElementById('trn-edit-regolamento').value || '').trim();
+    trnSave(t, false);
+    document.getElementById('trn-edit').style.display = 'none';
+    if (trnCurrentId === t.id) trnRenderView();
+    trnRenderList();
+  };
+
+  // Modifica DISTRUTTIVA: cambio squadre / fase finale → rigenera il tabellone.
+  // Avvisa esplicitamente che i risultati già inseriti verranno persi.
+  window.trnRigenera = function() {
+    const t = trnState.find(x => x.id === document.getElementById('trn-edit-id').value);
+    if (!t) return;
+    const squadre = (document.getElementById('trn-edit-squadre').value || '').split('\n').map(s=>s.trim()).filter(Boolean);
+    const nome = (document.getElementById('trn-edit-nome').value || '').trim() || t.nome;
+    const regolamento = (document.getElementById('trn-edit-regolamento').value || '').trim();
+
+    // Validazione in base al formato
+    if (t.formato === 'knockout') {
+      if (!trnRoundNames(squadre.length)) { impAlert('Eliminazione diretta: servono 2, 4, 8 o 16 squadre (ne hai ' + squadre.length + ')'); return; }
+    } else {
+      if (squadre.length < 3) { impAlert('Girone: servono almeno 3 squadre'); return; }
+      if (squadre.length > 12) { impAlert('Girone: massimo 12 squadre'); return; }
+    }
+    // Conta i risultati che andrebbero persi
+    const giocate = (t.partite || []).filter(p => p.golCasa != null && p.golOspite != null).length
+                  + (t.finali || []).filter(p => p.golCasa != null && p.golOspite != null).length;
+    const avviso = giocate > 0
+      ? `⚠️ ATTENZIONE: rigenerando il tabellone perderai i ${giocate} risultati già inseriti (e date/orari/campi delle partite).\n\nProcedere comunque?`
+      : 'Rigenerare il tabellone con queste squadre?';
+    if (!confirm(avviso)) return;
+
+    if (t.formato === 'knockout') {
+      const terzoPosto = !!t.terzoPosto;
+      const rounds = trnRoundNames(squadre.length);
+      const partite = [];
+      for (let i = 0; i < squadre.length / 2; i++)
+        partite.push({ id: trnGenId(), round: rounds[0], roundIdx: 0, pos: i, casa: squadre[i], ospite: squadre[squadre.length-1-i], golCasa: null, golOspite: null });
+      for (let r = 1; r < rounds.length; r++) {
+        const nM = squadre.length / Math.pow(2, r + 1);
+        for (let i = 0; i < nM; i++) partite.push({ id: trnGenId(), round: rounds[r], roundIdx: r, pos: i, casa: null, ospite: null, golCasa: null, golOspite: null });
+      }
+      if (terzoPosto && squadre.length >= 4)
+        partite.push({ id: trnGenId(), round: 'Finale 3°/4° posto', roundIdx: rounds.length-1, pos: 1, terzoPosto: true, casa: null, ospite: null, golCasa: null, golOspite: null });
+      Object.assign(t, { nome, regolamento, squadre, partite, rounds });
+    } else {
+      const faseFinale = document.getElementById('trn-edit-fase-finale').checked;
+      if (faseFinale && squadre.length < 4) { impAlert('Per la fase finale servono almeno 4 squadre'); return; }
+      const giornate = trnRoundRobin(squadre, !!t.ritorno);
+      const partite = [];
+      giornate.forEach((g, gi) => g.forEach((m, pi) => partite.push({ id: trnGenId(), giornata: gi+1, pos: pi, casa: m.casa, ospite: m.ospite, golCasa: null, golOspite: null })));
+      Object.assign(t, { nome, regolamento, squadre, partite, faseFinale, finali: [] });
+    }
+    trnSave(t, false);
+    document.getElementById('trn-edit').style.display = 'none';
+    if (trnCurrentId === t.id) trnRenderView();
+    trnRenderList();
+    impAlert('Tabellone rigenerato ✓', true);
   };
 
   // ── CONFIGURAZIONE ANNATE (per auto-scheduling) ───────────────
