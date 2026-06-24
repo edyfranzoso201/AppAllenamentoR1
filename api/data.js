@@ -443,6 +443,56 @@ if (req.query?.action === 'infortuni') {
   }
 }
 
+// ── AREA TECNICA: libreria video + (futuro) esercizi/schede/documenti ────────
+// Storage annate:<id>:areaTecnica = [ {id,tipo,titolo,url,fonte,categoria,data,
+// note,createdAt}, ... ]. tipo: video|esercizio|scheda|documento (Fase 1: video).
+// SOLO staff (canWrite). url validato come per infortuni (https/\\/file://).
+if (req.query?.action === 'area-tecnica') {
+  if (!session.isAuthenticated || !canWrite(session.role)) {
+    return res.status(403).json({ success: false, message: 'Permesso negato' });
+  }
+  if (!annataId || !isValidId(annataId)) {
+    return res.status(400).json({ success: false, message: 'annataId non valido' });
+  }
+  const key = `annate:${annataId}:areaTecnica`;
+
+  if (req.method === 'GET') {
+    const items = (await kv.get(key)) || [];
+    return res.status(200).json({ success: true, items });
+  }
+
+  if (req.method === 'POST') {
+    const { item, deleteId } = req.body || {};
+    let items = (await kv.get(key)) || [];
+    if (deleteId) {
+      items = items.filter(x => x.id !== deleteId);
+    } else if (item && typeof item === 'object') {
+      const tipiOk = ['video', 'esercizio', 'scheda', 'documento'];
+      const catOk = ['allenamento', 'partita', 'stralcio', 'tattica', 'altro'];
+      const fontiOk = ['drive', 'youtube', 'locale', 'altro'];
+      const url = String(item.url || '').trim();
+      if (!/^(https?:\/\/|file:\/\/|\\\\)/i.test(url)) {
+        return res.status(400).json({ success: false, message: 'Link non valido (usa https://, percorso di rete \\\\… o file://)' });
+      }
+      const v = {
+        id: item.id || ('at' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)),
+        tipo: tipiOk.includes(item.tipo) ? item.tipo : 'video',
+        titolo: String(item.titolo || '').slice(0, 120),
+        url: url.slice(0, 600),
+        fonte: fontiOk.includes(item.fonte) ? item.fonte : 'altro',
+        categoria: catOk.includes(item.categoria) ? item.categoria : 'altro',
+        data: String(item.data || '').slice(0, 10),
+        note: String(item.note || '').slice(0, 400),
+        createdAt: item.createdAt || new Date().toISOString()
+      };
+      const idx = items.findIndex(x => x.id === v.id);
+      if (idx >= 0) items[idx] = v; else items.push(v);
+    }
+    await kv.set(key, items);
+    return res.status(200).json({ success: true, items });
+  }
+}
+
 // ── CAMBIO STAGIONE: reset + archivio ────────────────────────────────────────
 // Le 4 categorie "di stagione" (risultati partite, presenze, hall of fame,
 // calendario) vengono copiate in annate:<id>:archive[<label>] con archivedAt

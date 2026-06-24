@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="it" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Area Tecnica — Sport Monitoring</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root{ --bg:#060f1e; --card:#0d1b2a; --panel:#1e293b; --border:#2d4a8a; --border2:#3b5a9d; --txt:#e2e8f0; --muted:#94a3b8; --accent:#16a34a; }
+    *{box-sizing:border-box;}
+    body{margin:0;font-family:system-ui,Arial,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;}
+    .at-header{background:var(--card);border-bottom:2px solid var(--accent);padding:12px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:10;}
+    .at-header h1{font-size:1.15rem;margin:0;font-weight:700;display:flex;align-items:center;gap:8px;}
+    .at-header .sub{color:var(--muted);font-size:0.82rem;}
+    .at-back{background:var(--panel);color:var(--txt);border:1px solid var(--border);border-radius:8px;padding:7px 12px;cursor:pointer;text-decoration:none;font-size:0.85rem;}
+    .at-main{max-width:1100px;margin:0 auto;padding:18px;}
+    .at-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;}
+    .at-toolbar select,.at-toolbar input{background:var(--panel);color:var(--txt);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:0.85rem;}
+    .at-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:600;font-size:0.85rem;}
+    .at-btn-ghost{background:var(--panel);color:var(--txt);border:1px solid var(--border);border-radius:8px;padding:8px 12px;cursor:pointer;font-size:0.85rem;}
+    .at-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;}
+    .at-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:transform .15s,box-shadow .15s;}
+    .at-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.5);border-color:var(--border2);}
+    .at-thumb{aspect-ratio:16/9;background:linear-gradient(135deg,#0f172a,#1e293b);display:flex;align-items:center;justify-content:center;font-size:2.4rem;position:relative;}
+    .at-thumb img{width:100%;height:100%;object-fit:cover;}
+    .at-thumb .play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:2.6rem;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.7);}
+    .at-cardbody{padding:10px 12px;}
+    .at-cardbody .tit{font-weight:600;font-size:0.92rem;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .at-badge{display:inline-block;font-size:0.7rem;border-radius:5px;padding:1px 7px;font-weight:600;}
+    .at-meta{color:var(--muted);font-size:0.75rem;margin-top:4px;display:flex;justify-content:space-between;align-items:center;gap:6px;}
+    .at-del{background:none;border:none;color:#ef4444;cursor:pointer;font-size:0.9rem;padding:2px;}
+    .at-empty{text-align:center;color:var(--muted);padding:48px 16px;}
+    /* overlay form / player */
+    .at-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;z-index:50;padding:16px;}
+    .at-modal{background:var(--card);border:1px solid var(--border2);border-radius:14px;max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:20px;}
+    .at-modal.wide{max-width:900px;}
+    .at-modal h3{margin:0 0 14px;font-size:1.05rem;}
+    .at-field{margin-bottom:12px;}
+    .at-field label{display:block;font-size:0.8rem;color:var(--muted);margin-bottom:4px;}
+    .at-field input,.at-field select,.at-field textarea{width:100%;background:var(--panel);color:var(--txt);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:0.88rem;font-family:inherit;}
+    .at-player{aspect-ratio:16/9;width:100%;background:#000;border-radius:8px;overflow:hidden;}
+    .at-player iframe{width:100%;height:100%;border:0;}
+    .at-locale{background:var(--panel);border:1px dashed var(--border2);border-radius:8px;padding:16px;text-align:center;}
+    .at-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#16a34a;color:#fff;padding:10px 18px;border-radius:8px;display:none;z-index:100;font-size:0.85rem;}
+  </style>
+</head>
+<body>
+  <div class="at-header">
+    <a href="/" class="at-back">← Dashboard</a>
+    <h1>🎬 Area Tecnica</h1>
+    <span class="sub" id="at-annata-label"></span>
+  </div>
+
+  <div class="at-main">
+    <div class="at-toolbar">
+      <select id="at-filter-tipo">
+        <option value="">Tutti i tipi</option>
+        <option value="video">🎥 Video</option>
+        <option value="esercizio">🏃 Esercizi</option>
+        <option value="scheda">📋 Schede</option>
+        <option value="documento">📄 Documenti</option>
+      </select>
+      <select id="at-filter-cat">
+        <option value="">Tutte le categorie</option>
+        <option value="allenamento">Allenamento</option>
+        <option value="partita">Partita</option>
+        <option value="stralcio">Stralcio</option>
+        <option value="tattica">Tattica</option>
+        <option value="altro">Altro</option>
+      </select>
+      <input type="text" id="at-search" placeholder="🔍 Cerca per titolo…" style="flex:1;min-width:160px;">
+      <button class="at-btn" id="at-add-btn">+ Aggiungi</button>
+    </div>
+    <div id="at-grid" class="at-grid"></div>
+  </div>
+
+  <!-- Overlay: form aggiungi/modifica -->
+  <div class="at-overlay" id="at-form-overlay">
+    <div class="at-modal">
+      <h3 id="at-form-title">➕ Aggiungi contenuto</h3>
+      <input type="hidden" id="at-edit-id">
+      <div class="at-field">
+        <label>Titolo</label>
+        <input type="text" id="at-titolo" placeholder="es. Esercizio possesso 4v2" maxlength="120">
+      </div>
+      <div style="display:flex;gap:10px;">
+        <div class="at-field" style="flex:1;">
+          <label>Tipo</label>
+          <select id="at-tipo">
+            <option value="video">🎥 Video</option>
+            <option value="esercizio">🏃 Esercizio</option>
+            <option value="scheda">📋 Scheda</option>
+            <option value="documento">📄 Documento</option>
+          </select>
+        </div>
+        <div class="at-field" style="flex:1;">
+          <label>Categoria</label>
+          <select id="at-categoria">
+            <option value="allenamento">Allenamento</option>
+            <option value="partita">Partita</option>
+            <option value="stralcio">Stralcio</option>
+            <option value="tattica">Tattica</option>
+            <option value="altro">Altro</option>
+          </select>
+        </div>
+        <div class="at-field" style="width:140px;">
+          <label>Data</label>
+          <input type="date" id="at-data">
+        </div>
+      </div>
+      <div class="at-field">
+        <label>🔗 Link (Google Drive / YouTube / percorso di rete)</label>
+        <input type="text" id="at-url" placeholder="https://drive.google.com/...  •  youtube.com/...  •  \\SERVER\Cartella\file">
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:3px;">Drive e YouTube si guardano qui senza scaricarli. I percorsi di rete si aprono solo dal PC della società.</div>
+      </div>
+      <div class="at-field">
+        <label>Note (opzionale)</label>
+        <input type="text" id="at-note" maxlength="400" placeholder="es. focus sul primo controllo">
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="at-btn" id="at-save-btn">💾 Salva</button>
+        <button class="at-btn-ghost" onclick="document.getElementById('at-form-overlay').style.display='none'">Annulla</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay: player -->
+  <div class="at-overlay" id="at-player-overlay">
+    <div class="at-modal wide">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 id="at-player-title" style="margin:0;"></h3>
+        <button class="at-btn-ghost" onclick="window.atClosePlayer()">✕ Chiudi</button>
+      </div>
+      <div id="at-player-body"></div>
+      <div id="at-player-note" style="color:var(--muted);font-size:0.85rem;margin-top:10px;"></div>
+    </div>
+  </div>
+
+  <div class="at-toast" id="at-toast"></div>
+
+  <script src="/area-tecnica.js"></script>
+</body>
+</html>
