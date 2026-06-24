@@ -332,7 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="col-6"><label class="form-label small mb-1">Zona</label><input type="text" id="inf-zona" class="form-control form-control-sm" placeholder="es. caviglia dx" maxlength="60"></div>
                     <div class="col-12"><label class="form-label small mb-1">Note (riservate)</label><input type="text" id="inf-note" class="form-control form-control-sm" placeholder="opzionale" maxlength="300"></div>
-                    <div class="col-12"><label class="form-label small mb-1">🔗 Link documentazione (Google Drive/Docs)</label><input type="url" id="inf-link" class="form-control form-control-sm" placeholder="https://drive.google.com/..." maxlength="500"></div>
+                    <div class="col-12"><label class="form-label small mb-1">🔗 Link documentazione</label><input type="text" id="inf-link" class="form-control form-control-sm" placeholder="https://drive.google.com/...  oppure  \\\\SERVER\\Cartella\\referto.pdf" maxlength="500"><div class="small text-muted" style="font-size:0.7rem;">Link Google Drive/Docs o percorso di rete della società (apribile solo dal PC locale).</div></div>
                 </div>
                 <button class="btn btn-sm btn-primary-custom mt-2" onclick="window.salvaInfortunio()"><i class="bi bi-plus-lg"></i> Aggiungi infortunio</button>
             </div>
@@ -381,7 +381,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="small text-muted" style="margin-top:3px;">Dal ${fmt(inf.dataInizio)} · rientro previsto ${fmt(inf.dataRientroPrevista)}${inf.dataRientroEffettiva?' · rientrato il '+fmt(inf.dataRientroEffettiva):''}</div>
                     ${inf.note?`<div class="small" style="margin-top:2px;color:#94a3b8;font-style:italic;">${escapeHtml(inf.note)}</div>`:''}
-                    ${inf.linkDoc?`<div class="small" style="margin-top:4px;"><a href="${escapeHtml(inf.linkDoc)}" target="_blank" rel="noopener" style="color:#60a5fa;"><i class="bi bi-box-arrow-up-right"></i> Apri documentazione</a></div>`:''}
+                    ${inf.linkDoc?(/^https?:\/\//i.test(inf.linkDoc)
+                        ? `<div class="small" style="margin-top:4px;"><a href="${escapeHtml(inf.linkDoc)}" target="_blank" rel="noopener" style="color:#60a5fa;"><i class="bi bi-box-arrow-up-right"></i> Apri documentazione</a></div>`
+                        : `<div class="small" style="margin-top:4px;"><span style="color:#94a3b8;"><i class="bi bi-folder-fill" style="color:#f59e0b;"></i> ${escapeHtml(inf.linkDoc)}</span> <button class="btn btn-sm btn-outline-light py-0 px-1" style="font-size:0.7rem;" onclick="navigator.clipboard.writeText('${escapeHtml(inf.linkDoc).replace(/'/g,"\\'")}');this.textContent='✓ copiato'">📋 copia</button></div>`
+                    ):''}
                     <div style="display:flex;gap:6px;margin-top:6px;">
                         ${inf.attivo?`<button class="btn btn-sm btn-outline-success" onclick="window.chiudiInfortunio('${inf.id}')"><i class="bi bi-check2"></i> Segna rientro (oggi)</button>`:''}
                         <button class="btn btn-sm btn-outline-danger" onclick="window.eliminaInfortunio('${inf.id}')"><i class="bi bi-trash"></i></button>
@@ -1209,9 +1212,16 @@ document.addEventListener('DOMContentLoaded', () => {
         jersey.dataset.athleteId = athlete.id;
         jersey.dataset.role = athlete.role;
         const jerseyColor = athlete.role.toLowerCase().includes('portiere') ? '#E8C135' : '#1e5095';
-        // Avviso infortunio (non blocca: la maglia resta posizionabile)
-        const infBadge = athlete.infortunato ? '<span class="jersey-inj" title="Infortunato" style="position:absolute;top:-4px;right:-4px;font-size:0.9rem;line-height:1;">🤕</span>' : '';
-        jersey.innerHTML = `<div class="jersey-body" style="--jersey-color: ${jerseyColor}; background-color: ${jerseyColor};position:relative;"><span class="jersey-number">${athlete.number}</span>${infBadge}</div><span class="player-name">${escapeHtml(athlete.name)}</span>`;
+        jersey.innerHTML = `<div class="jersey-body" style="--jersey-color: ${jerseyColor}; background-color: ${jerseyColor};position:relative;"><span class="jersey-number">${athlete.number}</span></div><span class="player-name">${escapeHtml(athlete.name)}</span>`;
+        // Avviso infortunio (non blocca): badge 🤕 ben visibile in alto a destra,
+        // distinto dal lucchetto visita scaduta (in alto a sinistra).
+        if (athlete.infortunato) {
+            const inj = document.createElement('span');
+            inj.innerHTML = '🤕';
+            inj.title = 'Infortunato' + (athlete.dataRientro ? ' — rientro previsto ' + new Date(athlete.dataRientro+'T00:00:00').toLocaleDateString('it-IT') : '');
+            inj.style.cssText = 'position:absolute;top:-6px;right:-6px;background:#fff;border:2px solid #d90429;border-radius:50%;width:1.6em;height:1.6em;display:flex;align-items:center;justify-content:center;font-size:0.95em;z-index:5;box-shadow:0 1px 4px rgba(0,0,0,0.4);';
+            jersey.appendChild(inj);
+        }
         return jersey;
     };
     const createTokenElement = (type, id) => {

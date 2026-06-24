@@ -416,7 +416,7 @@ if (req.query?.action === 'infortuni') {
         tipo: tipiOk.includes(infortunio.tipo) ? infortunio.tipo : 'altro',
         zona: String(infortunio.zona || '').slice(0, 60),
         note: String(infortunio.note || '').slice(0, 300),
-        linkDoc: (/^https?:\/\//i.test(String(infortunio.linkDoc || '').trim())) ? String(infortunio.linkDoc).trim().slice(0, 500) : '',
+        linkDoc: (/^(https?:\/\/|file:\/\/|\\\\)/i.test(String(infortunio.linkDoc || '').trim())) ? String(infortunio.linkDoc).trim().slice(0, 500) : '',
         attivo: !infortunio.dataRientroEffettiva
       };
       const idx = lista.findIndex(x => x.id === v.id);
