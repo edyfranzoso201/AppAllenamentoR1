@@ -332,6 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="col-6"><label class="form-label small mb-1">Zona</label><input type="text" id="inf-zona" class="form-control form-control-sm" placeholder="es. caviglia dx" maxlength="60"></div>
                     <div class="col-12"><label class="form-label small mb-1">Note (riservate)</label><input type="text" id="inf-note" class="form-control form-control-sm" placeholder="opzionale" maxlength="300"></div>
+                    <div class="col-12"><label class="form-label small mb-1">🔗 Link documentazione (Google Drive/Docs)</label><input type="url" id="inf-link" class="form-control form-control-sm" placeholder="https://drive.google.com/..." maxlength="500"></div>
                 </div>
                 <button class="btn btn-sm btn-primary-custom mt-2" onclick="window.salvaInfortunio()"><i class="bi bi-plus-lg"></i> Aggiungi infortunio</button>
             </div>
@@ -352,6 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
         m.querySelector('#inf-tipo').value = 'altro';
         m.querySelector('#inf-zona').value = '';
         m.querySelector('#inf-note').value = '';
+        m.querySelector('#inf-link').value = '';
         m.style.display = 'flex';
         await _infRenderList(athleteId);
     };
@@ -379,6 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="small text-muted" style="margin-top:3px;">Dal ${fmt(inf.dataInizio)} · rientro previsto ${fmt(inf.dataRientroPrevista)}${inf.dataRientroEffettiva?' · rientrato il '+fmt(inf.dataRientroEffettiva):''}</div>
                     ${inf.note?`<div class="small" style="margin-top:2px;color:#94a3b8;font-style:italic;">${escapeHtml(inf.note)}</div>`:''}
+                    ${inf.linkDoc?`<div class="small" style="margin-top:4px;"><a href="${escapeHtml(inf.linkDoc)}" target="_blank" rel="noopener" style="color:#60a5fa;"><i class="bi bi-box-arrow-up-right"></i> Apri documentazione</a></div>`:''}
                     <div style="display:flex;gap:6px;margin-top:6px;">
                         ${inf.attivo?`<button class="btn btn-sm btn-outline-success" onclick="window.chiudiInfortunio('${inf.id}')"><i class="bi bi-check2"></i> Segna rientro (oggi)</button>`:''}
                         <button class="btn btn-sm btn-outline-danger" onclick="window.eliminaInfortunio('${inf.id}')"><i class="bi bi-trash"></i></button>
@@ -409,11 +412,13 @@ document.addEventListener('DOMContentLoaded', () => {
             dataRientroPrevista: document.getElementById('inf-rientro-prev').value,
             tipo: document.getElementById('inf-tipo').value,
             zona: document.getElementById('inf-zona').value.trim(),
-            note: document.getElementById('inf-note').value.trim()
+            note: document.getElementById('inf-note').value.trim(),
+            linkDoc: document.getElementById('inf-link').value.trim()
         }});
         // pulisci il form
         document.getElementById('inf-zona').value = '';
         document.getElementById('inf-note').value = '';
+        document.getElementById('inf-link').value = '';
     };
     window.chiudiInfortunio = async function(id) {
         // ricarico la voce, imposto rientro effettivo = oggi (→ attivo:false lato server)
