@@ -138,7 +138,7 @@ async function purgeAthlete(prefix, athleteId) {
   }
 
   // 3. mappe {id:...} → cancella la chiave dell'atleta
-  for (const k of ['gpsData', 'ratingSheets', 'pagamenti', 'athleteDocs']) {
+  for (const k of ['gpsData', 'ratingSheets', 'pagamenti', 'athleteDocs', 'infortuni']) {
     const obj = await kv.get(`${prefix}:${k}`);
     if (obj && typeof obj === 'object' && aid in obj) {
       delete obj[aid];
@@ -373,6 +373,72 @@ if (req.query?.action === 'purge-athlete' && req.method === 'POST') {
   } catch (e) {
     console.error('[purge-athlete]', e?.message || e);
     return res.status(500).json({ success: false, message: 'Errore cancellazione' });
+  }
+}
+
+// ── INFORTUNI: storico per atleta (dato sensibile art.9 — SOLO staff) ────────
+// Struttura: annate:<id>:infortuni = { athleteId: [ {id,dataInizio,
+// dataRientroPrevista,dataRientroEffettiva,tipo,zona,note,attivo}, ... ] }.
+// NON è incluso nel GET dati (né va ai genitori): endpoint dedicato e protetto.
+// Lo stato "infortunato" sull'atleta è derivato: c'è un infortunio attivo.
+if (req.query?.action === 'infortuni') {
+  if (!session.isAuthenticated || !canWrite(session.role)) {
+    return res.status(403).json({ success: false, message: 'Permesso negato' });
+  }
+  if (!annataId || !isValidId(annataId)) {
+    return res.status(400).json({ success: false, message: 'annataId non valido' });
+  }
+  const prefix = `annate:${annataId}`;
+  const key = `${prefix}:infortuni`;
+
+  if (req.method === 'GET') {
+    const infortuni = (await kv.get(key)) || {};
+    return res.status(200).json({ success: true, infortuni });
+  }
+
+  if (req.method === 'POST') {
+    const athleteId = String((req.body && req.body.athleteId) || '').trim();
+    if (!athleteId) return res.status(400).json({ success: false, message: 'athleteId mancante' });
+    const { infortunio, deleteId } = req.body || {};
+    const all = (await kv.get(key)) || {};
+    let lista = Array.isArray(all[athleteId]) ? all[athleteId] : [];
+
+    if (deleteId) {
+      lista = lista.filter(x => x.id !== deleteId);
+    } else if (infortunio && typeof infortunio === 'object') {
+      // tipo limitato a categorie generiche (no diagnosi mediche dettagliate)
+      const tipiOk = ['muscolare', 'articolare', 'trauma', 'altro'];
+      const v = {
+        id: infortunio.id || ('inf' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)),
+        dataInizio: String(infortunio.dataInizio || '').slice(0, 10),
+        dataRientroPrevista: String(infortunio.dataRientroPrevista || '').slice(0, 10),
+        dataRientroEffettiva: String(infortunio.dataRientroEffettiva || '').slice(0, 10),
+        tipo: tipiOk.includes(infortunio.tipo) ? infortunio.tipo : 'altro',
+        zona: String(infortunio.zona || '').slice(0, 60),
+        note: String(infortunio.note || '').slice(0, 300),
+        attivo: !infortunio.dataRientroEffettiva
+      };
+      const idx = lista.findIndex(x => x.id === v.id);
+      if (idx >= 0) lista[idx] = v; else lista.push(v);
+    }
+
+    if (lista.length) all[athleteId] = lista; else delete all[athleteId];
+    await kv.set(key, all);
+
+    // Aggiorna lo stato derivato sull'atleta (infortunato + dataRientro) così la
+    // UI esistente (badge card, formazioni) resta coerente senza altre fetch.
+    try {
+      const athletes = (await kv.get(`${prefix}:athletes`)) || [];
+      const att = lista.find(x => x.attivo);
+      const i = athletes.findIndex(a => String(a.id) === athleteId);
+      if (i >= 0) {
+        if (att) { athletes[i].infortunato = true; athletes[i].dataRientro = att.dataRientroPrevista || ''; }
+        else { athletes[i].infortunato = false; delete athletes[i].dataRientro; }
+        await kv.set(`${prefix}:athletes`, athletes);
+      }
+    } catch (e) { console.error('[infortuni] sync athlete state:', e?.message || e); }
+
+    return res.status(200).json({ success: true, infortuni: all });
   }
 }
 

@@ -290,6 +290,143 @@ document.addEventListener('DOMContentLoaded', () => {
         parentModal.show();
     };
 
+    // ── INFORTUNI: cartella per atleta (dato sensibile, solo staff) ──────────
+    const _infHeaders = (json) => {
+        const h = {
+            'X-Society-Id': sessionStorage.getItem('gosport_society_id') || '',
+            'X-Annata-Id': sessionStorage.getItem('gosport_current_annata') || '',
+            'X-Auth-Session': sessionStorage.getItem('gosport_session_token') || '',
+            'X-Auth-User': sessionStorage.getItem('gosport_auth_user') || '',
+            'X-User-Role': sessionStorage.getItem('gosport_user_role') || ''
+        };
+        if (json) h['Content-Type'] = 'application/json';
+        return h;
+    };
+    const _infTipoLabel = { muscolare:'💪 Muscolare', articolare:'🦴 Articolare', trauma:'🩹 Trauma', altro:'➕ Altro' };
+    let _infCurrentAthlete = null;
+
+    function _infModalEl() {
+        let m = document.getElementById('infortuni-modal');
+        if (m) return m;
+        m = document.createElement('div');
+        m.id = 'infortuni-modal';
+        m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:3000;padding:16px;';
+        m.innerHTML = `<div style="background:var(--bg-card,#0d1b2a);border:1px solid #3b5a9d;border-radius:14px;max-width:640px;width:100%;max-height:90vh;overflow:auto;padding:20px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <h5 style="margin:0;color:var(--text-primary,#e2e8f0);">🩹 Infortuni — <span id="inf-ath-name"></span></h5>
+                <button class="btn btn-sm btn-outline-light" onclick="document.getElementById('infortuni-modal').style.display='none'">✕</button>
+            </div>
+            <div id="inf-list" style="margin-bottom:14px;"></div>
+            <div style="border-top:1px solid #2d4a8a;padding-top:12px;">
+                <div style="font-weight:600;color:#60a5fa;margin-bottom:8px;font-size:0.9rem;">➕ Nuovo infortunio</div>
+                <div class="row g-2">
+                    <div class="col-6"><label class="form-label small mb-1">Data inizio</label><input type="date" id="inf-inizio" class="form-control form-control-sm"></div>
+                    <div class="col-6"><label class="form-label small mb-1">Rientro previsto</label><input type="date" id="inf-rientro-prev" class="form-control form-control-sm"></div>
+                    <div class="col-6"><label class="form-label small mb-1">Tipo</label>
+                        <select id="inf-tipo" class="form-select form-select-sm">
+                            <option value="muscolare">💪 Muscolare</option>
+                            <option value="articolare">🦴 Articolare</option>
+                            <option value="trauma">🩹 Trauma</option>
+                            <option value="altro" selected>➕ Altro</option>
+                        </select>
+                    </div>
+                    <div class="col-6"><label class="form-label small mb-1">Zona</label><input type="text" id="inf-zona" class="form-control form-control-sm" placeholder="es. caviglia dx" maxlength="60"></div>
+                    <div class="col-12"><label class="form-label small mb-1">Note (riservate)</label><input type="text" id="inf-note" class="form-control form-control-sm" placeholder="opzionale" maxlength="300"></div>
+                </div>
+                <button class="btn btn-sm btn-primary-custom mt-2" onclick="window.salvaInfortunio()"><i class="bi bi-plus-lg"></i> Aggiungi infortunio</button>
+            </div>
+        </div>`;
+        document.body.appendChild(m);
+        m.addEventListener('click', (e) => { if (e.target === m) m.style.display = 'none'; });
+        return m;
+    }
+
+    window.openInfortuniModal = async function(athleteId) {
+        const athlete = athletes.find(a => String(a.id) === String(athleteId));
+        if (!athlete) return;
+        _infCurrentAthlete = athleteId;
+        const m = _infModalEl();
+        m.querySelector('#inf-ath-name').textContent = athlete.name;
+        m.querySelector('#inf-inizio').value = new Date().toISOString().split('T')[0];
+        m.querySelector('#inf-rientro-prev').value = '';
+        m.querySelector('#inf-tipo').value = 'altro';
+        m.querySelector('#inf-zona').value = '';
+        m.querySelector('#inf-note').value = '';
+        m.style.display = 'flex';
+        await _infRenderList(athleteId);
+    };
+
+    async function _infRenderList(athleteId) {
+        const box = document.getElementById('inf-list');
+        if (!box) return;
+        box.innerHTML = '<div class="text-muted small">Caricamento…</div>';
+        try {
+            const r = await fetch('/api/data?action=infortuni', { headers: _infHeaders(false) });
+            const d = await r.json();
+            const lista = (d.infortuni && d.infortuni[athleteId]) || [];
+            if (!lista.length) { box.innerHTML = '<div class="text-muted small">Nessun infortunio registrato.</div>'; return; }
+            // attivi in cima, poi per data inizio desc
+            lista.sort((a,b) => (b.attivo?1:0)-(a.attivo?1:0) || String(b.dataInizio).localeCompare(String(a.dataInizio)));
+            box.innerHTML = lista.map(inf => {
+                const stato = inf.attivo
+                    ? '<span style="background:#7f1d1d;color:#fecaca;border-radius:4px;padding:1px 7px;font-size:0.72rem;">🤕 In corso</span>'
+                    : '<span style="background:#14532d;color:#bbf7d0;border-radius:4px;padding:1px 7px;font-size:0.72rem;">✓ Guarito</span>';
+                const fmt = s => s ? new Date(s+'T00:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'2-digit'}) : '—';
+                return `<div style="border:1px solid #2d4a8a;border-radius:8px;padding:8px 10px;margin-bottom:6px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <span style="font-weight:600;">${_infTipoLabel[inf.tipo]||inf.tipo}${inf.zona?' · '+escapeHtml(inf.zona):''}</span>
+                        ${stato}
+                    </div>
+                    <div class="small text-muted" style="margin-top:3px;">Dal ${fmt(inf.dataInizio)} · rientro previsto ${fmt(inf.dataRientroPrevista)}${inf.dataRientroEffettiva?' · rientrato il '+fmt(inf.dataRientroEffettiva):''}</div>
+                    ${inf.note?`<div class="small" style="margin-top:2px;color:#94a3b8;font-style:italic;">${escapeHtml(inf.note)}</div>`:''}
+                    <div style="display:flex;gap:6px;margin-top:6px;">
+                        ${inf.attivo?`<button class="btn btn-sm btn-outline-success" onclick="window.chiudiInfortunio('${inf.id}')"><i class="bi bi-check2"></i> Segna rientro (oggi)</button>`:''}
+                        <button class="btn btn-sm btn-outline-danger" onclick="window.eliminaInfortunio('${inf.id}')"><i class="bi bi-trash"></i></button>
+                    </div>
+                </div>`;
+            }).join('');
+        } catch(e) { box.innerHTML = '<div class="text-danger small">Errore caricamento.</div>'; }
+    }
+
+    async function _infSave(payload) {
+        const r = await fetch('/api/data?action=infortuni', { method:'POST', headers:_infHeaders(true), body: JSON.stringify({ athleteId:_infCurrentAthlete, ...payload }) });
+        const d = await r.json();
+        if (!r.ok || !d.success) { alert('❌ ' + (d.message||'Errore')); return false; }
+        // aggiorna lo stato locale dell'atleta (infortunato/dataRientro) per la UI
+        try {
+            if (typeof loadData === 'function') await loadData();
+            if (window.updateAllUI) window.updateAllUI();
+        } catch(_){}
+        await _infRenderList(_infCurrentAthlete);
+        return true;
+    }
+
+    window.salvaInfortunio = function() {
+        const inizio = document.getElementById('inf-inizio').value;
+        if (!inizio) { alert('Inserisci la data di inizio'); return; }
+        _infSave({ infortunio: {
+            dataInizio: inizio,
+            dataRientroPrevista: document.getElementById('inf-rientro-prev').value,
+            tipo: document.getElementById('inf-tipo').value,
+            zona: document.getElementById('inf-zona').value.trim(),
+            note: document.getElementById('inf-note').value.trim()
+        }});
+        // pulisci il form
+        document.getElementById('inf-zona').value = '';
+        document.getElementById('inf-note').value = '';
+    };
+    window.chiudiInfortunio = async function(id) {
+        // ricarico la voce, imposto rientro effettivo = oggi (→ attivo:false lato server)
+        const r = await fetch('/api/data?action=infortuni', { headers:_infHeaders(false) });
+        const d = await r.json();
+        const inf = ((d.infortuni && d.infortuni[_infCurrentAthlete]) || []).find(x => x.id === id);
+        if (!inf) return;
+        await _infSave({ infortunio: { ...inf, dataRientroEffettiva: new Date().toISOString().split('T')[0] } });
+    };
+    window.eliminaInfortunio = function(id) {
+        if (!confirm('Eliminare questo infortunio dallo storico?')) return;
+        _infSave({ deleteId: id });
+    };
 
     window.resetIndividualPkg = function(athleteId) {
         if (!athleteId) {
@@ -1067,7 +1204,9 @@ document.addEventListener('DOMContentLoaded', () => {
         jersey.dataset.athleteId = athlete.id;
         jersey.dataset.role = athlete.role;
         const jerseyColor = athlete.role.toLowerCase().includes('portiere') ? '#E8C135' : '#1e5095';
-        jersey.innerHTML = `<div class="jersey-body" style="--jersey-color: ${jerseyColor}; background-color: ${jerseyColor};"><span class="jersey-number">${athlete.number}</span></div><span class="player-name">${escapeHtml(athlete.name)}</span>`;
+        // Avviso infortunio (non blocca: la maglia resta posizionabile)
+        const infBadge = athlete.infortunato ? '<span class="jersey-inj" title="Infortunato" style="position:absolute;top:-4px;right:-4px;font-size:0.9rem;line-height:1;">🤕</span>' : '';
+        jersey.innerHTML = `<div class="jersey-body" style="--jersey-color: ${jerseyColor}; background-color: ${jerseyColor};position:relative;"><span class="jersey-number">${athlete.number}</span>${infBadge}</div><span class="player-name">${escapeHtml(athlete.name)}</span>`;
         return jersey;
     };
     const createTokenElement = (type, id) => {
@@ -2205,7 +2344,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     : '';
                 const uscitaBadge = athlete.uscitaAutonoma ? '<span style="font-size:0.62rem;background:#fed7aa;color:#92400e;border-radius:3px;padding:1px 5px;margin-left:4px;vertical-align:middle;">🚶✅</span>' : '';
                 const infortunatoBadge = athlete.infortunato ? `<span style="font-size:0.62rem;background:#fee2e2;color:#991b1b;border-radius:3px;padding:1px 5px;margin-left:4px;vertical-align:middle;">🤕${athlete.dataRientro ? ' ' + new Date(athlete.dataRientro + 'T00:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}) : ''}</span>` : '';
-                card.innerHTML = `<div class="card ${cardClass}" style="${indBorder}${cardBg}"><div class="card-body athlete-card-clickable" data-athlete-id="${athlete.id}">${athlete.avatar ? `<img src="${escapeHtml(athlete.avatar)}" onerror="window.avatarFallback(this, ${JSON.stringify(athlete.name || '').replace(/"/g, '&quot;')})" alt="${escapeHtml(athlete.name)}" class="athlete-avatar me-3">` : initialsAvatarHtml(athlete.name)}<div><h5 class="card-title">${escapeHtml(athlete.name)} ${athlete.isCaptain ? '<i class="bi bi-star-fill is-captain"></i>' : ''} ${vcIcon}${uscitaBadge}${infortunatoBadge}</h5><p class="card-text text-muted">${escapeHtml(athlete.role)}</p>${indBadge}</div><div class="shirt-number">${athlete.number}</div>${statusIcon}</div><div class="card-actions no-print"><button class="btn btn-sm btn-outline-light rating-btn" title="Pagelle" data-athlete-id="${athlete.id}"><i class="bi bi-clipboard-check"></i></button><button class="btn btn-sm btn-outline-light gps-btn" title="Dati Performance" data-athlete-id="${athlete.id}"><i class="bi bi-person-fill-gear"></i></button><button class="btn btn-sm btn-outline-light individual-btn" title="Pacchetto Individual" data-athlete-id="${athlete.id}" style="${athlete.individualPackage?.type ? 'color:#f59e0b;border-color:#f59e0b;' : ''}"><i class="bi bi-person-fill-up"></i></button><div class="card-more-wrap"><button class="btn btn-sm btn-outline-light card-more-btn" title="Altre azioni" aria-label="Altre azioni"><i class="bi bi-three-dots"></i></button><div class="card-more-menu"><button class="btn btn-sm btn-outline-light parent-btn" data-athlete-id="${athlete.id}"><i class="bi bi-people-fill"></i> Genitori</button>${athlete.certLink ? `<button class="btn btn-sm btn-outline-light cert-btn" onclick="window.open('${escapeHtml(athlete.certLink)}','_blank')"><i class="bi bi-file-earmark-medical-fill" style="color:#16a34a;"></i> Certificato</button>` : ""}<button class="btn btn-sm btn-outline-light edit-btn" data-athlete-id="${athlete.id}"><i class="bi bi-pencil-fill"></i> Modifica</button>${athlete.archived ? `<button class="btn btn-sm btn-outline-success restore-btn" data-athlete-id="${athlete.id}"><i class="bi bi-arrow-counterclockwise"></i> Ripristina</button>` : `<button class="btn btn-sm btn-outline-warning archive-btn" data-athlete-id="${athlete.id}"><i class="bi bi-archive-fill"></i> Archivia</button>`}<button class="btn btn-sm btn-outline-danger delete-btn" data-athlete-id="${athlete.id}"><i class="bi bi-trash-fill"></i> Elimina</button></div></div></div></div>`;
+                card.innerHTML = `<div class="card ${cardClass}" style="${indBorder}${cardBg}"><div class="card-body athlete-card-clickable" data-athlete-id="${athlete.id}">${athlete.avatar ? `<img src="${escapeHtml(athlete.avatar)}" onerror="window.avatarFallback(this, ${JSON.stringify(athlete.name || '').replace(/"/g, '&quot;')})" alt="${escapeHtml(athlete.name)}" class="athlete-avatar me-3">` : initialsAvatarHtml(athlete.name)}<div><h5 class="card-title">${escapeHtml(athlete.name)} ${athlete.isCaptain ? '<i class="bi bi-star-fill is-captain"></i>' : ''} ${vcIcon}${uscitaBadge}${infortunatoBadge}</h5><p class="card-text text-muted">${escapeHtml(athlete.role)}</p>${indBadge}</div><div class="shirt-number">${athlete.number}</div>${statusIcon}</div><div class="card-actions no-print"><button class="btn btn-sm btn-outline-light rating-btn" title="Pagelle" data-athlete-id="${athlete.id}"><i class="bi bi-clipboard-check"></i></button><button class="btn btn-sm btn-outline-light gps-btn" title="Dati Performance" data-athlete-id="${athlete.id}"><i class="bi bi-person-fill-gear"></i></button><button class="btn btn-sm btn-outline-light individual-btn" title="Pacchetto Individual" data-athlete-id="${athlete.id}" style="${athlete.individualPackage?.type ? 'color:#f59e0b;border-color:#f59e0b;' : ''}"><i class="bi bi-person-fill-up"></i></button><div class="card-more-wrap"><button class="btn btn-sm btn-outline-light card-more-btn" title="Altre azioni" aria-label="Altre azioni"><i class="bi bi-three-dots"></i></button><div class="card-more-menu"><button class="btn btn-sm btn-outline-light parent-btn" data-athlete-id="${athlete.id}"><i class="bi bi-people-fill"></i> Genitori</button><button class="btn btn-sm btn-outline-light infortuni-btn" data-athlete-id="${athlete.id}"><i class="bi bi-bandaid-fill"></i> Infortuni</button>${athlete.certLink ? `<button class="btn btn-sm btn-outline-light cert-btn" onclick="window.open('${escapeHtml(athlete.certLink)}','_blank')"><i class="bi bi-file-earmark-medical-fill" style="color:#16a34a;"></i> Certificato</button>` : ""}<button class="btn btn-sm btn-outline-light edit-btn" data-athlete-id="${athlete.id}"><i class="bi bi-pencil-fill"></i> Modifica</button>${athlete.archived ? `<button class="btn btn-sm btn-outline-success restore-btn" data-athlete-id="${athlete.id}"><i class="bi bi-arrow-counterclockwise"></i> Ripristina</button>` : `<button class="btn btn-sm btn-outline-warning archive-btn" data-athlete-id="${athlete.id}"><i class="bi bi-archive-fill"></i> Archivia</button>`}<button class="btn btn-sm btn-outline-danger delete-btn" data-athlete-id="${athlete.id}"><i class="bi bi-trash-fill"></i> Elimina</button></div></div></div></div>`;
             }
             elements.athleteGrid.appendChild(card);
             // FIX v1.5.21: applica colore background dopo appendChild (override Bootstrap vars)
@@ -3976,6 +4115,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         if (e.target.closest('.parent-btn')) {
             openParentModal(athleteId);
+        }
+        else if (e.target.closest('.infortuni-btn')) {
+            window.openInfortuniModal(athleteId);
         }
         else if (e.target.closest('.individual-btn')) {
             const indModal = bootstrap.Modal.getInstance(document.getElementById('individualModal')) || new bootstrap.Modal(document.getElementById('individualModal'));
