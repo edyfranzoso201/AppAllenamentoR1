@@ -7,17 +7,24 @@
 
   let items = [];
 
+  // La pagina si apre in una NUOVA scheda (target=_blank): il sessionStorage NON
+  // è condiviso tra schede. L'app persiste le chiavi sessione in localStorage con
+  // prefisso "_p_" (vedi auth-multi-annata.js). Quindi leggo: sessionStorage →
+  // fallback localStorage "_p_" → fallback localStorage diretto.
+  function ss(key) {
+    return sessionStorage.getItem(key) || localStorage.getItem('_p_' + key) || '';
+  }
   function annataId() {
     const u = new URLSearchParams(location.search).get('annata');
-    return u || sessionStorage.getItem('gosport_current_annata') || localStorage.getItem('currentAnnata') || '';
+    return u || ss('gosport_current_annata') || localStorage.getItem('currentAnnata') || '';
   }
   function authHeaders(json) {
     const h = {
       'X-Annata-Id': annataId(),
-      'X-Auth-Session': sessionStorage.getItem('gosport_session_token') || sessionStorage.getItem('gosport_auth_session') || '',
-      'X-Auth-User': sessionStorage.getItem('gosport_auth_user') || '',
-      'X-User-Role': sessionStorage.getItem('gosport_user_role') || '',
-      'X-Society-Id': sessionStorage.getItem('gosport_society_id') || ''
+      'X-Auth-Session': ss('gosport_session_token') || ss('gosport_auth_session') || '',
+      'X-Auth-User': ss('gosport_auth_user') || '',
+      'X-User-Role': ss('gosport_user_role') || '',
+      'X-Society-Id': ss('gosport_society_id') || ''
     };
     if (json) h['Content-Type'] = 'application/json';
     return h;
