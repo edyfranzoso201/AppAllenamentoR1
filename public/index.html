@@ -7611,7 +7611,8 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
           var pid   = a.id;
           var entry = (matData[pid] || {})[itm];
           var num   = String((matData[pid] || {})._numero || '').trim();
-          if (!entry || entry.status !== 'consegnato') return; // non consegnato → skip (kit: non creare voce mancante per numero)
+          if (!entry || !entry.status) return; // mai assegnato → skip per i badge numerati
+          if (entry.status !== 'consegnato' && entry.status !== 'restituito') return;
           var taglia = entry.taglia || '';
           if (num) {
             // Cerca voce esistente nel kit con stesso numero
@@ -7627,11 +7628,11 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
             }
           }
         });
-        // Mancanti: atleti senza consegna
+        // Mancanti: atleti senza assegnazione (status vuoto = mai assegnato)
         var groupMissing = {};
         activeAthletes.forEach(function(a) {
           var entry = (matData[a.id] || {})[itm];
-          if (!entry || entry.status !== 'consegnato') {
+          if (!entry || !entry.status) {
             var taglia = entry ? (entry.taglia || '') : '';
             if (!groupMissing[taglia]) groupMissing[taglia] = 0;
             groupMissing[taglia]++;
@@ -7647,10 +7648,11 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         var groups = {};
         activeAthletes.forEach(function(a) {
           var entry = (matData[a.id] || {})[itm];
-          if (!entry) { if (!groups['']) groups[''] = {c:0,m:0}; groups[''].m++; return; }
+          if (!entry || !entry.status) { if (!groups['']) groups[''] = {c:0,m:0}; groups[''].m++; return; }
           var t = entry.taglia || '';
           if (!groups[t]) groups[t] = {c:0, m:0};
-          if (entry.status === 'consegnato') groups[t].c += (parseInt(entry.qty)||1);
+          // consegnato E restituito = presente in magazzino = buono
+          if (entry.status === 'consegnato' || entry.status === 'restituito') groups[t].c += (parseInt(entry.qty)||1);
           else groups[t].m++;
         });
         var existKeys = new Set(_items.map(function(it){ return (it.nome||'')+'||'+(it.taglia||'')+'||'+(it.condizione||''); }));
