@@ -6212,12 +6212,18 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   var WRITE_ROLES = ['admin', 'dirigente', 'coachl1', 'coach_l1', 'coach l1'];
   var CAT_ROLES   = ['admin', 'dirigente'];
 
-  function annataId() { return sessionStorage.getItem('gosport_current_annata') || ''; }
-  function currentRole() { return String(sessionStorage.getItem('gosport_user_role') || localStorage.getItem('_p_gosport_user_role') || '').toLowerCase(); }
+  function ss(k) { return sessionStorage.getItem(k) || localStorage.getItem('_p_' + k) || ''; }
+  function annataId() { return ss('gosport_current_annata'); }
+  function currentRole() { return String(ss('gosport_user_role')).toLowerCase(); }
   function authHeaders() {
-    var tok = sessionStorage.getItem('gosport_auth_token') || localStorage.getItem('gosport_auth_token') || '';
-    var aid = annataId();
-    return { 'Content-Type': 'application/json', 'x-auth-session': tok, 'x-annata-id': aid };
+    return {
+      'Content-Type': 'application/json',
+      'x-auth-session': ss('gosport_session_token') || ss('gosport_auth_session'),
+      'x-annata-id': annataId(),
+      'X-Auth-User': ss('gosport_auth_user'),
+      'X-User-Role': ss('gosport_user_role'),
+      'X-Society-Id': ss('gosport_society_id')
+    };
   }
 
   // ── carica dati dal server ──
@@ -6447,7 +6453,8 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
 
   // ── inizializzazione ──
   function tryInit() {
-    var tok = sessionStorage.getItem('gosport_auth_token') || localStorage.getItem('gosport_auth_token') || '';
+    // Aspetta che la sessione sia disponibile (login completato)
+    var tok = ss('gosport_session_token') || ss('gosport_auth_session');
     if (!tok) { setTimeout(tryInit, 800); return; }
     applyRole(currentRole());
     load();
