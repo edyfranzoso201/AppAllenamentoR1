@@ -2063,7 +2063,10 @@
             <div class="col-12 mt-5" id="inv-section">
                 <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
                     <h4 class="mb-0" style="color:#34d399;"><i class="bi bi-clipboard2-check-fill"></i> Inventario Fine Annata</h4>
-                    <button id="inv-add-btn" class="btn btn-sm btn-success ms-auto no-print" onclick="window.INV.openForm(null)" style="display:none;">
+                    <button id="inv-kit-btn" class="btn btn-sm btn-outline-warning ms-auto no-print" onclick="window.INV.openKit()" style="display:none;">
+                        <i class="bi bi-grid-3x3-gap-fill"></i> Kit Maglie
+                    </button>
+                    <button id="inv-add-btn" class="btn btn-sm btn-success no-print" onclick="window.INV.openForm(null)" style="display:none;">
                         <i class="bi bi-plus-circle-fill"></i> Aggiungi voce
                     </button>
                     <button id="inv-cat-btn" class="btn btn-sm btn-outline-info no-print" onclick="window.INV.openCategories()" style="display:none;">
@@ -2125,6 +2128,46 @@
                         <div class="modal-footer" style="border-color:#334155;">
                             <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annulla</button>
                             <button type="button" class="btn btn-success btn-sm" onclick="window.INV.saveForm()"><i class="bi bi-check-lg"></i> Salva</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Kit Maglie: crea in blocco un set di maglie numerate -->
+            <div class="modal fade" id="invKitModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                    <div class="modal-content" style="background:var(--bg-panel);border:1px solid #334155;color:var(--text-primary);">
+                        <div class="modal-header" style="border-color:#334155;">
+                            <h5 class="modal-title"><i class="bi bi-grid-3x3-gap-fill" style="color:#fbbf24;"></i> Kit Maglie — Griglia numerata</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="small mb-3" style="color:#94a3b8;">
+                                Crea un set di maglie numerate (es. "Divisa Rossa N°1→20"). Ogni numero avrà la sua riga con taglia, condizione e note. Le voci già esistenti per questo set verranno aggiornate.
+                            </p>
+                            <div class="row g-2 mb-3">
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label small">Nome set divise <span style="color:#f87171;">*</span></label>
+                                    <input id="inv-kit-name" type="text" class="form-control form-control-sm" placeholder="es. Divisa Rossa, Kit Trasferta…" maxlength="80" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <label class="form-label small">Da numero</label>
+                                    <input id="inv-kit-from" type="number" min="1" max="99" value="1" class="form-control form-control-sm" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <label class="form-label small">A numero</label>
+                                    <input id="inv-kit-to" type="number" min="1" max="99" value="20" class="form-control form-control-sm" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2 mb-3 align-items-center flex-wrap">
+                                <button class="btn btn-sm btn-outline-primary" type="button" onclick="window.INV.kitGenerate()"><i class="bi bi-arrow-clockwise"></i> Genera griglia</button>
+                                <span class="small" style="color:#94a3b8;" id="inv-kit-info"></span>
+                            </div>
+                            <div id="inv-kit-grid" style="overflow-x:auto;"></div>
+                        </div>
+                        <div class="modal-footer" style="border-color:#334155;">
+                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annulla</button>
+                            <button type="button" class="btn btn-success btn-sm" id="inv-kit-save-btn" onclick="window.INV.saveKit()" style="display:none;"><i class="bi bi-check-lg"></i> Salva kit</button>
                         </div>
                     </div>
                 </div>
@@ -6243,11 +6286,13 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   // ── aggiorna bottoni visibili in base al ruolo ──
   function applyRole(role) {
     var r = String(role || '').toLowerCase().replace(/ /g, '');
-    _canWrite = WRITE_ROLES.map(x => x.replace(/ /g,'').toLowerCase()).includes(r);
+    _canWrite = WRITE_ROLES.map(function(x){ return x.replace(/ /g,'').toLowerCase(); }).includes(r);
     _canCat   = CAT_ROLES.includes(r.replace(/_/g,''));
     var addBtn = document.getElementById('inv-add-btn');
+    var kitBtn = document.getElementById('inv-kit-btn');
     var catBtn = document.getElementById('inv-cat-btn');
     if (addBtn) addBtn.style.display = _canWrite ? '' : 'none';
+    if (kitBtn) kitBtn.style.display = _canWrite ? '' : 'none';
     if (catBtn) catBtn.style.display = _canCat   ? '' : 'none';
   }
 
@@ -6284,35 +6329,98 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
 
     Object.keys(grouped).sort().forEach(function (cat) {
       var rows = grouped[cat];
-      html += '<div class="mb-4"><div class="d-flex align-items-center gap-2 mb-2">' +
-        '<span style="font-weight:600;color:#93c5fd;font-size:0.95rem;"><i class="bi bi-folder2-open"></i> ' + esc(cat) + '</span>' +
-        '<span class="badge bg-secondary">' + rows.length + '</span></div>' +
-        '<div class="card chart-card"><div class="card-body p-0" style="overflow-x:auto;">' +
-        '<table class="table table-dark table-bordered mb-0" style="border-color:var(--bg-blue);min-width:600px;">' +
-        '<thead><tr style="font-size:0.82rem;color:#94a3b8;">' +
-        '<th style="width:180px;">Nome / Descrizione</th><th style="width:70px;text-align:center;">Qtà</th>' +
-        '<th style="width:90px;text-align:center;">Taglia</th><th style="width:120px;">Condizione</th>' +
-        '<th>Note</th>' + (_canWrite ? '<th style="width:80px;text-align:center;" class="no-print">Azioni</th>' : '') +
-        '</tr></thead><tbody>';
 
+      // Separa voci kit (hanno _kitName) dalle voci normali
+      var kitGroups = {};
+      var normalRows = [];
       rows.forEach(function (it) {
-        html += '<tr style="font-size:0.85rem;">' +
-          '<td>' + esc(it.nome) + '</td>' +
-          '<td style="text-align:center;">' + (it.quantita || 0) + '</td>' +
-          '<td style="text-align:center;">' + (it.taglia ? esc(it.taglia) : '<span style="color:#475569;">—</span>') + '</td>' +
-          '<td>' + (COND_LABEL[it.condizione] || '') + '</td>' +
-          '<td style="white-space:pre-wrap;max-width:260px;word-break:break-word;">' + esc(it.note || '') + '</td>' +
-          (_canWrite ? '<td style="text-align:center;" class="no-print">' +
-            '<button class="btn btn-xs btn-outline-warning me-1" title="Modifica" onclick="window.INV.openForm(' + JSON.stringify(it.id) + ')"><i class="bi bi-pencil-fill"></i></button>' +
-            '<button class="btn btn-xs btn-outline-danger" title="Elimina" onclick="window.INV.deleteItem(' + JSON.stringify(it.id) + ')"><i class="bi bi-trash3-fill"></i></button>' +
-            '</td>' : '') + '</tr>';
+        if (it._kitName) {
+          if (!kitGroups[it._kitName]) kitGroups[it._kitName] = [];
+          kitGroups[it._kitName].push(it);
+        } else {
+          normalRows.push(it);
+        }
       });
 
-      html += '</tbody></table></div></div></div>';
+      html += '<div class="mb-4"><div class="d-flex align-items-center gap-2 mb-2">' +
+        '<span style="font-weight:600;color:#93c5fd;font-size:0.95rem;"><i class="bi bi-folder2-open"></i> ' + esc(cat) + '</span>' +
+        '<span class="badge bg-secondary">' + rows.length + '</span></div>';
+
+      // ── Vista griglia per i kit maglie ──
+      Object.keys(kitGroups).sort().forEach(function (kitName) {
+        var kitRows = kitGroups[kitName].slice().sort(function(a,b){ return (a._kitNum||0)-(b._kitNum||0); });
+        var condClass = { buono:'#4ade80', riparazione:'#fbbf24', fuori_uso:'#f87171' };
+        var condIcon  = { buono:'✅', riparazione:'🔧', fuori_uso:'❌' };
+
+        html += '<div class="card chart-card mb-3">' +
+          '<div class="card-body p-2">' +
+          '<div class="d-flex align-items-center gap-2 mb-2 flex-wrap">' +
+          '<span style="font-weight:700;color:#fbbf24;font-size:0.9rem;"><i class="bi bi-grid-3x3-gap-fill"></i> ' + esc(kitName) + '</span>' +
+          '<span class="badge bg-secondary" style="font-size:0.75rem;">' + kitRows.length + ' maglie</span>' +
+          (_canWrite ? '<button class="btn btn-xs btn-outline-warning ms-auto no-print" title="Modifica kit" onclick="window.INV.editKit(' + JSON.stringify(kitName) + ')"><i class="bi bi-pencil-fill"></i> Modifica kit</button>' : '') +
+          '</div>' +
+          '<div style="overflow-x:auto;"><div style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;">';
+
+        kitRows.forEach(function (it) {
+          var col = condClass[it.condizione] || '#94a3b8';
+          var ic  = condIcon[it.condizione]  || '○';
+          var tooltip = [it.taglia ? 'Taglia: ' + it.taglia : '', it.note ? 'Note: ' + it.note : ''].filter(Boolean).join(' | ');
+          html += '<div title="' + esc(tooltip) + '" style="background:var(--bg-blue);border:2px solid ' + col + ';border-radius:8px;padding:6px 10px;text-align:center;min-width:52px;cursor:default;">' +
+            '<div style="font-size:1rem;font-weight:800;color:#e2e8f0;">N°' + (it._kitNum || '') + '</div>' +
+            '<div style="font-size:0.7rem;color:#94a3b8;">' + esc(it.taglia || '—') + '</div>' +
+            '<div style="font-size:0.75rem;">' + ic + '</div>' +
+            '</div>';
+        });
+
+        html += '</div></div></div></div>';
+      });
+
+      // ── Tabella normale per voci senza kit ──
+      if (normalRows.length) {
+        html += '<div class="card chart-card"><div class="card-body p-0" style="overflow-x:auto;">' +
+          '<table class="table table-dark table-bordered mb-0" style="border-color:var(--bg-blue);min-width:600px;">' +
+          '<thead><tr style="font-size:0.82rem;color:#94a3b8;">' +
+          '<th style="width:180px;">Nome / Descrizione</th><th style="width:70px;text-align:center;">Qtà</th>' +
+          '<th style="width:90px;text-align:center;">Taglia</th><th style="width:120px;">Condizione</th>' +
+          '<th>Note</th>' + (_canWrite ? '<th style="width:80px;text-align:center;" class="no-print">Azioni</th>' : '') +
+          '</tr></thead><tbody>';
+
+        normalRows.forEach(function (it) {
+          html += '<tr style="font-size:0.85rem;">' +
+            '<td>' + esc(it.nome) + '</td>' +
+            '<td style="text-align:center;">' + (it.quantita || 0) + '</td>' +
+            '<td style="text-align:center;">' + (it.taglia ? esc(it.taglia) : '<span style="color:#475569;">—</span>') + '</td>' +
+            '<td>' + (COND_LABEL[it.condizione] || '') + '</td>' +
+            '<td style="white-space:pre-wrap;max-width:260px;word-break:break-word;">' + esc(it.note || '') + '</td>' +
+            (_canWrite ? '<td style="text-align:center;" class="no-print">' +
+              '<button class="btn btn-xs btn-outline-warning me-1" title="Modifica" onclick="window.INV.openForm(' + JSON.stringify(it.id) + ')"><i class="bi bi-pencil-fill"></i></button>' +
+              '<button class="btn btn-xs btn-outline-danger" title="Elimina" onclick="window.INV.deleteItem(' + JSON.stringify(it.id) + ')"><i class="bi bi-trash3-fill"></i></button>' +
+              '</td>' : '') + '</tr>';
+        });
+
+        html += '</tbody></table></div></div>';
+      }
+
+      html += '</div>';
     });
 
     el.innerHTML = html;
   }
+
+  // Apre il kit in modifica (pre-popola nome e genera la griglia)
+  window.INV.editKit = function (kitName) {
+    document.getElementById('inv-kit-name').value = kitName;
+    document.getElementById('inv-kit-save-btn').style.display = '';
+    var kitItems = _items.filter(function(it){ return it._kitName === kitName; });
+    var nums = kitItems.map(function(it){ return it._kitNum || 0; });
+    var minN = Math.min.apply(null, nums) || 1;
+    var maxN = Math.max.apply(null, nums) || 20;
+    document.getElementById('inv-kit-from').value = minN;
+    document.getElementById('inv-kit-to').value   = maxN;
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('invKitModal')).show();
+    // Genera automaticamente la griglia dopo che il modal è aperto
+    setTimeout(function(){ window.INV.kitGenerate(); }, 300);
+  };
 
   function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -6448,6 +6556,129 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
       a.download = 'inventario_' + (annataId() || 'annata') + '.csv';
       a.click();
+    }
+  };
+
+  // ── Kit Maglie: griglia numerata per set divise ──
+  var _kitRows = [];   // [{num, taglia, condizione, note}] generati dalla griglia
+
+  window.INV.openKit = function () {
+    document.getElementById('inv-kit-name').value = '';
+    document.getElementById('inv-kit-from').value = 1;
+    document.getElementById('inv-kit-to').value   = 20;
+    document.getElementById('inv-kit-grid').innerHTML = '';
+    document.getElementById('inv-kit-info').textContent = '';
+    document.getElementById('inv-kit-save-btn').style.display = 'none';
+    _kitRows = [];
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('invKitModal')).show();
+  };
+
+  window.INV.kitGenerate = function () {
+    var name  = document.getElementById('inv-kit-name').value.trim();
+    var from  = Math.max(1, Math.min(99, parseInt(document.getElementById('inv-kit-from').value) || 1));
+    var to    = Math.max(1, Math.min(99, parseInt(document.getElementById('inv-kit-to').value) || 20));
+    if (from > to) { alert('Il numero iniziale deve essere ≤ del numero finale.'); return; }
+    if (!name) { alert('Inserisci il nome del set divise.'); return; }
+    var count = to - from + 1;
+    document.getElementById('inv-kit-info').textContent = count + ' maglie (n°' + from + '→' + to + ')';
+    document.getElementById('inv-kit-save-btn').style.display = '';
+
+    // Costruisce la griglia: una riga per ogni numero
+    var TAGLIE = ['', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '6 anni', '8 anni', '10 anni', '12 anni', '14 anni', 'Unica'];
+    var tagOpts = TAGLIE.map(function(t){ return '<option value="' + esc(t) + '">' + (t || '— nessuna —') + '</option>'; }).join('');
+
+    var html = '<table class="table table-dark table-bordered table-sm mb-0" style="border-color:var(--bg-blue);min-width:520px;">' +
+      '<thead><tr style="font-size:0.8rem;color:#94a3b8;">' +
+      '<th style="width:60px;text-align:center;">N°</th>' +
+      '<th style="width:130px;">Taglia</th>' +
+      '<th style="width:160px;">Condizione</th>' +
+      '<th>Note</th></tr></thead><tbody>';
+
+    // Pre-popola dalle voci esistenti per questo kit (stesso nome set)
+    var existing = {};
+    _items.forEach(function (it) {
+      if (it.categoria === 'Maglie da calcio' && it._kitName === name) {
+        existing[it._kitNum] = it;
+      }
+    });
+
+    for (var n = from; n <= to; n++) {
+      var ex = existing[n] || {};
+      html += '<tr data-num="' + n + '">' +
+        '<td style="text-align:center;font-weight:700;color:#93c5fd;">' + n + '</td>' +
+        '<td><select class="form-select form-select-sm kit-taglia" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">' + tagOpts + '</select></td>' +
+        '<td><select class="form-select form-select-sm kit-cond" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">' +
+          '<option value="buono" style="color:#4ade80;">● Buono</option>' +
+          '<option value="riparazione" style="color:#fbbf24;">● Da riparare</option>' +
+          '<option value="fuori_uso" style="color:#f87171;">● Fuori uso</option>' +
+        '</select></td>' +
+        '<td><input type="text" class="form-control form-control-sm kit-note" maxlength="200" placeholder="Note…" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;"></td>' +
+        '</tr>';
+    }
+    html += '</tbody></table>';
+    document.getElementById('inv-kit-grid').innerHTML = html;
+
+    // Ripristina valori esistenti
+    document.querySelectorAll('#inv-kit-grid tr[data-num]').forEach(function (tr) {
+      var num = parseInt(tr.dataset.num);
+      var ex = existing[num];
+      if (ex) {
+        tr.querySelector('.kit-taglia').value = ex.taglia || '';
+        tr.querySelector('.kit-cond').value   = ex.condizione || 'buono';
+        tr.querySelector('.kit-note').value   = ex.note || '';
+      }
+    });
+  };
+
+  window.INV.saveKit = async function () {
+    var name = document.getElementById('inv-kit-name').value.trim();
+    if (!name) { alert('Nome set divise mancante.'); return; }
+    var rows = document.querySelectorAll('#inv-kit-grid tr[data-num]');
+    if (!rows.length) { alert('Genera prima la griglia.'); return; }
+
+    var btn = document.getElementById('inv-kit-save-btn');
+    btn.disabled = true;
+
+    var items = [];
+    rows.forEach(function (tr) {
+      var num  = parseInt(tr.dataset.num);
+      var taglia    = tr.querySelector('.kit-taglia').value;
+      var condizione = tr.querySelector('.kit-cond').value;
+      var note = tr.querySelector('.kit-note').value.trim();
+      // Cerca un id esistente per questo kit+numero
+      var existing = _items.find(function(it){ return it._kitName === name && it._kitNum === num; });
+      items.push({
+        id:         existing ? existing.id : '',
+        categoria:  'Maglie da calcio',
+        nome:       name + ' N°' + num,
+        quantita:   1,
+        taglia:     taglia,
+        condizione: condizione,
+        note:       note,
+        _kitName:   name,
+        _kitNum:    num
+      });
+    });
+
+    // Salva ogni voce in sequenza (upsert)
+    var errors = 0;
+    for (var i = 0; i < items.length; i++) {
+      try {
+        var r = await fetch('/api/data?action=inventory', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ act: 'upsert', item: items[i] })
+        });
+        var d = await r.json();
+        if (!d.success) errors++;
+      } catch (e) { errors++; }
+    }
+
+    btn.disabled = false;
+    if (errors) { alert(errors + ' voci non salvate. Riprova.'); }
+    else {
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('invKitModal')).hide();
+      await load(true);
     }
   };
 

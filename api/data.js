@@ -545,7 +545,7 @@ const INV_DEFAULT_CATS = ['Maglie da calcio', 'Pantaloncini', 'Calzettoni', 'Pal
 function sanitizeInvItem(raw) {
   const TAGLIE = ['', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '6 anni', '8 anni', '10 anni', '12 anni', '14 anni', 'Unica'];
   const COND   = ['buono', 'riparazione', 'fuori_uso'];
-  return {
+  const item = {
     id:         String(raw.id || '').replace(/[^a-z0-9_-]/gi, '').slice(0, 40) || crypto.randomUUID().replace(/-/g,'').slice(0,16),
     categoria:  String(raw.categoria || 'Altro').slice(0, 80),
     nome:       String(raw.nome || '').slice(0, 120),
@@ -555,14 +555,30 @@ function sanitizeInvItem(raw) {
     note:       String(raw.note || '').slice(0, 500),
     updatedAt:  new Date().toISOString(),
   };
+  // Metadati kit maglie (opzionali)
+  if (raw._kitName) item._kitName = String(raw._kitName).slice(0, 80);
+  if (raw._kitNum  != null) item._kitNum = Math.max(1, Math.min(99, parseInt(raw._kitNum) || 1));
+  return item;
 }
 
 if (req.query?.action === 'inventory') {
   if (!session.isAuthenticated) return res.status(401).json({ success: false, message: 'Non autorizzato' });
-  if (!annataId || !isValidId(annataId)) return res.status(400).json({ success: false, message: 'annataId mancante' });
-  const sid   = session.societyId || '_default';
-  const invKey = `society:${sid}:inventory:${annataId}`;
+  const sid    = session.societyId || '_default';
   const catKey = `society:${sid}:inventoryCategories`;
+
+  // save-categories è per-società (non per-annata): gestito prima del check annataId
+  if (req.method === 'POST' && String((req.body && req.body.act) || '') === 'save-categories') {
+    if (!canInventoryCat(session.role)) return res.status(403).json({ success: false, message: 'Solo admin o dirigente' });
+    let cats = (req.body && req.body.categories) || [];
+    if (!Array.isArray(cats)) cats = [];
+    cats = cats.map(c => String(c).trim().slice(0, 80)).filter(c => c && !INV_DEFAULT_CATS.includes(c)).slice(0, 20);
+    await kv.set(catKey, cats);
+    return res.status(200).json({ success: true, categories: [...INV_DEFAULT_CATS, ...cats] });
+  }
+
+  // Tutte le altre operazioni richiedono annataId
+  if (!annataId || !isValidId(annataId)) return res.status(400).json({ success: false, message: 'annataId mancante' });
+  const invKey = `society:${sid}:inventory:${annataId}`;
 
   if (req.method === 'GET') {
     const [items, customCats] = await Promise.all([kv.get(invKey), kv.get(catKey)]);
@@ -574,7 +590,6 @@ if (req.query?.action === 'inventory') {
     if (!canInventory(session.role)) return res.status(403).json({ success: false, message: 'Permesso negato' });
     const act = String((req.body && req.body.act) || '');
 
-    // Upsert singola voce
     if (act === 'upsert') {
       const item = sanitizeInvItem(req.body.item || {});
       let items = (await kv.get(invKey)) || [];
@@ -585,7 +600,6 @@ if (req.query?.action === 'inventory') {
       return res.status(200).json({ success: true, item });
     }
 
-    // Elimina singola voce
     if (act === 'delete') {
       const id = String((req.body && req.body.id) || '').replace(/[^a-z0-9_-]/gi, '');
       if (!id) return res.status(400).json({ success: false, message: 'id mancante' });
@@ -594,17 +608,6 @@ if (req.query?.action === 'inventory') {
       items = items.filter(i => i.id !== id);
       await kv.set(invKey, items);
       return res.status(200).json({ success: true });
-    }
-
-    // Gestione categorie custom (solo admin/dirigente)
-    if (act === 'save-categories') {
-      if (!canInventoryCat(session.role)) return res.status(403).json({ success: false, message: 'Solo admin o dirigente' });
-      let cats = (req.body && req.body.categories) || [];
-      if (!Array.isArray(cats)) cats = [];
-      cats = cats.map(c => String(c).trim().slice(0, 80)).filter(c => c && !INV_DEFAULT_CATS.includes(c)).slice(0, 20);
-      await kv.set(catKey, cats);
-      const all = [...INV_DEFAULT_CATS, ...cats];
-      return res.status(200).json({ success: true, categories: all });
     }
 
     return res.status(400).json({ success: false, message: 'act non valido' });
