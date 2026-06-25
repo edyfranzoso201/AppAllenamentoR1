@@ -2080,6 +2080,9 @@
                         <button class="btn btn-sm btn-outline-secondary no-print" onclick="window.INV.exportExcel()" title="Esporta Excel">
                             <i class="bi bi-file-earmark-excel-fill"></i>
                         </button>
+                        <button id="inv-copy-btn" class="btn btn-sm btn-outline-light no-print" onclick="window.INV.openCopyTemplate()" style="display:none;" title="Copia struttura inventario in altre annate">
+                            <i class="bi bi-copy"></i> Copia template
+                        </button>
                     </div>
                     <div id="inv-body"></div>
                 </div>
@@ -2229,6 +2232,52 @@
                         <div class="modal-footer" style="border-color:#334155;">
                             <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annulla</button>
                             <button type="button" class="btn btn-primary-custom btn-sm" onclick="window.INV.saveCategories()"><i class="bi bi-check-lg"></i> Salva categorie</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal copia template inventario in altre annate -->
+            <div class="modal fade" id="invCopyModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-md">
+                    <div class="modal-content" style="background:var(--bg-panel);border:1px solid #334155;color:var(--text-primary);">
+                        <div class="modal-header" style="border-color:#334155;">
+                            <h5 class="modal-title"><i class="bi bi-copy" style="color:#93c5fd;"></i> Copia struttura inventario</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="small mb-3" style="color:#94a3b8;">
+                                Copia le <strong>categorie e nomi delle voci</strong> dell'inventario corrente in una o più altre annate, come punto di partenza da compilare.
+                                Le voci esistenti nelle annate di destinazione <strong>non vengono sovrascritte</strong>.
+                            </p>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Cosa copiare</label>
+                                <div class="d-flex flex-column gap-1">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="inv-copy-names" checked>
+                                        <label class="form-check-label small" for="inv-copy-names">Struttura: categoria + nome voce (quantità=0, condizione=Buono)</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="inv-copy-taglia">
+                                        <label class="form-check-label small" for="inv-copy-taglia">Includi anche taglia</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="inv-copy-sponsor">
+                                        <label class="form-check-label small" for="inv-copy-sponsor">Includi anche dati sponsor</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Annate di destinazione</label>
+                                <div id="inv-copy-annate-list" style="max-height:200px;overflow-y:auto;">
+                                    <p class="small" style="color:#94a3b8;">Caricamento annate…</p>
+                                </div>
+                            </div>
+                            <div id="inv-copy-result" style="display:none;"></div>
+                        </div>
+                        <div class="modal-footer" style="border-color:#334155;">
+                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Chiudi</button>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="window.INV.execCopyTemplate()"><i class="bi bi-copy"></i> Copia nelle annate selezionate</button>
                         </div>
                     </div>
                 </div>
@@ -6349,12 +6398,14 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     var r = String(role || '').toLowerCase().replace(/ /g, '');
     _canWrite = WRITE_ROLES.map(function(x){ return x.replace(/ /g,'').toLowerCase(); }).includes(r);
     _canCat   = CAT_ROLES.includes(r.replace(/_/g,''));
-    var addBtn = document.getElementById('inv-add-btn');
-    var kitBtn = document.getElementById('inv-kit-btn');
-    var catBtn = document.getElementById('inv-cat-btn');
-    if (addBtn) addBtn.style.display = _canWrite ? '' : 'none';
-    if (kitBtn) kitBtn.style.display = _canWrite ? '' : 'none';
-    if (catBtn) catBtn.style.display = _canCat   ? '' : 'none';
+    var addBtn  = document.getElementById('inv-add-btn');
+    var kitBtn  = document.getElementById('inv-kit-btn');
+    var catBtn  = document.getElementById('inv-cat-btn');
+    var copyBtn = document.getElementById('inv-copy-btn');
+    if (addBtn)  addBtn.style.display  = _canWrite ? '' : 'none';
+    if (kitBtn)  kitBtn.style.display  = _canWrite ? '' : 'none';
+    if (catBtn)  catBtn.style.display  = _canCat   ? '' : 'none';
+    if (copyBtn) copyBtn.style.display = (r === 'admin') ? '' : 'none';
   }
 
   // ── Collapse sezione inventario ──
@@ -6778,18 +6829,30 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     if (!_items.length) { alert('Nessuna voce da esportare.'); return; }
     var condLabel = { buono: 'Buono', riparazione: 'Da riparare', fuori_uso: 'Fuori uso', mancante: 'Mancante' };
     var annLabel  = (ss('gosport_current_annata_name') || annataId() || 'annata').replace(/[^a-zA-Z0-9_\-\.]/g, '_');
+    var header = ['Categoria','Nome/Descrizione','Quantità','Taglia','Condizione','Note','Con Sponsor','Nome Sponsor'];
     if (window.XLSX) {
-      var rows = [['Categoria','Nome/Descrizione','Quantità','Taglia','Condizione','Note']];
+      var rows = [header];
       _items.forEach(function (it) {
-        rows.push([it.categoria, it.nome, it.quantita, it.taglia || '', condLabel[it.condizione] || it.condizione, it.note || '']);
+        rows.push([
+          it.categoria, it.nome, it.quantita, it.taglia || '',
+          condLabel[it.condizione] || it.condizione, it.note || '',
+          it.sponsor ? 'Sì' : 'No', it.sponsorNome || ''
+        ]);
       });
+      var ws = XLSX.utils.aoa_to_sheet(rows);
+      // larghezze colonne
+      ws['!cols'] = [20,30,8,10,14,30,12,25].map(function(w){ return { wch: w }; });
       var wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Inventario');
+      XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
       XLSX.writeFile(wb, 'inventario_' + annLabel + '.xlsx');
     } else {
-      var csv = 'Categoria,Nome/Descrizione,Quantità,Taglia,Condizione,Note\n';
+      var csv = header.join(',') + '\n';
       _items.forEach(function (it) {
-        csv += [it.categoria, it.nome, it.quantita, it.taglia || '', condLabel[it.condizione] || it.condizione, (it.note || '').replace(/\n/g,' ')].map(function (v) { return '"' + String(v).replace(/"/g,'""') + '"'; }).join(',') + '\n';
+        csv += [
+          it.categoria, it.nome, it.quantita, it.taglia || '',
+          condLabel[it.condizione] || it.condizione, (it.note || '').replace(/\n/g,' '),
+          it.sponsor ? 'Sì' : 'No', it.sponsorNome || ''
+        ].map(function (v) { return '"' + String(v).replace(/"/g,'""') + '"'; }).join(',') + '\n';
       });
       var a = document.createElement('a');
       a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
@@ -7065,6 +7128,95 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     } catch (e) {
       btn.disabled = false;
       alert('Errore di rete durante il salvataggio del kit.');
+    }
+  };
+
+  // ── Copia template inventario in altre annate ──
+  window.INV.openCopyTemplate = async function () {
+    if (!_items.length) { alert('L\'inventario corrente è vuoto. Aggiungere prima le voci.'); return; }
+    var listEl = document.getElementById('inv-copy-annate-list');
+    var resEl  = document.getElementById('inv-copy-result');
+    if (listEl) listEl.innerHTML = '<p class="small" style="color:#94a3b8;">Caricamento annate…</p>';
+    if (resEl)  resEl.style.display = 'none';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('invCopyModal')).show();
+    try {
+      var r = await fetch('/api/annate/list', { headers: authHeaders() });
+      var d = await r.json();
+      var annate = (d.annate || []).filter(function(a){ return a.id !== annataId(); });
+      if (!annate.length) {
+        listEl.innerHTML = '<p class="small" style="color:#f87171;">Nessun\'altra annata disponibile.</p>';
+        return;
+      }
+      var curName = ss('gosport_current_annata_name') || annataId();
+      listEl.innerHTML = '<p class="small mb-2" style="color:#94a3b8;">Annata corrente (sorgente): <strong style="color:#34d399;">' + esc(curName) + '</strong></p>' +
+        annate.map(function(a) {
+          return '<div class="form-check mb-1">' +
+            '<input class="form-check-input inv-copy-ann-chk" type="checkbox" value="' + esc(a.id) + '" id="inv-copy-ann-' + esc(a.id) + '">' +
+            '<label class="form-check-label small" for="inv-copy-ann-' + esc(a.id) + '">' + esc(a.nome || a.id) + '</label>' +
+            '</div>';
+        }).join('');
+    } catch (e) {
+      listEl.innerHTML = '<p class="small" style="color:#f87171;">Errore caricamento annate.</p>';
+    }
+  };
+
+  window.INV.execCopyTemplate = async function () {
+    var destIds = Array.from(document.querySelectorAll('.inv-copy-ann-chk:checked')).map(function(c){ return c.value; });
+    if (!destIds.length) { alert('Seleziona almeno un\'annata di destinazione.'); return; }
+    var inclTaglia  = !!(document.getElementById('inv-copy-taglia') || {}).checked;
+    var inclSponsor = !!(document.getElementById('inv-copy-sponsor') || {}).checked;
+    var resEl = document.getElementById('inv-copy-result');
+
+    // Costruisce le voci template (azzerate)
+    var template = _items.map(function(it) {
+      var t = {
+        id:         '',   // nuovo id generato dal server
+        categoria:  it.categoria,
+        nome:       it.nome,
+        quantita:   0,
+        condizione: 'buono',
+        note:       '',
+        taglia:     inclTaglia ? (it.taglia || '') : '',
+        sponsor:    inclSponsor ? !!it.sponsor : false,
+        sponsorNome:inclSponsor ? (it.sponsorNome || '') : '',
+      };
+      if (it._kitName) { t._kitName = it._kitName; t._kitNum = it._kitNum; }
+      if (it._ktName)  t._ktName = it._ktName;
+      return t;
+    });
+
+    // mappa id→nome per il report finale
+    var nameMap = {};
+    document.querySelectorAll('.inv-copy-ann-chk').forEach(function(c) {
+      var lbl = document.querySelector('label[for="' + c.id + '"]');
+      nameMap[c.value] = lbl ? lbl.textContent.trim() : c.value;
+    });
+
+    var results = [];
+    for (var i = 0; i < destIds.length; i++) {
+      var destId = destIds[i];
+      try {
+        var r = await fetch('/api/data?action=inventory', {
+          method: 'POST',
+          headers: Object.assign({}, authHeaders(), { 'X-Dest-Annata-Id': destId }),
+          body: JSON.stringify({ act: 'template-copy', items: template })
+        });
+        var d = await r.json();
+        results.push({ nome: nameMap[destId] || destId, ok: !!(d && d.success), count: d.added || 0, msg: d.message || '' });
+      } catch (e) {
+        results.push({ nome: nameMap[destId] || destId, ok: false, msg: 'Errore di rete' });
+      }
+    }
+
+    // Mostra risultato
+    if (resEl) {
+      resEl.style.display = '';
+      resEl.innerHTML = '<div class="fw-bold small mb-2">Risultato:</div>' + results.map(function(r) {
+        return '<div class="small mb-1" style="color:' + (r.ok ? '#4ade80' : '#f87171') + ';">' +
+          (r.ok ? '✅' : '❌') + ' <strong>' + esc(r.nome) + '</strong>' +
+          (r.ok ? ' — ' + r.count + ' voci aggiunte' : ' — ' + esc(r.msg)) +
+          '</div>';
+      }).join('');
     }
   };
 

@@ -632,6 +632,36 @@ if (req.query?.action === 'inventory') {
       return res.status(200).json({ success: true });
     }
 
+    // Copia struttura inventario in un'altra annata (solo admin)
+    if (act === 'template-copy') {
+      if (String(session.role || '').toLowerCase() !== 'admin') {
+        return res.status(403).json({ success: false, message: 'Solo admin' });
+      }
+      const destAnnataId = String(req.headers['x-dest-annata-id'] || '').replace(/[^a-z0-9_-]/gi, '').slice(0, 40);
+      if (!destAnnataId) return res.status(400).json({ success: false, message: 'annata destinazione mancante' });
+      let rawItems = (req.body && Array.isArray(req.body.items)) ? req.body.items : [];
+      rawItems = rawItems.slice(0, 200);
+      const destKey = `society:${sid}:inventory:${destAnnataId}`;
+      let destItems = (await kv.get(destKey)) || [];
+      if (!Array.isArray(destItems)) destItems = [];
+      const existingNames = new Set(destItems.map(i => (i.categoria || '') + '|' + (i.nome || '')));
+      let added = 0;
+      rawItems.forEach(raw => {
+        const item = sanitizeInvItem(raw); // genera nuovo id, azzera condizione/note
+        item.quantita  = 0;
+        item.condizione = 'buono';
+        item.note       = '';
+        const key = (item.categoria || '') + '|' + (item.nome || '');
+        if (!existingNames.has(key)) {
+          destItems.push(item);
+          existingNames.add(key);
+          added++;
+        }
+      });
+      await kv.set(destKey, destItems);
+      return res.status(200).json({ success: true, added });
+    }
+
     return res.status(400).json({ success: false, message: 'act non valido' });
   }
 }
