@@ -6109,11 +6109,13 @@ function updateAppHeader() {
                 const annata = data.annate?.find(a => a.id === currentAnnataId);
                 if (annata) {
                     annataName = annata.nome;
+                    sessionStorage.setItem('gosport_current_annata_name', annataName);
                     updateHeaderUI(annataName, currentUser, userRole, currentAnnataId);
                 }
             })
             .catch(() => {
                 annataName = currentAnnataId.substring(0, 8) + '...';
+                sessionStorage.setItem('gosport_current_annata_name', annataName);
                 updateHeaderUI(annataName, currentUser, userRole, currentAnnataId);
             });
     } else {

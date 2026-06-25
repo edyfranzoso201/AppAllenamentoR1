@@ -543,8 +543,10 @@ function canInventoryCat(role) { return INV_CAT_WRITE_ROLES.includes(String(role
 const INV_DEFAULT_CATS = ['Maglie da calcio', 'Pantaloncini', 'Calzettoni', 'Palloni', 'Porte / Reti', 'Coni / Paletti', 'Pettorine', 'Altro'];
 
 function sanitizeInvItem(raw) {
-  const TAGLIE = ['', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '6 anni', '8 anni', '10 anni', '12 anni', '14 anni', 'Unica'];
-  const COND   = ['buono', 'riparazione', 'fuori_uso'];
+  const TAGLIE = ['', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '6 anni', '8 anni', '10 anni', '12 anni', '14 anni', 'Unica',
+                  '28-30', '31-33', '34-36', '37-39', '40-42', '43-45',
+                  '37', '38', '39', '40', '41', '42', '43', '44', '45'];
+  const COND = ['buono', 'riparazione', 'fuori_uso', 'mancante'];
   const item = {
     id:         String(raw.id || '').replace(/[^a-z0-9_-]/gi, '').slice(0, 40) || crypto.randomUUID().replace(/-/g,'').slice(0,16),
     categoria:  String(raw.categoria || 'Altro').slice(0, 80),
@@ -555,9 +557,14 @@ function sanitizeInvItem(raw) {
     note:       String(raw.note || '').slice(0, 500),
     updatedAt:  new Date().toISOString(),
   };
-  // Metadati kit maglie (opzionali)
+  // Metadati kit maglie numerato
   if (raw._kitName) item._kitName = String(raw._kitName).slice(0, 80);
   if (raw._kitNum  != null) item._kitNum = Math.max(1, Math.min(99, parseInt(raw._kitNum) || 1));
+  // Metadati kit per taglia (pantaloncini, calzettoni ecc.)
+  if (raw._ktName) item._ktName = String(raw._ktName).slice(0, 80);
+  // Sponsor
+  item.sponsor     = !!raw.sponsor;
+  item.sponsorNome = item.sponsor ? String(raw.sponsorNome || '').slice(0, 120) : '';
   return item;
 }
 
