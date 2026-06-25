@@ -600,6 +600,21 @@ if (req.query?.action === 'inventory') {
       return res.status(200).json({ success: true, item });
     }
 
+    // Salva un intero kit (array di voci) in una sola chiamata
+    if (act === 'upsert-kit') {
+      let rawItems = (req.body && Array.isArray(req.body.items)) ? req.body.items : [];
+      rawItems = rawItems.slice(0, 100); // max 100 voci per kit
+      const sanitized = rawItems.map(sanitizeInvItem);
+      let items = (await kv.get(invKey)) || [];
+      if (!Array.isArray(items)) items = [];
+      sanitized.forEach(item => {
+        const idx = items.findIndex(i => i.id === item.id);
+        if (idx >= 0) items[idx] = item; else items.push(item);
+      });
+      await kv.set(invKey, items);
+      return res.status(200).json({ success: true, count: sanitized.length });
+    }
+
     if (act === 'delete') {
       const id = String((req.body && req.body.id) || '').replace(/[^a-z0-9_-]/gi, '');
       if (!id) return res.status(400).json({ success: false, message: 'id mancante' });
