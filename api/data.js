@@ -530,6 +530,87 @@ if (req.query?.action === 'menu-config') {
   }
 }
 
+// ── INVENTARIO MATERIALE (per annata) ────────────────────────────────────────
+// Chiavi: society:<sid>:inventory:<annataId>  → array di voci
+//         society:<sid>:inventoryCategories   → array di stringhe (categorie custom)
+// Permessi scrittura: admin, dirigente, coach_l1. Lettura: tutti gli autenticati.
+// Niente nuovo file serverless (limite Hobby 12 route).
+const INV_WRITE_ROLES = ['admin', 'dirigente', 'coachl1', 'coach_l1'];
+function canInventory(role) { return INV_WRITE_ROLES.includes(String(role || '').toLowerCase().replace(/ /g, '')); }
+const INV_CAT_WRITE_ROLES = ['admin', 'dirigente'];
+function canInventoryCat(role) { return INV_CAT_WRITE_ROLES.includes(String(role || '').toLowerCase()); }
+
+const INV_DEFAULT_CATS = ['Maglie da calcio', 'Pantaloncini', 'Calzettoni', 'Palloni', 'Porte / Reti', 'Coni / Paletti', 'Pettorine', 'Altro'];
+
+function sanitizeInvItem(raw) {
+  const TAGLIE = ['', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '6 anni', '8 anni', '10 anni', '12 anni', '14 anni', 'Unica'];
+  const COND   = ['buono', 'riparazione', 'fuori_uso'];
+  return {
+    id:         String(raw.id || '').replace(/[^a-z0-9_-]/gi, '').slice(0, 40) || crypto.randomUUID().replace(/-/g,'').slice(0,16),
+    categoria:  String(raw.categoria || 'Altro').slice(0, 80),
+    nome:       String(raw.nome || '').slice(0, 120),
+    quantita:   Math.max(0, Math.min(9999, parseInt(raw.quantita) || 0)),
+    taglia:     TAGLIE.includes(raw.taglia) ? raw.taglia : '',
+    condizione: COND.includes(raw.condizione) ? raw.condizione : 'buono',
+    note:       String(raw.note || '').slice(0, 500),
+    updatedAt:  new Date().toISOString(),
+  };
+}
+
+if (req.query?.action === 'inventory') {
+  if (!session.isAuthenticated) return res.status(401).json({ success: false, message: 'Non autorizzato' });
+  if (!annataId || !isValidId(annataId)) return res.status(400).json({ success: false, message: 'annataId mancante' });
+  const sid   = session.societyId || '_default';
+  const invKey = `society:${sid}:inventory:${annataId}`;
+  const catKey = `society:${sid}:inventoryCategories`;
+
+  if (req.method === 'GET') {
+    const [items, customCats] = await Promise.all([kv.get(invKey), kv.get(catKey)]);
+    const cats = [...INV_DEFAULT_CATS, ...((Array.isArray(customCats) ? customCats : []).filter(c => !INV_DEFAULT_CATS.includes(c)))];
+    return res.status(200).json({ success: true, items: Array.isArray(items) ? items : [], categories: cats });
+  }
+
+  if (req.method === 'POST') {
+    if (!canInventory(session.role)) return res.status(403).json({ success: false, message: 'Permesso negato' });
+    const act = String((req.body && req.body.act) || '');
+
+    // Upsert singola voce
+    if (act === 'upsert') {
+      const item = sanitizeInvItem(req.body.item || {});
+      let items = (await kv.get(invKey)) || [];
+      if (!Array.isArray(items)) items = [];
+      const idx = items.findIndex(i => i.id === item.id);
+      if (idx >= 0) items[idx] = item; else items.push(item);
+      await kv.set(invKey, items);
+      return res.status(200).json({ success: true, item });
+    }
+
+    // Elimina singola voce
+    if (act === 'delete') {
+      const id = String((req.body && req.body.id) || '').replace(/[^a-z0-9_-]/gi, '');
+      if (!id) return res.status(400).json({ success: false, message: 'id mancante' });
+      let items = (await kv.get(invKey)) || [];
+      if (!Array.isArray(items)) items = [];
+      items = items.filter(i => i.id !== id);
+      await kv.set(invKey, items);
+      return res.status(200).json({ success: true });
+    }
+
+    // Gestione categorie custom (solo admin/dirigente)
+    if (act === 'save-categories') {
+      if (!canInventoryCat(session.role)) return res.status(403).json({ success: false, message: 'Solo admin o dirigente' });
+      let cats = (req.body && req.body.categories) || [];
+      if (!Array.isArray(cats)) cats = [];
+      cats = cats.map(c => String(c).trim().slice(0, 80)).filter(c => c && !INV_DEFAULT_CATS.includes(c)).slice(0, 20);
+      await kv.set(catKey, cats);
+      const all = [...INV_DEFAULT_CATS, ...cats];
+      return res.status(200).json({ success: true, categories: all });
+    }
+
+    return res.status(400).json({ success: false, message: 'act non valido' });
+  }
+}
+
 // ── CAMBIO STAGIONE: reset + archivio ────────────────────────────────────────
 // Le 4 categorie "di stagione" (risultati partite, presenze, hall of fame,
 // calendario) vengono copiate in annate:<id>:archive[<label>] con archivedAt
@@ -556,11 +637,14 @@ if (req.query?.action === 'season-reset' && req.method === 'POST') {
   }
   try {
     const prefix = `annate:${annataId}`;
-    // Snapshot delle 4 categorie correnti
+    const sid = session.societyId || '_default';
+    // Snapshot delle categorie correnti
     const snapshot = {};
     for (const k of SEASON_KEYS) {
       snapshot[k] = (await kv.get(`${prefix}:${k}`)) || {};
     }
+    // Includi anche inventario nel snapshot (archiviato per società+annata)
+    snapshot['inventory'] = (await kv.get(`society:${sid}:inventory:${annataId}`)) || [];
     const archive = (await kv.get(`${prefix}:archive`)) || {};
     if (archive[label]) {
       return res.status(409).json({ success: false, message: `Esiste già un archivio "${label}". Usa un'etichetta diversa.` });
@@ -571,8 +655,9 @@ if (req.query?.action === 'season-reset' && req.method === 'POST') {
       data: snapshot,
     };
     await kv.set(`${prefix}:archive`, archive);
-    // Azzera le 4 categorie correnti (la nuova stagione parte pulita)
+    // Azzera le categorie correnti (la nuova stagione parte pulita)
     const writes = SEASON_KEYS.map(k => kv.set(`${prefix}:${k}`, {}));
+    writes.push(kv.set(`society:${sid}:inventory:${annataId}`, []));
     await Promise.all(writes);
     return res.status(200).json({ success: true, label, archivedAt: archive[label].archivedAt });
   } catch (e) {
