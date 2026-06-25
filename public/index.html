@@ -6531,65 +6531,117 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         '<span class="badge bg-secondary">' + rows.length + '</span>' +
         deleteCatBtn + '</div>';
 
-      // ── Vista griglia per i kit maglie ──
+      // ── Vista griglia per i kit ──
       Object.keys(kitGroups).sort().forEach(function (kitName) {
         var allKitRows  = kitGroups[kitName];
-        var numbered    = allKitRows.filter(function(it){ return it._kitNum != null; }).sort(function(a,b){ var na=parseInt(a._kitNum),nb=parseInt(b._kitNum); return (!isNaN(na)&&!isNaN(nb)) ? na-nb : String(a._kitNum).localeCompare(String(b._kitNum)); });
+        var numbered    = allKitRows.filter(function(it){ return it._kitNum != null && !it._kitExtra; }).sort(function(a,b){ var na=parseInt(a._kitNum),nb=parseInt(b._kitNum); return (!isNaN(na)&&!isNaN(nb)) ? na-nb : String(a._kitNum).localeCompare(String(b._kitNum)); });
         var extraRows   = allKitRows.filter(function(it){ return it._kitExtra; });
+        var mancanti    = allKitRows.filter(function(it){ return it.condizione === 'mancante' && !it._kitExtra; });
         var condClass   = COND_COLOR;
         var condIcon    = COND_ICON;
 
-        var kitMancanti = allKitRows.filter(function(it){ return it.condizione === 'mancante'; });
-        var kitTotale   = numbered.length + extraRows.reduce(function(s,it){ return s+(it.quantita||1);},0);
-        var mancQty     = kitMancanti.reduce(function(s,it){ return s+(it.quantita||1);},0);
+        var totPresenti = numbered.length + extraRows.reduce(function(s,it){ return s+(it.quantita||1);},0);
+        var mancQty     = mancanti.reduce(function(s,it){ return s+(it.quantita||1);},0);
+        var totale      = totPresenti + mancQty;
         var mancBadge   = mancQty > 0
-          ? '<span class="badge ms-1" style="background:#7c3aed;font-size:0.75rem;" title="Mancanti sul totale kit">⚠️ ' + mancQty + '/' + kitTotale + ' mancanti</span>'
+          ? '<span class="badge ms-1" style="background:#7c3aed;font-size:0.75rem;">⚠️ ' + mancQty + '/' + totale + ' mancanti</span>'
           : '';
+
+        var kitKey = 'kit_view_' + kitName.replace(/[^a-z0-9]/gi,'_');
+        // stato toggle: 'num' (default) | 'taglia'
+        var viewMode = (window._kitViewMode && window._kitViewMode[kitKey]) || 'num';
+
+        var toggleBtn =
+          '<div class="btn-group btn-group-sm ms-auto no-print" role="group">' +
+            '<button type="button" class="btn btn-xs ' + (viewMode==='num' ? 'btn-warning' : 'btn-outline-secondary') + '" ' +
+              'onclick="window.INV.kitToggleView(' + JSON.stringify(kitKey).replace(/"/g,'&quot;') + ',\'num\')" title="Vista per numero">N°</button>' +
+            '<button type="button" class="btn btn-xs ' + (viewMode==='taglia' ? 'btn-info' : 'btn-outline-secondary') + '" ' +
+              'onclick="window.INV.kitToggleView(' + JSON.stringify(kitKey).replace(/"/g,'&quot;') + ',\'taglia\')" title="Vista per taglia">Taglia</button>' +
+          '</div>';
 
         html += '<div class="card chart-card mb-3">' +
           '<div class="card-body p-2">' +
           '<div class="d-flex align-items-center gap-2 mb-2 flex-wrap">' +
           '<span style="font-weight:700;color:#fbbf24;font-size:0.9rem;"><i class="bi bi-grid-3x3-gap-fill"></i> ' + esc(kitName) + '</span>' +
           '<span class="badge bg-secondary" style="font-size:0.75rem;">' + numbered.length + ' articoli</span>' +
-          (extraRows.length ? '<span class="badge bg-info text-dark" style="font-size:0.75rem;">+' + extraRows.reduce(function(s,it){ return s + (it.quantita||1); }, 0) + ' scorte</span>' : '') +
+          (extraRows.length ? '<span class="badge bg-info text-dark" style="font-size:0.75rem;">+' + extraRows.reduce(function(s,it){ return s+(it.quantita||1);},0) + ' scorte</span>' : '') +
           mancBadge +
-          (_canWrite ? '<button class="btn btn-xs btn-outline-warning ms-auto no-print" title="Modifica kit" onclick="window.INV.editKit(' + JSON.stringify(kitName).replace(/"/g, '&quot;') + ')"><i class="bi bi-pencil-fill"></i> Modifica kit</button>' : '') +
+          toggleBtn +
+          (_canWrite ? '<button class="btn btn-xs btn-outline-warning no-print" title="Modifica kit" onclick="window.INV.editKit(' + JSON.stringify(kitName).replace(/"/g, '&quot;') + ')"><i class="bi bi-pencil-fill"></i></button>' : '') +
           (_canWrite ? '<button class="btn btn-xs btn-outline-danger no-print" title="Elimina kit" onclick="window.INV.deleteKit(' + JSON.stringify(kitName).replace(/"/g, '&quot;') + ')"><i class="bi bi-trash3-fill"></i></button>' : '') +
-          '</div>' +
-          '<div style="overflow-x:auto;"><div style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;">';
+          '</div>';
 
-        // Badge numerati
-        numbered.forEach(function (it) {
-          var col = condClass[it.condizione] || '#94a3b8';
-          var ic  = condIcon[it.condizione]  || '○';
-          var tooltip = [it.taglia ? 'Taglia: ' + it.taglia : '', it.sponsor ? '🏷️ ' + (it.sponsorNome || 'Con sponsor') : '', it.note ? 'Note: ' + it.note : ''].filter(Boolean).join(' | ');
-          var canClick = _canWrite ? 'cursor:pointer;' : 'cursor:default;';
-          var clickAttr = _canWrite
-            ? ' onclick="window.INV.badgeClick(' + JSON.stringify(it.id).replace(/"/g,'&quot;') + ',event)"'
-            : '';
-          html += '<div title="' + esc(tooltip) + '" data-inv-badge="' + esc(it.id) + '" style="background:var(--bg-blue);border:2px solid ' + col + ';border-radius:8px;padding:6px 10px;text-align:center;min-width:52px;' + canClick + '"' + clickAttr + '>' +
-            '<div style="font-size:1rem;font-weight:800;color:#e2e8f0;">N°' + it._kitNum + '</div>' +
-            '<div style="font-size:0.7rem;color:#94a3b8;">' + esc(it.taglia || '—') + '</div>' +
-            '<div style="font-size:0.75rem;">' + ic + (it.sponsor ? ' 🏷️' : '') + '</div>' +
-            '</div>';
-        });
+        if (viewMode === 'num') {
+          // ── Vista per numero: badge singoli ──
+          html += '<div style="overflow-x:auto;"><div style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;">';
 
-        html += '</div></div>';
-
-        // Scorte senza numero (righe compatte sotto i badge)
-        if (extraRows.length) {
-          html += '<div style="margin-top:8px;padding:6px 8px;background:#0f172a;border-radius:6px;">' +
-            '<div style="font-size:0.78rem;color:#64748b;margin-bottom:4px;"><i class="bi bi-stack"></i> Scorte senza numero</div>' +
-            '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
-          extraRows.forEach(function(it) {
+          // Badge numerati presenti
+          numbered.forEach(function (it) {
             var col = condClass[it.condizione] || '#94a3b8';
             var ic  = condIcon[it.condizione]  || '○';
-            var spBadge = it.sponsor ? ' <span style="color:#93c5fd;font-size:0.7rem;">🏷️' + esc(it.sponsorNome || '') + '</span>' : '';
-            html += '<div style="background:var(--bg-blue);border:1px solid ' + col + ';border-radius:6px;padding:4px 8px;font-size:0.78rem;">' +
-              '<span style="color:#e2e8f0;font-weight:600;">' + (it.quantita || 1) + 'x</span> ' +
-              '<span style="color:#94a3b8;">' + esc(it.taglia || '—') + '</span> ' +
-              ic + spBadge +
-              (it.note ? '<span style="color:#64748b;margin-left:4px;">' + esc(it.note) + '</span>' : '') +
+            var tooltip = [it.taglia ? 'Taglia: ' + it.taglia : '', it.sponsor ? '🏷️ ' + (it.sponsorNome||'Con sponsor') : '', it.note ? 'Note: ' + it.note : ''].filter(Boolean).join(' | ');
+            var clickAttr = _canWrite ? ' onclick="window.INV.badgeClick(' + JSON.stringify(it.id).replace(/"/g,'&quot;') + ',event)"' : '';
+            html += '<div title="' + esc(tooltip) + '" data-inv-badge="' + esc(it.id) + '" style="background:var(--bg-blue);border:2px solid ' + col + ';border-radius:8px;padding:6px 10px;text-align:center;min-width:52px;' + (_canWrite?'cursor:pointer;':'') + '"' + clickAttr + '>' +
+              '<div style="font-size:1rem;font-weight:800;color:#e2e8f0;">N°' + it._kitNum + '</div>' +
+              '<div style="font-size:0.7rem;color:#94a3b8;">' + esc(it.taglia||'—') + '</div>' +
+              '<div style="font-size:0.75rem;">' + ic + (it.sponsor?' 🏷️':'') + '</div>' +
+              '</div>';
+          });
+
+          // Badge mancanti (uno per unità)
+          mancanti.forEach(function(it) {
+            var qty = it.quantita || 1;
+            for (var q = 0; q < qty; q++) {
+              html += '<div title="Mancante' + (it.taglia ? ' · ' + it.taglia : '') + (it.note ? ' · ' + it.note : '') + '" ' +
+                'style="background:#1e0a2e;border:2px dashed #c084fc;border-radius:8px;padding:6px 10px;text-align:center;min-width:52px;opacity:0.85;">' +
+                '<div style="font-size:1rem;font-weight:800;color:#c084fc;">?</div>' +
+                '<div style="font-size:0.7rem;color:#a855f7;">' + esc(it.taglia||'—') + '</div>' +
+                '<div style="font-size:0.75rem;color:#c084fc;">✗</div>' +
+                '</div>';
+            }
+          });
+
+          html += '</div></div>';
+
+          // Scorte senza numero
+          if (extraRows.length) {
+            html += '<div style="margin-top:8px;padding:6px 8px;background:#0f172a;border-radius:6px;">' +
+              '<div style="font-size:0.78rem;color:#64748b;margin-bottom:4px;"><i class="bi bi-stack"></i> Scorte senza numero</div>' +
+              '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+            extraRows.forEach(function(it) {
+              var col = condClass[it.condizione]||'#94a3b8';
+              var ic  = condIcon[it.condizione]||'○';
+              var spBadge = it.sponsor ? ' <span style="color:#93c5fd;font-size:0.7rem;">🏷️' + esc(it.sponsorNome||'') + '</span>' : '';
+              html += '<div style="background:var(--bg-blue);border:1px solid ' + col + ';border-radius:6px;padding:4px 8px;font-size:0.78rem;">' +
+                '<span style="color:#e2e8f0;font-weight:600;">' + (it.quantita||1) + 'x</span> ' +
+                '<span style="color:#94a3b8;">' + esc(it.taglia||'—') + '</span> ' +
+                ic + spBadge +
+                (it.note ? '<span style="color:#64748b;margin-left:4px;">' + esc(it.note) + '</span>' : '') +
+                '</div>';
+            });
+            html += '</div></div>';
+          }
+
+        } else {
+          // ── Vista per taglia: raggruppa presenti e mancanti ──
+          var byTaglia = {};
+          allKitRows.forEach(function(it) {
+            var t = it.taglia || '—';
+            if (!byTaglia[t]) byTaglia[t] = { buono:0, riparazione:0, fuori_uso:0, mancante:0 };
+            var c = it.condizione || 'buono';
+            byTaglia[t][c] = (byTaglia[t][c]||0) + (it.quantita||1);
+          });
+          html += '<div style="overflow-x:auto;"><div style="display:flex;flex-wrap:wrap;gap:8px;padding:4px 0;">';
+          Object.keys(byTaglia).sort().forEach(function(t) {
+            var g = byTaglia[t];
+            var totT = g.buono + g.riparazione + g.fuori_uso + g.mancante;
+            var presT = g.buono + g.riparazione + g.fuori_uso;
+            html += '<div style="background:var(--bg-blue);border:1px solid #334155;border-radius:8px;padding:8px 12px;min-width:90px;text-align:center;">' +
+              '<div style="font-size:0.85rem;font-weight:700;color:#e2e8f0;margin-bottom:4px;">' + esc(t) + '</div>' +
+              (g.buono      ? '<div style="font-size:0.75rem;color:#4ade80;">✅ ' + g.buono + ' buoni</div>' : '') +
+              (g.riparazione? '<div style="font-size:0.75rem;color:#fbbf24;">🔧 ' + g.riparazione + '</div>' : '') +
+              (g.fuori_uso  ? '<div style="font-size:0.75rem;color:#f87171;">❌ ' + g.fuori_uso + '</div>' : '') +
+              (g.mancante   ? '<div style="font-size:0.75rem;color:#c084fc;font-weight:600;">✗ ' + g.mancante + '/' + totT + ' mancanti</div>' : '') +
               '</div>';
           });
           html += '</div></div>';
@@ -7658,6 +7710,13 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       if (btn) btn.disabled = false;
       if (res) { res.style.display=''; res.innerHTML='<p class="small" style="color:#f87171;">Errore di rete.</p>'; }
     }
+  };
+
+  // ── Toggle vista kit: per numero | per taglia ──
+  window._kitViewMode = {};
+  window.INV.kitToggleView = function (kitKey, mode) {
+    window._kitViewMode[kitKey] = mode;
+    renderBody();
   };
 
   // ── Elimina intero kit (tutte le voci con _kitName) ──
