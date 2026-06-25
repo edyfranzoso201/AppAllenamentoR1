@@ -5755,5 +5755,342 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   };
 })();
 </script>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     PERSONALIZZA MENU — 2 livelli
+     • Pannello ADMIN (governance società): quali tab opzionali sono fisse vs
+       personalizzabili. Salvato su SERVER per società (?action=menu-config).
+     • Pannello UTENTE (vista personale): tra le tab personalizzabili dall'admin,
+       quali mostrare/nascondere. Salvato in LOCALE (localStorage, per device).
+     • Catena: permesso(licenza/ruolo) AND non-bloccata-admin AND preferenza-utente.
+       Il filtro si applica come ULTIMO step dopo permessi/licenza.
+     ═════════════════════════════════════════════════════════════════════════ -->
+<style>
+  .pm-overlay{position:fixed;inset:0;background:rgba(2,8,20,0.72);z-index:10050;display:none;align-items:flex-start;justify-content:center;padding:40px 14px;overflow-y:auto;}
+  .pm-overlay.show{display:flex;}
+  .pm-modal{background:var(--bg-card,#0f172a);border:1px solid rgba(255,255,255,0.12);border-radius:16px;width:100%;max-width:560px;box-shadow:0 20px 60px rgba(0,0,0,0.5);overflow:hidden;}
+  .pm-head{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.08);}
+  .pm-head h3{margin:0;font-size:1.05rem;color:#e2e8f0;font-weight:700;flex:1;}
+  .pm-x{background:none;border:none;color:#94a3b8;font-size:1.4rem;cursor:pointer;line-height:1;padding:0 4px;}
+  .pm-sub{padding:10px 20px 4px;color:#94a3b8;font-size:0.84rem;line-height:1.45;}
+  .pm-list{padding:8px 12px 4px;max-height:52vh;overflow-y:auto;}
+  .pm-row{display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:9px;}
+  .pm-row:hover{background:rgba(255,255,255,0.04);}
+  .pm-row label{flex:1;color:#e2e8f0;font-size:0.92rem;cursor:pointer;display:flex;align-items:center;gap:9px;margin:0;}
+  .pm-row .pm-ic{width:22px;text-align:center;}
+  .pm-row input[type=checkbox]{width:19px;height:19px;cursor:pointer;accent-color:#16a34a;flex-shrink:0;}
+  .pm-row.pm-disabled{opacity:0.5;}
+  .pm-row.pm-disabled label{cursor:default;}
+  .pm-pill{font-size:0.66rem;font-weight:700;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:0.4px;}
+  .pm-pill.fix{background:rgba(148,163,184,0.18);color:#cbd5e1;}
+  .pm-foot{display:flex;gap:10px;justify-content:space-between;align-items:center;padding:14px 20px;border-top:1px solid rgba(255,255,255,0.08);flex-wrap:wrap;}
+  .pm-foot .pm-left{display:flex;gap:8px;flex-wrap:wrap;}
+  .pm-btn{border:none;border-radius:9px;padding:9px 16px;font-weight:600;font-size:0.88rem;cursor:pointer;}
+  .pm-btn.save{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;}
+  .pm-btn.ghost{background:rgba(255,255,255,0.08);color:#cbd5e1;}
+  .pm-btn:disabled{opacity:0.5;cursor:default;}
+  .pm-note{font-size:0.78rem;color:#64748b;margin:0 20px 14px;}
+  html.theme-light .pm-modal{background:#ffffff;border-color:rgba(0,0,0,0.12);}
+  html.theme-light .pm-head h3,html.theme-light .pm-row label{color:#0f172a;}
+  html.theme-light .pm-sub,html.theme-light .pm-note{color:#475569;}
+</style>
+
+<div class="pm-overlay" id="pm-overlay">
+  <div class="pm-modal">
+    <div class="pm-head">
+      <span id="pm-title-ic" style="font-size:1.3rem;">⚙️</span>
+      <h3 id="pm-title">Personalizza menu</h3>
+      <button class="pm-x" onclick="window.PMClose()" title="Chiudi">✕</button>
+    </div>
+    <div class="pm-sub" id="pm-sub"></div>
+    <div class="pm-list" id="pm-list"></div>
+    <p class="pm-note" id="pm-note"></p>
+    <div class="pm-foot">
+      <div class="pm-left">
+        <button class="pm-btn ghost" id="pm-all" type="button" onclick="window.PMSetAll(true)">Tutte</button>
+        <button class="pm-btn ghost" id="pm-none" type="button" onclick="window.PMSetAll(false)">Nessuna</button>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="pm-btn ghost" onclick="window.PMClose()" type="button">Annulla</button>
+        <button class="pm-btn save" id="pm-save" type="button" onclick="window.PMSave(this)">Salva</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── Catalogo tab personalizzabili (data-tab + etichetta + icona) ──
+  // Home NON è elencata → è la tab di fallback, sempre visibile (se nascondessimo
+  // anche lei la dashboard resterebbe senza alcuna tab attiva).
+  // Le tab esterne (Area Tecnica, Org.) sono <a> senza data-tab → identificate
+  // dall'attributo href e marcate con una "key" stabile.
+  var OPTIONAL = [
+    { key:'formazione-section',         label:'Formazione',    ic:'🟦' },
+    { key:'calendario-section',         label:'Calendario',    ic:'📅' },
+    { key:'squadra-section',            label:'Squadra',       ic:'👥' },
+    { key:'match-results-section',      label:'Risultati',     ic:'🏆' },
+    { key:'report-valutazioni-section', label:'Valutazioni',   ic:'📋' },
+    { key:'report-presenze-section',    label:'Presenze',      ic:'✅' },
+    { key:'hall-of-fame-section',       label:'Hall of Fame',  ic:'🏅' },
+    { key:'monitoraggio-gps-section',   label:'GPS',           ic:'📈' },
+    { key:'analisi-singolo-section',    label:'Analisi',       ic:'🔬' },
+    { key:'at-area-tecnica',            label:'Area Tecnica',  ic:'🎬', href:'/area-tecnica.html' },
+    { key:'org-calendario',             label:'Org.',          ic:'📆', href:'/calendario.html' },
+    { key:'materiale-section',          label:'Materiale',     ic:'📦' },
+    { key:'pagamenti-section',          label:'Pagamenti',     ic:'💳' },
+    { key:'convocazioni-section',       label:'Convocazioni',  ic:'📣' }
+  ];
+  var LS_PREF = 'gosport_menu_pref';            // preferenza utente (per device)
+  var serverLocked = null;                       // set di key bloccate da admin (cache)
+
+  function role() { return String(sessionStorage.getItem('gosport_user_role') || localStorage.getItem('_p_gosport_user_role') || '').toLowerCase(); }
+  function isAdmin() { return role() === 'admin'; }
+
+  // ── Elemento DOM della tab a partire dalla key ──
+  function tabEl(key) {
+    var found = OPTIONAL.find(function (o) { return o.key === key; });
+    if (found && found.href) return document.querySelector('a.tab-nav-btn[href="' + found.href + '"]');
+    return document.querySelector('.tab-nav-btn[data-tab="' + key + '"]');
+  }
+
+  // ── Preferenza utente (localStorage): { hidden: [key,...] } ──
+  function loadPref() {
+    try { var p = JSON.parse(localStorage.getItem(LS_PREF) || '{}'); if (!Array.isArray(p.hidden)) p.hidden = []; return p; }
+    catch (e) { return { hidden: [] }; }
+  }
+  function savePref(p) { localStorage.setItem(LS_PREF, JSON.stringify(p)); }
+
+  // ── Config admin (server): scarica e cache l'array delle key bloccate ──
+  function authHeadersJSON() {
+    function ss(k){ return sessionStorage.getItem(k) || localStorage.getItem('_p_'+k) || ''; }
+    return {
+      'Content-Type':'application/json',
+      'X-Annata-Id': ss('gosport_current_annata'),
+      'X-Auth-Session': ss('gosport_session_token') || ss('gosport_auth_session'),
+      'X-Auth-User': ss('gosport_auth_user'),
+      'X-User-Role': ss('gosport_user_role'),
+      'X-Society-Id': ss('gosport_society_id')
+    };
+  }
+  function fetchServerConfig() {
+    return fetch('/api/data?action=menu-config', { headers: authHeadersJSON() })
+      .then(function (r) { return r.ok ? r.json() : { config:{ locked:[] } }; })
+      .then(function (d) { var l = (d && d.config && d.config.locked) || []; serverLocked = new Set(l); return serverLocked; })
+      .catch(function () { serverLocked = new Set(); return serverLocked; });
+  }
+
+  // ── APPLICA il filtro finale: una tab opzionale è visibile se l'admin l'ha
+  //    bloccata (sempre visibile) OPPURE l'utente non l'ha nascosta. ──
+  //    NB: questo NON tocca i permessi licenza/ruolo: se una tab è già display:none
+  //    per via dei permessi, resta nascosta (non la riaccendiamo mai).
+  function applyMenuPref() {
+    var pref = loadPref();
+    var locked = serverLocked || new Set();
+    var hidActiveBtn = false;
+    OPTIONAL.forEach(function (o) {
+      var el = tabEl(o.key);
+      if (!el) return;
+      // Se la tab è nascosta dai permessi/licenza (inline display:none impostato
+      // da showAccessTabIfAdmin o dal piano), NON la mostriamo: marchiamo solo.
+      var hiddenByPerm = el.dataset.pmPermHidden === '1';
+      var userHidden = pref.hidden.indexOf(o.key) !== -1;
+      var adminLocked = locked.has(o.key);
+      var shouldHide = !adminLocked && userHidden;
+      if (hiddenByPerm) return;            // i permessi vincono sempre
+      el.style.display = shouldHide ? 'none' : '';
+      if (shouldHide && el.classList.contains('active')) hidActiveBtn = true;
+    });
+    // Se ho appena nascosto la tab attualmente attiva, torna su Home.
+    if (hidActiveBtn && typeof window.switchTab === 'function') {
+      try { window.switchTab('home-section'); } catch (e) {}
+    }
+  }
+  window.PMApply = applyMenuPref;
+
+  // Memorizza quali tab erano già nascoste dai permessi PRIMA di applicare la pref,
+  // così non le "riaccendiamo" mai (es. tab Platinum non disponibili).
+  // Una tab è "nascosta dai permessi" se il suo BOTTONE è display:none OPPURE la
+  // SEZIONE collegata (data-tab) è stata nascosta da applyPermissions (es. GPS per
+  // ruoli senza canViewGPS). Le tab esterne (href) non hanno sezione → solo bottone.
+  function snapshotPermHidden() {
+    OPTIONAL.forEach(function (o) {
+      var el = tabEl(o.key);
+      if (!el) return;
+      var hidden = (el.style.display === 'none');
+      if (!hidden && !o.href) {
+        var sec = document.getElementById(o.key);
+        if (sec && sec.style.display === 'none') hidden = true;
+      }
+      if (hidden) el.dataset.pmPermHidden = '1';
+    });
+  }
+
+  // ── RENDER del pannello (admin o utente) ──
+  function render(mode) {
+    var list = document.getElementById('pm-list');
+    var pref = loadPref();
+    var locked = serverLocked || new Set();
+    document.getElementById('pm-title').textContent = mode === 'admin' ? 'Configura menu società' : 'Personalizza menu';
+    document.getElementById('pm-title-ic').textContent = mode === 'admin' ? '🛡️' : '⚙️';
+    document.getElementById('pm-sub').innerHTML = mode === 'admin'
+      ? 'Scegli quali voci restano <strong>fisse per tutti</strong> (spunta) e quali sono <strong>personalizzabili</strong> dal singolo utente (spunta tolta). Vale per tutta la società.'
+      : 'Spunta le voci che vuoi vedere nel tuo menu. Le voci bloccate dall\'amministratore restano sempre visibili. La scelta vale solo su questo dispositivo.';
+    document.getElementById('pm-note').textContent = mode === 'admin'
+      ? 'La voce Home è sempre presente (tab predefinita) e non compare qui.'
+      : '';
+
+    // Nel pannello utente mostriamo SOLO le tab che esistono per questo utente
+    // (presenti nel DOM e non nascoste dai permessi) e che l'admin ha reso
+    // personalizzabili (non bloccate).
+    var rows = OPTIONAL.filter(function (o) {
+      var el = tabEl(o.key);
+      if (!el) return false;
+      if (el.dataset.pmPermHidden === '1') return false;     // non disponibile per ruolo/licenza
+      if (mode === 'user' && locked.has(o.key)) return false; // bloccata dall'admin → non personalizzabile
+      return true;
+    });
+
+    if (!rows.length) {
+      list.innerHTML = '<div style="padding:24px;text-align:center;color:#94a3b8;">' +
+        (mode === 'user' ? 'Non ci sono voci personalizzabili: l\'amministratore le ha rese tutte fisse.' : 'Nessuna voce opzionale disponibile.') + '</div>';
+      return;
+    }
+
+    list.innerHTML = rows.map(function (o) {
+      var checked, pill = '';
+      if (mode === 'admin') {
+        checked = locked.has(o.key);   // spunta = FISSA per tutti
+        pill = checked ? '<span class="pm-pill fix">fissa</span>' : '';
+      } else {
+        checked = pref.hidden.indexOf(o.key) === -1;  // spunta = visibile
+      }
+      return '<div class="pm-row"><label><input type="checkbox" data-key="' + o.key + '"' + (checked ? ' checked' : '') + '>' +
+        '<span class="pm-ic">' + o.ic + '</span><span>' + o.label + '</span></label>' + pill + '</div>';
+    }).join('');
+  }
+
+  // ── Apertura pannelli ──
+  function open(mode) {
+    var ready = serverLocked ? Promise.resolve() : fetchServerConfig();
+    ready.then(function () {
+      render(mode);
+      var ov = document.getElementById('pm-overlay');
+      ov.dataset.mode = mode;
+      ov.classList.add('show');
+    });
+  }
+  window.PMOpenUser = function () { open('user'); };
+  window.PMOpenAdmin = function () { if (isAdmin()) open('admin'); };
+  window.PMClose = function () { document.getElementById('pm-overlay').classList.remove('show'); };
+
+  // ── Salvataggio (esposti come globali → richiamati via onclick inline nel
+  //    markup, come Annulla/✕. addEventListener qui non era affidabile perché i
+  //    nodi del footer venivano rigenerati da altri script, perdendo i listener) ──
+  function collectChecked() {
+    return Array.prototype.slice.call(document.querySelectorAll('#pm-list input[type=checkbox]'))
+      .filter(function (c) { return c.checked; }).map(function (c) { return c.dataset.key; });
+  }
+  window.PMSetAll = function (val) {
+    document.querySelectorAll('#pm-list input[type=checkbox]').forEach(function (c) { c.checked = !!val; });
+  };
+  window.PMSave = function (btn) {
+    var mode = document.getElementById('pm-overlay').dataset.mode;
+    if (btn) btn.disabled = true;
+    if (mode === 'admin') {
+      var locked = collectChecked();  // spuntate = fisse per tutti
+      fetch('/api/data?action=menu-config', { method:'POST', headers: authHeadersJSON(), body: JSON.stringify({ locked: locked }) })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (d && d.success) { serverLocked = new Set(d.config.locked || []); applyMenuPref(); window.PMClose(); }
+          else { alert('Errore nel salvataggio: ' + ((d && d.message) || '')); }
+        })
+        .catch(function () { alert('Errore di rete'); })
+        .finally(function () { if (btn) btn.disabled = false; });
+    } else {
+      // utente: spuntate = visibili → hidden = opzionali personalizzabili non spuntate
+      var visible = collectChecked();
+      var pref = loadPref();
+      var personalizable = OPTIONAL.filter(function (o) {
+        var el = tabEl(o.key);
+        return el && el.dataset.pmPermHidden !== '1' && !(serverLocked && serverLocked.has(o.key));
+      }).map(function (o) { return o.key; });
+      pref.hidden = pref.hidden.filter(function (k) { return personalizable.indexOf(k) === -1; });
+      personalizable.forEach(function (k) { if (visible.indexOf(k) === -1) pref.hidden.push(k); });
+      savePref(pref);
+      applyMenuPref();
+      if (btn) btn.disabled = false;
+      window.PMClose();
+    }
+  };
+  document.getElementById('pm-overlay').addEventListener('click', function (e) {
+    if (e.target === this) window.PMClose();
+  });
+
+  // ── Inietta le voci nei menu admin (desktop admin-dd-menu + mobile) ──
+  function injectDesktop(menu) {
+    if (!menu || menu.querySelector('#pm-entry-user')) return;
+    var html = '<button type="button" id="pm-entry-user" onclick="window.PMOpenUser();closeAdminMenu&&closeAdminMenu();" ' +
+      'style="width:100%;background:linear-gradient(135deg,#0e7490,#0891b2);color:#fff;border:none;padding:8px 12px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;margin-bottom:6px;display:block;text-align:left;">⚙️ Personalizza menu</button>';
+    if (isAdmin()) {
+      html += '<button type="button" id="pm-entry-admin" onclick="window.PMOpenAdmin();closeAdminMenu&&closeAdminMenu();" ' +
+        'style="width:100%;background:linear-gradient(135deg,#6d28d9,#7c3aed);color:#fff;border:none;padding:8px 12px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;margin-bottom:6px;display:block;text-align:left;">🛡️ Configura menu società</button>';
+    }
+    // Inserisci prima del pulsante "Esci" se presente, altrimenti in coda
+    var esci = Array.prototype.slice.call(menu.querySelectorAll('button')).filter(function (b) { return /Esci/.test(b.textContent); })[0];
+    var wrap = document.createElement('div'); wrap.innerHTML = html;
+    while (wrap.firstChild) { if (esci) menu.insertBefore(wrap.firstChild, esci); else menu.appendChild(wrap.firstChild); }
+  }
+  function injectMobile(dst) {
+    if (!dst || dst.querySelector('#pm-entry-user-m')) return;
+    var bU = document.createElement('button');
+    bU.type = 'button'; bU.id = 'pm-entry-user-m'; bU.textContent = '⚙️ Personalizza menu';
+    bU.style.cssText = 'background:#0891b2;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;';
+    bU.onclick = function () { document.getElementById('navbarNav').classList.remove('show'); window.PMOpenUser(); };
+    dst.appendChild(bU);
+    if (isAdmin()) {
+      var bA = document.createElement('button');
+      bA.type = 'button'; bA.id = 'pm-entry-admin-m'; bA.textContent = '🛡️ Menu società';
+      bA.style.cssText = 'background:#7c3aed;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;';
+      bA.onclick = function () { document.getElementById('navbarNav').classList.remove('show'); window.PMOpenAdmin(); };
+      dst.appendChild(bA);
+    }
+  }
+
+  // Il menu desktop viene (ri)creato dinamicamente: osserva il body e aggancia.
+  var mo = new MutationObserver(function () {
+    var m = document.getElementById('admin-dd-menu');
+    if (m) injectDesktop(m);
+  });
+  mo.observe(document.body, { childList: true, subtree: false });
+  // Aggancia subito se già presente
+  setTimeout(function () { var m = document.getElementById('admin-dd-menu'); if (m) injectDesktop(m); }, 800);
+
+  // Mobile: avvolgi populateMobileAdminMenu per aggiungere le voci dopo il popolamento.
+  function hookMobile() {
+    if (typeof window.populateMobileAdminMenu !== 'function' || window.populateMobileAdminMenu.__pmHooked) {
+      if (!window.populateMobileAdminMenu) { setTimeout(hookMobile, 500); return; }
+    }
+    var orig = window.populateMobileAdminMenu;
+    if (orig && !orig.__pmHooked) {
+      var wrapped = function () { orig.apply(this, arguments); injectMobile(document.getElementById('app-header-mobile')); };
+      wrapped.__pmHooked = true;
+      window.populateMobileAdminMenu = wrapped;
+    }
+  }
+  setTimeout(hookMobile, 1000);
+
+  // ── Inizializzazione: dopo che permessi/licenza hanno girato (snapshot →
+  //    fetch config server → applica). Più passate per coprire l'auth asincrona. ──
+  function init() {
+    snapshotPermHidden();
+    fetchServerConfig().then(applyMenuPref);
+  }
+  document.addEventListener('DOMContentLoaded', function () { setTimeout(init, 1700); });
+  setTimeout(function () { snapshotPermHidden(); applyMenuPref(); }, 3000);
+})();
+</script>
 </body>
 </html>

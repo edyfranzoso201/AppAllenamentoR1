@@ -493,6 +493,43 @@ if (req.query?.action === 'area-tecnica') {
   }
 }
 
+// ── PERSONALIZZA MENU: configurazione admin per società ──────────────────────
+// Pannello 1 (governance): l'admin decide quali tab opzionali sono "fisse per
+// tutti" e quali "personalizzabili" dal singolo utente. Salvata PER SOCIETÀ in
+// society:<id>:menuConfig = { locked: ["data-tab", ...] } (l'array elenca le tab
+// che l'admin ha BLOCCATO come sempre-visibili; tutte le altre opzionali sono
+// personalizzabili). Pannello 2 (vista utente) è 100% client/localStorage e non
+// passa di qui. GET: tutti gli autenticati (serve all'utente per sapere cosa può
+// personalizzare). POST: solo admin. Niente nuovo file serverless (limite Hobby).
+if (req.query?.action === 'menu-config') {
+  if (!session.isAuthenticated) {
+    return res.status(401).json({ success: false, message: 'Non autorizzato' });
+  }
+  const sid = session.societyId || '_default';
+  const key = `society:${sid}:menuConfig`;
+
+  if (req.method === 'GET') {
+    const cfg = (await kv.get(key)) || { locked: [] };
+    if (!Array.isArray(cfg.locked)) cfg.locked = [];
+    return res.status(200).json({ success: true, config: cfg });
+  }
+
+  if (req.method === 'POST') {
+    if (String(session.role).toLowerCase() !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Solo l\'amministratore può configurare il menu della società' });
+    }
+    let locked = (req.body && req.body.locked) || [];
+    if (!Array.isArray(locked)) locked = [];
+    // Sanifica: solo stringhe brevi tipo data-tab/identificatori (max 40 voci)
+    locked = locked
+      .filter(x => typeof x === 'string' && /^[\w-]{1,60}$/.test(x))
+      .slice(0, 40);
+    const cfg = { locked, updatedAt: new Date().toISOString() };
+    await kv.set(key, cfg);
+    return res.status(200).json({ success: true, config: cfg });
+  }
+}
+
 // ── CAMBIO STAGIONE: reset + archivio ────────────────────────────────────────
 // Le 4 categorie "di stagione" (risultati partite, presenze, hall of fame,
 // calendario) vengono copiate in annate:<id>:archive[<label>] con archivedAt
