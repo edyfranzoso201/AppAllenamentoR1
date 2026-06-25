@@ -2288,26 +2288,22 @@
 
             <!-- Modal importa da Materiale Atleti/Staff -->
             <div class="modal fade" id="invImportMatModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered modal-md">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
                     <div class="modal-content" style="background:var(--bg-panel);border:1px solid #334155;color:var(--text-primary);">
                         <div class="modal-header" style="border-color:#334155;">
-                            <h5 class="modal-title"><i class="bi bi-box-arrow-in-down" style="color:#38bdf8;"></i> Importa da Materiale</h5>
+                            <h5 class="modal-title"><i class="bi bi-box-arrow-in-down" style="color:#38bdf8;"></i> Importa da Materiale Atleti/Staff</h5>
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body">
-                            <p class="small" style="color:#94a3b8;">
-                                Converte il materiale di <strong>Atleti</strong> e <strong>Staff</strong> in voci dell'Inventario Fine Annata.<br>
-                                Per ogni articolo e taglia: quanti <strong>consegnati</strong> → condizione <em>Buono</em>; quanti <strong>non consegnati</strong> → condizione <em>Mancante</em>.
+                            <p class="small mb-2" style="color:#94a3b8;">
+                                Per ogni articolo scegli come importarlo. Maglie con numero atleta → usa lo stesso formato kit dell'inventario (badge N°).
                             </p>
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold">Categoria destinazione</label>
+                            <div class="mb-2">
+                                <label class="form-label small fw-bold">Categoria destinazione (per articoli non-kit)</label>
                                 <input id="inv-import-cat" type="text" class="form-control form-control-sm" value="Materiale squadra" maxlength="80" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">
                             </div>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="checkbox" id="inv-import-skip-existing" checked>
-                                <label class="form-check-label small" for="inv-import-skip-existing">Salta articoli già presenti nell'inventario (stesso nome+taglia)</label>
-                            </div>
-                            <div id="inv-import-mat-preview" style="max-height:260px;overflow-y:auto;margin-top:10px;"></div>
+                            <div id="inv-import-mat-mapping" style="max-height:360px;overflow-y:auto;margin-top:8px;"></div>
+                            <div id="inv-import-mat-preview" style="max-height:200px;overflow-y:auto;margin-top:8px;display:none;"></div>
                             <div id="inv-import-mat-result" style="display:none;margin-top:8px;"></div>
                         </div>
                         <div class="modal-footer" style="border-color:#334155;">
@@ -7423,91 +7419,166 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
 
   window.INV.openImportMateriale = function () {
     _importPreviewItems = [];
-    var prev = document.getElementById('inv-import-mat-preview');
-    var res  = document.getElementById('inv-import-mat-result');
-    var btn  = document.getElementById('inv-import-mat-confirm-btn');
-    if (prev) prev.innerHTML = '<p class="small" style="color:#94a3b8;">Clicca <strong>Anteprima</strong> per vedere cosa verrà importato.</p>';
-    if (res)  res.style.display = 'none';
-    if (btn)  btn.style.display = 'none';
-    bootstrap.Modal.getOrCreateInstance(document.getElementById('invImportMatModal')).show();
-  };
-
-  window.INV.previewImportMateriale = function () {
-    var prev = document.getElementById('inv-import-mat-preview');
-    var btn  = document.getElementById('inv-import-mat-confirm-btn');
-    var cat  = (document.getElementById('inv-import-cat') || {}).value || 'Materiale squadra';
-    var skipExisting = !!(document.getElementById('inv-import-skip-existing') || {}).checked;
-
-    // Legge dati dal modulo Materiale (variabili nel loro IIFE — accessibili via window se esposte, altrimenti via DOM)
-    // I dati sono in window.materialeData e window.materialeItems (esposti dall'IIFE materiale)
-    var matData  = window._materialeData  || {};
     var matItems = window._materialeItems || [];
     var athletes = window.athletes || [];
+    var mapEl = document.getElementById('inv-import-mat-mapping');
+    var prevEl = document.getElementById('inv-import-mat-preview');
+    var resEl  = document.getElementById('inv-import-mat-result');
+    var btn    = document.getElementById('inv-import-mat-confirm-btn');
+    if (prevEl) { prevEl.innerHTML = ''; prevEl.style.display = 'none'; }
+    if (resEl)  resEl.style.display = 'none';
+    if (btn)    btn.style.display = 'none';
 
     if (!matItems.length || !athletes.length) {
-      if (prev) prev.innerHTML = '<p class="small" style="color:#f87171;">Dati Materiale non ancora caricati. Apri prima il tab Materiale.</p>';
-      if (btn)  btn.style.display = 'none';
+      if (mapEl) mapEl.innerHTML = '<p class="small" style="color:#f87171;">Dati Materiale non ancora caricati. Apri prima il tab Materiale.</p>';
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('invImportMatModal')).show();
       return;
     }
 
-    // Raggruppa: per ogni articolo × taglia conta consegnati e non-consegnati
-    // chiave = articolo + '||' + taglia
-    var groups = {}; // { key: { nome, taglia, consegnati, mancanti } }
-    athletes.filter(function(a){ return !a.archived; }).forEach(function(a) {
-      var pid = a.id;
-      var entry = matData[pid] || {};
-      matItems.forEach(function(itm) {
-        var e = entry[itm];
-        if (!e) { // non assegnato = mancante
-          var key = itm + '||';
-          if (!groups[key]) groups[key] = { nome: itm, taglia: '', consegnati: 0, mancanti: 0 };
-          groups[key].mancanti++;
-        } else {
-          var taglia = e.taglia || '';
-          var key = itm + '||' + taglia;
-          if (!groups[key]) groups[key] = { nome: itm, taglia: taglia, consegnati: 0, mancanti: 0 };
-          if (e.status === 'consegnato') groups[key].consegnati += (parseInt(e.qty) || 1);
-          else groups[key].mancanti++;
-        }
-      });
+    // Kit esistenti nell'inventario (per il dropdown)
+    var kitNames = [];
+    var seen = {};
+    _items.forEach(function(it){ if (it._kitName && !seen[it._kitName]) { seen[it._kitName] = true; kitNames.push(it._kitName); } });
+    kitNames.sort();
+
+    var kitOpts = '<option value="">— aggregato per taglia —</option>' +
+      kitNames.map(function(k){ return '<option value="' + esc(k) + '">' + esc(k) + '</option>'; }).join('') +
+      '<option value="__new__">✏️ Nuovo kit…</option>';
+
+    // Riga per ogni articolo
+    var html = '<table class="table table-dark table-sm" style="font-size:0.82rem;">' +
+      '<thead><tr style="color:#94a3b8;">' +
+        '<th>Articolo Materiale</th>' +
+        '<th style="min-width:180px;">Importa come</th>' +
+        '<th style="min-width:150px;" id="inv-imp-kit-name-hdr" style="display:none;">Nome kit</th>' +
+      '</tr></thead><tbody>';
+    matItems.forEach(function(itm, idx) {
+      html += '<tr data-imp-itm="' + esc(itm) + '">' +
+        '<td style="vertical-align:middle;font-weight:600;color:#e2e8f0;">' + esc(itm) + '</td>' +
+        '<td>' +
+          '<select class="form-select form-select-sm imp-mode-sel" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;" onchange="window.INV._impModeChange(this)">' +
+            kitOpts +
+          '</select>' +
+        '</td>' +
+        '<td class="imp-kit-name-cell" style="display:none;">' +
+          '<input type="text" class="form-control form-control-sm imp-new-kit-name" maxlength="80" placeholder="Nome kit inventario…" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">' +
+        '</td>' +
+      '</tr>';
     });
+    html += '</tbody></table>';
+    if (mapEl) mapEl.innerHTML = html;
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('invImportMatModal')).show();
+  };
 
-    // Costruisce le voci inventario da importare
+  window.INV._impModeChange = function (sel) {
+    var tr = sel.closest('tr');
+    var nameCell = tr ? tr.querySelector('.imp-kit-name-cell') : null;
+    if (nameCell) nameCell.style.display = (sel.value === '__new__') ? '' : 'none';
+  };
+
+  window.INV.previewImportMateriale = function () {
+    var matData  = window._materialeData  || {};
+    var matItems = window._materialeItems || [];
+    var athletes = window.athletes || [];
+    var cat  = (document.getElementById('inv-import-cat') || {}).value || 'Materiale squadra';
+    var prevEl = document.getElementById('inv-import-mat-preview');
+    var btn    = document.getElementById('inv-import-mat-confirm-btn');
+
+    if (!matItems.length) {
+      if (prevEl) { prevEl.style.display=''; prevEl.innerHTML = '<p class="small" style="color:#f87171;">Apri prima il tab Materiale.</p>'; }
+      return;
+    }
+
+    var activeAthletes = athletes.filter(function(a){ return !a.archived; });
     _importPreviewItems = [];
-    // chiave per skip: nome + taglia + condizione (permette di avere Buono e Mancante separati)
-    var existingKeys = new Set(_items.map(function(it){ return (it.nome||'') + '||' + (it.taglia||'') + '||' + (it.condizione||''); }));
 
-    Object.keys(groups).sort().forEach(function(key) {
-      var g = groups[key];
-      if (g.consegnati > 0) {
-        var k = g.nome + '||' + g.taglia + '||buono';
-        if (!skipExisting || !existingKeys.has(k))
-          _importPreviewItems.push({ categoria: cat, nome: g.nome, quantita: g.consegnati, taglia: g.taglia, condizione: 'buono', note: '' });
-      }
-      if (g.mancanti > 0) {
-        var k2 = g.nome + '||' + g.taglia + '||mancante';
-        if (!skipExisting || !existingKeys.has(k2))
-          _importPreviewItems.push({ categoria: cat, nome: g.nome, quantita: g.mancanti, taglia: g.taglia, condizione: 'mancante', note: '' });
+    // Legge la mappatura dal modal
+    document.querySelectorAll('#inv-import-mat-mapping tr[data-imp-itm]').forEach(function(tr) {
+      var itm     = tr.dataset.impItm;
+      var modeSel = tr.querySelector('.imp-mode-sel');
+      var mode    = modeSel ? modeSel.value : ''; // '' = aggregato, kitName = kit esistente, '__new__' = nuovo kit
+      var newName = (tr.querySelector('.imp-new-kit-name') || {}).value || '';
+      var kitName = (mode === '__new__') ? newName.trim() : (mode || '');
+      var isKit   = !!kitName; // true = usa formato kit numerato
+
+      if (isKit) {
+        // Modalità kit: una voce per atleta con numero
+        activeAthletes.forEach(function(a) {
+          var pid   = a.id;
+          var entry = (matData[pid] || {})[itm];
+          var num   = String((matData[pid] || {})._numero || '').trim();
+          if (!entry || entry.status !== 'consegnato') return; // non consegnato → skip (kit: non creare voce mancante per numero)
+          var taglia = entry.taglia || '';
+          if (num) {
+            // Cerca voce esistente nel kit con stesso numero
+            var existing = _items.find(function(it){ return it._kitName === kitName && String(it._kitNum) === num; });
+            if (!existing) {
+              _importPreviewItems.push({ categoria: 'Maglie da calcio', nome: kitName + ' N°' + num, quantita: 1, taglia: taglia, condizione: 'buono', note: '', _kitName: kitName, _kitNum: num });
+            }
+          } else {
+            // Consegnato ma senza numero → scorta
+            var existExtra = _items.find(function(it){ return it._kitName === kitName && it._kitExtra && it.taglia === taglia; });
+            if (!existExtra) {
+              _importPreviewItems.push({ categoria: 'Maglie da calcio', nome: kitName + ' (scorta' + (taglia ? ' ' + taglia : '') + ')', quantita: 1, taglia: taglia, condizione: 'buono', note: '', _kitName: kitName, _kitExtra: true });
+            }
+          }
+        });
+        // Mancanti: atleti senza consegna
+        var groupMissing = {};
+        activeAthletes.forEach(function(a) {
+          var entry = (matData[a.id] || {})[itm];
+          if (!entry || entry.status !== 'consegnato') {
+            var taglia = entry ? (entry.taglia || '') : '';
+            if (!groupMissing[taglia]) groupMissing[taglia] = 0;
+            groupMissing[taglia]++;
+          }
+        });
+        Object.keys(groupMissing).forEach(function(taglia) {
+          var existMiss = _items.find(function(it){ return it._kitName === kitName && it.taglia === taglia && it.condizione === 'mancante'; });
+          if (!existMiss)
+            _importPreviewItems.push({ categoria: 'Maglie da calcio', nome: kitName + ' (mancante' + (taglia ? ' ' + taglia : '') + ')', quantita: groupMissing[taglia], taglia: taglia, condizione: 'mancante', note: '', _kitName: kitName });
+        });
+      } else {
+        // Modalità aggregata per taglia
+        var groups = {};
+        activeAthletes.forEach(function(a) {
+          var entry = (matData[a.id] || {})[itm];
+          if (!entry) { if (!groups['']) groups[''] = {c:0,m:0}; groups[''].m++; return; }
+          var t = entry.taglia || '';
+          if (!groups[t]) groups[t] = {c:0, m:0};
+          if (entry.status === 'consegnato') groups[t].c += (parseInt(entry.qty)||1);
+          else groups[t].m++;
+        });
+        var existKeys = new Set(_items.map(function(it){ return (it.nome||'')+'||'+(it.taglia||'')+'||'+(it.condizione||''); }));
+        Object.keys(groups).forEach(function(taglia) {
+          var g = groups[taglia];
+          if (g.c > 0 && !existKeys.has(itm+'||'+taglia+'||buono'))
+            _importPreviewItems.push({ categoria: cat, nome: itm, quantita: g.c, taglia: taglia, condizione: 'buono', note: '' });
+          if (g.m > 0 && !existKeys.has(itm+'||'+taglia+'||mancante'))
+            _importPreviewItems.push({ categoria: cat, nome: itm, quantita: g.m, taglia: taglia, condizione: 'mancante', note: '' });
+        });
       }
     });
 
     if (!_importPreviewItems.length) {
-      if (prev) prev.innerHTML = '<p class="small" style="color:#fbbf24;">Nessuna voce da importare (già tutte presenti o nessun dato).</p>';
-      if (btn)  btn.style.display = 'none';
+      if (prevEl) { prevEl.style.display=''; prevEl.innerHTML = '<p class="small" style="color:#fbbf24;">Nessuna voce nuova da importare.</p>'; }
+      if (btn) btn.style.display = 'none';
       return;
     }
 
-    var COND_LABEL = { buono: '✅ Buono', mancante: '🟣 Mancante', riparazione: '🔧 Riparazione', fuori_uso: '❌ Fuori uso' };
-    var html = '<table class="table table-dark table-sm mb-0" style="font-size:0.8rem;">' +
-      '<thead><tr><th>Articolo</th><th>Taglia</th><th>Qtà</th><th>Condizione</th></tr></thead><tbody>';
+    var COND_LABEL = { buono: '✅ Buono', mancante: '🟣 Mancante' };
+    var html = '<div style="font-size:0.78rem;color:#94a3b8;margin-bottom:4px;">Anteprima — ' + _importPreviewItems.length + ' voci:</div>' +
+      '<table class="table table-dark table-sm mb-0" style="font-size:0.78rem;">' +
+      '<thead><tr><th>Nome</th><th>Taglia</th><th>Qtà</th><th>Cond.</th><th>Kit</th></tr></thead><tbody>';
     _importPreviewItems.forEach(function(it) {
-      html += '<tr><td>' + esc(it.nome) + '</td><td>' + esc(it.taglia || '—') + '</td>' +
+      html += '<tr><td>' + esc(it.nome) + '</td><td>' + esc(it.taglia||'—') + '</td>' +
         '<td style="text-align:center;">' + it.quantita + '</td>' +
-        '<td>' + (COND_LABEL[it.condizione] || it.condizione) + '</td></tr>';
+        '<td>' + (COND_LABEL[it.condizione]||it.condizione) + '</td>' +
+        '<td style="color:#fbbf24;">' + (it._kitName ? esc(it._kitName) : '—') + '</td></tr>';
     });
     html += '</tbody></table>';
-    if (prev) prev.innerHTML = html;
-    if (btn)  btn.style.display = '';
+    if (prevEl) { prevEl.style.display=''; prevEl.innerHTML = html; }
+    if (btn) btn.style.display = '';
   };
 
   window.INV.execImportMateriale = async function () {
@@ -7524,16 +7595,16 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       var d = await r.json();
       if (btn) btn.disabled = false;
       if (d && d.success) {
-        if (res) { res.style.display = ''; res.innerHTML = '<p class="small" style="color:#4ade80;">✅ Importate ' + (d.count || _importPreviewItems.length) + ' voci.</p>'; }
+        if (res) { res.style.display=''; res.innerHTML='<p class="small" style="color:#4ade80;">✅ Importate ' + (d.count||_importPreviewItems.length) + ' voci.</p>'; }
         _importPreviewItems = [];
-        if (document.getElementById('inv-import-mat-confirm-btn')) document.getElementById('inv-import-mat-confirm-btn').style.display = 'none';
+        if (btn) btn.style.display = 'none';
         await load(true);
       } else {
-        if (res) { res.style.display = ''; res.innerHTML = '<p class="small" style="color:#f87171;">Errore: ' + ((d && d.message) || '') + '</p>'; }
+        if (res) { res.style.display=''; res.innerHTML='<p class="small" style="color:#f87171;">Errore: ' + ((d&&d.message)||'') + '</p>'; }
       }
     } catch(e) {
       if (btn) btn.disabled = false;
-      if (res) { res.style.display = ''; res.innerHTML = '<p class="small" style="color:#f87171;">Errore di rete.</p>'; }
+      if (res) { res.style.display=''; res.innerHTML='<p class="small" style="color:#f87171;">Errore di rete.</p>'; }
     }
   };
 
