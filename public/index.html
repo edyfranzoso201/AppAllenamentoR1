@@ -3085,8 +3085,13 @@ function switchTab(sectionId) {
     var navMenu = document.getElementById('navbarNav');
     if (navMenu) navMenu.classList.remove('show');
 
-    // Resize Chart.js
+    // Resize Chart.js (100ms per tutte le tab; GPS ha un secondo passaggio a 350ms
+    // perché confronto-squadra-section passa da display:none a block e i canvas
+    // hanno ancora offsetWidth=0 al primo tick, causando il grafico "ridotto").
     setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 100);
+    if (sectionId === 'monitoraggio-gps-section') {
+        setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 350);
+    }
 
     // Se si va al tab Presenze, ridisegna il grafico (era nascosto, offsetWidth era 0)
     if (sectionId === 'report-presenze-section') {
@@ -6089,7 +6094,10 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     fetchServerConfig().then(applyMenuPref);
   }
   document.addEventListener('DOMContentLoaded', function () { setTimeout(init, 1700); });
-  setTimeout(function () { snapshotPermHidden(); applyMenuPref(); }, 3000);
+  // Secondo passaggio: ri-applica solo le preferenze (NON ri-snapshot: a questo punto
+  // applyMenuPref potrebbe aver già nascosto tab per preferenza utente, e un nuovo
+  // snapshot le segnerebbe erroneamente come nascoste da permessi).
+  setTimeout(function () { applyMenuPref(); }, 3000);
 })();
 </script>
 </body>
