@@ -2069,7 +2069,7 @@
                 <div id="inv-collapsible">
                     <div class="d-flex align-items-center gap-2 mb-3 flex-wrap no-print" onclick="event.stopPropagation()">
                         <button id="inv-kit-btn" class="btn btn-sm btn-outline-warning no-print" onclick="window.INV.openKit()" style="display:none;">
-                            <i class="bi bi-grid-3x3-gap-fill"></i> Kit Maglie
+                            <i class="bi bi-grid-3x3-gap-fill"></i> Kit Maglie o Pantaloncini
                         </button>
                         <button id="inv-add-btn" class="btn btn-sm btn-success no-print" onclick="window.INV.openForm(null)" style="display:none;">
                             <i class="bi bi-plus-circle-fill"></i> Aggiungi voce
@@ -7020,7 +7020,11 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
 
     for (var n = from; n <= to; n++) {
       html += '<tr data-num="' + n + '">' +
-        '<td style="text-align:center;font-weight:700;color:#93c5fd;">' + n + '</td>' +
+        '<td style="text-align:center;padding:2px 4px;">' +
+          '<input type="number" class="form-control form-control-sm kit-num-edit" min="1" max="99" value="' + n + '" ' +
+          'style="background:var(--bg-blue);color:#93c5fd;border-color:#475569;font-weight:700;text-align:center;width:60px;padding:2px 4px;" ' +
+          'title="Modifica numero maglia">' +
+        '</td>' +
         '<td><select class="form-select form-select-sm kit-taglia" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">' + tagOpts + '</select></td>' +
         '<td>' + _kitCondSel('kit-cond') + '</td>' +
         '<td>' + _kitSponsorCell() + '</td>' +
@@ -7190,7 +7194,8 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       let numRows = document.querySelectorAll('#inv-kit-grid tr[data-num]');
       if (!numRows.length) { btn.disabled = false; alert('Genera prima la griglia.'); return; }
       numRows.forEach(function (tr) {
-        var num        = parseInt(tr.dataset.num);
+        var numInput   = tr.querySelector('.kit-num-edit');
+        var num        = numInput ? (Math.max(1, Math.min(99, parseInt(numInput.value) || parseInt(tr.dataset.num))) ) : parseInt(tr.dataset.num);
         var taglia     = tr.querySelector('.kit-taglia').value;
         var condizione = tr.querySelector('.kit-cond').value;
         var note       = tr.querySelector('.kit-note').value.trim();
@@ -7198,7 +7203,9 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         var spNome     = tr.querySelector('.kit-sponsor-nome');
         var sponsor    = !!(spChk && spChk.checked);
         var sponsorNome= sponsor ? ((spNome && spNome.value.trim()) || '') : '';
-        var existing   = _items.find(function(it){ return it._kitName === name && it._kitNum === num; });
+        // cerca per numero originale (dataset.num) per mantenere l'id esistente
+        var origNum    = parseInt(tr.dataset.num);
+        var existing   = _items.find(function(it){ return it._kitName === name && it._kitNum === origNum; });
         items.push({
           id: existing ? existing.id : '',
           categoria: 'Maglie da calcio',
