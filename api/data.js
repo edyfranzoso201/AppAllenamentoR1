@@ -544,7 +544,9 @@ const INV_DEFAULT_CATS = ['Maglie da calcio', 'Pantaloncini', 'Calzettoni', 'Pal
 
 function sanitizeInvItem(raw) {
   const TAGLIE = ['', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '6 anni', '8 anni', '10 anni', '12 anni', '14 anni', 'Unica',
-                  '28-30', '31-33', '34-36', '37-39', '40-42', '43-45',
+                  '6', '8', '10', '12', '14',
+                  '23-26 (n°5)', '27-30 (n°6)', '31-34 (n°7)', '35-38 (n°8)',
+                  '39-42 (n°9)', '43-46 (n°10)', '47-49 (n°11)',
                   '37', '38', '39', '40', '41', '42', '43', '44', '45'];
   const COND = ['buono', 'riparazione', 'fuori_uso', 'mancante'];
   const item = {

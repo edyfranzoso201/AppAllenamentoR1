@@ -7040,9 +7040,18 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   };
 
   function _kitTagOpts() {
-    var TAGLIE = ['', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '6 anni', '8 anni', '10 anni', '12 anni', '14 anni', 'Unica',
-                  '28-30', '31-33', '34-36', '37-39', '40-42', '43-45',
-                  '37', '38', '39', '40', '41', '42', '43', '44', '45'];
+    var TAGLIE = [
+      '', 'XS', 'S', 'M', 'L', 'XL', 'XXL',
+      '6 anni', '8 anni', '10 anni', '12 anni', '14 anni',
+      'Unica',
+      // taglie abbigliamento numeriche
+      '6', '8', '10', '12', '14',
+      // calzature (formato Materiale atleti)
+      '23-26 (n°5)', '27-30 (n°6)', '31-34 (n°7)', '35-38 (n°8)',
+      '39-42 (n°9)', '43-46 (n°10)', '47-49 (n°11)',
+      // calzature singole
+      '37', '38', '39', '40', '41', '42', '43', '44', '45'
+    ];
     return TAGLIE.map(function(t){ return '<option value="' + esc(t) + '">' + (t || '— nessuna —') + '</option>'; }).join('');
   }
 
