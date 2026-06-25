@@ -6956,40 +6956,19 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     var condLabel = { buono: 'Buono', riparazione: 'Da riparare', fuori_uso: 'Fuori uso', mancante: 'Mancante' };
     var annLabel  = (ss('gosport_current_annata_name') || annataId() || 'annata').replace(/[^a-zA-Z0-9_\-\.]/g, '_');
 
-    // Precalcola totali per calcolare "su totale" per i mancanti
-    // Kit numerato: totale = count di voci con stesso _kitName (escluse scorte mancanti)
+    // Totale per kit = TUTTI gli item con stesso _kitName (presenti + mancanti)
     var kitTotali = {};
     _items.forEach(function(it){
-      if (it._kitName) {
+      if (it._kitName && !it._kitExtra) {
         if (!kitTotali[it._kitName]) kitTotali[it._kitName] = 0;
-        if (it.condizione !== 'mancante') kitTotali[it._kitName] += (it.quantita || 1);
-      }
-    });
-    // Voce aggregata: totale per nome base (rimuove N°X, suffissi mancante/scorta)
-    function nomeBase(nome) {
-      return (nome || '')
-        .replace(/\s+N°\S+\s*$/i, '')          // rimuove " N°17" finale
-        .replace(/\s*\(mancante[^)]*\)\s*$/i, '') // rimuove "(mancante ...)"
-        .replace(/\s*\(scorta[^)]*\)\s*$/i, '')   // rimuove "(scorta ...)"
-        .trim();
-    }
-    var aggTotali = {};
-    _items.forEach(function(it){
-      if (!it._kitName) {
-        var k = nomeBase(it.nome);
-        if (!aggTotali[k]) aggTotali[k] = 0;
-        aggTotali[k] += (it.quantita || 1);
+        kitTotali[it._kitName] += (it.quantita || 1);
       }
     });
 
     function suTotale(it) {
       if (it.condizione !== 'mancante') return '';
-      if (it._kitName) {
-        var tot = kitTotali[it._kitName] || 0;
-        return tot > 0 ? (it.quantita||1) + '/' + (tot + (it.quantita||1)) : '';
-      }
-      var tot2 = aggTotali[nomeBase(it.nome)] || 0;
-      return tot2 > 0 ? (it.quantita||1) + '/' + tot2 : '';
+      var tot = kitTotali[it._kitName] || 0;
+      return tot > 0 ? (it.quantita||1) + '/' + tot : '';
     }
 
     var header = ['Categoria','Nome/Descrizione','Quantità','Su totale','Taglia','Condizione','Note','Con Sponsor','Nome Sponsor'];
