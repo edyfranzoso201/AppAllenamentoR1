@@ -652,6 +652,28 @@ if (req.query?.action === 'inventory') {
       return res.status(200).json({ success: true });
     }
 
+    if (act === 'delete-kit') {
+      const kitName = String((req.body && req.body.kitName) || '').slice(0, 80);
+      if (!kitName) return res.status(400).json({ success: false, message: 'kitName mancante' });
+      let items = (await kv.get(invKey)) || [];
+      if (!Array.isArray(items)) items = [];
+      const before = items.length;
+      items = items.filter(i => i._kitName !== kitName && i._ktName !== kitName);
+      await kv.set(invKey, items);
+      return res.status(200).json({ success: true, deleted: before - items.length });
+    }
+
+    if (act === 'delete-cat') {
+      const categoria = String((req.body && req.body.categoria) || '').slice(0, 80);
+      if (!categoria) return res.status(400).json({ success: false, message: 'categoria mancante' });
+      let items = (await kv.get(invKey)) || [];
+      if (!Array.isArray(items)) items = [];
+      const before = items.length;
+      items = items.filter(i => (i.categoria || 'Altro') !== categoria);
+      await kv.set(invKey, items);
+      return res.status(200).json({ success: true, deleted: before - items.length });
+    }
+
     // Copia struttura inventario in un'altra annata (solo admin)
     if (act === 'template-copy') {
       if (String(session.role || '').toLowerCase() !== 'admin') {

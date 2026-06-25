@@ -6523,9 +6523,13 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         }
       });
 
+      var deleteCatBtn = _canWrite
+        ? '<button class="btn btn-xs btn-outline-danger ms-auto no-print" title="Elimina tutta la categoria" onclick="window.INV.deleteCat(' + JSON.stringify(cat).replace(/"/g,'&quot;') + ')"><i class="bi bi-trash3-fill"></i></button>'
+        : '';
       html += '<div class="mb-4"><div class="d-flex align-items-center gap-2 mb-2">' +
         '<span style="font-weight:600;color:#93c5fd;font-size:0.95rem;"><i class="bi bi-folder2-open"></i> ' + esc(cat) + '</span>' +
-        '<span class="badge bg-secondary">' + rows.length + '</span></div>';
+        '<span class="badge bg-secondary">' + rows.length + '</span>' +
+        deleteCatBtn + '</div>';
 
       // ── Vista griglia per i kit maglie ──
       Object.keys(kitGroups).sort().forEach(function (kitName) {
@@ -6542,6 +6546,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
           '<span class="badge bg-secondary" style="font-size:0.75rem;">' + numbered.length + ' maglie</span>' +
           (extraRows.length ? '<span class="badge bg-info text-dark" style="font-size:0.75rem;">+' + extraRows.reduce(function(s,it){ return s + (it.quantita||1); }, 0) + ' scorte</span>' : '') +
           (_canWrite ? '<button class="btn btn-xs btn-outline-warning ms-auto no-print" title="Modifica kit" onclick="window.INV.editKit(' + JSON.stringify(kitName).replace(/"/g, '&quot;') + ')"><i class="bi bi-pencil-fill"></i> Modifica kit</button>' : '') +
+          (_canWrite ? '<button class="btn btn-xs btn-outline-danger no-print" title="Elimina kit" onclick="window.INV.deleteKit(' + JSON.stringify(kitName).replace(/"/g, '&quot;') + ')"><i class="bi bi-trash3-fill"></i></button>' : '') +
           '</div>' +
           '<div style="overflow-x:auto;"><div style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;">';
 
@@ -7606,6 +7611,38 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       if (btn) btn.disabled = false;
       if (res) { res.style.display=''; res.innerHTML='<p class="small" style="color:#f87171;">Errore di rete.</p>'; }
     }
+  };
+
+  // ── Elimina intero kit (tutte le voci con _kitName) ──
+  window.INV.deleteKit = async function (kitName) {
+    var count = _items.filter(function(it){ return it._kitName === kitName; }).length;
+    if (!confirm('Eliminare il kit "' + kitName + '" (' + count + ' voci)? L\'operazione non è reversibile.')) return;
+    try {
+      var r = await fetch('/api/data?action=inventory', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ act: 'delete-kit', kitName: kitName })
+      });
+      var d = await r.json();
+      if (d && d.success) await load(true);
+      else alert('Errore: ' + ((d && d.message) || ''));
+    } catch(e) { alert('Errore di rete.'); }
+  };
+
+  // ── Elimina tutte le voci di una categoria ──
+  window.INV.deleteCat = async function (cat) {
+    var count = _items.filter(function(it){ return (it.categoria || 'Altro') === cat; }).length;
+    if (!confirm('Eliminare TUTTE le ' + count + ' voci della categoria "' + cat + '"? L\'operazione non è reversibile.')) return;
+    try {
+      var r = await fetch('/api/data?action=inventory', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ act: 'delete-cat', categoria: cat })
+      });
+      var d = await r.json();
+      if (d && d.success) await load(true);
+      else alert('Errore: ' + ((d && d.message) || ''));
+    } catch(e) { alert('Errore di rete.'); }
   };
 
   // ── inizializzazione ──
