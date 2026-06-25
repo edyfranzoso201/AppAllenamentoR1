@@ -6492,20 +6492,24 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
 
       // ── Vista griglia per i kit maglie ──
       Object.keys(kitGroups).sort().forEach(function (kitName) {
-        var kitRows = kitGroups[kitName].slice().sort(function(a,b){ return (a._kitNum||0)-(b._kitNum||0); });
-        var condClass = COND_COLOR;
-        var condIcon  = COND_ICON;
+        var allKitRows  = kitGroups[kitName];
+        var numbered    = allKitRows.filter(function(it){ return it._kitNum != null; }).sort(function(a,b){ return a._kitNum - b._kitNum; });
+        var extraRows   = allKitRows.filter(function(it){ return it._kitExtra; });
+        var condClass   = COND_COLOR;
+        var condIcon    = COND_ICON;
 
         html += '<div class="card chart-card mb-3">' +
           '<div class="card-body p-2">' +
           '<div class="d-flex align-items-center gap-2 mb-2 flex-wrap">' +
           '<span style="font-weight:700;color:#fbbf24;font-size:0.9rem;"><i class="bi bi-grid-3x3-gap-fill"></i> ' + esc(kitName) + '</span>' +
-          '<span class="badge bg-secondary" style="font-size:0.75rem;">' + kitRows.length + ' maglie</span>' +
+          '<span class="badge bg-secondary" style="font-size:0.75rem;">' + numbered.length + ' maglie</span>' +
+          (extraRows.length ? '<span class="badge bg-info text-dark" style="font-size:0.75rem;">+' + extraRows.reduce(function(s,it){ return s + (it.quantita||1); }, 0) + ' scorte</span>' : '') +
           (_canWrite ? '<button class="btn btn-xs btn-outline-warning ms-auto no-print" title="Modifica kit" onclick="window.INV.editKit(' + JSON.stringify(kitName).replace(/"/g, '&quot;') + ')"><i class="bi bi-pencil-fill"></i> Modifica kit</button>' : '') +
           '</div>' +
           '<div style="overflow-x:auto;"><div style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;">';
 
-        kitRows.forEach(function (it) {
+        // Badge numerati
+        numbered.forEach(function (it) {
           var col = condClass[it.condizione] || '#94a3b8';
           var ic  = condIcon[it.condizione]  || '○';
           var tooltip = [it.taglia ? 'Taglia: ' + it.taglia : '', it.sponsor ? '🏷️ ' + (it.sponsorNome || 'Con sponsor') : '', it.note ? 'Note: ' + it.note : ''].filter(Boolean).join(' | ');
@@ -6514,13 +6518,34 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
             ? ' onclick="window.INV.badgeClick(' + JSON.stringify(it.id).replace(/"/g,'&quot;') + ',event)"'
             : '';
           html += '<div title="' + esc(tooltip) + '" data-inv-badge="' + esc(it.id) + '" style="background:var(--bg-blue);border:2px solid ' + col + ';border-radius:8px;padding:6px 10px;text-align:center;min-width:52px;' + canClick + '"' + clickAttr + '>' +
-            '<div style="font-size:1rem;font-weight:800;color:#e2e8f0;">N°' + (it._kitNum || '') + '</div>' +
+            '<div style="font-size:1rem;font-weight:800;color:#e2e8f0;">N°' + it._kitNum + '</div>' +
             '<div style="font-size:0.7rem;color:#94a3b8;">' + esc(it.taglia || '—') + '</div>' +
-            '<div style="font-size:0.75rem;">' + ic + '</div>' +
+            '<div style="font-size:0.75rem;">' + ic + (it.sponsor ? ' 🏷️' : '') + '</div>' +
             '</div>';
         });
 
-        html += '</div></div></div></div>';
+        html += '</div></div>';
+
+        // Scorte senza numero (righe compatte sotto i badge)
+        if (extraRows.length) {
+          html += '<div style="margin-top:8px;padding:6px 8px;background:#0f172a;border-radius:6px;">' +
+            '<div style="font-size:0.78rem;color:#64748b;margin-bottom:4px;"><i class="bi bi-stack"></i> Scorte senza numero</div>' +
+            '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+          extraRows.forEach(function(it) {
+            var col = condClass[it.condizione] || '#94a3b8';
+            var ic  = condIcon[it.condizione]  || '○';
+            var spBadge = it.sponsor ? ' <span style="color:#93c5fd;font-size:0.7rem;">🏷️' + esc(it.sponsorNome || '') + '</span>' : '';
+            html += '<div style="background:var(--bg-blue);border:1px solid ' + col + ';border-radius:6px;padding:4px 8px;font-size:0.78rem;">' +
+              '<span style="color:#e2e8f0;font-weight:600;">' + (it.quantita || 1) + 'x</span> ' +
+              '<span style="color:#94a3b8;">' + esc(it.taglia || '—') + '</span> ' +
+              ic + spBadge +
+              (it.note ? '<span style="color:#64748b;margin-left:4px;">' + esc(it.note) + '</span>' : '') +
+              '</div>';
+          });
+          html += '</div></div>';
+        }
+
+        html += '</div></div>';
       });
 
       // ── Tabella normale per voci senza kit ──
@@ -6563,8 +6588,8 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   window.INV.editKit = function (kitName) {
     document.getElementById('inv-kit-name').value = kitName;
     document.getElementById('inv-kit-save-btn').style.display = '';
-    var kitItems = _items.filter(function(it){ return it._kitName === kitName; });
-    var nums = kitItems.map(function(it){ return it._kitNum || 0; });
+    var kitItems = _items.filter(function(it){ return it._kitName === kitName && it._kitNum != null; });
+    var nums = kitItems.map(function(it){ return it._kitNum; });
     var minN = Math.min.apply(null, nums) || 1;
     var maxN = Math.max.apply(null, nums) || 20;
     document.getElementById('inv-kit-from').value = minN;
@@ -7002,9 +7027,36 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         '<td><input type="text" class="form-control form-control-sm kit-note" maxlength="200" placeholder="Note…" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;"></td>' +
         '</tr>';
     }
-    html += '</tbody></table>';
+    // Sezione scorte senza numero
+    var extraExisting = [];
+    _items.forEach(function(it){
+      if (it._kitName === name && it._kitNum == null && it._kitExtra) extraExisting.push(it);
+    });
+    var extraRows = extraExisting.length ? extraExisting.length : 1;
+
+    html += '</tbody></table>' +
+      '<div style="margin-top:14px;padding:10px;background:#0f172a;border-radius:8px;border:1px solid #334155;">' +
+        '<div class="d-flex align-items-center gap-2 mb-2">' +
+          '<span style="color:#93c5fd;font-weight:600;font-size:0.85rem;"><i class="bi bi-stack"></i> Scorte senza numero</span>' +
+          '<span style="color:#64748b;font-size:0.78rem;">(maglie di riserva per taglia)</span>' +
+          '<button type="button" class="btn btn-xs btn-outline-secondary ms-auto" onclick="window.INV.kitAddExtra()"><i class="bi bi-plus-circle"></i> Riga</button>' +
+        '</div>' +
+        '<table class="table table-dark table-bordered table-sm mb-0" style="border-color:#1e293b;min-width:660px;">' +
+          '<thead><tr style="font-size:0.78rem;color:#64748b;">' +
+            '<th style="width:110px;">Taglia</th>' +
+            '<th style="width:70px;text-align:center;">Qtà</th>' +
+            '<th style="width:145px;">Condizione</th>' +
+            '<th style="width:160px;">🏷️ Sponsor</th>' +
+            '<th>Note</th>' +
+            '<th style="width:36px;"></th>' +
+          '</tr></thead>' +
+          '<tbody id="inv-kit-extra-tbody">' +
+        '</tbody></table>' +
+      '</div>';
+
     document.getElementById('inv-kit-grid').innerHTML = html;
 
+    // Ripristina righe numerate
     document.querySelectorAll('#inv-kit-grid tr[data-num]').forEach(function (tr) {
       var ex = existing[parseInt(tr.dataset.num)];
       if (ex) {
@@ -7014,7 +7066,46 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         _kitRestoreSponsor(tr, ex);
       }
     });
+
+    // Genera righe scorte
+    for (var e = 0; e < extraRows; e++) {
+      _kitAddExtraRow(extraExisting[e] || null);
+    }
   }
+
+  function _kitExtraRowHtml(idx) {
+    var tagOpts = _kitTagOpts();
+    return '<tr data-extra="' + idx + '">' +
+      '<td><select class="form-select form-select-sm kit-taglia" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">' + tagOpts + '</select></td>' +
+      '<td><input type="number" class="form-control form-control-sm kit-extra-qty" min="0" max="999" value="1" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;text-align:center;"></td>' +
+      '<td>' + _kitCondSel('kit-cond') + '</td>' +
+      '<td>' + _kitSponsorCell() + '</td>' +
+      '<td><input type="text" class="form-control form-control-sm kit-note" maxlength="200" placeholder="Note…" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;"></td>' +
+      '<td style="text-align:center;"><button type="button" class="btn btn-xs btn-outline-danger" onclick="this.closest(\'tr\').remove()"><i class="bi bi-x"></i></button></td>' +
+      '</tr>';
+  }
+
+  function _kitAddExtraRow(ex) {
+    var tbody = document.getElementById('inv-kit-extra-tbody');
+    if (!tbody) return;
+    var idx = tbody.querySelectorAll('tr').length;
+    var tr = document.createElement('tr');
+    tr.dataset.extra = idx;
+    tr.innerHTML = _kitExtraRowHtml(idx).replace(/^<tr[^>]*>/, '').replace(/<\/tr>$/, '');
+    tbody.appendChild(tr);
+    if (ex) {
+      tr.querySelector('.kit-taglia').value = ex.taglia || '';
+      var qtyEl = tr.querySelector('.kit-extra-qty');
+      if (qtyEl) qtyEl.value = ex.quantita || 1;
+      tr.querySelector('.kit-cond').value   = ex.condizione || 'buono';
+      tr.querySelector('.kit-note').value   = ex.note || '';
+      _kitRestoreSponsor(tr, ex);
+    }
+  }
+
+  window.INV.kitAddExtra = function () {
+    _kitAddExtraRow(null);
+  };
 
   // Genera griglia "per taglia": righe con [Taglia | Condizione | Note], senza N° jersey.
   // taglie: array di taglie da pre-popolare (es. preset), null = 5 righe vuote.
@@ -7118,6 +7209,30 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
           _kitNum: num
         });
       });
+      // Scorte senza numero
+      var extraExisting = [];
+      _items.forEach(function(it){ if (it._kitName === name && it._kitNum == null && it._kitExtra) extraExisting.push(it); });
+      document.querySelectorAll('#inv-kit-extra-tbody tr').forEach(function(tr, i) {
+        var taglia     = tr.querySelector('.kit-taglia').value;
+        var qtyEl      = tr.querySelector('.kit-extra-qty');
+        var quantita   = Math.max(0, parseInt((qtyEl && qtyEl.value) || 1));
+        var condizione = tr.querySelector('.kit-cond').value;
+        var note       = tr.querySelector('.kit-note').value.trim();
+        var spChk      = tr.querySelector('.kit-sponsor-chk');
+        var spNome     = tr.querySelector('.kit-sponsor-nome');
+        var sponsor    = !!(spChk && spChk.checked);
+        var sponsorNome= sponsor ? ((spNome && spNome.value.trim()) || '') : '';
+        if (!taglia && !note && !sponsor) return; // salta righe vuote
+        var ex         = extraExisting[i] || null;
+        items.push({
+          id: ex ? ex.id : '',
+          categoria: 'Maglie da calcio',
+          nome: name + ' (scorta' + (taglia ? ' ' + taglia : '') + ')',
+          quantita, taglia, condizione, note, sponsor, sponsorNome,
+          _kitName: name,
+          _kitExtra: true
+        });
+      });
     } else {
       // Modalità per-taglia: ogni riga = un capo, senza _kitNum
       let tagRows = document.querySelectorAll('#inv-kit-grid tr[data-row]');
@@ -7215,7 +7330,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         sponsor:    inclSponsor ? !!it.sponsor : false,
         sponsorNome:inclSponsor ? (it.sponsorNome || '') : '',
       };
-      if (it._kitName) { t._kitName = it._kitName; t._kitNum = it._kitNum; }
+      if (it._kitName) { t._kitName = it._kitName; t._kitNum = it._kitNum; if (it._kitExtra) t._kitExtra = true; }
       if (it._ktName)  t._ktName = it._ktName;
       return t;
     });

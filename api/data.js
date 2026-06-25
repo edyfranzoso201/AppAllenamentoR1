@@ -560,6 +560,7 @@ function sanitizeInvItem(raw) {
   // Metadati kit maglie numerato
   if (raw._kitName) item._kitName = String(raw._kitName).slice(0, 80);
   if (raw._kitNum  != null) item._kitNum = Math.max(1, Math.min(99, parseInt(raw._kitNum) || 1));
+  if (raw._kitExtra) item._kitExtra = true;
   // Metadati kit per taglia (pantaloncini, calzettoni ecc.)
   if (raw._ktName) item._ktName = String(raw._ktName).slice(0, 80);
   // Sponsor
