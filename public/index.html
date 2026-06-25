@@ -6965,11 +6965,14 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         if (it.condizione !== 'mancante') kitTotali[it._kitName] += (it.quantita || 1);
       }
     });
-    // Voce aggregata: totale = somma qty per stesso nome (tutte le taglie) su tutte le condizioni
+    // Voce aggregata: totale per nome base (rimuove suffissi mancante/scorta per raggruppare)
+    function nomeBase(nome) {
+      return (nome || '').replace(/\s*\(mancante[^)]*\)\s*$/i, '').replace(/\s*\(scorta[^)]*\)\s*$/i, '').trim();
+    }
     var aggTotali = {};
     _items.forEach(function(it){
       if (!it._kitName) {
-        var k = it.nome || '';
+        var k = nomeBase(it.nome);
         if (!aggTotali[k]) aggTotali[k] = 0;
         aggTotali[k] += (it.quantita || 1);
       }
@@ -6981,7 +6984,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         var tot = kitTotali[it._kitName] || 0;
         return tot > 0 ? (it.quantita||1) + '/' + (tot + (it.quantita||1)) : '';
       }
-      var tot2 = aggTotali[it.nome||''] || 0;
+      var tot2 = aggTotali[nomeBase(it.nome)] || 0;
       return tot2 > 0 ? (it.quantita||1) + '/' + tot2 : '';
     }
 
