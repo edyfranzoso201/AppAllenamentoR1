@@ -6691,23 +6691,24 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     load();
   }
 
-  // Intercetta switchTab per caricare/aggiornare inventario quando si entra in Materiale
-  document.addEventListener('DOMContentLoaded', function () {
-    setTimeout(function () {
-      var orig = window.switchTab;
-      if (orig && !orig.__invHooked) {
-        window.switchTab = function (id) {
-          orig.apply(this, arguments);
-          if (id === 'materiale-section') {
-            applyRole(currentRole());
-            load();
-          }
-        };
-        window.switchTab.__invHooked = true;
-      }
-    }, 2500);
-    setTimeout(tryInit, 2800);
-  });
+  // Lo script è in fondo al body: DOMContentLoaded è già passato.
+  // Usiamo setTimeout direttamente — il DOM è disponibile subito.
+  setTimeout(function () {
+    // Hook su switchTab per ricaricare quando si entra in Materiale
+    var orig = window.switchTab;
+    if (orig && !orig.__invHooked) {
+      window.switchTab = function (id) {
+        orig.apply(this, arguments);
+        if (id === 'materiale-section') {
+          applyRole(currentRole());
+          load();
+        }
+      };
+      window.switchTab.__invHooked = true;
+    }
+  }, 1500);
+  // Primo caricamento (aspetta auth async)
+  setTimeout(tryInit, 1800);
 
 })();
 </script>
