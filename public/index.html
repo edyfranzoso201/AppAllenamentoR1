@@ -6539,12 +6539,20 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         var condClass   = COND_COLOR;
         var condIcon    = COND_ICON;
 
+        var kitMancanti = allKitRows.filter(function(it){ return it.condizione === 'mancante'; });
+        var kitTotale   = numbered.length + extraRows.reduce(function(s,it){ return s+(it.quantita||1);},0);
+        var mancQty     = kitMancanti.reduce(function(s,it){ return s+(it.quantita||1);},0);
+        var mancBadge   = mancQty > 0
+          ? '<span class="badge ms-1" style="background:#7c3aed;font-size:0.75rem;" title="Mancanti sul totale kit">⚠️ ' + mancQty + '/' + kitTotale + ' mancanti</span>'
+          : '';
+
         html += '<div class="card chart-card mb-3">' +
           '<div class="card-body p-2">' +
           '<div class="d-flex align-items-center gap-2 mb-2 flex-wrap">' +
           '<span style="font-weight:700;color:#fbbf24;font-size:0.9rem;"><i class="bi bi-grid-3x3-gap-fill"></i> ' + esc(kitName) + '</span>' +
           '<span class="badge bg-secondary" style="font-size:0.75rem;">' + numbered.length + ' maglie</span>' +
           (extraRows.length ? '<span class="badge bg-info text-dark" style="font-size:0.75rem;">+' + extraRows.reduce(function(s,it){ return s + (it.quantita||1); }, 0) + ' scorte</span>' : '') +
+          mancBadge +
           (_canWrite ? '<button class="btn btn-xs btn-outline-warning ms-auto no-print" title="Modifica kit" onclick="window.INV.editKit(' + JSON.stringify(kitName).replace(/"/g, '&quot;') + ')"><i class="bi bi-pencil-fill"></i> Modifica kit</button>' : '') +
           (_canWrite ? '<button class="btn btn-xs btn-outline-danger no-print" title="Elimina kit" onclick="window.INV.deleteKit(' + JSON.stringify(kitName).replace(/"/g, '&quot;') + ')"><i class="bi bi-trash3-fill"></i></button>' : '') +
           '</div>' +
@@ -6896,19 +6904,49 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     if (!_items.length) { alert('Nessuna voce da esportare.'); return; }
     var condLabel = { buono: 'Buono', riparazione: 'Da riparare', fuori_uso: 'Fuori uso', mancante: 'Mancante' };
     var annLabel  = (ss('gosport_current_annata_name') || annataId() || 'annata').replace(/[^a-zA-Z0-9_\-\.]/g, '_');
-    var header = ['Categoria','Nome/Descrizione','Quantità','Taglia','Condizione','Note','Con Sponsor','Nome Sponsor'];
+
+    // Precalcola totali per calcolare "su totale" per i mancanti
+    // Kit numerato: totale = count di voci con stesso _kitName (escluse scorte mancanti)
+    var kitTotali = {};
+    _items.forEach(function(it){
+      if (it._kitName) {
+        if (!kitTotali[it._kitName]) kitTotali[it._kitName] = 0;
+        if (it.condizione !== 'mancante') kitTotali[it._kitName] += (it.quantita || 1);
+      }
+    });
+    // Voce aggregata: totale = somma qty di stesso nome+taglia su tutte le condizioni
+    var aggTotali = {};
+    _items.forEach(function(it){
+      if (!it._kitName) {
+        var k = (it.nome||'') + '||' + (it.taglia||'');
+        if (!aggTotali[k]) aggTotali[k] = 0;
+        aggTotali[k] += (it.quantita || 1);
+      }
+    });
+
+    function suTotale(it) {
+      if (it.condizione !== 'mancante') return '';
+      if (it._kitName) {
+        var tot = kitTotali[it._kitName] || 0;
+        return tot > 0 ? (it.quantita||1) + '/' + (tot + (it.quantita||1)) : '';
+      }
+      var k = (it.nome||'') + '||' + (it.taglia||'');
+      var tot2 = aggTotali[k] || 0;
+      return tot2 > 0 ? (it.quantita||1) + '/' + tot2 : '';
+    }
+
+    var header = ['Categoria','Nome/Descrizione','Quantità','Su totale','Taglia','Condizione','Note','Con Sponsor','Nome Sponsor'];
     if (window.XLSX) {
       var rows = [header];
       _items.forEach(function (it) {
         rows.push([
-          it.categoria, it.nome, it.quantita, it.taglia || '',
+          it.categoria, it.nome, it.quantita, suTotale(it), it.taglia || '',
           condLabel[it.condizione] || it.condizione, it.note || '',
           it.sponsor ? 'Sì' : 'No', it.sponsorNome || ''
         ]);
       });
       var ws = XLSX.utils.aoa_to_sheet(rows);
-      // larghezze colonne
-      ws['!cols'] = [20,30,8,10,14,30,12,25].map(function(w){ return { wch: w }; });
+      ws['!cols'] = [20,30,8,10,10,14,30,12,25].map(function(w){ return { wch: w }; });
       var wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
       XLSX.writeFile(wb, 'inventario_' + annLabel + '.xlsx');
@@ -6916,7 +6954,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       var csv = header.join(',') + '\n';
       _items.forEach(function (it) {
         csv += [
-          it.categoria, it.nome, it.quantita, it.taglia || '',
+          it.categoria, it.nome, it.quantita, suTotale(it), it.taglia || '',
           condLabel[it.condizione] || it.condizione, (it.note || '').replace(/\n/g,' '),
           it.sponsor ? 'Sì' : 'No', it.sponsorNome || ''
         ].map(function (v) { return '"' + String(v).replace(/"/g,'""') + '"'; }).join(',') + '\n';
