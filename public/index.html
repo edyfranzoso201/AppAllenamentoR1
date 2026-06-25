@@ -3678,7 +3678,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // ── N°1: Collapse sezioni Atleti / Staff ─────────────────────────────
-    var matCollapsed = { atleti: true, staff: false };
+    var matCollapsed = { atleti: true, staff: true };
 
     window.matToggleSection = function(section) {
         matCollapsed[section] = !matCollapsed[section];
@@ -6346,7 +6346,6 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     var catBtn = document.getElementById('inv-cat-btn');
     if (addBtn) addBtn.style.display = _canWrite ? '' : 'none';
     if (kitBtn) kitBtn.style.display = _canWrite ? '' : 'none';
-    if (ktBtn)  ktBtn.style.display  = _canWrite ? '' : 'none';
     if (catBtn) catBtn.style.display = _canCat   ? '' : 'none';
   }
 
