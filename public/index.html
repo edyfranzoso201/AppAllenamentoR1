@@ -2061,22 +2061,28 @@
 
             <!-- ===== INVENTARIO FINE ANNATA ===== -->
             <div class="col-12 mt-5" id="inv-section">
-                <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+                <div class="d-flex align-items-center gap-2 mb-2 flex-wrap" style="cursor:pointer;" onclick="window.INV.toggleSection()">
                     <h4 class="mb-0" style="color:#34d399;"><i class="bi bi-clipboard2-check-fill"></i> Inventario Fine Annata</h4>
-                    <button id="inv-kit-btn" class="btn btn-sm btn-outline-warning ms-auto no-print" onclick="window.INV.openKit()" style="display:none;">
-                        <i class="bi bi-grid-3x3-gap-fill"></i> Kit Maglie
-                    </button>
-                    <button id="inv-add-btn" class="btn btn-sm btn-success no-print" onclick="window.INV.openForm(null)" style="display:none;">
-                        <i class="bi bi-plus-circle-fill"></i> Aggiungi voce
-                    </button>
-                    <button id="inv-cat-btn" class="btn btn-sm btn-outline-info no-print" onclick="window.INV.openCategories()" style="display:none;">
-                        <i class="bi bi-tags-fill"></i> Categorie
-                    </button>
-                    <button class="btn btn-sm btn-outline-secondary no-print" onclick="window.INV.exportExcel()" title="Esporta Excel">
-                        <i class="bi bi-file-earmark-excel-fill"></i>
-                    </button>
+                    <i id="inv-chevron" class="bi bi-chevron-down" style="color:#34d399;font-size:1rem;transition:transform 0.2s;transform:rotate(180deg);"></i>
+                    <span id="inv-summary" style="color:#94a3b8;font-size:0.8rem;margin-left:4px;"></span>
                 </div>
-                <div id="inv-body"></div>
+                <div id="inv-collapsible">
+                    <div class="d-flex align-items-center gap-2 mb-3 flex-wrap no-print" onclick="event.stopPropagation()">
+                        <button id="inv-kit-btn" class="btn btn-sm btn-outline-warning no-print" onclick="window.INV.openKit()" style="display:none;">
+                            <i class="bi bi-grid-3x3-gap-fill"></i> Kit Maglie
+                        </button>
+                        <button id="inv-add-btn" class="btn btn-sm btn-success no-print" onclick="window.INV.openForm(null)" style="display:none;">
+                            <i class="bi bi-plus-circle-fill"></i> Aggiungi voce
+                        </button>
+                        <button id="inv-cat-btn" class="btn btn-sm btn-outline-info no-print" onclick="window.INV.openCategories()" style="display:none;">
+                            <i class="bi bi-tags-fill"></i> Categorie
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary no-print" onclick="window.INV.exportExcel()" title="Esporta Excel">
+                            <i class="bi bi-file-earmark-excel-fill"></i>
+                        </button>
+                    </div>
+                    <div id="inv-body"></div>
+                </div>
             </div>
 
             <!-- Modal form voce inventario -->
@@ -6334,6 +6340,8 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     } catch (e) { console.warn('[INV] load error', e); }
     _loaded = true;
     renderBody();
+    _updateInvSummary();
+    _applyInvCollapse();
   }
 
   // ── aggiorna bottoni visibili in base al ruolo ──
@@ -6347,6 +6355,36 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     if (addBtn) addBtn.style.display = _canWrite ? '' : 'none';
     if (kitBtn) kitBtn.style.display = _canWrite ? '' : 'none';
     if (catBtn) catBtn.style.display = _canCat   ? '' : 'none';
+  }
+
+  // ── Collapse sezione inventario ──
+  var _invOpen = false; // chiuso di default
+
+  function _applyInvCollapse() {
+    var col  = document.getElementById('inv-collapsible');
+    var chev = document.getElementById('inv-chevron');
+    if (!col || !chev) return;
+    col.style.display  = _invOpen ? '' : 'none';
+    chev.style.transform = _invOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+  }
+
+  window.INV.toggleSection = function () {
+    _invOpen = !_invOpen;
+    _applyInvCollapse();
+    if (_invOpen && !_loaded) load();
+  };
+
+  function _updateInvSummary() {
+    var el = document.getElementById('inv-summary');
+    if (!el) return;
+    if (!_items.length) { el.textContent = ''; return; }
+    var tot = _items.length;
+    var man = _items.filter(function(i){ return i.condizione === 'mancante'; }).length;
+    var rip = _items.filter(function(i){ return i.condizione === 'riparazione'; }).length;
+    var parts = [tot + ' voci'];
+    if (rip)  parts.push('🔧 ' + rip);
+    if (man)  parts.push('❓ ' + man);
+    el.textContent = '(' + parts.join(' · ') + ')';
   }
 
   // ── render tabella raggruppata per categoria ──
@@ -6467,6 +6505,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     });
 
     el.innerHTML = html;
+    _updateInvSummary();
   }
 
   // Apre il kit in modifica (pre-popola nome e genera la griglia)
@@ -6537,11 +6576,26 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       return '<button type="button" style="display:block;width:100%;text-align:left;padding:5px 8px;margin-bottom:3px;border-radius:6px;border:1px solid ' + (active ? cd.c : '#334155') + ';background:' + (active ? cd.c + '22' : 'transparent') + ';color:' + (active ? cd.c : '#e2e8f0') + ';cursor:pointer;font-size:0.82rem;" onclick="window.INV.badgeSetCond(' + JSON.stringify(id).replace(/"/g,'&quot;') + ',' + JSON.stringify(cd.v).replace(/"/g,'&quot;') + ')">' + cd.l + '</button>';
     }).join('');
 
-    pop.innerHTML = info + btns;
+    var sponsorChk = it.sponsor ? 'checked' : '';
+    var sponsorNomeVal = esc(it.sponsorNome || '');
+    var sponsorBlock =
+      '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #334155;" onclick="event.stopPropagation()">' +
+        '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:#93c5fd;font-size:0.8rem;">' +
+          '<input type="checkbox" id="pop-sp-chk" ' + sponsorChk + ' onchange="document.getElementById(\'pop-sp-name\').style.display=this.checked?\'block\':\'none\'">' +
+          '🏷️ Con sponsor' +
+        '</label>' +
+        '<input id="pop-sp-name" type="text" placeholder="Nome sponsor…" maxlength="120" ' +
+          'style="display:' + (it.sponsor ? 'block' : 'none') + ';width:100%;margin-top:4px;padding:4px 6px;border-radius:5px;border:1px solid #475569;background:#0f172a;color:#e2e8f0;font-size:0.8rem;" ' +
+          'value="' + sponsorNomeVal + '">' +
+        '<button type="button" onclick="window.INV.badgeSaveSponsor(' + JSON.stringify(id).replace(/"/g,'&quot;') + ')" ' +
+          'style="margin-top:5px;width:100%;padding:4px;border-radius:5px;border:none;background:#1d4ed8;color:#fff;cursor:pointer;font-size:0.8rem;">💾 Salva sponsor</button>' +
+      '</div>';
+
+    pop.innerHTML = info + btns + sponsorBlock;
     document.body.appendChild(pop);
 
     // Posiziona: sopra il badge se c'è spazio, altrimenti sotto
-    var popH = 160; // stima altezza
+    var popH = 260;
     var top  = rect.top - popH - 6;
     if (top < 8) top = rect.bottom + 6;
     var left = Math.min(rect.left, window.innerWidth - 220);
@@ -6552,6 +6606,29 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     setTimeout(function() {
       document.addEventListener('click', _closeBadgePopover, { once: true });
     }, 0);
+  };
+
+  // Salva sponsor dal popover badge
+  window.INV.badgeSaveSponsor = async function (id) {
+    var it = _items.find(function(x){ return x.id === id; });
+    if (!it) return;
+    var chk  = document.getElementById('pop-sp-chk');
+    var nome = document.getElementById('pop-sp-name');
+    if (!chk) return;
+    var updated = Object.assign({}, it, {
+      sponsor:     chk.checked,
+      sponsorNome: chk.checked ? (nome ? nome.value.trim() : '') : ''
+    });
+    _closeBadgePopover();
+    try {
+      var r = await fetch('/api/data?action=inventory', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ act: 'upsert', item: updated })
+      });
+      var d = await r.json();
+      if (d && d.success) { await load(true); } else { alert('Errore: ' + ((d && d.message) || '')); }
+    } catch (e) { alert('Errore di rete.'); }
   };
 
   // Cambia condizione direttamente dal badge popover
@@ -6994,8 +7071,13 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   // ── inizializzazione ──
   function tryInit() {
     // Aspetta che l'annata sia disponibile (auth completata)
-    if (!annataId()) { setTimeout(tryInit, 600); return; }
+    if (!annataId()) {
+      _applyInvCollapse(); // applica subito lo stato chiuso
+      setTimeout(tryInit, 600);
+      return;
+    }
     applyRole(currentRole());
+    _applyInvCollapse();
     load();
   }
 
