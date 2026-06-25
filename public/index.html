@@ -6950,6 +6950,27 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     '</select>';
   }
 
+  // Cella sponsor nella griglia kit: checkbox + campo testo che appare se checked
+  function _kitSponsorCell() {
+    return '<div style="display:flex;flex-direction:column;gap:2px;">' +
+      '<label style="display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap;font-size:0.78rem;color:#93c5fd;">' +
+        '<input type="checkbox" class="kit-sponsor-chk" style="width:14px;height:14px;" onchange="this.closest(\'td\').querySelector(\'.kit-sponsor-nome\').style.display=this.checked?\'block\':\'none\'">' +
+        'Con sponsor' +
+      '</label>' +
+      '<input type="text" class="form-control form-control-sm kit-sponsor-nome" maxlength="120" placeholder="Nome sponsor…" style="display:none;background:var(--bg-blue);color:var(--text-primary);border-color:#475569;font-size:0.78rem;">' +
+    '</div>';
+  }
+
+  // Ripristina i valori sponsor in una riga esistente
+  function _kitRestoreSponsor(tr, ex) {
+    var chk  = tr.querySelector('.kit-sponsor-chk');
+    var nome = tr.querySelector('.kit-sponsor-nome');
+    if (!chk || !nome) return;
+    chk.checked = !!ex.sponsor;
+    nome.style.display = ex.sponsor ? 'block' : 'none';
+    nome.value = ex.sponsorNome || '';
+  }
+
   function _kitGenerateNumbered(name) {
     var from = Math.max(1, Math.min(99, parseInt(document.getElementById('inv-kit-from').value) || 1));
     var to   = Math.max(1, Math.min(99, parseInt(document.getElementById('inv-kit-to').value) || 20));
@@ -6959,11 +6980,12 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     document.getElementById('inv-kit-save-btn').style.display = '';
 
     var tagOpts = _kitTagOpts();
-    var html = '<table class="table table-dark table-bordered table-sm mb-0" style="border-color:var(--bg-blue);min-width:520px;">' +
+    var html = '<table class="table table-dark table-bordered table-sm mb-0" style="border-color:var(--bg-blue);min-width:660px;">' +
       '<thead><tr style="font-size:0.8rem;color:#94a3b8;">' +
-      '<th style="width:60px;text-align:center;">N°</th>' +
-      '<th style="width:130px;">Taglia</th>' +
-      '<th style="width:160px;">Condizione</th>' +
+      '<th style="width:50px;text-align:center;">N°</th>' +
+      '<th style="width:110px;">Taglia</th>' +
+      '<th style="width:145px;">Condizione</th>' +
+      '<th style="width:160px;">🏷️ Sponsor</th>' +
       '<th>Note</th></tr></thead><tbody>';
 
     var existing = {};
@@ -6976,6 +6998,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         '<td style="text-align:center;font-weight:700;color:#93c5fd;">' + n + '</td>' +
         '<td><select class="form-select form-select-sm kit-taglia" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">' + tagOpts + '</select></td>' +
         '<td>' + _kitCondSel('kit-cond') + '</td>' +
+        '<td>' + _kitSponsorCell() + '</td>' +
         '<td><input type="text" class="form-control form-control-sm kit-note" maxlength="200" placeholder="Note…" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;"></td>' +
         '</tr>';
     }
@@ -6985,9 +7008,10 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     document.querySelectorAll('#inv-kit-grid tr[data-num]').forEach(function (tr) {
       var ex = existing[parseInt(tr.dataset.num)];
       if (ex) {
-        tr.querySelector('.kit-taglia').value = ex.taglia || '';
-        tr.querySelector('.kit-cond').value   = ex.condizione || 'buono';
-        tr.querySelector('.kit-note').value   = ex.note || '';
+        tr.querySelector('.kit-taglia').value  = ex.taglia || '';
+        tr.querySelector('.kit-cond').value    = ex.condizione || 'buono';
+        tr.querySelector('.kit-note').value    = ex.note || '';
+        _kitRestoreSponsor(tr, ex);
       }
     });
   }
@@ -7011,19 +7035,20 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       });
     }
 
-    var html = '<table class="table table-dark table-bordered table-sm mb-0" style="border-color:var(--bg-blue);min-width:460px;">' +
+    var html = '<table class="table table-dark table-bordered table-sm mb-0" style="border-color:var(--bg-blue);min-width:600px;">' +
       '<thead><tr style="font-size:0.8rem;color:#94a3b8;">' +
       '<th style="width:35px;text-align:center;">#</th>' +
-      '<th style="width:140px;">Taglia</th>' +
-      '<th style="width:160px;">Condizione</th>' +
+      '<th style="width:120px;">Taglia</th>' +
+      '<th style="width:145px;">Condizione</th>' +
+      '<th style="width:160px;">🏷️ Sponsor</th>' +
       '<th>Note</th></tr></thead><tbody id="inv-kit-tbody">';
 
     rows.forEach(function(t, i) {
-      var ex = existing[i] || {};
       html += '<tr data-row="' + i + '">' +
         '<td style="text-align:center;color:#64748b;font-size:0.8rem;">' + (i + 1) + '</td>' +
         '<td><select class="form-select form-select-sm kit-taglia" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">' + tagOpts + '</select></td>' +
         '<td>' + _kitCondSel('kit-cond') + '</td>' +
+        '<td>' + _kitSponsorCell() + '</td>' +
         '<td><input type="text" class="form-control form-control-sm kit-note" maxlength="200" placeholder="Note…" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;"></td>' +
         '</tr>';
     });
@@ -7039,6 +7064,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       if (ex) {
         tr.querySelector('.kit-cond').value = ex.condizione || 'buono';
         tr.querySelector('.kit-note').value = ex.note || '';
+        _kitRestoreSponsor(tr, ex);
       }
     });
   }
@@ -7055,6 +7081,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       '<td style="text-align:center;color:#64748b;font-size:0.8rem;">' + (i + 1) + '</td>' +
       '<td><select class="form-select form-select-sm kit-taglia" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">' + tagOpts + '</select></td>' +
       '<td>' + _kitCondSel('kit-cond') + '</td>' +
+      '<td>' + _kitSponsorCell() + '</td>' +
       '<td><input type="text" class="form-control form-control-sm kit-note" maxlength="200" placeholder="Note…" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;"></td>';
     tbody.appendChild(tr);
     document.getElementById('inv-kit-info').textContent = (i + 1) + ' righe';
@@ -7072,17 +7099,21 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       let numRows = document.querySelectorAll('#inv-kit-grid tr[data-num]');
       if (!numRows.length) { btn.disabled = false; alert('Genera prima la griglia.'); return; }
       numRows.forEach(function (tr) {
-        var num       = parseInt(tr.dataset.num);
-        var taglia    = tr.querySelector('.kit-taglia').value;
-        var condizione= tr.querySelector('.kit-cond').value;
-        var note      = tr.querySelector('.kit-note').value.trim();
-        var existing  = _items.find(function(it){ return it._kitName === name && it._kitNum === num; });
+        var num        = parseInt(tr.dataset.num);
+        var taglia     = tr.querySelector('.kit-taglia').value;
+        var condizione = tr.querySelector('.kit-cond').value;
+        var note       = tr.querySelector('.kit-note').value.trim();
+        var spChk      = tr.querySelector('.kit-sponsor-chk');
+        var spNome     = tr.querySelector('.kit-sponsor-nome');
+        var sponsor    = !!(spChk && spChk.checked);
+        var sponsorNome= sponsor ? ((spNome && spNome.value.trim()) || '') : '';
+        var existing   = _items.find(function(it){ return it._kitName === name && it._kitNum === num; });
         items.push({
           id: existing ? existing.id : '',
           categoria: 'Maglie da calcio',
           nome: name + ' N°' + num,
           quantita: 1,
-          taglia, condizione, note,
+          taglia, condizione, note, sponsor, sponsorNome,
           _kitName: name,
           _kitNum: num
         });
@@ -7094,17 +7125,21 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       var existingArr = [];
       _items.forEach(function(it){ if (it._ktName === name && it._kitNum == null) existingArr.push(it); });
       tagRows.forEach(function (tr, i) {
-        var taglia    = tr.querySelector('.kit-taglia').value;
-        var condizione= tr.querySelector('.kit-cond').value;
-        var note      = tr.querySelector('.kit-note').value.trim();
-        if (!taglia && condizione === 'buono' && !note) return; // salta righe vuote
-        var existing  = existingArr[i] || null;
+        var taglia     = tr.querySelector('.kit-taglia').value;
+        var condizione = tr.querySelector('.kit-cond').value;
+        var note       = tr.querySelector('.kit-note').value.trim();
+        var spChk      = tr.querySelector('.kit-sponsor-chk');
+        var spNome     = tr.querySelector('.kit-sponsor-nome');
+        var sponsor    = !!(spChk && spChk.checked);
+        var sponsorNome= sponsor ? ((spNome && spNome.value.trim()) || '') : '';
+        if (!taglia && condizione === 'buono' && !note && !sponsor) return; // salta righe vuote
+        var existing   = existingArr[i] || null;
         items.push({
           id: existing ? existing.id : '',
           categoria: _cats[0] || 'Altro',
           nome: name + (taglia ? ' — ' + taglia : ''),
           quantita: 1,
-          taglia, condizione, note,
+          taglia, condizione, note, sponsor, sponsorNome,
           _ktName: name
         });
       });
