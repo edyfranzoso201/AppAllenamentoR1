@@ -6588,17 +6588,16 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
               '</div>';
           });
 
-          // Badge mancanti (uno per unità)
+          // Badge mancanti: se qty=1 → un badge "?", se qty>1 → un badge con il conteggio (aggregato senza numero)
           mancanti.forEach(function(it) {
             var qty = it.quantita || 1;
-            for (var q = 0; q < qty; q++) {
-              html += '<div title="Mancante' + (it.taglia ? ' · ' + it.taglia : '') + (it.note ? ' · ' + it.note : '') + '" ' +
-                'style="background:#1e0a2e;border:2px dashed #c084fc;border-radius:8px;padding:6px 10px;text-align:center;min-width:52px;opacity:0.85;">' +
-                '<div style="font-size:1rem;font-weight:800;color:#c084fc;">?</div>' +
-                '<div style="font-size:0.7rem;color:#a855f7;">' + esc(it.taglia||'—') + '</div>' +
-                '<div style="font-size:0.75rem;color:#c084fc;">✗</div>' +
-                '</div>';
-            }
+            var label = qty > 1 ? ('×' + qty) : '?';
+            html += '<div title="Mancante' + (it.taglia ? ' · ' + it.taglia : '') + (it.note ? ' · ' + it.note : '') + '" ' +
+              'style="background:#1e0a2e;border:2px dashed #c084fc;border-radius:8px;padding:6px 10px;text-align:center;min-width:52px;opacity:0.85;">' +
+              '<div style="font-size:1rem;font-weight:800;color:#c084fc;">' + label + '</div>' +
+              '<div style="font-size:0.7rem;color:#a855f7;">' + esc(it.taglia||'—') + '</div>' +
+              '<div style="font-size:0.75rem;color:#c084fc;">✗</div>' +
+              '</div>';
           });
 
           html += '</div></div>';
