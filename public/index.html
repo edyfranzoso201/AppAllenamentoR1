@@ -7265,7 +7265,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       var r = await fetch('/api/data?action=inventory', {
         method: 'POST',
         headers: authHeaders(),
-        body: JSON.stringify({ act: 'upsert-kit', items: items })
+        body: JSON.stringify({ act: 'upsert-kit', kitName: name, items: items })
       });
       var d = await r.json();
       btn.disabled = false;

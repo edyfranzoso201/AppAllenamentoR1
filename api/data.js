@@ -608,17 +608,21 @@ if (req.query?.action === 'inventory') {
       return res.status(200).json({ success: true, item });
     }
 
-    // Salva un intero kit (array di voci) in una sola chiamata
+    // Salva un intero kit (array di voci) in una sola chiamata — replace atomico del set
     if (act === 'upsert-kit') {
       let rawItems = (req.body && Array.isArray(req.body.items)) ? req.body.items : [];
       rawItems = rawItems.slice(0, 100); // max 100 voci per kit
       const sanitized = rawItems.map(sanitizeInvItem);
+      // Ricava il nome del kit (dal body esplicito o da una voce sanitizzata)
+      const bodyKitName = String((req.body && req.body.kitName) || '').slice(0, 80) || null;
+      const kitName = bodyKitName || sanitized.find(i => i._kitName)?._kitName || null;
+      const ktName  = bodyKitName || sanitized.find(i => i._ktName)?._ktName   || null;
       let items = (await kv.get(invKey)) || [];
       if (!Array.isArray(items)) items = [];
-      sanitized.forEach(item => {
-        const idx = items.findIndex(i => i.id === item.id);
-        if (idx >= 0) items[idx] = item; else items.push(item);
-      });
+      // Replace atomico: rimuove tutti gli item del kit corrente prima di reinserire
+      if (kitName && sanitized.some(i => i._kitName)) items = items.filter(i => i._kitName !== kitName);
+      else if (ktName && sanitized.some(i => i._ktName)) items = items.filter(i => i._ktName !== ktName);
+      items = items.concat(sanitized);
       await kv.set(invKey, items);
       return res.status(200).json({ success: true, count: sanitized.length });
     }
