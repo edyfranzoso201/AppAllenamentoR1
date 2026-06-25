@@ -608,6 +608,21 @@ if (req.query?.action === 'inventory') {
       return res.status(200).json({ success: true, item });
     }
 
+    // Inserisce più voci in una sola chiamata (importa da Materiale)
+    if (act === 'upsert-many') {
+      let rawItems = (req.body && Array.isArray(req.body.items)) ? req.body.items : [];
+      rawItems = rawItems.slice(0, 300);
+      const sanitized = rawItems.map(sanitizeInvItem);
+      let items = (await kv.get(invKey)) || [];
+      if (!Array.isArray(items)) items = [];
+      sanitized.forEach(item => {
+        const idx = items.findIndex(i => i.id === item.id);
+        if (idx >= 0) items[idx] = item; else items.push(item);
+      });
+      await kv.set(invKey, items);
+      return res.status(200).json({ success: true, count: sanitized.length });
+    }
+
     // Salva un intero kit (array di voci) in una sola chiamata — replace atomico del set
     if (act === 'upsert-kit') {
       let rawItems = (req.body && Array.isArray(req.body.items)) ? req.body.items : [];

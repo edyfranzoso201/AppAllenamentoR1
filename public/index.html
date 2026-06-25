@@ -2083,6 +2083,9 @@
                         <button id="inv-copy-btn" class="btn btn-sm btn-outline-light no-print" onclick="window.INV.openCopyTemplate()" style="display:none;" title="Copia struttura inventario in altre annate">
                             <i class="bi bi-copy"></i> Copia template
                         </button>
+                        <button id="inv-import-mat-btn" class="btn btn-sm btn-outline-info no-print" onclick="window.INV.openImportMateriale()" style="display:none;" title="Importa articoli consegnati da Materiale Atleti/Staff">
+                            <i class="bi bi-box-arrow-in-down"></i> Importa da Materiale
+                        </button>
                     </div>
                     <div id="inv-body"></div>
                 </div>
@@ -2278,6 +2281,39 @@
                         <div class="modal-footer" style="border-color:#334155;">
                             <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Chiudi</button>
                             <button type="button" class="btn btn-primary btn-sm" onclick="window.INV.execCopyTemplate()"><i class="bi bi-copy"></i> Copia nelle annate selezionate</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal importa da Materiale Atleti/Staff -->
+            <div class="modal fade" id="invImportMatModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-md">
+                    <div class="modal-content" style="background:var(--bg-panel);border:1px solid #334155;color:var(--text-primary);">
+                        <div class="modal-header" style="border-color:#334155;">
+                            <h5 class="modal-title"><i class="bi bi-box-arrow-in-down" style="color:#38bdf8;"></i> Importa da Materiale</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="small" style="color:#94a3b8;">
+                                Converte il materiale di <strong>Atleti</strong> e <strong>Staff</strong> in voci dell'Inventario Fine Annata.<br>
+                                Per ogni articolo e taglia: quanti <strong>consegnati</strong> → condizione <em>Buono</em>; quanti <strong>non consegnati</strong> → condizione <em>Mancante</em>.
+                            </p>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Categoria destinazione</label>
+                                <input id="inv-import-cat" type="text" class="form-control form-control-sm" value="Materiale squadra" maxlength="80" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="inv-import-skip-existing" checked>
+                                <label class="form-check-label small" for="inv-import-skip-existing">Salta articoli già presenti nell'inventario (stesso nome+taglia)</label>
+                            </div>
+                            <div id="inv-import-mat-preview" style="max-height:260px;overflow-y:auto;margin-top:10px;"></div>
+                            <div id="inv-import-mat-result" style="display:none;margin-top:8px;"></div>
+                        </div>
+                        <div class="modal-footer" style="border-color:#334155;">
+                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annulla</button>
+                            <button type="button" class="btn btn-info btn-sm" onclick="window.INV.previewImportMateriale()"><i class="bi bi-eye"></i> Anteprima</button>
+                            <button type="button" id="inv-import-mat-confirm-btn" class="btn btn-primary btn-sm" onclick="window.INV.execImportMateriale()" style="display:none;"><i class="bi bi-check-circle-fill"></i> Importa</button>
                         </div>
                     </div>
                 </div>
@@ -3445,6 +3481,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch(e) { console.warn('Materiale load:', e); }
         materialeLoaded = true;
+        // Espone i dati per il modulo Inventario (importa da materiale)
+        window._materialeItems = materialeItems;
+        window._materialeData  = materialeData;
         renderMateriale();
     }
 
@@ -6398,14 +6437,16 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     var r = String(role || '').toLowerCase().replace(/ /g, '');
     _canWrite = WRITE_ROLES.map(function(x){ return x.replace(/ /g,'').toLowerCase(); }).includes(r);
     _canCat   = CAT_ROLES.includes(r.replace(/_/g,''));
-    var addBtn  = document.getElementById('inv-add-btn');
-    var kitBtn  = document.getElementById('inv-kit-btn');
-    var catBtn  = document.getElementById('inv-cat-btn');
-    var copyBtn = document.getElementById('inv-copy-btn');
-    if (addBtn)  addBtn.style.display  = _canWrite ? '' : 'none';
-    if (kitBtn)  kitBtn.style.display  = _canWrite ? '' : 'none';
-    if (catBtn)  catBtn.style.display  = _canCat   ? '' : 'none';
-    if (copyBtn) copyBtn.style.display = (r === 'admin') ? '' : 'none';
+    var addBtn       = document.getElementById('inv-add-btn');
+    var kitBtn       = document.getElementById('inv-kit-btn');
+    var catBtn       = document.getElementById('inv-cat-btn');
+    var copyBtn      = document.getElementById('inv-copy-btn');
+    var importMatBtn = document.getElementById('inv-import-mat-btn');
+    if (addBtn)       addBtn.style.display       = _canWrite ? '' : 'none';
+    if (kitBtn)       kitBtn.style.display       = _canWrite ? '' : 'none';
+    if (catBtn)       catBtn.style.display       = _canCat   ? '' : 'none';
+    if (copyBtn)      copyBtn.style.display      = (r === 'admin') ? '' : 'none';
+    if (importMatBtn) importMatBtn.style.display = _canWrite ? '' : 'none';
   }
 
   // ── Collapse sezione inventario ──
@@ -7374,6 +7415,125 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
           (r.ok ? ' — ' + r.count + ' voci aggiunte' : ' — ' + esc(r.msg)) +
           '</div>';
       }).join('');
+    }
+  };
+
+  // ── Importa da Materiale Atleti/Staff ──
+  var _importPreviewItems = [];
+
+  window.INV.openImportMateriale = function () {
+    _importPreviewItems = [];
+    var prev = document.getElementById('inv-import-mat-preview');
+    var res  = document.getElementById('inv-import-mat-result');
+    var btn  = document.getElementById('inv-import-mat-confirm-btn');
+    if (prev) prev.innerHTML = '<p class="small" style="color:#94a3b8;">Clicca <strong>Anteprima</strong> per vedere cosa verrà importato.</p>';
+    if (res)  res.style.display = 'none';
+    if (btn)  btn.style.display = 'none';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('invImportMatModal')).show();
+  };
+
+  window.INV.previewImportMateriale = function () {
+    var prev = document.getElementById('inv-import-mat-preview');
+    var btn  = document.getElementById('inv-import-mat-confirm-btn');
+    var cat  = (document.getElementById('inv-import-cat') || {}).value || 'Materiale squadra';
+    var skipExisting = !!(document.getElementById('inv-import-skip-existing') || {}).checked;
+
+    // Legge dati dal modulo Materiale (variabili nel loro IIFE — accessibili via window se esposte, altrimenti via DOM)
+    // I dati sono in window.materialeData e window.materialeItems (esposti dall'IIFE materiale)
+    var matData  = window._materialeData  || {};
+    var matItems = window._materialeItems || [];
+    var athletes = window.athletes || [];
+
+    if (!matItems.length || !athletes.length) {
+      if (prev) prev.innerHTML = '<p class="small" style="color:#f87171;">Dati Materiale non ancora caricati. Apri prima il tab Materiale.</p>';
+      if (btn)  btn.style.display = 'none';
+      return;
+    }
+
+    // Raggruppa: per ogni articolo × taglia conta consegnati e non-consegnati
+    // chiave = articolo + '||' + taglia
+    var groups = {}; // { key: { nome, taglia, consegnati, mancanti } }
+    athletes.filter(function(a){ return !a.archived; }).forEach(function(a) {
+      var pid = a.id;
+      var entry = matData[pid] || {};
+      matItems.forEach(function(itm) {
+        var e = entry[itm];
+        if (!e) { // non assegnato = mancante
+          var key = itm + '||';
+          if (!groups[key]) groups[key] = { nome: itm, taglia: '', consegnati: 0, mancanti: 0 };
+          groups[key].mancanti++;
+        } else {
+          var taglia = e.taglia || '';
+          var key = itm + '||' + taglia;
+          if (!groups[key]) groups[key] = { nome: itm, taglia: taglia, consegnati: 0, mancanti: 0 };
+          if (e.status === 'consegnato') groups[key].consegnati += (parseInt(e.qty) || 1);
+          else groups[key].mancanti++;
+        }
+      });
+    });
+
+    // Costruisce le voci inventario da importare
+    _importPreviewItems = [];
+    // chiave per skip: nome + taglia + condizione (permette di avere Buono e Mancante separati)
+    var existingKeys = new Set(_items.map(function(it){ return (it.nome||'') + '||' + (it.taglia||'') + '||' + (it.condizione||''); }));
+
+    Object.keys(groups).sort().forEach(function(key) {
+      var g = groups[key];
+      if (g.consegnati > 0) {
+        var k = g.nome + '||' + g.taglia + '||buono';
+        if (!skipExisting || !existingKeys.has(k))
+          _importPreviewItems.push({ categoria: cat, nome: g.nome, quantita: g.consegnati, taglia: g.taglia, condizione: 'buono', note: '' });
+      }
+      if (g.mancanti > 0) {
+        var k2 = g.nome + '||' + g.taglia + '||mancante';
+        if (!skipExisting || !existingKeys.has(k2))
+          _importPreviewItems.push({ categoria: cat, nome: g.nome, quantita: g.mancanti, taglia: g.taglia, condizione: 'mancante', note: '' });
+      }
+    });
+
+    if (!_importPreviewItems.length) {
+      if (prev) prev.innerHTML = '<p class="small" style="color:#fbbf24;">Nessuna voce da importare (già tutte presenti o nessun dato).</p>';
+      if (btn)  btn.style.display = 'none';
+      return;
+    }
+
+    var COND_LABEL = { buono: '✅ Buono', mancante: '🟣 Mancante', riparazione: '🔧 Riparazione', fuori_uso: '❌ Fuori uso' };
+    var html = '<table class="table table-dark table-sm mb-0" style="font-size:0.8rem;">' +
+      '<thead><tr><th>Articolo</th><th>Taglia</th><th>Qtà</th><th>Condizione</th></tr></thead><tbody>';
+    _importPreviewItems.forEach(function(it) {
+      html += '<tr><td>' + esc(it.nome) + '</td><td>' + esc(it.taglia || '—') + '</td>' +
+        '<td style="text-align:center;">' + it.quantita + '</td>' +
+        '<td>' + (COND_LABEL[it.condizione] || it.condizione) + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    if (prev) prev.innerHTML = html;
+    if (btn)  btn.style.display = '';
+  };
+
+  window.INV.execImportMateriale = async function () {
+    if (!_importPreviewItems.length) return;
+    var btn = document.getElementById('inv-import-mat-confirm-btn');
+    var res = document.getElementById('inv-import-mat-result');
+    if (btn) btn.disabled = true;
+    try {
+      var r = await fetch('/api/data?action=inventory', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ act: 'upsert-many', items: _importPreviewItems })
+      });
+      var d = await r.json();
+      if (btn) btn.disabled = false;
+      if (d && d.success) {
+        if (res) { res.style.display = ''; res.innerHTML = '<p class="small" style="color:#4ade80;">✅ Importate ' + (d.count || _importPreviewItems.length) + ' voci.</p>'; }
+        _importPreviewItems = [];
+        if (document.getElementById('inv-import-mat-confirm-btn')) document.getElementById('inv-import-mat-confirm-btn').style.display = 'none';
+        await load(true);
+      } else {
+        if (res) { res.style.display = ''; res.innerHTML = '<p class="small" style="color:#f87171;">Errore: ' + ((d && d.message) || '') + '</p>'; }
+      }
+    } catch(e) {
+      if (btn) btn.disabled = false;
+      if (res) { res.style.display = ''; res.innerHTML = '<p class="small" style="color:#f87171;">Errore di rete.</p>'; }
     }
   };
 
