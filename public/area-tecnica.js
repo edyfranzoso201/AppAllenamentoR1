@@ -55,16 +55,18 @@
   // Ritorna { mode:'iframe', src } oppure { mode:'locale', path } oppure { mode:'link', href }
   function embedFor(item) {
     const fonte = item.fonte || detectFonte(item.url);
-    if (fonte === 'drive') {
-      const id = driveId(item.url);
-      if (id) return { mode: 'iframe', src: `https://drive.google.com/file/d/${id}/preview` };
-    }
     if (fonte === 'youtube') {
       const id = youtubeId(item.url);
       if (id) return { mode: 'iframe', src: `https://www.youtube.com/embed/${id}` };
     }
+    if (fonte === 'drive') {
+      const id = driveId(item.url);
+      // Drive blocca l'iframe CSP se il file non è pubblico → mostriamo link diretto
+      const previewUrl = id ? `https://drive.google.com/file/d/${id}/preview` : item.url;
+      const openUrl    = id ? `https://drive.google.com/file/d/${id}/view`    : item.url;
+      return { mode: 'drive', previewUrl, openUrl };
+    }
     if (fonte === 'locale') return { mode: 'locale', path: item.url };
-    // altro URL http: prova link diretto apribile
     if (/^https?:\/\//i.test(item.url)) return { mode: 'link', href: item.url };
     return { mode: 'locale', path: item.url };
   }
@@ -158,6 +160,27 @@
     const body = $('at-player-body');
     if (emb.mode === 'iframe') {
       body.innerHTML = `<div class="at-player"><iframe src="${esc(emb.src)}" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe></div>`;
+    } else if (emb.mode === 'drive') {
+      // Tenta iframe Drive con fallback visibile se bloccato dal CSP
+      body.innerHTML = `
+        <div id="at-drive-wrap">
+          <div class="at-player" id="at-drive-frame-wrap">
+            <iframe id="at-drive-iframe" src="${esc(emb.previewUrl)}"
+              allow="autoplay; encrypted-media; fullscreen" allowfullscreen
+              style="width:100%;height:100%;border:0;"
+              onerror="document.getElementById('at-drive-fallback').style.display='block';document.getElementById('at-drive-frame-wrap').style.display='none';">
+            </iframe>
+          </div>
+          <div id="at-drive-fallback" class="at-locale" style="margin-top:10px;">
+            <div style="color:#94a3b8;margin-bottom:10px;">⚠️ L'anteprima Drive non è disponibile (file privato o CSP). Aprilo direttamente:</div>
+            <a href="${esc(emb.openUrl)}" target="_blank" rel="noopener" class="at-btn" style="text-decoration:none;">📂 Apri in Google Drive ↗</a>
+          </div>
+        </div>`;
+      // Drive non lancia onerror sull'iframe (CSP è silenzioso) → mostriamo sempre anche il link sotto
+      setTimeout(() => {
+        const fb = document.getElementById('at-drive-fallback');
+        if (fb) fb.style.display = 'block';
+      }, 2500);
     } else if (emb.mode === 'link') {
       body.innerHTML = `<div class="at-locale">🔗 Contenuto esterno.<br><a href="${esc(emb.href)}" target="_blank" rel="noopener" class="at-btn" style="display:inline-block;margin-top:10px;text-decoration:none;">Apri in una nuova scheda ↗</a></div>`;
     } else {
