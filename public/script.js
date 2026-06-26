@@ -978,23 +978,38 @@ document.addEventListener('DOMContentLoaded', () => {
       function ensureTopBar() {
         const isMobile = window.matchMedia('(max-width: 820px)').matches;
         let bar = document.getElementById('mc-topbar');
-        if (!isMobile) { if (bar) bar.style.display = 'none'; return; }
+        if (!isMobile) {
+          if (bar) { bar.style.display = 'none'; _restoreMainPadding(); }
+          return;
+        }
+        // Altezza reale dell'header (navbar mobile) misurata live
+        const header = document.querySelector('#app-header-mobile') || document.querySelector('nav.navbar') || document.querySelector('header');
+        const headerH = header ? header.getBoundingClientRect().bottom : 56;
+        const barH = 46; // altezza approssimativa della barra (padding 12px × 2 + font)
         if (!bar) {
           bar = document.createElement('button');
           bar.id = 'mc-topbar';
           bar.type = 'button';
           bar.className = 'no-print';
           bar.innerHTML = '⚡ Modalità Campo';
-          bar.style.cssText = 'position:fixed;top:56px;left:0;right:0;z-index:1040;border:none;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-weight:800;font-size:1.05rem;padding:12px;box-shadow:0 2px 8px rgba(0,0,0,0.25);cursor:pointer;';
           bar.onclick = () => window.openModalitaCampo();
           document.body.appendChild(bar);
-          // Spinge giù il contenuto così la barra non copre la prima riga.
-          const main = document.querySelector('main.container-fluid');
-          if (main) main.style.paddingTop = '48px';
         }
+        bar.style.cssText = `position:fixed;top:${headerH}px;left:0;right:0;z-index:1040;border:none;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-weight:800;font-size:1.05rem;padding:10px;box-shadow:0 2px 8px rgba(0,0,0,0.25);cursor:pointer;`;
         bar.style.display = 'block';
+        // Spinge giù il contenuto della pagina della barra stessa
+        const main = document.querySelector('main.container-fluid');
+        if (main) { main.dataset.mcOrigPad = main.dataset.mcOrigPad || main.style.paddingTop || ''; main.style.paddingTop = barH + 'px'; }
       }
-      function removeFab() { const f = document.getElementById('mc-fab'); if (f) f.remove(); }
+      function _restoreMainPadding() {
+        const main = document.querySelector('main.container-fluid');
+        if (main && main.dataset.mcOrigPad !== undefined) { main.style.paddingTop = main.dataset.mcOrigPad; delete main.dataset.mcOrigPad; }
+      }
+      function removeFab() {
+        const f = document.getElementById('mc-fab'); if (f) f.remove();
+        const bar = document.getElementById('mc-topbar'); if (bar) bar.style.display = 'none';
+        _restoreMainPadding();
+      }
 
       // Regola del ⚡: appare SOLO se (a) sessione campo attiva E (b) NON sei in
       // Home. In Home non serve (c'è il pulsante verde) e va tolto. Chiamata a
