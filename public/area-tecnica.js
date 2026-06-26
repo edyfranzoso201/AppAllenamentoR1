@@ -140,9 +140,12 @@
       return `<div class="at-card" onclick="window.atOpen('${x.id}')">
         <div class="at-thumb">${codeTag}${thumbHtml}<div class="play">▶</div></div>
         <div class="at-cardbody">
-          <div class="tit" style="color:${titColor};">${esc(x.titolo) || '(senza titolo)'}</div>
-          <span class="at-badge" style="background:${CAT_COLOR[x.categoria] || '#64748b'}33;color:${CAT_COLOR[x.categoria] || '#94a3b8'};">${esc(x.categoria || '')}</span>
-          <div class="at-meta"><span style="font-weight:700;color:${titColor};opacity:.8;">${x._code || ''}</span><span>${TIPO_ICON[x.tipo] || ''} ${fmt}</span>
+          <div class="at-meta">
+            <span>
+              ${x._code ? `<span style="font-weight:800;color:${titColor};margin-right:4px;">${esc(x._code)}</span>` : ''}
+              <span class="at-badge" style="background:${CAT_COLOR[x.categoria] || '#64748b'}33;color:${CAT_COLOR[x.categoria] || '#94a3b8'};">${esc(x.categoria || '')}</span>
+              <span style="margin-left:4px;">${TIPO_ICON[x.tipo] || ''} ${fmt}</span>
+            </span>
             <span><button class="at-del" title="Modifica" onclick="event.stopPropagation();window.atEdit('${x.id}')">✏️</button><button class="at-del" title="Elimina" onclick="event.stopPropagation();window.atDelete('${x.id}')">🗑️</button></span>
           </div>
         </div>
