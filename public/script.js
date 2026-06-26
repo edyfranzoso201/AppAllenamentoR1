@@ -3835,13 +3835,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const totExp = expiredVisita.length + expiredTessera.length + expiredPagamenti.length;
         const headTxt = totExp > 0 ? '⚠️ Scadenze da gestire' : '🔔 Promemoria scadenze';
 
+        const isLightTheme = document.documentElement.classList.contains('theme-light') || document.body.classList.contains('theme-light');
+        const alertBg  = isLightTheme ? '#fff3f3' : '#1e293b';
+        const alertBd  = isLightTheme ? '#e2e8f0' : '#334155';
+        const alertTxt = isLightTheme ? '#1a202c' : '#f1f5f9';
+        const detailTxt= isLightTheme ? '#374151' : '#e2e8f0';
         elements.alertsContainer.innerHTML = `
             <div class="alert alert-dismissible fade show" role="alert"
-                 style="background:#1e293b;border:1px solid #334155;border-left:4px solid ${totExp>0?'#dc2626':'#d97706'};">
-                <div style="font-weight:700;margin-bottom:8px;color:#f1f5f9;">${headTxt}</div>
+                 style="background:${alertBg};border:1px solid ${alertBd};border-left:4px solid ${totExp>0?'#dc2626':'#d97706'};">
+                <div style="font-weight:700;margin-bottom:8px;color:${alertTxt};">${headTxt}</div>
                 <div style="display:flex;flex-wrap:wrap;gap:8px;">${groups.map(chip).join('')}</div>
-                ${groups.map(detail).join('')}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                ${groups.map(g => `<div id="gsd-${g.key}" class="gs-alert-detail" style="display:none;font-size:0.85rem;color:${detailTxt};padding:8px 4px 2px;line-height:1.6;">${g.items.map(esc).join(' · ')}</div>`).join('')}
+                <button type="button" class="${isLightTheme ? 'btn-close' : 'btn-close btn-close-white'}" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>`;
 
         // Toggle espansione dei dettagli al click sul chip
