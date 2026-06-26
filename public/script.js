@@ -982,8 +982,8 @@ document.addEventListener('DOMContentLoaded', () => {
           if (bar) { bar.style.display = 'none'; _restoreMainPadding(); }
           return;
         }
-        // Altezza reale dell'header (navbar mobile) misurata live
-        const header = document.querySelector('#app-header-mobile') || document.querySelector('nav.navbar') || document.querySelector('header');
+        // Altezza reale dell'header (navbar fissa in cima) misurata live
+        const header = document.querySelector('nav.navbar.fixed-top') || document.querySelector('nav.navbar') || document.querySelector('header');
         const headerH = header ? header.getBoundingClientRect().bottom : 56;
         const barH = 46; // altezza approssimativa della barra (padding 12px × 2 + font)
         if (!bar) {
@@ -997,13 +997,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         bar.style.cssText = `position:fixed;top:${headerH}px;left:0;right:0;z-index:1040;border:none;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-weight:800;font-size:1.05rem;padding:10px;box-shadow:0 2px 8px rgba(0,0,0,0.25);cursor:pointer;`;
         bar.style.display = 'block';
-        // Spinge giù il contenuto della pagina della barra stessa
+        // Spinge giù il contenuto: la navbar occupa già headerH px di margin-top sul main,
+        // aggiungiamo solo l'altezza della barra campo stessa come padding extra.
         const main = document.querySelector('main.container-fluid');
-        if (main) { main.dataset.mcOrigPad = main.dataset.mcOrigPad || main.style.paddingTop || ''; main.style.paddingTop = barH + 'px'; }
+        if (main) {
+          if (!main.dataset.mcOrigMt) main.dataset.mcOrigMt = main.style.marginTop || '';
+          const curMt = parseFloat(getComputedStyle(main).marginTop) || 0;
+          main.style.marginTop = (curMt + barH) + 'px';
+        }
       }
       function _restoreMainPadding() {
         const main = document.querySelector('main.container-fluid');
-        if (main && main.dataset.mcOrigPad !== undefined) { main.style.paddingTop = main.dataset.mcOrigPad; delete main.dataset.mcOrigPad; }
+        if (main && main.dataset.mcOrigMt !== undefined) { main.style.marginTop = main.dataset.mcOrigMt; delete main.dataset.mcOrigMt; }
       }
       function removeFab() {
         const f = document.getElementById('mc-fab'); if (f) f.remove();
