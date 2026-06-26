@@ -906,6 +906,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div id="mc-home">
               <button class="mc-tile" data-act="appello" style="width:100%;text-align:left;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;border-radius:14px;padding:22px;margin-bottom:12px;font-size:1.3rem;font-weight:800;cursor:pointer;">📋 Appello Rapido<div style="font-size:0.85rem;font-weight:500;opacity:0.9;margin-top:4px;">Presenze di oggi in un tap</div></button>
               <button class="mc-tile" data-act="squadra" style="width:100%;text-align:left;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:14px;padding:22px;margin-bottom:12px;font-size:1.3rem;font-weight:800;cursor:pointer;">👥 Squadra<div style="font-size:0.85rem;font-weight:500;color:#64748b;margin-top:4px;">Schede e valutazioni atleti</div></button>
+              <button class="mc-tile" data-act="risultati" style="width:100%;text-align:left;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:14px;padding:22px;margin-bottom:12px;font-size:1.3rem;font-weight:800;cursor:pointer;">🏆 Risultati<div style="font-size:0.85rem;font-weight:500;color:#64748b;margin-top:4px;">Inserisci risultati partite</div></button>
               <button class="mc-tile" data-act="presenze" style="width:100%;text-align:left;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:14px;padding:22px;margin-bottom:12px;font-size:1.3rem;font-weight:800;cursor:pointer;">📊 Presenze<div style="font-size:0.85rem;font-weight:500;color:#64748b;margin-top:4px;">Grafici e report presenze</div></button>
               <button class="mc-tile" data-act="calendario" style="width:100%;text-align:left;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:14px;padding:22px;margin-bottom:12px;font-size:1.3rem;font-weight:800;cursor:pointer;">📅 Calendario Squadra<div style="font-size:0.85rem;font-weight:500;color:#64748b;margin-top:4px;">Presenze segnalate dai genitori</div></button>
             </div>
@@ -942,6 +943,7 @@ document.addEventListener('DOMContentLoaded', () => {
               salvaAppello(true);
               chiudiModalitaCampo();
               const tab = act === 'squadra' ? 'squadra-section'
+                        : act === 'risultati' ? 'match-results-section'
                         : act === 'presenze' ? 'report-presenze-section'
                         : 'squadra-section';
               if (typeof switchTab === 'function') switchTab(tab);
