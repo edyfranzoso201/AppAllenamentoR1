@@ -978,8 +978,11 @@ document.addEventListener('DOMContentLoaded', () => {
       function ensureTopBar() {
         const isMobile = window.matchMedia('(max-width: 820px)').matches;
         let bar = document.getElementById('mc-topbar');
-        if (!isMobile) {
-          if (bar) { bar.style.display = 'none'; _restoreMainPadding(); }
+        let attivo = false;
+        try { attivo = sessionStorage.getItem('gosport_campo_mode') === '1'; } catch (e) {}
+        if (!isMobile || !attivo) {
+          if (bar) { bar.style.display = 'none'; }
+          _restoreMainPadding();
           return;
         }
         // Altezza reale dell'header (navbar fissa in cima) misurata live
@@ -997,13 +1000,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         bar.style.cssText = `position:fixed;top:${headerH}px;left:0;right:0;z-index:1040;border:none;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-weight:800;font-size:1.05rem;padding:10px;box-shadow:0 2px 8px rgba(0,0,0,0.25);cursor:pointer;`;
         bar.style.display = 'block';
-        // Spinge giù il contenuto: la navbar occupa già headerH px di margin-top sul main,
-        // aggiungiamo solo l'altezza della barra campo stessa come padding extra.
+        // Spinge giù il contenuto. Salva il marginTop originale solo la prima volta (idempotente).
         const main = document.querySelector('main.container-fluid');
         if (main) {
-          if (!main.dataset.mcOrigMt) main.dataset.mcOrigMt = main.style.marginTop || '';
-          const curMt = parseFloat(getComputedStyle(main).marginTop) || 0;
-          main.style.marginTop = (curMt + barH) + 'px';
+          if (main.dataset.mcOrigMt === undefined) main.dataset.mcOrigMt = getComputedStyle(main).marginTop || '0px';
+          const origMt = parseFloat(main.dataset.mcOrigMt) || 0;
+          main.style.marginTop = (origMt + barH) + 'px';
         }
       }
       function _restoreMainPadding() {
