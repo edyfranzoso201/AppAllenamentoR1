@@ -2077,8 +2077,8 @@
                         <button id="inv-cat-btn" class="btn btn-sm btn-outline-info no-print" onclick="window.INV.openCategories()" style="display:none;">
                             <i class="bi bi-tags-fill"></i> Categorie
                         </button>
-                        <button class="btn btn-sm btn-outline-secondary no-print" onclick="window.INV.exportExcel()" title="Esporta Excel">
-                            <i class="bi bi-file-earmark-excel-fill"></i>
+                        <button class="btn btn-sm btn-outline-success no-print" onclick="window.INV.exportExcel()" title="Esporta Excel inventario">
+                            <i class="bi bi-file-earmark-excel-fill"></i> Excel
                         </button>
                         <button id="inv-copy-btn" class="btn btn-sm btn-outline-light no-print" onclick="window.INV.openCopyTemplate()" style="display:none;" title="Copia struttura inventario in altre annate">
                             <i class="bi bi-copy"></i> Copia template
@@ -7540,7 +7540,8 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       '<thead><tr style="color:#94a3b8;">' +
         '<th>Articolo Materiale</th>' +
         '<th style="min-width:180px;">Importa come</th>' +
-        '<th style="min-width:150px;" id="inv-imp-kit-name-hdr" style="display:none;">Nome kit</th>' +
+        '<th style="min-width:150px;">Nome kit</th>' +
+        '<th style="width:60px;text-align:center;" title="Copia questa selezione su tutti gli articoli">Copia</th>' +
       '</tr></thead><tbody>';
     matItems.forEach(function(itm, idx) {
       html += '<tr data-imp-itm="' + esc(itm) + '">' +
@@ -7553,6 +7554,11 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         '<td class="imp-kit-name-cell" style="display:none;">' +
           '<input type="text" class="form-control form-control-sm imp-new-kit-name" maxlength="80" placeholder="Nome kit inventario…" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">' +
         '</td>' +
+        '<td style="text-align:center;vertical-align:middle;">' +
+          '<button class="btn btn-xs btn-outline-warning imp-copy-row-btn" title="Applica questa selezione a tutti" onclick="window.INV._impCopyRow(this)" style="font-size:0.72rem;padding:2px 7px;">' +
+            '<i class="bi bi-clipboard-fill"></i>' +
+          '</button>' +
+        '</td>' +
       '</tr>';
     });
     html += '</tbody></table>';
@@ -7564,6 +7570,32 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     var tr = sel.closest('tr');
     var nameCell = tr ? tr.querySelector('.imp-kit-name-cell') : null;
     if (nameCell) nameCell.style.display = (sel.value === '__new__') ? '' : 'none';
+  };
+
+  window.INV._impCopyRow = function (btn) {
+    var srcTr  = btn.closest('tr');
+    var srcSel = srcTr ? srcTr.querySelector('.imp-mode-sel') : null;
+    if (!srcSel) return;
+    var val     = srcSel.value;
+    var newName = (srcTr.querySelector('.imp-new-kit-name') || {}).value || '';
+    document.querySelectorAll('#inv-import-mat-mapping tr[data-imp-itm]').forEach(function(tr) {
+      if (tr === srcTr) return;
+      var sel = tr.querySelector('.imp-mode-sel');
+      if (!sel) return;
+      sel.value = val;
+      var nameCell = tr.querySelector('.imp-kit-name-cell');
+      if (nameCell) {
+        nameCell.style.display = (val === '__new__') ? '' : 'none';
+        if (val === '__new__') {
+          var inp = nameCell.querySelector('.imp-new-kit-name');
+          if (inp) inp.value = newName;
+        }
+      }
+    });
+    // feedback visivo
+    btn.classList.add('btn-warning');
+    btn.classList.remove('btn-outline-warning');
+    setTimeout(function(){ btn.classList.remove('btn-warning'); btn.classList.add('btn-outline-warning'); }, 600);
   };
 
   window.INV.previewImportMateriale = function () {
