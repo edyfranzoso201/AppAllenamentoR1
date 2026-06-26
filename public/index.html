@@ -1232,7 +1232,7 @@
         <div id="app-header-info" class="d-none d-lg-flex" style="flex-shrink:0; margin-left:auto; margin-right:8px; position:relative; align-items:center;"></div>
         <!-- Hamburger: solo su mobile -->
         <button class="navbar-toggler d-lg-none ms-auto" type="button"
-            onclick="(function(){var m=document.getElementById('navbarNav');m.classList.toggle('show');if(m.classList.contains('show')&&window.populateMobileAdminMenu)window.populateMobileAdminMenu();})()"
+            onclick="(function(){var m=document.getElementById('navbarNav');m.classList.toggle('show');if(m.classList.contains('show')){if(window.populateMobileAdminMenu)window.populateMobileAdminMenu();}else{var ah=document.getElementById('app-header-mobile');if(ah){ah.style.display='none';ah.innerHTML='';}};})()"
             id="hamburger-btn"
             style="border:1.5px solid rgba(255,255,255,0.6); padding:4px 10px; flex-shrink:0; background:transparent; color:#ffffff; font-size:1.4rem; line-height:1;">
             <i class="bi bi-list" id="hamburger-icon" style="color:inherit;"></i>
