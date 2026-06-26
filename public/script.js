@@ -978,17 +978,14 @@ document.addEventListener('DOMContentLoaded', () => {
       function ensureTopBar() {
         const isMobile = window.matchMedia('(max-width: 820px)').matches;
         let bar = document.getElementById('mc-topbar');
-        let attivo = false;
-        try { attivo = sessionStorage.getItem('gosport_campo_mode') === '1'; } catch (e) {}
-        if (!isMobile || !attivo) {
-          if (bar) { bar.style.display = 'none'; }
-          _restoreMainPadding();
+        if (!isMobile) {
+          if (bar) { bar.style.display = 'none'; _restoreMainPadding(); }
           return;
         }
         // Altezza reale dell'header (navbar fissa in cima) misurata live
         const header = document.querySelector('nav.navbar.fixed-top') || document.querySelector('nav.navbar') || document.querySelector('header');
         const headerH = header ? header.getBoundingClientRect().bottom : 56;
-        const barH = 46; // altezza approssimativa della barra (padding 12px × 2 + font)
+        const barH = 46; // altezza barra (padding 10px × 2 + font ~26px)
         if (!bar) {
           bar = document.createElement('button');
           bar.id = 'mc-topbar';
@@ -1000,10 +997,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         bar.style.cssText = `position:fixed;top:${headerH}px;left:0;right:0;z-index:1040;border:none;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-weight:800;font-size:1.05rem;padding:10px;box-shadow:0 2px 8px rgba(0,0,0,0.25);cursor:pointer;`;
         bar.style.display = 'block';
-        // Spinge giù il contenuto. Salva il marginTop originale solo la prima volta (idempotente).
+        // Spinge giù il contenuto. Salva il marginTop originale CSS solo la prima volta
+        // e applica sempre origMt+barH (idempotente su chiamate ripetute).
         const main = document.querySelector('main.container-fluid');
         if (main) {
-          if (main.dataset.mcOrigMt === undefined) main.dataset.mcOrigMt = getComputedStyle(main).marginTop || '0px';
+          if (main.dataset.mcOrigMt === undefined) {
+            main.dataset.mcOrigMt = getComputedStyle(main).marginTop || '0px';
+          }
           const origMt = parseFloat(main.dataset.mcOrigMt) || 0;
           main.style.marginTop = (origMt + barH) + 'px';
         }
