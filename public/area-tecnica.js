@@ -72,7 +72,8 @@
   const TIPO_ICON = { video:'🎥', esercizio:'🏃', scheda:'📋', documento:'📄' };
   const CAT_COLOR = { allenamento:'#16a34a', partita:'#2563eb', stralcio:'#7c3aed', tattica:'#d97706', altro:'#64748b' };
 
-  function youtubeThumb(item) {
+  function thumbFor(item) {
+    if (item.cover && /^https?:\/\//i.test(item.cover)) return item.cover;
     if ((item.fonte || detectFonte(item.url)) === 'youtube') {
       const id = youtubeId(item.url);
       if (id) return `https://img.youtube.com/vi/${id}/mqdefault.jpg`;
@@ -107,10 +108,14 @@
       return;
     }
     grid.innerHTML = list.map(x => {
-      const thumb = youtubeThumb(x);
+      const thumb = thumbFor(x);
       const fmt = x.data ? new Date(x.data + 'T00:00:00').toLocaleDateString('it-IT', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '';
+      const thumbHtml = thumb
+        ? `<img src="${esc(thumb)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+           <div class="at-title-overlay" style="display:none;"><div class="at-tov-icon">${TIPO_ICON[x.tipo] || '🎬'}</div><div class="at-tov-text">${esc(x.titolo || '(senza titolo)')}</div></div>`
+        : `<div class="at-title-overlay"><div class="at-tov-icon">${TIPO_ICON[x.tipo] || '🎬'}</div><div class="at-tov-text">${esc(x.titolo || '(senza titolo)')}</div></div>`;
       return `<div class="at-card" onclick="window.atOpen('${x.id}')">
-        <div class="at-thumb">${thumb ? `<img src="${esc(thumb)}" alt="">` : (TIPO_ICON[x.tipo] || '🎬')}<div class="play">▶</div></div>
+        <div class="at-thumb">${thumbHtml}<div class="play">▶</div></div>
         <div class="at-cardbody">
           <div class="tit">${esc(x.titolo) || '(senza titolo)'}</div>
           <span class="at-badge" style="background:${CAT_COLOR[x.categoria] || '#64748b'}33;color:${CAT_COLOR[x.categoria] || '#94a3b8'};">${esc(x.categoria || '')}</span>
@@ -154,6 +159,7 @@
     $('at-categoria').value = x ? (x.categoria || 'allenamento') : 'allenamento';
     $('at-data').value = x ? (x.data || '') : new Date().toISOString().split('T')[0];
     $('at-url').value = x ? (x.url || '') : '';
+    $('at-cover').value = x ? (x.cover || '') : '';
     $('at-note').value = x ? (x.note || '') : '';
     $('at-form-overlay').style.display = 'flex';
     $('at-titolo').focus();
@@ -165,6 +171,7 @@
     const titolo = $('at-titolo').value.trim();
     if (!titolo) { toast('Inserisci un titolo'); return; }
     if (!/^(https?:\/\/|file:\/\/|\\\\)/i.test(url)) { toast('Link non valido (https://, \\\\… o file://)'); return; }
+    const cover = $('at-cover').value.trim();
     const item = {
       id: $('at-edit-id').value || undefined,
       tipo: $('at-tipo').value,
@@ -172,6 +179,7 @@
       fonte: detectFonte(url),
       categoria: $('at-categoria').value,
       data: $('at-data').value,
+      cover: cover || undefined,
       note: $('at-note').value.trim()
     };
     try {

@@ -22,9 +22,12 @@
     .at-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;}
     .at-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:transform .15s,box-shadow .15s;}
     .at-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.5);border-color:var(--border2);}
-    .at-thumb{aspect-ratio:16/9;background:linear-gradient(135deg,#0f172a,#1e293b);display:flex;align-items:center;justify-content:center;font-size:2.4rem;position:relative;}
-    .at-thumb img{width:100%;height:100%;object-fit:cover;}
+    .at-thumb{aspect-ratio:16/9;background:linear-gradient(135deg,#0f172a,#1e293b);display:flex;align-items:center;justify-content:center;font-size:2.4rem;position:relative;overflow:hidden;}
+    .at-thumb img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;}
     .at-thumb .play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:2.6rem;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.7);}
+    .at-thumb .at-title-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;text-align:center;background:linear-gradient(135deg,rgba(6,15,30,0.85),rgba(30,41,59,0.85));}
+    .at-thumb .at-title-overlay .at-tov-icon{font-size:2rem;margin-bottom:6px;line-height:1;}
+    .at-thumb .at-title-overlay .at-tov-text{font-size:0.88rem;font-weight:700;color:#e2e8f0;line-height:1.3;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
     .at-cardbody{padding:10px 12px;}
     .at-cardbody .tit{font-weight:600;font-size:0.92rem;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
     .at-badge{display:inline-block;font-size:0.7rem;border-radius:5px;padding:1px 7px;font-weight:600;}
@@ -113,6 +116,11 @@
         <label>🔗 Link (Google Drive / YouTube / percorso di rete)</label>
         <input type="text" id="at-url" placeholder="https://drive.google.com/...  •  youtube.com/...  •  \\SERVER\Cartella\file">
         <div style="font-size:0.72rem;color:var(--muted);margin-top:3px;">Drive e YouTube si guardano qui senza scaricarli. I percorsi di rete si aprono solo dal PC della società.</div>
+      </div>
+      <div class="at-field">
+        <label>🖼️ Immagine copertina (URL opzionale — sovrascrive l'anteprima automatica)</label>
+        <input type="text" id="at-cover" maxlength="500" placeholder="https://... (Drive, imgur, qualsiasi URL immagine)">
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:3px;">Lascia vuoto per usare l'anteprima YouTube automatica o il titolo come copertina.</div>
       </div>
       <div class="at-field">
         <label>Note (opzionale)</label>
