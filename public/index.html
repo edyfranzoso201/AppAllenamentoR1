@@ -7555,7 +7555,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
           '<input type="text" class="form-control form-control-sm imp-new-kit-name" maxlength="80" placeholder="Nome kit inventario…" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">' +
         '</td>' +
         '<td style="text-align:center;vertical-align:middle;">' +
-          '<button class="btn btn-xs btn-outline-warning imp-copy-row-btn" title="Applica questa selezione a tutti" onclick="window.INV._impCopyRow(this)" style="font-size:0.72rem;padding:2px 7px;">' +
+          '<button class="btn btn-xs btn-outline-warning imp-copy-row-btn" title="Copia il nome articolo negli appunti" onclick="window.INV._impCopyRow(this)" style="font-size:0.72rem;padding:2px 7px;" data-itm="' + esc(itm) + '">' +
             '<i class="bi bi-clipboard-fill"></i>' +
           '</button>' +
         '</td>' +
@@ -7573,29 +7573,27 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   };
 
   window.INV._impCopyRow = function (btn) {
-    var srcTr  = btn.closest('tr');
-    var srcSel = srcTr ? srcTr.querySelector('.imp-mode-sel') : null;
-    if (!srcSel) return;
-    var val     = srcSel.value;
-    var newName = (srcTr.querySelector('.imp-new-kit-name') || {}).value || '';
-    document.querySelectorAll('#inv-import-mat-mapping tr[data-imp-itm]').forEach(function(tr) {
-      if (tr === srcTr) return;
-      var sel = tr.querySelector('.imp-mode-sel');
-      if (!sel) return;
-      sel.value = val;
-      var nameCell = tr.querySelector('.imp-kit-name-cell');
-      if (nameCell) {
-        nameCell.style.display = (val === '__new__') ? '' : 'none';
-        if (val === '__new__') {
-          var inp = nameCell.querySelector('.imp-new-kit-name');
-          if (inp) inp.value = newName;
-        }
-      }
+    var text = btn.dataset.itm || '';
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(function() {
+      btn.classList.add('btn-warning');
+      btn.classList.remove('btn-outline-warning');
+      var icon = btn.querySelector('i');
+      if (icon) { icon.className = 'bi bi-clipboard-check-fill'; }
+      setTimeout(function(){
+        btn.classList.remove('btn-warning');
+        btn.classList.add('btn-outline-warning');
+        if (icon) icon.className = 'bi bi-clipboard-fill';
+      }, 1200);
+    }).catch(function() {
+      // fallback per browser senza clipboard API
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
     });
-    // feedback visivo
-    btn.classList.add('btn-warning');
-    btn.classList.remove('btn-outline-warning');
-    setTimeout(function(){ btn.classList.remove('btn-warning'); btn.classList.add('btn-outline-warning'); }, 600);
   };
 
   window.INV.previewImportMateriale = function () {
