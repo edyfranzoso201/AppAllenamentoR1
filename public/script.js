@@ -1015,9 +1015,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
       function removeFab() {
+        // Rimuove SOLO il FAB flottante contestuale. La barra mobile in alto
+        // (mc-topbar) è la scorciatoia FISSA: resta sempre visibile su mobile
+        // e viene gestita esclusivamente da ensureTopBar().
         const f = document.getElementById('mc-fab'); if (f) f.remove();
-        const bar = document.getElementById('mc-topbar'); if (bar) bar.style.display = 'none';
-        _restoreMainPadding();
       }
 
       // Regola del ⚡: appare SOLO se (a) sessione campo attiva E (b) NON sei in
