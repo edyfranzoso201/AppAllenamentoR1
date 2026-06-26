@@ -474,6 +474,8 @@ if (req.query?.action === 'area-tecnica') {
       if (!/^(https?:\/\/|file:\/\/|\\\\)/i.test(url)) {
         return res.status(400).json({ success: false, message: 'Link non valido (usa https://, percorso di rete \\\\… o file://)' });
       }
+      const colore = String(item.colore || '').trim();
+      const cover  = String(item.cover  || '').trim();
       const v = {
         id: item.id || ('at' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)),
         tipo: tipiOk.includes(item.tipo) ? item.tipo : 'video',
@@ -485,6 +487,8 @@ if (req.query?.action === 'area-tecnica') {
         note: String(item.note || '').slice(0, 400),
         createdAt: item.createdAt || new Date().toISOString()
       };
+      if (colore && /^#[0-9a-fA-F]{6}$/.test(colore)) v.colore = colore;
+      if (cover  && /^https?:\/\//i.test(cover))       v.cover  = cover.slice(0, 500);
       const idx = items.findIndex(x => x.id === v.id);
       if (idx >= 0) items[idx] = v; else items.push(v);
     }

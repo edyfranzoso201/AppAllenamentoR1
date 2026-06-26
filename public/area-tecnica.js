@@ -205,7 +205,7 @@
       categoria: $('at-categoria').value,
       data: $('at-data').value,
       cover: cover || undefined,
-      colore: colore !== '#e2e8f0' ? colore : undefined,
+      colore: colore,
       note: $('at-note').value.trim()
     };
     try {
