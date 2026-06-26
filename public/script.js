@@ -982,10 +982,10 @@ document.addEventListener('DOMContentLoaded', () => {
           if (bar) { bar.style.display = 'none'; _restoreMainPadding(); }
           return;
         }
-        // Altezza reale dell'header (navbar fissa in cima) misurata live
-        const header = document.querySelector('nav.navbar.fixed-top') || document.querySelector('nav.navbar') || document.querySelector('header');
-        const headerH = header ? header.getBoundingClientRect().bottom : 56;
-        const barH = 46; // altezza barra (padding 10px × 2 + font ~26px)
+        // La navbar ha height:56px fisso nel CSS — usiamo sempre 56 (getBoundingClientRect
+        // può restituire 0 se chiamato prima del primo paint).
+        const NAVBAR_H = 56;
+        const BAR_H = 46;
         if (!bar) {
           bar = document.createElement('button');
           bar.id = 'mc-topbar';
@@ -995,22 +995,24 @@ document.addEventListener('DOMContentLoaded', () => {
           bar.onclick = () => window.openModalitaCampo();
           document.body.appendChild(bar);
         }
-        bar.style.cssText = `position:fixed;top:${headerH}px;left:0;right:0;z-index:1040;border:none;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-weight:800;font-size:1.05rem;padding:10px;box-shadow:0 2px 8px rgba(0,0,0,0.25);cursor:pointer;`;
+        bar.style.cssText = `position:fixed;top:${NAVBAR_H}px;left:0;right:0;z-index:1040;border:none;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-weight:800;font-size:1.05rem;padding:10px;box-shadow:0 2px 8px rgba(0,0,0,0.25);cursor:pointer;`;
         bar.style.display = 'block';
-        // Spinge giù il contenuto. Salva il marginTop originale CSS solo la prima volta
-        // e applica sempre origMt+barH (idempotente su chiamate ripetute).
+        // Su mobile il main ha margin-top:56px (CSS). Aggiunge BAR_H in modo idempotente.
         const main = document.querySelector('main.container-fluid');
-        if (main) {
-          if (main.dataset.mcOrigMt === undefined) {
-            main.dataset.mcOrigMt = getComputedStyle(main).marginTop || '0px';
-          }
-          const origMt = parseFloat(main.dataset.mcOrigMt) || 0;
-          main.style.marginTop = (origMt + barH) + 'px';
+        if (main && !main.dataset.mcBarApplied) {
+          main.dataset.mcBarApplied = '1';
+          const curMt = parseFloat(getComputedStyle(main).marginTop) || 0;
+          main.dataset.mcOrigMt = String(curMt);
+          main.style.marginTop = (curMt + BAR_H) + 'px';
         }
       }
       function _restoreMainPadding() {
         const main = document.querySelector('main.container-fluid');
-        if (main && main.dataset.mcOrigMt !== undefined) { main.style.marginTop = main.dataset.mcOrigMt; delete main.dataset.mcOrigMt; }
+        if (main && main.dataset.mcBarApplied) {
+          main.style.marginTop = (main.dataset.mcOrigMt || '0') + 'px';
+          delete main.dataset.mcBarApplied;
+          delete main.dataset.mcOrigMt;
+        }
       }
       function removeFab() {
         const f = document.getElementById('mc-fab'); if (f) f.remove();
