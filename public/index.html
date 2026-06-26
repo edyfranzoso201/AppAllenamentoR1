@@ -6956,19 +6956,21 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     var condLabel = { buono: 'Buono', riparazione: 'Da riparare', fuori_uso: 'Fuori uso', mancante: 'Mancante' };
     var annLabel  = (ss('gosport_current_annata_name') || annataId() || 'annata').replace(/[^a-zA-Z0-9_\-\.]/g, '_');
 
-    // Totale per kit = TUTTI gli item con stesso _kitName (presenti + mancanti)
-    var kitTotali = {};
+    // Totale per kit = presenti + mancanti (separati per calcolare ratio corretto)
+    var kitPresenti = {}, kitMancanti = {};
     _items.forEach(function(it){
       if (it._kitName && !it._kitExtra) {
-        if (!kitTotali[it._kitName]) kitTotali[it._kitName] = 0;
-        kitTotali[it._kitName] += (it.quantita || 1);
+        if (!kitPresenti[it._kitName]) kitPresenti[it._kitName] = 0;
+        if (!kitMancanti[it._kitName]) kitMancanti[it._kitName] = 0;
+        if (it.condizione === 'mancante') kitMancanti[it._kitName] += (it.quantita || 1);
+        else kitPresenti[it._kitName] += (it.quantita || 1);
       }
     });
 
     function suTotale(it) {
-      if (it.condizione !== 'mancante') return '';
-      var tot = kitTotali[it._kitName] || 0;
-      return tot > 0 ? (it.quantita||1) + '/' + tot : '';
+      if (it.condizione !== 'mancante' || !it._kitName) return '';
+      var totale = (kitPresenti[it._kitName] || 0) + (kitMancanti[it._kitName] || 0);
+      return totale > 0 ? (it.quantita||1) + '/' + totale : '';
     }
 
     var header = ['Categoria','Nome/Descrizione','Quantità','Su totale','Taglia','Condizione','Note','Con Sponsor','Nome Sponsor'];
@@ -7612,27 +7614,13 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
             }
           }
         });
-        // Mancanti: atleti senza assegnazione (status vuoto = mai assegnato)
-        var groupMissing = {};
-        activeAthletes.forEach(function(a) {
-          var entry = (matData[a.id] || {})[itm];
-          if (!entry || !entry.status) {
-            var taglia = entry ? (entry.taglia || '') : '';
-            if (!groupMissing[taglia]) groupMissing[taglia] = 0;
-            groupMissing[taglia]++;
-          }
-        });
-        Object.keys(groupMissing).forEach(function(taglia) {
-          var existMiss = _items.find(function(it){ return it._kitName === kitName && it.taglia === taglia && it.condizione === 'mancante'; });
-          if (!existMiss)
-            _importPreviewItems.push({ categoria: 'Maglie da calcio', nome: kitName + ' (mancante)', quantita: groupMissing[taglia], taglia: taglia, condizione: 'mancante', note: '', _kitName: kitName });
-        });
+        // status vuoto = mai assegnato → non è un mancante, si ignora
       } else {
         // Modalità aggregata per taglia
         var groups = {};
         activeAthletes.forEach(function(a) {
           var entry = (matData[a.id] || {})[itm];
-          if (!entry || !entry.status) { if (!groups['']) groups[''] = {c:0,m:0}; groups[''].m++; return; }
+          if (!entry || !entry.status) return; // mai assegnato → skip
           var t = entry.taglia || '';
           if (!groups[t]) groups[t] = {c:0, m:0};
           // consegnato E restituito = presente in magazzino = buono
