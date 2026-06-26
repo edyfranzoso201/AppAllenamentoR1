@@ -6540,7 +6540,8 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         var condClass   = COND_COLOR;
         var condIcon    = COND_ICON;
 
-        var totPresenti = numbered.length + extraRows.reduce(function(s,it){ return s+(it.quantita||1);},0);
+        var numberedPresenti = numbered.filter(function(it){ return it.condizione !== 'mancante'; });
+        var totPresenti = numberedPresenti.length + extraRows.reduce(function(s,it){ return s+(it.quantita||1);},0);
         var mancQty     = mancanti.reduce(function(s,it){ return s+(it.quantita||1);},0);
         var totale      = totPresenti + mancQty;
         var mancBadge   = mancQty > 0
@@ -6563,7 +6564,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
           '<div class="card-body p-2">' +
           '<div class="d-flex align-items-center gap-2 mb-2 flex-wrap">' +
           '<span style="font-weight:700;color:#fbbf24;font-size:0.9rem;"><i class="bi bi-grid-3x3-gap-fill"></i> ' + esc(kitName) + '</span>' +
-          '<span class="badge bg-secondary" style="font-size:0.75rem;">' + numbered.length + ' articoli</span>' +
+          '<span class="badge bg-secondary" style="font-size:0.75rem;">' + totale + ' articoli</span>' +
           (extraRows.length ? '<span class="badge bg-info text-dark" style="font-size:0.75rem;">+' + extraRows.reduce(function(s,it){ return s+(it.quantita||1);},0) + ' scorte</span>' : '') +
           mancBadge +
           toggleBtn +
@@ -6588,8 +6589,8 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
               '</div>';
           });
 
-          // Badge mancanti: se qty=1 → un badge "?", se qty>1 → un badge con il conteggio (aggregato senza numero)
-          mancanti.forEach(function(it) {
+          // Badge mancanti senza numero (aggregati): quelli con _kitNum sono già mostrati sopra tra i numbered
+          mancanti.filter(function(it){ return it._kitNum == null; }).forEach(function(it) {
             var qty = it.quantita || 1;
             var label = qty > 1 ? ('×' + qty) : '?';
             html += '<div title="Mancante' + (it.taglia ? ' · ' + it.taglia : '') + (it.note ? ' · ' + it.note : '') + '" ' +
