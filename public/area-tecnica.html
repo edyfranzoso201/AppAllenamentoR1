@@ -117,10 +117,16 @@
         <input type="text" id="at-url" placeholder="https://drive.google.com/...  •  youtube.com/...  •  \\SERVER\Cartella\file">
         <div style="font-size:0.72rem;color:var(--muted);margin-top:3px;">Drive e YouTube si guardano qui senza scaricarli. I percorsi di rete si aprono solo dal PC della società.</div>
       </div>
-      <div class="at-field">
-        <label>🖼️ Immagine copertina (URL opzionale — sovrascrive l'anteprima automatica)</label>
-        <input type="text" id="at-cover" maxlength="500" placeholder="https://... (Drive, imgur, qualsiasi URL immagine)">
-        <div style="font-size:0.72rem;color:var(--muted);margin-top:3px;">Lascia vuoto per usare l'anteprima YouTube automatica o il titolo come copertina.</div>
+      <div style="display:flex;gap:10px;align-items:flex-end;">
+        <div class="at-field" style="flex:1;">
+          <label>🖼️ Immagine copertina (URL opzionale)</label>
+          <input type="text" id="at-cover" maxlength="500" placeholder="https://... (Drive, imgur, qualsiasi URL immagine)">
+          <div style="font-size:0.72rem;color:var(--muted);margin-top:3px;">Lascia vuoto per usare l'anteprima YouTube o il titolo come copertina.</div>
+        </div>
+        <div class="at-field" style="width:80px;">
+          <label>🎨 Colore titolo</label>
+          <input type="color" id="at-colore" value="#e2e8f0" style="width:100%;height:38px;padding:2px;border-radius:8px;border:1px solid var(--border);background:var(--panel);cursor:pointer;">
+        </div>
       </div>
       <div class="at-field">
         <label>Note (opzionale)</label>

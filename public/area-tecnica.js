@@ -71,6 +71,23 @@
 
   const TIPO_ICON = { video:'🎥', esercizio:'🏃', scheda:'📋', documento:'📄' };
   const CAT_COLOR = { allenamento:'#16a34a', partita:'#2563eb', stralcio:'#7c3aed', tattica:'#d97706', altro:'#64748b' };
+  const FONTE_PREFIX = { youtube:'Y', drive:'D', locale:'F', altro:'A' };
+
+  // Calcola il codice progressivo (es. Y3) per ogni item basandosi sulla fonte.
+  // Ordina per createdAt/id, assegna numeri da 1; i buchi lasciati da item cancellati
+  // vengono riutilizzati automaticamente al prossimo salvataggio.
+  function assignCodes(allItems) {
+    const byFonte = {};
+    const sorted = [...allItems].sort((a, b) => String(a.createdAt || a.id).localeCompare(String(b.createdAt || b.id)));
+    sorted.forEach(x => {
+      const f = x.fonte || detectFonte(x.url || '');
+      const prefix = FONTE_PREFIX[f] || 'A';
+      if (!byFonte[prefix]) byFonte[prefix] = 0;
+      byFonte[prefix]++;
+      x._code = prefix + byFonte[prefix];
+    });
+    return allItems; // mutati in place
+  }
 
   function thumbFor(item) {
     if (item.cover && /^https?:\/\//i.test(item.cover)) return item.cover;
@@ -89,6 +106,7 @@
       if (r.status === 403) { document.querySelector('.at-main').innerHTML = '<div class="at-empty">⛔ Accesso riservato allo staff. Accedi dalla dashboard.</div>'; return; }
       const d = await r.json();
       items = (d.success && d.items) || [];
+      assignCodes(items);
       render();
     } catch (e) {
       document.querySelector('.at-main').innerHTML = '<div class="at-empty">Errore di caricamento. Apri questa pagina dalla dashboard (serve la sessione).</div>';
@@ -110,16 +128,19 @@
     grid.innerHTML = list.map(x => {
       const thumb = thumbFor(x);
       const fmt = x.data ? new Date(x.data + 'T00:00:00').toLocaleDateString('it-IT', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '';
+      const titColor = x.colore || '#e2e8f0';
+      const codeTag = x._code ? `<span style="background:rgba(0,0,0,0.55);color:${titColor};font-size:0.7rem;font-weight:800;border-radius:4px;padding:1px 5px;position:absolute;top:6px;left:6px;z-index:2;">${esc(x._code)}</span>` : '';
+      const overlayTitle = `<div class="at-tov-icon">${TIPO_ICON[x.tipo] || '🎬'}</div><div class="at-tov-text" style="color:${titColor};">${esc(x.titolo || '(senza titolo)')}</div>`;
       const thumbHtml = thumb
         ? `<img src="${esc(thumb)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-           <div class="at-title-overlay" style="display:none;"><div class="at-tov-icon">${TIPO_ICON[x.tipo] || '🎬'}</div><div class="at-tov-text">${esc(x.titolo || '(senza titolo)')}</div></div>`
-        : `<div class="at-title-overlay"><div class="at-tov-icon">${TIPO_ICON[x.tipo] || '🎬'}</div><div class="at-tov-text">${esc(x.titolo || '(senza titolo)')}</div></div>`;
+           <div class="at-title-overlay" style="display:none;">${overlayTitle}</div>`
+        : `<div class="at-title-overlay">${overlayTitle}</div>`;
       return `<div class="at-card" onclick="window.atOpen('${x.id}')">
-        <div class="at-thumb">${thumbHtml}<div class="play">▶</div></div>
+        <div class="at-thumb">${codeTag}${thumbHtml}<div class="play">▶</div></div>
         <div class="at-cardbody">
-          <div class="tit">${esc(x.titolo) || '(senza titolo)'}</div>
+          <div class="tit" style="color:${titColor};">${esc(x.titolo) || '(senza titolo)'}</div>
           <span class="at-badge" style="background:${CAT_COLOR[x.categoria] || '#64748b'}33;color:${CAT_COLOR[x.categoria] || '#94a3b8'};">${esc(x.categoria || '')}</span>
-          <div class="at-meta"><span>${TIPO_ICON[x.tipo] || ''} ${fmt}</span>
+          <div class="at-meta"><span style="font-weight:700;color:${titColor};opacity:.8;">${x._code || ''}</span><span>${TIPO_ICON[x.tipo] || ''} ${fmt}</span>
             <span><button class="at-del" title="Modifica" onclick="event.stopPropagation();window.atEdit('${x.id}')">✏️</button><button class="at-del" title="Elimina" onclick="event.stopPropagation();window.atDelete('${x.id}')">🗑️</button></span>
           </div>
         </div>
@@ -130,7 +151,9 @@
   // ── Player ──
   window.atOpen = function (id) {
     const x = items.find(i => i.id === id); if (!x) return;
-    $('at-player-title').textContent = (TIPO_ICON[x.tipo] || '') + ' ' + (x.titolo || '');
+    const codeLabel = x._code ? `[${x._code}] ` : '';
+    $('at-player-title').textContent = (TIPO_ICON[x.tipo] || '') + ' ' + codeLabel + (x.titolo || '');
+    $('at-player-title').style.color = x.colore || '';
     const emb = embedFor(x);
     const body = $('at-player-body');
     if (emb.mode === 'iframe') {
@@ -160,6 +183,7 @@
     $('at-data').value = x ? (x.data || '') : new Date().toISOString().split('T')[0];
     $('at-url').value = x ? (x.url || '') : '';
     $('at-cover').value = x ? (x.cover || '') : '';
+    $('at-colore').value = x ? (x.colore || '#e2e8f0') : '#e2e8f0';
     $('at-note').value = x ? (x.note || '') : '';
     $('at-form-overlay').style.display = 'flex';
     $('at-titolo').focus();
@@ -172,6 +196,7 @@
     if (!titolo) { toast('Inserisci un titolo'); return; }
     if (!/^(https?:\/\/|file:\/\/|\\\\)/i.test(url)) { toast('Link non valido (https://, \\\\… o file://)'); return; }
     const cover = $('at-cover').value.trim();
+    const colore = $('at-colore').value || '#e2e8f0';
     const item = {
       id: $('at-edit-id').value || undefined,
       tipo: $('at-tipo').value,
@@ -180,13 +205,14 @@
       categoria: $('at-categoria').value,
       data: $('at-data').value,
       cover: cover || undefined,
+      colore: colore !== '#e2e8f0' ? colore : undefined,
       note: $('at-note').value.trim()
     };
     try {
       const r = await fetch('/api/data?action=area-tecnica', { method:'POST', headers: authHeaders(true), body: JSON.stringify({ item }) });
       const d = await r.json();
       if (!r.ok || !d.success) { toast(d.message || 'Errore salvataggio'); return; }
-      items = d.items; render();
+      items = d.items; assignCodes(items); render();
       $('at-form-overlay').style.display = 'none';
       toast('Salvato ✓');
     } catch (e) { toast('Errore di rete'); }
@@ -197,7 +223,7 @@
     try {
       const r = await fetch('/api/data?action=area-tecnica', { method:'POST', headers: authHeaders(true), body: JSON.stringify({ deleteId: id }) });
       const d = await r.json();
-      if (d.success) { items = d.items; render(); toast('Eliminato ✓'); }
+      if (d.success) { items = d.items; assignCodes(items); render(); toast('Eliminato ✓'); }
     } catch (e) { toast('Errore'); }
   };
 
