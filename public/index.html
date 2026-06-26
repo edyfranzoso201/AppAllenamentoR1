@@ -7633,23 +7633,24 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
           // restituito = in magazzino → buono; consegnato = ancora dall'atleta → mancante
           var isReturned = entry.status === 'restituito';
           var taglia = entry.taglia || '';
+          var nota   = entry.nota   || '';
           if (num) {
             var existing = _items.find(function(it){ return it._kitName === kitName && String(it._kitNum) === num; });
             if (!existing) {
               var cond = isReturned ? 'buono' : 'mancante';
-              _importPreviewItems.push({ categoria: 'Maglie da calcio', nome: kitName + ' N°' + num, quantita: 1, taglia: taglia, condizione: cond, note: '', _kitName: kitName, _kitNum: num });
+              _importPreviewItems.push({ categoria: 'Maglie da calcio', nome: kitName + ' N°' + num, quantita: 1, taglia: taglia, condizione: cond, note: nota, _kitName: kitName, _kitNum: num });
             }
           } else {
             // senza numero: restituito → scorta buona; consegnato → mancante aggregato per taglia
             if (isReturned) {
               var existExtra = _items.find(function(it){ return it._kitName === kitName && it._kitExtra && it.taglia === taglia; });
               if (!existExtra) {
-                _importPreviewItems.push({ categoria: 'Maglie da calcio', nome: kitName + ' (scorta' + (taglia ? ' ' + taglia : '') + ')', quantita: 1, taglia: taglia, condizione: 'buono', note: '', _kitName: kitName, _kitExtra: true });
+                _importPreviewItems.push({ categoria: 'Maglie da calcio', nome: kitName + ' (scorta' + (taglia ? ' ' + taglia : '') + ')', quantita: 1, taglia: taglia, condizione: 'buono', note: nota, _kitName: kitName, _kitExtra: true });
               }
             } else {
               var existMissExtra = _items.find(function(it){ return it._kitName === kitName && it.condizione === 'mancante' && !it._kitNum && it.taglia === taglia; });
               if (!existMissExtra) {
-                _importPreviewItems.push({ categoria: 'Maglie da calcio', nome: kitName + ' (mancante)', quantita: 1, taglia: taglia, condizione: 'mancante', note: '', _kitName: kitName });
+                _importPreviewItems.push({ categoria: 'Maglie da calcio', nome: kitName + ' (mancante)', quantita: 1, taglia: taglia, condizione: 'mancante', note: nota, _kitName: kitName });
               }
             }
           }
