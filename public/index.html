@@ -7049,13 +7049,19 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     var ann = _annataName();
     var header = ['Annata','Categoria','Colore','Tipologia','Numero','Nome/Descrizione','Quantità','Taglia','Condizione','Note','Con Sponsor','Nome Sponsor'];
     function rowFor(it) {
+      // Per item kit numerati il nome è "KitName N°X": rimuovi il suffisso N° perché
+      // il numero è già nella colonna Numero.
+      var nomeBase = it.nome;
+      if (it._kitName && it._kitNum != null) {
+        nomeBase = it._kitName;
+      }
       return [
         ann,
         it.categoria,
         it._kitColore || '',
         it._kitTipologia || '',
         _itemNumero(it),
-        it.nome,
+        nomeBase,
         it.quantita,
         it.taglia || '',
         COND_EXP[it.condizione] || it.condizione,
