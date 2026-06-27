@@ -7393,32 +7393,54 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   function _kitGenerateTaglia(taglie) {
     var name = document.getElementById('inv-kit-name').value.trim();
     var tagOpts = _kitTagOpts();
-    var rows = taglie ? taglie : ['', '', '', '', ''];
-    var rowCount = rows.length;
 
-    document.getElementById('inv-kit-info').textContent = rowCount + ' righe';
-    document.getElementById('inv-kit-save-btn').style.display = '';
-
-    // Pre-popola da voci esistenti (_ktName = nome, no _kitNum)
-    var existing = [];
-    if (name) {
+    // Consolida TUTTE le voci esistenti del kit per (taglia+condizione+sponsor+note):
+    // ogni gruppo diventa UNA riga con la quantità totale.
+    // Supporta _kitName (nuovo) e _ktName (legacy typo).
+    var groupsMap = {};
+    var groupsArr = [];
+    if (name && !taglie) {
       _items.forEach(function(it){
-        if (it._ktName === name && it._kitNum == null) existing.push(it);
+        if (it._kitName !== name && it._ktName !== name) return;
+        var key = [it.taglia||'', it.condizione||'buono', it.sponsor?1:0, it.sponsorNome||'', it.note||''].join('||');
+        if (!groupsMap[key]) {
+          groupsMap[key] = { taglia: it.taglia||'', condizione: it.condizione||'buono',
+                             sponsor: !!it.sponsor, sponsorNome: it.sponsorNome||'',
+                             note: it.note||'', qty: 0 };
+          groupsArr.push(groupsMap[key]);
+        }
+        groupsMap[key].qty += (it.quantita || 1);
       });
     }
 
-    var html = '<table class="table table-dark table-bordered table-sm mb-0" style="border-color:var(--bg-blue);min-width:600px;">' +
+    // Righe da mostrare: preset taglie → righe per ogni taglia; consolidato → 1 riga per gruppo;
+    // altrimenti 5 righe vuote.
+    var rowsData;
+    if (taglie) {
+      rowsData = taglie.map(function(t){ return { taglia: t, condizione: 'buono', sponsor: false, sponsorNome: '', note: '', qty: 1 }; });
+    } else if (groupsArr.length) {
+      rowsData = groupsArr;
+    } else {
+      rowsData = [0,0,0,0,0].map(function(){ return { taglia: '', condizione: 'buono', sponsor: false, sponsorNome: '', note: '', qty: 1 }; });
+    }
+
+    document.getElementById('inv-kit-info').textContent = rowsData.length + ' righe';
+    document.getElementById('inv-kit-save-btn').style.display = '';
+
+    var html = '<table class="table table-dark table-bordered table-sm mb-0" style="border-color:var(--bg-blue);min-width:660px;">' +
       '<thead><tr style="font-size:0.8rem;color:#94a3b8;">' +
       '<th style="width:35px;text-align:center;">#</th>' +
       '<th style="width:120px;">Taglia</th>' +
+      '<th style="width:70px;text-align:center;">Qtà</th>' +
       '<th style="width:145px;">Condizione</th>' +
       '<th style="width:160px;">🏷️ Sponsor</th>' +
       '<th>Note</th></tr></thead><tbody id="inv-kit-tbody">';
 
-    rows.forEach(function(t, i) {
+    rowsData.forEach(function(d, i) {
       html += '<tr data-row="' + i + '">' +
         '<td style="text-align:center;color:#64748b;font-size:0.8rem;">' + (i + 1) + '</td>' +
         '<td><select class="form-select form-select-sm kit-taglia" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">' + tagOpts + '</select></td>' +
+        '<td><input type="number" min="1" max="999" class="form-control form-control-sm kit-qty" value="' + (d.qty || 1) + '" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;text-align:center;"></td>' +
         '<td>' + _kitCondSel('kit-cond') + '</td>' +
         '<td>' + _kitSponsorCell() + '</td>' +
         '<td><input type="text" class="form-control form-control-sm kit-note" maxlength="200" placeholder="Note…" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;"></td>' +
@@ -7428,16 +7450,14 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       '<button type="button" class="btn btn-xs btn-outline-secondary mt-2" onclick="window.INV.kitAddRow()"><i class="bi bi-plus-circle"></i> Aggiungi riga</button>';
     document.getElementById('inv-kit-grid').innerHTML = html;
 
-    // Ripristina valori (preset taglia → preseleziona, existing → tutti i campi)
+    // Ripristina valori
     document.querySelectorAll('#inv-kit-grid tr[data-row]').forEach(function(tr, i) {
-      var ex = existing[i];
-      var presetT = (taglie && taglie[i]) ? taglie[i] : '';
-      tr.querySelector('.kit-taglia').value = ex ? (ex.taglia || '') : presetT;
-      if (ex) {
-        tr.querySelector('.kit-cond').value = ex.condizione || 'buono';
-        tr.querySelector('.kit-note').value = ex.note || '';
-        _kitRestoreSponsor(tr, ex);
-      }
+      var d = rowsData[i];
+      if (!d) return;
+      tr.querySelector('.kit-taglia').value = d.taglia || '';
+      tr.querySelector('.kit-cond').value   = d.condizione || 'buono';
+      tr.querySelector('.kit-note').value   = d.note || '';
+      _kitRestoreSponsor(tr, d);
     });
   }
 
@@ -7452,6 +7472,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     tr.innerHTML =
       '<td style="text-align:center;color:#64748b;font-size:0.8rem;">' + (i + 1) + '</td>' +
       '<td><select class="form-select form-select-sm kit-taglia" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">' + tagOpts + '</select></td>' +
+      '<td><input type="number" min="1" max="999" class="form-control form-control-sm kit-qty" value="1" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;text-align:center;"></td>' +
       '<td>' + _kitCondSel('kit-cond') + '</td>' +
       '<td>' + _kitSponsorCell() + '</td>' +
       '<td><input type="text" class="form-control form-control-sm kit-note" maxlength="200" placeholder="Note…" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;"></td>';
@@ -7527,13 +7548,17 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         });
       });
     } else {
-      // Modalità per-taglia: ogni riga = un capo, senza _kitNum
+      // Modalità per-taglia: ogni riga = un gruppo di capi della stessa taglia (con Qtà),
+      // senza _kitNum. Marcati _kitExtra per coerenza con la vista raggruppata.
       let tagRows = document.querySelectorAll('#inv-kit-grid tr[data-row]');
       if (!tagRows.length) { btn.disabled = false; alert('Genera prima la griglia.'); return; }
-      var existingArr = [];
-      _items.forEach(function(it){ if (it._kitName === name && it._kitNum == null && !it._kitExtra) existingArr.push(it); });
-      tagRows.forEach(function (tr, i) {
+      // Categoria del kit: prendi quella degli item esistenti, altrimenti default
+      var kitCatItem = _items.find(function(it){ return (it._kitName === name || it._ktName === name) && it.categoria; });
+      var kitCat = kitCatItem ? kitCatItem.categoria : (_cats[0] || 'Altro');
+      tagRows.forEach(function (tr) {
         var taglia     = tr.querySelector('.kit-taglia').value;
+        var qtyEl      = tr.querySelector('.kit-qty');
+        var quantita   = Math.max(1, Math.min(999, parseInt((qtyEl && qtyEl.value) || 1) || 1));
         var condizione = tr.querySelector('.kit-cond').value;
         var note       = tr.querySelector('.kit-note').value.trim();
         var spChk      = tr.querySelector('.kit-sponsor-chk');
@@ -7541,14 +7566,14 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         var sponsor    = !!(spChk && spChk.checked);
         var sponsorNome= sponsor ? ((spNome && spNome.value.trim()) || '') : '';
         if (!taglia && condizione === 'buono' && !note && !sponsor) return; // salta righe vuote
-        var existing   = existingArr[i] || null;
         items.push({
-          id: existing ? existing.id : '',
-          categoria: _cats[0] || 'Altro',
-          nome: name + (taglia ? ' — ' + taglia : ''),
-          quantita: 1,
+          id: '',
+          categoria: kitCat,
+          nome: name + (taglia ? ' — ' + taglia : '') + ' ×' + quantita,
+          quantita: quantita,
           taglia, condizione, note, sponsor, sponsorNome,
           _kitName: name,
+          _kitExtra: true,
           _kitColore: kitColore,
           _kitTipologia: kitTipologia
         });
@@ -7556,11 +7581,18 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       if (!items.length) { btn.disabled = false; alert('Nessuna riga con dati da salvare.'); return; }
     }
 
+    // Tutti gli id esistenti di questo kit (per nome, anche legacy _ktName):
+    // li mando al server come removeIds per garantire che nessun orfano/duplicato resti.
+    var removeIds = _items
+      .filter(function(it){ return it._kitName === name || it._ktName === name; })
+      .map(function(it){ return it.id; })
+      .filter(Boolean);
+
     try {
       var r = await fetch('/api/data?action=inventory', {
         method: 'POST',
         headers: authHeaders(),
-        body: JSON.stringify({ act: 'upsert-kit', kitName: name, items: items })
+        body: JSON.stringify({ act: 'upsert-kit', kitName: name, items: items, removeIds: removeIds })
       });
       var d = await r.json();
       btn.disabled = false;

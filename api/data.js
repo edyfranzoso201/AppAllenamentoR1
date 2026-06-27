@@ -645,13 +645,21 @@ if (req.query?.action === 'inventory') {
       const sanitized = rawItems.map(sanitizeInvItem);
       // Ricava il nome del kit (dal body esplicito o da una voce sanitizzata)
       const bodyKitName = String((req.body && req.body.kitName) || '').slice(0, 80) || null;
-      const kitName = bodyKitName || sanitized.find(i => i._kitName)?._kitName || null;
-      const ktName  = bodyKitName || sanitized.find(i => i._ktName)?._ktName   || null;
+      const kitName = bodyKitName || sanitized.find(i => i._kitName)?._kitName
+                                  || sanitized.find(i => i._ktName)?._ktName || null;
+      // id espliciti da rimuovere (passati dal client per evitare orfani/duplicati)
+      const removeIds = new Set((Array.isArray(req.body?.removeIds) ? req.body.removeIds : [])
+                                  .map(x => String(x)));
       let items = (await kv.get(invKey)) || [];
       if (!Array.isArray(items)) items = [];
-      // Replace atomico: rimuove tutti gli item del kit corrente prima di reinserire
-      if (kitName && sanitized.some(i => i._kitName)) items = items.filter(i => i._kitName !== kitName);
-      else if (ktName && sanitized.some(i => i._ktName)) items = items.filter(i => i._ktName !== ktName);
+      // Replace atomico: rimuove TUTTI gli item che appartengono al kit (per nome,
+      // controllando sia _kitName sia il legacy _ktName) + eventuali id espliciti.
+      if (kitName) {
+        items = items.filter(i => i._kitName !== kitName && i._ktName !== kitName);
+      }
+      if (removeIds.size) {
+        items = items.filter(i => !removeIds.has(String(i.id)));
+      }
       items = items.concat(sanitized);
       await kv.set(invKey, items);
       return res.status(200).json({ success: true, count: sanitized.length });
