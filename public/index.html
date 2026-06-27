@@ -2108,6 +2108,9 @@
                         <button class="btn btn-sm btn-outline-success no-print" onclick="window.INV.exportExcelTaglie()" title="Esporta Excel raggruppato per taglie (numeri compattati)">
                             <i class="bi bi-rulers"></i> Excel per taglie
                         </button>
+                        <button id="inv-dedup-btn" class="btn btn-sm btn-outline-warning no-print" onclick="window.INV.dedupKit()" style="display:none;" title="Rimuovi articoli duplicati nei kit">
+                            <i class="bi bi-stars"></i> Pulisci duplicati
+                        </button>
                         <button id="inv-copy-btn" class="btn btn-sm btn-outline-light no-print" onclick="window.INV.openCopyTemplate()" style="display:none;" title="Copia struttura inventario in altre annate">
                             <i class="bi bi-copy"></i> Copia template
                         </button>
@@ -6476,11 +6479,13 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     var catBtn       = document.getElementById('inv-cat-btn');
     var copyBtn      = document.getElementById('inv-copy-btn');
     var importMatBtn = document.getElementById('inv-import-mat-btn');
+    var dedupBtn     = document.getElementById('inv-dedup-btn');
     if (addBtn)       addBtn.style.display       = _canWrite ? '' : 'none';
     if (kitBtn)       kitBtn.style.display       = _canWrite ? '' : 'none';
     if (catBtn)       catBtn.style.display       = _canCat   ? '' : 'none';
     if (copyBtn)      copyBtn.style.display      = (r === 'admin') ? '' : 'none';
     if (importMatBtn) importMatBtn.style.display = _canWrite ? '' : 'none';
+    if (dedupBtn)     dedupBtn.style.display     = _canWrite ? '' : 'none';
   }
 
   // ── Collapse sezione inventario ──
@@ -6744,9 +6749,10 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     if (colEl) colEl.value = (anyKitItem && anyKitItem._kitColore) || '';
     if (tipEl) tipEl.value = (anyKitItem && anyKitItem._kitTipologia) || '';
     var kitItems = _items.filter(function(it){ return it._kitName === kitName && it._kitNum != null; });
-    var nums = kitItems.map(function(it){ return it._kitNum; });
-    var minN = Math.min.apply(null, nums) || 1;
-    var maxN = Math.max.apply(null, nums) || 20;
+    // Considera solo i numeri interi validi per il range da/a (ignora "GK", "1A"…).
+    var nums = kitItems.map(function(it){ return parseInt(it._kitNum, 10); }).filter(function(n){ return !isNaN(n); });
+    var minN = nums.length ? Math.min.apply(null, nums) : 1;
+    var maxN = nums.length ? Math.max.apply(null, nums) : 20;
     document.getElementById('inv-kit-from').value = minN;
     document.getElementById('inv-kit-to').value   = maxN;
     bootstrap.Modal.getOrCreateInstance(document.getElementById('invKitModal')).show();
@@ -6950,6 +6956,23 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       var d = await r.json();
       if (d.success) { await load(true); }
       else { alert('Errore: ' + (d.message || '')); }
+    } catch (e) { alert('Errore di rete'); }
+  };
+
+  // ── Pulisci duplicati nei kit ──
+  window.INV.dedupKit = async function () {
+    if (!confirm('Rimuovere gli articoli duplicati nei kit?\n\nPer ogni N° verrà mantenuto un solo articolo (con la taglia valorizzata, se presente). Operazione consigliata se vedi N° ripetuti.')) return;
+    try {
+      var r = await fetch('/api/data?action=inventory', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ act: 'dedup-kit' })
+      });
+      var d = await r.json();
+      if (d.success) {
+        await load(true);
+        alert(d.removed > 0 ? ('✅ Rimossi ' + d.removed + ' articoli duplicati.') : 'Nessun duplicato trovato.');
+      } else { alert('Errore: ' + (d.message || '')); }
     } catch (e) { alert('Errore di rete'); }
   };
 
@@ -7261,9 +7284,15 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       '<th style="width:160px;">🏷️ Sponsor</th>' +
       '<th>Note</th></tr></thead><tbody>';
 
+    // In presenza di duplicati per lo stesso numero, preferisci l'item con taglia
+    // valorizzata (evita di mostrare una taglia vuota/sbagliata di un duplicato).
     var existing = {};
     _items.forEach(function (it) {
-      if (it._kitName === name && it._kitNum != null) existing[it._kitNum] = it;
+      if (it._kitName === name && it._kitNum != null) {
+        var prev = existing[it._kitNum];
+        if (!prev) { existing[it._kitNum] = it; }
+        else if (!prev.taglia && it.taglia) { existing[it._kitNum] = it; }
+      }
     });
 
     for (var n = from; n <= to; n++) {

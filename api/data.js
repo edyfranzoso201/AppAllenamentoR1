@@ -624,8 +624,14 @@ if (req.query?.action === 'inventory') {
       const sanitized = rawItems.map(sanitizeInvItem);
       let items = (await kv.get(invKey)) || [];
       if (!Array.isArray(items)) items = [];
+      // Replace per kit: se l'import contiene item di un kit (_kitName), rimuovo
+      // PRIMA tutti gli item esistenti di quei kit, così re-importare non duplica.
+      const importedKits = new Set(sanitized.map(i => i._kitName).filter(Boolean));
+      if (importedKits.size) {
+        items = items.filter(i => !(i._kitName && importedKits.has(i._kitName)));
+      }
       sanitized.forEach(item => {
-        const idx = items.findIndex(i => i.id === item.id);
+        const idx = item.id ? items.findIndex(i => i.id === item.id) : -1;
         if (idx >= 0) items[idx] = item; else items.push(item);
       });
       await kv.set(invKey, items);
@@ -659,6 +665,35 @@ if (req.query?.action === 'inventory') {
       items = items.filter(i => i.id !== id);
       await kv.set(invKey, items);
       return res.status(200).json({ success: true });
+    }
+
+    // Rimuove i duplicati: per gli item con _kitName+_kitNum tiene il primo che
+    // ha una taglia valorizzata (o il primo in assoluto). Gli item senza _kitNum
+    // (scorte/mancanti/voci singole) non vengono toccati.
+    if (act === 'dedup-kit') {
+      let items = (await kv.get(invKey)) || [];
+      if (!Array.isArray(items)) items = [];
+      const seen = new Map();   // key = _kitName||_kitNum  ->  index in result
+      const result = [];
+      let removed = 0;
+      items.forEach(it => {
+        if (it._kitName && it._kitNum != null && !it._kitExtra) {
+          const key = it._kitName + '||' + it._kitNum;
+          if (!seen.has(key)) {
+            seen.set(key, result.length);
+            result.push(it);
+          } else {
+            // duplicato: se quello già tenuto non ha taglia ma questo sì, sostituisci
+            const idx = seen.get(key);
+            if (!result[idx].taglia && it.taglia) result[idx] = it;
+            removed++;
+          }
+        } else {
+          result.push(it);
+        }
+      });
+      await kv.set(invKey, result);
+      return res.status(200).json({ success: true, removed });
     }
 
     if (act === 'delete-kit') {
