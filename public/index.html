@@ -7049,10 +7049,9 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     var ann = _annataName();
     var header = ['Annata','Categoria','Colore','Tipologia','Numero','Nome/Descrizione','Quantità','Taglia','Condizione','Note','Con Sponsor','Nome Sponsor'];
     function rowFor(it) {
-      // Per item kit numerati il nome è "KitName N°X": rimuovi il suffisso N° perché
-      // il numero è già nella colonna Numero.
       var nomeBase = it.nome;
-      if (it._kitName && it._kitNum != null) {
+      if (it._kitName) {
+        // Nome kit senza suffisso N°X (il numero è già nella colonna Numero)
         nomeBase = it._kitName;
       }
       return [
@@ -7941,14 +7940,17 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       ' <button type="button" onclick="window.INV._impSelectAll(false)" class="btn btn-xs btn-outline-secondary" style="font-size:0.7rem;padding:1px 6px;">Deseleziona tutto</button>' +
       '</div>' +
       '<table class="table table-dark table-sm mb-0" style="font-size:0.78rem;">' +
-      '<thead><tr><th style="width:32px;"></th><th>Nome</th><th>Taglia</th><th>Qtà</th><th>Cond.</th><th>Kit</th></tr></thead><tbody>';
+      '<thead><tr><th style="width:32px;"></th><th>Nome</th><th>Taglia</th><th>Qtà</th><th>Cond.</th><th>Kit / Categoria</th></tr></thead><tbody>';
     _importPreviewItems.forEach(function(it, idx) {
+      var kitCatLabel = it._kitName
+        ? '<span style="color:#fbbf24;">🏷️ ' + esc(it._kitName) + '</span>'
+        : '<span style="color:#94a3b8;">📁 ' + esc(it.categoria || '—') + '</span>';
       html += '<tr>' +
         '<td style="text-align:center;vertical-align:middle;"><input type="checkbox" class="imp-row-chk" data-idx="' + idx + '" checked style="width:16px;height:16px;cursor:pointer;"></td>' +
         '<td>' + esc(it.nome) + '</td><td>' + esc(it.taglia||'—') + '</td>' +
         '<td style="text-align:center;">' + it.quantita + '</td>' +
         '<td>' + (COND_LABEL[it.condizione]||it.condizione) + '</td>' +
-        '<td style="color:#fbbf24;">' + (it._kitName ? esc(it._kitName) : '—') + '</td></tr>';
+        '<td>' + kitCatLabel + '</td></tr>';
     });
     html += '</tbody></table>';
     if (prevEl) { prevEl.style.display=''; prevEl.innerHTML = html; }
