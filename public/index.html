@@ -6740,6 +6740,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
 
   // Apre il kit in modifica (pre-popola nome e genera la griglia)
   window.INV.editKit = function (kitName) {
+    _kitOriginalName = kitName; // memorizza il nome originale per il replace atomico
     document.getElementById('inv-kit-name').value = kitName;
     document.getElementById('inv-kit-save-btn').style.display = '';
     // Recupera colore/tipologia dal primo item del kit (sono a livello di set)
@@ -7149,6 +7150,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   // ── Kit: griglia righe (numerata per maglie, per taglia per altri capi) ──
   var _kitMode = 'numbered'; // 'numbered' | 'taglia'
   var _kitRows = [];
+  var _kitOriginalName = null; // nome del kit al momento dell'apertura in modifica
 
   var KT_PRESETS = {
     abbigliamento: ['XS','S','M','L','XL','XXL'],
@@ -7158,6 +7160,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
 
   window.INV.openKit = function () {
     _kitMode = 'numbered';
+    _kitOriginalName = null; // nuovo kit, nessun originale
     _syncKitTypeUI();
     document.getElementById('inv-kit-name').value = '';
     var colEl = document.getElementById('inv-kit-colore'); if (colEl) colEl.value = '';
@@ -7581,10 +7584,11 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       if (!items.length) { btn.disabled = false; alert('Nessuna riga con dati da salvare.'); return; }
     }
 
-    // Tutti gli id esistenti di questo kit (per nome, anche legacy _ktName):
-    // li mando al server come removeIds per garantire che nessun orfano/duplicato resti.
+    // Usa il nome originale (al momento dell'apertura in modifica) per rimuovere gli
+    // item vecchi. Se è un kit nuovo (_kitOriginalName === null) usa il nome corrente.
+    var originalName = _kitOriginalName !== null ? _kitOriginalName : name;
     var removeIds = _items
-      .filter(function(it){ return it._kitName === name || it._ktName === name; })
+      .filter(function(it){ return it._kitName === originalName || it._ktName === originalName; })
       .map(function(it){ return it.id; })
       .filter(Boolean);
 
@@ -7592,7 +7596,8 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       var r = await fetch('/api/data?action=inventory', {
         method: 'POST',
         headers: authHeaders(),
-        body: JSON.stringify({ act: 'upsert-kit', kitName: name, items: items, removeIds: removeIds })
+        // originalKitName = nome da rimuovere dal server; kitName = nome da assegnare ai nuovi item
+        body: JSON.stringify({ act: 'upsert-kit', kitName: originalName, newKitName: name, items: items, removeIds: removeIds })
       });
       var d = await r.json();
       btn.disabled = false;
