@@ -7487,6 +7487,18 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     var name = document.getElementById('inv-kit-name').value.trim();
     if (!name) { alert('Nome set mancante.'); return; }
 
+    // Blocca se il nome scelto è già usato da un ALTRO kit (rinomina che creerebbe fusione)
+    var originalName0 = _kitOriginalName !== null ? _kitOriginalName : name;
+    if (name !== originalName0) {
+      var nameCollision = _items.some(function(it){
+        return (it._kitName === name || it._ktName === name) && it._kitName !== originalName0 && it._ktName !== originalName0;
+      });
+      if (nameCollision) {
+        alert('⚠️ Esiste già un kit chiamato "' + name + '".\nScegli un nome diverso o elimina prima il kit esistente.');
+        return;
+      }
+    }
+
     // Colore + Tipologia sono a livello di set: valgono per tutti gli articoli del kit
     var kitColore    = (document.getElementById('inv-kit-colore') || {}).value || '';
     var kitTipologia = (document.getElementById('inv-kit-tipologia') || {}).value || '';
