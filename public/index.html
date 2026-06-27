@@ -7885,22 +7885,35 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       var rowCat = (rowCatSel && rowCatSel.value) ? rowCatSel.value : cat;
 
       if (isKit) {
+        // Categoria del kit: dalla select per riga se visibile, altrimenti dal kit esistente
+        var kitCatExisting = _items.find(function(it){ return it._kitName === kitName && it.categoria; });
+        var kitImpCat = (rowCatSel && rowCatSel.closest('td') && rowCatSel.closest('td').style.display !== 'none' && rowCatSel.value)
+          ? rowCatSel.value
+          : (kitCatExisting ? kitCatExisting.categoria : 'Maglie da calcio');
         // Modalità kit: una voce per atleta con numero
         activeAthletes.forEach(function(a) {
           var pid   = a.id;
           var entry = (matData[pid] || {})[itm];
           var num   = String((matData[pid] || {})._numero || '').trim();
-          if (!entry || !entry.status) return; // mai assegnato → skip
+          var taglia = (entry && entry.taglia) || '';
+          var nota   = (entry && entry.nota)   || '';
+          // Atleta con numero ma articolo MAI consegnato → importa come mancante con nota
+          if (num && (!entry || !entry.status)) {
+            var existingNever = _items.find(function(it){ return it._kitName === kitName && String(it._kitNum) === num; });
+            if (!existingNever) {
+              _importPreviewItems.push({ categoria: kitImpCat, nome: kitName + ' N°' + num, quantita: 1, taglia: taglia, condizione: 'mancante', note: 'Mai consegnato', _kitName: kitName, _kitNum: num });
+            }
+            return;
+          }
+          if (!entry || !entry.status) return; // senza numero e senza status → skip
           if (entry.status !== 'consegnato' && entry.status !== 'restituito') return;
           // restituito = in magazzino → buono; consegnato = ancora dall'atleta → mancante
           var isReturned = entry.status === 'restituito';
-          var taglia = entry.taglia || '';
-          var nota   = entry.nota   || '';
           if (num) {
             var existing = _items.find(function(it){ return it._kitName === kitName && String(it._kitNum) === num; });
             if (!existing) {
               var cond = isReturned ? 'buono' : 'mancante';
-              _importPreviewItems.push({ categoria: 'Maglie da calcio', nome: kitName + ' N°' + num, quantita: 1, taglia: taglia, condizione: cond, note: nota, _kitName: kitName, _kitNum: num });
+              _importPreviewItems.push({ categoria: kitImpCat, nome: kitName + ' N°' + num, quantita: 1, taglia: taglia, condizione: cond, note: nota, _kitName: kitName, _kitNum: num });
             }
           } else {
             // senza numero: restituito → scorta buona; consegnato → mancante aggregato per taglia
@@ -7923,10 +7936,12 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         var groups = {};
         activeAthletes.forEach(function(a) {
           var entry = (matData[a.id] || {})[itm];
-          if (!entry || !entry.status) return; // mai assegnato → skip
+          if (!entry || !entry.status) return; // mai assegnato (Nessuno) → skip
+          // Solo consegnato e restituito: altri status (es. '') vengono ignorati
+          if (entry.status !== 'consegnato' && entry.status !== 'restituito') return;
           var t = entry.taglia || '';
           if (!groups[t]) groups[t] = {c:0, m:0};
-          // restituito = in magazzino → buono; consegnato = ancora dall'atleta → mancante
+          // restituito = tornato in magazzino → buono; consegnato = ancora dall'atleta → mancante
           if (entry.status === 'restituito') groups[t].c += (parseInt(entry.qty)||1);
           else groups[t].m += (parseInt(entry.qty)||1);
         });
