@@ -2223,6 +2223,12 @@
                                     <input id="inv-kit-tipologia" type="text" class="form-control form-control-sm" placeholder="es. nuova 2025, più vecchia…" maxlength="60" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">
                                 </div>
                             </div>
+                            <div class="row g-2 mb-2">
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label small">📁 Categoria inventario</label>
+                                    <select id="inv-kit-cat" class="form-select form-select-sm" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;"></select>
+                                </div>
+                            </div>
                             <div class="row g-2 mb-3">
                                 <!-- Numerato: da/a -->
                                 <div class="col-6 col-md-2" id="inv-kit-from-wrap">
@@ -6746,6 +6752,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     var tipEl = document.getElementById('inv-kit-tipologia');
     if (colEl) colEl.value = (anyKitItem && anyKitItem._kitColore) || '';
     if (tipEl) tipEl.value = (anyKitItem && anyKitItem._kitTipologia) || '';
+    _fillKitCatSelect((anyKitItem && anyKitItem.categoria) || _cats[0] || 'Maglie da calcio');
     // Auto-rileva la modalità dal tipo di item: se esistono item con _kitNum → numerato, altrimenti per taglia
     var hasNumbered = allKitItems.some(function(it){ return it._kitNum != null && !it._kitExtra; });
     _kitMode = hasNumbered ? 'numbered' : 'taglia';
@@ -7095,16 +7102,17 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   window.INV.exportExcelTaglie = function () {
     if (!_items.length) { alert('Nessuna voce da esportare.'); return; }
     var ann = _annataName();
-    // groups[key] = { categoria, colore, tipologia, taglia, condizione, nums:[], qty:0, note:Set }
+    // groups[key] = { nome, categoria, colore, tipologia, taglia, condizione, nums:[], qty:0, note:[] }
     var groups = {};
     _items.forEach(function (it) {
-      var colore     = it._kitColore || '';
-      var tipologia  = it._kitTipologia || '';
-      var taglia     = it.taglia || '';
-      var cond       = it.condizione || 'buono';
-      var key = [it.categoria, colore, tipologia, taglia, cond].join('||');
+      var nomeSet   = it._kitName || it.nome || '';
+      var colore    = it._kitColore || '';
+      var tipologia = it._kitTipologia || '';
+      var taglia    = it.taglia || '';
+      var cond      = it.condizione || 'buono';
+      var key = [it.categoria, nomeSet, colore, tipologia, taglia, cond].join('||');
       if (!groups[key]) {
-        groups[key] = { categoria: it.categoria, colore: colore, tipologia: tipologia,
+        groups[key] = { nome: nomeSet, categoria: it.categoria, colore: colore, tipologia: tipologia,
                         taglia: taglia, condizione: cond, nums: [], qty: 0, note: [] };
       }
       var g = groups[key];
@@ -7125,13 +7133,13 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       return sorted.join('-');
     }
 
-    var header = ['Annata','Categoria','Colore','Tipologia','Taglia','Numeri','Quantità','Condizione','Note'];
+    var header = ['Annata','Categoria','Colore','Tipologia','Nome/Descrizione','Taglia','Numeri','Quantità','Condizione','Note'];
     var rows = [header];
-    // Ordina le righe per categoria, colore, taglia
+    // Ordina le righe per categoria, nome, taglia
     Object.keys(groups).sort().forEach(function (k) {
       var g = groups[k];
       rows.push([
-        ann, g.categoria, g.colore, g.tipologia, g.taglia,
+        ann, g.categoria, g.colore, g.tipologia, g.nome, g.taglia,
         compactNums(g.nums), g.qty, COND_EXP[g.condizione] || g.condizione,
         g.note.join(' · ')
       ]);
@@ -7139,7 +7147,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
 
     if (window.XLSX) {
       var ws = XLSX.utils.aoa_to_sheet(rows);
-      ws['!cols'] = [14,20,12,16,12,28,9,14,30].map(function(w){ return { wch: w }; });
+      ws['!cols'] = [14,20,12,16,28,12,28,9,14,30].map(function(w){ return { wch: w }; });
       var wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Per taglie');
       XLSX.writeFile(wb, 'inventario_taglie_' + _annLabel() + '.xlsx');
@@ -7165,6 +7173,14 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     calzettoni:    ['28-30','31-33','34-36','37-39','40-42','43-45']
   };
 
+  function _fillKitCatSelect(selectedCat) {
+    var sel = document.getElementById('inv-kit-cat');
+    if (!sel) return;
+    sel.innerHTML = _cats.map(function(c){
+      return '<option' + (c === selectedCat ? ' selected' : '') + '>' + esc(c) + '</option>';
+    }).join('');
+  }
+
   window.INV.openKit = function () {
     _kitMode = 'numbered';
     _kitOriginalName = null; // nuovo kit, nessun originale
@@ -7172,6 +7188,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     document.getElementById('inv-kit-name').value = '';
     var colEl = document.getElementById('inv-kit-colore'); if (colEl) colEl.value = '';
     var tipEl = document.getElementById('inv-kit-tipologia'); if (tipEl) tipEl.value = '';
+    _fillKitCatSelect(_cats[0] || 'Maglie da calcio');
     document.getElementById('inv-kit-from').value = 1;
     document.getElementById('inv-kit-to').value   = 20;
     document.getElementById('inv-kit-grid').innerHTML = '';
@@ -7507,10 +7524,11 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       }
     }
 
-    // Colore + Tipologia sono a livello di set: valgono per tutti gli articoli del kit
+    // Colore, Tipologia e Categoria sono a livello di set: valgono per tutti gli articoli del kit
     var kitColore    = (document.getElementById('inv-kit-colore') || {}).value || '';
     var kitTipologia = (document.getElementById('inv-kit-tipologia') || {}).value || '';
-    kitColore = kitColore.trim(); kitTipologia = kitTipologia.trim();
+    var kitCategoria = (document.getElementById('inv-kit-cat') || {}).value || _cats[0] || 'Maglie da calcio';
+    kitColore = kitColore.trim(); kitTipologia = kitTipologia.trim(); kitCategoria = kitCategoria.trim();
 
     var btn = document.getElementById('inv-kit-save-btn');
     btn.disabled = true;
@@ -7539,7 +7557,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         if (!existing && !taglia && condizione === 'buono' && !note && !sponsor) return;
         items.push({
           id: existing ? existing.id : '',
-          categoria: 'Maglie da calcio',
+          categoria: kitCategoria,
           nome: name + ' N°' + num,
           quantita: 1,
           taglia, condizione, note, sponsor, sponsorNome,
@@ -7566,7 +7584,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         var ex         = extraExisting[i] || null;
         items.push({
           id: ex ? ex.id : '',
-          categoria: 'Maglie da calcio',
+          categoria: kitCategoria,
           nome: name + ' (scorta' + (taglia ? ' ' + taglia : '') + ')',
           quantita, taglia, condizione, note, sponsor, sponsorNome,
           _kitName: name,
@@ -7580,9 +7598,6 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       // senza _kitNum. Marcati _kitExtra per coerenza con la vista raggruppata.
       let tagRows = document.querySelectorAll('#inv-kit-grid tr[data-row]');
       if (!tagRows.length) { btn.disabled = false; alert('Genera prima la griglia.'); return; }
-      // Categoria del kit: prendi quella degli item esistenti, altrimenti default
-      var kitCatItem = _items.find(function(it){ return (it._kitName === name || it._ktName === name) && it.categoria; });
-      var kitCat = kitCatItem ? kitCatItem.categoria : (_cats[0] || 'Altro');
       tagRows.forEach(function (tr) {
         var taglia     = tr.querySelector('.kit-taglia').value;
         var qtyEl      = tr.querySelector('.kit-qty');
@@ -7596,7 +7611,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         if (!taglia && condizione === 'buono' && !note && !sponsor) return; // salta righe vuote
         items.push({
           id: '',
-          categoria: kitCat,
+          categoria: kitCategoria,
           nome: name + (taglia ? ' — ' + taglia : '') + ' ×' + quantita,
           quantita: quantita,
           taglia, condizione, note, sponsor, sponsorNome,
