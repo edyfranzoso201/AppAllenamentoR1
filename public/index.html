@@ -6744,18 +6744,24 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     document.getElementById('inv-kit-name').value = kitName;
     document.getElementById('inv-kit-save-btn').style.display = '';
     // Recupera colore/tipologia dal primo item del kit (sono a livello di set)
-    var anyKitItem = _items.find(function(it){ return it._kitName === kitName; });
+    var allKitItems = _items.filter(function(it){ return it._kitName === kitName || it._ktName === kitName; });
+    var anyKitItem = allKitItems[0] || null;
     var colEl = document.getElementById('inv-kit-colore');
     var tipEl = document.getElementById('inv-kit-tipologia');
     if (colEl) colEl.value = (anyKitItem && anyKitItem._kitColore) || '';
     if (tipEl) tipEl.value = (anyKitItem && anyKitItem._kitTipologia) || '';
-    var kitItems = _items.filter(function(it){ return it._kitName === kitName && it._kitNum != null; });
-    // Considera solo i numeri interi validi per il range da/a (ignora "GK", "1A"…).
-    var nums = kitItems.map(function(it){ return parseInt(it._kitNum, 10); }).filter(function(n){ return !isNaN(n); });
-    var minN = nums.length ? Math.min.apply(null, nums) : 1;
-    var maxN = nums.length ? Math.max.apply(null, nums) : 20;
-    document.getElementById('inv-kit-from').value = minN;
-    document.getElementById('inv-kit-to').value   = maxN;
+    // Auto-rileva la modalità dal tipo di item: se esistono item con _kitNum → numerato, altrimenti per taglia
+    var hasNumbered = allKitItems.some(function(it){ return it._kitNum != null && !it._kitExtra; });
+    _kitMode = hasNumbered ? 'numbered' : 'taglia';
+    _syncKitTypeUI();
+    if (_kitMode === 'numbered') {
+      var nums = allKitItems.filter(function(it){ return it._kitNum != null && !it._kitExtra; })
+        .map(function(it){ return parseInt(it._kitNum, 10); }).filter(function(n){ return !isNaN(n); });
+      var minN = nums.length ? Math.min.apply(null, nums) : 1;
+      var maxN = nums.length ? Math.max.apply(null, nums) : 20;
+      document.getElementById('inv-kit-from').value = minN;
+      document.getElementById('inv-kit-to').value   = maxN;
+    }
     bootstrap.Modal.getOrCreateInstance(document.getElementById('invKitModal')).show();
     // Genera automaticamente la griglia dopo che il modal è aperto
     setTimeout(function(){ window.INV.kitGenerate(); }, 300);
@@ -7900,11 +7906,18 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     }
 
     var COND_LABEL = { buono: '✅ Buono', mancante: '🟣 Mancante' };
-    var html = '<div style="font-size:0.78rem;color:#94a3b8;margin-bottom:4px;">Anteprima — ' + _importPreviewItems.length + ' voci:</div>' +
+    var html = '<div style="font-size:0.78rem;color:#94a3b8;margin-bottom:4px;">' +
+      'Anteprima — <strong style="color:#e2e8f0;">' + _importPreviewItems.length + ' voci</strong>. ' +
+      'Deseleziona le righe che <u>non</u> vuoi importare.' +
+      ' <button type="button" onclick="window.INV._impSelectAll(true)" class="btn btn-xs btn-outline-secondary" style="font-size:0.7rem;padding:1px 6px;">Seleziona tutto</button>' +
+      ' <button type="button" onclick="window.INV._impSelectAll(false)" class="btn btn-xs btn-outline-secondary" style="font-size:0.7rem;padding:1px 6px;">Deseleziona tutto</button>' +
+      '</div>' +
       '<table class="table table-dark table-sm mb-0" style="font-size:0.78rem;">' +
-      '<thead><tr><th>Nome</th><th>Taglia</th><th>Qtà</th><th>Cond.</th><th>Kit</th></tr></thead><tbody>';
-    _importPreviewItems.forEach(function(it) {
-      html += '<tr><td>' + esc(it.nome) + '</td><td>' + esc(it.taglia||'—') + '</td>' +
+      '<thead><tr><th style="width:32px;"></th><th>Nome</th><th>Taglia</th><th>Qtà</th><th>Cond.</th><th>Kit</th></tr></thead><tbody>';
+    _importPreviewItems.forEach(function(it, idx) {
+      html += '<tr>' +
+        '<td style="text-align:center;vertical-align:middle;"><input type="checkbox" class="imp-row-chk" data-idx="' + idx + '" checked style="width:16px;height:16px;cursor:pointer;"></td>' +
+        '<td>' + esc(it.nome) + '</td><td>' + esc(it.taglia||'—') + '</td>' +
         '<td style="text-align:center;">' + it.quantita + '</td>' +
         '<td>' + (COND_LABEL[it.condizione]||it.condizione) + '</td>' +
         '<td style="color:#fbbf24;">' + (it._kitName ? esc(it._kitName) : '—') + '</td></tr>';
@@ -7914,8 +7927,21 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     if (btn) btn.style.display = '';
   };
 
+  window.INV._impSelectAll = function (checked) {
+    document.querySelectorAll('#inv-import-mat-preview .imp-row-chk').forEach(function(chk){ chk.checked = checked; });
+  };
+
   window.INV.execImportMateriale = async function () {
     if (!_importPreviewItems.length) return;
+    // Importa solo le voci con checkbox selezionata
+    var selectedItems = [];
+    document.querySelectorAll('#inv-import-mat-preview .imp-row-chk').forEach(function(chk) {
+      if (chk.checked) {
+        var idx = parseInt(chk.dataset.idx);
+        if (!isNaN(idx) && _importPreviewItems[idx]) selectedItems.push(_importPreviewItems[idx]);
+      }
+    });
+    if (!selectedItems.length) { alert('Nessuna voce selezionata.'); return; }
     var btn = document.getElementById('inv-import-mat-confirm-btn');
     var res = document.getElementById('inv-import-mat-result');
     if (btn) btn.disabled = true;
@@ -7923,7 +7949,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       var r = await fetch('/api/data?action=inventory', {
         method: 'POST',
         headers: authHeaders(),
-        body: JSON.stringify({ act: 'upsert-many', items: _importPreviewItems })
+        body: JSON.stringify({ act: 'upsert-many', items: selectedItems })
       });
       var d = await r.json();
       if (btn) btn.disabled = false;
