@@ -7297,9 +7297,10 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
 
     // In presenza di duplicati per lo stesso numero, preferisci l'item con taglia
     // valorizzata (evita di mostrare una taglia vuota/sbagliata di un duplicato).
+    // Cerca sia _kitName sia _ktName (legacy) per trovare tutti gli item del kit.
     var existing = {};
     _items.forEach(function (it) {
-      if (it._kitName === name && it._kitNum != null) {
+      if ((it._kitName === name || it._ktName === name) && it._kitNum != null) {
         var prev = existing[it._kitNum];
         if (!prev) { existing[it._kitNum] = it; }
         else if (!prev.taglia && it.taglia) { existing[it._kitNum] = it; }
@@ -7319,10 +7320,10 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         '<td><input type="text" class="form-control form-control-sm kit-note" maxlength="200" placeholder="Note…" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;"></td>' +
         '</tr>';
     }
-    // Sezione scorte senza numero
+    // Sezione scorte senza numero (cerca anche _ktName legacy)
     var extraExisting = [];
     _items.forEach(function(it){
-      if (it._kitName === name && it._kitNum == null && it._kitExtra) extraExisting.push(it);
+      if ((it._kitName === name || it._ktName === name) && it._kitNum == null && it._kitExtra) extraExisting.push(it);
     });
     var extraRows = extraExisting.length ? extraExisting.length : 1;
 
