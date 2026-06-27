@@ -567,6 +567,9 @@ function sanitizeInvItem(raw) {
   if (raw._kitName) item._kitName = String(raw._kitName).slice(0, 80);
   if (raw._kitNum  != null) item._kitNum = String(raw._kitNum).replace(/[^a-zA-Z0-9]/g, '').slice(0, 4) || '1';
   if (raw._kitExtra) item._kitExtra = true;
+  // Colore + Tipologia a livello di set (testo libero)
+  if (raw._kitColore)    item._kitColore    = String(raw._kitColore).slice(0, 40);
+  if (raw._kitTipologia) item._kitTipologia = String(raw._kitTipologia).slice(0, 60);
   // Metadati kit per taglia (pantaloncini, calzettoni ecc.)
   if (raw._ktName) item._ktName = String(raw._ktName).slice(0, 80);
   // Sponsor

@@ -2102,8 +2102,11 @@
                         <button id="inv-cat-btn" class="btn btn-sm btn-outline-info no-print" onclick="window.INV.openCategories()" style="display:none;">
                             <i class="bi bi-tags-fill"></i> Categorie
                         </button>
-                        <button class="btn btn-sm btn-outline-success no-print" onclick="window.INV.exportExcel()" title="Esporta Excel inventario">
+                        <button class="btn btn-sm btn-outline-success no-print" onclick="window.INV.exportExcel()" title="Esporta Excel inventario (una riga per articolo)">
                             <i class="bi bi-file-earmark-excel-fill"></i> Excel
+                        </button>
+                        <button class="btn btn-sm btn-outline-success no-print" onclick="window.INV.exportExcelTaglie()" title="Esporta Excel raggruppato per taglie (numeri compattati)">
+                            <i class="bi bi-rulers"></i> Excel per taglie
                         </button>
                         <button id="inv-copy-btn" class="btn btn-sm btn-outline-light no-print" onclick="window.INV.openCopyTemplate()" style="display:none;" title="Copia struttura inventario in altre annate">
                             <i class="bi bi-copy"></i> Copia template
@@ -2203,11 +2206,21 @@
                                     <i class="bi bi-list-ul"></i> Per taglia (pantaloncini, calzettoni…)
                                 </button>
                             </div>
-                            <div class="row g-2 mb-3">
+                            <div class="row g-2 mb-2">
                                 <div class="col-12 col-md-5">
                                     <label class="form-label small">Nome set <span style="color:#f87171;">*</span></label>
                                     <input id="inv-kit-name" type="text" class="form-control form-control-sm" placeholder="es. Divisa Rossa, Pantaloncini Neri…" maxlength="80" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">
                                 </div>
+                                <div class="col-6 col-md-3">
+                                    <label class="form-label small">🎨 Colore</label>
+                                    <input id="inv-kit-colore" type="text" class="form-control form-control-sm" placeholder="es. Blu, Rossa…" maxlength="40" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <label class="form-label small">🏷️ Tipologia</label>
+                                    <input id="inv-kit-tipologia" type="text" class="form-control form-control-sm" placeholder="es. nuova 2025, più vecchia…" maxlength="60" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">
+                                </div>
+                            </div>
+                            <div class="row g-2 mb-3">
                                 <!-- Numerato: da/a -->
                                 <div class="col-6 col-md-2" id="inv-kit-from-wrap">
                                     <label class="form-label small">Da numero</label>
@@ -6577,6 +6590,14 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         // stato toggle: 'num' (default) | 'taglia'
         var viewMode = (window._kitViewMode && window._kitViewMode[kitKey]) || 'num';
 
+        // Colore + Tipologia (a livello di set): presi dal primo item che li ha
+        var kitMeta   = allKitRows.find(function(it){ return it._kitColore || it._kitTipologia; });
+        var kitColore = kitMeta ? (kitMeta._kitColore || '') : '';
+        var kitTipo   = kitMeta ? (kitMeta._kitTipologia || '') : '';
+        var metaBadge = '';
+        if (kitColore) metaBadge += '<span class="badge" style="background:#0e7490;font-size:0.72rem;">🎨 ' + esc(kitColore) + '</span> ';
+        if (kitTipo)   metaBadge += '<span class="badge" style="background:#475569;font-size:0.72rem;">🏷️ ' + esc(kitTipo) + '</span> ';
+
         var toggleBtn =
           '<div class="btn-group btn-group-sm ms-auto no-print" role="group">' +
             '<button type="button" class="btn btn-xs ' + (viewMode==='num' ? 'btn-warning' : 'btn-outline-secondary') + '" ' +
@@ -6589,6 +6610,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
           '<div class="card-body p-2">' +
           '<div class="d-flex align-items-center gap-2 mb-2 flex-wrap">' +
           '<span style="font-weight:700;color:#fbbf24;font-size:0.9rem;"><i class="bi bi-grid-3x3-gap-fill"></i> ' + esc(kitName) + '</span>' +
+          metaBadge +
           '<span class="badge bg-secondary" style="font-size:0.75rem;">' + totale + ' articoli</span>' +
           (extraRows.length ? '<span class="badge bg-info text-dark" style="font-size:0.75rem;">+' + extraRows.reduce(function(s,it){ return s+(it.quantita||1);},0) + ' scorte</span>' : '') +
           mancBadge +
@@ -6715,6 +6737,12 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   window.INV.editKit = function (kitName) {
     document.getElementById('inv-kit-name').value = kitName;
     document.getElementById('inv-kit-save-btn').style.display = '';
+    // Recupera colore/tipologia dal primo item del kit (sono a livello di set)
+    var anyKitItem = _items.find(function(it){ return it._kitName === kitName; });
+    var colEl = document.getElementById('inv-kit-colore');
+    var tipEl = document.getElementById('inv-kit-tipologia');
+    if (colEl) colEl.value = (anyKitItem && anyKitItem._kitColore) || '';
+    if (tipEl) tipEl.value = (anyKitItem && anyKitItem._kitTipologia) || '';
     var kitItems = _items.filter(function(it){ return it._kitName === kitName && it._kitNum != null; });
     var nums = kitItems.map(function(it){ return it._kitNum; });
     var minN = Math.min.apply(null, nums) || 1;
@@ -6977,55 +7005,120 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   };
 
   // ── export Excel (usa SheetJS se disponibile, altrimenti CSV) ──
+  var COND_EXP = { buono: 'Buono', riparazione: 'Da riparare', fuori_uso: 'Fuori uso', mancante: 'Mancante' };
+
+  // Nome annata sportiva corrente (per la colonna "Annata")
+  function _annataName() { return ss('gosport_current_annata_name') || annataId() || ''; }
+  function _annLabel() { return (_annataName() || 'annata').replace(/[^a-zA-Z0-9_\-\.]/g, '_'); }
+
+  // Estrae il numero maglia "puro" da un item kit numerato (colonna singola).
+  function _itemNumero(it) {
+    if (it._kitNum != null && it._kitNum !== '') return String(it._kitNum);
+    return '';
+  }
+
+  // ── Export Excel: colonne singole (Annata, Colore, Tipologia, Numero) ──
   window.INV.exportExcel = function () {
     if (!_items.length) { alert('Nessuna voce da esportare.'); return; }
-    var condLabel = { buono: 'Buono', riparazione: 'Da riparare', fuori_uso: 'Fuori uso', mancante: 'Mancante' };
-    var annLabel  = (ss('gosport_current_annata_name') || annataId() || 'annata').replace(/[^a-zA-Z0-9_\-\.]/g, '_');
-
-    // Totale per kit = presenti + mancanti (separati per calcolare ratio corretto)
-    var kitPresenti = {}, kitMancanti = {};
-    _items.forEach(function(it){
-      if (it._kitName && !it._kitExtra) {
-        if (!kitPresenti[it._kitName]) kitPresenti[it._kitName] = 0;
-        if (!kitMancanti[it._kitName]) kitMancanti[it._kitName] = 0;
-        if (it.condizione === 'mancante') kitMancanti[it._kitName] += (it.quantita || 1);
-        else kitPresenti[it._kitName] += (it.quantita || 1);
-      }
-    });
-
-    function suTotale(it) {
-      if (it.condizione !== 'mancante' || !it._kitName) return '';
-      var totale = (kitPresenti[it._kitName] || 0) + (kitMancanti[it._kitName] || 0);
-      return totale > 0 ? (it.quantita||1) + '/' + totale : '';
+    var ann = _annataName();
+    var header = ['Annata','Categoria','Colore','Tipologia','Numero','Nome/Descrizione','Quantità','Taglia','Condizione','Note','Con Sponsor','Nome Sponsor'];
+    function rowFor(it) {
+      return [
+        ann,
+        it.categoria,
+        it._kitColore || '',
+        it._kitTipologia || '',
+        _itemNumero(it),
+        it.nome,
+        it.quantita,
+        it.taglia || '',
+        COND_EXP[it.condizione] || it.condizione,
+        it.note || '',
+        it.sponsor ? 'Sì' : 'No',
+        it.sponsorNome || ''
+      ];
     }
-
-    var header = ['Categoria','Nome/Descrizione','Quantità','Su totale','Taglia','Condizione','Note','Con Sponsor','Nome Sponsor'];
     if (window.XLSX) {
       var rows = [header];
-      _items.forEach(function (it) {
-        rows.push([
-          it.categoria, it.nome, it.quantita, suTotale(it), it.taglia || '',
-          condLabel[it.condizione] || it.condizione, it.note || '',
-          it.sponsor ? 'Sì' : 'No', it.sponsorNome || ''
-        ]);
-      });
+      _items.forEach(function (it) { rows.push(rowFor(it)); });
       var ws = XLSX.utils.aoa_to_sheet(rows);
-      ws['!cols'] = [20,30,8,10,10,14,30,12,25].map(function(w){ return { wch: w }; });
+      ws['!cols'] = [14,20,12,16,8,30,8,12,14,30,12,25].map(function(w){ return { wch: w }; });
       var wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
-      XLSX.writeFile(wb, 'inventario_' + annLabel + '.xlsx');
+      XLSX.writeFile(wb, 'inventario_' + _annLabel() + '.xlsx');
     } else {
       var csv = header.join(',') + '\n';
       _items.forEach(function (it) {
-        csv += [
-          it.categoria, it.nome, it.quantita, suTotale(it), it.taglia || '',
-          condLabel[it.condizione] || it.condizione, (it.note || '').replace(/\n/g,' '),
-          it.sponsor ? 'Sì' : 'No', it.sponsorNome || ''
-        ].map(function (v) { return '"' + String(v).replace(/"/g,'""') + '"'; }).join(',') + '\n';
+        csv += rowFor(it).map(function (v) { return '"' + String(v).replace(/"/g,'""') + '"'; }).join(',') + '\n';
       });
       var a = document.createElement('a');
       a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-      a.download = 'inventario_' + annLabel + '.csv';
+      a.download = 'inventario_' + _annLabel() + '.csv';
+      a.click();
+    }
+  };
+
+  // ── Export Excel raggruppato per Taglie ──
+  // Una riga per ogni combinazione Categoria + Colore + Tipologia + Taglia + Condizione,
+  // con i numeri maglia compattati in un elenco (es. "3-5-7-8-9…") nella colonna Numeri.
+  window.INV.exportExcelTaglie = function () {
+    if (!_items.length) { alert('Nessuna voce da esportare.'); return; }
+    var ann = _annataName();
+    // groups[key] = { categoria, colore, tipologia, taglia, condizione, nums:[], qty:0, note:Set }
+    var groups = {};
+    _items.forEach(function (it) {
+      var colore     = it._kitColore || '';
+      var tipologia  = it._kitTipologia || '';
+      var taglia     = it.taglia || '';
+      var cond       = it.condizione || 'buono';
+      var key = [it.categoria, colore, tipologia, taglia, cond].join('||');
+      if (!groups[key]) {
+        groups[key] = { categoria: it.categoria, colore: colore, tipologia: tipologia,
+                        taglia: taglia, condizione: cond, nums: [], qty: 0, note: [] };
+      }
+      var g = groups[key];
+      var num = _itemNumero(it);
+      if (num) g.nums.push(num);
+      g.qty += (it.quantita || 1);
+      if (it.note && g.note.indexOf(it.note) === -1) g.note.push(it.note);
+    });
+
+    // Compatta i numeri: ordina numericamente quando possibile, poi unisce con "-"
+    function compactNums(nums) {
+      if (!nums.length) return '';
+      var sorted = nums.slice().sort(function (a, b) {
+        var na = parseInt(a, 10), nb = parseInt(b, 10);
+        if (!isNaN(na) && !isNaN(nb) && na !== nb) return na - nb;
+        return String(a).localeCompare(String(b));
+      });
+      return sorted.join('-');
+    }
+
+    var header = ['Annata','Categoria','Colore','Tipologia','Taglia','Numeri','Quantità','Condizione','Note'];
+    var rows = [header];
+    // Ordina le righe per categoria, colore, taglia
+    Object.keys(groups).sort().forEach(function (k) {
+      var g = groups[k];
+      rows.push([
+        ann, g.categoria, g.colore, g.tipologia, g.taglia,
+        compactNums(g.nums), g.qty, COND_EXP[g.condizione] || g.condizione,
+        g.note.join(' · ')
+      ]);
+    });
+
+    if (window.XLSX) {
+      var ws = XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols'] = [14,20,12,16,12,28,9,14,30].map(function(w){ return { wch: w }; });
+      var wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Per taglie');
+      XLSX.writeFile(wb, 'inventario_taglie_' + _annLabel() + '.xlsx');
+    } else {
+      var csv = rows.map(function (r) {
+        return r.map(function (v) { return '"' + String(v).replace(/"/g,'""') + '"'; }).join(',');
+      }).join('\n');
+      var a = document.createElement('a');
+      a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+      a.download = 'inventario_taglie_' + _annLabel() + '.csv';
       a.click();
     }
   };
@@ -7044,6 +7137,8 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     _kitMode = 'numbered';
     _syncKitTypeUI();
     document.getElementById('inv-kit-name').value = '';
+    var colEl = document.getElementById('inv-kit-colore'); if (colEl) colEl.value = '';
+    var tipEl = document.getElementById('inv-kit-tipologia'); if (tipEl) tipEl.value = '';
     document.getElementById('inv-kit-from').value = 1;
     document.getElementById('inv-kit-to').value   = 20;
     document.getElementById('inv-kit-grid').innerHTML = '';
@@ -7339,6 +7434,11 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     var name = document.getElementById('inv-kit-name').value.trim();
     if (!name) { alert('Nome set mancante.'); return; }
 
+    // Colore + Tipologia sono a livello di set: valgono per tutti gli articoli del kit
+    var kitColore    = (document.getElementById('inv-kit-colore') || {}).value || '';
+    var kitTipologia = (document.getElementById('inv-kit-tipologia') || {}).value || '';
+    kitColore = kitColore.trim(); kitTipologia = kitTipologia.trim();
+
     var btn = document.getElementById('inv-kit-save-btn');
     btn.disabled = true;
     var items = [];
@@ -7366,7 +7466,9 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
           quantita: 1,
           taglia, condizione, note, sponsor, sponsorNome,
           _kitName: name,
-          _kitNum: num
+          _kitNum: num,
+          _kitColore: kitColore,
+          _kitTipologia: kitTipologia
         });
       });
       // Scorte senza numero
@@ -7390,7 +7492,9 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
           nome: name + ' (scorta' + (taglia ? ' ' + taglia : '') + ')',
           quantita, taglia, condizione, note, sponsor, sponsorNome,
           _kitName: name,
-          _kitExtra: true
+          _kitExtra: true,
+          _kitColore: kitColore,
+          _kitTipologia: kitTipologia
         });
       });
     } else {
@@ -7398,7 +7502,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       let tagRows = document.querySelectorAll('#inv-kit-grid tr[data-row]');
       if (!tagRows.length) { btn.disabled = false; alert('Genera prima la griglia.'); return; }
       var existingArr = [];
-      _items.forEach(function(it){ if (it._ktName === name && it._kitNum == null) existingArr.push(it); });
+      _items.forEach(function(it){ if (it._kitName === name && it._kitNum == null && !it._kitExtra) existingArr.push(it); });
       tagRows.forEach(function (tr, i) {
         var taglia     = tr.querySelector('.kit-taglia').value;
         var condizione = tr.querySelector('.kit-cond').value;
@@ -7415,7 +7519,9 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
           nome: name + (taglia ? ' — ' + taglia : ''),
           quantita: 1,
           taglia, condizione, note, sponsor, sponsorNome,
-          _ktName: name
+          _kitName: name,
+          _kitColore: kitColore,
+          _kitTipologia: kitTipologia
         });
       });
       if (!items.length) { btn.disabled = false; alert('Nessuna riga con dati da salvare.'); return; }
