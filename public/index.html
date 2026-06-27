@@ -7510,8 +7510,13 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         var sponsor    = !!(spChk && spChk.checked);
         var sponsorNome= sponsor ? ((spNome && spNome.value.trim()) || '') : '';
         // cerca per numero originale (dataset.num) per mantenere l'id esistente
+        // (cerca sia _kitName sia _ktName legacy)
         var origNum    = String(tr.dataset.num);
-        var existing   = _items.find(function(it){ return it._kitName === name && String(it._kitNum) === origNum; });
+        var existing   = _items.find(function(it){
+          return (it._kitName === originalName || it._ktName === originalName) && String(it._kitNum) === origNum;
+        });
+        // salta righe vuote che non corrispondono a un articolo reale del kit
+        if (!existing && !taglia && condizione === 'buono' && !note && !sponsor) return;
         items.push({
           id: existing ? existing.id : '',
           categoria: 'Maglie da calcio',
