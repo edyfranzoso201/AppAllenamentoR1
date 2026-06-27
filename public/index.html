@@ -2337,12 +2337,8 @@
                         </div>
                         <div class="modal-body">
                             <p class="small mb-2" style="color:#94a3b8;">
-                                Per ogni articolo scegli come importarlo. Maglie con numero atleta → usa lo stesso formato kit dell'inventario (badge N°).
+                                Per ogni articolo: spunta per importare, scegli kit (maglie con N°) o categoria di destinazione.
                             </p>
-                            <div class="mb-2">
-                                <label class="form-label small fw-bold">Categoria destinazione (per articoli non-kit)</label>
-                                <input id="inv-import-cat" type="text" class="form-control form-control-sm" value="Materiale squadra" maxlength="80" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">
-                            </div>
                             <div id="inv-import-mat-mapping" style="max-height:360px;overflow-y:auto;margin-top:8px;"></div>
                             <div id="inv-import-mat-preview" style="max-height:200px;overflow-y:auto;margin-top:8px;display:none;"></div>
                             <div id="inv-import-mat-result" style="display:none;margin-top:8px;"></div>
@@ -7756,24 +7752,36 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       kitNames.map(function(k){ return '<option value="' + esc(k) + '">' + esc(k) + '</option>'; }).join('') +
       '<option value="__new__">✏️ Nuovo kit…</option>';
 
+    var defaultCat = (document.getElementById('inv-import-cat') || {}).value || 'Materiale squadra';
+    var catOpts = ['Maglie da calcio', 'Materiale squadra', 'Abbigliamento', 'Attrezzatura', 'Altro']
+      .concat(_cats.filter(function(c){ return ['Maglie da calcio','Materiale squadra','Abbigliamento','Attrezzatura','Altro'].indexOf(c)<0; }))
+      .map(function(c){ return '<option value="' + esc(c) + '"' + (c===defaultCat?' selected':'') + '>' + esc(c) + '</option>'; }).join('');
+
     // Riga per ogni articolo
     var html = '<table class="table table-dark table-sm" style="font-size:0.82rem;">' +
       '<thead><tr style="color:#94a3b8;">' +
+        '<th style="width:32px;text-align:center;"><input type="checkbox" id="imp-map-all-chk" checked style="width:15px;height:15px;cursor:pointer;" onchange="window.INV._impMapSelectAll(this.checked)" title="Seleziona/deseleziona tutti"></th>' +
         '<th>Articolo Materiale</th>' +
-        '<th style="min-width:180px;">Importa come</th>' +
-        '<th style="min-width:150px;">Nome kit</th>' +
-        '<th style="width:60px;text-align:center;" title="Copia questa selezione su tutti gli articoli">Copia</th>' +
+        '<th style="min-width:160px;">Importa come</th>' +
+        '<th style="min-width:130px;">Nome kit / Categoria</th>' +
+        '<th style="width:50px;text-align:center;">Copia</th>' +
       '</tr></thead><tbody>';
     matItems.forEach(function(itm, idx) {
       html += '<tr data-imp-itm="' + esc(itm) + '">' +
+        '<td style="text-align:center;vertical-align:middle;"><input type="checkbox" class="imp-map-chk" checked style="width:15px;height:15px;cursor:pointer;"></td>' +
         '<td style="vertical-align:middle;font-weight:600;color:#e2e8f0;">' + esc(itm) + '</td>' +
         '<td>' +
           '<select class="form-select form-select-sm imp-mode-sel" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;" onchange="window.INV._impModeChange(this)">' +
             kitOpts +
           '</select>' +
         '</td>' +
-        '<td class="imp-kit-name-cell" style="display:none;">' +
-          '<input type="text" class="form-control form-control-sm imp-new-kit-name" maxlength="80" placeholder="Nome kit inventario…" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">' +
+        '<td>' +
+          '<div class="imp-kit-name-cell" style="display:none;">' +
+            '<input type="text" class="form-control form-control-sm imp-new-kit-name" maxlength="80" placeholder="Nome kit…" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">' +
+          '</div>' +
+          '<div class="imp-cat-cell">' +
+            '<select class="form-select form-select-sm imp-cat-sel" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">' + catOpts + '</select>' +
+          '</div>' +
         '</td>' +
         '<td style="text-align:center;vertical-align:middle;">' +
           '<button class="btn btn-xs btn-outline-warning imp-copy-row-btn" title="Copia il nome articolo negli appunti" onclick="window.INV._impCopyRow(this)" style="font-size:0.72rem;padding:2px 7px;" data-itm="' + esc(itm) + '">' +
@@ -7790,7 +7798,14 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   window.INV._impModeChange = function (sel) {
     var tr = sel.closest('tr');
     var nameCell = tr ? tr.querySelector('.imp-kit-name-cell') : null;
+    var catCell  = tr ? tr.querySelector('.imp-cat-cell')      : null;
+    var isKit = sel.value !== ''; // qualsiasi kit (esistente o nuovo) → nasconde categoria
     if (nameCell) nameCell.style.display = (sel.value === '__new__') ? '' : 'none';
+    if (catCell)  catCell.style.display  = isKit ? 'none' : '';
+  };
+
+  window.INV._impMapSelectAll = function (checked) {
+    document.querySelectorAll('#inv-import-mat-mapping .imp-map-chk').forEach(function(chk){ chk.checked = checked; });
   };
 
   window.INV._impCopyRow = function (btn) {
@@ -7835,12 +7850,18 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
 
     // Legge la mappatura dal modal
     document.querySelectorAll('#inv-import-mat-mapping tr[data-imp-itm]').forEach(function(tr) {
+      // Salta le righe deselezionate
+      var mapChk = tr.querySelector('.imp-map-chk');
+      if (mapChk && !mapChk.checked) return;
       var itm     = tr.dataset.impItm;
       var modeSel = tr.querySelector('.imp-mode-sel');
       var mode    = modeSel ? modeSel.value : ''; // '' = aggregato, kitName = kit esistente, '__new__' = nuovo kit
       var newName = (tr.querySelector('.imp-new-kit-name') || {}).value || '';
       var kitName = (mode === '__new__') ? newName.trim() : (mode || '');
       var isKit   = !!kitName; // true = usa formato kit numerato
+      // Categoria per riga (solo modalità aggregata)
+      var rowCatSel = tr.querySelector('.imp-cat-sel');
+      var rowCat = (rowCatSel && rowCatSel.value) ? rowCatSel.value : cat;
 
       if (isKit) {
         // Modalità kit: una voce per atleta con numero
@@ -7892,9 +7913,9 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         Object.keys(groups).forEach(function(taglia) {
           var g = groups[taglia];
           if (g.c > 0 && !existKeys.has(itm+'||'+taglia+'||buono'))
-            _importPreviewItems.push({ categoria: cat, nome: itm, quantita: g.c, taglia: taglia, condizione: 'buono', note: '' });
+            _importPreviewItems.push({ categoria: rowCat, nome: itm, quantita: g.c, taglia: taglia, condizione: 'buono', note: '' });
           if (g.m > 0 && !existKeys.has(itm+'||'+taglia+'||mancante'))
-            _importPreviewItems.push({ categoria: cat, nome: itm, quantita: g.m, taglia: taglia, condizione: 'mancante', note: '' });
+            _importPreviewItems.push({ categoria: rowCat, nome: itm, quantita: g.m, taglia: taglia, condizione: 'mancante', note: '' });
         });
       }
     });
