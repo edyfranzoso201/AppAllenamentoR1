@@ -564,14 +564,15 @@ function sanitizeInvItem(raw) {
     updatedAt:  new Date().toISOString(),
   };
   // Metadati kit maglie numerato
-  if (raw._kitName) item._kitName = String(raw._kitName).slice(0, 80);
+  // Normalizza _ktName (legacy) → _kitName: tutti i nuovi item usano sempre _kitName
+  const resolvedKitName = String(raw._kitName || raw._ktName || '').slice(0, 80);
+  if (resolvedKitName) item._kitName = resolvedKitName;
   if (raw._kitNum  != null) item._kitNum = String(raw._kitNum).replace(/[^a-zA-Z0-9]/g, '').slice(0, 4) || '1';
   if (raw._kitExtra) item._kitExtra = true;
   // Colore + Tipologia a livello di set (testo libero)
   if (raw._kitColore)    item._kitColore    = String(raw._kitColore).slice(0, 40);
   if (raw._kitTipologia) item._kitTipologia = String(raw._kitTipologia).slice(0, 60);
-  // Metadati kit per taglia (pantaloncini, calzettoni ecc.)
-  if (raw._ktName) item._ktName = String(raw._ktName).slice(0, 80);
+  // _ktName NON viene più salvato (legacy sostituito da _kitName sopra)
   // Sponsor
   item.sponsor     = !!raw.sponsor;
   item.sponsorNome = item.sponsor ? String(raw.sponsorNome || '').slice(0, 120) : '';
@@ -681,7 +682,17 @@ if (req.query?.action === 'inventory') {
     if (act === 'dedup-kit') {
       let items = (await kv.get(invKey)) || [];
       if (!Array.isArray(items)) items = [];
-      const seen = new Map();   // key = _kitName||_kitNum  ->  index in result
+      // Prima passata: normalizza _ktName (legacy) → _kitName su tutti gli item
+      items = items.map(it => {
+        if (!it._kitName && it._ktName) {
+          const clone = { ...it, _kitName: it._ktName };
+          delete clone._ktName;
+          return clone;
+        }
+        return it;
+      });
+      // Seconda passata: deuplica per _kitName+_kitNum (tieni quello con taglia)
+      const seen = new Map();
       const result = [];
       let removed = 0;
       items.forEach(it => {
@@ -691,7 +702,6 @@ if (req.query?.action === 'inventory') {
             seen.set(key, result.length);
             result.push(it);
           } else {
-            // duplicato: se quello già tenuto non ha taglia ma questo sì, sostituisci
             const idx = seen.get(key);
             if (!result[idx].taglia && it.taglia) result[idx] = it;
             removed++;
