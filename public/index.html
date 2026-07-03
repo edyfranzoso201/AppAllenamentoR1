@@ -2200,6 +2200,12 @@
                                     <input id="inv-f-qty" type="number" min="0" max="9999" class="form-control form-control-sm" value="1" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">
                                 </div>
                                 <div class="col-6">
+                                    <label class="form-label small">Colore</label>
+                                    <input id="inv-f-colore" type="text" class="form-control form-control-sm" maxlength="60" placeholder="es. Blu, Rosso/Nero…" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">
+                                </div>
+                            </div>
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
                                     <label class="form-label small">Taglia</label>
                                     <select id="inv-f-taglia" class="form-select form-select-sm" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">
                                         <option value="">— nessuna —</option>
@@ -6779,11 +6785,15 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
                 '<button class="btn btn-xs btn-outline-danger" title="Elimina" onclick="window.INV.deleteItem(' + JSON.stringify(it.id).replace(/"/g,'&quot;') + ')"><i class="bi bi-trash3-fill"></i></button>' +
               '</div>'
             : '';
+          var coloreLine = it.colore
+            ? '<div style="font-size:0.65rem;color:#7dd3fc;margin-top:2px;">🎨 ' + esc(it.colore) + '</div>'
+            : '';
           html +=
             '<div style="background:var(--bg-blue);border:2px solid ' + borderCol + ';border-radius:8px;min-width:110px;max-width:130px;padding:8px 10px;text-align:center;flex:0 0 auto;">' +
               '<div style="font-size:0.78rem;font-weight:700;color:#e2e8f0;line-height:1.2;margin-bottom:4px;word-break:break-word;">' + esc(it.nome) + '</div>' +
               '<div style="font-size:1.1rem;font-weight:800;color:#e2e8f0;line-height:1;">Qtà ' + (it.quantita || 0) + '</div>' +
               '<div style="font-size:0.7rem;color:#94a3b8;margin-top:2px;">' + (it.taglia ? esc(it.taglia) : '—') + '</div>' +
+              coloreLine +
               '<div style="font-size:0.75rem;margin-top:3px;">' + condI + '</div>' +
               sponsorLine + noteLine + actions +
             '</div>';
@@ -6965,11 +6975,12 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     // Popola select categorie
     var catSel = document.getElementById('inv-f-cat');
     catSel.innerHTML = _cats.map(function (c) { return '<option' + (it && it.categoria === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('');
-    document.getElementById('inv-f-id').value    = it ? it.id : '';
-    document.getElementById('inv-f-nome').value  = it ? (it.nome || '') : '';
-    document.getElementById('inv-f-qty').value   = it ? (it.quantita || 0) : 1;
+    document.getElementById('inv-f-id').value     = it ? it.id : '';
+    document.getElementById('inv-f-nome').value   = it ? (it.nome || '') : '';
+    document.getElementById('inv-f-qty').value    = it ? (it.quantita || 0) : 1;
+    document.getElementById('inv-f-colore').value = it ? (it.colore || '') : '';
     document.getElementById('inv-f-taglia').value = it ? (it.taglia || '') : '';
-    document.getElementById('inv-f-note').value  = it ? (it.note || '') : '';
+    document.getElementById('inv-f-note').value   = it ? (it.note || '') : '';
     var hasSponsor = !!(it && it.sponsor);
     var chkSp = document.getElementById('inv-f-sponsor');
     var wrapSp = document.getElementById('inv-f-sponsor-wrap');
@@ -6992,6 +7003,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       categoria:   document.getElementById('inv-f-cat').value,
       nome:        document.getElementById('inv-f-nome').value.trim(),
       quantita:    parseInt(document.getElementById('inv-f-qty').value) || 0,
+      colore:      document.getElementById('inv-f-colore').value.trim(),
       taglia:      document.getElementById('inv-f-taglia').value,
       condizione:  (document.querySelector('input[name="inv-cond"]:checked') || {}).value || 'buono',
       note:        document.getElementById('inv-f-note').value.trim(),
