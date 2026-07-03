@@ -2125,7 +2125,7 @@
             <!-- ===== LISTA DESIDERI ===== -->
             <div class="col-12 mt-4" id="wishlist-section" style="display:none;">
                 <div class="d-flex align-items-center gap-2 mb-2 flex-wrap" style="cursor:pointer;" onclick="window.WL.toggleSection()">
-                    <h4 class="mb-0" style="color:#f59e0b;"><i class="bi bi-cart-heart-fill"></i> Lista Desideri / Materiale Richiesto</h4>
+                    <h4 class="mb-0" style="color:#f59e0b;"><i class="bi bi-cart-heart-fill"></i> Materiale Mancante Richiesto</h4>
                     <i id="wl-chevron" class="bi bi-chevron-down" style="color:#f59e0b;font-size:1rem;transition:transform 0.2s;transform:rotate(180deg);"></i>
                     <span id="wl-summary" style="color:#94a3b8;font-size:0.8rem;margin-left:4px;"></span>
                 </div>
@@ -7132,6 +7132,11 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         it.sponsorNome || ''
       ];
     }
+    var wlItems = (window.WL && window.WL.getItems) ? window.WL.getItems() : [];
+    var wlHeader = ['Annata','Categoria','Articolo','Quantità','Note','Richiesto da','Acquistato','Data acquisto'];
+    function wlRowFor(it) {
+      return [ann, it.categoria || '', it.nome || '', it.quantita || 1, it.note || '', it.autore || '', it.acquistato ? 'Sì' : 'No', it.acquistatoAt ? it.acquistatoAt.slice(0,10) : ''];
+    }
     if (window.XLSX) {
       var rows = [header];
       _items.forEach(function (it) { rows.push(rowFor(it)); });
@@ -7139,6 +7144,11 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       ws['!cols'] = [14,20,12,16,8,30,8,12,14,30,12,25].map(function(w){ return { wch: w }; });
       var wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
+      var wlRows = [wlHeader];
+      wlItems.forEach(function(it){ wlRows.push(wlRowFor(it)); });
+      var wsWl = XLSX.utils.aoa_to_sheet(wlRows);
+      wsWl['!cols'] = [14,20,30,10,30,20,12,14].map(function(w){ return { wch: w }; });
+      XLSX.utils.book_append_sheet(wb, wsWl, 'Mat. Richiesto');
       XLSX.writeFile(wb, 'inventario_' + _annLabel() + '.xlsx');
     } else {
       var csv = header.join(',') + '\n';
@@ -7201,11 +7211,18 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       ]);
     });
 
+    var wlItemsT = (window.WL && window.WL.getItems) ? window.WL.getItems() : [];
+    var wlHeaderT = ['Annata','Categoria','Articolo','Quantità','Note','Richiesto da','Acquistato','Data acquisto'];
     if (window.XLSX) {
       var ws = XLSX.utils.aoa_to_sheet(rows);
       ws['!cols'] = [14,20,12,16,28,12,28,9,14,30].map(function(w){ return { wch: w }; });
       var wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Per taglie');
+      var wlRowsT = [wlHeaderT];
+      wlItemsT.forEach(function(it){ wlRowsT.push([ann, it.categoria||'', it.nome||'', it.quantita||1, it.note||'', it.autore||'', it.acquistato?'Sì':'No', it.acquistatoAt?it.acquistatoAt.slice(0,10):'']); });
+      var wsWlT = XLSX.utils.aoa_to_sheet(wlRowsT);
+      wsWlT['!cols'] = [14,20,30,10,30,20,12,14].map(function(w){ return { wch: w }; });
+      XLSX.utils.book_append_sheet(wb, wsWlT, 'Mat. Richiesto');
       XLSX.writeFile(wb, 'inventario_taglie_' + _annLabel() + '.xlsx');
     } else {
       var csv = rows.map(function (r) {
@@ -8272,6 +8289,8 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   }
 
   window.WL = {};
+
+  window.WL.getItems = function () { return _wlItems; };
 
   window.WL.toggleSection = function () {
     _wlOpen = !_wlOpen;
