@@ -7134,7 +7134,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       return [
         ann,
         it.categoria,
-        it._kitColore || '',
+        it._kitColore || it.colore || '',
         it._kitTipologia || '',
         _itemNumero(it),
         nomeBase,
@@ -7186,7 +7186,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     var groups = {};
     _items.forEach(function (it) {
       var nomeSet   = it._kitName || it.nome || '';
-      var colore    = it._kitColore || '';
+      var colore    = it._kitColore || it.colore || '';
       var tipologia = it._kitTipologia || '';
       var taglia    = it.taglia || '';
       var cond      = it.condizione || 'buono';
