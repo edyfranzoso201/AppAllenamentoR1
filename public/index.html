@@ -6714,17 +6714,19 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
           // Scorte senza numero
           if (extraRows.length) {
             html += '<div style="margin-top:8px;padding:6px 8px;background:#0f172a;border-radius:6px;">' +
-              '<div style="font-size:0.78rem;color:#64748b;margin-bottom:4px;"><i class="bi bi-stack"></i> Scorte senza numero</div>' +
+              '<div style="font-size:0.78rem;color:#64748b;margin-bottom:6px;"><i class="bi bi-stack"></i> Scorte senza numero</div>' +
               '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
             extraRows.forEach(function(it) {
-              var col = condClass[it.condizione]||'#94a3b8';
-              var ic  = condIcon[it.condizione]||'○';
-              var spBadge = it.sponsor ? ' <span style="color:#93c5fd;font-size:0.7rem;">🏷️' + esc(it.sponsorNome||'') + '</span>' : '';
-              html += '<div style="background:var(--bg-blue);border:1px solid ' + col + ';border-radius:6px;padding:4px 8px;font-size:0.78rem;">' +
-                '<span style="color:#e2e8f0;font-weight:600;">' + (it.quantita||1) + 'x</span> ' +
-                '<span style="color:#94a3b8;">' + esc(it.taglia||'—') + '</span> ' +
-                ic + spBadge +
-                (it.note ? '<span style="color:#64748b;margin-left:4px;">' + esc(it.note) + '</span>' : '') +
+              var col = condClass[it.condizione] || '#94a3b8';
+              var ic  = condIcon[it.condizione]  || '○';
+              var qty = it.quantita || 1;
+              var spLine = it.sponsor ? '<div style="font-size:0.65rem;color:#93c5fd;margin-top:2px;">🏷️ ' + esc(it.sponsorNome||'Con sponsor') + '</div>' : '';
+              var noteLine = it.note ? '<div style="font-size:0.65rem;color:#94a3b8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;" title="' + esc(it.note) + '">' + esc(it.note) + '</div>' : '';
+              html += '<div style="background:var(--bg-blue);border:2px solid ' + col + ';border-radius:8px;padding:6px 10px;text-align:center;min-width:52px;">' +
+                '<div style="font-size:1rem;font-weight:800;color:#e2e8f0;line-height:1;">×' + qty + '</div>' +
+                '<div style="font-size:0.7rem;color:#94a3b8;">' + esc(it.taglia||'—') + '</div>' +
+                '<div style="font-size:0.75rem;">' + ic + (it.sponsor?' 🏷️':'') + '</div>' +
+                spLine + noteLine +
                 '</div>';
             });
             html += '</div></div>';
@@ -7417,7 +7419,10 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     var extraRows = extraExisting.length ? extraExisting.length : 1;
 
     html += '</tbody></table>' +
-      '<div style="margin-top:14px;padding:10px;background:#0f172a;border-radius:8px;border:1px solid #334155;">' +
+      '<div class="d-flex justify-content-end mt-2 mb-1">' +
+        '<button type="button" class="btn btn-xs btn-outline-info" onclick="window.INV.kitAddNumbered()"><i class="bi bi-plus-circle"></i> Aggiungi N°</button>' +
+      '</div>' +
+      '<div style="margin-top:6px;padding:10px;background:#0f172a;border-radius:8px;border:1px solid #334155;">' +
         '<div class="d-flex align-items-center gap-2 mb-2">' +
           '<span style="color:#93c5fd;font-weight:600;font-size:0.85rem;"><i class="bi bi-stack"></i> Scorte senza numero</span>' +
           '<span style="color:#64748b;font-size:0.78rem;">(maglie di riserva per taglia)</span>' +
@@ -7487,6 +7492,30 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
 
   window.INV.kitAddExtra = function () {
     _kitAddExtraRow(null);
+  };
+
+  window.INV.kitAddNumbered = function () {
+    var tbody = document.querySelector('#inv-kit-grid table tbody');
+    if (!tbody) return;
+    var tagOpts = _kitTagOpts();
+    var newKey = 'new-' + Date.now();
+    var tr = document.createElement('tr');
+    tr.dataset.num = newKey;
+    tr.innerHTML =
+      '<td style="text-align:center;padding:2px 4px;">' +
+        '<input type="text" class="form-control form-control-sm kit-num-edit" maxlength="4" value="" placeholder="N°" ' +
+        'style="background:var(--bg-blue);color:#93c5fd;border-color:#475569;font-weight:700;text-align:center;width:60px;padding:2px 4px;" ' +
+        'title="Numero maglia (es. 6, GK)">' +
+      '</td>' +
+      '<td><select class="form-select form-select-sm kit-taglia" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">' + tagOpts + '</select></td>' +
+      '<td>' + _kitCondSel('kit-cond') + '</td>' +
+      '<td>' + _kitSponsorCell() + '</td>' +
+      '<td style="display:flex;gap:4px;align-items:center;">' +
+        '<input type="text" class="form-control form-control-sm kit-note" maxlength="200" placeholder="Note…" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">' +
+        '<button type="button" class="btn btn-xs btn-outline-danger" onclick="this.closest(\'tr\').remove()" title="Rimuovi"><i class="bi bi-x"></i></button>' +
+      '</td>';
+    tbody.appendChild(tr);
+    tr.querySelector('.kit-num-edit').focus();
   };
 
   // Genera griglia "per taglia": righe con [Taglia | Condizione | Note], senza N° jersey.
@@ -7626,8 +7655,10 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         var existing   = _items.find(function(it){
           return (it._kitName === originalName || it._ktName === originalName) && String(it._kitNum) === origNum;
         });
-        // salta righe vuote che non corrispondono a un articolo reale del kit
-        if (!existing && !taglia && condizione === 'buono' && !note && !sponsor) return;
+        // salta righe vuote: righe generate automaticamente senza dati, oppure righe aggiunte manualmente senza numero
+        var isManual = origNum.startsWith('new-');
+        if (isManual && !num) return; // riga manuale senza numero → ignora
+        if (!existing && !isManual && !taglia && condizione === 'buono' && !note && !sponsor) return;
         items.push({
           id: existing ? existing.id : '',
           categoria: kitCategoria,
