@@ -2122,6 +2122,60 @@
                 </div>
             </div>
 
+            <!-- ===== LISTA DESIDERI ===== -->
+            <div class="col-12 mt-4" id="wishlist-section" style="display:none;">
+                <div class="d-flex align-items-center gap-2 mb-2 flex-wrap" style="cursor:pointer;" onclick="window.WL.toggleSection()">
+                    <h4 class="mb-0" style="color:#f59e0b;"><i class="bi bi-cart-heart-fill"></i> Lista Desideri / Materiale Richiesto</h4>
+                    <i id="wl-chevron" class="bi bi-chevron-down" style="color:#f59e0b;font-size:1rem;transition:transform 0.2s;transform:rotate(180deg);"></i>
+                    <span id="wl-summary" style="color:#94a3b8;font-size:0.8rem;margin-left:4px;"></span>
+                </div>
+                <div id="wl-collapsible">
+                    <div class="d-flex align-items-center gap-2 mb-3 flex-wrap no-print" onclick="event.stopPropagation()">
+                        <button id="wl-add-btn" class="btn btn-sm btn-warning no-print" onclick="window.WL.openForm(null)" style="display:none;">
+                            <i class="bi bi-plus-circle-fill"></i> Aggiungi richiesta
+                        </button>
+                    </div>
+                    <div id="wl-body"></div>
+                </div>
+            </div>
+
+            <!-- Modal form wishlist -->
+            <div class="modal fade" id="wlModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content" style="background:var(--bg-panel);border:1px solid #334155;color:var(--text-primary);">
+                        <div class="modal-header" style="border-color:#334155;">
+                            <h5 class="modal-title" id="wl-modal-title">📋 Richiesta materiale</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" id="wl-f-id">
+                            <div class="mb-3">
+                                <label class="form-label small">Articolo / Descrizione <span style="color:#f87171;">*</span></label>
+                                <input id="wl-f-nome" type="text" class="form-control form-control-sm" placeholder="es. Maglie da gioco, Palloni, Confetti…" maxlength="120" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">
+                            </div>
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <label class="form-label small">Quantità</label>
+                                    <input id="wl-f-qty" type="number" min="1" max="9999" value="1" class="form-control form-control-sm" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small">Categoria</label>
+                                    <select id="wl-f-cat" class="form-select form-select-sm" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;"></select>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small">Note (taglia, colore, urgenza…)</label>
+                                <textarea id="wl-f-note" class="form-control form-control-sm" rows="2" maxlength="300" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;resize:vertical;"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer" style="border-color:#334155;">
+                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annulla</button>
+                            <button type="button" class="btn btn-warning btn-sm" onclick="window.WL.save()"><i class="bi bi-check-lg"></i> Salva richiesta</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Modal form voce inventario -->
             <div class="modal fade" id="invModal" tabindex="-1" aria-labelledby="invModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
@@ -6704,33 +6758,35 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         html += '</div></div>';
       });
 
-      // ── Tabella normale per voci senza kit ──
+      // ── Griglia badge per voci senza kit ──
       if (normalRows.length) {
-        html += '<div class="card chart-card"><div class="card-body p-0" style="overflow-x:auto;">' +
-          '<table class="table table-dark table-bordered mb-0" style="border-color:var(--bg-blue);min-width:600px;">' +
-          '<thead><tr style="font-size:0.82rem;color:#94a3b8;">' +
-          '<th style="width:180px;">Nome / Descrizione</th><th style="width:70px;text-align:center;">Qtà</th>' +
-          '<th style="width:90px;text-align:center;">Taglia</th><th style="width:120px;">Condizione</th>' +
-          '<th>Note</th>' + (_canWrite ? '<th style="width:80px;text-align:center;" class="no-print">Azioni</th>' : '') +
-          '</tr></thead><tbody>';
-
+        html += '<div class="card chart-card"><div class="card-body p-2">' +
+          '<div class="d-flex flex-wrap gap-2">';
         normalRows.forEach(function (it) {
-          var sponsorBadge = it.sponsor
-            ? '<br><span style="font-size:0.72rem;color:#93c5fd;">🏷️ ' + esc(it.sponsorNome || 'Con sponsor') + '</span>'
+          var borderCol = COND_COLOR[it.condizione] || '#475569';
+          var condI     = COND_ICON[it.condizione]  || '';
+          var sponsorLine = it.sponsor
+            ? '<div style="font-size:0.65rem;color:#93c5fd;margin-top:2px;">🏷️ ' + esc(it.sponsorNome || 'Con sponsor') + '</div>'
             : '';
-          html += '<tr style="font-size:0.85rem;">' +
-            '<td>' + esc(it.nome) + sponsorBadge + '</td>' +
-            '<td style="text-align:center;">' + (it.quantita || 0) + '</td>' +
-            '<td style="text-align:center;">' + (it.taglia ? esc(it.taglia) : '<span style="color:#475569;">—</span>') + '</td>' +
-            '<td>' + (COND_LABEL[it.condizione] || '') + '</td>' +
-            '<td style="white-space:pre-wrap;max-width:260px;word-break:break-word;">' + esc(it.note || '') + '</td>' +
-            (_canWrite ? '<td style="text-align:center;" class="no-print">' +
-              '<button class="btn btn-xs btn-outline-warning me-1" title="Modifica" onclick="window.INV.openForm(' + JSON.stringify(it.id).replace(/"/g,'&quot;') + ')"><i class="bi bi-pencil-fill"></i></button>' +
-              '<button class="btn btn-xs btn-outline-danger" title="Elimina" onclick="window.INV.deleteItem(' + JSON.stringify(it.id).replace(/"/g,'&quot;') + ')"><i class="bi bi-trash3-fill"></i></button>' +
-              '</td>' : '') + '</tr>';
+          var noteLine = it.note
+            ? '<div style="font-size:0.65rem;color:#94a3b8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;" title="' + esc(it.note) + '">' + esc(it.note) + '</div>'
+            : '';
+          var actions = _canWrite
+            ? '<div class="d-flex gap-1 justify-content-center mt-1 no-print">' +
+                '<button class="btn btn-xs btn-outline-warning" title="Modifica" onclick="window.INV.openForm(' + JSON.stringify(it.id).replace(/"/g,'&quot;') + ')"><i class="bi bi-pencil-fill"></i></button>' +
+                '<button class="btn btn-xs btn-outline-danger" title="Elimina" onclick="window.INV.deleteItem(' + JSON.stringify(it.id).replace(/"/g,'&quot;') + ')"><i class="bi bi-trash3-fill"></i></button>' +
+              '</div>'
+            : '';
+          html +=
+            '<div style="background:var(--bg-blue);border:2px solid ' + borderCol + ';border-radius:8px;min-width:110px;max-width:130px;padding:8px 10px;text-align:center;flex:0 0 auto;">' +
+              '<div style="font-size:0.78rem;font-weight:700;color:#e2e8f0;line-height:1.2;margin-bottom:4px;word-break:break-word;">' + esc(it.nome) + '</div>' +
+              '<div style="font-size:1.1rem;font-weight:800;color:#e2e8f0;line-height:1;">Qtà ' + (it.quantita || 0) + '</div>' +
+              '<div style="font-size:0.7rem;color:#94a3b8;margin-top:2px;">' + (it.taglia ? esc(it.taglia) : '—') + '</div>' +
+              '<div style="font-size:0.75rem;margin-top:3px;">' + condI + '</div>' +
+              sponsorLine + noteLine + actions +
+            '</div>';
         });
-
-        html += '</tbody></table></div></div>';
+        html += '</div></div></div>';
       }
 
       html += '</div>';
@@ -8109,6 +8165,202 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   }, 1500);
   // Primo caricamento (aspetta auth async)
   setTimeout(tryInit, 1800);
+
+})();
+
+// ── LISTA DESIDERI ────────────────────────────────────────────────────────────
+(function () {
+  'use strict';
+  var _wlItems  = [];
+  var _wlCats   = [];
+  var _wlRole   = '';
+  var _wlOpen   = true;
+
+  var WL_WRITE_ROLES = ['admin', 'dirigente', 'coach_l1', 'coachl1', 'coach_l2', 'coachl2'];
+  var WL_DEL_ROLES   = ['admin', 'dirigente'];
+
+  function canWrite() { return WL_WRITE_ROLES.includes(String(_wlRole || '').toLowerCase().replace(/ /g,'')); }
+  function canDel()   { return WL_DEL_ROLES.includes(String(_wlRole || '').toLowerCase()); }
+
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function authHeaders() {
+    return {
+      'Content-Type': 'application/json',
+      'X-Annata-Id':    (sessionStorage.getItem('gosport_current_annata') || localStorage.getItem('_p_gosport_current_annata') || ''),
+      'X-Auth-Session': (sessionStorage.getItem('gosport_session_token')  || localStorage.getItem('_p_gosport_session_token')  || ''),
+      'X-Auth-User':    (sessionStorage.getItem('gosport_auth_user')       || localStorage.getItem('_p_gosport_auth_user')       || ''),
+      'X-User-Role':    (sessionStorage.getItem('gosport_user_role')       || localStorage.getItem('_p_gosport_user_role')       || ''),
+      'X-Society-Id':   (sessionStorage.getItem('gosport_society_id')      || localStorage.getItem('_p_gosport_society_id')      || '')
+    };
+  }
+
+  async function load() {
+    try {
+      var r = await fetch('/api/data?action=inventory', { headers: authHeaders() });
+      var d = await r.json();
+      if (d && d.success) {
+        _wlItems = Array.isArray(d.wishlist) ? d.wishlist : [];
+        _wlCats  = Array.isArray(d.categories) ? d.categories : [];
+        render();
+      }
+    } catch(e) {}
+  }
+
+  function render() {
+    var sec = document.getElementById('wishlist-section');
+    if (!sec) return;
+    sec.style.display = '';
+
+    // Pulsante aggiungi
+    var addBtn = document.getElementById('wl-add-btn');
+    if (addBtn) addBtn.style.display = canWrite() ? '' : 'none';
+
+    // Summary
+    var total  = _wlItems.length;
+    var pending = _wlItems.filter(function(x){ return !x.acquistato; }).length;
+    var sumEl = document.getElementById('wl-summary');
+    if (sumEl) sumEl.textContent = total ? (pending + ' da acquistare · ' + (total - pending) + ' acquistat' + (total - pending === 1 ? 'o' : 'i')) : '';
+
+    var body = document.getElementById('wl-body');
+    if (!body) return;
+    if (!_wlItems.length) {
+      body.innerHTML = '<p style="color:#94a3b8;font-size:0.85rem;padding:8px 0;">Nessuna richiesta. Clicca "+ Aggiungi richiesta" per inserire materiale mancante o desiderato.</p>';
+      return;
+    }
+
+    var pending_ = _wlItems.filter(function(x){ return !x.acquistato; });
+    var bought_  = _wlItems.filter(function(x){ return  x.acquistato; });
+
+    function renderGroup(items, title, color) {
+      if (!items.length) return '';
+      var h = '<div style="font-size:0.78rem;color:' + color + ';font-weight:700;margin-bottom:6px;margin-top:10px;">' + title + '</div>';
+      h += '<div class="d-flex flex-wrap gap-2 mb-2">';
+      items.forEach(function(it) {
+        var borderCol = it.acquistato ? '#4ade80' : '#f59e0b';
+        var badgeStyle = it.acquistato ? 'opacity:0.7;' : '';
+        var noteLine = it.note
+          ? '<div style="font-size:0.65rem;color:#94a3b8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;" title="' + esc(it.note) + '">' + esc(it.note) + '</div>'
+          : '';
+        var autoreLine = it.autore
+          ? '<div style="font-size:0.62rem;color:#64748b;margin-top:1px;">👤 ' + esc(it.autore) + '</div>'
+          : '';
+        var btnAcq = canWrite() && !it.acquistato
+          ? '<button class="btn btn-xs btn-outline-success" title="Segna come acquistato" onclick="window.WL.toggleAcquistato(' + JSON.stringify(it.id).replace(/"/g,'&quot;') + ')"><i class="bi bi-check-circle-fill"></i></button>'
+          : '';
+        var btnDel = canDel()
+          ? '<button class="btn btn-xs btn-outline-danger" title="Elimina" onclick="window.WL.deleteItem(' + JSON.stringify(it.id).replace(/"/g,'&quot;') + ')"><i class="bi bi-trash3-fill"></i></button>'
+          : '';
+        var btnEdit = canWrite()
+          ? '<button class="btn btn-xs btn-outline-warning" title="Modifica" onclick="window.WL.openForm(' + JSON.stringify(it.id).replace(/"/g,'&quot;') + ')"><i class="bi bi-pencil-fill"></i></button>'
+          : '';
+        h += '<div style="background:var(--bg-blue);border:2px solid ' + borderCol + ';border-radius:8px;min-width:120px;max-width:145px;padding:8px 10px;text-align:center;flex:0 0 auto;' + badgeStyle + '">' +
+          '<div style="font-size:0.78rem;font-weight:700;color:#e2e8f0;line-height:1.2;margin-bottom:4px;word-break:break-word;">' + esc(it.nome) + '</div>' +
+          '<div style="font-size:1.05rem;font-weight:800;color:#e2e8f0;line-height:1;">Qtà ' + (it.quantita || 1) + '</div>' +
+          '<div style="font-size:0.68rem;color:#94a3b8;margin-top:2px;">' + esc(it.categoria || '') + '</div>' +
+          (it.acquistato ? '<div style="font-size:0.72rem;color:#4ade80;margin-top:3px;font-weight:700;">✓ Acquistato</div>' : '') +
+          noteLine + autoreLine +
+          '<div class="d-flex gap-1 justify-content-center mt-2 no-print">' + btnEdit + btnAcq + btnDel + '</div>' +
+          '</div>';
+      });
+      h += '</div>';
+      return h;
+    }
+
+    body.innerHTML =
+      renderGroup(pending_, '🛒 Da acquistare (' + pending_.length + ')', '#f59e0b') +
+      renderGroup(bought_,  '✅ Acquistati (' + bought_.length + ')',    '#4ade80');
+  }
+
+  window.WL = {};
+
+  window.WL.toggleSection = function () {
+    _wlOpen = !_wlOpen;
+    var coll = document.getElementById('wl-collapsible');
+    var chev = document.getElementById('wl-chevron');
+    if (coll) coll.style.display = _wlOpen ? '' : 'none';
+    if (chev) chev.style.transform = _wlOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+  };
+
+  window.WL.openForm = function (id) {
+    var it = id ? _wlItems.find(function(x){ return x.id === id; }) : null;
+    document.getElementById('wl-modal-title').textContent = it ? '✏️ Modifica richiesta' : '📋 Nuova richiesta materiale';
+    document.getElementById('wl-f-id').value   = it ? it.id : '';
+    document.getElementById('wl-f-nome').value = it ? (it.nome || '') : '';
+    document.getElementById('wl-f-qty').value  = it ? (it.quantita || 1) : 1;
+    document.getElementById('wl-f-note').value = it ? (it.note || '') : '';
+    var catSel = document.getElementById('wl-f-cat');
+    catSel.innerHTML = _wlCats.map(function(c){
+      return '<option' + (it && it.categoria === c ? ' selected' : '') + '>' + esc(c) + '</option>';
+    }).join('');
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('wlModal')).show();
+    document.getElementById('wl-f-nome').focus();
+  };
+
+  window.WL.save = async function () {
+    var nome = document.getElementById('wl-f-nome').value.trim();
+    if (!nome) { alert('Inserisci una descrizione.'); return; }
+    var autore = sessionStorage.getItem('gosport_auth_user') || localStorage.getItem('_p_gosport_auth_user') || '';
+    var item = {
+      id:        document.getElementById('wl-f-id').value || '',
+      nome:      nome,
+      quantita:  Math.max(1, parseInt(document.getElementById('wl-f-qty').value) || 1),
+      categoria: document.getElementById('wl-f-cat').value,
+      note:      document.getElementById('wl-f-note').value.trim(),
+      autore:    autore
+    };
+    try {
+      var r = await fetch('/api/data?action=inventory', {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify({ act: 'wishlist-save', item: item })
+      });
+      var d = await r.json();
+      if (d && d.success) {
+        _wlItems = d.wishlist;
+        render();
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('wlModal')).hide();
+      } else { alert('Errore: ' + (d.message || '')); }
+    } catch(e) { alert('Errore di rete.'); }
+  };
+
+  window.WL.toggleAcquistato = async function (id) {
+    try {
+      var r = await fetch('/api/data?action=inventory', {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify({ act: 'wishlist-toggle', id: id })
+      });
+      var d = await r.json();
+      if (d && d.success) { _wlItems = d.wishlist; render(); }
+      else alert('Errore: ' + (d.message || ''));
+    } catch(e) { alert('Errore di rete.'); }
+  };
+
+  window.WL.deleteItem = async function (id) {
+    if (!confirm('Eliminare questa richiesta?')) return;
+    try {
+      var r = await fetch('/api/data?action=inventory', {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify({ act: 'wishlist-delete', id: id })
+      });
+      var d = await r.json();
+      if (d && d.success) { _wlItems = d.wishlist; render(); }
+      else alert('Errore: ' + (d.message || ''));
+    } catch(e) { alert('Errore di rete.'); }
+  };
+
+  // Aggancio a switchTab come INV
+  setTimeout(function () {
+    _wlRole = sessionStorage.getItem('gosport_user_role') || localStorage.getItem('_p_gosport_user_role') || '';
+    var orig = window.switchTab;
+    if (orig && !orig.__wlHooked) {
+      var _origST = window.switchTab;
+      window.switchTab = function (id) {
+        _origST.apply(this, arguments);
+        if (id === 'materiale-section') { _wlRole = sessionStorage.getItem('gosport_user_role') || localStorage.getItem('_p_gosport_user_role') || ''; load(); }
+      };
+      window.switchTab.__wlHooked = true;
+    }
+    load();
+  }, 2000);
 
 })();
 </script>

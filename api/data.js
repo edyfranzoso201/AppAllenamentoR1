@@ -598,10 +598,12 @@ if (req.query?.action === 'inventory') {
   if (!annataId || !isValidId(annataId)) return res.status(400).json({ success: false, message: 'annataId mancante' });
   const invKey = `society:${sid}:inventory:${annataId}`;
 
+  const wlKey = `society:${sid}:wishlist:${annataId}`;
+
   if (req.method === 'GET') {
-    const [items, customCats] = await Promise.all([kv.get(invKey), kv.get(catKey)]);
+    const [items, customCats, wishlist] = await Promise.all([kv.get(invKey), kv.get(catKey), kv.get(wlKey)]);
     const cats = [...INV_DEFAULT_CATS, ...((Array.isArray(customCats) ? customCats : []).filter(c => !INV_DEFAULT_CATS.includes(c)))];
-    return res.status(200).json({ success: true, items: Array.isArray(items) ? items : [], categories: cats });
+    return res.status(200).json({ success: true, items: Array.isArray(items) ? items : [], categories: cats, wishlist: Array.isArray(wishlist) ? wishlist : [] });
   }
 
   if (req.method === 'POST') {
@@ -767,6 +769,56 @@ if (req.query?.action === 'inventory') {
       });
       await kv.set(destKey, destItems);
       return res.status(200).json({ success: true, added });
+    }
+
+    // ── Wishlist: salva/modifica voce ──
+    if (act === 'wishlist-save') {
+      const WL_WRITE = ['admin', 'dirigente', 'coachl1', 'coach_l1', 'coachl2', 'coach_l2'];
+      if (!WL_WRITE.includes(String(session.role || '').toLowerCase().replace(/ /g,'')))
+        return res.status(403).json({ success: false, message: 'Permesso negato' });
+      const raw = req.body.item || {};
+      const item = {
+        id:        String(raw.id || '').replace(/[^a-z0-9_-]/gi,'').slice(0,40) || crypto.randomUUID().replace(/-/g,'').slice(0,16),
+        nome:      String(raw.nome || '').slice(0, 120),
+        quantita:  Math.max(1, Math.min(9999, parseInt(raw.quantita) || 1)),
+        categoria: String(raw.categoria || 'Altro').slice(0, 80),
+        note:      String(raw.note || '').slice(0, 300),
+        autore:    String(raw.autore || '').slice(0, 60),
+        acquistato: false,
+        createdAt:  new Date().toISOString()
+      };
+      let wl = (await kv.get(wlKey)) || [];
+      if (!Array.isArray(wl)) wl = [];
+      const idx = wl.findIndex(x => x.id === item.id);
+      if (idx >= 0) { item.acquistato = wl[idx].acquistato; item.createdAt = wl[idx].createdAt; wl[idx] = item; }
+      else wl.push(item);
+      await kv.set(wlKey, wl);
+      return res.status(200).json({ success: true, wishlist: wl });
+    }
+
+    // ── Wishlist: toggle acquistato ──
+    if (act === 'wishlist-toggle') {
+      const WL_WRITE = ['admin', 'dirigente', 'coachl1', 'coach_l1', 'coachl2', 'coach_l2'];
+      if (!WL_WRITE.includes(String(session.role || '').toLowerCase().replace(/ /g,'')))
+        return res.status(403).json({ success: false, message: 'Permesso negato' });
+      const id = String((req.body && req.body.id) || '').slice(0, 40);
+      let wl = (await kv.get(wlKey)) || [];
+      if (!Array.isArray(wl)) wl = [];
+      const it = wl.find(x => x.id === id);
+      if (it) { it.acquistato = !it.acquistato; it.acquistatoAt = it.acquistato ? new Date().toISOString() : null; }
+      await kv.set(wlKey, wl);
+      return res.status(200).json({ success: true, wishlist: wl });
+    }
+
+    // ── Wishlist: elimina voce (solo admin/dirigente) ──
+    if (act === 'wishlist-delete') {
+      if (!canInventoryCat(session.role)) return res.status(403).json({ success: false, message: 'Solo admin o dirigente' });
+      const id = String((req.body && req.body.id) || '').slice(0, 40);
+      let wl = (await kv.get(wlKey)) || [];
+      if (!Array.isArray(wl)) wl = [];
+      wl = wl.filter(x => x.id !== id);
+      await kv.set(wlKey, wl);
+      return res.status(200).json({ success: true, wishlist: wl });
     }
 
     return res.status(400).json({ success: false, message: 'act non valido' });
