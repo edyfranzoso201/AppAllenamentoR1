@@ -1489,13 +1489,16 @@ async function showUserModal(userData = null) {
                     <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">
                         Password ${isEdit ? '(opzionale - lascia vuoto per non modificare)' : '*'}
                     </label>
-                    <input 
-                        type="password" 
-                        id="user-password" 
-                        placeholder="${isEdit ? 'Nuova password (opzionale)' : 'Password'}" 
-                        style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#ffffff;box-sizing:border-box;" 
-                        ${!isEdit ? 'required' : ''} 
-                    />
+                    <div style="position:relative;">
+                        <input
+                            type="password"
+                            id="user-password"
+                            placeholder="${isEdit ? 'Nuova password (opzionale)' : 'Password'}"
+                            style="width:100%;padding:10px;padding-right:42px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#ffffff;box-sizing:border-box;"
+                            ${!isEdit ? 'required' : ''}
+                        />
+                        <button type="button" onclick="(function(){var f=document.getElementById('user-password');var b=this;if(f.type==='password'){f.type='text';b.textContent='🙈';}else{f.type='password';b.textContent='👁';}}).call(this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;padding:0;line-height:1;" title="Mostra/nascondi password">👁</button>
+                    </div>
                     ${isEdit ? '<small style="color:#94a3b8;font-size:12px;">Compila solo se vuoi cambiare la password</small>' : ''}
                 </div>
                 <div>
@@ -2141,13 +2144,16 @@ async function showUserModal(userData = null) {
                     <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">
                         Password ${isEdit ? '(opzionale - lascia vuoto per non modificare)' : '*'}
                     </label>
-                    <input 
-                        type="password" 
-                        id="user-password" 
-                        placeholder="${isEdit ? 'Nuova password (opzionale)' : 'Password'}" 
-                        style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#ffffff;box-sizing:border-box;" 
-                        ${!isEdit ? 'required' : ''} 
-                    />
+                    <div style="position:relative;">
+                        <input
+                            type="password"
+                            id="user-password"
+                            placeholder="${isEdit ? 'Nuova password (opzionale)' : 'Password'}"
+                            style="width:100%;padding:10px;padding-right:42px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#ffffff;box-sizing:border-box;"
+                            ${!isEdit ? 'required' : ''}
+                        />
+                        <button type="button" onclick="(function(){var f=document.getElementById('user-password');var b=this;if(f.type==='password'){f.type='text';b.textContent='🙈';}else{f.type='password';b.textContent='👁';}}).call(this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;padding:0;line-height:1;" title="Mostra/nascondi password">👁</button>
+                    </div>
                     ${isEdit ? '<small style="color:#94a3b8;font-size:12px;">Compila solo se vuoi cambiare la password</small>' : ''}
                 </div>
                 <div>
