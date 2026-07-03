@@ -2374,6 +2374,39 @@ await kv.set(`${prefix}:athleteDocs`, existing);
 return res.status(200).json({ success: true });
 }
 
+// ── Copia singolo atleta/staff in un'altra annata (solo admin, stessa società) ──
+if (body._action === 'copy-athlete') {
+  if (String(session.role || '').toLowerCase() !== 'admin')
+    return res.status(403).json({ success: false, message: 'Solo admin può copiare atleti' });
+  const destId = String(body.destAnnataId || '').replace(/[^a-z0-9_-]/gi, '').slice(0, 40);
+  if (!destId) return res.status(400).json({ success: false, message: 'annata destinazione mancante' });
+  if (destId === annataId) return res.status(400).json({ success: false, message: 'Annata sorgente e destinazione coincidono' });
+  // Verifica che l'annata di destinazione appartenga alla STESSA società
+  const al2 = (await kv.get('annate:list')) || [];
+  const destMeta = al2.find(a => String(a.id) === destId);
+  if (destMeta && destMeta.societyId && destMeta.societyId !== (session.societyId || null))
+    return res.status(403).json({ success: false, message: 'Annata di un\'altra società' });
+  const athleteId = String(body.athleteId || '');
+  if (!athleteId) return res.status(400).json({ success: false, message: 'athleteId mancante' });
+  // Legge atleta dalla sorgente
+  const srcAthletes = (await kv.get(`${prefix}:athletes`)) || [];
+  const src = srcAthletes.find(a => String(a.id) === athleteId);
+  if (!src) return res.status(404).json({ success: false, message: 'Atleta non trovato' });
+  // Legge atleti della destinazione
+  const destPrefix = `annate:${destId}`;
+  let destAthletes = (await kv.get(`${destPrefix}:athletes`)) || [];
+  if (!Array.isArray(destAthletes)) destAthletes = [];
+  // Skip se esiste già (stesso nome+cognome, case-insensitive)
+  const srcName = String(src.name || '').trim().toLowerCase();
+  const already = destAthletes.some(a => String(a.name || '').trim().toLowerCase() === srcName);
+  if (already) return res.status(200).json({ success: true, skipped: true, message: 'Atleta già presente nell\'annata di destinazione' });
+  // Copia con nuovo id, azzera campi specifici dell'annata corrente
+  const copy = { ...src, id: crypto.randomUUID().replace(/-/g,'').slice(0,16), infortunato: false, dataRientro: null, archived: false, archivedAt: null };
+  destAthletes.push(copy);
+  await kv.set(`${destPrefix}:athletes`, destAthletes);
+  return res.status(200).json({ success: true, skipped: false });
+}
+
 if (!canWrite(session.role)) {
 return res.status(403).json({ success: false, message: 'Permesso negato' });
 }

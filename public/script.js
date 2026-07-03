@@ -2374,6 +2374,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             ? `<button class="btn btn-sm btn-outline-success restore-btn" title="Ripristina in rosa" data-athlete-id="${athlete.id}"><i class="bi bi-arrow-counterclockwise"></i></button>`
                             : `<button class="btn btn-sm btn-outline-warning archive-btn" title="Archivia" data-athlete-id="${athlete.id}"><i class="bi bi-archive-fill"></i></button>`}
                         <button class="btn btn-sm btn-outline-light delete-btn" title="Elimina definitivamente" data-athlete-id="${athlete.id}"><i class="bi bi-trash-fill"></i></button>
+                        ${sessionStorage.getItem('gosport_user_role') === 'admin' ? `<button class="btn btn-sm btn-outline-info copy-annata-btn" title="Copia in altra annata" data-athlete-id="${athlete.id}"><i class="bi bi-clipboard-plus"></i></button>` : ''}
                     </div>
                 </div>`;
             } else {
@@ -2386,7 +2387,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     : '';
                 const uscitaBadge = athlete.uscitaAutonoma ? '<span style="font-size:0.62rem;background:#fed7aa;color:#92400e;border-radius:3px;padding:1px 5px;margin-left:4px;vertical-align:middle;">🚶✅</span>' : '';
                 const infortunatoBadge = athlete.infortunato ? `<span style="font-size:0.62rem;background:#fee2e2;color:#991b1b;border-radius:3px;padding:1px 5px;margin-left:4px;vertical-align:middle;">🤕${athlete.dataRientro ? ' ' + new Date(athlete.dataRientro + 'T00:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}) : ''}</span>` : '';
-                card.innerHTML = `<div class="card ${cardClass}" style="${indBorder}${cardBg}"><div class="card-body athlete-card-clickable" data-athlete-id="${athlete.id}">${athlete.avatar ? `<img src="${escapeHtml(athlete.avatar)}" onerror="window.avatarFallback(this, ${JSON.stringify(athlete.name || '').replace(/"/g, '&quot;')})" alt="${escapeHtml(athlete.name)}" class="athlete-avatar me-3">` : initialsAvatarHtml(athlete.name)}<div><h5 class="card-title">${escapeHtml(athlete.name)} ${athlete.isCaptain ? '<i class="bi bi-star-fill is-captain"></i>' : ''} ${vcIcon}${uscitaBadge}${infortunatoBadge}</h5><p class="card-text text-muted">${escapeHtml(athlete.role)}</p>${indBadge}</div><div class="shirt-number">${athlete.number}</div>${statusIcon}</div><div class="card-actions no-print"><button class="btn btn-sm btn-outline-light rating-btn" title="Pagelle" data-athlete-id="${athlete.id}"><i class="bi bi-clipboard-check"></i></button><button class="btn btn-sm btn-outline-light gps-btn" title="Dati Performance" data-athlete-id="${athlete.id}"><i class="bi bi-person-fill-gear"></i></button><button class="btn btn-sm btn-outline-light individual-btn" title="Pacchetto Individual" data-athlete-id="${athlete.id}" style="${athlete.individualPackage?.type ? 'color:#f59e0b;border-color:#f59e0b;' : ''}"><i class="bi bi-person-fill-up"></i></button><div class="card-more-wrap"><button class="btn btn-sm btn-outline-light card-more-btn" title="Altre azioni" aria-label="Altre azioni"><i class="bi bi-three-dots"></i></button><div class="card-more-menu"><button class="btn btn-sm btn-outline-light parent-btn" data-athlete-id="${athlete.id}"><i class="bi bi-people-fill"></i> Genitori</button><button class="btn btn-sm btn-outline-light infortuni-btn" data-athlete-id="${athlete.id}"><i class="bi bi-bandaid-fill"></i> Infortuni</button>${athlete.certLink ? `<button class="btn btn-sm btn-outline-light cert-btn" onclick="window.open('${escapeHtml(athlete.certLink)}','_blank')"><i class="bi bi-file-earmark-medical-fill" style="color:#16a34a;"></i> Certificato</button>` : ""}<button class="btn btn-sm btn-outline-light edit-btn" data-athlete-id="${athlete.id}"><i class="bi bi-pencil-fill"></i> Modifica</button>${athlete.archived ? `<button class="btn btn-sm btn-outline-success restore-btn" data-athlete-id="${athlete.id}"><i class="bi bi-arrow-counterclockwise"></i> Ripristina</button>` : `<button class="btn btn-sm btn-outline-warning archive-btn" data-athlete-id="${athlete.id}"><i class="bi bi-archive-fill"></i> Archivia</button>`}<button class="btn btn-sm btn-outline-danger delete-btn" data-athlete-id="${athlete.id}"><i class="bi bi-trash-fill"></i> Elimina</button></div></div></div></div>`;
+                card.innerHTML = `<div class="card ${cardClass}" style="${indBorder}${cardBg}"><div class="card-body athlete-card-clickable" data-athlete-id="${athlete.id}">${athlete.avatar ? `<img src="${escapeHtml(athlete.avatar)}" onerror="window.avatarFallback(this, ${JSON.stringify(athlete.name || '').replace(/"/g, '&quot;')})" alt="${escapeHtml(athlete.name)}" class="athlete-avatar me-3">` : initialsAvatarHtml(athlete.name)}<div><h5 class="card-title">${escapeHtml(athlete.name)} ${athlete.isCaptain ? '<i class="bi bi-star-fill is-captain"></i>' : ''} ${vcIcon}${uscitaBadge}${infortunatoBadge}</h5><p class="card-text text-muted">${escapeHtml(athlete.role)}</p>${indBadge}</div><div class="shirt-number">${athlete.number}</div>${statusIcon}</div><div class="card-actions no-print"><button class="btn btn-sm btn-outline-light rating-btn" title="Pagelle" data-athlete-id="${athlete.id}"><i class="bi bi-clipboard-check"></i></button><button class="btn btn-sm btn-outline-light gps-btn" title="Dati Performance" data-athlete-id="${athlete.id}"><i class="bi bi-person-fill-gear"></i></button><button class="btn btn-sm btn-outline-light individual-btn" title="Pacchetto Individual" data-athlete-id="${athlete.id}" style="${athlete.individualPackage?.type ? 'color:#f59e0b;border-color:#f59e0b;' : ''}"><i class="bi bi-person-fill-up"></i></button><div class="card-more-wrap"><button class="btn btn-sm btn-outline-light card-more-btn" title="Altre azioni" aria-label="Altre azioni"><i class="bi bi-three-dots"></i></button><div class="card-more-menu"><button class="btn btn-sm btn-outline-light parent-btn" data-athlete-id="${athlete.id}"><i class="bi bi-people-fill"></i> Genitori</button><button class="btn btn-sm btn-outline-light infortuni-btn" data-athlete-id="${athlete.id}"><i class="bi bi-bandaid-fill"></i> Infortuni</button>${athlete.certLink ? `<button class="btn btn-sm btn-outline-light cert-btn" onclick="window.open('${escapeHtml(athlete.certLink)}','_blank')"><i class="bi bi-file-earmark-medical-fill" style="color:#16a34a;"></i> Certificato</button>` : ""}<button class="btn btn-sm btn-outline-light edit-btn" data-athlete-id="${athlete.id}"><i class="bi bi-pencil-fill"></i> Modifica</button>${athlete.archived ? `<button class="btn btn-sm btn-outline-success restore-btn" data-athlete-id="${athlete.id}"><i class="bi bi-arrow-counterclockwise"></i> Ripristina</button>` : `<button class="btn btn-sm btn-outline-warning archive-btn" data-athlete-id="${athlete.id}"><i class="bi bi-archive-fill"></i> Archivia</button>`}<button class="btn btn-sm btn-outline-danger delete-btn" data-athlete-id="${athlete.id}"><i class="bi bi-trash-fill"></i> Elimina</button>${sessionStorage.getItem('gosport_user_role') === 'admin' ? `<button class="btn btn-sm btn-outline-info copy-annata-btn" data-athlete-id="${athlete.id}"><i class="bi bi-clipboard-plus"></i> Copia in annata</button>` : ''}</div></div></div></div>`;
             }
             elements.athleteGrid.appendChild(card);
             // FIX v1.5.21: applica colore background dopo appendChild (override Bootstrap vars)
@@ -4317,6 +4318,61 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 updateAllUI();
             }
+        }
+        else if (e.target.closest('.copy-annata-btn')) {
+            const annataId = sessionStorage.getItem('gosport_current_annata') || localStorage.getItem('currentAnnata');
+            let modal = document.getElementById('copyAnnataModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'copyAnnataModal';
+                modal.className = 'modal fade';
+                modal.tabIndex = -1;
+                modal.innerHTML = `<div class="modal-dialog modal-sm"><div class="modal-content" style="background:#1e293b;color:#f1f5f9;"><div class="modal-header border-secondary"><h5 class="modal-title">📋 Copia in annata</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><p id="copyAnnataAthlName" class="fw-bold mb-3"></p><label class="form-label small">Annata di destinazione</label><select id="copyAnnataSelect" class="form-select form-select-sm" style="background:#0f172a;color:#f1f5f9;border-color:#334155;"></select></div><div class="modal-footer border-secondary"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annulla</button><button type="button" class="btn btn-info btn-sm" id="copyAnnataConfirmBtn">Copia</button></div></div></div>`;
+                document.body.appendChild(modal);
+            }
+            document.getElementById('copyAnnataAthlName').textContent = athlete.name;
+            const select = document.getElementById('copyAnnataSelect');
+            select.innerHTML = '<option value="">Caricamento…</option>';
+            const bsModal = new bootstrap.Modal(modal);
+            bsModal.show();
+            try {
+                const resp = await fetch('/api/annate/list');
+                const data = await resp.json();
+                const annateList = Array.isArray(data) ? data : (data.annate || []);
+                const filtered = annateList.filter(a => String(a.id) !== String(annataId));
+                if (filtered.length === 0) {
+                    select.innerHTML = '<option value="">Nessuna altra annata disponibile</option>';
+                } else {
+                    select.innerHTML = filtered.map(a => `<option value="${a.id}">${a.name || a.id}</option>`).join('');
+                }
+            } catch (err) {
+                select.innerHTML = '<option value="">Errore caricamento annate</option>';
+            }
+            document.getElementById('copyAnnataConfirmBtn').onclick = async function () {
+                const destId = select.value;
+                if (!destId) return;
+                this.disabled = true;
+                this.textContent = 'Copia in corso…';
+                try {
+                    const r = await fetch('/api/data?action=copy-athlete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-Annata-Id': annataId },
+                        body: JSON.stringify({ _action: 'copy-athlete', athleteId, destAnnataId: destId })
+                    });
+                    const res = await r.json();
+                    bsModal.hide();
+                    if (res.skipped) {
+                        alert(`ℹ️ ${athlete.name} è già presente nell'annata selezionata. Nessuna copia effettuata.`);
+                    } else if (res.success) {
+                        alert(`✅ ${athlete.name} copiato con successo!`);
+                    } else {
+                        alert('⚠️ Errore durante la copia: ' + (res.error || 'sconosciuto'));
+                    }
+                } catch (err) {
+                    bsModal.hide();
+                    alert('⚠️ Errore di rete durante la copia.');
+                }
+            };
         }
         else if (e.target.closest('.gps-btn')) {
             document.getElementById('modal-athlete-name-gps').textContent = athlete.name;
