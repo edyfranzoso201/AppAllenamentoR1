@@ -569,6 +569,8 @@ function sanitizeInvItem(raw) {
   if (resolvedKitName) item._kitName = resolvedKitName;
   if (raw._kitNum  != null) item._kitNum = String(raw._kitNum).replace(/[^a-zA-Z0-9]/g, '').slice(0, 4) || '1';
   if (raw._kitExtra) item._kitExtra = true;
+  // Colore voce singola (non-kit)
+  if (raw.colore) item.colore = String(raw.colore).slice(0, 60);
   // Colore + Tipologia a livello di set (testo libero)
   if (raw._kitColore)    item._kitColore    = String(raw._kitColore).slice(0, 40);
   if (raw._kitTipologia) item._kitTipologia = String(raw._kitTipologia).slice(0, 60);
