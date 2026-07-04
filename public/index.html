@@ -6842,7 +6842,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     if (_kitMode === 'numbered') {
       var nums = allKitItems.filter(function(it){ return it._kitNum != null && !it._kitExtra; })
         .map(function(it){ return parseInt(it._kitNum, 10); }).filter(function(n){ return !isNaN(n); });
-      var minN = nums.length ? Math.min.apply(null, nums) : 1;
+      var minN = nums.length ? Math.max(1, Math.min.apply(null, nums)) : 1;
       var maxN = nums.length ? Math.max.apply(null, nums) : 20;
       document.getElementById('inv-kit-from').value = minN;
       document.getElementById('inv-kit-to').value   = maxN;
@@ -7648,11 +7648,17 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     var name = document.getElementById('inv-kit-name').value.trim();
     if (!name) { alert('Nome set mancante.'); return; }
 
+    // Nome originale del kit (al momento dell'apertura in modifica): serve per
+    // ritrovare gli id esistenti e per il replace atomico server-side.
+    // DEVE essere dichiarato PRIMA del loop righe: prima era dichiarato dopo,
+    // e per hoisting valeva undefined durante il loop → id mai riusati,
+    // righe scartate e removeIds incoerenti (causa della perdita di kit).
+    var originalName = _kitOriginalName !== null ? _kitOriginalName : name;
+
     // Blocca se il nome scelto è già usato da un ALTRO kit (rinomina che creerebbe fusione)
-    var originalName0 = _kitOriginalName !== null ? _kitOriginalName : name;
-    if (name !== originalName0) {
+    if (name !== originalName) {
       var nameCollision = _items.some(function(it){
-        return (it._kitName === name || it._ktName === name) && it._kitName !== originalName0 && it._ktName !== originalName0;
+        return (it._kitName === name || it._ktName === name) && it._kitName !== originalName && it._ktName !== originalName;
       });
       if (nameCollision) {
         alert('⚠️ Esiste già un kit chiamato "' + name + '".\nScegli un nome diverso o elimina prima il kit esistente.');
@@ -7754,9 +7760,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       if (!items.length) { btn.disabled = false; alert('Nessuna riga con dati da salvare.'); return; }
     }
 
-    // Usa il nome originale (al momento dell'apertura in modifica) per rimuovere gli
-    // item vecchi. Se è un kit nuovo (_kitOriginalName === null) usa il nome corrente.
-    var originalName = _kitOriginalName !== null ? _kitOriginalName : name;
+    // removeIds: solo gli item del kit originale (il server li rimuove per il replace atomico)
     var removeIds = _items
       .filter(function(it){ return it._kitName === originalName || it._ktName === originalName; })
       .map(function(it){ return it.id; })
@@ -8025,6 +8029,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
           var pid   = a.id;
           var entry = (matData[pid] || {})[itm];
           var num   = String((matData[pid] || {})._numero || '').trim();
+          if (num === '0') num = ''; // numero 0 = nessun numero assegnato → trattato come senza numero
           var taglia = (entry && entry.taglia) || '';
           var nota   = (entry && entry.nota)   || '';
           // Atleta con numero ma articolo MAI consegnato → importa come mancante con nota

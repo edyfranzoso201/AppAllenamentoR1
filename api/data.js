@@ -661,14 +661,19 @@ if (req.query?.action === 'inventory') {
                                   .map(x => String(x)));
       let items = (await kv.get(invKey)) || [];
       if (!Array.isArray(items)) items = [];
-      // Protezione: se il KV ha item che non appartengono al kit corrente ma
-      // la lettura ha restituito meno item di quanti i removeIds suggeriscono esistano,
-      // potrebbe esserci un problema di lettura. In ogni caso non perdiamo mai item
-      // di altri kit: il filter è per nome kit specifico, non per id generici.
-      const otherItems = kitName
-        ? items.filter(i => i._kitName !== kitName && i._ktName !== kitName && !removeIds.has(String(i.id)))
-        : items.filter(i => !removeIds.has(String(i.id)));
-      items = otherItems.concat(sanitized);
+      // Replace atomico con protezione hard: può essere rimosso SOLO
+      // - un item del kit originale (per _kitName / _ktName legacy), oppure
+      // - un item in removeIds che sia dello stesso kit o senza kit (orfano).
+      // Gli item di ALTRI kit non sono mai rimovibili da questa azione,
+      // anche se il client inviasse removeIds errati.
+      items = items.filter(i => {
+        const sameKit = kitName && (i._kitName === kitName || i._ktName === kitName);
+        if (sameKit) return false;
+        const isOrphan = !i._kitName && !i._ktName;
+        if (isOrphan && removeIds.has(String(i.id))) return false;
+        return true;
+      });
+      items = items.concat(sanitized);
       await kv.set(invKey, items);
       return res.status(200).json({ success: true, count: sanitized.length, total: items.length });
     }
