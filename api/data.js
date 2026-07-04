@@ -964,6 +964,24 @@ if (req.query?.action === 'push-send' && req.method === 'POST') {
   const { title, body, url, annataId: sendAnnataId } = req.body || {};
   const aid = sendAnnataId || annataId;
   if (!aid) return res.status(400).json({ success: false, message: 'annataId mancante' });
+  if (!isValidId(aid)) return res.status(400).json({ success: false, message: 'annataId non valido' });
+
+  // ISOLAMENTO SOCIETÀ: si possono inviare push SOLO ai subscriber di un'annata
+  // della PROPRIA società. Senza questo controllo un utente di una società poteva
+  // inviare notifiche (con titolo/testo/URL liberi) ai genitori di un'altra società
+  // — vettore di phishing verso contatti di minori. Il societyId viene dalla
+  // sessione (server-side), mai dagli header falsificabili.
+  const _pushAnnate = (await kv.get('annate:list')) || [];
+  const _pushMeta = _pushAnnate.find(a => String(a.id) === String(aid));
+  if (_pushMeta) {
+    const annSoc = _pushMeta.societyId || null;
+    const userSoc = session.societyId || null;
+    if (annSoc !== userSoc) {
+      return res.status(403).json({ success: false, message: 'Non puoi inviare notifiche a un\'annata di un\'altra società' });
+    }
+  }
+  // Annata non in annate:list (orfana): nessun dato cross-società da proteggere → consentita.
+
   const subs = (await kv.get(`push:annata:${aid}:subs`)) || [];
   if (subs.length === 0) return res.status(200).json({ success: true, sent: 0 });
   const { default: webpush } = await import('web-push');
@@ -972,7 +990,16 @@ if (req.query?.action === 'push-send' && req.method === 'POST') {
     process.env.VAPID_PUBLIC_KEY,
     process.env.VAPID_PRIVATE_KEY
   );
-  const payload = JSON.stringify({ title: title || 'Sport Monitoring', body: body || '', url: url || '/' });
+  // URL della notifica: accetta SOLO percorsi relativi interni (iniziano con "/"
+  // ma non "//", che sarebbe protocol-relative verso un host esterno). Impedisce
+  // di far aprire alle famiglie un link esterno arbitrario tramite la notifica.
+  const rawUrl = String(url || '/');
+  const safeUrl = (/^\/(?!\/)/.test(rawUrl)) ? rawUrl.slice(0, 300) : '/';
+  // Titolo e testo: cap di lunghezza (il contenuto è testo, non HTML, quindi non
+  // c'è rischio XSS; il limite evita solo payload abnormi).
+  const safeTitle = String(title || 'Sport Monitoring').slice(0, 120);
+  const safeBody  = String(body || '').slice(0, 300);
+  const payload = JSON.stringify({ title: safeTitle, body: safeBody, url: safeUrl });
   const results = await Promise.allSettled(subs.map(s => webpush.sendNotification(s, payload)));
   const valid = subs.filter((_, i) => !(results[i].status === 'rejected' && results[i].reason?.statusCode === 410));
   if (valid.length !== subs.length) await kv.set(`push:annata:${aid}:subs`, valid);
