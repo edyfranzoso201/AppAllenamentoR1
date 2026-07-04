@@ -42,15 +42,30 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      // Scrivi log
+      // Scrivi log accesso. RICHIEDE sessione valida: senza questo controllo
+      // l'endpoint era scrivibile da chiunque, permettendo di falsificare accessi,
+      // inquinare i log di altre società e svuotare il ring-buffer (500) con spam.
+      const sess = await getLogSession(req);
+      if (!sess) return res.status(401).json({ ok: false, error: 'Non autorizzato' });
+
+      // Legge un eventuale timestamp dal body ma NON si fida di username/role/
+      // societyId inviati dal client: quei campi vengono SEMPRE dalla sessione,
+      // così un log non può essere attribuito a un altro utente o a un'altra società.
       let body = req.body;
       if (!body) {
         const chunks = [];
         for await (const chunk of req) chunks.push(chunk);
-        body = JSON.parse(Buffer.concat(chunks).toString() || '{}');
+        try { body = JSON.parse(Buffer.concat(chunks).toString() || '{}'); }
+        catch { body = {}; }
       }
-      const entry = body.entry;
-      if (!entry) return res.status(400).json({ error: 'entry mancante' });
+      const clientTs = body && body.entry && typeof body.entry.ts === 'string' ? body.entry.ts : null;
+
+      const entry = {
+        ts: clientTs || new Date().toISOString(),
+        username: sess.username || '',
+        role: sess.role || 'user',
+        societyId: sess.societyId || null,
+      };
 
       const existing = await kv.get('access_log');
       const arr = Array.isArray(existing) ? existing : [];

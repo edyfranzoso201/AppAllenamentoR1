@@ -734,18 +734,20 @@
                         sessionStorage.setItem(SESSION_KEY + '_expiry', expiry.toString());
                         saveSessionToLocal();
 
-                        // Registra accesso — usa /api/log che non richiede annata
+                        // Registra accesso — usa /api/log che non richiede annata.
+                        // Invia il token di sessione appena ricevuto: il server lo valida
+                        // e ricava username/role/societyId DALLA sessione (non si fida del
+                        // body, che è falsificabile). L'interceptor non è ancora installato
+                        // a questo punto, quindi passiamo l'header esplicitamente.
                         try {
                             fetch('/api/log', {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-Auth-Session': result.sessionToken || ''
+                                },
                                 body: JSON.stringify({
-                                    entry: {
-                                        ts: new Date().toISOString(),
-                                        username: username,
-                                        role: result.role || 'user',
-                                        societyId: result.societyId || null
-                                    }
+                                    entry: { ts: new Date().toISOString() }
                                 })
                             }).then(r => r.json())
                               .then(d => console.log('✅ Log accesso:', d))
