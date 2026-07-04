@@ -39,6 +39,15 @@ export default async function handler(req, res) {
     }
     // TTL scorrevole: rinnova la scadenza della sessione a 8h da ora (soft)
     try { await kv.expire(`session:${token}`, 8 * 60 * 60); } catch (e) { /* non bloccante */ }
+
+    // AUTORIZZAZIONE: creare/modificare/cancellare annate è un'operazione
+    // distruttiva (delete azzera atleti, valutazioni, GPS, calendario, presenze,
+    // formazioni a cascata). Consentita SOLO all'admin della società. Senza questo
+    // check, qualsiasi utente con sessione valida — anche un coach in sola lettura —
+    // potrebbe distruggere un'intera stagione.
+    if (String(sess.role || '').toLowerCase() !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Solo l\'amministratore può gestire le annate' });
+    }
     const societyId = sess.societyId || null;
 
     if (!action) {
