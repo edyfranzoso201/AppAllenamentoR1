@@ -2288,6 +2288,20 @@
                                     <label class="form-label small">📁 Categoria inventario</label>
                                     <select id="inv-kit-cat" class="form-select form-select-sm" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;"></select>
                                 </div>
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label small d-block mb-1">🏷️ Sponsor (per tutto il kit)</label>
+                                    <div class="d-flex align-items-center gap-2 flex-wrap p-2" style="background:#0f172a;border-radius:6px;border:1px solid #334155;">
+                                        <div class="form-check mb-0">
+                                            <input class="form-check-input" type="checkbox" id="inv-kit-sponsor" style="background:#1e293b;border-color:#475569;"
+                                                onchange="document.getElementById('inv-kit-sponsor-wrap').style.display=this.checked?'':'none'">
+                                            <label class="form-check-label small" for="inv-kit-sponsor" style="color:#93c5fd;">Con sponsor</label>
+                                        </div>
+                                        <div id="inv-kit-sponsor-wrap" style="display:none;flex:1;">
+                                            <input id="inv-kit-sponsor-nome" type="text" class="form-control form-control-sm" maxlength="120"
+                                                placeholder="Nome sponsor…" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <div class="row g-2 mb-3">
                                 <!-- Numerato: da/a -->
@@ -6833,6 +6847,14 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       document.getElementById('inv-kit-from').value = minN;
       document.getElementById('inv-kit-to').value   = maxN;
     }
+    // Ripristina sponsor globale dal primo item del kit
+    var spChk = document.getElementById('inv-kit-sponsor');
+    var spWrap = document.getElementById('inv-kit-sponsor-wrap');
+    var spNome = document.getElementById('inv-kit-sponsor-nome');
+    var hasSp = !!(anyKitItem && anyKitItem.sponsor);
+    if (spChk) spChk.checked = hasSp;
+    if (spWrap) spWrap.style.display = hasSp ? '' : 'none';
+    if (spNome) spNome.value = (anyKitItem && anyKitItem.sponsorNome) ? anyKitItem.sponsorNome : '';
     bootstrap.Modal.getOrCreateInstance(document.getElementById('invKitModal')).show();
     // Genera automaticamente la griglia dopo che il modal è aperto
     setTimeout(function(){ window.INV.kitGenerate(); }, 300);
@@ -7284,6 +7306,9 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     document.getElementById('inv-kit-grid').innerHTML = '';
     document.getElementById('inv-kit-info').textContent = '';
     document.getElementById('inv-kit-save-btn').style.display = 'none';
+    var spChk = document.getElementById('inv-kit-sponsor'); if (spChk) spChk.checked = false;
+    var spWrap = document.getElementById('inv-kit-sponsor-wrap'); if (spWrap) spWrap.style.display = 'none';
+    var spNome = document.getElementById('inv-kit-sponsor-nome'); if (spNome) spNome.value = '';
     _kitRows = [];
     bootstrap.Modal.getOrCreateInstance(document.getElementById('invKitModal')).show();
   };
@@ -7393,12 +7418,11 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     document.getElementById('inv-kit-save-btn').style.display = '';
 
     var tagOpts = _kitTagOpts();
-    var html = '<table class="table table-dark table-bordered table-sm mb-0" style="border-color:var(--bg-blue);min-width:660px;">' +
+    var html = '<table class="table table-dark table-bordered table-sm mb-0" style="border-color:var(--bg-blue);min-width:480px;">' +
       '<thead><tr style="font-size:0.8rem;color:#94a3b8;">' +
       '<th style="width:50px;text-align:center;">N°</th>' +
       '<th style="width:110px;">Taglia</th>' +
       '<th style="width:145px;">Condizione</th>' +
-      '<th style="width:160px;">🏷️ Sponsor</th>' +
       '<th>Note</th></tr></thead><tbody>';
 
     // In presenza di duplicati per lo stesso numero, preferisci l'item con taglia
@@ -7422,7 +7446,6 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         '</td>' +
         '<td><select class="form-select form-select-sm kit-taglia" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">' + tagOpts + '</select></td>' +
         '<td>' + _kitCondSel('kit-cond') + '</td>' +
-        '<td>' + _kitSponsorCell() + '</td>' +
         '<td><input type="text" class="form-control form-control-sm kit-note" maxlength="200" placeholder="Note…" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;"></td>' +
         '</tr>';
     }
@@ -7443,12 +7466,11 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
           '<span style="color:#64748b;font-size:0.78rem;">(maglie di riserva per taglia)</span>' +
           '<button type="button" class="btn btn-xs btn-outline-secondary ms-auto" onclick="window.INV.kitAddExtra()"><i class="bi bi-plus-circle"></i> Riga</button>' +
         '</div>' +
-        '<table class="table table-dark table-bordered table-sm mb-0" style="border-color:#1e293b;min-width:660px;">' +
+        '<table class="table table-dark table-bordered table-sm mb-0" style="border-color:#1e293b;min-width:400px;">' +
           '<thead><tr style="font-size:0.78rem;color:#64748b;">' +
             '<th style="width:110px;">Taglia</th>' +
             '<th style="width:70px;text-align:center;">Qtà</th>' +
             '<th style="width:145px;">Condizione</th>' +
-            '<th style="width:160px;">🏷️ Sponsor</th>' +
             '<th>Note</th>' +
             '<th style="width:36px;"></th>' +
           '</tr></thead>' +
@@ -7481,7 +7503,6 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       '<td><select class="form-select form-select-sm kit-taglia" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">' + tagOpts + '</select></td>' +
       '<td><input type="number" class="form-control form-control-sm kit-extra-qty" min="0" max="999" value="1" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;text-align:center;"></td>' +
       '<td>' + _kitCondSel('kit-cond') + '</td>' +
-      '<td>' + _kitSponsorCell() + '</td>' +
       '<td><input type="text" class="form-control form-control-sm kit-note" maxlength="200" placeholder="Note…" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;"></td>' +
       '<td style="text-align:center;"><button type="button" class="btn btn-xs btn-outline-danger" onclick="this.closest(\'tr\').remove()"><i class="bi bi-x"></i></button></td>' +
       '</tr>';
@@ -7499,9 +7520,8 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       tr.querySelector('.kit-taglia').value = ex.taglia || '';
       var qtyEl = tr.querySelector('.kit-extra-qty');
       if (qtyEl) qtyEl.value = ex.quantita || 1;
-      tr.querySelector('.kit-cond').value   = ex.condizione || 'buono';
-      tr.querySelector('.kit-note').value   = ex.note || '';
-      _kitRestoreSponsor(tr, ex);
+      tr.querySelector('.kit-cond').value = ex.condizione || 'buono';
+      tr.querySelector('.kit-note').value = ex.note || '';
     }
   }
 
@@ -7524,7 +7544,6 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       '</td>' +
       '<td><select class="form-select form-select-sm kit-taglia" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">' + tagOpts + '</select></td>' +
       '<td>' + _kitCondSel('kit-cond') + '</td>' +
-      '<td>' + _kitSponsorCell() + '</td>' +
       '<td style="display:flex;gap:4px;align-items:center;">' +
         '<input type="text" class="form-control form-control-sm kit-note" maxlength="200" placeholder="Note…" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">' +
         '<button type="button" class="btn btn-xs btn-outline-danger" onclick="this.closest(\'tr\').remove()" title="Rimuovi"><i class="bi bi-x"></i></button>' +
@@ -7641,11 +7660,15 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       }
     }
 
-    // Colore, Tipologia e Categoria sono a livello di set: valgono per tutti gli articoli del kit
+    // Colore, Tipologia, Categoria e Sponsor sono a livello di set: valgono per tutti gli articoli del kit
     var kitColore    = (document.getElementById('inv-kit-colore') || {}).value || '';
     var kitTipologia = (document.getElementById('inv-kit-tipologia') || {}).value || '';
     var kitCategoria = (document.getElementById('inv-kit-cat') || {}).value || _cats[0] || 'Maglie da calcio';
     kitColore = kitColore.trim(); kitTipologia = kitTipologia.trim(); kitCategoria = kitCategoria.trim();
+    var kitSponsorChk  = document.getElementById('inv-kit-sponsor');
+    var kitSponsorNome = document.getElementById('inv-kit-sponsor-nome');
+    var kitSponsor     = !!(kitSponsorChk && kitSponsorChk.checked);
+    var kitSponsorName = kitSponsor ? ((kitSponsorNome && kitSponsorNome.value.trim()) || '') : '';
 
     var btn = document.getElementById('inv-kit-save-btn');
     btn.disabled = true;
@@ -7660,10 +7683,6 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         var taglia     = tr.querySelector('.kit-taglia').value;
         var condizione = tr.querySelector('.kit-cond').value;
         var note       = tr.querySelector('.kit-note').value.trim();
-        var spChk      = tr.querySelector('.kit-sponsor-chk');
-        var spNome     = tr.querySelector('.kit-sponsor-nome');
-        var sponsor    = !!(spChk && spChk.checked);
-        var sponsorNome= sponsor ? ((spNome && spNome.value.trim()) || '') : '';
         // cerca per numero originale (dataset.num) per mantenere l'id esistente
         // (cerca sia _kitName sia _ktName legacy)
         var origNum    = String(tr.dataset.num);
@@ -7673,13 +7692,13 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         // salta righe vuote: righe generate automaticamente senza dati, oppure righe aggiunte manualmente senza numero
         var isManual = origNum.startsWith('new-');
         if (isManual && !num) return; // riga manuale senza numero → ignora
-        if (!existing && !isManual && !taglia && condizione === 'buono' && !note && !sponsor) return;
+        if (!existing && !isManual && !taglia && condizione === 'buono' && !note) return;
         items.push({
           id: existing ? existing.id : '',
           categoria: kitCategoria,
           nome: name + ' N°' + num,
           quantita: 1,
-          taglia, condizione, note, sponsor, sponsorNome,
+          taglia, condizione, note, sponsor: kitSponsor, sponsorNome: kitSponsorName,
           _kitName: name,
           _kitNum: num,
           _kitColore: kitColore,
@@ -7695,17 +7714,13 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         var quantita   = Math.max(0, parseInt((qtyEl && qtyEl.value) || 1));
         var condizione = tr.querySelector('.kit-cond').value;
         var note       = tr.querySelector('.kit-note').value.trim();
-        var spChk      = tr.querySelector('.kit-sponsor-chk');
-        var spNome     = tr.querySelector('.kit-sponsor-nome');
-        var sponsor    = !!(spChk && spChk.checked);
-        var sponsorNome= sponsor ? ((spNome && spNome.value.trim()) || '') : '';
-        if (!taglia && !note && !sponsor) return; // salta righe vuote
+        if (!taglia && !note) return; // salta righe vuote
         var ex         = extraExisting[i] || null;
         items.push({
           id: ex ? ex.id : '',
           categoria: kitCategoria,
           nome: name + ' (scorta' + (taglia ? ' ' + taglia : '') + ')',
-          quantita, taglia, condizione, note, sponsor, sponsorNome,
+          quantita, taglia, condizione, note, sponsor: kitSponsor, sponsorNome: kitSponsorName,
           _kitName: name,
           _kitExtra: true,
           _kitColore: kitColore,
@@ -7723,17 +7738,13 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         var quantita   = Math.max(1, Math.min(999, parseInt((qtyEl && qtyEl.value) || 1) || 1));
         var condizione = tr.querySelector('.kit-cond').value;
         var note       = tr.querySelector('.kit-note').value.trim();
-        var spChk      = tr.querySelector('.kit-sponsor-chk');
-        var spNome     = tr.querySelector('.kit-sponsor-nome');
-        var sponsor    = !!(spChk && spChk.checked);
-        var sponsorNome= sponsor ? ((spNome && spNome.value.trim()) || '') : '';
-        if (!taglia && condizione === 'buono' && !note && !sponsor) return; // salta righe vuote
+        if (!taglia && condizione === 'buono' && !note) return; // salta righe vuote
         items.push({
           id: '',
           categoria: kitCategoria,
           nome: name + (taglia ? ' — ' + taglia : '') + ' ×' + quantita,
           quantita: quantita,
-          taglia, condizione, note, sponsor, sponsorNome,
+          taglia, condizione, note, sponsor: kitSponsor, sponsorNome: kitSponsorName,
           _kitName: name,
           _kitExtra: true,
           _kitColore: kitColore,

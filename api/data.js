@@ -661,16 +661,16 @@ if (req.query?.action === 'inventory') {
                                   .map(x => String(x)));
       let items = (await kv.get(invKey)) || [];
       if (!Array.isArray(items)) items = [];
-      // Replace atomico: rimuove gli item del kit ORIGINALE (per nome e legacy _ktName) + id espliciti
-      if (kitName) {
-        items = items.filter(i => i._kitName !== kitName && i._ktName !== kitName);
-      }
-      if (removeIds.size) {
-        items = items.filter(i => !removeIds.has(String(i.id)));
-      }
-      items = items.concat(sanitized);
+      // Protezione: se il KV ha item che non appartengono al kit corrente ma
+      // la lettura ha restituito meno item di quanti i removeIds suggeriscono esistano,
+      // potrebbe esserci un problema di lettura. In ogni caso non perdiamo mai item
+      // di altri kit: il filter è per nome kit specifico, non per id generici.
+      const otherItems = kitName
+        ? items.filter(i => i._kitName !== kitName && i._ktName !== kitName && !removeIds.has(String(i.id)))
+        : items.filter(i => !removeIds.has(String(i.id)));
+      items = otherItems.concat(sanitized);
       await kv.set(invKey, items);
-      return res.status(200).json({ success: true, count: sanitized.length });
+      return res.status(200).json({ success: true, count: sanitized.length, total: items.length });
     }
 
     if (act === 'delete') {
