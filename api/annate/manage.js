@@ -69,7 +69,24 @@ export default async function handler(req, res) {
         return res.status(400).json({ success: false, message: "Esiste già un'annata con questo nome" });
       }
 
-      const annataId = id || generateAnnataId();
+      // SICUREZZA: il client può proporre un id (usato per "recuperare" un'annata
+      // con dati già presenti). Ma se quell'id ESISTE GIÀ in annate:list ed è di
+      // un'ALTRA società, rifiutiamo: altrimenti un admin potrebbe agganciare alla
+      // propria società un'annata (e i suoi dati) di un'altra. Se l'id non è valido
+      // lo ignoriamo e ne generiamo uno nuovo.
+      let annataId;
+      if (id) {
+        if (!/^[a-z0-9_-]+$/i.test(String(id))) {
+          return res.status(400).json({ success: false, message: 'ID annata non valido' });
+        }
+        const existingEntry = annate.find(a => String(a.id) === String(id));
+        if (existingEntry && (existingEntry.societyId || null) !== (societyId || null)) {
+          return res.status(403).json({ success: false, message: 'ID annata già assegnato a un\'altra società' });
+        }
+        annataId = String(id);
+      } else {
+        annataId = generateAnnataId();
+      }
 
       const newAnnata = {
         id: annataId,
@@ -191,34 +208,37 @@ export default async function handler(req, res) {
     }
 
     // ==========================================
-    // FIX_SOCIETY - Assegna societyId alle annate orfane
+    // FIX_SOCIETY - Reclama UNA annata orfana specifica (per id)
     // ==========================================
+    // Prima assegnava in blocco TUTTE le annate senza societyId a chi invocava:
+    // così un admin poteva rastrellare annate orfane di altre società (incluse
+    // quelle diventate orfane) e vederne i dati. Ora si può reclamare SOLO una
+    // singola annata orfana, indicata esplicitamente per id, e solo se è davvero
+    // orfana (societyId assente). Un'annata già assegnata a un'altra società non
+    // è reclamabile.
     if (action === 'fix_society') {
       if (!societyId) {
-        return res.status(400).json({ success: false, message: 'X-Society-Id header obbligatorio' });
+        return res.status(400).json({ success: false, message: 'Società non determinata dalla sessione' });
       }
-
-      const orphans = annate.filter(a => !a.societyId);
-      if (orphans.length === 0) {
-        return res.status(200).json({ success: true, message: 'Nessuna annata orfana trovata', fixed: 0 });
+      if (!id) {
+        return res.status(400).json({ success: false, message: 'ID annata obbligatorio: indica quale annata orfana reclamare' });
       }
-
-      let fixedCount = 0;
-      for (let i = 0; i < annate.length; i++) {
-        if (!annate[i].societyId) {
-          annate[i].societyId = societyId;
-          fixedCount++;
-          console.log(`✅ Fix societyId per annata: ${annate[i].nome} → ${societyId}`);
-        }
+      const idx = annate.findIndex(a => String(a.id) === String(id));
+      if (idx === -1) {
+        return res.status(404).json({ success: false, message: 'Annata non trovata' });
       }
-
+      if (annate[idx].societyId) {
+        return res.status(403).json({ success: false, message: 'Annata già assegnata a una società: non reclamabile' });
+      }
+      annate[idx].societyId = societyId;
+      annate[idx].updatedAt = new Date().toISOString();
       await kv.set('annate:list', annate);
-
+      console.log(`✅ Annata orfana reclamata: ${annate[idx].nome} (${id}) → ${societyId}`);
       return res.status(200).json({
         success: true,
-        message: `Corrette ${fixedCount} annate orfane`,
-        fixed: fixedCount,
-        annate: orphans.map(a => a.nome)
+        message: 'Annata assegnata alla società',
+        fixed: 1,
+        annata: annate[idx].nome
       });
     }
 
