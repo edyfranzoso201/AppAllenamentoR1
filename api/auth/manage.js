@@ -1,6 +1,7 @@
 // api/auth/manage.js - Gestione utenti (create, update, delete, list)
 import { createClient } from '@vercel/kv';
 import { hashPasswordScrypt } from './_password.js';
+import { verifySuperAdmin } from '../_sa-auth.js';
 
 const kv = createClient({
   url: process.env.UPSTASH_KV_REST_API_URL || process.env.KV_REST_API_URL,
@@ -48,10 +49,17 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const superAdminPwd = req.headers['x-super-admin-password'] || null;
   const SUPER_PWD = process.env.SUPER_ADMIN_PASSWORD;
   if (!SUPER_PWD) return res.status(500).json({ success: false, message: 'Configurazione server incompleta' });
-  const isSuperAdmin = superAdminPwd === SUPER_PWD;
+  // Verifica la chiave superadmin SOLO se l'header è presente: l'uso normale è
+  // via sessione admin (che non manda la chiave) e non deve consumare il
+  // rate-limit. Confronto timing-safe + rate-limit per IP dentro l'helper.
+  let isSuperAdmin = false;
+  if ((req.headers['x-super-admin-password'] || '').trim()) {
+    const sa = await verifySuperAdmin(req, kv);
+    if (sa.blocked) return res.status(429).json({ success: false, message: `Troppi tentativi. Riprova tra ${sa.retryAfterMin} min.` });
+    isSuperAdmin = sa.ok;
+  }
 
   try {
     // ── Autenticazione ──────────────────────────────────────────────────────

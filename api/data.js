@@ -2,6 +2,7 @@
 import { createClient } from '@vercel/kv';
 import { gzipSync } from 'zlib';
 import crypto from 'crypto';
+import { verifySuperAdmin } from './_sa-auth.js';
 
 const kv = createClient({
 url: process.env.UPSTASH_KV_REST_API_URL || process.env.KV_REST_API_URL,
@@ -1505,9 +1506,15 @@ if (req.query?.action === 'backup-store') {
 if (req.query?.action === 'backup') {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  const saKey = (req.headers['x-sa-key'] || '').trim();
-  const validSaKey = (process.env.SUPER_ADMIN_PASSWORD || '').trim();
-  const isSuperAdmin = validSaKey && saKey === validSaKey;
+  // Verifica la chiave superadmin SOLO se l'header è presente: così un backup
+  // legittimo via sessione admin o token backup (che non mandano x-sa-key) non
+  // consuma il rate-limit superadmin. Confronto timing-safe + rate-limit dentro l'helper.
+  let isSuperAdmin = false;
+  if ((req.headers['x-sa-key'] || '').trim()) {
+    const sa = await verifySuperAdmin(req, kv);
+    if (sa.blocked) return res.status(429).json({ error: `Troppi tentativi. Riprova tra ${sa.retryAfterMin} min.` });
+    isSuperAdmin = sa.ok;
+  }
 
   const isAdminSession = session.isAuthenticated && session.role === 'admin';
   const backupToken = req.headers['x-backup-token'] || req.query.token;
@@ -1598,11 +1605,9 @@ if (req.query?.action === 'backup') {
 if (req.query?.action === 'restore') {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const saKey = (req.headers['x-sa-key'] || '').trim();
-  const validSaKey = (process.env.SUPER_ADMIN_PASSWORD || '').trim();
-  if (!validSaKey || saKey !== validSaKey) {
-    return res.status(401).json({ error: 'Non autorizzato — solo superadmin' });
-  }
+  const sa = await verifySuperAdmin(req, kv);
+  if (sa.blocked) return res.status(429).json({ error: `Troppi tentativi. Riprova tra ${sa.retryAfterMin} min.` });
+  if (!sa.ok) return res.status(401).json({ error: 'Non autorizzato — solo superadmin' });
 
   const { data, confirmToken } = req.body || {};
   if (confirmToken !== 'RESTORE_CONFIRMED') {
@@ -1631,11 +1636,9 @@ if (req.query?.action === 'restore') {
 
 // ── MONITORING: Redis INFO + Vercel usage (solo superadmin) ──────────────
 if (req.query?.action === 'monitoring') {
-  const saKey = (req.headers['x-sa-key'] || '').trim();
-  const validSaKey = (process.env.SUPER_ADMIN_PASSWORD || '').trim();
-  if (!validSaKey || saKey !== validSaKey) {
-    return res.status(401).json({ error: 'Non autorizzato' });
-  }
+  const sa = await verifySuperAdmin(req, kv);
+  if (sa.blocked) return res.status(429).json({ error: `Troppi tentativi. Riprova tra ${sa.retryAfterMin} min.` });
+  if (!sa.ok) return res.status(401).json({ error: 'Non autorizzato' });
 
   const out = { redis: null, vercel: null, errors: [] };
 
@@ -1742,14 +1745,10 @@ if (req.query?.action === 'monitoring') {
 
 // ── SUPERADMIN: banner config ────────────────────────────────────────────
 if (req.query?.action === 'superadmin-config') {
-  const saKey = (req.headers['x-sa-key'] || '').trim();
-  const validKey = (process.env.SUPER_ADMIN_PASSWORD || '').trim();
-  if (!validKey) {
-    return res.status(403).json({ success: false, message: 'ENV_NOT_SET' });
-  }
-  if (saKey !== validKey) {
-    return res.status(403).json({ success: false, message: 'WRONG_KEY' });
-  }
+  const sa = await verifySuperAdmin(req, kv);
+  if (sa.reason === 'not-set') return res.status(403).json({ success: false, message: 'ENV_NOT_SET' });
+  if (sa.blocked) return res.status(429).json({ success: false, message: `Troppi tentativi. Riprova tra ${sa.retryAfterMin} min.` });
+  if (!sa.ok) return res.status(403).json({ success: false, message: 'WRONG_KEY' });
   if (req.method === 'GET') {
     const cfg = (await kv.get('global:superadminBanners')) || {};
     return res.status(200).json({ success: true, superadminBanners: cfg });

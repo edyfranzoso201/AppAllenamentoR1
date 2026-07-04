@@ -3,6 +3,7 @@
 
 import { createClient } from '@vercel/kv';
 import crypto from 'crypto';
+import { verifySuperAdmin } from './_sa-auth.js';
 
 const kv = createClient({
   url: process.env.UPSTASH_KV_REST_API_URL || process.env.KV_REST_API_URL,
@@ -154,8 +155,13 @@ export default async function handler(req, res) {
     // ==========================================
     // Da qui in poi: solo Super Admin
     // ==========================================
-    const adminPassword = req.headers['x-super-admin-password'] || req.body?.adminPassword;
-    if (adminPassword !== SUPER_ADMIN_PASSWORD) {
+    // Confronto timing-safe + rate-limit per IP (helper condiviso). La chiave può
+    // arrivare da header o dal body (adminPassword), come in origine.
+    const sa = await verifySuperAdmin(req, kv, req.body?.adminPassword);
+    if (sa.blocked) {
+      return res.status(429).json({ success: false, message: `Troppi tentativi. Riprova tra ${sa.retryAfterMin} min.` });
+    }
+    if (!sa.ok) {
       return res.status(401).json({ success: false, message: 'Password Super Admin non valida' });
     }
 
