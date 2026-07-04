@@ -92,6 +92,32 @@ function icalParseTime(t) {
 }
 const ICAL_TYPE_ICON = { Allenamento:'🏃', Partita:'⚽', Torneo:'🏆', Campionato:'🏅', Finale:'🥇', Semifinale:'🥈', Individual:'🏋️', Visita:'🏥', Evento:'📅', Varie:'🎉' };
 
+// ── Firma link genitore (parentMode) ────────────────────────────────────────
+// I genitori accedono SENZA login: l'annataId viaggia in chiaro nel link.
+// Per impedire che chiunque conosca/indovini un annataId manometta i dati di
+// un'annata, il link generato dall'app include una firma HMAC dell'annataId
+// (stesso meccanismo di icalSign). Transizione morbida: i link VECCHI senza
+// firma continuano a funzionare (parentSigOk ritorna true se non c'è firma),
+// ma una firma PRESENTE deve essere valida — così non si può inventarne una.
+function parentSecret() { return process.env.ICAL_SECRET || process.env.BACKUP_SECRET || ''; }
+function parentSign(annataId) {
+  const sec = parentSecret();
+  if (!sec) return '';
+  return crypto.createHmac('sha256', sec).update(`parent:${annataId}`).digest('hex').substring(0, 32);
+}
+// Ritorna true se la richiesta genitore è accettabile:
+//  - firma assente  → true  (link legacy, transizione morbida)
+//  - firma presente → true SOLO se coincide (timing-safe) con quella attesa
+function parentSigOk(annataId, providedSig) {
+  const sig = String(providedSig || '').trim();
+  if (!sig) return true;                 // nessuna firma: link vecchio, consentito
+  const expected = parentSign(annataId);
+  if (!expected) return true;            // secret non configurato: non blocchiamo
+  const a = Buffer.from(sig), b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  try { return crypto.timingSafeEqual(a, b); } catch { return false; }
+}
+
 function canWrite(role) {
 return ['admin', 'coach', 'coachl1', 'coachl2'].includes(String(role || '').toLowerCase());
 }
@@ -238,7 +264,7 @@ async function logRetentionPurge(annataId, count, extra) {
 export default async function handler(req, res) {
 setCors(req, res);
 res.setHeader('Access-Control-Allow-Headers',
-'Content-Type, X-Annata-Id, X-Auth-Session, X-Auth-User, X-User-Role, X-Society-Id, X-Sa-Key');
+'Content-Type, X-Annata-Id, X-Auth-Session, X-Auth-User, X-User-Role, X-Society-Id, X-Sa-Key, X-Parent-Sig');
 res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
 
 if (req.method === 'OPTIONS') return res.status(200).end();
@@ -317,6 +343,27 @@ const annataId = String(rawAnnata).split(',')[0].trim();
 
 if (annataId && !isValidId(annataId)) {
 return res.status(400).json({ success: false, message: 'Formato annataId non valido' });
+}
+
+// ── PARENT-SIGN: firma per il link genitore ────────────────────────────────
+// Il coach autenticato chiede la firma HMAC dell'annata corrente, che poi
+// inserisce nel link condiviso con i genitori (&psig=...). Solo autenticati:
+// un anonimo non deve poter ottenere firme valide. La firma dipende SOLO
+// dall'annata (non scade), coerente con la natura del link condiviso.
+if (req.query?.action === 'parent-sign' && req.method === 'GET') {
+  if (!session.isAuthenticated) {
+    return res.status(401).json({ success: false, message: 'Non autorizzato' });
+  }
+  if (!annataId || !isValidId(annataId)) {
+    return res.status(400).json({ success: false, message: 'annataId non valido' });
+  }
+  // Isolamento: la firma è per un'annata della PROPRIA società.
+  const _al = (await kv.get('annate:list')) || [];
+  const _am = _al.find(a => String(a.id) === annataId);
+  if (_am && (_am.societyId || null) !== (session.societyId || null)) {
+    return res.status(403).json({ success: false, message: 'Annata di un\'altra società' });
+  }
+  return res.status(200).json({ success: true, sig: parentSign(annataId) });
 }
 
 // ── PUSH: subscribe ────────────────────────────────────────────────────────
@@ -2156,6 +2203,18 @@ const isCalendarResponsePost = req.method === 'POST' &&
 
 if (!session.isAuthenticated && !isParentMode && !isCalendarResponsePost) {
 return res.status(401).json({ success: false, message: 'Accesso non autorizzato. Effettua il login.' });
+}
+
+// Firma link genitore: per gli accessi SENZA login (parentMode / POST genitore)
+// verifichiamo la firma HMAC dell'annata. Transizione morbida: i link vecchi
+// senza firma passano; una firma presente e SBAGLIATA viene rifiutata, così non
+// si può fabbricare un link per un'annata a caso. Gli utenti autenticati (coach)
+// non sono soggetti al check (hanno già l'isolamento società via sessione).
+if (!session.isAuthenticated && (isParentMode || isCalendarResponsePost)) {
+  const _psig = req.headers['x-parent-sig'] || req.query?.psig || '';
+  if (!parentSigOk(annataId, _psig)) {
+    return res.status(403).json({ success: false, message: 'Link non valido o scaduto' });
+  }
 }
 
 // ── Isolamento multi-società ────────────────────────────────────────────────

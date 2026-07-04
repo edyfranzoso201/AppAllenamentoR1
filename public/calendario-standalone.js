@@ -1,5 +1,32 @@
 // calendario-standalone.js - VERSIONE UNIFICATA (URL param + Token path)
 
+// ── Interceptor firma genitore ──────────────────────────────────────────────
+// Il link genitore contiene ?psig=<HMAC>. Questo interceptor aggiunge quella
+// firma come header X-Parent-Sig a OGNI chiamata verso /api/data, così il
+// server può verificarla senza dover modificare le ~25 fetch sparse nel file.
+// I link vecchi (senza psig) semplicemente non aggiungono l'header e il server
+// li accetta comunque (transizione morbida). Solo lettura dall'URL: se non c'è
+// psig, non tocca nulla.
+(function () {
+  let _psig = '';
+  try { _psig = new URLSearchParams(window.location.search).get('psig') || ''; } catch (e) {}
+  if (!_psig) return; // nessuna firma nel link: comportamento invariato
+  const _origFetch = window.fetch;
+  window.fetch = function (url, options = {}) {
+    try {
+      if (typeof url === 'string' && url.includes('/api/data')) {
+        options.headers = options.headers || {};
+        if (options.headers instanceof Headers) {
+          if (!options.headers.has('X-Parent-Sig')) options.headers.set('X-Parent-Sig', _psig);
+        } else if (!options.headers['X-Parent-Sig'] && !options.headers['x-parent-sig']) {
+          options.headers['X-Parent-Sig'] = _psig;
+        }
+      }
+    } catch (e) { /* non bloccante */ }
+    return _origFetch.call(this, url, options);
+  };
+})();
+
 const TRAINING = [
   { day: 1, time: '18:00-19:30' },
   { day: 3, time: '18:30-20:00' },
@@ -1499,17 +1526,32 @@ window.editEvent = function(date) {
   };
 };
 
-window.generatePresenceLink = function(athleteId, athleteName) {
+window.generatePresenceLink = async function(athleteId, athleteName) {
   // IMPORTANTE: Ottieni l'annata corrente
   const currentAnnata = sessionStorage.getItem('gosport_current_annata') ||
-                        window.currentAnnata || 
-                        localStorage.getItem('currentAnnata') || 
+                        window.currentAnnata ||
+                        localStorage.getItem('currentAnnata') ||
                         sessionStorage.getItem('gosport:currentannata');
-  
-  // Link con athleteId, annata e societyId (per bacheca pubblica e notifiche)
+
+  // Firma HMAC dell'annata: chiesta al server (solo autenticati). Il genitore
+  // la rimanderà a ogni chiamata, così un link fabbricato/manomesso viene
+  // rifiutato. Se la firma non è disponibile il link resta valido comunque
+  // (transizione morbida lato server: firma assente = link legacy accettato).
+  let psig = '';
+  if (currentAnnata) {
+    try {
+      const _r = await fetch('/api/data?action=parent-sign', {
+        headers: { 'X-Annata-Id': currentAnnata }
+      });
+      const _d = await _r.json();
+      if (_d && _d.success && _d.sig) psig = _d.sig;
+    } catch (e) { /* non bloccante: link senza firma */ }
+  }
+
+  // Link con athleteId, annata, societyId e firma (per bacheca pubblica e notifiche)
   const societyId = sessionStorage.getItem('gosport_society_id') || '';
   const link = currentAnnata
-    ? `${window.location.origin}/calendario.html?athleteId=${athleteId}&annata=${currentAnnata}${societyId ? '&sid='+societyId : ''}`
+    ? `${window.location.origin}/calendario.html?athleteId=${athleteId}&annata=${currentAnnata}${societyId ? '&sid='+societyId : ''}${psig ? '&psig='+psig : ''}`
     : `${window.location.origin}/calendario.html?athleteId=${athleteId}`;
   
   console.log('[CALENDARIO] 🔗 Link generato:', {
