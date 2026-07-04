@@ -3621,7 +3621,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function stStyle(s) {
         var isLight = document.documentElement.classList.contains('theme-light');
         if (s==='consegnato') return { bg:'#16a34a', color:'#ffffff', border:'#16a34a', icon:'&#x2705;', label:'Consegnato' };
-        if (s==='restituito') return { bg: isLight ? '#d90429' : '#450a0a', color: isLight ? '#000103' : '#d90429', border:'#d90429', icon:'&#x21A9;&#xFE0F;', label:'Restituito' };
+        if (s==='restituito') return { bg: isLight ? '#1d4ed8' : '#1e3a8a', color: isLight ? '#ffffff' : '#93c5fd', border:'#3b82f6', icon:'&#x21A9;&#xFE0F;', label:'Restituito' };
         return { bg: isLight ? '#f0f1f2' : '#1e293b', color: isLight ? '#000103' : '#64748b', border: isLight ? '#f0f1f2' : '#64748b', icon:'&mdash;', label:'Nessuno' };
     }
     function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -7263,7 +7263,10 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   function _fillKitCatSelect(selectedCat) {
     var sel = document.getElementById('inv-kit-cat');
     if (!sel) return;
-    sel.innerHTML = _cats.map(function(c){
+    var list = _cats.slice();
+    // Se la categoria del kit non è nella lista (es. rimossa o typo maiuscole), aggiungila
+    if (selectedCat && !list.includes(selectedCat)) list.unshift(selectedCat);
+    sel.innerHTML = list.map(function(c){
       return '<option' + (c === selectedCat ? ' selected' : '') + '>' + esc(c) + '</option>';
     }).join('');
   }
