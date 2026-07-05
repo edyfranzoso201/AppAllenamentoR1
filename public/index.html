@@ -7289,9 +7289,10 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   async function _writeStyledXlsx(rowsMain, rowsWl, colsMain, colsWl, filename) {
     try {
       var wb = new ExcelJS.Workbook();
-      var HDR_FILL = 'FFC00000';   // rosso header
-      var ROW_A    = 'FF1F4E79';   // blu scuro (righe pari)
-      var ROW_B    = 'FF9DC3E6';   // azzurro chiaro (righe dispari)
+      var HDR_TXT  = 'FFC00000';   // testo header ROSSO (sfondo neutro, non rosso)
+      var HDR_BG   = 'FFF2F2F2';   // sfondo header grigio chiarissimo
+      var ROW_A    = 'FFFFFFFF';   // bianco (righe pari)
+      var ROW_B    = 'FFDDEBF7';   // azzurro chiaro (righe dispari)
 
       function buildSheet(name, data, widths) {
         var ws = wb.addWorksheet(name);
@@ -7299,23 +7300,23 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         data.forEach(function (rowArr, idx) {
           var row = ws.addRow(rowArr);
           if (idx === 0) {
-            // Header
+            // Header: testo ROSSO grassetto su sfondo neutro (non sfondo rosso)
             row.eachCell(function (cell) {
-              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: HDR_FILL } };
-              cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
+              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: HDR_BG } };
+              cell.font = { bold: true, color: { argb: HDR_TXT }, size: 12 };
               cell.alignment = { vertical: 'middle', horizontal: 'center' };
-              cell.border = { bottom: { style: 'thin', color: { argb: 'FF7F7F7F' } } };
+              cell.border = { bottom: { style: 'medium', color: { argb: 'FFC00000' } } };
             });
-            row.height = 20;
+            row.height = 22;
           } else {
-            // Banding: alterna blu scuro / azzurro chiaro
+            // Banding: alterna bianco / azzurro chiaro (testo sempre scuro)
             var even = (idx % 2 === 1); // idx 1 = prima riga dati
             var fill = even ? ROW_A : ROW_B;
-            var txt  = even ? 'FFFFFFFF' : 'FF1A1A1A';
             row.eachCell(function (cell) {
               cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fill } };
-              cell.font = { color: { argb: txt } };
+              cell.font = { color: { argb: 'FF1A1A1A' } };
               cell.alignment = { vertical: 'middle' };
+              cell.border = { bottom: { style: 'thin', color: { argb: 'FFD9D9D9' } } };
             });
           }
         });
