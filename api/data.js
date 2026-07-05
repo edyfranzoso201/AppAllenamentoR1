@@ -634,6 +634,7 @@ if (req.query?.action === 'inventory') {
   if (!session.isAuthenticated) return res.status(401).json({ success: false, message: 'Non autorizzato' });
   const sid    = session.societyId || '_default';
   const catKey = `society:${sid}:inventoryCategories`;
+  const photosKey = `society:${sid}:inventoryCatPhotos`; // { "<categoria>": ["link1",...max5] }
 
   // save-categories è per-società (non per-annata): gestito prima del check annataId
   if (req.method === 'POST' && String((req.body && req.body.act) || '') === 'save-categories') {
@@ -645,6 +646,27 @@ if (req.query?.action === 'inventory') {
     return res.status(200).json({ success: true, categories: [...INV_DEFAULT_CATS, ...cats] });
   }
 
+  // save-cat-photos: fino a 5 link foto (Google Drive o URL http) per categoria.
+  // Per società, non per annata (come le categorie). Solo admin/dirigente.
+  if (req.method === 'POST' && String((req.body && req.body.act) || '') === 'save-cat-photos') {
+    if (!canInventoryCat(session.role)) return res.status(403).json({ success: false, message: 'Solo admin o dirigente' });
+    const categoria = String((req.body && req.body.categoria) || '').trim().slice(0, 80);
+    if (!categoria) return res.status(400).json({ success: false, message: 'Categoria mancante' });
+    let photos = (req.body && req.body.photos) || [];
+    if (!Array.isArray(photos)) photos = [];
+    // Solo link http(s), max 5, deduplicati, ognuno max 600 char
+    photos = photos
+      .map(p => String(p || '').trim())
+      .filter(p => /^https?:\/\//i.test(p))
+      .map(p => p.slice(0, 600))
+      .filter((p, i, arr) => arr.indexOf(p) === i)
+      .slice(0, 5);
+    const map = (await kv.get(photosKey)) || {};
+    if (photos.length) map[categoria] = photos; else delete map[categoria];
+    await kv.set(photosKey, map);
+    return res.status(200).json({ success: true, categoria, photos });
+  }
+
   // Tutte le altre operazioni richiedono annataId
   if (!annataId || !isValidId(annataId)) return res.status(400).json({ success: false, message: 'annataId mancante' });
   const invKey = `society:${sid}:inventory:${annataId}`;
@@ -652,9 +674,9 @@ if (req.query?.action === 'inventory') {
   const wlKey = `society:${sid}:wishlist:${annataId}`;
 
   if (req.method === 'GET') {
-    const [items, customCats, wishlist] = await Promise.all([kv.get(invKey), kv.get(catKey), kv.get(wlKey)]);
+    const [items, customCats, wishlist, catPhotos] = await Promise.all([kv.get(invKey), kv.get(catKey), kv.get(wlKey), kv.get(photosKey)]);
     const cats = [...INV_DEFAULT_CATS, ...((Array.isArray(customCats) ? customCats : []).filter(c => !INV_DEFAULT_CATS.includes(c)))];
-    return res.status(200).json({ success: true, items: Array.isArray(items) ? items : [], categories: cats, wishlist: Array.isArray(wishlist) ? wishlist : [] });
+    return res.status(200).json({ success: true, items: Array.isArray(items) ? items : [], categories: cats, wishlist: Array.isArray(wishlist) ? wishlist : [], catPhotos: (catPhotos && typeof catPhotos === 'object') ? catPhotos : {} });
   }
 
   if (req.method === 'POST') {

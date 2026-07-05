@@ -6508,6 +6508,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   var _items = [];        // array voci corrente
   var _cats  = [];        // categorie (default + custom)
   var _customCats = [];   // solo custom (per il pannello categorie)
+  var _catPhotos = {};    // { "<categoria>": ["link1",...max5] } foto per categoria
   var _canWrite = false;  // admin | dirigente | coach_l1
   var _canCat   = false;  // admin | dirigente
   var _loaded   = false;
@@ -6540,7 +6541,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     try {
       var r = await fetch('/api/data?action=inventory', { headers: authHeaders() });
       var d = await r.json();
-      if (d.success) { _items = d.items || []; _cats = d.categories || []; }
+      if (d.success) { _items = d.items || []; _cats = d.categories || []; _catPhotos = (d.catPhotos && typeof d.catPhotos === 'object') ? d.catPhotos : {}; }
     } catch (e) { console.warn('[INV] load error', e); }
     _loaded = true;
     renderBody();
@@ -6648,10 +6649,27 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       var deleteCatBtn = _canWrite
         ? '<button class="btn btn-xs btn-outline-danger ms-auto no-print" title="Elimina tutta la categoria" onclick="window.INV.deleteCat(' + JSON.stringify(cat).replace(/"/g,'&quot;') + ')"><i class="bi bi-trash3-fill"></i></button>'
         : '';
+      // Foto categoria (max 5 link Google Drive/URL)
+      var _photos = (_catPhotos && _catPhotos[cat]) ? _catPhotos[cat] : [];
+      var photosBtn = _canWrite
+        ? '<button class="btn btn-xs btn-outline-info no-print" title="Foto categoria (max 5)" onclick="window.INV.openCatPhotos(' + JSON.stringify(cat).replace(/"/g,'&quot;') + ')"><i class="bi bi-images"></i>' + (_photos.length ? ' ' + _photos.length : '') + '</button>'
+        : '';
       html += '<div class="mb-4"><div class="d-flex align-items-center gap-2 mb-2">' +
         '<span style="font-weight:600;color:#93c5fd;font-size:0.95rem;"><i class="bi bi-folder2-open"></i> ' + esc(cat) + '</span>' +
         '<span class="badge bg-secondary">' + rows.length + '</span>' +
-        deleteCatBtn + '</div>';
+        photosBtn + deleteCatBtn + '</div>';
+      // Galleria anteprime foto categoria
+      if (_photos.length) {
+        html += '<div class="d-flex flex-wrap gap-2 mb-2">';
+        _photos.forEach(function(link){
+          var thumb = _driveThumb(link);
+          html += '<a href="' + esc(link) + '" target="_blank" rel="noopener" title="Apri foto" style="display:block;">' +
+            '<img src="' + esc(thumb) + '" alt="foto ' + esc(cat) + '" loading="lazy" ' +
+            'style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #334155;background:#0f172a;" ' +
+            'onerror="this.onerror=null;this.src=\'' + esc(link) + '\';"></a>';
+        });
+        html += '</div>';
+      }
 
       // ── Vista griglia per i kit ──
       Object.keys(kitGroups).sort().forEach(function (kitName) {
@@ -8203,6 +8221,75 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       var d = await r.json();
       if (d && d.success) await load(true);
       else alert('Errore: ' + ((d && d.message) || ''));
+    } catch(e) { alert('Errore di rete.'); }
+  };
+
+  // ── Foto categoria (max 5 link Google Drive/URL) ──
+  // Estrae l'id file da un link Google Drive e ritorna l'URL del proxy interno
+  // (api/gdrive-img) che aggira i blocchi CORS. Per link non-Drive usa l'URL così com'è.
+  function _driveThumb(link) {
+    var s = String(link || '');
+    var m = s.match(/\/d\/([a-zA-Z0-9_-]+)/) || s.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (m && m[1]) return '/api/gdrive-img?id=' + encodeURIComponent(m[1]);
+    return s;
+  }
+
+  window.INV.openCatPhotos = function (cat) {
+    var existing = (_catPhotos && _catPhotos[cat]) ? _catPhotos[cat] : [];
+    var modal = document.getElementById('invCatPhotosModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'invCatPhotosModal';
+      modal.className = 'modal fade';
+      modal.tabIndex = -1;
+      modal.innerHTML =
+        '<div class="modal-dialog modal-dialog-centered"><div class="modal-content" style="background:var(--bg-panel);border:1px solid #334155;color:var(--text-primary);">' +
+          '<div class="modal-header" style="border-color:#334155;"><h5 class="modal-title"><i class="bi bi-images" style="color:#38bdf8;"></i> Foto categoria <span id="invCatPhotosName"></span></h5>' +
+          '<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>' +
+          '<div class="modal-body">' +
+            '<p class="small mb-2" style="color:#94a3b8;">Fino a 5 link foto (Google Drive o URL immagine). Su Drive: file condiviso, link "Chiunque abbia il link".</p>' +
+            '<div id="invCatPhotosRows"></div>' +
+          '</div>' +
+          '<div class="modal-footer" style="border-color:#334155;">' +
+            '<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annulla</button>' +
+            '<button type="button" class="btn btn-info btn-sm" id="invCatPhotosSaveBtn"><i class="bi bi-check-lg"></i> Salva</button>' +
+          '</div>' +
+        '</div></div>';
+      document.body.appendChild(modal);
+    }
+    document.getElementById('invCatPhotosName').textContent = '"' + cat + '"';
+    var rowsEl = document.getElementById('invCatPhotosRows');
+    rowsEl.innerHTML = '';
+    for (var i = 0; i < 5; i++) {
+      var val = existing[i] || '';
+      var row = document.createElement('div');
+      row.className = 'mb-2';
+      row.innerHTML = '<input type="url" class="form-control form-control-sm inv-cat-photo-input" maxlength="600" placeholder="Link foto ' + (i+1) + '…" ' +
+        'value="' + esc(val) + '" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">';
+      rowsEl.appendChild(row);
+    }
+    document.getElementById('invCatPhotosSaveBtn').onclick = function () { window.INV.saveCatPhotos(cat); };
+    bootstrap.Modal.getOrCreateInstance(modal).show();
+  };
+
+  window.INV.saveCatPhotos = async function (cat) {
+    var inputs = document.querySelectorAll('#invCatPhotosRows .inv-cat-photo-input');
+    var photos = [];
+    inputs.forEach(function(inp){ var v = inp.value.trim(); if (v) photos.push(v); });
+    try {
+      var r = await fetch('/api/data?action=inventory', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ act: 'save-cat-photos', categoria: cat, photos: photos })
+      });
+      var d = await r.json();
+      if (d && d.success) {
+        _catPhotos[cat] = d.photos || [];
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('invCatPhotosModal')).hide();
+        renderBody();
+      } else {
+        alert('Errore: ' + ((d && d.message) || ''));
+      }
     } catch(e) { alert('Errore di rete.'); }
   };
 
