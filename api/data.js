@@ -599,7 +599,8 @@ function sanitizeInvItem(raw) {
                   '6', '8', '10', '12', '14',
                   '23-26 (n°5)', '27-30 (n°6)', '31-34 (n°7)', '35-38 (n°8)',
                   '39-42 (n°9)', '43-46 (n°10)', '47-49 (n°11)',
-                  '37', '38', '39', '40', '41', '42', '43', '44', '45'];
+                  '37', '38', '39', '40', '41', '42', '43', '44', '45',
+                  '3', '4', '5'];
   const COND = ['buono', 'riparazione', 'fuori_uso', 'mancante'];
   const item = {
     id:         String(raw.id || '').replace(/[^a-z0-9_-]/gi, '').slice(0, 40) || crypto.randomUUID().replace(/-/g,'').slice(0,16),
