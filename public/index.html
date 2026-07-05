@@ -2102,11 +2102,8 @@
                         <button id="inv-cat-btn" class="btn btn-sm btn-outline-info no-print" onclick="window.INV.openCategories()" style="display:none;">
                             <i class="bi bi-tags-fill"></i> Categorie
                         </button>
-                        <button class="btn btn-sm btn-outline-success no-print" onclick="window.INV.exportExcel()" title="Esporta Excel inventario (una riga per articolo)">
+                        <button class="btn btn-sm btn-outline-success no-print" onclick="window.INV.exportExcel()" title="Esporta Excel come lo vedi: maglie per N°, calzettoni/pantaloncini per Taglia (secondo il toggle di ogni kit)">
                             <i class="bi bi-file-earmark-excel-fill"></i> Excel
-                        </button>
-                        <button class="btn btn-sm btn-outline-success no-print" onclick="window.INV.exportExcelTaglie()" title="Esporta Excel raggruppato per taglie (numeri compattati)">
-                            <i class="bi bi-rulers"></i> Excel per taglie
                         </button>
                         <button id="inv-dedup-btn" class="btn btn-sm btn-outline-warning no-print" onclick="window.INV.dedupKit()" style="display:none;" title="Rimuovi articoli duplicati nei kit">
                             <i class="bi bi-stars"></i> Pulisci duplicati
@@ -6538,6 +6535,8 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     if (_loaded && !force) return;
     var aid = annataId();
     if (!aid) { renderBody(); return; }
+    // Ora che l'annata è certa, ripristina le viste N°/Taglia salvate per questa annata
+    try { window._kitViewMode = _loadKitViewMode(); } catch (e) {}
     try {
       var r = await fetch('/api/data?action=inventory', { headers: authHeaders() });
       var d = await r.json();
@@ -7163,24 +7162,28 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     return '';
   }
 
-  // ── Export Excel: colonne singole (Annata, Colore, Tipologia, Numero) ──
+  // ── Export Excel UNICO "come lo vedi" ──────────────────────────────────────
+  // Rispetta la vista N°/Taglia scelta per ogni kit (window._kitViewMode):
+  //  - kit in vista 'num' (default) → una riga per articolo, colonna Numero valorizzata
+  //  - kit in vista 'taglia'        → raggruppato per taglia+condizione, Numero vuoto
+  //  - voci singole senza kit       → una riga ciascuna
+  // Stessa colonna-set dei vecchi export (Numero e Taglia entrambe presenti).
+  function _kitKeyForName(kitName) { return 'kit_view_' + String(kitName || '').replace(/[^a-z0-9]/gi, '_'); }
+
   window.INV.exportExcel = function () {
     if (!_items.length) { alert('Nessuna voce da esportare.'); return; }
     var ann = _annataName();
     var header = ['Annata','Categoria','Colore','Tipologia','Numero','Nome/Descrizione','Quantità','Taglia','Condizione','Note','Con Sponsor','Nome Sponsor'];
-    function rowFor(it) {
-      var nomeBase = it.nome;
-      if (it._kitName) {
-        // Nome kit senza suffisso N°X (il numero è già nella colonna Numero)
-        nomeBase = it._kitName;
-      }
+
+    // Riga "per articolo" (vista N° o voce singola)
+    function rowSingle(it) {
       return [
         ann,
         it.categoria,
         it._kitColore || it.colore || '',
         it._kitTipologia || '',
         _itemNumero(it),
-        nomeBase,
+        it._kitName || it.nome,
         it.quantita,
         it.taglia || '',
         COND_EXP[it.condizione] || it.condizione,
@@ -7189,14 +7192,64 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         it.sponsorNome || ''
       ];
     }
+
+    // Separa gli item per kit; decide la modalità in base al toggle salvato.
+    var kitItems = {};   // kitName → [items]
+    var singles  = [];   // voci senza kit
+    _items.forEach(function (it) {
+      if (it._kitName) {
+        if (!kitItems[it._kitName]) kitItems[it._kitName] = [];
+        kitItems[it._kitName].push(it);
+      } else {
+        singles.push(it);
+      }
+    });
+
+    var rows = [header];
+
+    // Voci singole: sempre una riga ciascuna
+    singles.forEach(function (it) { rows.push(rowSingle(it)); });
+
+    // Kit: dipende dalla vista
+    Object.keys(kitItems).sort().forEach(function (kitName) {
+      var list = kitItems[kitName];
+      var mode = (window._kitViewMode && window._kitViewMode[_kitKeyForName(kitName)]) || 'num';
+      if (mode === 'taglia') {
+        // Raggruppa per taglia + condizione, somma quantità, Numero vuoto
+        var groups = {};
+        list.forEach(function (it) {
+          var taglia = it.taglia || '';
+          var cond   = it.condizione || 'buono';
+          var key = taglia + '||' + cond;
+          if (!groups[key]) {
+            groups[key] = { taglia: taglia, cond: cond, qty: 0, note: [],
+                            colore: it._kitColore || it.colore || '', tipologia: it._kitTipologia || '',
+                            categoria: it.categoria, sponsor: it.sponsor, sponsorNome: it.sponsorNome };
+          }
+          groups[key].qty += (it.quantita || 1);
+          if (it.note && groups[key].note.indexOf(it.note) === -1) groups[key].note.push(it.note);
+        });
+        Object.keys(groups).sort().forEach(function (k) {
+          var g = groups[k];
+          rows.push([ann, g.categoria, g.colore, g.tipologia, '', kitName, g.qty, g.taglia,
+                     COND_EXP[g.cond] || g.cond, g.note.join(' · '), g.sponsor ? 'Sì' : 'No', g.sponsorNome || '']);
+        });
+      } else {
+        // Vista numeri: una riga per articolo, ordinati per numero
+        list.slice().sort(function (a, b) {
+          var na = parseInt(a._kitNum, 10), nb = parseInt(b._kitNum, 10);
+          if (!isNaN(na) && !isNaN(nb) && na !== nb) return na - nb;
+          return String(a._kitNum || '').localeCompare(String(b._kitNum || ''));
+        }).forEach(function (it) { rows.push(rowSingle(it)); });
+      }
+    });
+
     var wlItems = (window.WL && window.WL.getItems) ? window.WL.getItems() : [];
     var wlHeader = ['Annata','Categoria','Articolo','Quantità','Note','Richiesto da','Acquistato','Data acquisto'];
     function wlRowFor(it) {
       return [ann, it.categoria || '', it.nome || '', it.quantita || 1, it.note || '', it.autore || '', it.acquistato ? 'Sì' : 'No', it.acquistatoAt ? it.acquistatoAt.slice(0,10) : ''];
     }
     if (window.XLSX) {
-      var rows = [header];
-      _items.forEach(function (it) { rows.push(rowFor(it)); });
       var ws = XLSX.utils.aoa_to_sheet(rows);
       ws['!cols'] = [14,20,12,16,8,30,8,12,14,30,12,25].map(function(w){ return { wch: w }; });
       var wb = XLSX.utils.book_new();
@@ -7208,10 +7261,9 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       XLSX.utils.book_append_sheet(wb, wsWl, 'Mat. Richiesto');
       XLSX.writeFile(wb, 'inventario_' + _annLabel() + '.xlsx');
     } else {
-      var csv = header.join(',') + '\n';
-      _items.forEach(function (it) {
-        csv += rowFor(it).map(function (v) { return '"' + String(v).replace(/"/g,'""') + '"'; }).join(',') + '\n';
-      });
+      var csv = rows.map(function (r) {
+        return r.map(function (v) { return '"' + String(v).replace(/"/g,'""') + '"'; }).join(',');
+      }).join('\n');
       var a = document.createElement('a');
       a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
       a.download = 'inventario_' + _annLabel() + '.csv';
@@ -7219,78 +7271,9 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     }
   };
 
-  // ── Export Excel raggruppato per Taglie ──
-  // Una riga per ogni combinazione Categoria + Colore + Tipologia + Taglia + Condizione,
-  // con i numeri maglia compattati in un elenco (es. "3-5-7-8-9…") nella colonna Numeri.
-  window.INV.exportExcelTaglie = function () {
-    if (!_items.length) { alert('Nessuna voce da esportare.'); return; }
-    var ann = _annataName();
-    // groups[key] = { nome, categoria, colore, tipologia, taglia, condizione, nums:[], qty:0, note:[] }
-    var groups = {};
-    _items.forEach(function (it) {
-      var nomeSet   = it._kitName || it.nome || '';
-      var colore    = it._kitColore || it.colore || '';
-      var tipologia = it._kitTipologia || '';
-      var taglia    = it.taglia || '';
-      var cond      = it.condizione || 'buono';
-      var key = [it.categoria, nomeSet, colore, tipologia, taglia, cond].join('||');
-      if (!groups[key]) {
-        groups[key] = { nome: nomeSet, categoria: it.categoria, colore: colore, tipologia: tipologia,
-                        taglia: taglia, condizione: cond, nums: [], qty: 0, note: [] };
-      }
-      var g = groups[key];
-      var num = _itemNumero(it);
-      if (num) g.nums.push(num);
-      g.qty += (it.quantita || 1);
-      if (it.note && g.note.indexOf(it.note) === -1) g.note.push(it.note);
-    });
-
-    // Compatta i numeri: ordina numericamente quando possibile, poi unisce con "-"
-    function compactNums(nums) {
-      if (!nums.length) return '';
-      var sorted = nums.slice().sort(function (a, b) {
-        var na = parseInt(a, 10), nb = parseInt(b, 10);
-        if (!isNaN(na) && !isNaN(nb) && na !== nb) return na - nb;
-        return String(a).localeCompare(String(b));
-      });
-      return sorted.join('-');
-    }
-
-    var header = ['Annata','Categoria','Colore','Tipologia','Nome/Descrizione','Taglia','Numeri','Quantità','Condizione','Note'];
-    var rows = [header];
-    // Ordina le righe per categoria, nome, taglia
-    Object.keys(groups).sort().forEach(function (k) {
-      var g = groups[k];
-      rows.push([
-        ann, g.categoria, g.colore, g.tipologia, g.nome, g.taglia,
-        compactNums(g.nums), g.qty, COND_EXP[g.condizione] || g.condizione,
-        g.note.join(' · ')
-      ]);
-    });
-
-    var wlItemsT = (window.WL && window.WL.getItems) ? window.WL.getItems() : [];
-    var wlHeaderT = ['Annata','Categoria','Articolo','Quantità','Note','Richiesto da','Acquistato','Data acquisto'];
-    if (window.XLSX) {
-      var ws = XLSX.utils.aoa_to_sheet(rows);
-      ws['!cols'] = [14,20,12,16,28,12,28,9,14,30].map(function(w){ return { wch: w }; });
-      var wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Per taglie');
-      var wlRowsT = [wlHeaderT];
-      wlItemsT.forEach(function(it){ wlRowsT.push([ann, it.categoria||'', it.nome||'', it.quantita||1, it.note||'', it.autore||'', it.acquistato?'Sì':'No', it.acquistatoAt?it.acquistatoAt.slice(0,10):'']); });
-      var wsWlT = XLSX.utils.aoa_to_sheet(wlRowsT);
-      wsWlT['!cols'] = [14,20,30,10,30,20,12,14].map(function(w){ return { wch: w }; });
-      XLSX.utils.book_append_sheet(wb, wsWlT, 'Mat. Richiesto');
-      XLSX.writeFile(wb, 'inventario_taglie_' + _annLabel() + '.xlsx');
-    } else {
-      var csv = rows.map(function (r) {
-        return r.map(function (v) { return '"' + String(v).replace(/"/g,'""') + '"'; }).join(',');
-      }).join('\n');
-      var a = document.createElement('a');
-      a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-      a.download = 'inventario_taglie_' + _annLabel() + '.csv';
-      a.click();
-    }
-  };
+  // Retrocompatibilità: exportExcelTaglie ora punta al nuovo export unico
+  // "come lo vedi" (l'esportazione per-taglia si ottiene mettendo il kit in vista Taglia).
+  window.INV.exportExcelTaglie = function () { return window.INV.exportExcel(); };
 
   // ── Kit: griglia righe (numerata per maglie, per taglia per altri capi) ──
   var _kitMode = 'numbered'; // 'numbered' | 'taglia'
@@ -8186,9 +8169,17 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   };
 
   // ── Toggle vista kit: per numero | per taglia ──
-  window._kitViewMode = {};
+  // Vista N°/Taglia per kit, PERSISTENTE per annata (localStorage) così l'export
+  // Excel resta coerente con come guardi ogni kit anche dopo un ricaricamento.
+  function _kitViewStoreKey() { return 'inv_kitview_' + (annataId() || '_'); }
+  function _loadKitViewMode() {
+    try { return JSON.parse(localStorage.getItem(_kitViewStoreKey()) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  window._kitViewMode = _loadKitViewMode();
   window.INV.kitToggleView = function (kitKey, mode) {
     window._kitViewMode[kitKey] = mode;
+    try { localStorage.setItem(_kitViewStoreKey(), JSON.stringify(window._kitViewMode)); } catch (e) {}
     renderBody();
   };
 
