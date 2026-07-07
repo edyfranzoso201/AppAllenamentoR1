@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Sport Monitoring — Manuale d'uso</title>
+<style>
+  :root {
+    --ground: #0b1220; --panel: #131f33; --panel-2: #1a2942; --line: #26344f;
+    --ink: #e6ecf5; --muted: #93a3bd; --faint: #6b7c99;
+    --emerald: #10b981; --rose: #e11d48; --amber: #fb923c; --sky: #38bdf8; --violet: #a78bfa;
+    --shadow: 0 10px 30px rgba(0,0,0,.35); --radius: 14px; --maxw: 820px;
+    /* mockup app */
+    --uibg: #0f1b2e; --uipanel: #16233b; --uiline: #2a3a57; --uiink: #dce6f5; --uimuted: #8ba0bf;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --ground:#f4f6fb; --panel:#fff; --panel-2:#eef2f9; --line:#dbe2ee; --ink:#16203a;
+      --muted:#52627e; --faint:#7a8aa4; --shadow:0 8px 24px rgba(20,40,80,.10); }
+  }
+  :root[data-theme="dark"] {
+    --ground:#0b1220; --panel:#131f33; --panel-2:#1a2942; --line:#26344f;
+    --ink:#e6ecf5; --muted:#93a3bd; --faint:#6b7c99; --shadow:0 10px 30px rgba(0,0,0,.35); }
+  :root[data-theme="light"] {
+    --ground:#f4f6fb; --panel:#fff; --panel-2:#eef2f9; --line:#dbe2ee; --ink:#16203a;
+    --muted:#52627e; --faint:#7a8aa4; --shadow:0 8px 24px rgba(20,40,80,.10); }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin:0; background:var(--ground); color:var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height:1.62; font-size:16px; -webkit-font-smoothing:antialiased; }
+  @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} *{transition:none!important} }
+
+  .wrap { display:grid; grid-template-columns:300px 1fr; min-height:100vh; }
+
+  .side { position:sticky; top:0; align-self:start; height:100vh; overflow-y:auto;
+    background:linear-gradient(180deg,var(--panel) 0%,var(--ground) 100%);
+    border-right:1px solid var(--line); padding:26px 18px; }
+  .brand { display:flex; align-items:center; gap:12px; margin-bottom:4px; }
+  .brand .mark { width:40px; height:40px; border-radius:11px; flex-shrink:0;
+    background:linear-gradient(135deg,var(--emerald),#059669); display:grid; place-items:center;
+    font-size:20px; box-shadow:0 4px 14px rgba(16,185,129,.35); }
+  .brand h1 { font-size:1.02rem; margin:0; font-weight:700; letter-spacing:-.01em; }
+  .brand .sub { font-size:.7rem; color:var(--faint); text-transform:uppercase; letter-spacing:.12em; margin-top:2px; }
+  .toc-title { font-size:.68rem; text-transform:uppercase; letter-spacing:.14em; color:var(--faint); margin:22px 0 8px 8px; }
+  .toc { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:1px; }
+  .toc a { display:flex; align-items:baseline; gap:9px; padding:6px 10px; border-radius:8px;
+    color:var(--muted); text-decoration:none; font-size:.86rem; transition:background .15s,color .15s; }
+  .toc a:hover { background:var(--panel-2); color:var(--ink); }
+  .toc a .n { font-variant-numeric:tabular-nums; font-size:.7rem; color:var(--faint); min-width:20px; font-weight:600; }
+  .toc a:focus-visible { outline:2px solid var(--emerald); outline-offset:2px; }
+  .toc .grp { font-size:.66rem; text-transform:uppercase; letter-spacing:.12em; color:var(--faint); padding:12px 10px 4px; }
+
+  .main { padding:44px 40px 120px; }
+  .inner { max-width:var(--maxw); margin:0 auto; }
+
+  .lede { background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:34px; margin-bottom:20px; box-shadow:var(--shadow); border-top:3px solid var(--emerald); }
+  .lede h2 { margin:0 0 8px; font-size:1.75rem; letter-spacing:-.02em; text-wrap:balance;
+    font-family:Georgia,"Times New Roman",serif; font-weight:600; }
+  .lede p { margin:0; color:var(--muted); font-size:1.02rem; }
+  .lede .meta { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
+  .tag { font-size:.72rem; padding:4px 11px; border-radius:999px; background:var(--panel-2);
+    color:var(--muted); border:1px solid var(--line); }
+
+  .howto { background:var(--panel-2); border:1px solid var(--line); border-radius:12px;
+    padding:16px 20px; margin-bottom:36px; font-size:.9rem; color:var(--muted); }
+  .howto b { color:var(--ink); }
+
+  .chapter { margin-bottom:52px; scroll-margin-top:24px; }
+  .chapter > .head { display:flex; align-items:center; gap:14px; margin-bottom:16px; }
+  .chapter .num { font-variant-numeric:tabular-nums; font-size:.78rem; font-weight:700;
+    width:32px; height:32px; border-radius:9px; display:grid; place-items:center;
+    background:color-mix(in srgb,var(--c) 20%,transparent); color:var(--c); flex-shrink:0; }
+  .chapter h3 { margin:0; font-size:1.5rem; letter-spacing:-.02em; text-wrap:balance;
+    font-family:Georgia,"Times New Roman",serif; font-weight:600; }
+  .eyebrow { font-size:.68rem; text-transform:uppercase; letter-spacing:.13em; font-weight:700; margin-bottom:3px; color:var(--c); }
+
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:26px 30px; box-shadow:var(--shadow); border-left:4px solid var(--c,var(--emerald)); }
+  .card .purpose { color:var(--ink); font-size:1.02rem; margin:0 0 4px; }
+  .card .purpose b { color:var(--c,var(--emerald)); }
+
+  .sub-h { font-size:.96rem; font-weight:700; color:var(--ink); margin:26px 0 10px;
+    display:flex; align-items:center; gap:8px; }
+  .sub-h::before { content:""; width:7px; height:7px; border-radius:2px; background:var(--c); flex-shrink:0; }
+
+  ol.steps { margin:0; padding:0; list-style:none; counter-reset:s; display:flex; flex-direction:column; gap:9px; }
+  ol.steps li { position:relative; padding-left:34px; counter-increment:s; color:var(--muted); font-size:.95rem; }
+  ol.steps li::before { content:counter(s); position:absolute; left:0; top:1px; width:22px; height:22px;
+    border-radius:7px; display:grid; place-items:center; background:color-mix(in srgb,var(--c) 18%,transparent);
+    color:var(--c); font-size:.72rem; font-weight:700; font-variant-numeric:tabular-nums; }
+  ol.steps li b { color:var(--ink); font-weight:600; }
+
+  /* tabella campi */
+  .fields { width:100%; border-collapse:collapse; margin:6px 0 4px; font-size:.9rem; }
+  .fields th { text-align:left; color:var(--faint); font-weight:600; font-size:.72rem; text-transform:uppercase;
+    letter-spacing:.08em; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); }
+  .fields td { padding:9px 12px 9px 0; border-bottom:1px solid var(--line); color:var(--muted); vertical-align:top; }
+  .fields td:first-child { color:var(--ink); font-weight:600; white-space:nowrap; }
+  .fields tr:last-child td { border-bottom:0; }
+
+  .note { margin-top:18px; padding:13px 16px; border-radius:10px; font-size:.88rem;
+    background:var(--panel-2); border:1px solid var(--line); color:var(--muted);
+    display:flex; gap:10px; align-items:flex-start; }
+  .note .ic { flex-shrink:0; }
+  .note.perm { border-color:color-mix(in srgb,var(--amber) 40%,var(--line)); }
+  .note.tip { border-color:color-mix(in srgb,var(--emerald) 40%,var(--line)); }
+  .note b { color:var(--ink); }
+
+  kbd, .ui-tag { font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-size:.82em;
+    background:var(--panel-2); border:1px solid var(--line); border-radius:5px; padding:1px 6px; color:var(--ink); }
+
+  .section-break { margin:58px 0 14px; }
+  .section-break .kicker { font-size:.74rem; text-transform:uppercase; letter-spacing:.16em; color:var(--faint); font-weight:700; }
+  .section-break h2 { margin:4px 0 0; font-size:1.1rem; color:var(--muted); font-weight:600; }
+
+  /* ---- MOCKUP UI ---- */
+  .mock { background:var(--uibg); border:1px solid var(--uiline); border-radius:12px; overflow:hidden;
+    margin:18px 0; box-shadow:0 6px 18px rgba(0,0,0,.25); font-size:13px; color:var(--uiink); }
+  .mock-top { display:flex; align-items:center; gap:8px; padding:9px 12px; background:#0a1526; border-bottom:1px solid var(--uiline); }
+  .mock-top .dot { width:10px; height:10px; border-radius:50%; }
+  .mock-top .t { margin-left:8px; font-size:11px; color:var(--uimuted); }
+  .mock-body { padding:14px; }
+  .m-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .m-btn { background:var(--uipanel); border:1px solid var(--uiline); border-radius:7px; padding:5px 11px; font-size:12px; color:var(--uiink); white-space:nowrap; }
+  .m-btn.green { background:rgba(16,185,129,.18); border-color:rgba(16,185,129,.5); color:#6ee7b7; }
+  .m-btn.red { background:rgba(225,29,72,.16); border-color:rgba(225,29,72,.45); color:#fda4af; }
+  .m-btn.amber { background:rgba(251,146,60,.16); border-color:rgba(251,146,60,.45); color:#fdba74; }
+  .m-btn.blue { background:rgba(56,189,248,.16); border-color:rgba(56,189,248,.45); color:#7dd3fc; }
+  .m-tab { padding:6px 10px; border-radius:7px; font-size:12px; color:var(--uimuted); border:1px solid transparent; }
+  .m-tab.on { background:rgba(16,185,129,.2); color:#6ee7b7; border-color:rgba(16,185,129,.4); }
+  .m-input { background:#0b1424; border:1px solid var(--uiline); border-radius:6px; padding:6px 9px; font-size:12px; color:var(--uimuted); flex:1; min-width:120px; }
+  .m-label { font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--uimuted); margin-bottom:3px; display:block; }
+  .m-card { background:var(--uipanel); border:1px solid var(--uiline); border-radius:9px; padding:10px 12px; }
+  .m-badge { display:inline-block; font-size:11px; padding:2px 8px; border-radius:999px; }
+  .m-grid { display:grid; gap:8px; }
+  .m-athlete { background:var(--uipanel); border:1px solid var(--uiline); border-radius:10px; padding:12px; position:relative; }
+  .m-athlete .av { width:42px; height:42px; border-radius:50%; background:linear-gradient(135deg,#334155,#1e293b); display:inline-grid; place-items:center; color:#94a3b8; font-weight:700; }
+  .m-num { position:absolute; right:12px; top:50%; transform:translateY(-50%); width:30px; height:30px; border-radius:50%; background:var(--rose); color:#fff; display:grid; place-items:center; font-weight:700; font-size:14px; }
+  .m-cap { font-size:11px; color:var(--uimuted); margin-top:8px; text-align:center; font-style:italic; }
+  .m-jersey { width:46px; height:46px; border-radius:8px; background:#1a3a5f; border:2px solid var(--sky); display:grid; place-items:center; font-weight:800; color:#e2e8f0; font-size:15px; }
+
+  footer.end { max-width:var(--maxw); margin:60px auto 0; padding-top:26px; border-top:1px solid var(--line);
+    color:var(--faint); font-size:.85rem; }
+
+  .topbar { display:none; }
+  @media (max-width:880px) {
+    .wrap { grid-template-columns:1fr; }
+    .side { display:none; }
+    .topbar { display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:10;
+      background:var(--panel); border-bottom:1px solid var(--line); padding:12px 18px; }
+    .topbar .mark { width:32px; height:32px; border-radius:9px; background:linear-gradient(135deg,var(--emerald),#059669); display:grid; place-items:center; }
+    .topbar h1 { font-size:.95rem; margin:0; }
+    .topbar details { margin-left:auto; }
+    .topbar summary { cursor:pointer; font-size:.85rem; color:var(--muted); list-style:none; padding:6px 12px; border:1px solid var(--line); border-radius:8px; }
+    .topbar .toc-pop { position:absolute; right:18px; top:54px; background:var(--panel); border:1px solid var(--line);
+      border-radius:12px; padding:10px; box-shadow:var(--shadow); max-height:70vh; overflow-y:auto; width:270px; z-index:20; }
+    .main { padding:24px 16px 90px; }
+    .lede, .card { padding:22px; }
+    .fields { font-size:.85rem; }
+  }
+  .scrollx { overflow-x:auto; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="mark">⚽</span>
+  <h1>Manuale — Sport Monitoring</h1>
+  <details><summary>Capitoli</summary><div class="toc-pop" id="tocPop"></div></details>
+</div>
+
+<div class="wrap">
+  <aside class="side">
+    <div class="brand">
+      <span class="mark">⚽</span>
+      <div><h1>Sport Monitoring</h1><div class="sub">Manuale d'uso</div></div>
+    </div>
+    <div class="toc-title">Indice</div>
+    <nav>
+      <ul class="toc" id="toc">
+        <li class="grp">Per iniziare</li>
+        <li><a href="#c0"><span class="n">00</span> Accesso, ruoli e annate</a></li>
+        <li><a href="#nav"><span class="n">•</span> Come muoversi nell'app</a></li>
+        <li class="grp">Rosa &amp; partite</li>
+        <li><a href="#c1"><span class="n">01</span> Gestione Squadra</a></li>
+        <li><a href="#c2"><span class="n">02</span> Formazione</a></li>
+        <li><a href="#c3"><span class="n">03</span> Calendario</a></li>
+        <li><a href="#c4"><span class="n">04</span> Convocazioni</a></li>
+        <li><a href="#c5"><span class="n">05</span> Risultati</a></li>
+        <li class="grp">Valutazione atleti</li>
+        <li><a href="#c6"><span class="n">06</span> Valutazioni (pagelle)</a></li>
+        <li><a href="#c7"><span class="n">07</span> Grafici Presenze</a></li>
+        <li><a href="#c8"><span class="n">08</span> Hall of Fame</a></li>
+        <li><a href="#c9"><span class="n">09</span> GPS / Performance</a></li>
+        <li><a href="#c10"><span class="n">10</span> Analisi singolo</a></li>
+        <li class="grp">Organizzazione</li>
+        <li><a href="#c11"><span class="n">11</span> Materiale</a></li>
+        <li><a href="#c12"><span class="n">12</span> Pagamenti</a></li>
+        <li><a href="#c13"><span class="n">13</span> Area Tecnica</a></li>
+        <li class="grp">Amministrazione</li>
+        <li><a href="#c14"><span class="n">14</span> Accessi</a></li>
+        <li><a href="#c15"><span class="n">15</span> Alert scadenze</a></li>
+        <li><a href="#c16"><span class="n">16</span> Stagioni</a></li>
+        <li><a href="#c17"><span class="n">17</span> Genitori &amp; iscrizioni</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="inner">
+
+      <div class="lede">
+        <h2>Manuale d'uso di Sport Monitoring</h2>
+        <p>La guida completa a tutte le funzioni dell'app, spiegate campo per campo con esempi di schermata. Pensata per allenatori e dirigenti che devono imparare a usarla nel quotidiano.</p>
+        <div class="meta">
+          <span class="tag">18 capitoli</span>
+          <span class="tag">Dettaglio campo per campo</span>
+          <span class="tag">Con schemi delle schermate</span>
+        </div>
+      </div>
+
+      <div class="howto">
+        <b>Come leggere questo manuale.</b> Ogni capitolo segue lo stesso schema: <b>a cosa serve</b> la sezione, uno <b>schema della schermata</b> per orientarti, i <b>campi</b> uno per uno e i <b>passaggi operativi</b>. I riquadri arancioni segnalano i <b>permessi</b> (chi può fare cosa), quelli verdi i <b>consigli</b>. Gli schemi delle schermate sono illustrazioni indicative: i colori e le posizioni rispecchiano l'app reale.
+      </div>
+
+      <!-- ============ 00 ACCESSO ============ -->
+      <div class="section-break"><div class="kicker">Per iniziare</div><h2>Entrare nell'app e capire come è organizzata</h2></div>
+
+      <section class="chapter" id="c0" style="--c:var(--emerald)">
+        <div class="head"><span class="num">00</span><div><div class="eyebrow">Accesso</div><h3>Accesso, ruoli e annate</h3></div></div>
+        <div class="card">
+          <p class="purpose">Sport Monitoring organizza <b>tutto per annata</b> (la stagione sportiva). Prima di lavorare devi entrare con le tue credenziali e trovarti sull'annata giusta: presenze, valutazioni, materiale e ogni altro dato restano legati a quell'annata.</p>
+
+          <div class="sub-h">La schermata di accesso</div>
+          <div class="mock">
+            <div class="mock-top"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="t">app-allenamento-r1.vercel.app</span></div>
+            <div class="mock-body" style="max-width:340px;margin:0 auto">
+              <div style="text-align:center;margin-bottom:14px"><span style="font-size:26px">⚽</span><div style="font-weight:700;margin-top:4px">Sport Monitoring</div></div>
+              <div style="margin-bottom:8px"><span class="m-label">Utente</span><div class="m-input">mario.rossi</div></div>
+              <div style="margin-bottom:12px"><span class="m-label">Password</span><div class="m-row"><div class="m-input">••••••••</div><span class="m-btn">👁</span></div></div>
+              <div class="m-btn green" style="width:100%;text-align:center;padding:8px">Accedi</div>
+            </div>
+          </div>
+
+          <div class="sub-h">I campi</div>
+          <div class="scrollx"><table class="fields">
+            <tr><th>Campo</th><th>Cosa inserire</th></tr>
+            <tr><td>Utente</td><td>Il nome utente che ti ha assegnato la società (non è l'email).</td></tr>
+            <tr><td>Password</td><td>La password ricevuta. L'icona <span class="ui-tag">👁</span> mostra/nasconde ciò che digiti.</td></tr>
+          </table></div>
+
+          <div class="sub-h">I ruoli — cosa determina cosa vedi</div>
+          <p style="color:var(--muted);font-size:.95rem;margin:0 0 4px">Il ruolo assegnato dall'admin decide quali sezioni compaiono e cosa puoi modificare. In sintesi:</p>
+          <div class="scrollx"><table class="fields">
+            <tr><th>Ruolo</th><th>Cosa può fare</th></tr>
+            <tr><td>Admin</td><td>Tutto: crea utenti e annate, gestisce accessi, alert, stagioni. È il responsabile della società nell'app.</td></tr>
+            <tr><td>Dirigente</td><td>Gestione ampia (rosa, materiale, categorie), accesso alla dashboard; alcune operazioni distruttive restano all'admin.</td></tr>
+            <tr><td>Coach L1</td><td>Allenatore con pieni diritti operativi su rosa, calendario, valutazioni, materiale.</td></tr>
+            <tr><td>Coach L2 / L3</td><td>Diritti progressivamente ridotti (es. GPS in sola lettura, o modifica limitata).</td></tr>
+            <tr><td>Sola lettura</td><td>Può consultare ma non modificare.</td></tr>
+          </table></div>
+
+          <div class="sub-h">Scegliere e cambiare l'annata</div>
+          <ol class="steps">
+            <li>Dopo l'accesso, se hai più annate assegnate, <b>selezionala</b> dalla schermata iniziale.</li>
+            <li>L'annata attiva è mostrata in alto; <b>solo l'admin</b> può cambiarla al volo dal menu in alto.</li>
+            <li>Tutti i dati che vedi e inserisci appartengono all'annata attiva. Cambiando annata, cambia il contesto.</li>
+          </ol>
+
+          <div class="sub-h">Cambiare la propria password</div>
+          <ol class="steps">
+            <li>Apri il <b>menu profilo</b> (in alto, accanto al tuo nome).</li>
+            <li>Scegli <b>Cambia password</b>: inserisci quella <b>attuale</b>, poi la nuova due volte (minimo 6 caratteri).</li>
+            <li>Conferma. Da quel momento userai la nuova password.</li>
+          </ol>
+          <div class="note perm"><span class="ic">🔑</span><div><b>Solo admin crea gli utenti.</b> Se serve un nuovo accesso per un collaboratore, lo chiedi all'amministratore della società, che lo crea dal pannello di gestione utenti e assegna ruolo e annate.</div></div>
+        </div>
+      </section>
+
+      <!-- ============ NAV ============ -->
+      <section class="chapter" id="nav" style="--c:var(--sky)">
+        <div class="head"><span class="num">•</span><div><div class="eyebrow">Orientarsi</div><h3>Come muoversi nell'app</h3></div></div>
+        <div class="card">
+          <p class="purpose">In alto trovi la <b>barra dei menu</b>: ogni voce è una sezione con un colore e un'icona. La sezione attiva è evidenziata. Alcune voci compaiono solo per certi ruoli (es. Accessi, Alert, Stagioni sono da admin).</p>
+          <div class="mock">
+            <div class="mock-top"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="t">Coach Dashboard</span></div>
+            <div class="mock-body">
+              <div class="m-row" style="gap:6px">
+                <span class="m-tab">🏠 Home</span>
+                <span class="m-tab">▦ Formazione</span>
+                <span class="m-tab">📅 Calendario</span>
+                <span class="m-tab">👥 Squadra</span>
+                <span class="m-tab">🏆 Risultati</span>
+                <span class="m-tab on">📦 Materiale</span>
+                <span class="m-tab">💳 Pagamenti</span>
+                <span class="m-tab">📣 Convocazioni</span>
+                <span class="m-tab" style="opacity:.6">👑 Accessi</span>
+              </div>
+            </div>
+          </div>
+          <div class="note tip"><span class="ic">💡</span><div>Se non vedi una sezione citata nel manuale, quasi sempre è perché il tuo <b>ruolo</b> non la prevede, oppure l'admin l'ha nascosta dalla <b>personalizzazione menu</b> della società.</div></div>
+        </div>
+      </section>
+
+      <!-- ============ 01 SQUADRA ============ -->
+      <div class="section-break"><div class="kicker">Rosa &amp; partite</div><h2>Il cuore quotidiano: chi c'è, dove gioca, quando</h2></div>
+
+      <section class="chapter" id="c1" style="--c:#10b981">
+        <div class="head"><span class="num">01</span><div><div class="eyebrow">Rosa</div><h3>Gestione Squadra</h3></div></div>
+        <div class="card">
+          <p class="purpose">L'<b>anagrafica della rosa</b>: qui vivono atleti e staff con tutti i loro dati. È la base di tutto il resto — presenze, convocazioni, materiale e pagamenti pescano da qui.</p>
+
+          <div class="sub-h">La schermata</div>
+          <div class="mock">
+            <div class="mock-body">
+              <div class="m-row" style="justify-content:space-between;margin-bottom:12px">
+                <div class="m-row"><div class="m-input" style="min-width:180px">🔍 Cerca per nome o cognome</div><div class="m-input" style="min-width:90px">N° maglia</div></div>
+                <span class="m-btn green">+ Aggiungi</span>
+              </div>
+              <div class="m-grid" style="grid-template-columns:repeat(3,1fr)">
+                <div class="m-athlete"><span class="av">MR</span> <b style="margin-left:8px">Mario Rossi</b><div style="color:var(--uimuted);font-size:11px;margin-top:6px">Attaccante</div><span class="m-num">9</span>
+                  <div class="m-row" style="margin-top:10px;gap:5px"><span class="m-btn" style="padding:4px 7px">📋</span><span class="m-btn" style="padding:4px 7px">📈</span><span class="m-btn amber" style="padding:4px 7px">✏️</span><span class="m-btn red" style="padding:4px 7px">🗑</span></div></div>
+                <div class="m-athlete"><span class="av">LB</span> <b style="margin-left:8px">Luca Bianchi</b> ⭐<div style="color:var(--uimuted);font-size:11px;margin-top:6px">Difensore</div><span class="m-num">4</span></div>
+                <div class="m-athlete" style="border-left:3px solid #16a34a"><span class="av">GV</span> <b style="margin-left:8px">Gianni Verdi</b><div style="color:var(--uimuted);font-size:11px;margin-top:6px">Staff · Dirigente</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-h">Aggiungere/modificare un atleta — i campi</div>
+          <div class="scrollx"><table class="fields">
+            <tr><th>Campo</th><th>A cosa serve</th></tr>
+            <tr><td>Nome e cognome</td><td>Identifica l'atleta in tutta l'app.</td></tr>
+            <tr><td>Numero di maglia</td><td>Mostrato sul cerchio rosso della scheda e in formazione/convocazioni.</td></tr>
+            <tr><td>Ruolo</td><td>Il ruolo in campo (attaccante, difensore…).</td></tr>
+            <tr><td>Data di nascita</td><td>Usata per l'anagrafica e, dove serve, per fasce d'età.</td></tr>
+            <tr><td>Foto (avatar)</td><td>Link a un'immagine; se assente compaiono le iniziali su sfondo colorato.</td></tr>
+            <tr><td>Capitano / Vice</td><td>La stellina ⭐ marca il capitano; il vice ha il suo simbolo.</td></tr>
+            <tr><td>Uscita autonoma</td><td>Spunta che indica se il ragazzo può uscire da solo (badge 🚶 sulla scheda).</td></tr>
+            <tr><td>Scadenza visita / tessera</td><td>Date usate dagli <b>Alert scadenze</b> per avvisarti in anticipo.</td></tr>
+          </table></div>
+
+          <div class="sub-h">I pulsanti su ogni scheda</div>
+          <div class="scrollx"><table class="fields">
+            <tr><th>Pulsante</th><th>Cosa apre</th></tr>
+            <tr><td>📋 Pagelle</td><td>La valutazione dell'atleta (vedi cap. 06).</td></tr>
+            <tr><td>📈 Performance</td><td>I dati GPS/sessioni (vedi cap. 09).</td></tr>
+            <tr><td>👥 Genitori</td><td>Anagrafica dei genitori: nome, telefono, email, codice fiscale, indirizzo.</td></tr>
+            <tr><td>🩹 Infortuni</td><td>Storico infortuni e stato "infortunato" con data di rientro.</td></tr>
+            <tr><td>🏅 Individual</td><td>Pacchetto di allenamento individuale dell'atleta.</td></tr>
+            <tr><td>📄 Certificato</td><td>Apre il link al certificato medico (se caricato).</td></tr>
+            <tr><td>✏️ Modifica</td><td>Riapre la scheda per correggere i dati.</td></tr>
+            <tr><td>🗄 Archivia</td><td>Nasconde l'atleta dalla rosa conservando i dati (vedi nota privacy).</td></tr>
+            <tr><td>📋 Copia in annata</td><td><i>Solo admin.</i> Copia l'atleta in un'altra annata della stessa società.</td></tr>
+            <tr><td>🗑 Elimina</td><td>Cancellazione definitiva, propagata a tutti i dati collegati.</td></tr>
+          </table></div>
+
+          <div class="note perm"><span class="ic">🛡️</span><div><b>Privacy (GDPR).</b> Gli atleti <b>archiviati</b> vengono cancellati automaticamente dopo 12 mesi. L'<b>eliminazione</b> è definitiva e rimuove i dati da presenze, pagelle, pagamenti, certificati, formazioni e convocazioni.</div></div>
+          <div class="note tip"><span class="ic">💡</span><div>Lo <b>staff</b> (allenatori, dirigenti) sta nella stessa lista, evidenziato con un bordo colorato. La <b>copia in un'altra annata</b> salta l'atleta se un nome uguale esiste già lì.</div></div>
+        </div>
+      </section>
+
+      <!-- ============ 02 FORMAZIONE ============ -->
+      <section class="chapter" id="c2" style="--c:#a855f7">
+        <div class="head"><span class="num">02</span><div><div class="eyebrow">Tattica</div><h3>Formazione</h3></div></div>
+        <div class="card">
+          <p class="purpose">Il <b>campo tattico</b> per comporre lo schieramento: trascini i giocatori dalle liste alle posizioni e prepari titolari e panchina.</p>
+          <div class="mock">
+            <div class="mock-body">
+              <div class="m-row" style="gap:16px;align-items:flex-start">
+                <div style="flex:1">
+                  <span class="m-label">Disponibili</span>
+                  <div class="m-card" style="margin-bottom:5px">4 · Bianchi</div>
+                  <div class="m-card" style="margin-bottom:5px">9 · Rossi</div>
+                  <div class="m-card">7 · Verdi</div>
+                </div>
+                <div style="flex:2;background:#0e2a1a;border:1px solid #1c5236;border-radius:10px;min-height:150px;position:relative;padding:10px">
+                  <div style="border-top:1px dashed #2e7d54;position:absolute;left:8px;right:8px;top:50%"></div>
+                  <div class="m-row" style="justify-content:center;gap:20px"><span class="m-jersey">4</span></div>
+                  <div class="m-row" style="justify-content:center;gap:20px;margin-top:24px"><span class="m-jersey">9</span><span class="m-jersey">7</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="sub-h">Come si usa</div>
+          <ol class="steps">
+            <li>Scegli il <b>modulo</b> e trascina gli atleti dalla lista "Disponibili" alle posizioni in campo.</li>
+            <li>Distingui <b>titolari</b> e <b>panchina</b>; sulla casacca compare il numero di maglia.</li>
+            <li><b>Salva</b> lo schieramento: resta legato all'annata e lo ritrovi quando serve.</li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- ============ 03 CALENDARIO ============ -->
+      <section class="chapter" id="c3" style="--c:#06b6d4">
+        <div class="head"><span class="num">03</span><div><div class="eyebrow">Agenda</div><h3>Calendario</h3></div></div>
+        <div class="card">
+          <p class="purpose">L'<b>agenda della squadra</b>: allenamenti, partite, tornei, visite. Ogni tipo ha un colore. Da qui parte anche il <b>link presenze</b> che condividi con i genitori.</p>
+          <div class="mock">
+            <div class="mock-body">
+              <div class="m-row" style="justify-content:space-between;margin-bottom:10px"><b>Maggio 2026</b><span class="m-btn green">+ Evento</span></div>
+              <div class="m-grid" style="grid-template-columns:repeat(4,1fr)">
+                <div class="m-card">Lun 4<div class="m-badge" style="background:#16a34a;color:#fff;margin-top:6px">🏃 Allenam. 18:00</div></div>
+                <div class="m-card">Mer 6<div class="m-badge" style="background:#16a34a;color:#fff;margin-top:6px">🏃 Allenam. 18:30</div></div>
+                <div class="m-card">Ven 8<div class="m-badge" style="background:#2563eb;color:#fff;margin-top:6px">⚽ Partita 20:00</div></div>
+                <div class="m-card">Sab 9<div class="m-badge" style="background:#db2777;color:#fff;margin-top:6px">🏆 Torneo</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="sub-h">Creare un evento — i campi</div>
+          <div class="scrollx"><table class="fields">
+            <tr><th>Campo</th><th>A cosa serve</th></tr>
+            <tr><td>Data</td><td>Il giorno dell'evento nel calendario.</td></tr>
+            <tr><td>Tipo</td><td>Allenamento, Partita, Torneo, Campionato, Finale, Individual, Visita, Evento… Ognuno ha un colore dedicato.</td></tr>
+            <tr><td>Orario</td><td>Ora di inizio (ed eventuale fine), usata anche nel feed calendario.</td></tr>
+            <tr><td>Note</td><td>Dettagli liberi (avversario, luogo, indicazioni).</td></tr>
+          </table></div>
+          <div class="sub-h">Condividere le presenze con i genitori</div>
+          <ol class="steps">
+            <li>Dalla scheda atleta (o dal calendario) genera il <b>link presenze</b> di quell'atleta.</li>
+            <li>Invialo alla famiglia: il genitore lo apre <b>senza login</b> e segna <b>presente/assente</b> per ogni evento.</li>
+            <li>Chi vuole aggiunge gli eventi al proprio <b>Google/Apple Calendar</b> con il pulsante dedicato: il feed si aggiorna da solo.</li>
+          </ol>
+          <div class="note tip"><span class="ic">🔗</span><div>Il link genitore è <b>firmato e sicuro</b>: mostra solo i dati di quell'annata e non è falsificabile. Il genitore non deve registrarsi.</div></div>
+        </div>
+      </section>
+
+      <!-- ============ 04 CONVOCAZIONI ============ -->
+      <section class="chapter" id="c4" style="--c:#f87171">
+        <div class="head"><span class="num">04</span><div><div class="eyebrow">Partita</div><h3>Convocazioni</h3></div></div>
+        <div class="card">
+          <p class="purpose">Prepari la <b>distinta dei convocati</b> per una partita, con una locandina condivisibile, e avvisi le famiglie con una notifica.</p>
+          <div class="mock">
+            <div class="mock-body">
+              <span class="m-label">Convocati — Partita di Sab 9</span>
+              <div class="m-grid" style="grid-template-columns:repeat(4,1fr);margin-top:6px">
+                <div class="m-card">✅ 9 Rossi</div><div class="m-card">✅ 4 Bianchi</div><div class="m-card">✅ 7 Verdi</div><div class="m-card" style="opacity:.5">⬜ 11 Neri</div>
+              </div>
+              <div class="m-row" style="margin-top:10px"><span class="m-btn blue">🖼 Genera distinta</span><span class="m-btn green">📣 Notifica famiglie</span></div>
+            </div>
+          </div>
+          <div class="sub-h">Come si usa</div>
+          <ol class="steps">
+            <li>Seleziona l'<b>evento/partita</b> e <b>spunta</b> gli atleti (e lo staff) convocati.</li>
+            <li>Personalizza lo <b>sfondo</b> della distinta e <b>generala</b> come immagine da condividere.</li>
+            <li>Alla creazione, modifica o annullamento, i genitori iscritti alle notifiche ricevono una <b>push</b>.</li>
+          </ol>
+          <div class="note tip"><span class="ic">💡</span><div>La distinta è pensata per essere <b>inoltrata su WhatsApp</b> o stampata: prepara sfondo e loghi una volta e riusali.</div></div>
+        </div>
+      </section>
+
+      <!-- ============ 05 RISULTATI ============ -->
+      <section class="chapter" id="c5" style="--c:#f59e0b">
+        <div class="head"><span class="num">05</span><div><div class="eyebrow">Match</div><h3>Risultati</h3></div></div>
+        <div class="card">
+          <p class="purpose">Registri l'<b>esito delle partite</b>: punteggio, marcatori, assist e cartellini. Alimenta statistiche, report e Hall of Fame.</p>
+          <div class="sub-h">Cosa inserisci</div>
+          <div class="scrollx"><table class="fields">
+            <tr><th>Dato</th><th>Note</th></tr>
+            <tr><td>Punteggio</td><td>Gol fatti e subiti della partita.</td></tr>
+            <tr><td>Marcatori</td><td>Atleti che hanno segnato (uno o più gol ciascuno).</td></tr>
+            <tr><td>Assist</td><td>Atleti che hanno servito l'assist.</td></tr>
+            <tr><td>Cartellini</td><td>Ammonizioni/espulsioni associate agli atleti.</td></tr>
+          </table></div>
+          <div class="sub-h">Come si usa</div>
+          <ol class="steps">
+            <li>Apri la partita (dal calendario o dall'elenco risultati) e inserisci il <b>punteggio</b>.</li>
+            <li>Aggiungi <b>marcatori, assist e cartellini</b> scegliendo gli atleti dalla rosa.</li>
+            <li>Puoi filtrare l'elenco per <b>società avversaria</b> per ritrovare una partita.</li>
+          </ol>
+          <div class="note tip"><span class="ic">💡</span><div>I dati inseriti qui confluiscono <b>automaticamente</b> nella Hall of Fame e nei report di fine stagione: non serve ricopiarli altrove.</div></div>
+        </div>
+      </section>
+
+      <!-- ============ 06 VALUTAZIONI ============ -->
+      <div class="section-break"><div class="kicker">Valutazione atleti</div><h2>Misurare crescita, presenza e rendimento</h2></div>
+
+      <section class="chapter" id="c6" style="--c:#ec4899">
+        <div class="head"><span class="num">06</span><div><div class="eyebrow">Pagelle</div><h3>Valutazioni (pagelle)</h3></div></div>
+        <div class="card">
+          <p class="purpose">Le <b>pagelle</b> dell'atleta: assegni voti su quattro aree e segui l'andamento nel tempo. Ogni pagella è datata e firmata dal coach.</p>
+          <div class="mock">
+            <div class="mock-body" style="max-width:420px">
+              <div class="m-row" style="justify-content:space-between;margin-bottom:8px"><b>Pagella — Mario Rossi</b><span style="color:var(--uimuted);font-size:11px">12/05/2026</span></div>
+              <div class="m-grid" style="grid-template-columns:1fr 1fr;gap:8px">
+                <div class="m-card"><span class="m-label">Tecnica</span><b style="color:#6ee7b7">7.5</b></div>
+                <div class="m-card"><span class="m-label">Tattica</span><b style="color:#6ee7b7">7.0</b></div>
+                <div class="m-card"><span class="m-label">Fisico</span><b style="color:#fdba74">6.5</b></div>
+                <div class="m-card"><span class="m-label">Comportamentale</span><b style="color:#6ee7b7">8.0</b></div>
+              </div>
+              <div class="m-input" style="margin-top:8px">Note: buona settimana, crescita nel palleggio…</div>
+            </div>
+          </div>
+          <div class="sub-h">I campi della pagella</div>
+          <div class="scrollx"><table class="fields">
+            <tr><th>Campo</th><th>A cosa serve</th></tr>
+            <tr><td>Nome atleta</td><td>Precompilato (sola lettura).</td></tr>
+            <tr><td>Nome coach</td><td>Chi compila la pagella (obbligatorio).</td></tr>
+            <tr><td>Data</td><td>Data della valutazione (obbligatoria).</td></tr>
+            <tr><td>Tecnica</td><td>Voto sull'abilità tecnica.</td></tr>
+            <tr><td>Tattica</td><td>Voto sulla comprensione tattica.</td></tr>
+            <tr><td>Fisico</td><td>Voto sulla condizione atletica.</td></tr>
+            <tr><td>Comportamentale</td><td>Voto su impegno e comportamento.</td></tr>
+            <tr><td>Note</td><td>Commento libero del coach.</td></tr>
+          </table></div>
+          <div class="sub-h">Come si usa</div>
+          <ol class="steps">
+            <li>Dalla scheda atleta apri <b>📋 Pagelle</b> e compila i quattro parametri per la data scelta.</li>
+            <li>Salva: la pagella entra nello storico dell'atleta.</li>
+            <li>Nella sezione <b>Valutazioni</b> vedi il quadro di tutta la rosa a una certa data (selezionabile in alto).</li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- ============ 07 PRESENZE ============ -->
+      <section class="chapter" id="c7" style="--c:#14b8a6">
+        <div class="head"><span class="num">07</span><div><div class="eyebrow">Presenze</div><h3>Grafici Presenze</h3></div></div>
+        <div class="card">
+          <p class="purpose">La <b>fotografia della partecipazione</b>: chi c'è di più, chi manca spesso, con grafici per atleta e per squadra. I dati arrivano dal calendario.</p>
+          <div class="sub-h">Da dove vengono i dati</div>
+          <ol class="steps">
+            <li>Le presenze si generano dagli <b>eventi del calendario</b>: le segni tu, oppure le confermano i genitori dal link.</li>
+            <li>La sezione le aggrega in <b>grafici</b> filtrabili per data/periodo.</li>
+            <li>Individui a colpo d'occhio i cali di partecipazione e puoi attivare i <b>solleciti</b> per chi salta gli allenamenti.</li>
+          </ol>
+          <div class="note tip"><span class="ic">💡</span><div>Per avere presenze affidabili, abitua le famiglie a usare il <b>link presenze</b>: meno lavoro manuale per te e dato sempre aggiornato.</div></div>
+        </div>
+      </section>
+
+      <!-- ============ 08 HALL OF FAME ============ -->
+      <section class="chapter" id="c8" style="--c:#f97316">
+        <div class="head"><span class="num">08</span><div><div class="eyebrow">Premi</div><h3>Hall of Fame</h3></div></div>
+        <div class="card">
+          <p class="purpose">La <b>bacheca dei riconoscimenti</b>: migliori marcatori, premi e traguardi della stagione. Si costruisce da sola con i dati dei <b>Risultati</b>.</p>
+          <div class="sub-h">Come si usa</div>
+          <ol class="steps">
+            <li>Registra con cura i <b>Risultati</b> (gol, assist): la Hall of Fame li usa per le classifiche.</li>
+            <li>Consulta i premi e i traguardi assegnati.</li>
+            <li>È un ottimo contenuto da mostrare alla squadra e alle famiglie a fine anno.</li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- ============ 09 GPS ============ -->
+      <section class="chapter" id="c9" style="--c:#84cc16">
+        <div class="head"><span class="num">09</span><div><div class="eyebrow">Dati</div><h3>GPS / Performance</h3></div></div>
+        <div class="card">
+          <p class="purpose">I <b>dati di performance</b> delle sessioni: distanze, velocità, carichi. Per gli staff che usano GPS o vogliono tracciare il lavoro fisico, sessione per sessione.</p>
+          <div class="sub-h">Come si usa</div>
+          <ol class="steps">
+            <li>Dalla scheda atleta apri <b>📈 Dati Performance</b>.</li>
+            <li>Inserisci una <b>nuova sessione</b> con la data e i parametri della seduta (o partita).</li>
+            <li>Rivedi e <b>confronta</b> le sessioni per seguire l'andamento del carico.</li>
+          </ol>
+          <div class="note perm"><span class="ic">🔒</span><div><b>Permessi.</b> Vedere e modificare i dati GPS dipende dal ruolo: alcuni livelli di coach possono solo <b>consultarli</b>. Le sessioni marcate "Individual" possono essere protette.</div></div>
+        </div>
+      </section>
+
+      <!-- ============ 10 ANALISI ============ -->
+      <section class="chapter" id="c10" style="--c:#38bdf8">
+        <div class="head"><span class="num">10</span><div><div class="eyebrow">Focus</div><h3>Analisi singolo</h3></div></div>
+        <div class="card">
+          <p class="purpose">La <b>vista analitica del singolo atleta</b>: andamento nel tempo, confronto tra due atleti, radar dei parametri. Utile per i colloqui con la famiglia o con il ragazzo.</p>
+          <div class="sub-h">Cosa puoi confrontare</div>
+          <div class="scrollx"><table class="fields">
+            <tr><th>Strumento</th><th>A cosa serve</th></tr>
+            <tr><td>Andamento nel tempo</td><td>Come cambia una metrica di un atleta lungo un periodo.</td></tr>
+            <tr><td>Confronto 2 atleti</td><td>Mette a paragone due giocatori sulla stessa metrica.</td></tr>
+            <tr><td>Radar</td><td>Il profilo dell'atleta sui vari parametri, a colpo d'occhio.</td></tr>
+            <tr><td>Filtri</td><td>Per tipo di sessione, metrica e intervallo di date.</td></tr>
+          </table></div>
+          <div class="sub-h">Come si usa</div>
+          <ol class="steps">
+            <li>Scegli l'<b>atleta principale</b> (e, se vuoi, un secondo per il confronto).</li>
+            <li>Imposta <b>metrica</b>, <b>tipo sessione</b> e <b>periodo</b>.</li>
+            <li>Leggi i grafici come base per il <b>feedback individuale</b>.</li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- ============ 11 MATERIALE ============ -->
+      <div class="section-break"><div class="kicker">Organizzazione</div><h2>Magazzino, quote e risorse tecniche</h2></div>
+
+      <section class="chapter" id="c11" style="--c:#fb923c">
+        <div class="head"><span class="num">11</span><div><div class="eyebrow">Magazzino</div><h3>Materiale</h3></div></div>
+        <div class="card">
+          <p class="purpose">Il <b>magazzino della squadra</b> e la <b>consegna del materiale</b> agli atleti. Gestisce voci singole e <b>kit</b> (mute di maglie numerate), con taglie, colori, condizione, sponsor e foto.</p>
+
+          <div class="sub-h">Le due parti della sezione</div>
+          <div class="scrollx"><table class="fields">
+            <tr><th>Parte</th><th>Cosa fa</th></tr>
+            <tr><td>Materiale Atleti/Staff</td><td>La tabella di consegna: per ogni persona segni cosa ha ricevuto (Consegnato / Restituito / Nessuno), con taglia e note.</td></tr>
+            <tr><td>Inventario Fine Annata</td><td>Il magazzino vero e proprio: categorie, voci, kit, condizioni. Da qui esporti gli Excel.</td></tr>
+          </table></div>
+
+          <div class="sub-h">Inventario — la schermata</div>
+          <div class="mock">
+            <div class="mock-body">
+              <div class="m-row" style="gap:6px;margin-bottom:10px">
+                <span class="m-btn amber">Kit</span><span class="m-btn green">+ Aggiungi voce</span><span class="m-btn blue">Categorie</span><span class="m-btn green">Excel</span><span class="m-btn">📷</span>
+              </div>
+              <div class="m-card" style="margin-bottom:8px">📁 Maglie da calcio <span class="m-badge" style="background:#334155;color:#cbd5e1;margin-left:6px">26</span></div>
+              <div class="m-row" style="gap:6px">
+                <div style="width:52px;text-align:center;background:#1a3a5f;border:2px solid #4ade80;border-radius:8px;padding:6px"><b>N°1</b><div style="font-size:10px;color:#94a3b8">XL ✅</div></div>
+                <div style="width:52px;text-align:center;background:#1a3a5f;border:2px solid #4ade80;border-radius:8px;padding:6px"><b>N°2</b><div style="font-size:10px;color:#94a3b8">L ✅</div></div>
+                <div style="width:52px;text-align:center;background:#1a3a5f;border:2px solid #fbbf24;border-radius:8px;padding:6px"><b>N°3</b><div style="font-size:10px;color:#94a3b8">M 🔧</div></div>
+                <div style="width:52px;text-align:center;background:#1e0a2e;border:2px dashed #c084fc;border-radius:8px;padding:6px"><b>?</b><div style="font-size:10px;color:#c084fc">✗</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-h">Aggiungere una voce singola — i campi</div>
+          <div class="scrollx"><table class="fields">
+            <tr><th>Campo</th><th>A cosa serve</th></tr>
+            <tr><td>Categoria</td><td>Dove finisce la voce (Maglie, Palloni, Pettorine…). Predefinite + tue personalizzate.</td></tr>
+            <tr><td>Nome / Descrizione</td><td>Es. "Pallone n°5", "Borsa medica".</td></tr>
+            <tr><td>Quantità / N°</td><td>Quante ne hai (o il numero per un pezzo singolo).</td></tr>
+            <tr><td>Colore</td><td>Testo libero (es. Blu, Rosso/Nero). Appare nel badge e nell'Excel.</td></tr>
+            <tr><td>Taglia</td><td>Da abbigliamento (XS–XXL, anni), calzettoni (misure) o <b>palloni (3/4/5)</b>.</td></tr>
+            <tr><td>Condizione</td><td>Buono · Da riparare · Fuori uso · Mancante (colore del bordo).</td></tr>
+            <tr><td>Note</td><td>Annotazioni libere (manutenzione, fornitore…).</td></tr>
+            <tr><td>Sponsor</td><td>Spunta + nome sponsor, se il capo è sponsorizzato.</td></tr>
+          </table></div>
+
+          <div class="sub-h">I kit (maglie numerate)</div>
+          <ol class="steps">
+            <li>Apri <b>Kit</b> e scegli <b>Con numero</b> (maglie) o <b>Per taglia</b> (pantaloncini, calzettoni).</li>
+            <li>Imposta nome set, colore, tipologia, categoria e, per lo sponsor, la spunta unica valida <b>per tutto il kit</b>.</li>
+            <li>Definisci l'intervallo (Da/A numero) e <b>Genera griglia</b>: compili taglia, condizione e note riga per riga.</li>
+            <li>Con <b>+ Aggiungi N°</b> inserisci una maglia extra fuori intervallo; le <b>Scorte senza numero</b> gestiscono le riserve per taglia.</li>
+          </ol>
+
+          <div class="sub-h">Vista N° / Taglia ed Excel</div>
+          <ol class="steps">
+            <li>Ogni kit ha due toggle: <b>N°</b> (badge maglia per maglia) e <b>Taglia</b> (raggruppato per taglia). La scelta <b>resta salvata</b>.</li>
+            <li>Il pulsante <b>Excel</b> esporta <b>come lo vedi</b>: le maglie in N° escono riga per numero, i calzettoni in Taglia escono raggruppati per taglia.</li>
+            <li>Il file ha intestazione in <b>rosso</b> e righe alternate bianco/azzurro; include un foglio <b>Mat. Richiesto</b> con la lista dei desideri.</li>
+          </ol>
+
+          <div class="sub-h">Foto per categoria</div>
+          <ol class="steps">
+            <li>Accanto al nome di una categoria clicca <b>📷</b>.</li>
+            <li>Incolla fino a <b>5 link Google Drive</b> (o URL immagine) e salva.</li>
+            <li>Sotto la categoria appaiono le <b>miniature</b> cliccabili.</li>
+          </ol>
+          <div class="note perm"><span class="ic">🔒</span><div><b>Permessi.</b> Aggiungere voci: admin, dirigente, coach L1. Gestire <b>categorie</b> e <b>foto</b>: admin e dirigente. Le foto Drive devono essere condivise come <b>"chiunque abbia il link"</b>.</div></div>
+        </div>
+      </section>
+
+      <!-- ============ 12 PAGAMENTI ============ -->
+      <section class="chapter" id="c12" style="--c:#16a34a">
+        <div class="head"><span class="num">12</span><div><div class="eyebrow">Quote</div><h3>Pagamenti</h3></div></div>
+        <div class="card">
+          <p class="purpose">La <b>gestione delle quote</b>: chi ha pagato, quanto e cosa manca. Iscrizioni, rate e voci extra sotto controllo.</p>
+          <div class="mock">
+            <div class="mock-body">
+              <div class="scrollx"><table style="width:100%;font-size:12px;color:var(--uiink);border-collapse:collapse;min-width:380px">
+                <tr style="color:var(--uimuted)"><td style="padding:5px 8px">Atleta</td><td>Iscrizione</td><td>Rata 1</td><td>Rata 2</td></tr>
+                <tr><td style="padding:5px 8px">Rossi M.</td><td><span class="m-badge" style="background:#16a34a;color:#fff">✓</span></td><td><span class="m-badge" style="background:#16a34a;color:#fff">✓</span></td><td><span class="m-badge" style="background:#7c2d12;color:#fdba74">–</span></td></tr>
+                <tr><td style="padding:5px 8px">Bianchi L.</td><td><span class="m-badge" style="background:#16a34a;color:#fff">✓</span></td><td><span class="m-badge" style="background:#7c2d12;color:#fdba74">–</span></td><td><span class="m-badge" style="background:#7c2d12;color:#fdba74">–</span></td></tr>
+              </table></div>
+            </div>
+          </div>
+          <div class="sub-h">Come si usa</div>
+          <ol class="steps">
+            <li>Definisci le <b>voci di pagamento</b> (iscrizione, rate, kit, extra…).</li>
+            <li>Per ogni atleta <b>registri gli incassi</b>: vedi subito le situazioni in regola e quelle aperte.</li>
+            <li>Consulti il <b>riepilogo</b> per avere il quadro economico della rosa.</li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- ============ 13 AREA TECNICA ============ -->
+      <section class="chapter" id="c13" style="--c:#22c55e">
+        <div class="head"><span class="num">13</span><div><div class="eyebrow">Risorse</div><h3>Area Tecnica</h3></div></div>
+        <div class="card">
+          <p class="purpose">La <b>libreria di risorse dello staff</b>: video, esercizi, schede e documenti (link Drive/YouTube o file), organizzati per categoria e colore.</p>
+          <div class="sub-h">Aggiungere una risorsa — i campi</div>
+          <div class="scrollx"><table class="fields">
+            <tr><th>Campo</th><th>A cosa serve</th></tr>
+            <tr><td>Titolo</td><td>Nome della risorsa.</td></tr>
+            <tr><td>Tipo</td><td>Video, esercizio, scheda, documento.</td></tr>
+            <tr><td>Link (URL)</td><td>Drive, YouTube, percorso di rete o file.</td></tr>
+            <tr><td>Categoria</td><td>Allenamento, partita, tattica, stralcio, altro.</td></tr>
+            <tr><td>Colore / Data / Note</td><td>Per ordinare e ritrovare in fretta.</td></tr>
+          </table></div>
+          <div class="note perm"><span class="ic">🔒</span><div><b>Permessi.</b> È lo spazio di lavoro tecnico: visibile e modificabile dallo staff con diritti di scrittura (allenatori e dirigenti abilitati).</div></div>
+        </div>
+      </section>
+
+      <!-- ============ 14 ACCESSI ============ -->
+      <div class="section-break"><div class="kicker">Amministrazione</div><h2>Controllo, scadenze e passaggi di stagione</h2></div>
+
+      <section class="chapter" id="c14" style="--c:#94a3b8">
+        <div class="head"><span class="num">14</span><div><div class="eyebrow">Log</div><h3>Accessi</h3></div></div>
+        <div class="card">
+          <p class="purpose">Il <b>registro degli accessi</b>: chi è entrato nell'app e quando. Uno strumento di controllo per l'admin.</p>
+          <div class="sub-h">Come si usa</div>
+          <ol class="steps">
+            <li>Consulti l'elenco degli <b>ultimi accessi</b> della tua società.</li>
+            <li>Filtri per <b>utente</b> se cerchi un accesso preciso.</li>
+            <li>Puoi <b>azzerare</b> il registro della tua società quando serve.</li>
+          </ol>
+          <div class="note perm"><span class="ic">👑</span><div><b>Solo admin.</b> La sezione compare unicamente per l'amministratore, e mostra soltanto gli accessi della propria società.</div></div>
+        </div>
+      </section>
+
+      <!-- ============ 15 ALERT ============ -->
+      <section class="chapter" id="c15" style="--c:#eab308">
+        <div class="head"><span class="num">15</span><div><div class="eyebrow">Scadenze</div><h3>Alert scadenze</h3></div></div>
+        <div class="card">
+          <p class="purpose">Gli <b>avvisi automatici</b> per certificati medici e tesseramenti in scadenza. Decidi con quanto anticipo essere avvisato.</p>
+          <div class="sub-h">I campi</div>
+          <div class="scrollx"><table class="fields">
+            <tr><th>Campo</th><th>A cosa serve</th></tr>
+            <tr><td>Giorni preavviso visita</td><td>Con quanti giorni d'anticipo segnalare la visita medica in scadenza.</td></tr>
+            <tr><td>Giorni preavviso tessera</td><td>Idem per il tesseramento.</td></tr>
+          </table></div>
+          <div class="note perm"><span class="ic">👑</span><div><b>Solo admin.</b> La configurazione è riservata all'amministratore. I link ai certificati vengono rimossi automaticamente dopo il periodo previsto (privacy).</div></div>
+        </div>
+      </section>
+
+      <!-- ============ 16 STAGIONI ============ -->
+      <section class="chapter" id="c16" style="--c:#a78bfa">
+        <div class="head"><span class="num">16</span><div><div class="eyebrow">Archivio</div><h3>Stagioni</h3></div></div>
+        <div class="card">
+          <p class="purpose">Il <b>cambio stagione</b>: archivia l'anno concluso e riparti puliti, conservando lo storico. Una delle operazioni più delicate — falla con calma.</p>
+          <div class="sub-h">Cosa viene archiviato/azzerato</div>
+          <div class="scrollx"><table class="fields">
+            <tr><th>Categoria</th><th>Esito</th></tr>
+            <tr><td>Partite, presenze, valutazioni</td><td>Archiviate e azzerate per la nuova stagione.</td></tr>
+            <tr><td>Calendario, Hall of Fame, allenamenti</td><td>Archiviati e azzerati.</td></tr>
+            <tr><td>Rosa atleti</td><td>Rimane: aggiorni tu chi resta e chi va.</td></tr>
+          </table></div>
+          <div class="sub-h">Come si usa</div>
+          <ol class="steps">
+            <li><b>Esporta</b> lo storico in JSON/Excel (per sicurezza) prima di procedere.</li>
+            <li>Avvia l'<b>archiviazione</b>: le categorie sopra vengono messe da parte.</li>
+            <li>Riparti con la stagione nuova; l'archivio resta consultabile per <b>un anno</b> (con preavviso prima della rimozione).</li>
+          </ol>
+          <div class="note perm"><span class="ic">👑</span><div><b>Ruoli abilitati.</b> Operazione riservata ad <b>admin, dirigente e coach L1</b>. Le altre figure non vedono questa sezione.</div></div>
+        </div>
+      </section>
+
+      <!-- ============ 17 GENITORI ============ -->
+      <section class="chapter" id="c17" style="--c:#38bdf8">
+        <div class="head"><span class="num">17</span><div><div class="eyebrow">Famiglie</div><h3>Genitori &amp; iscrizioni</h3></div></div>
+        <div class="card">
+          <p class="purpose">Il <b>ponte con le famiglie</b>: modulo d'iscrizione online, bacheca comunicazioni, conferma presenze e caricamento documenti — <b>senza che il genitore debba registrarsi</b>.</p>
+          <div class="sub-h">Il flusso di iscrizione</div>
+          <ol class="steps">
+            <li>Condividi il <b>modulo d'iscrizione</b> della società (link pubblico).</li>
+            <li>La famiglia compila i dati dell'atleta, i propri contatti e i <b>consensi privacy</b> (compresi foto e uscita autonoma).</li>
+            <li>Tu ricevi la richiesta nella sezione iscrizioni e la <b>accetti</b>: l'atleta viene <b>creato in automatico</b> nell'annata scelta, genitori inclusi.</li>
+          </ol>
+          <div class="sub-h">Cosa fanno i genitori dopo</div>
+          <div class="scrollx"><table class="fields">
+            <tr><th>Azione</th><th>Come</th></tr>
+            <tr><td>Confermare presenze</td><td>Dal link presenze, senza login: presente/assente per ogni evento.</td></tr>
+            <tr><td>Caricare documenti</td><td>Link Google Drive (es. certificato medico) associati all'atleta.</td></tr>
+            <tr><td>Leggere le comunicazioni</td><td>Nella bacheca dedicata, con eventuali notifiche push.</td></tr>
+          </table></div>
+          <div class="note tip"><span class="ic">🛡️</span><div>Consensi e dati dei minori sono gestiti nel rispetto del <b>GDPR</b>: la prova del consenso viene registrata con data, e i dati vengono rimossi automaticamente alla fine della retention prevista.</div></div>
+        </div>
+      </section>
+
+      <footer class="end">
+        Sport Monitoring · Manuale d'uso · Le sezioni e i pulsanti visibili dipendono dal ruolo assegnato dalla società. Gli schemi delle schermate sono illustrazioni indicative.
+      </footer>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  (function () {
+    var toc = document.getElementById('toc');
+    var pop = document.getElementById('tocPop');
+    if (toc && pop) pop.appendChild(toc.cloneNode(true));
+    if (pop) pop.addEventListener('click', function (e) {
+      if (e.target.closest('a')) { var d = pop.closest('details'); if (d) d.open = false; }
+    });
+  })();
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('.side .toc a'));
+    var map = {};
+    links.forEach(function (a) { map[a.getAttribute('href').slice(1)] = a; });
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        var a = map[en.target.id];
+        if (a && en.isIntersecting) {
+          links.forEach(function (l) { l.style.color = ''; l.style.background = ''; });
+          a.style.color = 'var(--ink)'; a.style.background = 'var(--panel-2)';
+        }
+      });
+    }, { rootMargin: '-15% 0px -75% 0px' });
+    document.querySelectorAll('.chapter').forEach(function (c) { obs.observe(c); });
+  })();
+</script>
+</body>
+</html>

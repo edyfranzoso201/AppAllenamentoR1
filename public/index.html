@@ -1292,6 +1292,8 @@
             <button class="tab-nav-btn admin-only" data-tab="accessi-section" onclick="switchTab('accessi-section')" style="display:none;"><i class="bi bi-clock-history"></i><span class="tab-label"> Accessi</span></button>
             <button class="tab-nav-btn admin-only" data-tab="alert-settings-section" onclick="switchTab('alert-settings-section')" style="display:none;"><i class="bi bi-bell-fill"></i><span class="tab-label"> Alert</span></button>
             <button class="tab-nav-btn season-only" data-tab="stagioni-section" onclick="switchTab('stagioni-section')" style="display:none;"><i class="bi bi-archive-fill"></i><span class="tab-label"> Stagioni</span></button>
+            <!-- Guida: apre il manuale d'uso in una nuova scheda (pagina statica, non è una sezione) -->
+            <button class="tab-nav-btn" type="button" title="Manuale d'uso (nuova scheda)" onclick="window.open('/manuale.html','_blank','noopener')"><i class="bi bi-question-circle-fill"></i><span class="tab-label"> Guida</span></button>
         </div>
         <!-- Riga admin mobile: in fondo alla tendina, solo su mobile -->
         <div id="app-header-mobile" class="d-lg-none"
