@@ -128,7 +128,7 @@ function parentSigOk(annataId, providedSig) {
 // (403) pur mostrando l'atleta lato client, che spariva al refresh.
 function canWrite(role) {
   const r = String(role || '').toLowerCase().replace(/[_\s]/g, '');
-  return ['admin', 'coachl0', 'coachl1', 'coachl2', 'societal1', 'dirigentel1'].includes(r);
+  return ['admin', 'coachl0', 'coachl1', 'coachl2', 'societal1', 'dirigentel1', 'dirigentel2'].includes(r);
 }
 
 // Il cambio stagione è un'operazione delicata (archivia + azzera): consentita

@@ -49,11 +49,20 @@ function getPermissions(role) {
     case 'direttivo':
       return { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true };
     case 'dirigente':
-      // Dirigente L1 = "Edit + Materiale Completo": può creare/modificare atleti.
-      // canEditGeneral:true DEVE combaciare col client (DASHBOARD_APP_PERMS.dirigente_l1)
-      // e con canWrite() in api/data.js. Prima era false → il pulsante "Salva Atleta"
-      // veniva nascosto e il salvataggio rifiutato (l'atleta spariva al refresh).
+    case 'dirigente_l1':
+    case 'dirigente_l2':
+      // Dirigente L1 ("Edit + Materiale Completo") e L2 ("Edit + Materiale"):
+      // possono creare/modificare atleti. Gli utenti sono creati col ruolo
+      // suffissato (dirigente_l1/l2), non 'dirigente' base, quindi vanno elencati
+      // esplicitamente qui. canEditGeneral:true DEVE combaciare col client
+      // (script.js getPermissions + DASHBOARD_APP_PERMS) e con canWrite() in
+      // api/data.js. Prima solo 'dirigente' base era gestito → il pulsante
+      // "Salva Atleta" spariva e il salvataggio veniva rifiutato (perdita dati).
       return { canEditGeneral: true, canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true };
+    case 'dirigente_l3':
+    case 'dirigente_l4':
+      // L3 ("Squadra") e L4 ("Solo Materiale"): NON creano/modificano atleti.
+      return { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true };
     case 'staff':
       return { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true };
     default:

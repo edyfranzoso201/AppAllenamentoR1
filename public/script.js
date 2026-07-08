@@ -139,6 +139,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (role === 'coach_readonly') return { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false };
         if (role === 'societa_l1')   return { canEditGeneral: true,  canViewGPS: true,  canEditGPS: false, isAdmin: false, isDashboard: true };
         if (role === 'dirigente_l1') return { canEditGeneral: true,  canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true };
+        if (role === 'dirigente_l2') return { canEditGeneral: true,  canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true };
+        if (role === 'dirigente_l3') return { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true };
+        if (role === 'dirigente_l4') return { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true };
         if (role === 'societa_l3')   return { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true };
         return { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false };
     }
