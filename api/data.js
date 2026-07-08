@@ -602,13 +602,13 @@ if (req.query?.action === 'menu-config') {
 //         society:<sid>:inventoryCategories   → array di stringhe (categorie custom)
 // Permessi scrittura: admin, dirigente, coach_l1. Lettura: tutti gli autenticati.
 // Niente nuovo file serverless (limite Hobby 12 route).
-// Scrittura inventario: admin, dirigente (semplice e a livelli L1-L4), coach L1.
-// La normalizzazione toglie spazi ma tiene gli underscore (coach_l1, dirigente_l1…).
-const INV_WRITE_ROLES = ['admin', 'dirigente', 'dirigente_l1', 'dirigente_l2', 'dirigente_l3', 'dirigente_l4', 'coachl1', 'coach_l1'];
-function canInventory(role) { return INV_WRITE_ROLES.includes(String(role || '').toLowerCase().replace(/ /g, '')); }
-// Gestione categorie/foto: admin e dirigenti (semplice e a livelli).
-const INV_CAT_WRITE_ROLES = ['admin', 'dirigente', 'dirigente_l1', 'dirigente_l2', 'dirigente_l3', 'dirigente_l4'];
-function canInventoryCat(role) { return INV_CAT_WRITE_ROLES.includes(String(role || '').toLowerCase().replace(/ /g, '')); }
+// Inventario/categorie ora seguono la STESSA regola dell'edit generale (canWrite):
+// chi può editare atleti può editare anche inventario/kit/categorie/foto.
+// Ruoli edit: admin, coach_l1, coach_l2, dirigente_l1, dirigente_l2, societa_l1.
+// (Prima D-L3/L4 editavano l'inventario pur non editando atleti, e coach_l2 no:
+//  incoerenza rimossa allineando tutto a canWrite.)
+function canInventory(role) { return canWrite(role); }
+function canInventoryCat(role) { return canWrite(role); }
 
 const INV_DEFAULT_CATS = ['Maglie da calcio', 'Pantaloncini', 'Calzettoni', 'Palloni', 'Porte / Reti', 'Coni / Paletti', 'Pettorine', 'Altro'];
 
@@ -869,8 +869,8 @@ if (req.query?.action === 'inventory') {
 
     // ── Wishlist: salva/modifica voce ──
     if (act === 'wishlist-save') {
-      const WL_WRITE = ['admin', 'dirigente', 'dirigente_l1', 'dirigente_l2', 'dirigente_l3', 'dirigente_l4', 'coachl1', 'coach_l1', 'coachl2', 'coach_l2'];
-      if (!WL_WRITE.includes(String(session.role || '').toLowerCase().replace(/ /g,'')))
+      // Wishlist edit = edit generale (allineato a canWrite).
+      if (!canWrite(session.role))
         return res.status(403).json({ success: false, message: 'Permesso negato' });
       const raw = req.body.item || {};
       const item = {
@@ -894,8 +894,8 @@ if (req.query?.action === 'inventory') {
 
     // ── Wishlist: toggle acquistato ──
     if (act === 'wishlist-toggle') {
-      const WL_WRITE = ['admin', 'dirigente', 'dirigente_l1', 'dirigente_l2', 'dirigente_l3', 'dirigente_l4', 'coachl1', 'coach_l1', 'coachl2', 'coach_l2'];
-      if (!WL_WRITE.includes(String(session.role || '').toLowerCase().replace(/ /g,'')))
+      // Wishlist edit = edit generale (allineato a canWrite).
+      if (!canWrite(session.role))
         return res.status(403).json({ success: false, message: 'Permesso negato' });
       const id = String((req.body && req.body.id) || '').slice(0, 40);
       let wl = (await kv.get(wlKey)) || [];
