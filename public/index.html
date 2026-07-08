@@ -6185,6 +6185,15 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   .pm-row.pm-disabled label{cursor:default;}
   .pm-pill{font-size:0.66rem;font-weight:700;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:0.4px;}
   .pm-pill.fix{background:rgba(148,163,184,0.18);color:#cbd5e1;}
+  /* Segmented control a 3 stati (pannello admin) */
+  .pm-seg{display:inline-flex;gap:3px;background:rgba(255,255,255,0.05);border-radius:8px;padding:3px;flex-shrink:0;}
+  .pm-seg button{border:none;background:transparent;color:#94a3b8;font-size:0.72rem;font-weight:600;padding:4px 9px;border-radius:6px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px;}
+  .pm-seg button:hover{color:#e2e8f0;}
+  .pm-seg button.on[data-st="lock"]{background:#334155;color:#fff;}
+  .pm-seg button.on[data-st="free"]{background:#0e7490;color:#fff;}
+  .pm-seg button.on[data-st="hide"]{background:#b91c1c;color:#fff;}
+  html.theme-light .pm-seg{background:rgba(0,0,0,0.05);}
+  html.theme-light .pm-seg button{color:#475569;}
   .pm-foot{display:flex;gap:10px;justify-content:space-between;align-items:center;padding:14px 20px;border-top:1px solid rgba(255,255,255,0.08);flex-wrap:wrap;}
   .pm-foot .pm-left{display:flex;gap:8px;flex-wrap:wrap;}
   .pm-btn{border:none;border-radius:9px;padding:9px 16px;font-weight:600;font-size:0.88rem;cursor:pointer;}
@@ -6246,7 +6255,8 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     { key:'convocazioni-section',       label:'Convocazioni',  ic:'📣' }
   ];
   var LS_PREF = 'gosport_menu_pref';            // preferenza utente (per device)
-  var serverLocked = null;                       // set di key bloccate da admin (cache)
+  var serverLocked = null;                       // set di key FISSE per tutti (admin)
+  var serverHidden = null;                       // set di key NASCOSTE a tutti (admin, tranne admin stesso)
 
   function role() { return String(sessionStorage.getItem('gosport_user_role') || localStorage.getItem('_p_gosport_user_role') || '').toLowerCase(); }
   function isAdmin() { return role() === 'admin'; }
@@ -6279,9 +6289,15 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   }
   function fetchServerConfig() {
     return fetch('/api/data?action=menu-config', { headers: authHeadersJSON() })
-      .then(function (r) { return r.ok ? r.json() : { config:{ locked:[] } }; })
-      .then(function (d) { var l = (d && d.config && d.config.locked) || []; serverLocked = new Set(l); return serverLocked; })
-      .catch(function () { serverLocked = new Set(); return serverLocked; });
+      .then(function (r) { return r.ok ? r.json() : { config:{ locked:[], hidden:[] } }; })
+      .then(function (d) {
+        var l = (d && d.config && d.config.locked) || [];
+        var h = (d && d.config && d.config.hidden) || [];
+        serverLocked = new Set(l);
+        serverHidden = new Set(h);
+        return serverLocked;
+      })
+      .catch(function () { serverLocked = new Set(); serverHidden = new Set(); return serverLocked; });
   }
 
   // ── APPLICA il filtro finale: una tab opzionale è visibile se l'admin l'ha
@@ -6291,6 +6307,8 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   function applyMenuPref() {
     var pref = loadPref();
     var locked = serverLocked || new Set();
+    var hidden = serverHidden || new Set();
+    var admin = isAdmin();
     var hidActiveBtn = false;
     OPTIONAL.forEach(function (o) {
       var el = tabEl(o.key);
@@ -6298,10 +6316,19 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       // Se la tab è nascosta dai permessi/licenza (inline display:none impostato
       // da showAccessTabIfAdmin o dal piano), NON la mostriamo: marchiamo solo.
       var hiddenByPerm = el.dataset.pmPermHidden === '1';
-      var userHidden = pref.hidden.indexOf(o.key) !== -1;
-      var adminLocked = locked.has(o.key);
-      var shouldHide = !adminLocked && userHidden;
       if (hiddenByPerm) return;            // i permessi vincono sempre
+      var userHidden  = pref.hidden.indexOf(o.key) !== -1;
+      var adminLocked = locked.has(o.key);
+      var adminHidden = hidden.has(o.key);
+      // Nascosta dall'admin a tutta la società: sparisce per tutti TRANNE l'admin
+      // (che deve poterla vedere e riattivare). Ha priorità sulle altre regole.
+      var shouldHide;
+      if (adminHidden && !admin) {
+        shouldHide = true;
+      } else {
+        // Regola standard: fissa = sempre visibile; libera = visibile salvo scelta utente.
+        shouldHide = !adminLocked && userHidden;
+      }
       el.style.display = shouldHide ? 'none' : '';
       if (shouldHide && el.classList.contains('active')) hidActiveBtn = true;
     });
@@ -6338,10 +6365,10 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     document.getElementById('pm-title').textContent = mode === 'admin' ? 'Configura menu società' : 'Personalizza menu';
     document.getElementById('pm-title-ic').textContent = mode === 'admin' ? '🛡️' : '⚙️';
     document.getElementById('pm-sub').innerHTML = mode === 'admin'
-      ? 'Scegli quali voci restano <strong>fisse per tutti</strong> (spunta) e quali sono <strong>personalizzabili</strong> dal singolo utente (spunta tolta). Vale per tutta la società.'
+      ? 'Per ogni voce scegli: <strong>🔒 Fissa</strong> (sempre visibile a tutti), <strong>⚪ Libera</strong> (ogni utente decide se vederla), <strong>🚫 Nascosta</strong> (tolta a tutta la società). Vale per tutti gli utenti.'
       : 'Spunta le voci che vuoi vedere nel tuo menu. Le voci bloccate dall\'amministratore restano sempre visibili. La scelta vale solo su questo dispositivo.';
-    document.getElementById('pm-note').textContent = mode === 'admin'
-      ? 'La voce Home è sempre presente (tab predefinita) e non compare qui.'
+    document.getElementById('pm-note').innerHTML = mode === 'admin'
+      ? 'La voce Home è sempre presente e non compare qui. Le voci <strong>🚫 Nascoste</strong> restano visibili solo a te (admin), così puoi riattivarle.'
       : '';
 
     // Nel pannello utente mostriamo SOLO le tab che esistono per questo utente
@@ -6361,17 +6388,32 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       return;
     }
 
-    list.innerHTML = rows.map(function (o) {
-      var checked, pill = '';
-      if (mode === 'admin') {
-        checked = locked.has(o.key);   // spunta = FISSA per tutti
-        pill = checked ? '<span class="pm-pill fix">fissa</span>' : '';
-      } else {
-        checked = pref.hidden.indexOf(o.key) === -1;  // spunta = visibile
-      }
-      return '<div class="pm-row"><label><input type="checkbox" data-key="' + o.key + '"' + (checked ? ' checked' : '') + '>' +
-        '<span class="pm-ic">' + o.ic + '</span><span>' + o.label + '</span></label>' + pill + '</div>';
-    }).join('');
+    var hidden = serverHidden || new Set();
+    if (mode === 'admin') {
+      // 3 stati per voce: Fissa (sempre visibile) · Libera (personalizzabile) · Nascosta (tolta a tutti)
+      list.innerHTML = rows.map(function (o) {
+        var st = locked.has(o.key) ? 'lock' : (hidden.has(o.key) ? 'hide' : 'free');
+        function seg(v, ic, txt){ return '<button type="button" data-st="' + v + '"' + (st===v?' class="on"':'') + '>' + ic + ' ' + txt + '</button>'; }
+        return '<div class="pm-row" data-key="' + o.key + '" data-state="' + st + '">' +
+          '<span style="flex:1;color:#e2e8f0;display:flex;align-items:center;gap:9px;"><span class="pm-ic">' + o.ic + '</span><span>' + o.label + '</span></span>' +
+          '<span class="pm-seg">' + seg('lock','🔒','Fissa') + seg('free','⚪','Libera') + seg('hide','🚫','Nascosta') + '</span>' +
+        '</div>';
+      }).join('');
+      // click sui 3 pulsanti: aggiorna lo stato della riga
+      list.querySelectorAll('.pm-seg button').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var row = b.closest('.pm-row');
+          row.dataset.state = b.dataset.st;
+          row.querySelectorAll('.pm-seg button').forEach(function (x) { x.classList.toggle('on', x === b); });
+        });
+      });
+    } else {
+      list.innerHTML = rows.map(function (o) {
+        var checked = pref.hidden.indexOf(o.key) === -1;  // spunta = visibile
+        return '<div class="pm-row"><label><input type="checkbox" data-key="' + o.key + '"' + (checked ? ' checked' : '') + '>' +
+          '<span class="pm-ic">' + o.ic + '</span><span>' + o.label + '</span></label></div>';
+      }).join('');
+    }
   }
 
   // ── Apertura pannelli ──
@@ -6396,17 +6438,38 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       .filter(function (c) { return c.checked; }).map(function (c) { return c.dataset.key; });
   }
   window.PMSetAll = function (val) {
-    document.querySelectorAll('#pm-list input[type=checkbox]').forEach(function (c) { c.checked = !!val; });
+    var mode = document.getElementById('pm-overlay').dataset.mode;
+    if (mode === 'admin') {
+      // "Tutte" = tutte Libere (personalizzabili); "Nessuna" = tutte Nascoste.
+      var st = val ? 'free' : 'hide';
+      document.querySelectorAll('#pm-list .pm-row').forEach(function (row) {
+        row.dataset.state = st;
+        row.querySelectorAll('.pm-seg button').forEach(function (b) { b.classList.toggle('on', b.dataset.st === st); });
+      });
+    } else {
+      document.querySelectorAll('#pm-list input[type=checkbox]').forEach(function (c) { c.checked = !!val; });
+    }
   };
   window.PMSave = function (btn) {
     var mode = document.getElementById('pm-overlay').dataset.mode;
     if (btn) btn.disabled = true;
     if (mode === 'admin') {
-      var locked = collectChecked();  // spuntate = fisse per tutti
-      fetch('/api/data?action=menu-config', { method:'POST', headers: authHeadersJSON(), body: JSON.stringify({ locked: locked }) })
+      // Raccoglie i 3 stati dalle righe: lock → fissa, hide → nascosta, free → libera.
+      var locked = [], hidden = [];
+      document.querySelectorAll('#pm-list .pm-row').forEach(function (row) {
+        var k = row.dataset.key, s = row.dataset.state;
+        if (s === 'lock') locked.push(k);
+        else if (s === 'hide') hidden.push(k);
+      });
+      fetch('/api/data?action=menu-config', { method:'POST', headers: authHeadersJSON(), body: JSON.stringify({ locked: locked, hidden: hidden }) })
         .then(function (r) { return r.json(); })
         .then(function (d) {
-          if (d && d.success) { serverLocked = new Set(d.config.locked || []); applyMenuPref(); window.PMClose(); }
+          if (d && d.success) {
+            serverLocked = new Set(d.config.locked || []);
+            serverHidden = new Set(d.config.hidden || []);
+            applyMenuPref();
+            window.PMClose();
+          }
           else { alert('Errore nel salvataggio: ' + ((d && d.message) || '')); }
         })
         .catch(function () { alert('Errore di rete'); })

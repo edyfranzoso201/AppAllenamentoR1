@@ -548,9 +548,11 @@ if (req.query?.action === 'area-tecnica') {
 // ── PERSONALIZZA MENU: configurazione admin per società ──────────────────────
 // Pannello 1 (governance): l'admin decide quali tab opzionali sono "fisse per
 // tutti" e quali "personalizzabili" dal singolo utente. Salvata PER SOCIETÀ in
-// society:<id>:menuConfig = { locked: ["data-tab", ...] } (l'array elenca le tab
-// che l'admin ha BLOCCATO come sempre-visibili; tutte le altre opzionali sono
-// personalizzabili). Pannello 2 (vista utente) è 100% client/localStorage e non
+// society:<id>:menuConfig = { locked: [...], hidden: [...] }.
+//   locked = tab sempre visibili a tutti (l'utente non può nasconderle);
+//   hidden = tab nascoste a tutta la società (tranne l'admin, che le vede sempre
+//            per poterle riattivare). Le tab non in nessuno dei due sono
+//            "libere": personalizzabili dal singolo utente. Pannello 2 (vista utente) è 100% client/localStorage e non
 // passa di qui. GET: tutti gli autenticati (serve all'utente per sapere cosa può
 // personalizzare). POST: solo admin. Niente nuovo file serverless (limite Hobby).
 if (req.query?.action === 'menu-config') {
@@ -561,8 +563,9 @@ if (req.query?.action === 'menu-config') {
   const key = `society:${sid}:menuConfig`;
 
   if (req.method === 'GET') {
-    const cfg = (await kv.get(key)) || { locked: [] };
+    const cfg = (await kv.get(key)) || { locked: [], hidden: [] };
     if (!Array.isArray(cfg.locked)) cfg.locked = [];
+    if (!Array.isArray(cfg.hidden)) cfg.hidden = []; // retrocompat: config vecchie non hanno hidden
     return res.status(200).json({ success: true, config: cfg });
   }
 
@@ -570,13 +573,16 @@ if (req.query?.action === 'menu-config') {
     if (String(session.role).toLowerCase() !== 'admin') {
       return res.status(403).json({ success: false, message: 'Solo l\'amministratore può configurare il menu della società' });
     }
-    let locked = (req.body && req.body.locked) || [];
-    if (!Array.isArray(locked)) locked = [];
-    // Sanifica: solo stringhe brevi tipo data-tab/identificatori (max 40 voci)
-    locked = locked
+    const clean = (arr) => (Array.isArray(arr) ? arr : [])
       .filter(x => typeof x === 'string' && /^[\w-]{1,60}$/.test(x))
       .slice(0, 40);
-    const cfg = { locked, updatedAt: new Date().toISOString() };
+    // locked = fisse per tutti; hidden = nascoste a tutti (tranne admin).
+    let locked = clean(req.body && req.body.locked);
+    let hidden = clean(req.body && req.body.hidden);
+    // Coerenza: una voce non può essere insieme fissa e nascosta → locked vince.
+    const lockedSet = new Set(locked);
+    hidden = hidden.filter(k => !lockedSet.has(k));
+    const cfg = { locked, hidden, updatedAt: new Date().toISOString() };
     await kv.set(key, cfg);
     return res.status(200).json({ success: true, config: cfg });
   }
