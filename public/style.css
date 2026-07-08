@@ -3,13 +3,79 @@
     --text-light: #ffffff; --card-bg: #1a3a7a; --border-color: #3b5a9d; --gold-star: #FFD700;
     --field-green: #008000; --field-line: #FFF; --gk-color: #E8C135; --custom-purple: #6f42c1;
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   DESIGN TOKENS — set unico condiviso (Restyle 2026-07)
+   Spec: docs/superpowers/specs/2026-07-08-restyle-visivo-design.md
+   Fase 0: definizione soltanto. Nessun componente li usa ancora, quindi
+   l'aspetto dell'app NON cambia. Le fasi successive migreranno i componenti
+   da --primary-red/--card-bg (legacy) a questi token semantici.
+   ────────────────────────────────────────────────────────────────────── */
+:root {
+    /* superfici / testo — TEMA SCURO (default) */
+    --sm-bg:        #0a1424;
+    --sm-bg-2:      #0d1b2a;
+    --sm-surface:   #13233a;
+    --sm-surface-2: #1a2d47;
+    --sm-border:    #263e63;
+    --sm-border-soft:#1d2f4d;
+    --sm-text:      #e8eef8;
+    --sm-text-muted:#8ea3c0;
+    --sm-text-dim:  #617694;
+
+    /* accento di marca (verde sportivo, dal colore PWA) */
+    --sm-brand:       #1aa05e;
+    --sm-brand-strong:#15864e;
+    --sm-brand-soft:  rgba(26,160,94,0.14);
+
+    /* semantici — separati dall'accento di marca */
+    --sm-ok:     #1aa05e;
+    --sm-warn:   #e0a53a;
+    --sm-danger: #e5484d;
+    --sm-info:   #4a90e2;
+
+    /* forma */
+    --sm-radius:    12px;
+    --sm-radius-sm: 8px;
+    --sm-shadow:    0 8px 28px rgba(0,0,0,0.42);
+    --sm-shadow-sm: 0 2px 8px rgba(0,0,0,0.30);
+}
+
+/* TEMA CHIARO — l'app usa le classi html.theme-light / body.theme-light */
+html.theme-light, body.theme-light {
+    --sm-bg:        #f4f7fb;
+    --sm-bg-2:      #eef3f9;
+    --sm-surface:   #ffffff;
+    --sm-surface-2: #f7fafd;
+    --sm-border:    #dbe4f0;
+    --sm-border-soft:#e7edf5;
+    --sm-text:      #0f1e33;
+    --sm-text-muted:#5a6b82;
+    --sm-text-dim:  #8496ac;
+
+    --sm-brand:       #16884f;
+    --sm-brand-strong:#127043;
+    --sm-brand-soft:  rgba(22,136,79,0.10);
+
+    --sm-ok:     #16884f;
+    --sm-warn:   #c98410;
+    --sm-danger: #d23539;
+    --sm-info:   #2f6fc4;
+
+    /* Ombra più decisa in tema chiaro: le card bianche devono staccare
+       nettamente dallo sfondo azzurrino, con un alone morbido + un bordo-ombra. */
+    --sm-shadow:    0 4px 6px rgba(15,30,51,0.06), 0 10px 28px rgba(15,30,51,0.14);
+    --sm-shadow-sm: 0 1px 3px rgba(15,30,51,0.10), 0 2px 8px rgba(15,30,51,0.08);
+}
+
 html { scroll-behavior: smooth; }
 body { background-color: var(--primary-blue); color: var(--text-light); padding-top: 56px; }
 .bg-dark-blue { background-color: #051438 !important; border-bottom: 2px solid var(--primary-red); }
 .main-title { color: var(--text-light); border-left: 4px solid var(--primary-red); padding-left: 1rem; }
-* ✅ FIX: Aggiungi padding-top all'alerts-container per far spazio all'header */
+/* Spazio sopra l'alert: il body ha già padding-top:56px per l'header sticky,
+   quindi qui basta un piccolo respiro (prima erano altri 60px → ~116px di vuoto). */
 #alerts-container {
-    padding-top: 60px;
+    padding-top: 12px;
 }
 
 /* ✅ FIX: Assicura che gli alert abbiano z-index inferiore all'header */

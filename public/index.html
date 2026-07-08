@@ -92,28 +92,22 @@
     }
 
 
-    /* Azioni Rapide: pulsanti secondari outline tenue grigio-blu uniforme.
-       Un solo primario pieno (Modalità Campo); il rosso resta solo per azioni distruttive. */
+    /* Azioni Rapide: pulsanti secondari outline uniforme (token restyle 2026-07).
+       Un solo primario pieno (Modalità Campo); il rosso resta solo per azioni distruttive.
+       Ancorati ai token --sm-*: cambiano in automatico tra tema scuro e chiaro. */
     .btn-qa {
-        background: rgba(30,41,59,0.55) !important;
-        border: 1px solid #3b5a9d !important;
-        color: #cbd5e1 !important;
+        background: var(--sm-surface) !important;
+        border: 1px solid var(--sm-border) !important;
+        color: var(--sm-text) !important;
         font-weight: 500;
         text-align: left;
+        border-radius: var(--sm-radius-sm);
+        transition: background .15s, border-color .15s, color .15s;
     }
     .btn-qa:hover {
-        background: rgba(59,90,157,0.35) !important;
-        border-color: #60a5fa !important;
-        color: #ffffff !important;
-    }
-    html.theme-light .btn-qa, body.theme-light .btn-qa {
-        background: #f1f5f9 !important;
-        border: 1px solid #cbd5e1 !important;
-        color: #1e293b !important;
-    }
-    html.theme-light .btn-qa:hover, body.theme-light .btn-qa:hover {
-        background: #e2e8f0 !important;
-        border-color: #60a5fa !important;
+        background: var(--sm-surface-2) !important;
+        border-color: var(--sm-brand) !important;
+        color: var(--sm-brand) !important;
     }
 
     /* Home: empty-state compatto e centrato per card vuote (Prossima sessione,
@@ -125,48 +119,79 @@
     }
     .home-empty-icon { font-size:2rem; opacity:0.55; margin-bottom:6px; }
 
-    /* Home: più stacco delle card dallo sfondo (bordo più chiaro + ombra) così
-       non sono più "blu su blu su blu". Vale per le card della dashboard Home. */
+    /* Home: card della dashboard con stacco dallo sfondo (token restyle 2026-07).
+       Un unico set di token gestisce bordo/ombra/superficie/testo per entrambi i temi;
+       niente più regole .theme-light duplicate per ogni testo interno. */
     .summary-card {
-        border: 1px solid #3b5a9d !important;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.45) !important;
-        border-radius: 12px !important;
+        background: var(--sm-surface) !important;
+        border: 1px solid var(--sm-border) !important;
+        box-shadow: var(--sm-shadow) !important;
+        border-radius: var(--sm-radius) !important;
     }
-    html.theme-light .summary-card, body.theme-light .summary-card {
-        border: 1px solid #d1d9e6 !important;
-        box-shadow: 0 4px 14px rgba(15,23,42,0.12) !important;
-    }
-
-    /* Home - tema scuro: testi leggibili in Staff e Statistiche */
+    /* Testi interni alle card (titoli, valori, muted) leggibili in entrambi i temi.
+       I titoletti-etichetta (card-title) usano --sm-text con letter-spacing per
+       darsi il tono "label" senza risultare slavati come il muted puro. */
     .summary-card small, .summary-card p.small,
     .summary-card .text-muted {
-        color: #e2e8f0 !important;
+        color: var(--sm-text-muted) !important;
     }
-    .stat-item h6 {
-        color: #e2e8f0 !important;
+    .summary-card .card-title,
+    .summary-card p, .summary-card h6 {
+        color: var(--sm-text) !important;
     }
-    .stat-item p {
-        color: #ffffff !important;
+    .summary-card .card-title {
+        letter-spacing: .04em;
+        font-weight: 700;
+        opacity: .85;
     }
-    /* n1 — Home: testo "Nessuna sessione pianificata" e card text → nero */
-    html.theme-light #home-next-session .text-muted,
-    body.theme-light #home-next-session .text-muted,
-    html.theme-light #home-next-session p,
-    body.theme-light #home-next-session p,
-    html.theme-light .summary-card .card-title,
-    body.theme-light .summary-card .card-title,
-    html.theme-light .summary-card p,
-    body.theme-light .summary-card p,
-    html.theme-light .summary-card h6,
-    body.theme-light .summary-card h6 {
-      color: #000103 !important;
+    .stat-item h6 { color: var(--sm-text-muted) !important; }
+    .stat-item p  { color: var(--sm-text) !important; }
+
+    /* Home (restyle Fase 1): le card della sola sezione Home usano i token.
+       Specificità #home-section per vincere sul blocco globale .theme-light .card
+       (→ #f0f1f2) senza toccarlo: quel blocco verrà armonizzato nella fase
+       "tema chiaro trasversale". Ancoraggio ai token = coerente scuro+chiaro. */
+    #home-section .summary-card,
+    html.theme-light #home-section .summary-card,
+    body.theme-light #home-section .summary-card {
+        background: var(--sm-surface) !important;
+        border: 1px solid var(--sm-border) !important;
+        box-shadow: var(--sm-shadow) !important;
+        border-radius: var(--sm-radius) !important;
     }
-    /* Home tema chiaro: stat-item (Partite Giocate, V-P-S, Gol Fatti, ecc.) testo nero */
-    html.theme-light .stat-item h6,
-    body.theme-light .stat-item h6,
-    html.theme-light .stat-item p,
-    body.theme-light .stat-item p {
-        color: #000103 !important;
+    /* Striscia di stato colorata a sinistra della card (tocco distintivo, dal mockup).
+       Colore per-card via --stripe; default = accento di marca. */
+    #home-section .summary-card {
+        position: relative;
+        overflow: hidden;
+    }
+    #home-section .summary-card::before {
+        content: "";
+        position: absolute; left: 0; top: 0; bottom: 0;
+        width: 4px; background: var(--stripe, var(--sm-brand));
+    }
+    #home-section .summary-card .card-title,
+    html.theme-light #home-section .summary-card .card-title,
+    body.theme-light #home-section .summary-card .card-title {
+        color: var(--sm-text) !important;
+        opacity: .82;
+    }
+    /* I numeri grandi (id home-total-*) hanno stile inline: ereditano il colore
+       testo del tema tramite la regola .summary-card p sopra. */
+
+    /* Alert "Scadenze da gestire" (generato da script.js) — ora usa i token e
+       segue il tema. La X di chiusura viene forzata al colore giusto del tema
+       corrente a prescindere da quando l'alert è stato creato (evita X invisibile
+       dopo un cambio tema). */
+    html.theme-light .gs-deadline-alert .btn-close,
+    body.theme-light .gs-deadline-alert .btn-close {
+        filter: none;
+    }
+    .gs-deadline-alert .btn-close {
+        filter: invert(1) grayscale(1) brightness(1.6);
+    }
+    html.theme-light .gs-deadline-alert .btn-close {
+        filter: none !important;
     }
     /* n2a — Risultati: date nei box gare → #1d4ed8 */
     html.theme-light .match-result-item .text-muted,
@@ -1320,13 +1345,13 @@
             <div class="row">
                 <!-- Colonna sinistra: Atleti + Staff impilati -->
                 <div class="col-lg-2 col-md-4 mb-4 d-flex flex-column gap-3">
-                    <div class="card summary-card">
+                    <div class="card summary-card" style="--stripe:var(--sm-brand);">
                         <div class="card-body py-2 px-3">
                             <h6 class="card-title text-muted mb-1" style="font-size:0.72rem;">ATLETI IN ROSA</h6>
                             <p class="mb-0" style="font-size:2.2rem;font-weight:700;line-height:1;" id="home-total-athletes">0</p>
                         </div>
                     </div>
-                    <div class="card summary-card">
+                    <div class="card summary-card" style="--stripe:var(--sm-info);">
                         <div class="card-body py-2 px-3" id="home-staff-box">
                             <h6 class="card-title text-muted mb-1" style="font-size:0.72rem;">STAFF TECNICO</h6>
                             <p class="mb-1" style="font-size:2.2rem;font-weight:700;line-height:1;" id="home-total-staff">0</p>
@@ -1358,7 +1383,7 @@
                             <h5 class="card-title text-muted">AZIONI RAPIDE</h5>
                             <div class="d-grid gap-2 w-100 no-print">
                                 <!-- Azione PRIMARIA: unica piena (verde brand). Tutte le altre in stile outline tenue uniforme. -->
-                                <button class="btn btn-lg" id="quick-modalita-campo-btn" onclick="window.openModalitaCampo()" style="background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-weight:700;font-size:1.1rem;padding:14px;">⚡ Modalità Campo</button>
+                                <button class="btn btn-lg" id="quick-modalita-campo-btn" onclick="window.openModalitaCampo()" style="background:linear-gradient(135deg,var(--sm-brand),var(--sm-brand-strong));color:#fff;font-weight:700;font-size:1.1rem;padding:14px;border:none;">⚡ Modalità Campo</button>
                                 <button class="btn btn-outline-light btn-qa" id="quick-add-athlete-btn"><i class="bi bi-person-plus-fill"></i> Aggiungi Atleta</button>
                                 <button class="btn btn-outline-light btn-qa" id="quick-add-staff-btn"><i class="bi bi-person-badge-fill"></i> Aggiungi Staff</button>
                                 <button class="btn btn-outline-light btn-qa" id="quick-plan-session-btn"><i class="bi bi-calendar-plus"></i> Pianifica Sessione</button>
