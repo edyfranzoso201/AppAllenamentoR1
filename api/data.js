@@ -593,10 +593,13 @@ if (req.query?.action === 'menu-config') {
 //         society:<sid>:inventoryCategories   → array di stringhe (categorie custom)
 // Permessi scrittura: admin, dirigente, coach_l1. Lettura: tutti gli autenticati.
 // Niente nuovo file serverless (limite Hobby 12 route).
-const INV_WRITE_ROLES = ['admin', 'dirigente', 'coachl1', 'coach_l1'];
+// Scrittura inventario: admin, dirigente (semplice e a livelli L1-L4), coach L1.
+// La normalizzazione toglie spazi ma tiene gli underscore (coach_l1, dirigente_l1…).
+const INV_WRITE_ROLES = ['admin', 'dirigente', 'dirigente_l1', 'dirigente_l2', 'dirigente_l3', 'dirigente_l4', 'coachl1', 'coach_l1'];
 function canInventory(role) { return INV_WRITE_ROLES.includes(String(role || '').toLowerCase().replace(/ /g, '')); }
-const INV_CAT_WRITE_ROLES = ['admin', 'dirigente'];
-function canInventoryCat(role) { return INV_CAT_WRITE_ROLES.includes(String(role || '').toLowerCase()); }
+// Gestione categorie/foto: admin e dirigenti (semplice e a livelli).
+const INV_CAT_WRITE_ROLES = ['admin', 'dirigente', 'dirigente_l1', 'dirigente_l2', 'dirigente_l3', 'dirigente_l4'];
+function canInventoryCat(role) { return INV_CAT_WRITE_ROLES.includes(String(role || '').toLowerCase().replace(/ /g, '')); }
 
 const INV_DEFAULT_CATS = ['Maglie da calcio', 'Pantaloncini', 'Calzettoni', 'Palloni', 'Porte / Reti', 'Coni / Paletti', 'Pettorine', 'Altro'];
 

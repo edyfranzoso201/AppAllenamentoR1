@@ -6587,8 +6587,10 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   var COND_ICON = { buono:'✅', riparazione:'🔧', fuori_uso:'❌', mancante:'❓' };
   var COND_COLOR = { buono:'#4ade80', riparazione:'#fbbf24', fuori_uso:'#f87171', mancante:'#c084fc' };
   var TAGLIE_ALL = ['XS','S','M','L','XL','XXL','6 anni','8 anni','10 anni','12 anni','14 anni','Unica','28-30','31-33','34-36','37-39','40-42','43-45','37','38','39','40','41','42','43','44','45','3','4','5'];
-  var WRITE_ROLES = ['admin', 'dirigente', 'coachl1', 'coach_l1', 'coach l1'];
-  var CAT_ROLES   = ['admin', 'dirigente'];
+  // WRITE_ROLES confrontato con il ruolo normalizzato SENZA spazi ma CON underscore (vedi applyRole).
+  var WRITE_ROLES = ['admin', 'dirigente', 'dirigente_l1', 'dirigente_l2', 'dirigente_l3', 'dirigente_l4', 'coachl1', 'coach_l1', 'coach l1'];
+  // CAT_ROLES confrontato con il ruolo normalizzato SENZA underscore (vedi applyRole) → niente underscore qui.
+  var CAT_ROLES   = ['admin', 'dirigente', 'dirigentel1', 'dirigentel2', 'dirigentel3', 'dirigentel4'];
 
   function ss(k) { return sessionStorage.getItem(k) || localStorage.getItem('_p_' + k) || ''; }
   function annataId() { return ss('gosport_current_annata'); }
