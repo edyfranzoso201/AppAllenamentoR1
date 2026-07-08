@@ -49,9 +49,13 @@
             --border:     #3b5a9d;
             --text:       #ffffff;
             --text-muted: #60a5fa;
-            --accent:     #d90429;
+            /* Restyle 2026-07: l'accento di marca ora è il verde unico (era rosso #d90429).
+               --danger resta il rosso SEMANTICO (errori, assenze, elimina, gare fuori casa),
+               distinto dall'accento. Allineato ai token --sm-* del resto dell'app. */
+            --accent:     #1aa05e;
             --accent2:    #ffffff;
-            --red:        #d90429;
+            --red:        #1aa05e;   /* alias legacy dell'accento → verde */
+            --danger:     #d90429;   /* rosso semantico */
         }
 
         * { box-sizing: border-box; }
@@ -129,10 +133,10 @@
             transition: filter 0.15s;
         }
         .btn-cal:hover { filter: brightness(1.15); }
-        .btn-new      { background: var(--red);     color: white; }
+        .btn-new      { background: var(--accent);  color: white; }
         .btn-gen      { background: #f59e0b;         color: white; }
         .btn-import   { background: #3b82f6;         color: white; }
-        .btn-resp     { background: #d90429;         color: white; }
+        .btn-resp     { background: var(--accent);  color: white; }
         .btn-delete   { background: #64748b;         color: #e2e8f0; }
 
         /* ── Card wrapper ── */
@@ -443,7 +447,7 @@
         .rte-editor { background:#0d1b2a; border:1px solid #3b5a9d; color:#ffffff;
             border-radius:6px; padding:10px 12px; font-size:0.9rem; min-height:90px;
             outline:none; line-height:1.6; }
-        .rte-editor:focus { border-color:#d90429; }
+        .rte-editor:focus { border-color:var(--accent); }
         .rte-color-btn { width:20px; height:20px; border-radius:50%; border:2px solid #3b5a9d;
             cursor:pointer; padding:0; display:inline-block; }
         .cal-section-header {
@@ -548,7 +552,7 @@
         .sponsor-row:last-child { border-bottom:none; margin-bottom:0; padding-bottom:0; }
         .sponsor-row label { color:#60a5fa; font-size:0.8rem; font-weight:600; }
         .sponsor-row input { background:#0d1b2a; border:1px solid #3b5a9d; color:#ffffff; border-radius:6px; padding:7px 10px; font-size:0.85rem; width:100%; }
-        .sponsor-row input:focus { border-color:#d90429; outline:none; }
+        .sponsor-row input:focus { border-color:var(--accent); outline:none; }
         .sponsor-img-preview { height:48px; border-radius:6px; border:1px solid #3b5a9d; margin-top:4px; display:none; }
         .btn-save-sponsor { background:#f59e0b; color:#000; border:none; border-radius:6px; padding:9px 20px; font-weight:700; cursor:pointer; font-size:0.85rem; margin-top:4px; }
         .btn-save-sponsor:hover { background:#f59e0b; }
@@ -675,7 +679,7 @@
         html.theme-light .page-tab,
         body.theme-light .page-tab { color: #000103 !important; background: transparent; }
         html.theme-light .page-tab.active,
-        body.theme-light .page-tab.active { color: #d90429 !important; border-color: #d90429 !important; }
+        body.theme-light .page-tab.active { color: var(--accent) !important; border-color: var(--accent) !important; }
         /* ── Regola base: testo nero su sfondi chiari, bianco su sfondi scuri ── */
         html.theme-light body, body.theme-light { color: #000103; }
         /* Forza bianco esplicito su rte-btn e figli */
@@ -701,7 +705,7 @@
         html.theme-light .gare-ora,
         body.theme-light .gare-ora { color: #ffffff !important; }
         html.theme-light .page-tab.active,
-        body.theme-light .page-tab.active { color: #d90429 !important; }
+        body.theme-light .page-tab.active { color: var(--accent) !important; }
         html.theme-light .back-btn,
         body.theme-light .back-btn { color: #000103 !important; }
 
@@ -1152,7 +1156,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <button class="btn-cal btn-resp"   id="responses-btn" onclick="showResponses()"><i class="bi bi-eye"></i> Risposte</button>
             <button class="btn-cal btn-delete" id="delete-btn"    onclick="deleteOldEvents()"><i class="bi bi-trash"></i> Elimina Vecchi</button>
             <button id="cal-bacheca-btn" hidden
-                style="background:#d90429;color:#fff;border:none;border-radius:50px;padding:5px 14px;cursor:pointer;font-size:0.82rem;font-weight:600;">
+                style="background:var(--accent);color:#fff;border:none;border-radius:50px;padding:5px 14px;cursor:pointer;font-size:0.82rem;font-weight:600;">
                 📢 Bacheca
             </button>
             <button id="cal-push-btn" onclick="window.calPushSubscribe()" hidden
@@ -1195,7 +1199,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         style="background:#f59e0b;color:#000;border:none;border-radius:6px;padding:5px 12px;font-size:0.78rem;cursor:pointer;font-weight:600;">
                         🔔 Invia Notifica
                     </button>
-                    <button onclick="copyBachecaLink()" style="background:#d90429;color:white;border:none;
+                    <button onclick="copyBachecaLink()" style="background:var(--accent);color:white;border:none;
                         border-radius:6px;padding:5px 12px;font-size:0.78rem;cursor:pointer;font-weight:600;">
                         <i class="bi bi-link-45deg"></i> Copia Link Pubblico
                     </button>
@@ -1443,7 +1447,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <button class="gare-nav-btn" onclick="gareNavSett(-1)"><i class="bi bi-chevron-left"></i> Prec.</button>
             <div class="gare-week-label" id="gare-week-label">—</div>
             <button class="gare-nav-btn" onclick="gareNavSett(1)">Succ. <i class="bi bi-chevron-right"></i></button>
-            <button class="gare-nav-btn" onclick="gareGoToday()" style="background:#d90429;border-color:#d90429;color:#fff;">Oggi</button>
+            <button class="gare-nav-btn" onclick="gareGoToday()" style="background:var(--accent);border-color:var(--accent);color:#fff;">Oggi</button>
         </div>
 
         <!-- Vista settimanale Casa / Fuori -->

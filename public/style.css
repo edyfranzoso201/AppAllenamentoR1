@@ -2,6 +2,13 @@
     --primary-blue: #0a2463; --secondary-blue: #1e5095; --primary-red: #d90429;
     --text-light: #ffffff; --card-bg: #1a3a7a; --border-color: #3b5a9d; --gold-star: #FFD700;
     --field-green: #008000; --field-line: #FFF; --gk-color: #E8C135; --custom-purple: #6f42c1;
+    /* Restyle 2026-07: accento di marca verde. Gli usi ACCENTO (nav border, titoli,
+       pulsanti primari, giorno corrente, focus) puntano a --primary-accent; --primary-red
+       resta il rosso SEMANTICO (avversario/trasferta, diff reti negativa). */
+    --primary-accent: #1aa05e; --primary-accent-hover: #15864e;
+}
+html.theme-light, body.theme-light {
+    --primary-accent: #16884f; --primary-accent-hover: #127043;
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -70,8 +77,8 @@ html.theme-light, body.theme-light {
 
 html { scroll-behavior: smooth; }
 body { background-color: var(--primary-blue); color: var(--text-light); padding-top: 56px; }
-.bg-dark-blue { background-color: #051438 !important; border-bottom: 2px solid var(--primary-red); }
-.main-title { color: var(--text-light); border-left: 4px solid var(--primary-red); padding-left: 1rem; }
+.bg-dark-blue { background-color: #051438 !important; border-bottom: 2px solid var(--primary-accent); }
+.main-title { color: var(--text-light); border-left: 4px solid var(--primary-accent); padding-left: 1rem; }
 /* Spazio sopra l'alert: il body ha già padding-top:56px per l'header sticky,
    quindi qui basta un piccolo respiro (prima erano altri 60px → ~116px di vuoto). */
 #alerts-container {
@@ -85,7 +92,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 }
 .athlete-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; transition: all 0.3s ease; position: relative; overflow: hidden; }
 .athlete-card-clickable { cursor: pointer; }
-.athlete-card-clickable:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(217, 4, 41, 0.2); border-color: var(--primary-red); }
+.athlete-card-clickable:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(26, 160, 94, 0.2); border-color: var(--primary-accent); }
 .athlete-avatar { width: 70px; height: 70px; border-radius: 50%; border: 3px solid var(--border-color); object-fit: cover; background-color: var(--secondary-blue); }
 /* Avatar con iniziali (quando manca la foto): stesso ingombro dell'avatar foto */
 .avatar-initials { display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 1.5rem; line-height: 1; flex-shrink: 0; text-transform: uppercase; }
@@ -115,11 +122,11 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 .chart-card, .table-card, .summary-card { background-color: var(--card-bg); border: 1px solid var(--border-color); }
 .modal-content { background-color: var(--primary-blue); border: 1px solid var(--primary-red); }
 .modal-header, .modal-footer { border-bottom: 1px solid var(--border-color); border-top: 1px solid var(--border-color); }
-.btn-primary-custom { background-color: var(--primary-red); border-color: var(--primary-red); color: white; }
-.btn-primary-custom:hover { background-color: #b80323; border-color: #b80323; }
+.btn-primary-custom { background-color: var(--primary-accent); border-color: var(--primary-accent); color: white; }
+.btn-primary-custom:hover { background-color: var(--primary-accent-hover); border-color: var(--primary-accent-hover); }
 .form-control, .form-select { background-color: var(--secondary-blue); color: var(--text-light); border-color: var(--border-color); }
 .form-control::placeholder { color: #8a9fc1; }
-.form-control:focus, .form-select:focus { background-color: var(--secondary-blue); color: var(--text-light); border-color: var(--primary-red); box-shadow: 0 0 0 0.25rem rgba(217, 4, 41, 0.25); }
+.form-control:focus, .form-select:focus { background-color: var(--secondary-blue); color: var(--text-light); border-color: var(--primary-accent); box-shadow: 0 0 0 0.25rem rgba(26, 160, 94, 0.25); }
 .award-card { background: linear-gradient(45deg, var(--gold-star), #d4af37); color: #000; border: 2px solid #fff; width: 180px; }
 .award-avatar { width: 50px; height: 50px; }
 .text-muted { color: rgba(255, 255, 255, 0.75) !important; }
@@ -129,7 +136,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 .calendar-header { display: flex; justify-content: space-between; align-items: center; }
 .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
 .calendar-day { background-color: var(--secondary-blue); border: 1px solid var(--border-color); min-height: 120px; padding: 8px; font-size: 0.9rem; }
-.calendar-day.today { border-color: var(--primary-red); }
+.calendar-day.today { border-color: var(--primary-accent); }
 .calendar-day-header { font-weight: bold; }
 /* Nuove classi per sessioni */
 .calendar-session {
