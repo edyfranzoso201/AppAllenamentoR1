@@ -860,7 +860,7 @@ if (req.query?.action === 'inventory') {
 
     // ── Wishlist: salva/modifica voce ──
     if (act === 'wishlist-save') {
-      const WL_WRITE = ['admin', 'dirigente', 'coachl1', 'coach_l1', 'coachl2', 'coach_l2'];
+      const WL_WRITE = ['admin', 'dirigente', 'dirigente_l1', 'dirigente_l2', 'dirigente_l3', 'dirigente_l4', 'coachl1', 'coach_l1', 'coachl2', 'coach_l2'];
       if (!WL_WRITE.includes(String(session.role || '').toLowerCase().replace(/ /g,'')))
         return res.status(403).json({ success: false, message: 'Permesso negato' });
       const raw = req.body.item || {};
@@ -885,7 +885,7 @@ if (req.query?.action === 'inventory') {
 
     // ── Wishlist: toggle acquistato ──
     if (act === 'wishlist-toggle') {
-      const WL_WRITE = ['admin', 'dirigente', 'coachl1', 'coach_l1', 'coachl2', 'coach_l2'];
+      const WL_WRITE = ['admin', 'dirigente', 'dirigente_l1', 'dirigente_l2', 'dirigente_l3', 'dirigente_l4', 'coachl1', 'coach_l1', 'coachl2', 'coach_l2'];
       if (!WL_WRITE.includes(String(session.role || '').toLowerCase().replace(/ /g,'')))
         return res.status(403).json({ success: false, message: 'Permesso negato' });
       const id = String((req.body && req.body.id) || '').slice(0, 40);

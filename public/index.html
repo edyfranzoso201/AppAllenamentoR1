@@ -8479,11 +8479,12 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   var _wlRole   = '';
   var _wlOpen   = true;
 
-  var WL_WRITE_ROLES = ['admin', 'dirigente', 'coach_l1', 'coachl1', 'coach_l2', 'coachl2'];
-  var WL_DEL_ROLES   = ['admin', 'dirigente'];
+  // Confronto con ruolo normalizzato SENZA spazi ma CON underscore (coach_l1, dirigente_l1…).
+  var WL_WRITE_ROLES = ['admin', 'dirigente', 'dirigente_l1', 'dirigente_l2', 'dirigente_l3', 'dirigente_l4', 'coach_l1', 'coachl1', 'coach_l2', 'coachl2'];
+  var WL_DEL_ROLES   = ['admin', 'dirigente', 'dirigente_l1', 'dirigente_l2', 'dirigente_l3', 'dirigente_l4'];
 
   function canWrite() { return WL_WRITE_ROLES.includes(String(_wlRole || '').toLowerCase().replace(/ /g,'')); }
-  function canDel()   { return WL_DEL_ROLES.includes(String(_wlRole || '').toLowerCase()); }
+  function canDel()   { return WL_DEL_ROLES.includes(String(_wlRole || '').toLowerCase().replace(/ /g,'')); }
 
   function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function authHeaders() {
