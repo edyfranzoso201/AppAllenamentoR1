@@ -82,6 +82,15 @@
   .card .purpose { color:var(--ink); font-size:1.02rem; margin:0 0 4px; }
   .card .purpose b { color:var(--c,var(--emerald)); }
 
+  /* breadcrumb "Percorso" — dove trovare la funzione */
+  .path { display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin:2px 0 18px;
+    padding:11px 14px; background:color-mix(in srgb,var(--c) 10%,var(--panel-2));
+    border:1px solid color-mix(in srgb,var(--c) 30%,var(--line)); border-radius:10px; font-size:.86rem; }
+  .path .plabel { font-size:.66rem; text-transform:uppercase; letter-spacing:.1em; color:var(--faint); font-weight:700; margin-right:2px; }
+  .path .seg { color:var(--ink); font-weight:600; }
+  .path .chev { color:var(--c); font-weight:700; }
+  .path .seg.btn { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:2px 8px; }
+
   .sub-h { font-size:.96rem; font-weight:700; color:var(--ink); margin:26px 0 10px;
     display:flex; align-items:center; gap:8px; }
   .sub-h::before { content:""; width:7px; height:7px; border-radius:2px; background:var(--c); flex-shrink:0; }
@@ -217,13 +226,14 @@
         <p>La guida completa a tutte le funzioni dell'app, spiegate campo per campo con esempi di schermata. Pensata per allenatori e dirigenti che devono imparare a usarla nel quotidiano.</p>
         <div class="meta">
           <span class="tag">18 capitoli</span>
-          <span class="tag">Dettaglio campo per campo</span>
-          <span class="tag">Con schemi delle schermate</span>
+          <span class="tag">Percorso passo-passo</span>
+          <span class="tag">Nomi reali dei pulsanti</span>
+          <span class="tag">v1.0 — luglio 2026</span>
         </div>
       </div>
 
       <div class="howto">
-        <b>Come leggere questo manuale.</b> Ogni capitolo segue lo stesso schema: <b>a cosa serve</b> la sezione, uno <b>schema della schermata</b> per orientarti, i <b>campi</b> uno per uno e i <b>passaggi operativi</b>. I riquadri arancioni segnalano i <b>permessi</b> (chi può fare cosa), quelli verdi i <b>consigli</b>. Gli schemi delle schermate sono illustrazioni indicative: i colori e le posizioni rispecchiano l'app reale.
+        <b>Come leggere questo manuale.</b> Ogni capitolo si apre con il <b>Percorso</b> — la sequenza esatta di clic per arrivare alla funzione (menu → sezione → pulsante) — seguito da <b>a cosa serve</b>, uno <b>schema della schermata</b>, i <b>campi</b> uno per uno e i <b>passaggi operativi</b> con il risultato atteso. I nomi dei pulsanti sono scritti <b>esattamente come compaiono nell'app</b>. I riquadri arancioni segnalano i <b>permessi</b> (chi può fare cosa), quelli verdi i <b>consigli</b>.
       </div>
 
       <!-- ============ 00 ACCESSO ============ -->
@@ -232,6 +242,7 @@
       <section class="chapter" id="c0" style="--c:var(--emerald)">
         <div class="head"><span class="num">00</span><div><div class="eyebrow">Accesso</div><h3>Accesso, ruoli e annate</h3></div></div>
         <div class="card">
+          <div class="path"><span class="plabel">Percorso</span><span class="seg btn">app-allenamento-r1.vercel.app</span><span class="chev">›</span><span class="seg">Accedi</span></div>
           <p class="purpose">Sport Monitoring organizza <b>tutto per annata</b> (la stagione sportiva). Prima di lavorare devi entrare con le tue credenziali e trovarti sull'annata giusta: presenze, valutazioni, materiale e ogni altro dato restano legati a quell'annata.</p>
 
           <div class="sub-h">La schermata di accesso</div>
@@ -256,7 +267,7 @@
           <p style="color:var(--muted);font-size:.95rem;margin:0 0 4px">Il ruolo assegnato dall'admin decide quali sezioni compaiono e cosa puoi modificare. In sintesi:</p>
           <div class="scrollx"><table class="fields">
             <tr><th>Ruolo</th><th>Cosa può fare</th></tr>
-            <tr><td>Admin</td><td>Tutto: crea utenti e annate, gestisce accessi, alert, stagioni. È il responsabile della società nell'app.</td></tr>
+            <tr><td>Admin</td><td>Tutto: crea utenti e annate, gestisce accessi, alert e stagioni.</td></tr>
             <tr><td>Dirigente</td><td>Gestione ampia (rosa, materiale, categorie), accesso alla dashboard; alcune operazioni distruttive restano all'admin.</td></tr>
             <tr><td>Coach L1</td><td>Allenatore con pieni diritti operativi su rosa, calendario, valutazioni, materiale.</td></tr>
             <tr><td>Coach L2 / L3</td><td>Diritti progressivamente ridotti (es. GPS in sola lettura, o modifica limitata).</td></tr>
@@ -288,20 +299,23 @@
           <div class="mock">
             <div class="mock-top"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="t">Coach Dashboard</span></div>
             <div class="mock-body">
-              <div class="m-row" style="gap:6px">
+              <div class="m-row" style="gap:5px">
                 <span class="m-tab">🏠 Home</span>
                 <span class="m-tab">▦ Formazione</span>
                 <span class="m-tab">📅 Calendario</span>
-                <span class="m-tab">👥 Squadra</span>
+                <span class="m-tab on">👥 Gestione Squadra</span>
                 <span class="m-tab">🏆 Risultati</span>
-                <span class="m-tab on">📦 Materiale</span>
-                <span class="m-tab">💳 Pagamenti</span>
+                <span class="m-tab">✅ Grafici Presenze</span>
+                <span class="m-tab">📊 Dashboard</span>
+                <span class="m-tab">📦 Materiale</span>
                 <span class="m-tab">📣 Convocazioni</span>
-                <span class="m-tab" style="opacity:.6">👑 Accessi</span>
+                <span class="m-tab" style="opacity:.6">🕐 Accessi</span>
+                <span class="m-tab" style="opacity:.6">🔔 Alert</span>
+                <span class="m-tab">❓ Guida</span>
               </div>
             </div>
           </div>
-          <div class="note tip"><span class="ic">💡</span><div>Se non vedi una sezione citata nel manuale, quasi sempre è perché il tuo <b>ruolo</b> non la prevede, oppure l'admin l'ha nascosta dalla <b>personalizzazione menu</b> della società.</div></div>
+          <div class="note tip"><span class="ic">💡</span><div>La barra è <b>personalizzabile</b>: l'ordine e le voci visibili dipendono dal tuo <b>ruolo</b>, dalla <b>licenza</b> e da come l'admin ha configurato il menu. Se non vedi una sezione citata nel manuale, quasi sempre è per uno di questi motivi. La voce <b>❓ Guida</b> apre questo manuale in una nuova scheda.</div></div>
         </div>
       </section>
 
@@ -311,14 +325,15 @@
       <section class="chapter" id="c1" style="--c:#10b981">
         <div class="head"><span class="num">01</span><div><div class="eyebrow">Rosa</div><h3>Gestione Squadra</h3></div></div>
         <div class="card">
-          <p class="purpose">L'<b>anagrafica della rosa</b>: qui vivono atleti e staff con tutti i loro dati. È la base di tutto il resto — presenze, convocazioni, materiale e pagamenti pescano da qui.</p>
+          <div class="path"><span class="plabel">Percorso</span><span class="seg">Menu in alto</span><span class="chev">›</span><span class="seg btn">👥 Gestione Squadra</span></div>
+          <p class="purpose">La sezione si intitola <b>«Gestione Squadra e Gruppi»</b>. È l'<b>anagrafica della rosa</b>: qui vivono atleti e staff con tutti i loro dati. È la base di tutto il resto — presenze, convocazioni, materiale e pagamenti pescano da qui.</p>
 
           <div class="sub-h">La schermata</div>
           <div class="mock">
             <div class="mock-body">
               <div class="m-row" style="justify-content:space-between;margin-bottom:12px">
                 <div class="m-row"><div class="m-input" style="min-width:180px">🔍 Cerca per nome o cognome</div><div class="m-input" style="min-width:90px">N° maglia</div></div>
-                <span class="m-btn green">+ Aggiungi</span>
+                <div class="m-row"><span class="m-btn green">👤 Aggiungi Atleta</span><span class="m-btn amber">🧑‍🏫 Aggiungi Staff</span></div>
               </div>
               <div class="m-grid" style="grid-template-columns:repeat(3,1fr)">
                 <div class="m-athlete"><span class="av">MR</span> <b style="margin-left:8px">Mario Rossi</b><div style="color:var(--uimuted);font-size:11px;margin-top:6px">Attaccante</div><span class="m-num">9</span>
@@ -329,36 +344,66 @@
             </div>
           </div>
 
-          <div class="sub-h">Aggiungere/modificare un atleta — i campi</div>
+          <div class="sub-h">Aggiungere un atleta — passo passo</div>
+          <ol class="steps">
+            <li>Entra in <b>👥 Gestione Squadra</b> dal menu in alto.</li>
+            <li>In alto a destra premi <b>Aggiungi Atleta</b> (per un membro dello staff usa invece <b>Aggiungi Staff</b>).</li>
+            <li>Compila la scheda (i campi sotto) e <b>salva</b>.</li>
+            <li><b>Risultato:</b> la nuova card compare nella griglia, con numero di maglia sul cerchio rosso e ruolo sotto il nome.</li>
+          </ol>
+
+          <div class="sub-h">I campi della scheda atleta</div>
           <div class="scrollx"><table class="fields">
             <tr><th>Campo</th><th>A cosa serve</th></tr>
             <tr><td>Nome e cognome</td><td>Identifica l'atleta in tutta l'app.</td></tr>
-            <tr><td>Numero di maglia</td><td>Mostrato sul cerchio rosso della scheda e in formazione/convocazioni.</td></tr>
-            <tr><td>Ruolo</td><td>Il ruolo in campo (attaccante, difensore…).</td></tr>
+            <tr><td>Numero di maglia</td><td>Mostrato sul cerchio rosso della card e in formazione/convocazioni.</td></tr>
+            <tr><td>Ruolo</td><td>Il ruolo in campo (es. Centrocampista, Difensore Centrale).</td></tr>
             <tr><td>Data di nascita</td><td>Usata per l'anagrafica e, dove serve, per fasce d'età.</td></tr>
             <tr><td>Foto (avatar)</td><td>Link a un'immagine; se assente compaiono le iniziali su sfondo colorato.</td></tr>
             <tr><td>Capitano / Vice</td><td>La stellina ⭐ marca il capitano; il vice ha il suo simbolo.</td></tr>
-            <tr><td>Uscita autonoma</td><td>Spunta che indica se il ragazzo può uscire da solo (badge 🚶 sulla scheda).</td></tr>
+            <tr><td>Uscita autonoma</td><td>Spunta che indica se il ragazzo può uscire da solo (badge 🚶 sulla card).</td></tr>
             <tr><td>Scadenza visita / tessera</td><td>Date usate dagli <b>Alert scadenze</b> per avvisarti in anticipo.</td></tr>
           </table></div>
 
-          <div class="sub-h">I pulsanti su ogni scheda</div>
+          <div class="sub-h">I pulsanti sotto ogni card</div>
+          <p style="color:var(--muted);font-size:.93rem;margin:0 0 10px">Sotto la foto di ogni atleta ci sono alcune icone. Le prime tre sono sempre visibili; l'icona <b>⋯</b> («Altre azioni») apre le restanti. I nomi qui sotto sono quelli che compaiono passando il dito/mouse sull'icona.</p>
           <div class="scrollx"><table class="fields">
-            <tr><th>Pulsante</th><th>Cosa apre</th></tr>
-            <tr><td>📋 Pagelle</td><td>La valutazione dell'atleta (vedi cap. 06).</td></tr>
-            <tr><td>📈 Performance</td><td>I dati GPS/sessioni (vedi cap. 09).</td></tr>
-            <tr><td>👥 Genitori</td><td>Anagrafica dei genitori: nome, telefono, email, codice fiscale, indirizzo.</td></tr>
-            <tr><td>🩹 Infortuni</td><td>Storico infortuni e stato "infortunato" con data di rientro.</td></tr>
-            <tr><td>🏅 Individual</td><td>Pacchetto di allenamento individuale dell'atleta.</td></tr>
-            <tr><td>📄 Certificato</td><td>Apre il link al certificato medico (se caricato).</td></tr>
-            <tr><td>✏️ Modifica</td><td>Riapre la scheda per correggere i dati.</td></tr>
-            <tr><td>🗄 Archivia</td><td>Nasconde l'atleta dalla rosa conservando i dati (vedi nota privacy).</td></tr>
-            <tr><td>📋 Copia in annata</td><td><i>Solo admin.</i> Copia l'atleta in un'altra annata della stessa società.</td></tr>
-            <tr><td>🗑 Elimina</td><td>Cancellazione definitiva, propagata a tutti i dati collegati.</td></tr>
+            <tr><th>Icona</th><th>Nome reale (tooltip)</th><th>Cosa apre</th></tr>
+            <tr><td>📋</td><td>Pagelle</td><td>La valutazione dell'atleta (vedi cap. 06).</td></tr>
+            <tr><td>👤⚙</td><td>Dati Performance</td><td>Sessioni e dati GPS (vedi cap. 09).</td></tr>
+            <tr><td>👤↑</td><td>Pacchetto Individual</td><td>Allenamento individuale dell'atleta.</td></tr>
+            <tr><td>⋯</td><td>Altre azioni</td><td>Apre il menu con le voci qui sotto.</td></tr>
+            <tr><td>👥</td><td>Anagrafica Genitori</td><td>Nome, telefono, email, codice fiscale, indirizzo dei genitori.</td></tr>
+            <tr><td>🩹</td><td>Infortuni</td><td>Storico infortuni e stato "infortunato" con data di rientro.</td></tr>
+            <tr><td>📄</td><td>Apri Certificato Medico</td><td>Compare solo se il certificato è stato caricato.</td></tr>
+            <tr><td>✏️</td><td>Modifica</td><td>Riapre la scheda per correggere i dati.</td></tr>
+            <tr><td>🗄</td><td>Archivia</td><td>Nasconde l'atleta dalla rosa conservando i dati (vedi nota privacy).</td></tr>
+            <tr><td>🗑</td><td>Elimina definitivamente</td><td>Cancellazione definitiva, propagata a tutti i dati collegati.</td></tr>
+            <tr><td>📋+</td><td>Copia in altra annata</td><td><i>Solo admin.</i> Copia l'atleta in un'altra annata della stessa società.</td></tr>
+          </table></div>
+
+          <div class="sub-h">Aprire le pagelle di un atleta — passo passo</div>
+          <ol class="steps">
+            <li>Vai su <b>👥 Gestione Squadra</b>.</li>
+            <li>Trova la card dell'atleta e premi l'icona <b>📋 Pagelle</b> (la prima delle icone sotto la card).</li>
+            <li>Si apre la scheda di valutazione: compila i voti e salva (i dettagli sono nel <b>cap. 06</b>).</li>
+            <li><b>Risultato:</b> la pagella entra nello storico dell'atleta ed è consultabile per data.</li>
+          </ol>
+
+          <div class="sub-h">Barra strumenti in alto</div>
+          <div class="scrollx"><table class="fields">
+            <tr><th>Pulsante</th><th>A cosa serve</th></tr>
+            <tr><td>Aggiungi Atleta</td><td>Crea un nuovo giocatore.</td></tr>
+            <tr><td>Aggiungi Staff</td><td>Crea un membro dello staff (allenatore, dirigente).</td></tr>
+            <tr><td>Esporta Dati</td><td>Scarica i dati della rosa.</td></tr>
+            <tr><td>Esporta FIGC</td><td>Esporta nel formato utile per la FIGC.</td></tr>
+            <tr><td>Importa Dati</td><td>Carica dati da un file.</td></tr>
+            <tr><td>Data Valutazioni</td><td>Imposta la data a cui riferire le valutazioni mostrate.</td></tr>
+            <tr><td>▦ / ☰</td><td>Cambia tra vista a griglia (card) e vista a elenco.</td></tr>
           </table></div>
 
           <div class="note perm"><span class="ic">🛡️</span><div><b>Privacy (GDPR).</b> Gli atleti <b>archiviati</b> vengono cancellati automaticamente dopo 12 mesi. L'<b>eliminazione</b> è definitiva e rimuove i dati da presenze, pagelle, pagamenti, certificati, formazioni e convocazioni.</div></div>
-          <div class="note tip"><span class="ic">💡</span><div>Lo <b>staff</b> (allenatori, dirigenti) sta nella stessa lista, evidenziato con un bordo colorato. La <b>copia in un'altra annata</b> salta l'atleta se un nome uguale esiste già lì.</div></div>
+          <div class="note tip"><span class="ic">💡</span><div>Lo <b>staff</b> compare nella stessa griglia degli atleti, evidenziato con un bordo colorato. La <b>copia in un'altra annata</b> salta l'atleta se un nome uguale esiste già lì.</div></div>
         </div>
       </section>
 
@@ -366,7 +411,8 @@
       <section class="chapter" id="c2" style="--c:#a855f7">
         <div class="head"><span class="num">02</span><div><div class="eyebrow">Tattica</div><h3>Formazione</h3></div></div>
         <div class="card">
-          <p class="purpose">Il <b>campo tattico</b> per comporre lo schieramento: trascini i giocatori dalle liste alle posizioni e prepari titolari e panchina.</p>
+          <div class="path"><span class="plabel">Percorso</span><span class="seg">Menu in alto</span><span class="chev">›</span><span class="seg btn">▦ Formazione</span></div>
+          <p class="purpose">La sezione «<b>Modulo Formazione</b>» è il <b>campo tattico</b> per comporre lo schieramento: trascini i giocatori dalle liste alle posizioni e prepari titolari e panchina.</p>
           <div class="mock">
             <div class="mock-body">
               <div class="m-row" style="gap:16px;align-items:flex-start">
@@ -397,10 +443,11 @@
       <section class="chapter" id="c3" style="--c:#06b6d4">
         <div class="head"><span class="num">03</span><div><div class="eyebrow">Agenda</div><h3>Calendario</h3></div></div>
         <div class="card">
-          <p class="purpose">L'<b>agenda della squadra</b>: allenamenti, partite, tornei, visite. Ogni tipo ha un colore. Da qui parte anche il <b>link presenze</b> che condividi con i genitori.</p>
+          <div class="path"><span class="plabel">Percorso</span><span class="seg">Menu in alto</span><span class="chev">›</span><span class="seg btn">📅 Calendario</span></div>
+          <p class="purpose">La sezione «<b>Calendario Attività Sportiva</b>» è l'<b>agenda della squadra</b>: allenamenti, partite, tornei, visite. Ogni tipo ha un colore. Da qui crei gli eventi e generi il <b>poster</b> per i genitori.</p>
           <div class="mock">
             <div class="mock-body">
-              <div class="m-row" style="justify-content:space-between;margin-bottom:10px"><b>Maggio 2026</b><span class="m-btn green">+ Evento</span></div>
+              <div class="m-row" style="justify-content:space-between;margin-bottom:10px"><b>‹ Maggio 2026 ›</b><div class="m-row"><span class="m-btn red">📅 Pianifica Sessione</span><span class="m-btn">🖼 Poster</span></div></div>
               <div class="m-grid" style="grid-template-columns:repeat(4,1fr)">
                 <div class="m-card">Lun 4<div class="m-badge" style="background:#16a34a;color:#fff;margin-top:6px">🏃 Allenam. 18:00</div></div>
                 <div class="m-card">Mer 6<div class="m-badge" style="background:#16a34a;color:#fff;margin-top:6px">🏃 Allenam. 18:30</div></div>
@@ -409,19 +456,31 @@
               </div>
             </div>
           </div>
-          <div class="sub-h">Creare un evento — i campi</div>
+          <div class="sub-h">Creare un evento — passo passo</div>
+          <ol class="steps">
+            <li>Vai su <b>📅 Calendario</b> e, in alto a destra, premi <b>Pianifica Sessione</b>.</li>
+            <li>Compila i campi (sotto) e salva.</li>
+            <li><b>Risultato:</b> l'evento compare nel giorno scelto, colorato in base al tipo.</li>
+          </ol>
+          <div class="sub-h">I campi dell'evento</div>
           <div class="scrollx"><table class="fields">
             <tr><th>Campo</th><th>A cosa serve</th></tr>
-            <tr><td>Data</td><td>Il giorno dell'evento nel calendario.</td></tr>
+            <tr><td>Data</td><td>Il giorno dell'evento (naviga i mesi con le frecce <b>‹ ›</b>).</td></tr>
             <tr><td>Tipo</td><td>Allenamento, Partita, Torneo, Campionato, Finale, Individual, Visita, Evento… Ognuno ha un colore dedicato.</td></tr>
             <tr><td>Orario</td><td>Ora di inizio (ed eventuale fine), usata anche nel feed calendario.</td></tr>
             <tr><td>Note</td><td>Dettagli liberi (avversario, luogo, indicazioni).</td></tr>
           </table></div>
+          <div class="sub-h">Il poster per i genitori</div>
+          <ol class="steps">
+            <li>Premi <b>Poster</b>: si apre il pannello «Crea Poster Calendario».</li>
+            <li>Scegli il <b>Periodo</b> (questo mese, prossimi 2/3 mesi, tutti) e spunta gli eventi da includere (<b>Seleziona tutto</b> / <b>Nessuno</b>).</li>
+            <li>Premi <b>Genera e Scarica Poster PNG</b>: ottieni un'immagine da condividere con le famiglie.</li>
+          </ol>
           <div class="sub-h">Condividere le presenze con i genitori</div>
           <ol class="steps">
-            <li>Dalla scheda atleta (o dal calendario) genera il <b>link presenze</b> di quell'atleta.</li>
+            <li>Il <b>link presenze</b> di un atleta si genera dalla sua card in <b>Gestione Squadra</b> (vedi cap. 17).</li>
             <li>Invialo alla famiglia: il genitore lo apre <b>senza login</b> e segna <b>presente/assente</b> per ogni evento.</li>
-            <li>Chi vuole aggiunge gli eventi al proprio <b>Google/Apple Calendar</b> con il pulsante dedicato: il feed si aggiorna da solo.</li>
+            <li>Dalla pagina del link, chi vuole può <b>aggiungere gli eventi al proprio Google/Apple Calendar</b>: il feed si aggiorna da solo.</li>
           </ol>
           <div class="note tip"><span class="ic">🔗</span><div>Il link genitore è <b>firmato e sicuro</b>: mostra solo i dati di quell'annata e non è falsificabile. Il genitore non deve registrarsi.</div></div>
         </div>
@@ -431,6 +490,7 @@
       <section class="chapter" id="c4" style="--c:#f87171">
         <div class="head"><span class="num">04</span><div><div class="eyebrow">Partita</div><h3>Convocazioni</h3></div></div>
         <div class="card">
+          <div class="path"><span class="plabel">Percorso</span><span class="seg">Menu in alto</span><span class="chev">›</span><span class="seg btn">📣 Convocazioni</span></div>
           <p class="purpose">Prepari la <b>distinta dei convocati</b> per una partita, con una locandina condivisibile, e avvisi le famiglie con una notifica.</p>
           <div class="mock">
             <div class="mock-body">
@@ -455,7 +515,8 @@
       <section class="chapter" id="c5" style="--c:#f59e0b">
         <div class="head"><span class="num">05</span><div><div class="eyebrow">Match</div><h3>Risultati</h3></div></div>
         <div class="card">
-          <p class="purpose">Registri l'<b>esito delle partite</b>: punteggio, marcatori, assist e cartellini. Alimenta statistiche, report e Hall of Fame.</p>
+          <div class="path"><span class="plabel">Percorso</span><span class="seg">Menu in alto</span><span class="chev">›</span><span class="seg btn">🏆 Risultati</span></div>
+          <p class="purpose">La sezione «<b>Risultati Partite</b>»: registri l'<b>esito delle partite</b> — punteggio, marcatori, assist e cartellini. Alimenta statistiche, report e Hall of Fame.</p>
           <div class="sub-h">Cosa inserisci</div>
           <div class="scrollx"><table class="fields">
             <tr><th>Dato</th><th>Note</th></tr>
@@ -480,7 +541,8 @@
       <section class="chapter" id="c6" style="--c:#ec4899">
         <div class="head"><span class="num">06</span><div><div class="eyebrow">Pagelle</div><h3>Valutazioni (pagelle)</h3></div></div>
         <div class="card">
-          <p class="purpose">Le <b>pagelle</b> dell'atleta: assegni voti su quattro aree e segui l'andamento nel tempo. Ogni pagella è datata e firmata dal coach.</p>
+          <div class="path"><span class="plabel">Percorso</span><span class="seg">Menu</span><span class="chev">›</span><span class="seg btn">👥 Gestione Squadra</span><span class="chev">›</span><span class="seg">card atleta</span><span class="chev">›</span><span class="seg btn">📋 Pagelle</span></div>
+          <p class="purpose">Le <b>pagelle</b> dell'atleta: assegni voti su quattro aree e segui l'andamento nel tempo. Ogni pagella è datata e firmata dal coach. Il riepilogo di tutta la rosa lo trovi anche nella sezione di menu <b>Valutazioni</b> («Report Valutazioni Comportamentali»).</p>
           <div class="mock">
             <div class="mock-body" style="max-width:420px">
               <div class="m-row" style="justify-content:space-between;margin-bottom:8px"><b>Pagella — Mario Rossi</b><span style="color:var(--uimuted);font-size:11px">12/05/2026</span></div>
@@ -505,11 +567,12 @@
             <tr><td>Comportamentale</td><td>Voto su impegno e comportamento.</td></tr>
             <tr><td>Note</td><td>Commento libero del coach.</td></tr>
           </table></div>
-          <div class="sub-h">Come si usa</div>
+          <div class="sub-h">Come si usa — passo passo</div>
           <ol class="steps">
-            <li>Dalla scheda atleta apri <b>📋 Pagelle</b> e compila i quattro parametri per la data scelta.</li>
-            <li>Salva: la pagella entra nello storico dell'atleta.</li>
-            <li>Nella sezione <b>Valutazioni</b> vedi il quadro di tutta la rosa a una certa data (selezionabile in alto).</li>
+            <li>Vai su <b>👥 Gestione Squadra</b> e premi <b>📋 Pagelle</b> sulla card dell'atleta.</li>
+            <li>Inserisci <b>Nome coach</b> e <b>Data</b>, poi assegna i quattro voti (Tecnica, Tattica, Fisico, Comportamentale) e le eventuali <b>Note</b>.</li>
+            <li><b>Salva</b>: la pagella entra nello storico dell'atleta.</li>
+            <li><b>Risultato:</b> nella sezione di menu <b>Valutazioni</b> vedi il quadro di tutta la rosa alla data scelta in alto.</li>
           </ol>
         </div>
       </section>
@@ -518,7 +581,8 @@
       <section class="chapter" id="c7" style="--c:#14b8a6">
         <div class="head"><span class="num">07</span><div><div class="eyebrow">Presenze</div><h3>Grafici Presenze</h3></div></div>
         <div class="card">
-          <p class="purpose">La <b>fotografia della partecipazione</b>: chi c'è di più, chi manca spesso, con grafici per atleta e per squadra. I dati arrivano dal calendario.</p>
+          <div class="path"><span class="plabel">Percorso</span><span class="seg">Menu in alto</span><span class="chev">›</span><span class="seg btn">✅ Grafici Presenze</span></div>
+          <p class="purpose">La sezione «<b>Report Presenze Allenamenti</b>» è la <b>fotografia della partecipazione</b>: chi c'è di più, chi manca spesso, con grafici per atleta e per squadra. I dati arrivano dal calendario.</p>
           <div class="sub-h">Da dove vengono i dati</div>
           <ol class="steps">
             <li>Le presenze si generano dagli <b>eventi del calendario</b>: le segni tu, oppure le confermano i genitori dal link.</li>
@@ -533,7 +597,8 @@
       <section class="chapter" id="c8" style="--c:#f97316">
         <div class="head"><span class="num">08</span><div><div class="eyebrow">Premi</div><h3>Hall of Fame</h3></div></div>
         <div class="card">
-          <p class="purpose">La <b>bacheca dei riconoscimenti</b>: migliori marcatori, premi e traguardi della stagione. Si costruisce da sola con i dati dei <b>Risultati</b>.</p>
+          <div class="path"><span class="plabel">Percorso</span><span class="seg">Menu in alto</span><span class="chev">›</span><span class="seg btn">🏅 Hall of Fame</span></div>
+          <p class="purpose">La <b>bacheca dei riconoscimenti</b> («Hall of Fame - Atleti Premiati della Stagione»): migliori marcatori, premi e traguardi. Si costruisce da sola con i dati dei <b>Risultati</b>.</p>
           <div class="sub-h">Come si usa</div>
           <ol class="steps">
             <li>Registra con cura i <b>Risultati</b> (gol, assist): la Hall of Fame li usa per le classifiche.</li>
@@ -547,10 +612,11 @@
       <section class="chapter" id="c9" style="--c:#84cc16">
         <div class="head"><span class="num">09</span><div><div class="eyebrow">Dati</div><h3>GPS / Performance</h3></div></div>
         <div class="card">
-          <p class="purpose">I <b>dati di performance</b> delle sessioni: distanze, velocità, carichi. Per gli staff che usano GPS o vogliono tracciare il lavoro fisico, sessione per sessione.</p>
-          <div class="sub-h">Come si usa</div>
+          <div class="path"><span class="plabel">Percorso</span><span class="seg btn">📈 GPS</span><span class="chev">(menu)</span><span class="seg">oppure</span><span class="seg btn">👥 Gestione Squadra</span><span class="chev">›</span><span class="seg">card</span><span class="chev">›</span><span class="seg btn">👤⚙ Dati Performance</span></div>
+          <p class="purpose">I <b>dati di performance</b> delle sessioni: distanze, velocità, carichi. La panoramica è nella sezione di menu «<b>Monitoraggio Performance (GPS)</b>»; per inserire i dati di un singolo atleta parti dalla sua card.</p>
+          <div class="sub-h">Come si usa — passo passo</div>
           <ol class="steps">
-            <li>Dalla scheda atleta apri <b>📈 Dati Performance</b>.</li>
+            <li>Da <b>👥 Gestione Squadra</b>, sulla card dell'atleta premi <b>👤⚙ Dati Performance</b>.</li>
             <li>Inserisci una <b>nuova sessione</b> con la data e i parametri della seduta (o partita).</li>
             <li>Rivedi e <b>confronta</b> le sessioni per seguire l'andamento del carico.</li>
           </ol>
@@ -562,7 +628,8 @@
       <section class="chapter" id="c10" style="--c:#38bdf8">
         <div class="head"><span class="num">10</span><div><div class="eyebrow">Focus</div><h3>Analisi singolo</h3></div></div>
         <div class="card">
-          <p class="purpose">La <b>vista analitica del singolo atleta</b>: andamento nel tempo, confronto tra due atleti, radar dei parametri. Utile per i colloqui con la famiglia o con il ragazzo.</p>
+          <div class="path"><span class="plabel">Percorso</span><span class="seg">Menu in alto</span><span class="chev">›</span><span class="seg btn">👤 Analisi</span></div>
+          <p class="purpose">La sezione «<b>Analisi Atleta Singolo</b>»: andamento nel tempo, confronto tra due atleti, radar dei parametri. Utile per i colloqui con la famiglia o con il ragazzo.</p>
           <div class="sub-h">Cosa puoi confrontare</div>
           <div class="scrollx"><table class="fields">
             <tr><th>Strumento</th><th>A cosa serve</th></tr>
@@ -586,20 +653,22 @@
       <section class="chapter" id="c11" style="--c:#fb923c">
         <div class="head"><span class="num">11</span><div><div class="eyebrow">Magazzino</div><h3>Materiale</h3></div></div>
         <div class="card">
-          <p class="purpose">Il <b>magazzino della squadra</b> e la <b>consegna del materiale</b> agli atleti. Gestisce voci singole e <b>kit</b> (mute di maglie numerate), con taglie, colori, condizione, sponsor e foto.</p>
+          <div class="path"><span class="plabel">Percorso</span><span class="seg">Menu in alto</span><span class="chev">›</span><span class="seg btn">📦 Materiale</span></div>
+          <p class="purpose">La sezione «<b>Gestione Materiale</b>» ha <b>due parti distinte</b>: in alto la <b>consegna</b> del materiale ad atleti e staff; sotto l'<b>Inventario Fine Annata</b>, il magazzino vero e proprio con kit, taglie, condizioni e foto.</p>
 
-          <div class="sub-h">Le due parti della sezione</div>
+          <div class="sub-h">Le due parti — attenzione a non confonderle</div>
           <div class="scrollx"><table class="fields">
-            <tr><th>Parte</th><th>Cosa fa</th></tr>
-            <tr><td>Materiale Atleti/Staff</td><td>La tabella di consegna: per ogni persona segni cosa ha ricevuto (Consegnato / Restituito / Nessuno), con taglia e note.</td></tr>
-            <tr><td>Inventario Fine Annata</td><td>Il magazzino vero e proprio: categorie, voci, kit, condizioni. Da qui esporti gli Excel.</td></tr>
+            <tr><th>Parte</th><th>Cosa fa</th><th>Pulsante</th></tr>
+            <tr><td>Consegna (tabelle Atleti / Staff)</td><td>Per ogni persona segni cosa ha ricevuto. <b>Clicca su una cella</b> per cambiare stato: Consegnato (verde) / Restituito (blu) / Nessuno.</td><td>Aggiungi Articolo</td></tr>
+            <tr><td>Inventario Fine Annata</td><td>Il magazzino: categorie, voci singole, kit numerati, condizioni. Da qui esporti l'Excel.</td><td>Aggiungi voce</td></tr>
           </table></div>
+          <div class="note tip"><span class="ic">💡</span><div><b>Aggiungi Articolo</b> (in alto) crea una colonna nella tabella di <b>consegna</b>. <b>Aggiungi voce</b> (nell'Inventario) crea un pezzo di <b>magazzino</b>. Sono due cose diverse.</div></div>
 
-          <div class="sub-h">Inventario — la schermata</div>
+          <div class="sub-h">Inventario — la barra strumenti</div>
           <div class="mock">
             <div class="mock-body">
               <div class="m-row" style="gap:6px;margin-bottom:10px">
-                <span class="m-btn amber">Kit</span><span class="m-btn green">+ Aggiungi voce</span><span class="m-btn blue">Categorie</span><span class="m-btn green">Excel</span><span class="m-btn">📷</span>
+                <span class="m-btn amber">▦ Kit Maglie o Pantaloncini</span><span class="m-btn green">+ Aggiungi voce</span><span class="m-btn blue">🏷 Categorie</span><span class="m-btn green">Excel</span><span class="m-btn">📷</span>
               </div>
               <div class="m-card" style="margin-bottom:8px">📁 Maglie da calcio <span class="m-badge" style="background:#334155;color:#cbd5e1;margin-left:6px">26</span></div>
               <div class="m-row" style="gap:6px">
@@ -626,7 +695,7 @@
 
           <div class="sub-h">I kit (maglie numerate)</div>
           <ol class="steps">
-            <li>Apri <b>Kit</b> e scegli <b>Con numero</b> (maglie) o <b>Per taglia</b> (pantaloncini, calzettoni).</li>
+            <li>Nell'Inventario premi <b>Kit Maglie o Pantaloncini</b> e scegli <b>Con numero (maglie)</b> o <b>Per taglia (pantaloncini, calzettoni…)</b>.</li>
             <li>Imposta nome set, colore, tipologia, categoria e, per lo sponsor, la spunta unica valida <b>per tutto il kit</b>.</li>
             <li>Definisci l'intervallo (Da/A numero) e <b>Genera griglia</b>: compili taglia, condizione e note riga per riga.</li>
             <li>Con <b>+ Aggiungi N°</b> inserisci una maglia extra fuori intervallo; le <b>Scorte senza numero</b> gestiscono le riserve per taglia.</li>
@@ -653,7 +722,8 @@
       <section class="chapter" id="c12" style="--c:#16a34a">
         <div class="head"><span class="num">12</span><div><div class="eyebrow">Quote</div><h3>Pagamenti</h3></div></div>
         <div class="card">
-          <p class="purpose">La <b>gestione delle quote</b>: chi ha pagato, quanto e cosa manca. Iscrizioni, rate e voci extra sotto controllo.</p>
+          <div class="path"><span class="plabel">Percorso</span><span class="seg">Menu in alto</span><span class="chev">›</span><span class="seg btn">💳 Pagamenti</span></div>
+          <p class="purpose">La sezione «<b>Gestione Pagamenti</b>»: chi ha pagato, quanto e cosa manca. Iscrizioni, rate e voci extra sotto controllo.</p>
           <div class="mock">
             <div class="mock-body">
               <div class="scrollx"><table style="width:100%;font-size:12px;color:var(--uiink);border-collapse:collapse;min-width:380px">
@@ -676,6 +746,7 @@
       <section class="chapter" id="c13" style="--c:#22c55e">
         <div class="head"><span class="num">13</span><div><div class="eyebrow">Risorse</div><h3>Area Tecnica</h3></div></div>
         <div class="card">
+          <div class="path"><span class="plabel">Percorso</span><span class="seg">Menu in alto</span><span class="chev">›</span><span class="seg btn">🎬 Area Tecnica</span></div>
           <p class="purpose">La <b>libreria di risorse dello staff</b>: video, esercizi, schede e documenti (link Drive/YouTube o file), organizzati per categoria e colore.</p>
           <div class="sub-h">Aggiungere una risorsa — i campi</div>
           <div class="scrollx"><table class="fields">
@@ -696,7 +767,8 @@
       <section class="chapter" id="c14" style="--c:#94a3b8">
         <div class="head"><span class="num">14</span><div><div class="eyebrow">Log</div><h3>Accessi</h3></div></div>
         <div class="card">
-          <p class="purpose">Il <b>registro degli accessi</b>: chi è entrato nell'app e quando. Uno strumento di controllo per l'admin.</p>
+          <div class="path"><span class="plabel">Percorso</span><span class="seg">Menu in alto</span><span class="chev">›</span><span class="seg btn">🕐 Accessi</span><span class="chev">·</span><span class="seg">solo admin</span></div>
+          <p class="purpose">La sezione «<b>Log Accessi Utenti</b>»: chi è entrato nell'app e quando. Uno strumento di controllo per l'admin.</p>
           <div class="sub-h">Come si usa</div>
           <ol class="steps">
             <li>Consulti l'elenco degli <b>ultimi accessi</b> della tua società.</li>
@@ -711,7 +783,8 @@
       <section class="chapter" id="c15" style="--c:#eab308">
         <div class="head"><span class="num">15</span><div><div class="eyebrow">Scadenze</div><h3>Alert scadenze</h3></div></div>
         <div class="card">
-          <p class="purpose">Gli <b>avvisi automatici</b> per certificati medici e tesseramenti in scadenza. Decidi con quanto anticipo essere avvisato.</p>
+          <div class="path"><span class="plabel">Percorso</span><span class="seg">Menu in alto</span><span class="chev">›</span><span class="seg btn">🔔 Alert</span><span class="chev">·</span><span class="seg">solo admin</span></div>
+          <p class="purpose">La sezione «<b>Impostazioni Alert Email</b>»: <b>avvisi automatici</b> per certificati medici e tesseramenti in scadenza. Decidi con quanto anticipo essere avvisato.</p>
           <div class="sub-h">I campi</div>
           <div class="scrollx"><table class="fields">
             <tr><th>Campo</th><th>A cosa serve</th></tr>
@@ -726,7 +799,8 @@
       <section class="chapter" id="c16" style="--c:#a78bfa">
         <div class="head"><span class="num">16</span><div><div class="eyebrow">Archivio</div><h3>Stagioni</h3></div></div>
         <div class="card">
-          <p class="purpose">Il <b>cambio stagione</b>: archivia l'anno concluso e riparti puliti, conservando lo storico. Una delle operazioni più delicate — falla con calma.</p>
+          <div class="path"><span class="plabel">Percorso</span><span class="seg">Menu in alto</span><span class="chev">›</span><span class="seg btn">🗄 Stagioni</span></div>
+          <p class="purpose">La sezione «<b>Stagioni passate</b>»: archivia l'anno concluso e riparti puliti, conservando lo storico. Una delle operazioni più delicate — falla con calma.</p>
           <div class="sub-h">Cosa viene archiviato/azzerato</div>
           <div class="scrollx"><table class="fields">
             <tr><th>Categoria</th><th>Esito</th></tr>
@@ -748,6 +822,7 @@
       <section class="chapter" id="c17" style="--c:#38bdf8">
         <div class="head"><span class="num">17</span><div><div class="eyebrow">Famiglie</div><h3>Genitori &amp; iscrizioni</h3></div></div>
         <div class="card">
+          <div class="path"><span class="plabel">Percorso</span><span class="seg">Link presenze: da</span><span class="seg btn">👥 Gestione Squadra</span><span class="chev">›</span><span class="seg">card atleta</span><span class="chev">·</span><span class="seg">Iscrizioni: modulo pubblico della società</span></div>
           <p class="purpose">Il <b>ponte con le famiglie</b>: modulo d'iscrizione online, bacheca comunicazioni, conferma presenze e caricamento documenti — <b>senza che il genitore debba registrarsi</b>.</p>
           <div class="sub-h">Il flusso di iscrizione</div>
           <ol class="steps">
