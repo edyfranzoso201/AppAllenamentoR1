@@ -118,8 +118,17 @@ function parentSigOk(annataId, providedSig) {
   try { return crypto.timingSafeEqual(a, b); } catch { return false; }
 }
 
+// Chi può scrivere i dati generali (creare/editare atleti, calendario, ecc.).
+// DEVE combaciare con i ruoli che hanno canEditGeneral:true in:
+//   - api/auth/login.js getPermissions()  → admin, coach_l0/l1/l2
+//   - client DASHBOARD_APP_PERMS           → societa_l1, dirigente_l1
+// BUG STORICO: la vecchia lista ['admin','coach','coachl1','coachl2'] senza
+// rimuovere l'underscore NON matchava 'coach_l1'/'coach_l2' (salvati con _),
+// e ometteva del tutto dirigente_l1/societa_l1 → il salvataggio veniva rifiutato
+// (403) pur mostrando l'atleta lato client, che spariva al refresh.
 function canWrite(role) {
-return ['admin', 'coach', 'coachl1', 'coachl2'].includes(String(role || '').toLowerCase());
+  const r = String(role || '').toLowerCase().replace(/[_\s]/g, '');
+  return ['admin', 'coachl0', 'coachl1', 'coachl2', 'societal1', 'dirigentel1'].includes(r);
 }
 
 // Il cambio stagione è un'operazione delicata (archivia + azzera): consentita

@@ -49,7 +49,11 @@ function getPermissions(role) {
     case 'direttivo':
       return { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true };
     case 'dirigente':
-      return { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true };
+      // Dirigente L1 = "Edit + Materiale Completo": può creare/modificare atleti.
+      // canEditGeneral:true DEVE combaciare col client (DASHBOARD_APP_PERMS.dirigente_l1)
+      // e con canWrite() in api/data.js. Prima era false → il pulsante "Salva Atleta"
+      // veniva nascosto e il salvataggio rifiutato (l'atleta spariva al refresh).
+      return { canEditGeneral: true, canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true };
     case 'staff':
       return { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true };
     default:
