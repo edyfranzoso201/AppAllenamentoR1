@@ -76,7 +76,7 @@ html.theme-light, body.theme-light {
 }
 
 html { scroll-behavior: smooth; }
-body { background-color: var(--primary-blue); color: var(--text-light); padding-top: 56px; }
+body { background-color: var(--sm-bg); color: var(--text-light); padding-top: 56px; }
 .bg-dark-blue { background-color: #051438 !important; border-bottom: 2px solid var(--primary-accent); }
 .main-title { color: var(--text-light); border-left: 4px solid var(--primary-accent); padding-left: 1rem; }
 /* Spazio sopra l'alert: il body ha già padding-top:56px per l'header sticky,
@@ -90,10 +90,10 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     position: relative;
     z-index: 1040;
 }
-.athlete-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; transition: all 0.3s ease; position: relative; overflow: hidden; }
+.athlete-card { background-color: var(--sm-surface); border: 1px solid var(--sm-border); border-radius: 12px; transition: all 0.3s ease; position: relative; overflow: hidden; }
 .athlete-card-clickable { cursor: pointer; }
 .athlete-card-clickable:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(26, 160, 94, 0.2); border-color: var(--primary-accent); }
-.athlete-avatar { width: 70px; height: 70px; border-radius: 50%; border: 3px solid var(--border-color); object-fit: cover; background-color: var(--secondary-blue); }
+.athlete-avatar { width: 70px; height: 70px; border-radius: 50%; border: 3px solid var(--sm-border); object-fit: cover; background-color: var(--sm-surface-2); }
 /* Avatar con iniziali (quando manca la foto): stesso ingombro dell'avatar foto */
 .avatar-initials { display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 1.5rem; line-height: 1; flex-shrink: 0; text-transform: uppercase; }
 .athlete-card .card-title { font-size: 1.1rem; margin-bottom: 0.1rem; }
@@ -119,23 +119,23 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 .athlete-card:has(.card-more-wrap.open) { overflow: visible; }
 .card-more-menu .btn { background: transparent !important; text-align: left; white-space: nowrap; }
 .card-more-menu .btn:hover { background: rgba(59,90,157,0.35) !important; }
-.chart-card, .table-card, .summary-card { background-color: var(--card-bg); border: 1px solid var(--border-color); }
-.modal-content { background-color: var(--primary-blue); border: 1px solid var(--primary-red); }
-.modal-header, .modal-footer { border-bottom: 1px solid var(--border-color); border-top: 1px solid var(--border-color); }
+.chart-card, .table-card, .summary-card { background-color: var(--sm-surface); border: 1px solid var(--sm-border); }
+.modal-content { background-color: var(--sm-surface); border: 1px solid var(--primary-red); }
+.modal-header, .modal-footer { border-bottom: 1px solid var(--sm-border); border-top: 1px solid var(--sm-border); }
 .btn-primary-custom { background-color: var(--primary-accent); border-color: var(--primary-accent); color: white; }
 .btn-primary-custom:hover { background-color: var(--primary-accent-hover); border-color: var(--primary-accent-hover); }
-.form-control, .form-select { background-color: var(--secondary-blue); color: var(--text-light); border-color: var(--border-color); }
+.form-control, .form-select { background-color: var(--sm-surface-2); color: var(--text-light); border-color: var(--sm-border); }
 .form-control::placeholder { color: #8a9fc1; }
-.form-control:focus, .form-select:focus { background-color: var(--secondary-blue); color: var(--text-light); border-color: var(--primary-accent); box-shadow: 0 0 0 0.25rem rgba(26, 160, 94, 0.25); }
+.form-control:focus, .form-select:focus { background-color: var(--sm-surface-2); color: var(--text-light); border-color: var(--primary-accent); box-shadow: 0 0 0 0.25rem rgba(26, 160, 94, 0.25); }
 .award-card { background: linear-gradient(45deg, var(--gold-star), #d4af37); color: #000; border: 2px solid #fff; width: 180px; }
 .award-avatar { width: 50px; height: 50px; }
 .text-muted { color: rgba(255, 255, 255, 0.75) !important; }
 .summary-card .card-body { min-height: 150px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;}
 .summary-card .display-4 { font-weight: 500; }
-.calendar-card { background-color: var(--card-bg); border: 1px solid var(--border-color); }
+.calendar-card { background-color: var(--sm-surface); border: 1px solid var(--sm-border); }
 .calendar-header { display: flex; justify-content: space-between; align-items: center; }
 .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-.calendar-day { background-color: var(--secondary-blue); border: 1px solid var(--border-color); min-height: 120px; padding: 8px; font-size: 0.9rem; }
+.calendar-day { background-color: var(--sm-surface-2); border: 1px solid var(--sm-border); min-height: 120px; padding: 8px; font-size: 0.9rem; }
 .calendar-day.today { border-color: var(--primary-accent); }
 .calendar-day-header { font-weight: bold; }
 /* Nuove classi per sessioni */
@@ -196,7 +196,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 .token-captain { font-weight: bold; color: white; background: black; padding: 0.2em 0.5em; border-radius: 4px; font-size: clamp(8px, 1vw, 12px); }
 .token-ball { font-size: 2rem; }
 .token-opponent { width: 2.5em; height: 2.5em; background-color: var(--primary-red); border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.5); font-size: clamp(8px, 1vw, 12px); }
-.match-result-item { background-color: var(--card-bg); border: 1px solid var(--border-color); }
+.match-result-item { background-color: var(--sm-surface); border: 1px solid var(--sm-border); }
 .match-score { font-weight: bold; font-size: 1.1rem; }
 .yellow-card { width: 10px; height: 14px; background-color: #ffc107; display: inline-block; border-radius: 2px; }
 .red-card { width: 10px; height: 14px; background-color: #dc3545; display: inline-block; border-radius: 2px; }
@@ -227,8 +227,8 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
     color: var(--session-partita-futura);
 }
 
-#cards-summary-table { --bs-table-bg: var(--secondary-blue); --bs-table-striped-bg: var(--secondary-blue); --bs-table-hover-bg: var(--border-color); border-color: var(--border-color); }
-.season-stats-card { background-color: var(--card-bg); border: 1px solid var(--border-color); }
+#cards-summary-table { --bs-table-bg: var(--sm-surface-2); --bs-table-striped-bg: var(--sm-surface-2); --bs-table-hover-bg: var(--sm-border); border-color: var(--sm-border); }
+.season-stats-card { background-color: var(--sm-surface); border: 1px solid var(--sm-border); }
 .season-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 1rem; text-align: center;}
 .stat-item h6 { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.2rem;}
 .stat-item p { font-size: 1.4rem; font-weight: 500; margin-bottom: 0;}
@@ -912,7 +912,7 @@ body { background-color: var(--primary-blue); color: var(--text-light); padding-
 
 /* Lista storico pagelle */
 .rating-card-mini {
-    background: linear-gradient(135deg, var(--card-bg) 0%, rgba(255, 255, 255, 0.05) 100%);
+    background: linear-gradient(135deg, var(--sm-surface) 0%, rgba(255, 255, 255, 0.05) 100%);
     border: 2px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
     padding: 1.25rem;
