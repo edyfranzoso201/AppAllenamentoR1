@@ -6218,7 +6218,10 @@ function updateHeaderUI(annataName, currentUser, userRole, currentAnnataId) {
     const headerContainer = document.getElementById('app-header-info');
     if (!headerContainer) return;
     const roleIcon = userRole === 'admin' ? '\u{1F451}' : userRole && userRole.startsWith('dirigente') ? '\u{1F3C5}' : '\u{1F468}\u200d\u{1F3EB}';
-    const canChangeAnnata = userRole === 'admin';
+    // "Cambia Annata" appare a chi ha 2+ annate assegnate (admin inclusi): chi ne ha
+    // una sola non ha nulla da cambiare. Il pulsante nasce nascosto e viene mostrato
+    // dopo un fetch che conta le annate disponibili (vedi in fondo alla funzione).
+    const canChangeAnnata = true;
 
     headerContainer.innerHTML = `
         <div style="position:relative;display:inline-block;">
@@ -6250,11 +6253,11 @@ function updateHeaderUI(annataName, currentUser, userRole, currentAnnataId) {
         <div style="font-size:12px;color:${menuText};padding:4px 8px 8px;border-bottom:${menuDivider};margin-bottom:8px;">
             📅 Annata: <strong style="color:${menuStrong};">${annataName}</strong>
         </div>
-        ${canChangeAnnata ? `<button type="button" onclick="window.handleQuickChangeAnnata();closeAdminMenu();"
+        ${canChangeAnnata ? `<button type="button" id="admin-dd-change-annata" onclick="window.handleQuickChangeAnnata();closeAdminMenu();"
             style="width:100%;background:linear-gradient(135deg,#8b5cf6,#8b5cf6);color:white;border:none;
                    padding:8px 12px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;
-                   margin-bottom:6px;display:block;text-align:left;">
-            &#16a34a; Cambia Annata
+                   margin-bottom:6px;display:none;text-align:left;">
+            📅 Cambia Annata
         </button>` : ''}
         <button type="button" onclick="window.openChangePasswordModal();closeAdminMenu();"
             style="width:100%;background:linear-gradient(135deg,#0369a1,#0284c7);color:white;border:none;
@@ -6266,10 +6269,25 @@ function updateHeaderUI(annataName, currentUser, userRole, currentAnnataId) {
             style="width:100%;background:#d90429;color:white;border:none;
                    padding:8px 12px;border-radius:8px;font-weight:600;font-size:13px;
                    cursor:pointer;display:block;text-align:left;">
-            &#16a34a; Esci
+            🚪 Esci
         </button>
     `;
     document.body.appendChild(menu);
+
+    // "Cambia Annata": mostralo solo se l'utente ha 2+ annate assegnate.
+    // /api/annate/list restituisce già le sole annate visibili all'utente (filtrate
+    // per società/permessi lato server). Il pulsante nasce nascosto (display:none)
+    // e viene mostrato qui se il conteggio è >= 2.
+    var changeBtn = document.getElementById('admin-dd-change-annata');
+    if (changeBtn) {
+        fetch('/api/annate/list')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                var list = Array.isArray(data) ? data : (data.annate || []);
+                if (list.length >= 2) changeBtn.style.display = 'block';
+            })
+            .catch(function () { /* in caso di errore lascia nascosto */ });
+    }
 
     // Chiudi cliccando fuori
     document.addEventListener('click', function onClickOutside(e) {

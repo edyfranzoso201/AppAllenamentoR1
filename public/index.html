@@ -894,7 +894,6 @@
         if (!dst) return;
         var role = window.getUserRole ? window.getUserRole() : sessionStorage.getItem('gosport_user_role');
         var user = window.getCurrentUser ? window.getCurrentUser() : sessionStorage.getItem('gosport_auth_user');
-        var canChange = (role === 'admin');
         var icon = (role === 'admin') ? '\u{1F451}' : '\u{1F464}';
 
         var lbl = document.createElement('div');
@@ -905,16 +904,20 @@
         dst.innerHTML = '';
         dst.appendChild(lbl);
 
-        if (canChange) {
-            var btnCambia = document.createElement('button');
-            btnCambia.type = 'button';
-            btnCambia.textContent = '\u{1F4C5} Cambia Annata';
-            btnCambia.style.cssText = 'background:#8b5cf6;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;';
-            btnCambia.onclick = function() {
-                if (window.handleQuickChangeAnnata) window.handleQuickChangeAnnata();
-            };
-            dst.appendChild(btnCambia);
-        }
+        // "Cambia Annata": mostrato solo se l'utente ha 2+ annate (admin inclusi).
+        // Creato nascosto e reso visibile dopo il fetch che conta le annate.
+        var btnCambia = document.createElement('button');
+        btnCambia.type = 'button';
+        btnCambia.textContent = '\u{1F4C5} Cambia Annata';
+        btnCambia.style.cssText = 'display:none;background:#8b5cf6;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;';
+        btnCambia.onclick = function() {
+            if (window.handleQuickChangeAnnata) window.handleQuickChangeAnnata();
+        };
+        dst.appendChild(btnCambia);
+        fetch('/api/annate/list').then(function(r){return r.json();}).then(function(data){
+            var list = Array.isArray(data) ? data : (data.annate || []);
+            if (list.length >= 2) btnCambia.style.display = '';
+        }).catch(function(){});
 
         var btnEsci = document.createElement('button');
         btnEsci.type = 'button';
