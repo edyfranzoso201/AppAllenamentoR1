@@ -3450,6 +3450,13 @@
 /* ===== TAB NAVIGATION CONTROLLER ===== */
 
 function switchTab(sectionId) {
+    // GPS/Analisi restano bloccati per i ruoli senza canViewGPS anche se il
+    // bottone nav fosse ancora cliccabile (es. race condition di init):
+    // niente deve poter smontare il display:none imposto da applyPermissions().
+    if (sectionId === 'monitoraggio-gps-section' || sectionId === 'analisi-singolo-section') {
+        var _sec = document.getElementById(sectionId);
+        if (_sec && _sec.style.display === 'none') return;
+    }
     // Mostra la sezione corretta
     document.querySelectorAll('.tab-section').forEach(function(s) {
         s.classList.remove('tab-active');

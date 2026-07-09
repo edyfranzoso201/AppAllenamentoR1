@@ -159,8 +159,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (el) el.style.display = perms.canViewGPS ? '' : 'none';
         });
 
-        // Nascondi anche i link di navigazione verso le sezioni GPS
-        document.querySelectorAll('a[href="#monitoraggio-gps-section"], a[href="#analisi-singolo-section"], a[href="#confronto-squadra-section"]').forEach(el => {
+        // Nascondi anche i link/pulsanti di navigazione verso le sezioni GPS
+        // (i tab della barra di navigazione sono <button data-tab="...">, non <a href>)
+        document.querySelectorAll(
+            'a[href="#monitoraggio-gps-section"], a[href="#analisi-singolo-section"], a[href="#confronto-squadra-section"], ' +
+            '.tab-nav-btn[data-tab="monitoraggio-gps-section"], .tab-nav-btn[data-tab="analisi-singolo-section"]'
+        ).forEach(el => {
             el.style.display = perms.canViewGPS ? '' : 'none';
         });
 
