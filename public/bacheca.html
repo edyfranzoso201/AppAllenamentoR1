@@ -8,20 +8,25 @@
 <meta property="og:description" content="Comunicati e aggiornamenti della squadra">
 <title>Bacheca Squadra</title>
 <style>
+:root {
+  --accent: #1aa05e;
+  --accent-hover: #15864e;
+  --accent-soft: rgba(26,160,94,.16);
+}
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: #0a2463; color: #ffffff; font-family: system-ui, sans-serif; min-height: 100vh; overflow-x: hidden; }
 
 /* ── HEADER ── */
 .header {
   background: linear-gradient(90deg,#051438 0%,#0a2463 60%,#051438 100%);
-  border-bottom: 3px solid #d90429;
+  border-bottom: 3px solid var(--accent);
   padding: 14px 24px; display: flex; align-items: center; gap: 16px;
   position: relative;
 }
 .header-logo { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; border: 2px solid #3b5a9d; }
 .header-title { font-size: 1.5rem; font-weight: 800; color: #fff; letter-spacing: 0.02em; }
 .header-sub { font-size: 0.78rem; color: #8a9fc1; margin-top: 2px; }
-.bacheca-push-btn { margin-top: 8px; background: #3b82f6; color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-size: 0.85rem; cursor: pointer; white-space: nowrap; }
+.bacheca-push-btn { margin-top: 8px; background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-size: 0.85rem; cursor: pointer; white-space: nowrap; }
 .bacheca-push-btn.active { background: #16a34a; }
 .header-ticker {
   flex: 1; overflow: hidden; margin-left: 20px;
@@ -52,7 +57,7 @@ body { background: #0a2463; color: #ffffff; font-family: system-ui, sans-serif; 
   overflow: hidden; flex: 1; min-height: 80px; position: relative;
   cursor: pointer; transition: border-color 0.2s;
 }
-.ad-box:hover { border-color: #d90429; }
+.ad-box:hover { border-color: var(--accent); }
 .ad-box > img { 
   position: absolute; top: 0; left: 0; 
   width: 100% !important; height: 100% !important; 
@@ -82,7 +87,7 @@ body { background: #0a2463; color: #ffffff; font-family: system-ui, sans-serif; 
   padding: 14px; margin-bottom: 12px; display: flex; gap: 14px; align-items: flex-start;
   transition: border-color 0.2s;
 }
-.post-card:hover { border-color: #d90429; }
+.post-card:hover { border-color: var(--accent); }
 .post-card.pinned { border-color: #fbbf24; box-shadow: 0 0 0 1px #fbbf2440; }
 .post-img {
   width: 88px; height: 88px; object-fit: cover; border-radius: 8px;
@@ -130,14 +135,14 @@ body { background: #0a2463; color: #ffffff; font-family: system-ui, sans-serif; 
 }
 .cal-month { font-size: 0.85rem; font-weight: 700; color: #ffffff; text-transform: capitalize; }
 .cal-nav { background: none; border: none; color: #8a9fc1; cursor: pointer; font-size: 1rem; padding: 2px 6px; border-radius: 4px; }
-.cal-nav:hover { color: #ffffff; background: #1e5095; }
+.cal-nav:hover { color: #ffffff; background: var(--accent-soft); }
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
 .cal-wd { font-size: 0.60rem; color: #334155; text-align: center; padding: 1px 0; font-weight: 700; }
 .cal-day {
   font-size: 0.68rem; text-align: center; padding: 2px 1px;
   border-radius: 4px; cursor: default; color: #8a9fc1;
 }
-.cal-day.today { background: #1d4ed8; color: #fff; font-weight: 700; border-radius: 50%; }
+.cal-day.today { background: var(--accent); color: #fff; font-weight: 700; border-radius: 50%; }
 .cal-day.other-month { color: #3b5a9d; }
 
 /* Sponsor box */

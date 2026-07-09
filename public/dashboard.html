@@ -25,8 +25,9 @@
     --border-soft:  #1e3a5f;
     --text-primary: #e2e8f0;
     --text-muted:   #64748b;
-    --accent:       #3b82f6;
-    --accent-hover: #2563eb;
+    --accent:       #1aa05e;
+    --accent-hover: #15864e;
+    --accent-soft:  #14532d;
     --sidebar-w:    220px;
   }
   html.theme-light {
@@ -42,14 +43,14 @@
 
   /* ══ TEMA CHIARO — overrides hardcoded dark colors ═══════════════ */
   html.theme-light .role-badge {
-    background: #dbeafe !important;
-    color: #1d4ed8 !important;
-    border-color: #93c5fd !important;
+    background: #dcfce7 !important;
+    color: #15803d !important;
+    border-color: #86efac !important;
   }
   html.theme-light .nav-item.active {
-    background: #dbeafe !important;
-    border-color: #3b82f6 !important;
-    color: #1d4ed8 !important;
+    background: #dcfce7 !important;
+    border-color: #16884f !important;
+    color: #15803d !important;
   }
   html.theme-light .badge-blue   { background: #dbeafe !important; color: #1d4ed8 !important; }
   html.theme-light .badge-green  { background: #dcfce7 !important; color: #15803d !important; }
@@ -122,7 +123,7 @@
   }
   .dash-header .role-badge {
     font-size: 0.72rem;
-    background: #1e3a5f;
+    background: var(--accent-soft);
     border: 1px solid var(--accent);
     border-radius: 20px;
     padding: 3px 10px;
@@ -181,7 +182,7 @@
     color: var(--text-primary);
   }
   .nav-item.active {
-    background: #1e3a5f;
+    background: var(--accent-soft);
     border-color: var(--accent);
     color: var(--accent);
     font-weight: 600;
@@ -553,7 +554,7 @@
       Questa funzione è disponibile esclusivamente con la licenza <strong style="color:#f59e0b">Platinum</strong>.
     </p>
     <p style="color:var(--text-muted);font-size:0.8rem">Contatta Sport Monitoring per aggiornare la tua licenza.</p>
-    <button onclick="doLogout()" style="margin-top:24px;padding:10px 24px;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.9rem;">
+    <button onclick="doLogout()" style="margin-top:24px;padding:10px 24px;background:var(--accent);color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.9rem;">
       Torna al login
     </button>
   </div>
