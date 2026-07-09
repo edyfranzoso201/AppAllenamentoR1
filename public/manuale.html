@@ -214,6 +214,7 @@
         <li><a href="#c15"><span class="n">15</span> Alert scadenze</a></li>
         <li><a href="#c16"><span class="n">16</span> Stagioni</a></li>
         <li><a href="#c17"><span class="n">17</span> Genitori &amp; iscrizioni</a></li>
+        <li><a href="#c18"><span class="n">18</span> Ruoli &amp; permessi</a></li>
       </ul>
     </nav>
   </aside>
@@ -838,6 +839,122 @@
             <tr><td>Leggere le comunicazioni</td><td>Nella bacheca dedicata, con eventuali notifiche push.</td></tr>
           </table></div>
           <div class="note tip"><span class="ic">🛡️</span><div>Consensi e dati dei minori sono gestiti nel rispetto del <b>GDPR</b>: la prova del consenso viene registrata con data, e i dati vengono rimossi automaticamente alla fine della retention prevista.</div></div>
+        </div>
+      </section>
+
+      <section class="chapter" id="c18" style="--c:#1aa05e">
+        <div class="head"><span class="num">18</span><div><div class="eyebrow">Riferimento</div><h3>Ruoli &amp; permessi</h3></div></div>
+        <div class="card">
+          <div class="path"><span class="plabel">Percorso</span><span class="seg">Assegnazione ruoli: da</span><span class="seg btn">Pannello Superadmin / Gestione utenti</span></div>
+          <p class="purpose">Ogni utente ha un <b>ruolo</b> che decide quali <b>fogli</b> (le sezioni del menu) può <b>vedere</b> e quali può <b>modificare</b>. Questa tabella elenca tutti i fogli, raggruppati per <b>piano di licenza</b>. <b>Chi può modificare può anche cancellare.</b></p>
+
+          <style>
+            .perm-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.82rem;margin:6px 0 12px;color:var(--muted);}
+            .perm-legend span{display:inline-flex;align-items:center;gap:6px;}
+            .pchip{width:20px;height:20px;border-radius:5px;display:inline-grid;place-items:center;font-weight:800;font-size:.8rem;}
+            .p-e{background:color-mix(in srgb,#1aa05e 16%,transparent);color:#1aa05e;border:1px solid #1aa05e;}
+            .p-v{background:color-mix(in srgb,#3b82f6 16%,transparent);color:#3b82f6;border:1px solid #3b82f6;}
+            .p-x{background:color-mix(in srgb,#e5484d 14%,transparent);color:#e5484d;border:1px solid #e5484d;}
+            table.perm{width:100%;border-collapse:separate;border-spacing:0;font-size:.78rem;min-width:840px;}
+            table.perm th,table.perm td{padding:7px 8px;text-align:center;border-bottom:1px solid var(--line);border-right:1px solid var(--line);}
+            table.perm thead th{background:var(--panel-2);font-weight:700;font-size:.68rem;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);position:sticky;top:0;}
+            table.perm td.fn{text-align:left;font-weight:600;color:var(--ink);white-space:nowrap;background:var(--panel);min-width:150px;}
+            table.perm th.fn{text-align:left;}
+            /* Riga-banda di intestazione piano: verde Silver, ambra Gold, azzurro Platinum */
+            table.perm tr.plan td{text-align:left;font-weight:800;text-transform:uppercase;letter-spacing:.08em;font-size:.72rem;padding:8px 12px;}
+            table.perm tr.plan.silver td{background:color-mix(in srgb,#1aa05e 20%,var(--panel));color:#0f7a45;border-top:2px solid #1aa05e;}
+            table.perm tr.plan.gold td{background:color-mix(in srgb,#e0a53a 22%,var(--panel));color:#a06a10;border-top:2px solid #e0a53a;}
+            table.perm tr.plan.platinum td{background:color-mix(in srgb,#3b82f6 20%,var(--panel));color:#2059b8;border-top:2px solid #3b82f6;}
+            table.perm tr.plan .pill-inc{font-weight:600;text-transform:none;letter-spacing:0;opacity:.85;font-size:.68rem;margin-left:8px;}
+            /* Bordo colorato a sinistra su ogni riga-foglio per rinforzare il piano */
+            table.perm tbody tr.silver td.fn{box-shadow:inset 3px 0 0 #1aa05e;}
+            table.perm tbody tr.gold td.fn{box-shadow:inset 3px 0 0 #e0a53a;}
+            table.perm tbody tr.platinum td.fn{box-shadow:inset 3px 0 0 #3b82f6;}
+            .rc{color:#1aa05e;} .rd{color:#e0a53a;} .rs{color:#3b82f6;} .ra{color:#a855f7;}
+            .perm-key{font-size:.78rem;color:var(--muted);margin-top:10px;line-height:1.7;}
+            .perm-key b.rc{color:#1aa05e;} .perm-key b.rd{color:#e0a53a;} .perm-key b.rs{color:#3b82f6;} .perm-key b.ra{color:#a855f7;}
+          </style>
+
+          <div class="perm-legend">
+            <span><span class="pchip p-e">✎</span> Modifica (e cancella)</span>
+            <span><span class="pchip p-v">👁</span> Solo visualizza</span>
+            <span><span class="pchip p-x">✕</span> Nessun accesso</span>
+          </div>
+
+          <div class="scrollx"><table class="perm">
+            <thead><tr>
+              <th class="fn">Foglio</th>
+              <th class="rc">C-L1</th><th class="rc">C-L2</th><th class="rc">C-L3</th><th class="rc">C-RO</th>
+              <th class="rd">D-L1</th><th class="rd">D-L2</th><th class="rd">D-L3</th><th class="rd">D-L4</th>
+              <th class="rs">S-L1</th><th class="rs">S-L3</th>
+              <th class="ra">A1</th><th class="ra">A2</th><th class="ra">A3</th>
+            </tr></thead>
+            <tbody id="permBody"></tbody>
+          </table></div>
+
+          <div class="perm-key">
+            <b class="rc">C</b> = Coach (L1–L3, RO read-only) &nbsp;·&nbsp;
+            <b class="rd">D</b> = Dirigente (L1–L4) &nbsp;·&nbsp;
+            <b class="rs">S</b> = Società (L1, L3) &nbsp;·&nbsp;
+            <b class="ra">A</b> = Dashboard (A1 Direttivo, A2 Dirigente, A3 Staff)
+          </div>
+
+          <div class="note tip"><span class="ic">🎫</span><div>I piani sono <b>cumulativi</b>: <b class="rc">Silver</b> è la base, <b style="color:#a06a10">Gold</b> aggiunge i suoi fogli a quelli Silver, <b class="rs">Platinum</b> include tutto. Un ruolo non vede un foglio se il suo piano non lo comprende — a prescindere dai permessi di ruolo. I permessi ✎/👁/✕ in tabella valgono quando il foglio <b>è</b> incluso nel piano.</div></div>
+
+          <script>
+            (function(){
+              // Ogni riga = un FOGLIO (sezione del menu). e=modifica, v=vista, x=nessuno.
+              // Colonne: C-L1,C-L2,C-L3,C-RO, D-L1,D-L2,D-L3,D-L4, S-L1,S-L3, A1,A2,A3
+              // Raggruppate per piano licenza (Silver ⊂ Gold ⊂ Platinum).
+              // ogni gruppo: [nomePiano, classe, notaInclusione, righe]
+              var groups=[
+                ['Silver','silver','Sempre incluso', [
+                  ['Home',            'e','e','v','v','e','e','v','v','e','v','v','e','v'],
+                  ['Gest. Squadra',   'e','e','v','v','e','e','v','v','e','v','v','e','v'],
+                  ['Materiale',       'e','e','v','v','e','e','v','v','e','v','v','e','v'],
+                  ['Convocazioni',    'e','e','v','v','e','e','v','x','v','x','v','e','x'],
+                  ['Guida',           'v','v','v','v','v','v','v','v','v','v','v','v','v']
+                ]],
+                ['Gold','gold','include Silver +', [
+                  ['Calendario',      'e','e','v','v','e','e','v','x','v','x','v','e','x'],
+                  ['Org ↗',           'e','e','v','v','e','e','v','x','v','v','v','e','v'],
+                  ['Pagamenti',       'e','v','x','x','e','e','x','x','v','x','v','e','x'],
+                  ['GPS',             'e','v','v','v','x','x','x','x','v','x','v','x','x'],
+                  ['Analisi Singolo', 'e','e','v','x','v','v','x','x','x','x','v','e','x'],
+                  ['Report Presenze', 'e','e','v','v','e','e','v','x','x','x','v','e','x'],
+                  ['Formazione',      'e','e','v','v','e','e','v','x','x','x','v','e','x'],
+                  ['Risultati Partite','e','e','v','v','e','e','v','x','x','x','x','e','x'],
+                  ['Presenze',        'e','e','v','v','e','e','v','x','x','x','v','e','x']
+                ]],
+                ['Platinum','platinum','include Gold +', [
+                  ['Report Valutazioni','e','e','v','v','e','e','v','x','x','x','v','e','x'],
+                  ['Area Tecnica',    'e','e','v','v','e','e','v','x','v','v','v','e','x'],
+                  ['Hall of Fame',    'e','e','v','v','e','e','v','x','x','x','x','e','x'],
+                  ['Accessi Utenti',  'e','e','v','v','e','e','v','x','v','v','v','e','v'],
+                  ['Pagelle',         'e','e','x','x','e','e','v','x','v','x','v','e','x'],
+                  ['Dashboard',       'x','x','x','x','x','x','x','x','x','x','e','e','e']
+                ]]
+              ];
+              function chip(v){
+                if(v==='e')return '<span class="pchip p-e" title="Modifica e cancella">✎</span>';
+                if(v==='v')return '<span class="pchip p-v" title="Solo visualizza">👁</span>';
+                return '<span class="pchip p-x" title="Nessun accesso">✕</span>';
+              }
+              var b=document.getElementById('permBody'),h='';
+              groups.forEach(function(g){
+                var name=g[0], cls=g[1], nota=g[2], rows=g[3];
+                // Riga-banda che apre il piano
+                h+='<tr class="plan '+cls+'"><td colspan="14">🎫 '+name
+                  +'<span class="pill-inc">'+nota+'</span></td></tr>';
+                rows.forEach(function(r){
+                  h+='<tr class="'+cls+'"><td class="fn">'+r[0]+'</td>';
+                  for(var i=1;i<r.length;i++){h+='<td>'+chip(r[i])+'</td>';}
+                  h+='</tr>';
+                });
+              });
+              if(b)b.innerHTML=h;
+            })();
+          </script>
         </div>
       </section>
 
