@@ -3493,10 +3493,16 @@ function switchTab(sectionId) {
 
     // Resize Chart.js (100ms per tutte le tab; GPS ha un secondo passaggio a 350ms
     // perché confronto-squadra-section passa da display:none a block e i canvas
-    // hanno ancora offsetWidth=0 al primo tick, causando il grafico "ridotto").
+    // hanno ancora offsetWidth=0 al primo tick, causando il grafico "ridotto".
+    // I chart GPS sono responsive:false e non ascoltano 'resize': vanno ridisegnati
+    // chiamando direttamente le loro funzioni di update dopo che il layout si è assestato).
     setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 100);
     if (sectionId === 'monitoraggio-gps-section') {
-        setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 350);
+        setTimeout(function() {
+            window.dispatchEvent(new Event('resize'));
+            if (window.updateMultiAthleteChart) window.updateMultiAthleteChart();
+            if (window.updatePerformanceChart) window.updatePerformanceChart();
+        }, 350);
     }
 
     // Se si va al tab Presenze, ridisegna il grafico (era nascosto, offsetWidth era 0)
