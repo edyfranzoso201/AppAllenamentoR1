@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="it" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Reattività — Sport Monitoring</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <style>
+    :root{ --bg:#060f1e; --card:#0d1b2a; --panel:#1e293b; --border:#2d4a8a; --border2:#3b5a9d; --txt:#e2e8f0; --muted:#94a3b8; --accent:#1aa05e; --accent-hover:#15864e; }
+    *{box-sizing:border-box;}
+    html,body{margin:0;padding:0;}
+    body{background:var(--bg);color:var(--txt);font-family:system-ui,Arial,sans-serif;min-height:100vh;}
+
+    .rt-header{background:var(--card);border-bottom:2px solid var(--accent);padding:12px 18px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10;}
+    .rt-header h1{font-size:1.1rem;margin:0;font-weight:700;}
+    .rt-back{background:var(--panel);color:var(--txt);border:1px solid var(--border);border-radius:8px;padding:7px 12px;cursor:pointer;text-decoration:none;font-size:0.85rem;}
+
+    .rt-main{max-width:640px;margin:0 auto;padding:18px 16px 50px;}
+    .rt-section{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;}
+    .rt-section h3{margin:0 0 12px;font-size:0.92rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;font-weight:700;}
+
+    .rt-swatches{display:flex;flex-wrap:wrap;gap:10px;}
+    .rt-swatch{width:52px;height:52px;border-radius:12px;cursor:pointer;border:3px solid transparent;position:relative;transition:transform .1s;}
+    .rt-swatch:active{transform:scale(0.94);}
+    .rt-swatch.sel{border-color:#fff;box-shadow:0 0 0 2px var(--accent);}
+    .rt-swatch.sel::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:900;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,0.8);}
+    .rt-swatch[data-c="bianco"].sel::after{color:#000;text-shadow:none;}
+
+    .rt-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap;}
+    .rt-row:last-child{margin-bottom:0;}
+    .rt-row label{font-size:0.9rem;}
+    .rt-row .hint{display:block;font-size:0.72rem;color:var(--muted);margin-top:2px;}
+    .rt-row input[type="number"]{width:86px;background:var(--panel);color:var(--txt);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:0.95rem;text-align:center;}
+    .rt-row select{background:var(--panel);color:var(--txt);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:0.9rem;}
+
+    .rt-tgl{position:relative;width:52px;height:28px;flex:0 0 auto;}
+    .rt-tgl input{opacity:0;width:0;height:0;}
+    .rt-tgl .knob{position:absolute;inset:0;background:var(--panel);border:1px solid var(--border);border-radius:20px;cursor:pointer;transition:background .15s;}
+    .rt-tgl .knob::before{content:'';position:absolute;width:20px;height:20px;border-radius:50%;background:#94a3b8;top:3px;left:4px;transition:transform .15s,background .15s;}
+    .rt-tgl input:checked + .knob{background:var(--accent);border-color:var(--accent);}
+    .rt-tgl input:checked + .knob::before{transform:translateX(23px);background:#fff;}
+
+    .rt-modes{display:flex;gap:10px;}
+    .rt-mode-btn{flex:1;background:var(--panel);border:2px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;text-align:center;color:var(--txt);font-size:0.9rem;font-weight:600;}
+    .rt-mode-btn.sel{border-color:var(--accent);background:rgba(26,160,94,0.12);color:#4ade80;}
+    .rt-mode-btn .d{display:block;font-size:0.72rem;color:var(--muted);font-weight:400;margin-top:3px;}
+
+    .rt-preset-row{display:flex;gap:8px;flex-wrap:wrap;}
+    .rt-preset-row select{flex:1;min-width:140px;background:var(--panel);color:var(--txt);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:0.9rem;}
+    .rt-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 14px;cursor:pointer;font-weight:600;font-size:0.85rem;}
+    .rt-btn-ghost{background:var(--panel);color:var(--txt);border:1px solid var(--border);border-radius:8px;padding:9px 12px;cursor:pointer;font-size:0.85rem;}
+    .rt-btn-danger{background:transparent;color:#f87171;border:1px solid #7f1d1d;border-radius:8px;padding:9px 12px;cursor:pointer;font-size:0.85rem;}
+
+    .rt-start{width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:16px;font-size:1.15rem;font-weight:800;cursor:pointer;letter-spacing:0.02em;}
+    .rt-start:disabled{background:#334155;color:#64748b;cursor:not-allowed;}
+    .rt-note{color:var(--muted);font-size:0.78rem;line-height:1.6;margin-top:14px;}
+
+    /* ── schermata esecuzione ── */
+    #rt-run{position:fixed;inset:0;background:#000;display:none;z-index:100;align-items:center;justify-content:center;flex-direction:column;}
+    #rt-run.on{display:flex;}
+    body.rt-running{overflow:hidden;}
+    #rt-circle{width:70vmin;height:70vmin;border-radius:50%;background:#333;transition:background .12s;}
+    #rt-counter{position:fixed;top:14px;right:18px;color:#475569;font-size:1.05rem;font-weight:700;font-variant-numeric:tabular-nums;z-index:102;}
+    #rt-stophint{position:fixed;top:14px;left:18px;color:#334155;font-size:0.8rem;z-index:102;}
+    #rt-countdown{position:fixed;inset:0;display:none;align-items:center;justify-content:center;font-size:65vmin;font-weight:900;color:#e2e8f0;background:#000;z-index:101;line-height:1;}
+    #rt-end{display:none;flex-direction:column;align-items:center;gap:18px;}
+    #rt-end .big{font-size:3rem;}
+    #rt-end .btns{display:flex;gap:12px;}
+    #rt-manualbar{position:fixed;bottom:0;left:0;right:0;display:none;gap:8px;padding:12px;justify-content:center;z-index:102;background:rgba(0,0,0,0.35);flex-wrap:wrap;}
+    #rt-manualbar .mswatch{width:64px;height:64px;border-radius:14px;border:3px solid rgba(255,255,255,0.25);cursor:pointer;flex:0 0 auto;}
+    #rt-manualbar .mswatch:active{transform:scale(0.92);}
+    #rt-manualbar .mswatch.active{border-color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,0.35);}
+  </style>
+</head>
+<body>
+  <div class="rt-header">
+    <a href="/area-tecnica.html" class="rt-back">← Area Tecnica</a>
+    <h1>⚡ Test Reattività</h1>
+  </div>
+
+  <div class="rt-main">
+
+    <div class="rt-section">
+      <h3>Modalità</h3>
+      <div class="rt-modes" id="rt-modes">
+        <button type="button" class="rt-mode-btn sel" data-m="auto">🎲 Automatica<span class="d">colori random a intervallo fisso</span></button>
+        <button type="button" class="rt-mode-btn" data-m="manual">👆 Manuale<span class="d">tocchi tu il colore da mostrare</span></button>
+      </div>
+    </div>
+
+    <div class="rt-section">
+      <h3>Colori (tocca per selezionare — min 2)</h3>
+      <div class="rt-swatches" id="rt-swatches"></div>
+    </div>
+
+    <div class="rt-section" id="rt-autoopts">
+      <h3>Impostazioni sequenza</h3>
+      <div class="rt-row">
+        <label for="rt-interval">⏱️ Intervallo tra i colori <span class="hint">secondi tra un cambio e l'altro</span></label>
+        <input type="number" id="rt-interval" min="0.5" max="30" step="0.5" value="4">
+      </div>
+      <div class="rt-row">
+        <label for="rt-gap">⬛ Pausa neutra (nero) <span class="hint">0 = cambio colore diretto</span></label>
+        <input type="number" id="rt-gap" min="0" max="10" step="0.5" value="0">
+      </div>
+      <div class="rt-row">
+        <label for="rt-repeat">🔁 Stesso colore consecutivo <span class="hint">se attivo, può uscire due volte di fila</span></label>
+        <span class="rt-tgl"><input type="checkbox" id="rt-repeat" checked><span class="knob" onclick="document.getElementById('rt-repeat').click()"></span></span>
+      </div>
+      <div class="rt-row">
+        <label for="rt-endmode">🏁 Fine sessione</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select id="rt-endmode" title="Criterio di fine sessione">
+            <option value="count">n° stimoli</option>
+            <option value="time">durata (min)</option>
+          </select>
+          <input type="number" id="rt-endvalue" min="1" max="120" step="1" value="10" title="Valore fine sessione">
+        </div>
+      </div>
+    </div>
+
+    <div class="rt-section">
+      <h3>Opzioni</h3>
+      <div class="rt-row">
+        <label for="rt-countdown-on">🕒 Countdown 3-2-1 all'avvio</label>
+        <span class="rt-tgl"><input type="checkbox" id="rt-countdown-on" checked><span class="knob" onclick="document.getElementById('rt-countdown-on').click()"></span></span>
+      </div>
+      <div class="rt-row">
+        <label for="rt-beep-on">🔊 Beep al cambio colore</label>
+        <span class="rt-tgl"><input type="checkbox" id="rt-beep-on"><span class="knob" onclick="document.getElementById('rt-beep-on').click()"></span></span>
+      </div>
+    </div>
+
+    <div class="rt-section">
+      <h3>Preset (salvati su questo dispositivo)</h3>
+      <div class="rt-preset-row">
+        <select id="rt-preset-sel" title="Preset salvati"><option value="">— nessun preset —</option></select>
+        <button type="button" class="rt-btn-ghost" id="rt-preset-load">Carica</button>
+        <button type="button" class="rt-btn-ghost" id="rt-preset-save">💾 Salva come…</button>
+        <button type="button" class="rt-btn-danger" id="rt-preset-del" title="Elimina preset">🗑</button>
+      </div>
+    </div>
+
+    <button type="button" class="rt-start" id="rt-start">▶ AVVIA TEST</button>
+    <p class="rt-note">All'avvio la pagina va a schermo intero e lo schermo non si spegne. Per interrompere: tocca lo schermo (o premi ESC). Nessun dato viene salvato: i preset restano su questo dispositivo.</p>
+  </div>
+
+  <!-- schermata esecuzione -->
+  <div id="rt-run">
+    <div id="rt-stophint">tocca per interrompere</div>
+    <div id="rt-counter"></div>
+    <div id="rt-countdown">3</div>
+    <div id="rt-circle" style="display:none;"></div>
+    <div id="rt-end">
+      <div class="big">✅</div>
+      <div style="font-size:1.4rem;font-weight:700;">Sessione completata</div>
+      <div id="rt-endstats" style="color:#64748b;"></div>
+      <div class="btns">
+        <button type="button" class="rt-btn" id="rt-again">↻ Ripeti</button>
+        <button type="button" class="rt-btn-ghost" id="rt-config">⚙ Configura</button>
+      </div>
+    </div>
+    <div id="rt-manualbar"></div>
+  </div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── soft-gate: come area-tecnica.js, la pagina si apre spesso in nuova scheda,
+  //    quindi sessionStorage → fallback localStorage "_p_" → localStorage diretto.
+  function ss(key) {
+    return sessionStorage.getItem(key) || localStorage.getItem('_p_' + key) || localStorage.getItem(key) || '';
+  }
+  if (!(ss('gosport_session_token') || ss('gosport_auth_session'))) {
+    location.href = '/';
+    return;
+  }
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  // ── palette colori cunei/cinesini ──
+  var COLORS = [
+    { id:'rosso',    hex:'#e11d2e' },
+    { id:'blu',      hex:'#1d4ed8' },
+    { id:'verde',    hex:'#16a34a' },
+    { id:'giallo',   hex:'#facc15' },
+    { id:'arancione',hex:'#f97316' },
+    { id:'viola',    hex:'#8b5cf6' },
+    { id:'bianco',   hex:'#f8fafc' },
+    { id:'azzurro',  hex:'#38bdf8' }
+  ];
+  var DEFAULT_SEL = ['rosso','blu','verde','giallo'];
+
+  var mode = 'auto';
+  var selected = DEFAULT_SEL.slice();
+
+  // ── palette UI ──
+  var swEl = $('rt-swatches');
+  COLORS.forEach(function (c) {
+    var d = document.createElement('div');
+    d.className = 'rt-swatch' + (selected.indexOf(c.id) >= 0 ? ' sel' : '');
+    d.style.background = c.hex;
+    d.dataset.c = c.id;
+    d.title = c.id;
+    d.onclick = function () {
+      var i = selected.indexOf(c.id);
+      if (i >= 0) selected.splice(i, 1); else selected.push(c.id);
+      d.classList.toggle('sel');
+      validate();
+    };
+    swEl.appendChild(d);
+  });
+
+  $('rt-modes').addEventListener('click', function (e) {
+    var b = e.target.closest('.rt-mode-btn'); if (!b) return;
+    mode = b.dataset.m;
+    document.querySelectorAll('.rt-mode-btn').forEach(function (x) { x.classList.toggle('sel', x === b); });
+    $('rt-autoopts').style.display = (mode === 'auto') ? '' : 'none';
+  });
+
+  function validate() { $('rt-start').disabled = selected.length < 2; }
+  validate();
+
+  // ── beep (Web Audio, nessun file) ──
+  var actx = null;
+  function beep() {
+    if (!$('rt-beep-on').checked) return;
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      var o = actx.createOscillator(), g = actx.createGain();
+      o.frequency.value = 880; o.type = 'square';
+      g.gain.setValueAtTime(0.15, actx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + 0.18);
+      o.connect(g); g.connect(actx.destination);
+      o.start(); o.stop(actx.currentTime + 0.2);
+    } catch (e) {}
+  }
+
+  // ── fullscreen + wake lock ──
+  var wakeLock = null;
+  function goFullscreen() {
+    var el = document.documentElement;
+    var fn = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (fn) { try { fn.call(el).catch(function(){}); } catch (e) {} }
+  }
+  function exitFullscreen() {
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      var fn = document.exitFullscreen || document.webkitExitFullscreen;
+      if (fn) { try { fn.call(document).catch(function(){}); } catch (e) {} }
+    }
+  }
+  function acquireWakeLock() {
+    if (!('wakeLock' in navigator)) return;
+    navigator.wakeLock.request('screen').then(function (wl) { wakeLock = wl; }).catch(function () {});
+  }
+  function releaseWakeLock() {
+    if (wakeLock) { try { wakeLock.release(); } catch (e) {} wakeLock = null; }
+  }
+  document.addEventListener('visibilitychange', function () {
+    // il wake lock viene rilasciato dal sistema quando la pagina va in background
+    if (document.visibilityState === 'visible' && running) acquireWakeLock();
+  });
+
+  // ── esecuzione ──
+  var runEl = $('rt-run');
+  var circleEl = $('rt-circle');
+  var counterEl = $('rt-counter');
+  var countdownEl = $('rt-countdown');
+  var endEl = $('rt-end');
+  var manualBar = $('rt-manualbar');
+  var timers = [];
+  var running = false;
+  var lastColor = null;
+  var shown = 0;
+
+  function clearTimers() { timers.forEach(clearTimeout); timers = []; }
+  function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
+
+  function pickColor() {
+    var pool = selected.slice();
+    if (!$('rt-repeat').checked && lastColor && pool.length > 1) {
+      pool = pool.filter(function (c) { return c !== lastColor; });
+    }
+    var id = pool[Math.floor(Math.random() * pool.length)];
+    lastColor = id;
+    return COLORS.find(function (c) { return c.id === id; });
+  }
+
+  function startRun() {
+    if (selected.length < 2) return;
+    clearTimers();
+    running = true; shown = 0; lastColor = null;
+    runEl.classList.add('on');
+    document.body.classList.add('rt-running');
+    endEl.style.display = 'none';
+    circleEl.style.display = 'none';
+    manualBar.style.display = 'none';
+    counterEl.textContent = '';
+    goFullscreen();
+    acquireWakeLock();
+
+    if ($('rt-countdown-on').checked) {
+      countdownEl.style.display = 'flex';
+      var n = 3;
+      countdownEl.textContent = n;
+      var tick = function () {
+        n--;
+        if (n > 0) { countdownEl.textContent = n; later(tick, 1000); }
+        else { countdownEl.style.display = 'none'; begin(); }
+      };
+      later(tick, 1000);
+    } else {
+      begin();
+    }
+  }
+
+  function begin() { (mode === 'manual') ? beginManual() : beginAuto(); }
+
+  function beginAuto() {
+    var interval = parseFloat($('rt-interval').value) || 4;
+    var gap = parseFloat($('rt-gap').value) || 0;
+    var endMode = $('rt-endmode').value;
+    var endValue = parseFloat($('rt-endvalue').value) || 10;
+    var tEnd = (endMode === 'time') ? Date.now() + endValue * 60 * 1000 : null;
+    var total = (endMode === 'count') ? endValue : null;
+
+    function step() {
+      if (!running) return;
+      if (total !== null && shown >= total) return finish();
+      if (tEnd !== null && Date.now() >= tEnd) return finish();
+
+      var c = pickColor();
+      circleEl.style.background = c.hex;
+      circleEl.style.display = '';
+      beep();
+      shown++;
+      counterEl.textContent = (total !== null)
+        ? shown + ' / ' + total
+        : Math.max(0, Math.ceil((tEnd - Date.now()) / 1000)) + 's';
+
+      if (gap > 0) {
+        later(function () {
+          if (!running) return;
+          circleEl.style.display = 'none'; // pausa nera
+          later(step, gap * 1000);
+        }, interval * 1000);
+      } else {
+        later(step, interval * 1000);
+      }
+    }
+    step();
+  }
+
+  function beginManual() {
+    circleEl.style.display = '';
+    circleEl.style.background = '#222';
+    manualBar.style.display = 'flex';
+    manualBar.innerHTML = '';
+    selected.forEach(function (id) {
+      var c = COLORS.find(function (x) { return x.id === id; });
+      var b = document.createElement('div');
+      b.className = 'mswatch';
+      b.style.background = c.hex;
+      b.title = c.id;
+      b.onclick = function (ev) {
+        ev.stopPropagation();
+        circleEl.style.background = c.hex;
+        beep();
+        shown++;
+        counterEl.textContent = shown + (shown === 1 ? ' stimolo' : ' stimoli');
+        document.querySelectorAll('#rt-manualbar .mswatch').forEach(function (x) { x.classList.toggle('active', x === b); });
+      };
+      manualBar.appendChild(b);
+    });
+  }
+
+  function finish() {
+    running = false;
+    clearTimers();
+    circleEl.style.display = 'none';
+    manualBar.style.display = 'none';
+    countdownEl.style.display = 'none';
+    $('rt-endstats').textContent = shown + ' stimoli mostrati';
+    endEl.style.display = 'flex';
+    releaseWakeLock();
+  }
+
+  function closeRun() {
+    running = false;
+    clearTimers();
+    runEl.classList.remove('on');
+    document.body.classList.remove('rt-running');
+    manualBar.style.display = 'none';
+    countdownEl.style.display = 'none';
+    releaseWakeLock();
+    exitFullscreen();
+  }
+
+  $('rt-start').addEventListener('click', startRun);
+  $('rt-again').addEventListener('click', function (e) { e.stopPropagation(); startRun(); });
+  $('rt-config').addEventListener('click', function (e) { e.stopPropagation(); closeRun(); });
+
+  runEl.addEventListener('click', function (e) {
+    if (e.target.closest('#rt-manualbar') || e.target.closest('#rt-end')) return;
+    if (running) finish();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && runEl.classList.contains('on')) { running ? finish() : closeRun(); }
+  });
+
+  // ── preset localStorage ──
+  var LS_KEY = 'reattivita_presets';
+  function getPresets() { try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch (e) { return {}; } }
+  function refreshPresetList() {
+    var sel = $('rt-preset-sel');
+    var cur = sel.value;
+    sel.innerHTML = '<option value="">— nessun preset —</option>';
+    Object.keys(getPresets()).sort().forEach(function (name) {
+      var o = document.createElement('option'); o.value = name; o.textContent = name;
+      sel.appendChild(o);
+    });
+    sel.value = cur;
+  }
+  function currentConfig() {
+    return {
+      mode: mode, colors: selected.slice(),
+      interval: $('rt-interval').value,
+      gap: $('rt-gap').value,
+      repeat: $('rt-repeat').checked,
+      endMode: $('rt-endmode').value,
+      endValue: $('rt-endvalue').value,
+      countdown: $('rt-countdown-on').checked,
+      beep: $('rt-beep-on').checked
+    };
+  }
+  function applyConfig(c) {
+    mode = c.mode || 'auto';
+    document.querySelectorAll('.rt-mode-btn').forEach(function (x) { x.classList.toggle('sel', x.dataset.m === mode); });
+    $('rt-autoopts').style.display = (mode === 'auto') ? '' : 'none';
+    selected = (c.colors || DEFAULT_SEL).slice();
+    document.querySelectorAll('#rt-swatches .rt-swatch').forEach(function (s) {
+      s.classList.toggle('sel', selected.indexOf(s.dataset.c) >= 0);
+    });
+    $('rt-interval').value = c.interval || 4;
+    $('rt-gap').value = c.gap || 0;
+    $('rt-repeat').checked = !!c.repeat;
+    $('rt-endmode').value = c.endMode || 'count';
+    $('rt-endvalue').value = c.endValue || 10;
+    $('rt-countdown-on').checked = c.countdown !== false;
+    $('rt-beep-on').checked = !!c.beep;
+    validate();
+  }
+  $('rt-preset-save').addEventListener('click', function () {
+    var name = prompt('Nome del preset (es. "U12 riscaldamento"):');
+    if (!name) return;
+    var p = getPresets(); p[name.trim()] = currentConfig();
+    localStorage.setItem(LS_KEY, JSON.stringify(p));
+    refreshPresetList();
+    $('rt-preset-sel').value = name.trim();
+  });
+  $('rt-preset-load').addEventListener('click', function () {
+    var name = $('rt-preset-sel').value;
+    if (!name) return;
+    var p = getPresets(); if (p[name]) applyConfig(p[name]);
+  });
+  $('rt-preset-del').addEventListener('click', function () {
+    var name = $('rt-preset-sel').value;
+    if (!name) return;
+    if (!confirm('Eliminare il preset "' + name + '"?')) return;
+    var p = getPresets(); delete p[name];
+    localStorage.setItem(LS_KEY, JSON.stringify(p));
+    refreshPresetList();
+  });
+  refreshPresetList();
+})();
+</script>
+</body>
+</html>
