@@ -344,6 +344,53 @@ if (req.query?.action === 'ical') {
   return res.status(200).send(ics);
 }
 
+// ── CONTACT: form contatti del sito vetrina (sport-monitoring.vercel.app) ──
+// Pubblico, nessuna auth: riceve il POST classico (urlencoded) del form della
+// landing, invia l'email via Gmail e riporta il visitatore al sito con l'esito
+// (?sent=1 ok, ?sent=0 errore). POST di navigazione: il CORS non si applica.
+// Protezioni: honeypot, limiti di lunghezza, rate limit 5 invii/ora per IP.
+if (req.query?.action === 'contact' && req.method === 'POST') {
+  const SITE = 'https://sport-monitoring.vercel.app';
+  const back = (q) => { res.setHeader('Location', `${SITE}/?${q}#contatti`); return res.status(303).end(); };
+  const b = req.body || {};
+  // honeypot: i bot compilano anche i campi nascosti — finto ok, nessuna email
+  if (String(b._honey || '').trim()) return back('sent=1');
+  const nome = String(b.nome || '').trim().slice(0, 100);
+  const email = String(b.email || '').trim().slice(0, 150);
+  const squadra = String(b.squadra || '').trim().slice(0, 50);
+  const messaggio = String(b.messaggio || '').trim().slice(0, 2000);
+  if (!nome || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return back('sent=0');
+  try {
+    const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'noip';
+    const rlKey = `contact:rl:${ip}`;
+    const n = await kv.incr(rlKey);
+    if (n === 1) await kv.expire(rlKey, 3600);
+    if (n > 5) return back('sent=0');
+  } catch (e) { /* rate limit soft: un errore KV non blocca il contatto */ }
+  try {
+    const { createTransport } = await import('nodemailer');
+    const t = createTransport({ service: 'gmail', auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS } });
+    const esc = s => String(s).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    await t.sendMail({
+      from: `"Sport Monitoring — Sito" <${process.env.GMAIL_USER}>`,
+      to: process.env.CONTACT_EMAIL || 'info.mondo2026@gmail.com',
+      replyTo: email,
+      subject: `Richiesta info dal sito — ${nome}`,
+      html: `<h2>Nuova richiesta dal sito Sport Monitoring</h2>
+        <table cellpadding="6" style="border-collapse:collapse;border:1px solid #ddd">
+          <tr><td><b>Nome</b></td><td>${esc(nome)}</td></tr>
+          <tr><td><b>Email</b></td><td>${esc(email)}</td></tr>
+          <tr><td><b>Squadra</b></td><td>${esc(squadra) || '-'}</td></tr>
+          <tr><td><b>Messaggio</b></td><td>${esc(messaggio).replace(/\n/g, '<br>') || '-'}</td></tr>
+        </table>`
+    });
+    return back('sent=1');
+  } catch (e) {
+    console.error('[contact]', e?.message || e);
+    return back('sent=0');
+  }
+}
+
 try {
 const session = await getSessionInfo(req);
 
