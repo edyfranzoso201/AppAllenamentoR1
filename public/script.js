@@ -2901,10 +2901,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateAttendanceChart = () => {
         // Usa il picker della sezione presenze se disponibile, altrimenti quello principale
         const presenzePicker = document.getElementById('presenze-date-picker');
-        const date = (presenzePicker && presenzePicker.value) 
-                     ? presenzePicker.value 
+        const date = (presenzePicker && presenzePicker.value)
+                     ? presenzePicker.value
                      : elements.evaluationDatePicker.value;
-        if (!date) return;
+        // Fascia personalizzata Da–A: usa i due picker dedicati, la data singola non serve
+        const rangeStartEl = document.getElementById('attendance-range-start');
+        const rangeEndEl = document.getElementById('attendance-range-end');
+        const customRange = attendanceChartPeriod === 'custom';
+        if (customRange) {
+            if (!rangeStartEl || !rangeEndEl || !rangeStartEl.value || !rangeEndEl.value) return;
+        } else if (!date) return;
         
         const attendanceData = {};
         const justifiedAbsenceData = {};
@@ -2982,7 +2988,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 Object.entries(evaluations[d]).forEach(([id, ev]) => {
                     // Salta gli atleti ospiti
                     if (isGuestAthlete(id)) return;
-                    
+
+                    const presenzaValue = parseInt(ev['presenza-allenamento'], 10);
+                    if (attendanceData[id]) {
+                        if (presenzaValue > 0) {
+                            attendanceData[id].count++;
+                        } else if (presenzaValue === -1) {
+                            justifiedAbsenceData[id].count++;
+                        }
+                    }
+                });
+            });
+        } else if (customRange) {
+            const rs = rangeStartEl.value, re = rangeEndEl.value;
+            Object.keys(evaluations).filter(d => d >= rs && d <= re).forEach(d => {
+                Object.entries(evaluations[d]).forEach(([id, ev]) => {
+                    // Salta gli atleti ospiti
+                    if (isGuestAthlete(id)) return;
+
                     const presenzaValue = parseInt(ev['presenza-allenamento'], 10);
                     if (attendanceData[id]) {
                         if (presenzaValue > 0) {
@@ -3037,6 +3060,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (attendanceChartPeriod === 'annual') {
             const _ay = date.substring(0, 4);
             _pctDates = Object.keys(evaluations).filter(d => d.startsWith(_ay));
+        } else if (customRange) {
+            const _rs = rangeStartEl.value, _re = rangeEndEl.value;
+            _pctDates = Object.keys(evaluations).filter(d => d >= _rs && d <= _re);
         } else {
             const _w = getWeekRange(date);
             _pctDates = Object.keys(evaluations).filter(d => d >= _w.start && d <= _w.end);
@@ -4055,8 +4081,28 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.attendancePeriodToggle.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
             e.target.classList.add('active');
             attendanceChartPeriod = e.target.dataset.period;
+            // Fascia Da–A: mostra i picker e precompila con gli ultimi 30 giorni
+            const rangeWrap = document.getElementById('attendance-range-wrap');
+            const rangeStart = document.getElementById('attendance-range-start');
+            const rangeEnd = document.getElementById('attendance-range-end');
+            if (rangeWrap) rangeWrap.style.display = (attendanceChartPeriod === 'custom') ? 'flex' : 'none';
+            if (attendanceChartPeriod === 'custom' && rangeStart && rangeEnd && (!rangeStart.value || !rangeEnd.value)) {
+                const presenzePicker = document.getElementById('presenze-date-picker');
+                const ref = (presenzePicker && presenzePicker.value) ? new Date(presenzePicker.value) : new Date();
+                const from = new Date(ref); from.setDate(from.getDate() - 30);
+                const iso = (dt) => dt.toISOString().substring(0, 10);
+                if (!rangeEnd.value) rangeEnd.value = iso(ref);
+                if (!rangeStart.value) rangeStart.value = iso(from);
+            }
             updateAttendanceChart();
         }
+    });
+    // Ridisegna il conteggio quando cambiano le date della fascia Da–A
+    ['attendance-range-start', 'attendance-range-end'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', () => {
+            if (attendanceChartPeriod === 'custom') updateAttendanceChart();
+        });
     });
     // Listener Aggiungi Staff
     // FIX v1.5.21: funzione per impostare tipo persona nel modal
