@@ -249,7 +249,11 @@
     html.theme-light #attendance-range-start,
     body.theme-light #attendance-range-start,
     html.theme-light #attendance-range-end,
-    body.theme-light #attendance-range-end {
+    body.theme-light #attendance-range-end,
+    html.theme-light #risultati-filter-start,
+    body.theme-light #risultati-filter-start,
+    html.theme-light #risultati-filter-end,
+    body.theme-light #risultati-filter-end {
       background-color: #ccd3db !important;
       color: #000103 !important;
       border-color: #ccd3db !important;
@@ -1660,7 +1664,13 @@
                     </select>
                 </div>
                 <div class="col-md-2 col-sm-2 d-flex align-items-center">
-                    <button class="btn btn-sm btn-outline-secondary w-100" onclick="document.getElementById('risultati-filter-opponent').value='';document.getElementById('risultati-filter-location').value='';document.getElementById('risultati-filter-result').value='';window.renderMatchResults();" title="Azzera filtri"><i class="bi bi-x-circle"></i> Reset</button>
+                    <button class="btn btn-sm btn-outline-secondary w-100" onclick="document.getElementById('risultati-filter-opponent').value='';document.getElementById('risultati-filter-location').value='';document.getElementById('risultati-filter-result').value='';document.getElementById('risultati-filter-start').value='';document.getElementById('risultati-filter-end').value='';window.renderMatchResults();window.updateMatchResultsFilterDependents();" title="Azzera filtri"><i class="bi bi-x-circle"></i> Reset</button>
+                </div>
+                <div class="col-md-12 d-flex align-items-center gap-1 flex-wrap">
+                    <label for="risultati-filter-start" class="form-label mb-0 small text-nowrap">Da</label>
+                    <input type="date" id="risultati-filter-start" class="form-control form-control-sm" style="max-width:150px;" title="Data inizio">
+                    <label for="risultati-filter-end" class="form-label mb-0 small text-nowrap">A</label>
+                    <input type="date" id="risultati-filter-end" class="form-control form-control-sm" style="max-width:150px;" title="Data fine">
                 </div>
             </div>
             <div class="row" id="match-results-container">

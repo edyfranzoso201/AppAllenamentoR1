@@ -1828,6 +1828,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.renderAthletes = () => renderAthletes();
     window.renderMatchResults = () => renderMatchResults();
+    window.updateMatchResultsFilterDependents = () => {
+        renderCardsSummary();
+        renderTopScorers();
+        renderTopAssists();
+        updateMatchAnalysisChart();
+    };
 
     // ── Alert settings ────────────────────────────────────────────────────
     const loadAlertSettings = async () => {
@@ -2509,6 +2515,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const openSessionModal = (sessionData = null) => {
         elements.sessionForm.reset(); if(sessionData) { document.getElementById('sessionModalLabel').textContent = "Modifica Sessione"; document.getElementById('session-id').value = sessionData.id; document.getElementById('session-date').value = sessionData.date; document.getElementById('session-title').value = sessionData.title; document.getElementById('session-type').value = sessionData.type || ''; document.getElementById('session-time').value = sessionData.time; document.getElementById('session-location').value = sessionData.location; document.getElementById('session-goals').value = sessionData.goals; document.getElementById('session-description').value = sessionData.description; document.getElementById('session-note').value = sessionData.note || ''; elements.deleteSessionBtn.style.display = 'block'; } else { document.getElementById('sessionModalLabel').textContent = "Pianifica Sessione"; document.getElementById('session-id').value = ''; document.getElementById('session-date').valueAsDate = new Date(); elements.deleteSessionBtn.style.display = 'none'; } sessionModal.show();
     };
+    // Fascia di date Da–A condivisa da lista partite, grafico andamento, marcatori/assist e cartellini
+    const getMatchDateRangeFilter = () => {
+        const start = document.getElementById('risultati-filter-start')?.value || '';
+        const end = document.getElementById('risultati-filter-end')?.value || '';
+        return { start, end };
+    };
+    const isMatchInDateRange = (match, range) => {
+        if (!range.start && !range.end) return true;
+        const d = toLocalDateISO(match.date);
+        if (range.start && d < range.start) return false;
+        if (range.end && d > range.end) return false;
+        return true;
+    };
     const renderMatchResults = () => {
         elements.matchResultsContainer.innerHTML = '';
         const allMatches = Object.values(matchResults).sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -2519,7 +2538,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const filterOpponent = (document.getElementById('risultati-filter-opponent')?.value || '').trim().toLowerCase();
         const filterLocation = document.getElementById('risultati-filter-location')?.value || '';
         const filterResult   = document.getElementById('risultati-filter-result')?.value || '';
+        const dateRange = getMatchDateRangeFilter();
         const sortedMatches = allMatches.filter(match => {
+            if (!isMatchInDateRange(match, dateRange)) return false;
             if (filterOpponent && !(match.opponentName || '').toLowerCase().includes(filterOpponent)) return false;
             if (filterLocation && match.location !== filterLocation) return false;
             if (filterResult) {
@@ -2590,13 +2611,16 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.cardsSummaryTbody.innerHTML = '';
         // v1.5.13: aggregazione per atleta - somma TOTALE cartellini fino a reset annata
         // Raccoglie tutti i cartellini con id univoco (per matching con visuallyDeletedCards)
-        const allCards = Object.values(matchResults).flatMap((match) =>
-            match.cards.map((card, cardIndex) => ({
-                ...card,
-                date: match.date,
-                uniqueId: `${match.id}-${cardIndex}`
-            }))
-        );
+        const dateRange = getMatchDateRangeFilter();
+        const allCards = Object.values(matchResults)
+            .filter(match => isMatchInDateRange(match, dateRange))
+            .flatMap((match) =>
+                match.cards.map((card, cardIndex) => ({
+                    ...card,
+                    date: match.date,
+                    uniqueId: `${match.id}-${cardIndex}`
+                }))
+            );
         // Raggruppa per atleta, escludendo i cartellini "cancellati visivamente"
         const byAthlete = {};
         allCards.forEach(card => {
@@ -2638,7 +2662,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const renderTopScorers = () => {
         const goalCounts = {};
-        Object.values(matchResults).forEach(match => {
+        const _dateRangeScorers = getMatchDateRangeFilter();
+        Object.values(matchResults).filter(match => isMatchInDateRange(match, _dateRangeScorers)).forEach(match => {
             match.scorers.forEach(scorer => {
                 goalCounts[scorer.athleteId] = (goalCounts[scorer.athleteId] || 0) + 1;
             });
@@ -2671,7 +2696,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const renderTopAssists = () => {
         const assistCounts = {};
-        Object.values(matchResults).forEach(match => {
+        const _dateRangeAssists = getMatchDateRangeFilter();
+        Object.values(matchResults).filter(match => isMatchInDateRange(match, _dateRangeAssists)).forEach(match => {
             match.assists.forEach(assist => {
                 assistCounts[assist.athleteId] = (assistCounts[assist.athleteId] || 0) + 1;
             });
@@ -2708,7 +2734,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const period = elements.matchPeriodToggle.querySelector('.active').dataset.period;
         
         // Filtro solo le partite con risultato effettivo (esclude partite future senza risultato)
+        const _dateRangeChart = getMatchDateRangeFilter();
         let filteredMatches = Object.values(matchResults)
+            .filter(m => isMatchInDateRange(m, _dateRangeChart))
             .filter(m => {
                 // Considero una partita come "giocata" solo se almeno uno dei punteggi è definito e diverso da null
                 const myScore = m.location === 'home' ? m.homeScore : m.awayScore;
@@ -6151,6 +6179,14 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
             e.target.classList.add('active');
             updateMatchAnalysisChart();
         }
+    });
+    // Fascia Da–A: ricalcola lista partite, grafico, marcatori/assist e cartellini
+    ['risultati-filter-start', 'risultati-filter-end'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', () => {
+            renderMatchResults();
+            window.updateMatchResultsFilterDependents();
+        });
     });
     function startPolling() {
         // 5 minuti (era 5 sec = 312 comandi Redis/min → troppo costoso su Upstash free tier)
