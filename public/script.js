@@ -2768,6 +2768,26 @@ document.addEventListener('DOMContentLoaded', () => {
         renderWipeButtons();
     };
 
+    // Quando una delle due sezioni "evaluations" (Valutazioni / Presenze) cancella
+    // un'annata, l'altra select deve deselezionarla e la sua vista aggiornarsi:
+    // condividono la stessa chiave dati sul server (vedi nota tecnica nella spec).
+    window.__annataCompareSyncSibling = (originSelectId, wipedAnnataId) => {
+        const siblingSelectId = originSelectId === 'valutazioni-annata-compare-select'
+            ? 'presenze-annata-compare-select'
+            : (originSelectId === 'presenze-annata-compare-select' ? 'valutazioni-annata-compare-select' : null);
+        if (!siblingSelectId) return;
+        const siblingSelect = document.getElementById(siblingSelectId);
+        if (!siblingSelect) return;
+        Array.from(siblingSelect.options).forEach(o => { if (String(o.value) === String(wipedAnnataId)) o.selected = false; });
+        const siblingButtonsId = siblingSelectId === 'valutazioni-annata-compare-select' ? 'valutazioni-annata-wipe-buttons' : 'presenze-annata-wipe-buttons';
+        const siblingButtons = document.getElementById(siblingButtonsId);
+        if (siblingButtons) {
+            siblingButtons.querySelectorAll(`.wipe-annata-btn[data-annata-id="${wipedAnnataId}"]`).forEach(b => b.remove());
+        }
+        if (siblingSelectId === 'valutazioni-annata-compare-select' && typeof updateEvaluationCharts === 'function') updateEvaluationCharts();
+        if (siblingSelectId === 'presenze-annata-compare-select' && typeof updateAttendanceChart === 'function') updateAttendanceChart();
+    };
+
     const renderMatchResults = () => {
         elements.matchResultsContainer.innerHTML = '';
         const allMatches = Object.values(matchResults).sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -6492,6 +6512,15 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
             buttonsContainerId: 'valutazioni-annata-wipe-buttons',
             showSharedWarning: true,
             onDataChanged: () => { updateEvaluationCharts(); }
+        });
+
+        initAnnataCompareWidget({
+            category: 'evaluations',
+            sectionLabel: 'Conteggio Presenze Atleti',
+            selectId: 'presenze-annata-compare-select',
+            buttonsContainerId: 'presenze-annata-wipe-buttons',
+            showSharedWarning: true,
+            onDataChanged: () => { updateAttendanceChart(); }
         });
     });
 });
