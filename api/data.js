@@ -1134,7 +1134,51 @@ if (req.query?.action === 'season-restore' && req.method === 'POST') {
       summary[cat] = { added, skipped };
     }
 
-    return res.status(200).json({ success: true, summary, _partial: true });
+    // C. awards: sempre keyed per data con valore ARRAY di {athleteId, reason, date, ...}.
+    // Un elemento è "già presente" se stessa data + stesso athleteId + stesso reason.
+    if (categories.includes('awards')) {
+      const current = (await kv.get(`${prefix}:awards`)) || {};
+      const fromArchive = archData.awards || {};
+      let added = 0, skipped = 0;
+      for (const [date, itemsArchive] of Object.entries(fromArchive)) {
+        const list = Array.isArray(itemsArchive) ? itemsArchive : [itemsArchive];
+        if (!Array.isArray(current[date])) current[date] = [];
+        for (const item of list) {
+          if (!item || typeof item !== 'object') continue;
+          const exists = current[date].some(x =>
+            x && String(x.athleteId) === String(item.athleteId) && String(x.reason || '') === String(item.reason || '')
+          );
+          if (exists) { skipped++; continue; }
+          current[date].push(item);
+          added++;
+        }
+      }
+      await kv.set(`${prefix}:awards`, current);
+      summary.awards = { added, skipped };
+    }
+
+    // D. inventory: array su chiave separata society:<sid>:inventory:<annataId>.
+    // Un elemento è "già presente" se stesso nome+taglia (case-insensitive, trim).
+    if (categories.includes('inventory')) {
+      const sid = session.societyId || '_default';
+      const invKey = `society:${sid}:inventory:${annataId}`;
+      let current = (await kv.get(invKey)) || [];
+      if (!Array.isArray(current)) current = [];
+      const fromArchive = Array.isArray(archData.inventory) ? archData.inventory : [];
+      const norm = (s) => String(s || '').trim().toLowerCase();
+      let added = 0, skipped = 0;
+      for (const item of fromArchive) {
+        if (!item || typeof item !== 'object') continue;
+        const exists = current.some(x => norm(x.nome) === norm(item.nome) && norm(x.taglia) === norm(item.taglia));
+        if (exists) { skipped++; continue; }
+        current.push({ ...item, id: crypto.randomUUID().replace(/-/g, '').slice(0, 16) });
+        added++;
+      }
+      await kv.set(invKey, current);
+      summary.inventory = { added, skipped };
+    }
+
+    return res.status(200).json({ success: true, summary });
   } catch (e) {
     console.error('[season-restore]', e?.message || e);
     return res.status(500).json({ success: false, message: 'Errore ripristino archivio' });
