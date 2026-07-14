@@ -2630,6 +2630,68 @@ document.addEventListener('DOMContentLoaded', () => {
         if (range.end && d > range.end) return false;
         return true;
     };
+    // ── CONFRONTO/CANCELLAZIONE DATI PER ANNATA (Risultati/Valutazioni/Presenze) ──
+    // Stato: annate passate attualmente "richiamate" per ciascuna categoria, con lo
+    // snapshot dei dati ORIGINALI (stagione corrente) per poter tornare indietro.
+    const annataCompareState = {
+        matchResults: { selectedIds: [], originalSnapshot: null },
+        evaluations: { selectedIds: [], originalSnapshot: null }
+    };
+
+    const fetchAnnataListForCompare = async () => {
+        const resp = await fetch('/api/annate/list', {
+            headers: { 'X-Auth-Session': sessionStorage.getItem('gosport_session_token') || '' }
+        });
+        if (!resp.ok) return [];
+        const data = await resp.json();
+        const annateList = Array.isArray(data) ? data : (data.annate || []);
+        const currentAnnataId = sessionStorage.getItem('gosport_current_annata') || localStorage.getItem('currentAnnata');
+        return annateList.filter(a => String(a.id) !== String(currentAnnataId));
+    };
+
+    // Fetch dei dati di UNA categoria per UNA annata specifica (diversa da quella attiva).
+    const fetchCategoryForAnnata = async (annataIdToFetch, category) => {
+        const resp = await fetch('/api/data', {
+            cache: 'no-store',
+            headers: { 'X-Annata-Id': annataIdToFetch, 'X-Auth-Session': sessionStorage.getItem('gosport_session_token') || '' }
+        });
+        if (!resp.ok) throw new Error(`Errore HTTP: ${resp.status}`);
+        const data = await resp.json();
+        return data[category] || {};
+    };
+
+    // Fonde i dati di un'annata passata dentro la variabile globale della categoria.
+    // matchResults è keyed-by-id: merge diretto delle chiavi (i match id sono univoci
+    // per annata, quindi non collidono). evaluations è keyed-by-data->atleta: merge
+    // per data, poi per atleta (un atleta della stagione corrente non collide mai con
+    // un atleta di un'altra annata perché gli id atleta sono univoci per annata).
+    const mergeCategoryData = (category, incomingData) => {
+        if (category === 'matchResults') {
+            Object.assign(window.matchResults, incomingData);
+            matchResults = window.matchResults;
+        } else if (category === 'evaluations') {
+            Object.entries(incomingData).forEach(([date, byAthlete]) => {
+                if (!evaluations[date]) evaluations[date] = {};
+                Object.assign(evaluations[date], byAthlete);
+            });
+            window.evaluations = evaluations;
+        }
+    };
+
+    const restoreCategoryFromSnapshot = (category) => {
+        const state = annataCompareState[category];
+        if (!state.originalSnapshot) return;
+        if (category === 'matchResults') {
+            matchResults = JSON.parse(JSON.stringify(state.originalSnapshot));
+            window.matchResults = matchResults;
+        } else if (category === 'evaluations') {
+            evaluations = JSON.parse(JSON.stringify(state.originalSnapshot));
+            window.evaluations = evaluations;
+        }
+        state.originalSnapshot = null;
+        state.selectedIds = [];
+    };
+
     const renderMatchResults = () => {
         elements.matchResultsContainer.innerHTML = '';
         const allMatches = Object.values(matchResults).sort((a, b) => new Date(b.date) - new Date(a.date));
