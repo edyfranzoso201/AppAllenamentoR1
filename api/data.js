@@ -726,12 +726,15 @@ if (req.query?.action === 'inventory') {
     return res.status(200).json({ success: true, categories: [...INV_DEFAULT_CATS, ...cats] });
   }
 
-  // save-cat-photos: fino a 5 link foto (Google Drive o URL http) per categoria.
+  // save-cat-photos: fino a 5 link foto (Google Drive o URL http) per categoria O per kit.
   // Per società, non per annata (come le categorie). Solo admin/dirigente.
+  // Le foto di un kit sono salvate nella stessa mappa sotto la chiave "kit:<nomeKit>".
   if (req.method === 'POST' && String((req.body && req.body.act) || '') === 'save-cat-photos') {
     if (!canInventoryCat(session.role)) return res.status(403).json({ success: false, message: 'Solo admin o dirigente' });
-    const categoria = String((req.body && req.body.categoria) || '').trim().slice(0, 80);
-    if (!categoria) return res.status(400).json({ success: false, message: 'Categoria mancante' });
+    const kitName = String((req.body && req.body.kit) || '').trim().slice(0, 80);
+    const categoria = kitName ? '' : String((req.body && req.body.categoria) || '').trim().slice(0, 80);
+    const mapKey = kitName ? `kit:${kitName}` : categoria;
+    if (!mapKey) return res.status(400).json({ success: false, message: 'Categoria o kit mancante' });
     let photos = (req.body && req.body.photos) || [];
     if (!Array.isArray(photos)) photos = [];
     // Solo link http(s), max 5, deduplicati, ognuno max 600 char
@@ -742,9 +745,9 @@ if (req.query?.action === 'inventory') {
       .filter((p, i, arr) => arr.indexOf(p) === i)
       .slice(0, 5);
     const map = (await kv.get(photosKey)) || {};
-    if (photos.length) map[categoria] = photos; else delete map[categoria];
+    if (photos.length) map[mapKey] = photos; else delete map[mapKey];
     await kv.set(photosKey, map);
-    return res.status(200).json({ success: true, categoria, photos });
+    return res.status(200).json({ success: true, categoria, kit: kitName, photos });
   }
 
   // Tutte le altre operazioni richiedono annataId

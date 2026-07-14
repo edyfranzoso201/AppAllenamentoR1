@@ -6859,6 +6859,12 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
               'onclick="window.INV.kitToggleView(' + JSON.stringify(kitKey).replace(/"/g,'&quot;') + ',\'taglia\')" title="Vista per taglia">Taglia</button>' +
           '</div>';
 
+        // Foto kit (max 5 link Google Drive/URL), chiave interna "kit:<nome>"
+        var _kitPhotos = (_catPhotos && _catPhotos['kit:' + kitName]) ? _catPhotos['kit:' + kitName] : [];
+        var kitPhotosBtn = _canWrite
+          ? '<button class="btn btn-xs btn-outline-info no-print" title="Foto kit (max 5)" onclick="window.INV.openCatPhotos(' + JSON.stringify(kitName).replace(/"/g,'&quot;') + ', true)"><i class="bi bi-images"></i>' + (_kitPhotos.length ? ' ' + _kitPhotos.length : '') + '</button>'
+          : '';
+
         html += '<div class="card chart-card mb-3">' +
           '<div class="card-body p-2">' +
           '<div class="d-flex align-items-center gap-2 mb-2 flex-wrap">' +
@@ -6868,9 +6874,21 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
           (extraRows.length ? '<span class="badge bg-info text-dark" style="font-size:0.75rem;">+' + extraRows.reduce(function(s,it){ return s+(it.quantita||1);},0) + ' scorte</span>' : '') +
           mancBadge +
           toggleBtn +
+          kitPhotosBtn +
           (_canWrite ? '<button class="btn btn-xs btn-outline-warning no-print" title="Modifica kit" onclick="window.INV.editKit(' + JSON.stringify(kitName).replace(/"/g, '&quot;') + ')"><i class="bi bi-pencil-fill"></i></button>' : '') +
           (_canWrite ? '<button class="btn btn-xs btn-outline-danger no-print" title="Elimina kit" onclick="window.INV.deleteKit(' + JSON.stringify(kitName).replace(/"/g, '&quot;') + ')"><i class="bi bi-trash3-fill"></i></button>' : '') +
           '</div>';
+        if (_kitPhotos.length) {
+          html += '<div class="d-flex flex-wrap gap-2 mb-2">';
+          _kitPhotos.forEach(function(link){
+            var thumb = _driveThumb(link);
+            html += '<a href="' + esc(link) + '" target="_blank" rel="noopener" title="Apri foto" style="display:block;">' +
+              '<img src="' + esc(thumb) + '" alt="foto ' + esc(kitName) + '" loading="lazy" ' +
+              'style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid #334155;background:#0f172a;" ' +
+              'onerror="this.onerror=null;this.src=\'' + esc(link) + '\';"></a>';
+          });
+          html += '</div>';
+        }
 
         if (viewMode === 'num') {
           // ── Vista per numero: badge singoli ──
@@ -8448,8 +8466,10 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     return s;
   }
 
-  window.INV.openCatPhotos = function (cat) {
-    var existing = (_catPhotos && _catPhotos[cat]) ? _catPhotos[cat] : [];
+  // `isKit` true => `name` è un nome di kit (chiave interna "kit:<name>"), altrimenti è una categoria.
+  window.INV.openCatPhotos = function (name, isKit) {
+    var mapKey = isKit ? ('kit:' + name) : name;
+    var existing = (_catPhotos && _catPhotos[mapKey]) ? _catPhotos[mapKey] : [];
     var modal = document.getElementById('invCatPhotosModal');
     if (!modal) {
       modal = document.createElement('div');
@@ -8458,7 +8478,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
       modal.tabIndex = -1;
       modal.innerHTML =
         '<div class="modal-dialog modal-dialog-centered"><div class="modal-content" style="background:var(--bg-panel);border:1px solid #334155;color:var(--text-primary);">' +
-          '<div class="modal-header" style="border-color:#334155;"><h5 class="modal-title"><i class="bi bi-images" style="color:#38bdf8;"></i> Foto categoria <span id="invCatPhotosName"></span></h5>' +
+          '<div class="modal-header" style="border-color:#334155;"><h5 class="modal-title"><i class="bi bi-images" style="color:#38bdf8;"></i> <span id="invCatPhotosLabel">Foto categoria</span> <span id="invCatPhotosName"></span></h5>' +
           '<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>' +
           '<div class="modal-body">' +
             '<p class="small mb-2" style="color:#94a3b8;">Fino a 5 link foto (Google Drive o URL immagine). Su Drive: file condiviso, link "Chiunque abbia il link".</p>' +
@@ -8471,7 +8491,8 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         '</div></div>';
       document.body.appendChild(modal);
     }
-    document.getElementById('invCatPhotosName').textContent = '"' + cat + '"';
+    document.getElementById('invCatPhotosLabel').textContent = isKit ? 'Foto kit' : 'Foto categoria';
+    document.getElementById('invCatPhotosName').textContent = '"' + name + '"';
     var rowsEl = document.getElementById('invCatPhotosRows');
     rowsEl.innerHTML = '';
     for (var i = 0; i < 5; i++) {
@@ -8482,23 +8503,25 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
         'value="' + esc(val) + '" style="background:var(--bg-blue);color:var(--text-primary);border-color:#475569;">';
       rowsEl.appendChild(row);
     }
-    document.getElementById('invCatPhotosSaveBtn').onclick = function () { window.INV.saveCatPhotos(cat); };
+    document.getElementById('invCatPhotosSaveBtn').onclick = function () { window.INV.saveCatPhotos(name, isKit); };
     bootstrap.Modal.getOrCreateInstance(modal).show();
   };
 
-  window.INV.saveCatPhotos = async function (cat) {
+  window.INV.saveCatPhotos = async function (name, isKit) {
+    var mapKey = isKit ? ('kit:' + name) : name;
     var inputs = document.querySelectorAll('#invCatPhotosRows .inv-cat-photo-input');
     var photos = [];
     inputs.forEach(function(inp){ var v = inp.value.trim(); if (v) photos.push(v); });
     try {
+      var body = isKit ? { act: 'save-cat-photos', kit: name, photos: photos } : { act: 'save-cat-photos', categoria: name, photos: photos };
       var r = await fetch('/api/data?action=inventory', {
         method: 'POST',
         headers: authHeaders(),
-        body: JSON.stringify({ act: 'save-cat-photos', categoria: cat, photos: photos })
+        body: JSON.stringify(body)
       });
       var d = await r.json();
       if (d && d.success) {
-        _catPhotos[cat] = d.photos || [];
+        _catPhotos[mapKey] = d.photos || [];
         bootstrap.Modal.getOrCreateInstance(document.getElementById('invCatPhotosModal')).hide();
         renderBody();
       } else {
