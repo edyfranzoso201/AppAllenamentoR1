@@ -2142,7 +2142,7 @@
             <div class="col-12 mt-5" id="inv-section">
                 <div class="d-flex align-items-center gap-2 mb-2 flex-wrap" style="cursor:pointer;" onclick="window.INV.toggleSection()">
                     <h4 class="mb-0" style="color:#34d399;"><i class="bi bi-clipboard2-check-fill"></i> Inventario Fine Annata</h4>
-                    <i id="inv-chevron" class="bi bi-chevron-down" style="color:#34d399;font-size:1rem;transition:transform 0.2s;transform:rotate(180deg);"></i>
+                    <i id="inv-chevron" class="bi bi-chevron-down" style="color:#34d399;font-size:1rem;transition:transform 0.2s;transform:rotate(0deg);"></i>
                     <span id="inv-summary" style="color:#94a3b8;font-size:0.8rem;margin-left:4px;"></span>
                 </div>
                 <div id="inv-collapsible">
@@ -2177,10 +2177,10 @@
             <div class="col-12 mt-4" id="wishlist-section" style="display:none;">
                 <div class="d-flex align-items-center gap-2 mb-2 flex-wrap" style="cursor:pointer;" onclick="window.WL.toggleSection()">
                     <h4 class="mb-0" style="color:#f59e0b;"><i class="bi bi-cart-heart-fill"></i> Materiale Mancante Richiesto</h4>
-                    <i id="wl-chevron" class="bi bi-chevron-down" style="color:#f59e0b;font-size:1rem;transition:transform 0.2s;transform:rotate(180deg);"></i>
+                    <i id="wl-chevron" class="bi bi-chevron-down" style="color:#f59e0b;font-size:1rem;transition:transform 0.2s;transform:rotate(0deg);"></i>
                     <span id="wl-summary" style="color:#94a3b8;font-size:0.8rem;margin-left:4px;"></span>
                 </div>
-                <div id="wl-collapsible">
+                <div id="wl-collapsible" style="display:none;">
                     <div class="d-flex align-items-center gap-2 mb-3 flex-wrap no-print" onclick="event.stopPropagation()">
                         <button id="wl-add-btn" class="btn btn-sm btn-warning no-print" onclick="window.WL.openForm(null)" style="display:none;">
                             <i class="bi bi-plus-circle-fill"></i> Aggiungi richiesta
@@ -6709,7 +6709,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     var chev = document.getElementById('inv-chevron');
     if (!col || !chev) return;
     col.style.display  = _invOpen ? '' : 'none';
-    chev.style.transform = _invOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+    chev.style.transform = _invOpen ? 'rotate(180deg)' : 'rotate(0deg)';
   }
 
   window.INV.toggleSection = function () {
@@ -8541,7 +8541,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   var _wlItems  = [];
   var _wlCats   = [];
   var _wlRole   = '';
-  var _wlOpen   = true;
+  var _wlOpen   = false;
 
   // Wishlist edit = edit generale (chi scrive può anche cancellare): admin, coach_l1,
   // coach_l2, dirigente_l1/l2, societa_l1. Confronto con ruolo SENZA spazi ma CON underscore.
