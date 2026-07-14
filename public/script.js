@@ -2788,6 +2788,64 @@ document.addEventListener('DOMContentLoaded', () => {
         if (siblingSelectId === 'presenze-annata-compare-select' && typeof updateAttendanceChart === 'function') updateAttendanceChart();
     };
 
+    // Apre il modal di conferma cancellazione (creato in index.html, id wipeAnnataModal).
+    // config: { category, sectionLabel, annataId, annataNome, showSharedWarning, onWiped }
+    const openWipeAnnataModal = (config) => {
+        const modalEl = document.getElementById('wipeAnnataModal');
+        const textEl = document.getElementById('wipeAnnataModalText');
+        const warningEl = document.getElementById('wipeAnnataSharedWarning');
+        const warningNameEl = document.getElementById('wipeAnnataSharedWarningName');
+        const input = document.getElementById('wipeAnnataConfirmInput');
+        const confirmBtn = document.getElementById('wipeAnnataConfirmBtn');
+        if (!modalEl || !textEl || !input || !confirmBtn) return;
+
+        textEl.textContent = `Stai per cancellare TUTTI i dati di "${config.sectionLabel}" per l'annata "${config.annataNome}". Azione irreversibile. Scrivi "${config.annataNome}" per confermare.`;
+        if (config.showSharedWarning) {
+            warningNameEl.textContent = config.annataNome;
+            warningEl.style.display = '';
+        } else {
+            warningEl.style.display = 'none';
+        }
+        input.value = '';
+        confirmBtn.disabled = true;
+
+        const onInput = () => { confirmBtn.disabled = input.value.trim() !== config.annataNome; };
+        input.oninput = onInput;
+
+        const onConfirm = async () => {
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Cancellazione in corso...';
+            try {
+                const resp = await fetch('/api/data?action=wipe-annata-category', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Auth-Session': sessionStorage.getItem('gosport_session_token') || '',
+                        'X-Annata-Id': sessionStorage.getItem('gosport_current_annata') || localStorage.getItem('currentAnnata') || ''
+                    },
+                    body: JSON.stringify({ targetAnnataId: config.annataId, category: config.category })
+                });
+                const data = await resp.json();
+                if (!resp.ok || !data.success) {
+                    alert(data.message || 'Errore durante la cancellazione.');
+                    return;
+                }
+                bootstrap.Modal.getInstance(modalEl)?.hide();
+                alert(`✅ ${data.deletedCount} elementi eliminati da "${config.annataNome}".`);
+                config.onWiped();
+            } catch (e) {
+                console.error('[wipeAnnata]', e);
+                alert('Errore di rete durante la cancellazione.');
+            } finally {
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Cancella definitivamente';
+            }
+        };
+        confirmBtn.onclick = onConfirm;
+
+        new bootstrap.Modal(modalEl).show();
+    };
+
     const renderMatchResults = () => {
         elements.matchResultsContainer.innerHTML = '';
         const allMatches = Object.values(matchResults).sort((a, b) => new Date(b.date) - new Date(a.date));
