@@ -18,6 +18,17 @@ function toLocalDateISO(dateInput) {
     const localDate = new Date(d.getTime() - (offset * 60 * 1000));
     return localDate.toISOString().split('T')[0];
 }
+// Stagione calcistica: 01 Agosto -> 31 Luglio. "2026-03-15" -> "2025-26".
+function seasonOfDate(isoDateOrDate) {
+    const iso = typeof isoDateOrDate === 'string' ? isoDateOrDate : toLocalDateISO(isoDateOrDate);
+    const y = parseInt(iso.substring(0, 4), 10);
+    const m = parseInt(iso.substring(5, 7), 10);
+    const startYear = m >= 8 ? y : y - 1;
+    return `${startYear}-${String((startYear + 1) % 100).padStart(2, '0')}`;
+}
+function currentSeasonKey() {
+    return seasonOfDate(toLocalDateISO(new Date()));
+}
 function generateId() {
     return crypto.randomUUID();
 }
@@ -2630,178 +2641,49 @@ document.addEventListener('DOMContentLoaded', () => {
         if (range.end && d > range.end) return false;
         return true;
     };
-    // ── CONFRONTO/CANCELLAZIONE DATI PER ANNATA (Risultati/Valutazioni/Presenze) ──
-    // Stato: annate passate attualmente "richiamate" per ciascuna categoria, con lo
-    // snapshot dei dati ORIGINALI (stagione corrente) per poter tornare indietro.
-    const annataCompareState = {
-        matchResults: { selectedIds: [], originalSnapshot: null },
-        evaluations: { selectedIds: [], originalSnapshot: null }
+    // ── CONFRONTO/CANCELLAZIONE DATI PER STAGIONE CALCISTICA (Ago-Lug) ──
+    // Stato: stagioni PASSATE attualmente aggiunte al confronto, per sezione.
+    // Puro filtro client-side sui dati gia' caricati per l'annata attiva:
+    // nessuna fetch aggiuntiva, nessun mescolamento fra annate-squadra diverse.
+    const seasonCompareState = {
+        matchResults: { selectedSeasons: [] },
+        evaluations: { selectedSeasons: [] }
     };
 
-    const fetchAnnataListForCompare = async () => {
-        const resp = await fetch('/api/annate/list', {
-            headers: { 'X-Auth-Session': sessionStorage.getItem('gosport_session_token') || '' }
-        });
-        if (!resp.ok) return [];
-        const data = await resp.json();
-        const annateList = Array.isArray(data) ? data : (data.annate || []);
-        const currentAnnataId = sessionStorage.getItem('gosport_current_annata') || localStorage.getItem('currentAnnata');
-        return annateList.filter(a => String(a.id) !== String(currentAnnataId));
+    // Elenca le stagioni distinte presenti nei dati di una categoria, per l'annata
+    // attiva, escludendo quella corrente. Ordinate dalla piu' recente.
+    const listPastSeasons = (category) => {
+        const source = category === 'matchResults' ? matchResults : evaluations;
+        const dates = category === 'matchResults'
+            ? Object.values(source).map(m => m.date)
+            : Object.keys(source);
+        const seasons = new Set(dates.filter(Boolean).map(seasonOfDate));
+        seasons.delete(currentSeasonKey());
+        return Array.from(seasons).sort().reverse();
     };
 
-    // Fetch dei dati di UNA categoria per UNA annata specifica (diversa da quella attiva).
-    const fetchCategoryForAnnata = async (annataIdToFetch, category) => {
-        const resp = await fetch('/api/data', {
-            cache: 'no-store',
-            headers: { 'X-Annata-Id': annataIdToFetch, 'X-Auth-Session': sessionStorage.getItem('gosport_session_token') || '' }
-        });
-        if (!resp.ok) throw new Error(`Errore HTTP: ${resp.status}`);
-        const data = await resp.json();
-        return data[category] || {};
-    };
-
-    // Fonde i dati di un'annata passata dentro la variabile globale della categoria.
-    // matchResults è keyed-by-id: merge diretto delle chiavi (i match id sono univoci
-    // per annata, quindi non collidono). evaluations è keyed-by-data->atleta: merge
-    // per data, poi per atleta (un atleta della stagione corrente non collide mai con
-    // un atleta di un'altra annata perché gli id atleta sono univoci per annata).
-    const mergeCategoryData = (category, incomingData) => {
-        if (category === 'matchResults') {
-            Object.assign(window.matchResults, incomingData);
-            matchResults = window.matchResults;
-        } else if (category === 'evaluations') {
-            Object.entries(incomingData).forEach(([date, byAthlete]) => {
-                if (!evaluations[date]) evaluations[date] = {};
-                Object.assign(evaluations[date], byAthlete);
-            });
-            window.evaluations = evaluations;
-        }
-    };
-
-    const restoreCategoryFromSnapshot = (category) => {
-        const state = annataCompareState[category];
-        if (!state.originalSnapshot) return;
-        if (category === 'matchResults') {
-            matchResults = JSON.parse(JSON.stringify(state.originalSnapshot));
-            window.matchResults = matchResults;
-        } else if (category === 'evaluations') {
-            evaluations = JSON.parse(JSON.stringify(state.originalSnapshot));
-            window.evaluations = evaluations;
-        }
-        state.originalSnapshot = null;
-        state.selectedIds = [];
-    };
-
-    // Monta un widget "confronto annata" per UNA sezione. `config`:
-    //   category: 'matchResults' | 'evaluations'
-    //   sectionLabel: es. "Risultati Partite"
-    //   selectId: id della <select> nel DOM
-    //   buttonsContainerId: id del div dove appendere i pulsanti di cancellazione
-    //   onDataChanged: callback chiamata dopo merge/restore (per ri-renderizzare la sezione)
-    //   showSharedWarning: true per Valutazioni/Presenze (evaluations condivisa)
-    const initAnnataCompareWidget = async (config) => {
-        const select = document.getElementById(config.selectId);
-        const buttonsContainer = document.getElementById(config.buttonsContainerId);
-        if (!select || !buttonsContainer) return;
-
-        const annateOptions = await fetchAnnataListForCompare();
-        select.innerHTML = annateOptions.map(a => `<option value="${escapeHtml(a.id)}" data-nome="${escapeHtml(a.nome || a.id)}">${escapeHtml(a.nome || a.id)}</option>`).join('');
-
-        const renderWipeButtons = () => {
-            const state = annataCompareState[config.category];
-            const isAdmin = sessionStorage.getItem('gosport_user_role') === 'admin';
-            buttonsContainer.innerHTML = state.selectedIds.map(id => {
-                const opt = annateOptions.find(a => String(a.id) === String(id));
-                const nome = opt ? (opt.nome || opt.id) : id;
-                if (!isAdmin) return '';
-                return `<button type="button" class="btn btn-sm btn-outline-danger wipe-annata-btn" data-annata-id="${escapeHtml(id)}" data-nome="${escapeHtml(nome)}">🗑️ Cancella dati ${escapeHtml(nome)}</button>`;
-            }).join('');
-            buttonsContainer.querySelectorAll('.wipe-annata-btn').forEach(btn => {
-                btn.addEventListener('click', () => openWipeAnnataModal({
-                    category: config.category,
-                    sectionLabel: config.sectionLabel,
-                    annataId: btn.dataset.annataId,
-                    annataNome: btn.dataset.nome,
-                    showSharedWarning: !!config.showSharedWarning,
-                    onWiped: () => {
-                        const st = annataCompareState[config.category];
-                        st.selectedIds = st.selectedIds.filter(id => String(id) !== String(btn.dataset.annataId));
-                        if (st.selectedIds.length === 0) restoreCategoryFromSnapshot(config.category);
-                        Array.from(select.options).forEach(o => { if (String(o.value) === String(btn.dataset.annataId)) o.selected = false; });
-                        renderWipeButtons();
-                        config.onDataChanged();
-                        // Se la categoria è evaluations, invalida anche l'ALTRA sezione (Presenze/Valutazioni).
-                        if (config.category === 'evaluations' && typeof window.__annataCompareSyncSibling === 'function') {
-                            window.__annataCompareSyncSibling(config.selectId, btn.dataset.annataId);
-                        }
-                    }
-                }));
-            });
-        };
-
-        select.addEventListener('change', async () => {
-            const state = annataCompareState[config.category];
-            const chosenIds = Array.from(select.selectedOptions).map(o => o.value);
-            const newlySelected = chosenIds.filter(id => !state.selectedIds.includes(id));
-            const deselected = state.selectedIds.filter(id => !chosenIds.includes(id));
-
-            if (deselected.length > 0 && chosenIds.length === 0) {
-                restoreCategoryFromSnapshot(config.category);
-            }
-            if (!state.originalSnapshot && newlySelected.length > 0) {
-                state.originalSnapshot = JSON.parse(JSON.stringify(config.category === 'matchResults' ? matchResults : evaluations));
-            }
-            for (const id of newlySelected) {
-                try {
-                    const incoming = await fetchCategoryForAnnata(id, config.category);
-                    mergeCategoryData(config.category, incoming);
-                } catch (e) {
-                    console.error('[annataCompare] errore fetch', e);
-                    alert('Errore nel caricamento dei dati dell\'annata selezionata.');
-                }
-            }
-            state.selectedIds = chosenIds;
-            renderWipeButtons();
-            config.onDataChanged();
-        });
-
-        renderWipeButtons();
-    };
-
-    // Quando una delle due sezioni "evaluations" (Valutazioni / Presenze) cancella
-    // un'annata, l'altra select deve deselezionarla e la sua vista aggiornarsi:
-    // condividono la stessa chiave dati sul server (vedi nota tecnica nella spec).
-    window.__annataCompareSyncSibling = (originSelectId, wipedAnnataId) => {
-        const siblingSelectId = originSelectId === 'valutazioni-annata-compare-select'
-            ? 'presenze-annata-compare-select'
-            : (originSelectId === 'presenze-annata-compare-select' ? 'valutazioni-annata-compare-select' : null);
-        if (!siblingSelectId) return;
-        const siblingSelect = document.getElementById(siblingSelectId);
-        if (!siblingSelect) return;
-        Array.from(siblingSelect.options).forEach(o => { if (String(o.value) === String(wipedAnnataId)) o.selected = false; });
-        const siblingButtonsId = siblingSelectId === 'valutazioni-annata-compare-select' ? 'valutazioni-annata-wipe-buttons' : 'presenze-annata-wipe-buttons';
-        const siblingButtons = document.getElementById(siblingButtonsId);
-        if (siblingButtons) {
-            siblingButtons.querySelectorAll(`.wipe-annata-btn[data-annata-id="${wipedAnnataId}"]`).forEach(b => b.remove());
-        }
-        if (siblingSelectId === 'valutazioni-annata-compare-select' && typeof updateEvaluationCharts === 'function') updateEvaluationCharts();
-        if (siblingSelectId === 'presenze-annata-compare-select' && typeof updateAttendanceChart === 'function') updateAttendanceChart();
-    };
-
-    // Apre il modal di conferma cancellazione (creato in index.html, id wipeAnnataModal).
-    // config: { category, sectionLabel, annataId, annataNome, showSharedWarning, onWiped }
-    const openWipeAnnataModal = (config) => {
-        const modalEl = document.getElementById('wipeAnnataModal');
-        const textEl = document.getElementById('wipeAnnataModalText');
-        const warningEl = document.getElementById('wipeAnnataSharedWarning');
-        const warningNameEl = document.getElementById('wipeAnnataSharedWarningName');
-        const input = document.getElementById('wipeAnnataConfirmInput');
-        const confirmBtn = document.getElementById('wipeAnnataConfirmBtn');
+    // Apre il modal di conferma cancellazione per UNA stagione passata.
+    // config: { category, sectionLabel, seasonKey, showSharedWarning, onWiped }
+    const openWipeSeasonModal = (config) => {
+        const modalEl = document.getElementById('wipeSeasonModal');
+        const textEl = document.getElementById('wipeSeasonModalText');
+        const warningEl = document.getElementById('wipeSeasonSharedWarning');
+        const warningNameEl = document.getElementById('wipeSeasonSharedWarningName');
+        const input = document.getElementById('wipeSeasonConfirmInput');
+        const confirmBtn = document.getElementById('wipeSeasonConfirmBtn');
         if (!modalEl || !textEl || !input || !confirmBtn) return;
 
-        textEl.textContent = `Stai per cancellare TUTTI i dati di "${config.sectionLabel}" per l'annata "${config.annataNome}". Azione irreversibile. Scrivi "${config.annataNome}" per confermare.`;
+        const source = config.category === 'matchResults' ? matchResults : evaluations;
+        const dates = config.category === 'matchResults'
+            ? Object.values(source).map(m => m.date)
+            : Object.keys(source);
+        const count = config.category === 'matchResults'
+            ? dates.filter(d => seasonOfDate(d) === config.seasonKey).length
+            : Object.entries(source).reduce((sum, [d, byAthlete]) => sum + (seasonOfDate(d) === config.seasonKey ? Object.keys(byAthlete || {}).length : 0), 0);
+
+        textEl.textContent = `Stai per cancellare TUTTI i dati di "${config.sectionLabel}" per la stagione "${config.seasonKey}" (${count} elementi). Azione irreversibile. Scrivi "${config.seasonKey}" per confermare.`;
         if (config.showSharedWarning) {
-            warningNameEl.textContent = config.annataNome;
+            warningNameEl.textContent = config.seasonKey;
             warningEl.style.display = '';
         } else {
             warningEl.style.display = 'none';
@@ -2809,21 +2691,17 @@ document.addEventListener('DOMContentLoaded', () => {
         input.value = '';
         confirmBtn.disabled = true;
 
-        const onInput = () => { confirmBtn.disabled = input.value.trim() !== config.annataNome; };
+        const onInput = () => { confirmBtn.disabled = input.value.trim() !== config.seasonKey; };
         input.oninput = onInput;
 
         const onConfirm = async () => {
             confirmBtn.disabled = true;
             confirmBtn.textContent = 'Cancellazione in corso...';
             try {
-                const resp = await fetch('/api/data?action=wipe-annata-category', {
+                const resp = await fetch('/api/data?action=wipe-season', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Auth-Session': sessionStorage.getItem('gosport_session_token') || '',
-                        'X-Annata-Id': sessionStorage.getItem('gosport_current_annata') || localStorage.getItem('currentAnnata') || ''
-                    },
-                    body: JSON.stringify({ targetAnnataId: config.annataId, category: config.category })
+                    headers: _seasonHeaders(true),
+                    body: JSON.stringify({ category: config.category, seasonKey: config.seasonKey })
                 });
                 const data = await resp.json();
                 if (!resp.ok || !data.success) {
@@ -2831,10 +2709,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 bootstrap.Modal.getInstance(modalEl)?.hide();
-                alert(`✅ ${data.deletedCount} elementi eliminati da "${config.annataNome}".`);
+                alert(`✅ ${data.deletedCount} elementi eliminati dalla stagione "${config.seasonKey}".`);
                 config.onWiped();
             } catch (e) {
-                console.error('[wipeAnnata]', e);
+                console.error('[wipeSeason]', e);
                 alert('Errore di rete durante la cancellazione.');
             } finally {
                 confirmBtn.disabled = false;
@@ -2843,9 +2721,85 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         confirmBtn.onclick = onConfirm;
 
-        new bootstrap.Modal(modalEl).show();
+        (bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl)).show();
     };
 
+    // Monta un widget "confronto stagione calcistica" per UNA sezione. `config`:
+    //   category: 'matchResults' | 'evaluations'
+    //   sectionLabel: es. "Risultati Partite"
+    //   toggleBtnId, menuId, wipeButtonsContainerId, currentLabelId: id nel DOM
+    //   onDataChanged: callback per ri-renderizzare la sezione dopo un cambio selezione
+    //   showSharedWarning: true per Valutazioni/Presenze
+    const initSeasonCompareWidget = (config) => {
+        const toggleBtn = document.getElementById(config.toggleBtnId);
+        const menu = document.getElementById(config.menuId);
+        const wipeButtons = document.getElementById(config.wipeButtonsContainerId);
+        const currentLabel = document.getElementById(config.currentLabelId);
+        if (!toggleBtn || !menu || !wipeButtons) return;
+
+        const refresh = () => {
+            if (currentLabel) currentLabel.textContent = `Stagione ${currentSeasonKey()}`;
+            const pastSeasons = listPastSeasons(config.category);
+            toggleBtn.style.display = pastSeasons.length > 0 ? '' : 'none';
+
+            const state = seasonCompareState[config.category];
+            menu.innerHTML = pastSeasons.map(s => `
+                <label class="d-flex align-items-center gap-1 mb-1 small">
+                    <input type="checkbox" class="season-compare-checkbox" value="${escapeHtml(s)}" ${state.selectedSeasons.includes(s) ? 'checked' : ''}>
+                    ${escapeHtml(s)}
+                </label>
+            `).join('');
+            menu.querySelectorAll('.season-compare-checkbox').forEach(cb => {
+                cb.addEventListener('change', () => {
+                    const season = cb.value;
+                    if (cb.checked) {
+                        if (!state.selectedSeasons.includes(season)) state.selectedSeasons.push(season);
+                    } else {
+                        state.selectedSeasons = state.selectedSeasons.filter(s => s !== season);
+                    }
+                    renderWipeButtons();
+                    config.onDataChanged();
+                    if (config.category === 'evaluations' && typeof window.__seasonCompareRefreshSiblingWidget === 'function') {
+                        window.__seasonCompareRefreshSiblingWidget(config.toggleBtnId);
+                    }
+                });
+            });
+
+            renderWipeButtons();
+        };
+
+        const renderWipeButtons = () => {
+            const state = seasonCompareState[config.category];
+            const isAdmin = sessionStorage.getItem('gosport_user_role') === 'admin';
+            wipeButtons.innerHTML = !isAdmin ? '' : state.selectedSeasons.map(season => `
+                <button type="button" class="btn btn-sm btn-outline-danger wipe-season-btn" data-season="${escapeHtml(season)}">🗑️ Cancella dati ${escapeHtml(season)}</button>
+            `).join('');
+            wipeButtons.querySelectorAll('.wipe-season-btn').forEach(btn => {
+                btn.addEventListener('click', () => openWipeSeasonModal({
+                    category: config.category,
+                    sectionLabel: config.sectionLabel,
+                    seasonKey: btn.dataset.season,
+                    showSharedWarning: !!config.showSharedWarning,
+                    onWiped: () => {
+                        const st = seasonCompareState[config.category];
+                        st.selectedSeasons = st.selectedSeasons.filter(s => s !== btn.dataset.season);
+                        refresh();
+                        config.onDataChanged();
+                        if (config.category === 'evaluations' && typeof window.__seasonCompareSyncSibling === 'function') {
+                            window.__seasonCompareSyncSibling(config.category, btn.dataset.season);
+                        }
+                    }
+                }));
+            });
+        };
+
+        toggleBtn.addEventListener('click', () => {
+            menu.style.display = menu.style.display === 'none' ? '' : 'none';
+        });
+
+        refresh();
+        return refresh;
+    };
     const renderMatchResults = () => {
         elements.matchResultsContainer.innerHTML = '';
         const allMatches = Object.values(matchResults).sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -2857,7 +2811,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const filterLocation = document.getElementById('risultati-filter-location')?.value || '';
         const filterResult   = document.getElementById('risultati-filter-result')?.value || '';
         const dateRange = getMatchDateRangeFilter();
+        const activeSeasons = seasonCompareState.matchResults.selectedSeasons.length > 0
+            ? [currentSeasonKey(), ...seasonCompareState.matchResults.selectedSeasons]
+            : null; // null = nessun confronto attivo, si applica comunque il default stagione corrente sotto
         const sortedMatches = allMatches.filter(match => {
+            const matchSeason = seasonOfDate(match.date);
+            if (activeSeasons) {
+                if (!activeSeasons.includes(matchSeason)) return false;
+            } else if (matchSeason !== currentSeasonKey()) {
+                return false;
+            }
             if (!isMatchInDateRange(match, dateRange)) return false;
             if (filterOpponent && !(match.opponentName || '').toLowerCase().includes(filterOpponent)) return false;
             if (filterLocation && match.location !== filterLocation) return false;
@@ -2879,6 +2842,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         sortedMatches.forEach(match => {
+            const matchSeasonBadge = seasonOfDate(match.date) !== currentSeasonKey()
+                ? `<span class="badge bg-secondary ms-1">${escapeHtml(seasonOfDate(match.date))}</span>`
+                : '';
             const myTeamName = getMyTeamName();
             const homeTeamName = match.location === 'home' ? myTeamName : match.opponentName;
             const awayTeamName = match.location === 'away' ? myTeamName : match.opponentName;
@@ -2907,7 +2873,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="card h-100 match-result-item ${cardClass}" data-match-id="${match.id}" style="cursor: pointer;">
                     <div class="card-body p-2">
                         <div class="d-flex justify-content-between">
-                            <small class="text-muted">${new Date(match.date).toLocaleDateString('it-IT', {day: '2-digit', month: 'short', year: 'numeric'})}</small>
+                            <small class="text-muted">${new Date(match.date).toLocaleDateString('it-IT', {day: '2-digit', month: 'short', year: 'numeric'})}${matchSeasonBadge}</small>
                             <a href="#" class="no-print edit-match-btn" data-match-id="${match.id}"><i class="bi bi-pencil-fill"></i></a>
                         </div>
                         <div> ${homeTeamName} vs ${awayTeamName} <strong class="match-score ms-2">${match.homeScore ?? ''} - ${match.awayScore ?? ''}</strong></div>
@@ -3137,17 +3103,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateEvaluationCharts = () => {
         const date = elements.evaluationDatePicker.value;
         if (!date) return;
+        const seasonsToRender = [currentSeasonKey(), ...seasonCompareState.evaluations.selectedSeasons];
+        const seasonColors = ['rgba(22, 163, 74, 1)', 'rgba(100, 116, 139, 1)', 'rgba(59, 130, 246, 1)', 'rgba(217, 119, 6, 1)'];
+        const seasonBg = ['rgba(22, 163, 74, 0.2)', 'rgba(100, 116, 139, 0.2)', 'rgba(59, 130, 246, 0.2)', 'rgba(217, 119, 6, 0.2)'];
+
         const last7Days = Array.from({length: 7}, (_, i) => toLocalDateISO(new Date(Date.now() - i * 864e5))).reverse();
-        const teamDailyAvgScores = last7Days.map(d => {
-            let total = 0, count = 0;
-            if (evaluations[d]) {
-                Object.values(evaluations[d]).forEach(ev => {
-                    total += calculateAthleteScore(ev);
-                    count++;
-                });
-            }
-            return count > 0 ? (total / count).toFixed(2) : 0;
+        const dailyTeamDatasets = seasonsToRender.map((season, idx) => {
+            const scores = last7Days.map(d => {
+                if (seasonOfDate(d) !== season) return null;
+                let total = 0, count = 0;
+                if (evaluations[d]) {
+                    Object.values(evaluations[d]).forEach(ev => { total += calculateAthleteScore(ev); count++; });
+                }
+                return count > 0 ? (total / count).toFixed(2) : 0;
+            });
+            return {
+                label: season === currentSeasonKey() ? 'Punteggio Medio' : `Punteggio Medio ${season}`,
+                data: scores,
+                borderColor: seasonColors[idx % seasonColors.length],
+                backgroundColor: seasonBg[idx % seasonBg.length],
+                tension: 0.3
+            };
         });
+
         if(chartInstances.dailyTeam) chartInstances.dailyTeam.destroy();
         const _dailyTeamCanvas = document.getElementById('dailyTeamChart');
         if (!_dailyTeamCanvas) return;
@@ -3155,13 +3133,7 @@ document.addEventListener('DOMContentLoaded', () => {
             type: 'line',
             data: {
                 labels: last7Days.map(d => new Date(d).toLocaleDateString('it-IT', {day:'2-digit', month:'short'})),
-                datasets: [{
-                    label: 'Punteggio Medio',
-                    data: teamDailyAvgScores,
-                    borderColor: 'rgba(22, 163, 74, 1)',
-                    backgroundColor: 'rgba(22, 163, 74, 0.2)',
-                    tension: 0.3
-                }]
+                datasets: dailyTeamDatasets
             },
             options: {
                 scales: {
@@ -3171,66 +3143,77 @@ document.addEventListener('DOMContentLoaded', () => {
                 plugins: { legend: { labels: { color: _chartTickColor() } } }
             }
         });
-        const scores = {};
-        athletes.forEach(a => scores[String(a.id)] = { name: a.name, score: 0 });
-        if (comparisonChartPeriod === 'daily') {
-            if(evaluations[date]) {
-                Object.entries(evaluations[date]).forEach(([id, ev]) => {
-                    if(scores[id]) scores[id].score += calculateAthleteScore(ev);
-                });
+
+        const computeScoresForSeason = (season) => {
+            const scores = {};
+            athletes.forEach(a => scores[String(a.id)] = { name: a.name, score: 0 });
+            const datesInSeasonAndPeriod = (allDatesFilter) => Object.keys(evaluations)
+                .filter(d => seasonOfDate(d) === season)
+                .filter(allDatesFilter);
+            let relevantDates;
+            if (comparisonChartPeriod === 'daily') {
+                relevantDates = seasonOfDate(date) === season ? datesInSeasonAndPeriod(d => d === date) : [];
+            } else if (comparisonChartPeriod === 'monthly') {
+                const month = date.substring(5, 7);
+                relevantDates = datesInSeasonAndPeriod(d => d.substring(5, 7) === month);
+            } else if (comparisonChartPeriod === 'semester') {
+                // NB: semesterEndMonth e' SEMPRE '12', anche per il secondo semestre (luglio-dicembre):
+                // e' un limite noto e preesistente (identico in updateAttendanceChart, riga ~3293),
+                // per cui il filtro "semestrale" copre in pratica l'intero anno solare invece
+                // di una sola meta'. Non va corretto qui da solo: se lo si sistema, farlo in
+                // ENTRAMBE le funzioni, altrimenti Valutazioni e Presenze mostrerebbero range
+                // diversi per la stessa selezione "Semestrale" sulla stagione corrente.
+                const year = date.substring(0, 4);
+                const month = parseInt(date.substring(5, 7), 10);
+                const semesterStartMonth = month <= 6 ? '01' : '07';
+                const semesterEndMonth = '12';
+                const startDate = `${year}-${semesterStartMonth}-01`;
+                const endDate = `${year}-${semesterEndMonth}-31`;
+                relevantDates = datesInSeasonAndPeriod(d => d >= startDate && d <= endDate);
+            } else if (comparisonChartPeriod === 'annual') {
+                relevantDates = datesInSeasonAndPeriod(() => true);
+            } else {
+                const week = getWeekRange(date);
+                // Per stagioni passate non esiste una "settimana equivalente" calcolata
+                // automaticamente: nessun dato, limite noto e accettato (vedi piano Task 6).
+                relevantDates = seasonOfDate(date) === season
+                    ? datesInSeasonAndPeriod(d => d >= week.start && d <= week.end)
+                    : [];
             }
-        } else if (comparisonChartPeriod === 'monthly') {
-            const month = date.substring(0, 7);
-            Object.keys(evaluations).filter(d => d.startsWith(month)).forEach(d => {
+            relevantDates.forEach(d => {
                 Object.entries(evaluations[d]).forEach(([id, ev]) => {
-                    if(scores[id]) scores[id].score += calculateAthleteScore(ev);
+                    if (scores[id]) scores[id].score += calculateAthleteScore(ev);
                 });
             });
-        } else if (comparisonChartPeriod === 'semester') {
-            const year = date.substring(0, 4);
-            const month = parseInt(date.substring(5, 7), 10);
-            const semesterStartMonth = month <= 6 ? '01' : '07';
-            const semesterEndMonth = month <= 6 ? '12' : '12';
-            const startDate = `${year}-${semesterStartMonth}-01`;
-            const endDate = `${year}-${semesterEndMonth}-31`;
-            Object.keys(evaluations).filter(d => d >= startDate && d <= endDate).forEach(d => {
-                Object.entries(evaluations[d]).forEach(([id, ev]) => {
-                    if(scores[id]) scores[id].score += calculateAthleteScore(ev);
-                });
-            });
-        } else if (comparisonChartPeriod === 'annual') {
-            const year = date.substring(0, 4);
-            Object.keys(evaluations).filter(d => d.startsWith(year)).forEach(d => {
-                Object.entries(evaluations[d]).forEach(([id, ev]) => {
-                    if(scores[id]) scores[id].score += calculateAthleteScore(ev);
-                });
-            });
-        } else {
-            const week = getWeekRange(date);
-            Object.keys(evaluations).filter(d => d >= week.start && d <= week.end).forEach(d => {
-                Object.entries(evaluations[d]).forEach(([id, ev]) => {
-                    if(scores[id]) scores[id].score += calculateAthleteScore(ev);
-                });
-            });
+            return scores;
+        };
+
+        const monthlyDatasetsBySeason = seasonsToRender.map(season => computeScoresForSeason(season));
+        const allAthleteIds = Object.keys(monthlyDatasetsBySeason[0] || {});
+        const totalsAcrossSeasons = allAthleteIds.map(id => ({
+            id, name: monthlyDatasetsBySeason[0][id].name,
+            total: monthlyDatasetsBySeason.reduce((sum, bySeason) => sum + (bySeason[id]?.score || 0), 0)
+        }));
+        let athletesToShow = totalsAcrossSeasons.filter(a => a.total > 0).sort((a, b) => b.total - a.total);
+        if (athletesToShow.length > 20) {
+            const cutoff = athletesToShow[19].total;
+            athletesToShow = athletesToShow.filter(a => a.total >= cutoff);
         }
-        const allSortedScores = Object.values(scores).filter(a => a.score > 0).sort((a, b) => b.score - a.score);
-        let scoresToShow = allSortedScores;
-        if (allSortedScores.length > 20) {
-            const cutoffScore = allSortedScores[19].score;
-            scoresToShow = allSortedScores.filter(a => a.score >= cutoffScore);
-        }
+
+        const monthlyDatasets = seasonsToRender.map((season, idx) => ({
+            label: season === currentSeasonKey() ? 'Punteggio Totale' : `Punteggio Totale ${season}`,
+            data: athletesToShow.map(a => monthlyDatasetsBySeason[idx][a.id]?.score || 0),
+            backgroundColor: seasonColors[idx % seasonColors.length].replace(', 1)', ', 0.8)')
+        }));
+
         if(chartInstances.monthlyComparison) chartInstances.monthlyComparison.destroy();
         const _monthlyCanvas = document.getElementById('monthlyComparisonChart');
         if (!_monthlyCanvas) return;
         chartInstances.monthlyComparison = new Chart(_monthlyCanvas.getContext('2d'), {
             type: 'bar',
             data: {
-                labels: scoresToShow.map(a=>a.name),
-                datasets: [{
-                    label: 'Punteggio Totale',
-                    data: scoresToShow.map(a=>a.score),
-                    backgroundColor: 'rgba(22, 163, 74, 0.8)'
-                }]
+                labels: athletesToShow.map(a => a.name),
+                datasets: monthlyDatasets
             },
             options: {
                 indexAxis: 'y',
@@ -3417,10 +3400,74 @@ document.addEventListener('DOMContentLoaded', () => {
             Object.values(evaluations[d] || {}).some(ev => parseInt(ev['presenza-allenamento'], 10) > 0)
         ).length;
 
+        // A questo punto attendanceData/justifiedAbsenceData sono gia' calcolati
+        // per il periodo selezionato (comportamento esistente, invariato sopra;
+        // non e' filtrato per stagione calcistica). Il confronto con stagioni
+        // passate, aggiunto come dataset extra qui sotto, applica lo STESSO
+        // periodo (attendanceChartPeriod) a ciascuna stagione passata, cosi'
+        // da confrontare grandezze omogenee (es. mese vs mese, non mese vs anno).
+        const pastSeasons = seasonCompareState.evaluations.selectedSeasons;
+        const computeAttendanceForSeason = (season) => {
+            const data = {};
+            athletes.filter(a => !a.isGuest).forEach(a => { data[String(a.id)] = { name: a.name, count: 0 }; });
+            const datesInSeasonAndPeriod = (allDatesFilter) => Object.keys(evaluations)
+                .filter(d => seasonOfDate(d) === season)
+                .filter(allDatesFilter);
+            // Stesso periodo (attendanceChartPeriod) applicato sopra alla stagione corrente,
+            // per non mostrare confronti fra grandezze diverse (es. un mese vs l'intera stagione).
+            let relevantDates;
+            if (attendanceChartPeriod === 'daily') {
+                relevantDates = seasonOfDate(date) === season ? datesInSeasonAndPeriod(d => d === date) : [];
+            } else if (attendanceChartPeriod === 'monthly') {
+                const month = date.substring(5, 7);
+                relevantDates = datesInSeasonAndPeriod(d => d.substring(5, 7) === month);
+            } else if (attendanceChartPeriod === 'semester') {
+                const year = date.substring(0, 4);
+                const month = parseInt(date.substring(5, 7), 10);
+                const semesterStartMonth = month <= 6 ? '01' : '07';
+                const semesterEndMonth = '12'; // NB: stesso limite noto del ramo 'semester' sopra.
+                const startDate = `${year}-${semesterStartMonth}-01`;
+                const endDate = `${year}-${semesterEndMonth}-31`;
+                relevantDates = datesInSeasonAndPeriod(d => d >= startDate && d <= endDate);
+            } else if (attendanceChartPeriod === 'annual') {
+                relevantDates = datesInSeasonAndPeriod(() => true);
+            } else if (customRange) {
+                // Fascia Da-A manuale: non ha un equivalente per stagioni diverse da quella corrente.
+                relevantDates = seasonOfDate(date) === season
+                    ? datesInSeasonAndPeriod(d => d >= rangeStartEl.value && d <= rangeEndEl.value)
+                    : [];
+            } else {
+                const week = getWeekRange(date);
+                // Nessuna "settimana equivalente" calcolata per stagioni passate (stesso limite
+                // noto di computeScoresForSeason).
+                relevantDates = seasonOfDate(date) === season
+                    ? datesInSeasonAndPeriod(d => d >= week.start && d <= week.end)
+                    : [];
+            }
+            relevantDates.forEach(d => {
+                Object.entries(evaluations[d]).forEach(([id, ev]) => {
+                    if (isGuestAthlete(id)) return;
+                    const presenzaValue = parseInt(ev['presenza-allenamento'], 10);
+                    if (data[id] && presenzaValue > 0) data[id].count++;
+                });
+            });
+            return data;
+        };
+        const pastSeasonsData = pastSeasons.map(season => computeAttendanceForSeason(season));
+
         const labels = combinedData.map(d => d.name);
         const presenzeData = combinedData.map(d => d.presenze);
         const assenzeGiustificateData = combinedData.map(d => d.assenzeGiustificate);
-        
+        const seasonColorsAtt = ['rgba(100, 116, 139, 0.8)', 'rgba(59, 130, 246, 0.8)', 'rgba(217, 119, 6, 0.8)'];
+        const pastSeasonDatasets = pastSeasons.map((season, idx) => ({
+            label: `Presenze ${season}`,
+            data: labels.map(name => {
+                const match = combinedData.find(d => d.name === name);
+                return match && pastSeasonsData[idx][match.id] ? pastSeasonsData[idx][match.id].count : 0;
+            }),
+            backgroundColor: seasonColorsAtt[idx % seasonColorsAtt.length]
+        }));
+
         if(chartInstances.attendance) chartInstances.attendance.destroy();
         const attendanceCanvas = document.getElementById('attendanceChart');
         if (!attendanceCanvas) return;
@@ -3453,7 +3500,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         label: 'Assenze Giustificate',
                         data: assenzeGiustificateData,
                         backgroundColor: 'rgba(217, 119, 6, 0.85)'
-                    }
+                    },
+                    ...pastSeasonDatasets
                 ]
             },
             plugins: [{
@@ -6515,20 +6563,6 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
             if (document.visibilityState !== 'visible') return;
             const currentDataSnapshot = JSON.stringify({ athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults });
             await loadData();
-            // Ri-applica il merge delle annate precedenti eventualmente selezionate,
-            // altrimenti il polling le farebbe sparire silenziosamente dalla vista.
-            for (const cat of ['matchResults', 'evaluations']) {
-                const state = annataCompareState[cat];
-                if (state.selectedIds.length > 0) {
-                    state.originalSnapshot = JSON.parse(JSON.stringify(cat === 'matchResults' ? matchResults : evaluations));
-                    for (const id of state.selectedIds) {
-                        try {
-                            const incoming = await fetchCategoryForAnnata(id, cat);
-                            mergeCategoryData(cat, incoming);
-                        } catch (e) { console.error('[annataCompare] errore re-merge dopo polling', e); }
-                    }
-                }
-            }
             const newDataSnapshot = JSON.stringify({ athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults });
             if (currentDataSnapshot !== newDataSnapshot) {
                 console.log("Dati aggiornati dal server. Ricarico l'interfaccia.");
@@ -6554,32 +6588,57 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
         setTimeout(window._checkPendingAthleteDocs, 2000);
         setTimeout(window._checkPendingAthleteDocs, 6000); // secondo check per sicurezza
 
-        initAnnataCompareWidget({
+        initSeasonCompareWidget({
             category: 'matchResults',
             sectionLabel: 'Risultati Partite',
-            selectId: 'risultati-annata-compare-select',
-            buttonsContainerId: 'risultati-annata-wipe-buttons',
+            toggleBtnId: 'risultati-season-compare-toggle',
+            menuId: 'risultati-season-compare-menu',
+            wipeButtonsContainerId: 'risultati-season-wipe-buttons',
+            currentLabelId: 'risultati-season-current-label',
             showSharedWarning: false,
             onDataChanged: () => { renderMatchResults(); if (typeof updateMatchAnalysisChart === 'function') updateMatchAnalysisChart(); }
         });
 
-        initAnnataCompareWidget({
+        const refreshValutazioniSeasonWidget = initSeasonCompareWidget({
             category: 'evaluations',
             sectionLabel: 'Valutazioni',
-            selectId: 'valutazioni-annata-compare-select',
-            buttonsContainerId: 'valutazioni-annata-wipe-buttons',
+            toggleBtnId: 'valutazioni-season-compare-toggle',
+            menuId: 'valutazioni-season-compare-menu',
+            wipeButtonsContainerId: 'valutazioni-season-wipe-buttons',
+            currentLabelId: 'valutazioni-season-current-label',
             showSharedWarning: true,
             onDataChanged: () => { updateEvaluationCharts(); }
         });
 
-        initAnnataCompareWidget({
+        const refreshPresenzeSeasonWidget = initSeasonCompareWidget({
             category: 'evaluations',
             sectionLabel: 'Conteggio Presenze Atleti',
-            selectId: 'presenze-annata-compare-select',
-            buttonsContainerId: 'presenze-annata-wipe-buttons',
+            toggleBtnId: 'presenze-season-compare-toggle',
+            menuId: 'presenze-season-compare-menu',
+            wipeButtonsContainerId: 'presenze-season-wipe-buttons',
+            currentLabelId: 'presenze-season-current-label',
             showSharedWarning: true,
             onDataChanged: () => { updateAttendanceChart(); }
         });
+
+        window.__seasonCompareSyncSibling = (category, wipedSeasonKey) => {
+            if (category !== 'evaluations') return;
+            if (typeof refreshValutazioniSeasonWidget === 'function') refreshValutazioniSeasonWidget();
+            if (typeof refreshPresenzeSeasonWidget === 'function') refreshPresenzeSeasonWidget();
+            updateEvaluationCharts();
+            updateAttendanceChart();
+        };
+
+        window.__seasonCompareRefreshSiblingWidget = (originToggleBtnId) => {
+            if (originToggleBtnId === 'valutazioni-season-compare-toggle') {
+                if (typeof refreshPresenzeSeasonWidget === 'function') refreshPresenzeSeasonWidget();
+                updateAttendanceChart();
+            }
+            if (originToggleBtnId === 'presenze-season-compare-toggle') {
+                if (typeof refreshValutazioniSeasonWidget === 'function') refreshValutazioniSeasonWidget();
+                updateEvaluationCharts();
+            }
+        };
     });
 });
 

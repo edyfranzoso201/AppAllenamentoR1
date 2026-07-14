@@ -57,6 +57,21 @@ societyId: String(sessionData.societyId || '').trim()
 function isValidId(value) {
 return /^[a-z0-9_-]+$/i.test(String(value || '').trim());
 }
+// Stagione calcistica: 01 Agosto -> 31 Luglio. "2026-03-15" -> "2025-26".
+// Duplicata rispetto a public/script.js: non esiste un modulo condiviso client/server in questo progetto.
+function seasonOfDate(isoDate) {
+  const iso = String(isoDate || '').slice(0, 10);
+  const y = parseInt(iso.substring(0, 4), 10);
+  const m = parseInt(iso.substring(5, 7), 10);
+  const startYear = m >= 8 ? y : y - 1;
+  return `${startYear}-${String((startYear + 1) % 100).padStart(2, '0')}`;
+}
+function currentSeasonKey() {
+  return seasonOfDate(new Date().toISOString().slice(0, 10));
+}
+function isValidSeasonKey(value) {
+  return /^\d{4}-\d{2}$/.test(String(value || '').trim());
+}
 
 // Nome squadra ISOLATO per società: ricavato dal societyName della licenza
 // della società indicata. Questo evita che il nome sia condiviso tra società
@@ -1185,55 +1200,67 @@ if (req.query?.action === 'season-restore' && req.method === 'POST') {
   }
 }
 
-// ── WIPE ANNATA CATEGORY: cancellazione mirata di UNA categoria per UNA
-// annata passata (Risultati Partite / Valutazioni-Presenze), senza toccare
-// le altre categorie né l'annata corrente. Solo Admin. ───────────────────
-const WIPE_CATEGORIES = ['matchResults', 'evaluations'];
-if (req.query?.action === 'wipe-annata-category' && req.method === 'POST') {
+// ── WIPE SEASON: cancellazione mirata di UNA categoria per UNA stagione
+// calcistica passata (Ago-Lug), dentro l'annata-squadra attiva. Non tocca
+// altre stagioni nella stessa chiave, né altre categorie, né altre annate.
+// Solo Admin. La stagione corrente non è mai cancellabile da qui. ─────────
+const WIPE_SEASON_CATEGORIES = ['matchResults', 'evaluations'];
+if (req.query?.action === 'wipe-season' && req.method === 'POST') {
   if (!session.isAuthenticated || String(session.role).toLowerCase() !== 'admin') {
-    return res.status(403).json({ success: false, message: 'Permesso negato: solo Admin può cancellare dati di un\'annata' });
+    return res.status(403).json({ success: false, message: 'Permesso negato: solo Admin può cancellare dati di una stagione' });
   }
   const category = String((req.body && req.body.category) || '').trim();
-  if (!WIPE_CATEGORIES.includes(category)) {
+  if (!WIPE_SEASON_CATEGORIES.includes(category)) {
     return res.status(400).json({ success: false, message: 'Categoria non valida' });
   }
-  const targetAnnataId = String((req.body && req.body.targetAnnataId) || '').trim();
-  if (!isValidId(targetAnnataId)) {
-    return res.status(400).json({ success: false, message: 'targetAnnataId non valido' });
+  const seasonKey = String((req.body && req.body.seasonKey) || '').trim();
+  if (!isValidSeasonKey(seasonKey)) {
+    return res.status(400).json({ success: false, message: 'Stagione non valida' });
+  }
+  if (seasonKey === currentSeasonKey()) {
+    return res.status(400).json({ success: false, message: 'Non puoi cancellare la stagione corrente' });
+  }
+  if (!annataId || !isValidId(annataId)) {
+    return res.status(400).json({ success: false, message: 'Annata non valida' });
   }
   try {
-    const annateListForWipe = (await kv.get('annate:list')) || [];
-    const annataMeta = annateListForWipe.find(a => String(a.id) === targetAnnataId);
-    if (annataMeta && (annataMeta.societyId || null) !== (session.societyId || null)) {
-      return res.status(403).json({ success: false, message: 'Accesso negato: annata di un\'altra società' });
-    }
-    if (targetAnnataId === annataId) {
-      return res.status(400).json({ success: false, message: 'Non puoi cancellare l\'annata attiva da qui, usa Cambio Stagione' });
-    }
-    const prefix = `annate:${targetAnnataId}`;
-    const key = `${prefix}:${category}`;
+    const key = `annate:${annataId}:${category}`;
     const current = (await kv.get(key)) || {};
     let deletedCount = 0;
+    let updated;
     if (category === 'matchResults') {
-      deletedCount = Object.keys(current).length;
+      updated = {};
+      for (const [id, match] of Object.entries(current)) {
+        if (seasonOfDate(match?.date) === seasonKey) {
+          deletedCount++;
+        } else {
+          updated[id] = match;
+        }
+      }
     } else {
-      deletedCount = Object.values(current).reduce((sum, byAthlete) => sum + Object.keys(byAthlete || {}).length, 0);
+      updated = {};
+      for (const [dateKey, byAthlete] of Object.entries(current)) {
+        if (seasonOfDate(dateKey) === seasonKey) {
+          deletedCount += Object.keys(byAthlete || {}).length;
+        } else {
+          updated[dateKey] = byAthlete;
+        }
+      }
     }
-    await kv.set(key, {});
-    // Audit log: azione distruttiva, stesso pattern di logRetentionPurge.
+    await kv.set(key, updated);
     try {
-      const logKey = 'audit:wipe-annata-log';
+      const logKey = 'audit:wipe-season-log';
       const log = (await kv.get(logKey)) || [];
       log.push({
         date: new Date().toISOString().split('T')[0],
-        targetAnnataId, category, deletedCount,
+        annataId, category, seasonKey, deletedCount,
         admin: session.username, societyId: session.societyId || null
       });
       await kv.set(logKey, log.slice(-500));
     } catch (e) { /* non bloccante */ }
     return res.status(200).json({ success: true, deletedCount });
   } catch (e) {
-    console.error('[wipe-annata-category]', e?.message || e);
+    console.error('[wipe-season]', e?.message || e);
     return res.status(500).json({ success: false, message: 'Errore durante la cancellazione' });
   }
 }
