@@ -3157,12 +3157,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const month = date.substring(5, 7);
                 relevantDates = datesInSeasonAndPeriod(d => d.substring(5, 7) === month);
             } else if (comparisonChartPeriod === 'semester') {
+                // NB: stessa logica (con lo stesso limite noto: semesterEndMonth sempre '12')
+                // di updateAttendanceChart, per non introdurre un disallineamento fra le due viste.
+                const year = date.substring(0, 4);
                 const month = parseInt(date.substring(5, 7), 10);
-                const inFirstHalf = month <= 6;
-                relevantDates = datesInSeasonAndPeriod(d => {
-                    const dm = parseInt(d.substring(5, 7), 10);
-                    return inFirstHalf ? dm <= 6 : dm > 6;
-                });
+                const semesterStartMonth = month <= 6 ? '01' : '07';
+                const semesterEndMonth = '12';
+                const startDate = `${year}-${semesterStartMonth}-01`;
+                const endDate = `${year}-${semesterEndMonth}-31`;
+                relevantDates = datesInSeasonAndPeriod(d => d >= startDate && d <= endDate);
             } else if (comparisonChartPeriod === 'annual') {
                 relevantDates = datesInSeasonAndPeriod(() => true);
             } else {
@@ -6584,11 +6587,19 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
             if (category !== 'evaluations') return;
             if (typeof refreshValutazioniSeasonWidget === 'function') refreshValutazioniSeasonWidget();
             if (typeof refreshPresenzeSeasonWidget === 'function') refreshPresenzeSeasonWidget();
+            updateEvaluationCharts();
+            updateAttendanceChart();
         };
 
         window.__seasonCompareRefreshSiblingWidget = (originToggleBtnId) => {
-            if (originToggleBtnId === 'valutazioni-season-compare-toggle' && typeof refreshPresenzeSeasonWidget === 'function') refreshPresenzeSeasonWidget();
-            if (originToggleBtnId === 'presenze-season-compare-toggle' && typeof refreshValutazioniSeasonWidget === 'function') refreshValutazioniSeasonWidget();
+            if (originToggleBtnId === 'valutazioni-season-compare-toggle') {
+                if (typeof refreshPresenzeSeasonWidget === 'function') refreshPresenzeSeasonWidget();
+                updateAttendanceChart();
+            }
+            if (originToggleBtnId === 'presenze-season-compare-toggle') {
+                if (typeof refreshValutazioniSeasonWidget === 'function') refreshValutazioniSeasonWidget();
+                updateEvaluationCharts();
+            }
         };
     });
 });
