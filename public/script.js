@@ -2705,7 +2705,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!select || !buttonsContainer) return;
 
         const annateOptions = await fetchAnnataListForCompare();
-        select.innerHTML = annateOptions.map(a => `<option value="${a.id}" data-nome="${a.nome || a.id}">${a.nome || a.id}</option>`).join('');
+        select.innerHTML = annateOptions.map(a => `<option value="${escapeHtml(a.id)}" data-nome="${escapeHtml(a.nome || a.id)}">${escapeHtml(a.nome || a.id)}</option>`).join('');
 
         const renderWipeButtons = () => {
             const state = annataCompareState[config.category];
@@ -2714,7 +2714,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const opt = annateOptions.find(a => String(a.id) === String(id));
                 const nome = opt ? (opt.nome || opt.id) : id;
                 if (!isAdmin) return '';
-                return `<button type="button" class="btn btn-sm btn-outline-danger wipe-annata-btn" data-annata-id="${id}" data-nome="${nome}">🗑️ Cancella dati ${nome}</button>`;
+                return `<button type="button" class="btn btn-sm btn-outline-danger wipe-annata-btn" data-annata-id="${escapeHtml(id)}" data-nome="${escapeHtml(nome)}">🗑️ Cancella dati ${escapeHtml(nome)}</button>`;
             }).join('');
             buttonsContainer.querySelectorAll('.wipe-annata-btn').forEach(btn => {
                 btn.addEventListener('click', () => openWipeAnnataModal({
