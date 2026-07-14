@@ -1063,6 +1063,64 @@ if (req.query?.action === 'season-archive' && req.method === 'GET') {
   return res.status(200).json({ success: true, archives: list });
 }
 
+// ── CAMBIO STAGIONE: ripristino selettivo da archivio (merge additivo) ──────
+// Riporta nella stagione corrente le categorie scelte da un archivio esistente,
+// SENZA MAI sovrascrivere: per ogni categoria, gli elementi già presenti (per
+// id, o per data+atleta, o per nome+taglia) vengono saltati. L'archivio non
+// viene mai modificato: resta riutilizzabile per ripristini successivi.
+// Solo Admin: è un'operazione di scrittura sui dati della stagione attiva.
+const RESTORE_KEYED_BY_ID = ['matchResults', 'calendarEvents', 'trainingSessions'];
+const RESTORE_KEYED_BY_DATE = ['evaluations', 'calendarResponses'];
+const RESTORE_CATEGORIES = [...RESTORE_KEYED_BY_ID, ...RESTORE_KEYED_BY_DATE, 'awards', 'inventory'];
+
+if (req.query?.action === 'season-restore' && req.method === 'POST') {
+  if (!session.isAuthenticated || String(session.role).toLowerCase() !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Permesso negato: solo Admin può ripristinare da un archivio' });
+  }
+  if (!annataId || !isValidId(annataId)) {
+    return res.status(400).json({ success: false, message: 'annataId non valido' });
+  }
+  const label = String((req.body && req.body.label) || '').trim();
+  if (!label) {
+    return res.status(400).json({ success: false, message: 'Etichetta archivio mancante' });
+  }
+  const requestedCategories = Array.isArray(req.body && req.body.categories) ? req.body.categories : [];
+  const categories = requestedCategories.filter(c => RESTORE_CATEGORIES.includes(c));
+  if (categories.length === 0) {
+    return res.status(400).json({ success: false, message: 'Nessuna categoria valida selezionata' });
+  }
+  try {
+    const prefix = `annate:${annataId}`;
+    const archive = (await kv.get(`${prefix}:archive`)) || {};
+    const entry = archive[label];
+    if (!entry) {
+      return res.status(404).json({ success: false, message: `Archivio "${label}" non trovato` });
+    }
+    const archData = entry.data || {};
+    const summary = {};
+
+    // A. Categorie keyed-by-id: copia l'elemento solo se l'id non esiste già
+    for (const cat of categories) {
+      if (!RESTORE_KEYED_BY_ID.includes(cat)) continue;
+      const current = (await kv.get(`${prefix}:${cat}`)) || {};
+      const fromArchive = archData[cat] || {};
+      let added = 0, skipped = 0;
+      for (const [id, val] of Object.entries(fromArchive)) {
+        if (Object.prototype.hasOwnProperty.call(current, id)) { skipped++; continue; }
+        current[id] = val;
+        added++;
+      }
+      await kv.set(`${prefix}:${cat}`, current);
+      summary[cat] = { added, skipped };
+    }
+
+    return res.status(200).json({ success: true, summary, _partial: true });
+  } catch (e) {
+    console.error('[season-restore]', e?.message || e);
+    return res.status(500).json({ success: false, message: 'Errore ripristino archivio' });
+  }
+}
+
 // ── PASSWORD INDIVIDUAL: cambio sicuro (verifica vecchia lato server) ────────
 // Per cambiare serve conoscere la password ATTUALE: il server la verifica e solo
 // allora salva la nuova. La password attuale non viene MAI restituita al client
