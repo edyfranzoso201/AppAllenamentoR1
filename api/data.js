@@ -57,6 +57,21 @@ societyId: String(sessionData.societyId || '').trim()
 function isValidId(value) {
 return /^[a-z0-9_-]+$/i.test(String(value || '').trim());
 }
+// Stagione calcistica: 01 Agosto -> 31 Luglio. "2026-03-15" -> "2025-26".
+// Duplicata rispetto a public/script.js: non esiste un modulo condiviso client/server in questo progetto.
+function seasonOfDate(isoDate) {
+  const iso = String(isoDate || '').slice(0, 10);
+  const y = parseInt(iso.substring(0, 4), 10);
+  const m = parseInt(iso.substring(5, 7), 10);
+  const startYear = m >= 8 ? y : y - 1;
+  return `${startYear}-${String((startYear + 1) % 100).padStart(2, '0')}`;
+}
+function currentSeasonKey() {
+  return seasonOfDate(new Date().toISOString().slice(0, 10));
+}
+function isValidSeasonKey(value) {
+  return /^\d{4}-\d{2}$/.test(String(value || '').trim());
+}
 
 // Nome squadra ISOLATO per società: ricavato dal societyName della licenza
 // della società indicata. Questo evita che il nome sia condiviso tra società

@@ -18,6 +18,17 @@ function toLocalDateISO(dateInput) {
     const localDate = new Date(d.getTime() - (offset * 60 * 1000));
     return localDate.toISOString().split('T')[0];
 }
+// Stagione calcistica: 01 Agosto -> 31 Luglio. "2026-03-15" -> "2025-26".
+function seasonOfDate(isoDateOrDate) {
+    const iso = typeof isoDateOrDate === 'string' ? isoDateOrDate : toLocalDateISO(isoDateOrDate);
+    const y = parseInt(iso.substring(0, 4), 10);
+    const m = parseInt(iso.substring(5, 7), 10);
+    const startYear = m >= 8 ? y : y - 1;
+    return `${startYear}-${String((startYear + 1) % 100).padStart(2, '0')}`;
+}
+function currentSeasonKey() {
+    return seasonOfDate(toLocalDateISO(new Date()));
+}
 function generateId() {
     return crypto.randomUUID();
 }
