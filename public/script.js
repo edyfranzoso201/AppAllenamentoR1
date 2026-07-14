@@ -6484,6 +6484,15 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
             showSharedWarning: false,
             onDataChanged: () => { renderMatchResults(); if (typeof updateMatchAnalysisChart === 'function') updateMatchAnalysisChart(); }
         });
+
+        initAnnataCompareWidget({
+            category: 'evaluations',
+            sectionLabel: 'Valutazioni',
+            selectId: 'valutazioni-annata-compare-select',
+            buttonsContainerId: 'valutazioni-annata-wipe-buttons',
+            showSharedWarning: true,
+            onDataChanged: () => { updateEvaluationCharts(); }
+        });
     });
 });
 
