@@ -2641,6 +2641,169 @@ document.addEventListener('DOMContentLoaded', () => {
         if (range.end && d > range.end) return false;
         return true;
     };
+    // ── CONFRONTO/CANCELLAZIONE DATI PER STAGIONE CALCISTICA (Ago-Lug) ──
+    // Stato: stagioni PASSATE attualmente aggiunte al confronto, per sezione.
+    // Puro filtro client-side sui dati gia' caricati per l'annata attiva:
+    // nessuna fetch aggiuntiva, nessun mescolamento fra annate-squadra diverse.
+    const seasonCompareState = {
+        matchResults: { selectedSeasons: [] },
+        evaluations: { selectedSeasons: [] }
+    };
+
+    // Elenca le stagioni distinte presenti nei dati di una categoria, per l'annata
+    // attiva, escludendo quella corrente. Ordinate dalla piu' recente.
+    const listPastSeasons = (category) => {
+        const source = category === 'matchResults' ? matchResults : evaluations;
+        const dates = category === 'matchResults'
+            ? Object.values(source).map(m => m.date)
+            : Object.keys(source);
+        const seasons = new Set(dates.filter(Boolean).map(seasonOfDate));
+        seasons.delete(currentSeasonKey());
+        return Array.from(seasons).sort().reverse();
+    };
+
+    // Apre il modal di conferma cancellazione per UNA stagione passata.
+    // config: { category, sectionLabel, seasonKey, showSharedWarning, onWiped }
+    const openWipeSeasonModal = (config) => {
+        const modalEl = document.getElementById('wipeSeasonModal');
+        const textEl = document.getElementById('wipeSeasonModalText');
+        const warningEl = document.getElementById('wipeSeasonSharedWarning');
+        const warningNameEl = document.getElementById('wipeSeasonSharedWarningName');
+        const input = document.getElementById('wipeSeasonConfirmInput');
+        const confirmBtn = document.getElementById('wipeSeasonConfirmBtn');
+        if (!modalEl || !textEl || !input || !confirmBtn) return;
+
+        const source = config.category === 'matchResults' ? matchResults : evaluations;
+        const dates = config.category === 'matchResults'
+            ? Object.values(source).map(m => m.date)
+            : Object.keys(source);
+        const count = config.category === 'matchResults'
+            ? dates.filter(d => seasonOfDate(d) === config.seasonKey).length
+            : Object.entries(source).reduce((sum, [d, byAthlete]) => sum + (seasonOfDate(d) === config.seasonKey ? Object.keys(byAthlete || {}).length : 0), 0);
+
+        textEl.textContent = `Stai per cancellare TUTTI i dati di "${config.sectionLabel}" per la stagione "${config.seasonKey}" (${count} elementi). Azione irreversibile. Scrivi "${config.seasonKey}" per confermare.`;
+        if (config.showSharedWarning) {
+            warningNameEl.textContent = config.seasonKey;
+            warningEl.style.display = '';
+        } else {
+            warningEl.style.display = 'none';
+        }
+        input.value = '';
+        confirmBtn.disabled = true;
+
+        const onInput = () => { confirmBtn.disabled = input.value.trim() !== config.seasonKey; };
+        input.oninput = onInput;
+
+        const onConfirm = async () => {
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Cancellazione in corso...';
+            try {
+                const resp = await fetch('/api/data?action=wipe-season', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Auth-Session': sessionStorage.getItem('gosport_session_token') || '',
+                        'X-Annata-Id': sessionStorage.getItem('gosport_current_annata') || ''
+                    },
+                    body: JSON.stringify({ category: config.category, seasonKey: config.seasonKey })
+                });
+                const data = await resp.json();
+                if (!resp.ok || !data.success) {
+                    alert(data.message || 'Errore durante la cancellazione.');
+                    return;
+                }
+                bootstrap.Modal.getInstance(modalEl)?.hide();
+                alert(`✅ ${data.deletedCount} elementi eliminati dalla stagione "${config.seasonKey}".`);
+                config.onWiped();
+            } catch (e) {
+                console.error('[wipeSeason]', e);
+                alert('Errore di rete durante la cancellazione.');
+            } finally {
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Cancella definitivamente';
+            }
+        };
+        confirmBtn.onclick = onConfirm;
+
+        new bootstrap.Modal(modalEl).show();
+    };
+
+    // Monta un widget "confronto stagione calcistica" per UNA sezione. `config`:
+    //   category: 'matchResults' | 'evaluations'
+    //   sectionLabel: es. "Risultati Partite"
+    //   toggleBtnId, menuId, wipeButtonsContainerId, currentLabelId: id nel DOM
+    //   onDataChanged: callback per ri-renderizzare la sezione dopo un cambio selezione
+    //   showSharedWarning: true per Valutazioni/Presenze
+    const initSeasonCompareWidget = (config) => {
+        const toggleBtn = document.getElementById(config.toggleBtnId);
+        const menu = document.getElementById(config.menuId);
+        const wipeButtons = document.getElementById(config.wipeButtonsContainerId);
+        const currentLabel = document.getElementById(config.currentLabelId);
+        if (!toggleBtn || !menu || !wipeButtons) return;
+
+        const refresh = () => {
+            if (currentLabel) currentLabel.textContent = `Stagione ${currentSeasonKey()}`;
+            const pastSeasons = listPastSeasons(config.category);
+            toggleBtn.style.display = pastSeasons.length > 0 ? '' : 'none';
+
+            const state = seasonCompareState[config.category];
+            menu.innerHTML = pastSeasons.map(s => `
+                <label class="d-flex align-items-center gap-1 mb-1 small">
+                    <input type="checkbox" class="season-compare-checkbox" value="${escapeHtml(s)}" ${state.selectedSeasons.includes(s) ? 'checked' : ''}>
+                    ${escapeHtml(s)}
+                </label>
+            `).join('');
+            menu.querySelectorAll('.season-compare-checkbox').forEach(cb => {
+                cb.addEventListener('change', () => {
+                    const season = cb.value;
+                    if (cb.checked) {
+                        if (!state.selectedSeasons.includes(season)) state.selectedSeasons.push(season);
+                    } else {
+                        state.selectedSeasons = state.selectedSeasons.filter(s => s !== season);
+                    }
+                    renderWipeButtons();
+                    config.onDataChanged();
+                    if (config.category === 'evaluations' && typeof window.__seasonCompareRefreshSiblingWidget === 'function') {
+                        window.__seasonCompareRefreshSiblingWidget(config.toggleBtnId);
+                    }
+                });
+            });
+
+            renderWipeButtons();
+        };
+
+        const renderWipeButtons = () => {
+            const state = seasonCompareState[config.category];
+            const isAdmin = sessionStorage.getItem('gosport_user_role') === 'admin';
+            wipeButtons.innerHTML = !isAdmin ? '' : state.selectedSeasons.map(season => `
+                <button type="button" class="btn btn-sm btn-outline-danger wipe-season-btn" data-season="${escapeHtml(season)}">🗑️ Cancella dati ${escapeHtml(season)}</button>
+            `).join('');
+            wipeButtons.querySelectorAll('.wipe-season-btn').forEach(btn => {
+                btn.addEventListener('click', () => openWipeSeasonModal({
+                    category: config.category,
+                    sectionLabel: config.sectionLabel,
+                    seasonKey: btn.dataset.season,
+                    showSharedWarning: !!config.showSharedWarning,
+                    onWiped: () => {
+                        const st = seasonCompareState[config.category];
+                        st.selectedSeasons = st.selectedSeasons.filter(s => s !== btn.dataset.season);
+                        refresh();
+                        config.onDataChanged();
+                        if (config.category === 'evaluations' && typeof window.__seasonCompareSyncSibling === 'function') {
+                            window.__seasonCompareSyncSibling(config.category, btn.dataset.season);
+                        }
+                    }
+                }));
+            });
+        };
+
+        toggleBtn.addEventListener('click', () => {
+            menu.style.display = menu.style.display === 'none' ? '' : 'none';
+        });
+
+        refresh();
+        return refresh;
+    };
     const renderMatchResults = () => {
         elements.matchResultsContainer.innerHTML = '';
         const allMatches = Object.values(matchResults).sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -2652,7 +2815,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const filterLocation = document.getElementById('risultati-filter-location')?.value || '';
         const filterResult   = document.getElementById('risultati-filter-result')?.value || '';
         const dateRange = getMatchDateRangeFilter();
+        const activeSeasons = seasonCompareState.matchResults.selectedSeasons.length > 0
+            ? [currentSeasonKey(), ...seasonCompareState.matchResults.selectedSeasons]
+            : null; // null = nessun confronto attivo, si applica comunque il default stagione corrente sotto
         const sortedMatches = allMatches.filter(match => {
+            const matchSeason = seasonOfDate(match.date);
+            if (activeSeasons) {
+                if (!activeSeasons.includes(matchSeason)) return false;
+            } else if (matchSeason !== currentSeasonKey()) {
+                return false;
+            }
             if (!isMatchInDateRange(match, dateRange)) return false;
             if (filterOpponent && !(match.opponentName || '').toLowerCase().includes(filterOpponent)) return false;
             if (filterLocation && match.location !== filterLocation) return false;
@@ -2674,6 +2846,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         sortedMatches.forEach(match => {
+            const matchSeasonBadge = seasonOfDate(match.date) !== currentSeasonKey()
+                ? `<span class="badge bg-secondary ms-1">${escapeHtml(seasonOfDate(match.date))}</span>`
+                : '';
             const myTeamName = getMyTeamName();
             const homeTeamName = match.location === 'home' ? myTeamName : match.opponentName;
             const awayTeamName = match.location === 'away' ? myTeamName : match.opponentName;
@@ -2702,7 +2877,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="card h-100 match-result-item ${cardClass}" data-match-id="${match.id}" style="cursor: pointer;">
                     <div class="card-body p-2">
                         <div class="d-flex justify-content-between">
-                            <small class="text-muted">${new Date(match.date).toLocaleDateString('it-IT', {day: '2-digit', month: 'short', year: 'numeric'})}</small>
+                            <small class="text-muted">${new Date(match.date).toLocaleDateString('it-IT', {day: '2-digit', month: 'short', year: 'numeric'})}${matchSeasonBadge}</small>
                             <a href="#" class="no-print edit-match-btn" data-match-id="${match.id}"><i class="bi bi-pencil-fill"></i></a>
                         </div>
                         <div> ${homeTeamName} vs ${awayTeamName} <strong class="match-score ms-2">${match.homeScore ?? ''} - ${match.awayScore ?? ''}</strong></div>
@@ -6334,6 +6509,17 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
         // FIX v1.5.21: controlla documenti caricati dai genitori
         setTimeout(window._checkPendingAthleteDocs, 2000);
         setTimeout(window._checkPendingAthleteDocs, 6000); // secondo check per sicurezza
+
+        initSeasonCompareWidget({
+            category: 'matchResults',
+            sectionLabel: 'Risultati Partite',
+            toggleBtnId: 'risultati-season-compare-toggle',
+            menuId: 'risultati-season-compare-menu',
+            wipeButtonsContainerId: 'risultati-season-wipe-buttons',
+            currentLabelId: 'risultati-season-current-label',
+            showSharedWarning: false,
+            onDataChanged: () => { renderMatchResults(); if (typeof updateMatchAnalysisChart === 'function') updateMatchAnalysisChart(); }
+        });
     });
 });
 
