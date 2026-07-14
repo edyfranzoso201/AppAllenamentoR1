@@ -3157,8 +3157,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const month = date.substring(5, 7);
                 relevantDates = datesInSeasonAndPeriod(d => d.substring(5, 7) === month);
             } else if (comparisonChartPeriod === 'semester') {
-                // NB: stessa logica (con lo stesso limite noto: semesterEndMonth sempre '12')
-                // di updateAttendanceChart, per non introdurre un disallineamento fra le due viste.
+                // NB: semesterEndMonth e' SEMPRE '12', anche per il secondo semestre (luglio-dicembre):
+                // e' un limite noto e preesistente (identico in updateAttendanceChart, riga ~3293),
+                // per cui il filtro "semestrale" copre in pratica l'intero anno solare invece
+                // di una sola meta'. Non va corretto qui da solo: se lo si sistema, farlo in
+                // ENTRAMBE le funzioni, altrimenti Valutazioni e Presenze mostrerebbero range
+                // diversi per la stessa selezione "Semestrale" sulla stagione corrente.
                 const year = date.substring(0, 4);
                 const month = parseInt(date.substring(5, 7), 10);
                 const semesterStartMonth = month <= 6 ? '01' : '07';
@@ -3170,13 +3174,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 relevantDates = datesInSeasonAndPeriod(() => true);
             } else {
                 const week = getWeekRange(date);
-                const weekLen = (new Date(week.end) - new Date(week.start)) / 864e5;
+                // Per stagioni passate non esiste una "settimana equivalente" calcolata
+                // automaticamente: nessun dato, limite noto e accettato (vedi piano Task 6).
                 relevantDates = seasonOfDate(date) === season
                     ? datesInSeasonAndPeriod(d => d >= week.start && d <= week.end)
-                    : datesInSeasonAndPeriod(d => {
-                        // stessa posizione relativa nella stagione confrontata (settimana equivalente)
-                        return true; // fallback: l'intera stagione se non e' quella con la data corrente selezionata
-                      }).slice(0, 0); // per stagioni passate senza data di riferimento esplicita, nessuna settimana equivalente automatica
+                    : [];
             }
             relevantDates.forEach(d => {
                 Object.entries(evaluations[d]).forEach(([id, ev]) => {
@@ -3400,13 +3402,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // A questo punto attendanceData/justifiedAbsenceData sono gia' calcolati
         // per il periodo selezionato (comportamento esistente, invariato sopra;
-        // non e' filtrato per stagione calcistica, il confronto stagioni passate
-        // viene aggiunto come dataset extra qui sotto).
+        // non e' filtrato per stagione calcistica). Il confronto con stagioni
+        // passate, aggiunto come dataset extra qui sotto, applica lo STESSO
+        // periodo (attendanceChartPeriod) a ciascuna stagione passata, cosi'
+        // da confrontare grandezze omogenee (es. mese vs mese, non mese vs anno).
         const pastSeasons = seasonCompareState.evaluations.selectedSeasons;
         const computeAttendanceForSeason = (season) => {
             const data = {};
             athletes.filter(a => !a.isGuest).forEach(a => { data[String(a.id)] = { name: a.name, count: 0 }; });
-            Object.keys(evaluations).filter(d => seasonOfDate(d) === season).forEach(d => {
+            const datesInSeasonAndPeriod = (allDatesFilter) => Object.keys(evaluations)
+                .filter(d => seasonOfDate(d) === season)
+                .filter(allDatesFilter);
+            // Stesso periodo (attendanceChartPeriod) applicato sopra alla stagione corrente,
+            // per non mostrare confronti fra grandezze diverse (es. un mese vs l'intera stagione).
+            let relevantDates;
+            if (attendanceChartPeriod === 'daily') {
+                relevantDates = seasonOfDate(date) === season ? datesInSeasonAndPeriod(d => d === date) : [];
+            } else if (attendanceChartPeriod === 'monthly') {
+                const month = date.substring(5, 7);
+                relevantDates = datesInSeasonAndPeriod(d => d.substring(5, 7) === month);
+            } else if (attendanceChartPeriod === 'semester') {
+                const year = date.substring(0, 4);
+                const month = parseInt(date.substring(5, 7), 10);
+                const semesterStartMonth = month <= 6 ? '01' : '07';
+                const semesterEndMonth = '12'; // NB: stesso limite noto del ramo 'semester' sopra.
+                const startDate = `${year}-${semesterStartMonth}-01`;
+                const endDate = `${year}-${semesterEndMonth}-31`;
+                relevantDates = datesInSeasonAndPeriod(d => d >= startDate && d <= endDate);
+            } else if (attendanceChartPeriod === 'annual') {
+                relevantDates = datesInSeasonAndPeriod(() => true);
+            } else if (customRange) {
+                // Fascia Da-A manuale: non ha un equivalente per stagioni diverse da quella corrente.
+                relevantDates = seasonOfDate(date) === season
+                    ? datesInSeasonAndPeriod(d => d >= rangeStartEl.value && d <= rangeEndEl.value)
+                    : [];
+            } else {
+                const week = getWeekRange(date);
+                // Nessuna "settimana equivalente" calcolata per stagioni passate (stesso limite
+                // noto di computeScoresForSeason).
+                relevantDates = seasonOfDate(date) === season
+                    ? datesInSeasonAndPeriod(d => d >= week.start && d <= week.end)
+                    : [];
+            }
+            relevantDates.forEach(d => {
                 Object.entries(evaluations[d]).forEach(([id, ev]) => {
                     if (isGuestAthlete(id)) return;
                     const presenzaValue = parseInt(ev['presenza-allenamento'], 10);
