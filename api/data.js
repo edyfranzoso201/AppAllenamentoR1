@@ -1200,6 +1200,68 @@ if (req.query?.action === 'season-restore' && req.method === 'POST') {
   }
 }
 
+// ── WIPE SEASON: cancellazione mirata di UNA categoria per UNA stagione
+// calcistica passata (Ago-Lug), dentro l'annata-squadra attiva. Non tocca
+// altre stagioni nella stessa chiave, né altre categorie, né altre annate.
+// Solo Admin. La stagione corrente non è mai cancellabile da qui. ─────────
+const WIPE_SEASON_CATEGORIES = ['matchResults', 'evaluations'];
+if (req.query?.action === 'wipe-season' && req.method === 'POST') {
+  if (!session.isAuthenticated || String(session.role).toLowerCase() !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Permesso negato: solo Admin può cancellare dati di una stagione' });
+  }
+  const category = String((req.body && req.body.category) || '').trim();
+  if (!WIPE_SEASON_CATEGORIES.includes(category)) {
+    return res.status(400).json({ success: false, message: 'Categoria non valida' });
+  }
+  const seasonKey = String((req.body && req.body.seasonKey) || '').trim();
+  if (!isValidSeasonKey(seasonKey)) {
+    return res.status(400).json({ success: false, message: 'Stagione non valida' });
+  }
+  if (seasonKey === currentSeasonKey()) {
+    return res.status(400).json({ success: false, message: 'Non puoi cancellare la stagione corrente' });
+  }
+  try {
+    const key = `annate:${annataId}:${category}`;
+    const current = (await kv.get(key)) || {};
+    let deletedCount = 0;
+    let updated;
+    if (category === 'matchResults') {
+      updated = {};
+      for (const [id, match] of Object.entries(current)) {
+        if (seasonOfDate(match?.date) === seasonKey) {
+          deletedCount++;
+        } else {
+          updated[id] = match;
+        }
+      }
+    } else {
+      updated = {};
+      for (const [dateKey, byAthlete] of Object.entries(current)) {
+        if (seasonOfDate(dateKey) === seasonKey) {
+          deletedCount += Object.keys(byAthlete || {}).length;
+        } else {
+          updated[dateKey] = byAthlete;
+        }
+      }
+    }
+    await kv.set(key, updated);
+    try {
+      const logKey = 'audit:wipe-season-log';
+      const log = (await kv.get(logKey)) || [];
+      log.push({
+        date: new Date().toISOString().split('T')[0],
+        annataId, category, seasonKey, deletedCount,
+        admin: session.username, societyId: session.societyId || null
+      });
+      await kv.set(logKey, log.slice(-500));
+    } catch (e) { /* non bloccante */ }
+    return res.status(200).json({ success: true, deletedCount });
+  } catch (e) {
+    console.error('[wipe-season]', e?.message || e);
+    return res.status(500).json({ success: false, message: 'Errore durante la cancellazione' });
+  }
+}
+
 // ── PASSWORD INDIVIDUAL: cambio sicuro (verifica vecchia lato server) ────────
 // Per cambiare serve conoscere la password ATTUALE: il server la verifica e solo
 // allora salva la nuova. La password attuale non viene MAI restituita al client
