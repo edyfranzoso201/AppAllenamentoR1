@@ -1672,6 +1672,12 @@
                     <label for="risultati-filter-end" class="form-label mb-0 small text-nowrap">A</label>
                     <input type="date" id="risultati-filter-end" class="form-control form-control-sm" style="max-width:150px;" title="Data fine">
                 </div>
+                <div class="col-md-12 d-flex align-items-center gap-2 flex-wrap no-print" id="risultati-season-compare-bar">
+                    <span class="small text-muted" id="risultati-season-current-label"></span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="risultati-season-compare-toggle" style="display:none;">+ Confronta stagione precedente</button>
+                    <div class="dropdown-menu p-2" id="risultati-season-compare-menu" style="display:none; position:static; max-width:260px;"></div>
+                    <div id="risultati-season-wipe-buttons" class="d-flex gap-1 flex-wrap"></div>
+                </div>
             </div>
             <div class="row" id="match-results-container">
                  <p class="text-muted">Nessun risultato inserito.</p>
@@ -8735,5 +8741,27 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
 
 })();
 </script>
+<div class="modal fade" id="wipeSeasonModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Cancella dati stagione</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+      </div>
+      <div class="modal-body">
+        <p id="wipeSeasonModalText"></p>
+        <div class="alert alert-warning no-print" id="wipeSeasonSharedWarning" style="display:none;">
+          ⚠️ Valutazioni e Presenze condividono gli stessi dati: cancellando qui, i dati della stagione <strong id="wipeSeasonSharedWarningName"></strong> spariranno ANCHE dall'altra sezione (Presenze/Valutazioni).
+        </div>
+        <label for="wipeSeasonConfirmInput" class="form-label small">Scrivi il nome esatto della stagione per confermare:</label>
+        <input type="text" id="wipeSeasonConfirmInput" class="form-control" autocomplete="off">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annulla</button>
+        <button type="button" class="btn btn-danger" id="wipeSeasonConfirmBtn" disabled>Cancella definitivamente</button>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
