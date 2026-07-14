@@ -2794,7 +2794,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         toggleBtn.addEventListener('click', () => {
-            menu.style.display = menu.style.display === 'none' ? '' : 'none';
+            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
         });
 
         refresh();
