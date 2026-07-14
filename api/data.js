@@ -1114,6 +1114,26 @@ if (req.query?.action === 'season-restore' && req.method === 'POST') {
       summary[cat] = { added, skipped };
     }
 
+    // B. Categorie keyed-by-data → poi per atleta: merge a livello di singolo
+    // atleta dentro ogni data, mai sovrascrive un valore già presente.
+    for (const cat of categories) {
+      if (!RESTORE_KEYED_BY_DATE.includes(cat)) continue;
+      const current = (await kv.get(`${prefix}:${cat}`)) || {};
+      const fromArchive = archData[cat] || {};
+      let added = 0, skipped = 0;
+      for (const [date, byAthleteArchive] of Object.entries(fromArchive)) {
+        if (!byAthleteArchive || typeof byAthleteArchive !== 'object') continue;
+        if (!current[date]) current[date] = {};
+        for (const [athleteId, val] of Object.entries(byAthleteArchive)) {
+          if (Object.prototype.hasOwnProperty.call(current[date], athleteId)) { skipped++; continue; }
+          current[date][athleteId] = val;
+          added++;
+        }
+      }
+      await kv.set(`${prefix}:${cat}`, current);
+      summary[cat] = { added, skipped };
+    }
+
     return res.status(200).json({ success: true, summary, _partial: true });
   } catch (e) {
     console.error('[season-restore]', e?.message || e);
