@@ -1752,6 +1752,12 @@
                     <input type="date" id="evaluation-date-picker-2" class="form-control" style="max-width: 180px;">
                 </div>
             </div>
+            <div class="col-12 d-flex align-items-center gap-2 flex-wrap no-print mb-3" id="valutazioni-season-compare-bar">
+                <span class="small text-muted" id="valutazioni-season-current-label"></span>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="valutazioni-season-compare-toggle" style="display:none;">+ Confronta stagione precedente</button>
+                <div class="dropdown-menu p-2" id="valutazioni-season-compare-menu" style="display:none; position:static; max-width:260px;"></div>
+                <div id="valutazioni-season-wipe-buttons" class="d-flex gap-1 flex-wrap"></div>
+            </div>
             <div class="col-lg-6 mb-4"><div class="card chart-card"><div class="card-body"><h5 class="card-title">Andamento Medio Squadra (Ultimi 7 Giorni)</h5><canvas id="dailyTeamChart"></canvas></div></div></div>
             <div class="col-lg-6 mb-4"><div class="card chart-card"><div class="card-body" id="comparison-chart-container"><h5 class="card-title mb-0">Confronto Valutazioni Atleti</h5><div class="btn-group btn-group-sm float-end no-print" id="comparison-period-toggle"><button type="button" class="btn btn-outline-secondary" data-period="daily">Giornaliero</button><button type="button" class="btn btn-outline-secondary" data-period="weekly">Settimanale</button><button type="button" class="btn btn-outline-secondary" data-period="monthly">Mensile</button><button type="button" class="btn btn-outline-secondary" data-period="semester">Semestrale</button><button type="button" class="btn btn-outline-secondary active" data-period="annual">Annuale</button></div><canvas id="monthlyComparisonChart"></canvas></div></div></div>
         </div>
@@ -1770,6 +1776,12 @@
             <div class="col-12 mb-4">
                 <div class="card chart-card">
                     <div class="card-body">
+                        <div class="d-flex align-items-center gap-2 flex-wrap no-print mb-2" id="presenze-season-compare-bar">
+                            <span class="small text-muted" id="presenze-season-current-label"></span>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="presenze-season-compare-toggle" style="display:none;">+ Confronta stagione precedente</button>
+                            <div class="dropdown-menu p-2" id="presenze-season-compare-menu" style="display:none; position:static; max-width:260px;"></div>
+                            <div id="presenze-season-wipe-buttons" class="d-flex gap-1 flex-wrap"></div>
+                        </div>
                         <div class="d-flex justify-content-between align-items-center">
                             <h5 class="card-title mb-0">Conteggio Presenze Atleti</h5>
                             <div class="d-flex gap-2 align-items-center flex-wrap">

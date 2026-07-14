@@ -3103,17 +3103,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateEvaluationCharts = () => {
         const date = elements.evaluationDatePicker.value;
         if (!date) return;
+        const seasonsToRender = [currentSeasonKey(), ...seasonCompareState.evaluations.selectedSeasons];
+        const seasonColors = ['rgba(22, 163, 74, 1)', 'rgba(100, 116, 139, 1)', 'rgba(59, 130, 246, 1)', 'rgba(217, 119, 6, 1)'];
+        const seasonBg = ['rgba(22, 163, 74, 0.2)', 'rgba(100, 116, 139, 0.2)', 'rgba(59, 130, 246, 0.2)', 'rgba(217, 119, 6, 0.2)'];
+
         const last7Days = Array.from({length: 7}, (_, i) => toLocalDateISO(new Date(Date.now() - i * 864e5))).reverse();
-        const teamDailyAvgScores = last7Days.map(d => {
-            let total = 0, count = 0;
-            if (evaluations[d]) {
-                Object.values(evaluations[d]).forEach(ev => {
-                    total += calculateAthleteScore(ev);
-                    count++;
-                });
-            }
-            return count > 0 ? (total / count).toFixed(2) : 0;
+        const dailyTeamDatasets = seasonsToRender.map((season, idx) => {
+            const scores = last7Days.map(d => {
+                if (seasonOfDate(d) !== season) return null;
+                let total = 0, count = 0;
+                if (evaluations[d]) {
+                    Object.values(evaluations[d]).forEach(ev => { total += calculateAthleteScore(ev); count++; });
+                }
+                return count > 0 ? (total / count).toFixed(2) : 0;
+            });
+            return {
+                label: season === currentSeasonKey() ? 'Punteggio Medio' : `Punteggio Medio ${season}`,
+                data: scores,
+                borderColor: seasonColors[idx % seasonColors.length],
+                backgroundColor: seasonBg[idx % seasonBg.length],
+                tension: 0.3
+            };
         });
+
         if(chartInstances.dailyTeam) chartInstances.dailyTeam.destroy();
         const _dailyTeamCanvas = document.getElementById('dailyTeamChart');
         if (!_dailyTeamCanvas) return;
@@ -3121,13 +3133,7 @@ document.addEventListener('DOMContentLoaded', () => {
             type: 'line',
             data: {
                 labels: last7Days.map(d => new Date(d).toLocaleDateString('it-IT', {day:'2-digit', month:'short'})),
-                datasets: [{
-                    label: 'Punteggio Medio',
-                    data: teamDailyAvgScores,
-                    borderColor: 'rgba(22, 163, 74, 1)',
-                    backgroundColor: 'rgba(22, 163, 74, 0.2)',
-                    tension: 0.3
-                }]
+                datasets: dailyTeamDatasets
             },
             options: {
                 scales: {
@@ -3137,66 +3143,72 @@ document.addEventListener('DOMContentLoaded', () => {
                 plugins: { legend: { labels: { color: _chartTickColor() } } }
             }
         });
-        const scores = {};
-        athletes.forEach(a => scores[String(a.id)] = { name: a.name, score: 0 });
-        if (comparisonChartPeriod === 'daily') {
-            if(evaluations[date]) {
-                Object.entries(evaluations[date]).forEach(([id, ev]) => {
-                    if(scores[id]) scores[id].score += calculateAthleteScore(ev);
+
+        const computeScoresForSeason = (season) => {
+            const scores = {};
+            athletes.forEach(a => scores[String(a.id)] = { name: a.name, score: 0 });
+            const datesInSeasonAndPeriod = (allDatesFilter) => Object.keys(evaluations)
+                .filter(d => seasonOfDate(d) === season)
+                .filter(allDatesFilter);
+            let relevantDates;
+            if (comparisonChartPeriod === 'daily') {
+                relevantDates = seasonOfDate(date) === season ? datesInSeasonAndPeriod(d => d === date) : [];
+            } else if (comparisonChartPeriod === 'monthly') {
+                const month = date.substring(5, 7);
+                relevantDates = datesInSeasonAndPeriod(d => d.substring(5, 7) === month);
+            } else if (comparisonChartPeriod === 'semester') {
+                const month = parseInt(date.substring(5, 7), 10);
+                const inFirstHalf = month <= 6;
+                relevantDates = datesInSeasonAndPeriod(d => {
+                    const dm = parseInt(d.substring(5, 7), 10);
+                    return inFirstHalf ? dm <= 6 : dm > 6;
                 });
+            } else if (comparisonChartPeriod === 'annual') {
+                relevantDates = datesInSeasonAndPeriod(() => true);
+            } else {
+                const week = getWeekRange(date);
+                const weekLen = (new Date(week.end) - new Date(week.start)) / 864e5;
+                relevantDates = seasonOfDate(date) === season
+                    ? datesInSeasonAndPeriod(d => d >= week.start && d <= week.end)
+                    : datesInSeasonAndPeriod(d => {
+                        // stessa posizione relativa nella stagione confrontata (settimana equivalente)
+                        return true; // fallback: l'intera stagione se non e' quella con la data corrente selezionata
+                      }).slice(0, 0); // per stagioni passate senza data di riferimento esplicita, nessuna settimana equivalente automatica
             }
-        } else if (comparisonChartPeriod === 'monthly') {
-            const month = date.substring(0, 7);
-            Object.keys(evaluations).filter(d => d.startsWith(month)).forEach(d => {
+            relevantDates.forEach(d => {
                 Object.entries(evaluations[d]).forEach(([id, ev]) => {
-                    if(scores[id]) scores[id].score += calculateAthleteScore(ev);
+                    if (scores[id]) scores[id].score += calculateAthleteScore(ev);
                 });
             });
-        } else if (comparisonChartPeriod === 'semester') {
-            const year = date.substring(0, 4);
-            const month = parseInt(date.substring(5, 7), 10);
-            const semesterStartMonth = month <= 6 ? '01' : '07';
-            const semesterEndMonth = month <= 6 ? '12' : '12';
-            const startDate = `${year}-${semesterStartMonth}-01`;
-            const endDate = `${year}-${semesterEndMonth}-31`;
-            Object.keys(evaluations).filter(d => d >= startDate && d <= endDate).forEach(d => {
-                Object.entries(evaluations[d]).forEach(([id, ev]) => {
-                    if(scores[id]) scores[id].score += calculateAthleteScore(ev);
-                });
-            });
-        } else if (comparisonChartPeriod === 'annual') {
-            const year = date.substring(0, 4);
-            Object.keys(evaluations).filter(d => d.startsWith(year)).forEach(d => {
-                Object.entries(evaluations[d]).forEach(([id, ev]) => {
-                    if(scores[id]) scores[id].score += calculateAthleteScore(ev);
-                });
-            });
-        } else {
-            const week = getWeekRange(date);
-            Object.keys(evaluations).filter(d => d >= week.start && d <= week.end).forEach(d => {
-                Object.entries(evaluations[d]).forEach(([id, ev]) => {
-                    if(scores[id]) scores[id].score += calculateAthleteScore(ev);
-                });
-            });
+            return scores;
+        };
+
+        const monthlyDatasetsBySeason = seasonsToRender.map(season => computeScoresForSeason(season));
+        const allAthleteIds = Object.keys(monthlyDatasetsBySeason[0] || {});
+        const totalsAcrossSeasons = allAthleteIds.map(id => ({
+            id, name: monthlyDatasetsBySeason[0][id].name,
+            total: monthlyDatasetsBySeason.reduce((sum, bySeason) => sum + (bySeason[id]?.score || 0), 0)
+        }));
+        let athletesToShow = totalsAcrossSeasons.filter(a => a.total > 0).sort((a, b) => b.total - a.total);
+        if (athletesToShow.length > 20) {
+            const cutoff = athletesToShow[19].total;
+            athletesToShow = athletesToShow.filter(a => a.total >= cutoff);
         }
-        const allSortedScores = Object.values(scores).filter(a => a.score > 0).sort((a, b) => b.score - a.score);
-        let scoresToShow = allSortedScores;
-        if (allSortedScores.length > 20) {
-            const cutoffScore = allSortedScores[19].score;
-            scoresToShow = allSortedScores.filter(a => a.score >= cutoffScore);
-        }
+
+        const monthlyDatasets = seasonsToRender.map((season, idx) => ({
+            label: season === currentSeasonKey() ? 'Punteggio Totale' : `Punteggio Totale ${season}`,
+            data: athletesToShow.map(a => monthlyDatasetsBySeason[idx][a.id]?.score || 0),
+            backgroundColor: seasonColors[idx % seasonColors.length].replace(', 1)', ', 0.8)')
+        }));
+
         if(chartInstances.monthlyComparison) chartInstances.monthlyComparison.destroy();
         const _monthlyCanvas = document.getElementById('monthlyComparisonChart');
         if (!_monthlyCanvas) return;
         chartInstances.monthlyComparison = new Chart(_monthlyCanvas.getContext('2d'), {
             type: 'bar',
             data: {
-                labels: scoresToShow.map(a=>a.name),
-                datasets: [{
-                    label: 'Punteggio Totale',
-                    data: scoresToShow.map(a=>a.score),
-                    backgroundColor: 'rgba(22, 163, 74, 0.8)'
-                }]
+                labels: athletesToShow.map(a => a.name),
+                datasets: monthlyDatasets
             },
             options: {
                 indexAxis: 'y',
@@ -3383,10 +3395,38 @@ document.addEventListener('DOMContentLoaded', () => {
             Object.values(evaluations[d] || {}).some(ev => parseInt(ev['presenza-allenamento'], 10) > 0)
         ).length;
 
+        // A questo punto attendanceData/justifiedAbsenceData sono gia' calcolati
+        // per il periodo selezionato (comportamento esistente, invariato sopra;
+        // non e' filtrato per stagione calcistica, il confronto stagioni passate
+        // viene aggiunto come dataset extra qui sotto).
+        const pastSeasons = seasonCompareState.evaluations.selectedSeasons;
+        const computeAttendanceForSeason = (season) => {
+            const data = {};
+            athletes.filter(a => !a.isGuest).forEach(a => { data[String(a.id)] = { name: a.name, count: 0 }; });
+            Object.keys(evaluations).filter(d => seasonOfDate(d) === season).forEach(d => {
+                Object.entries(evaluations[d]).forEach(([id, ev]) => {
+                    if (isGuestAthlete(id)) return;
+                    const presenzaValue = parseInt(ev['presenza-allenamento'], 10);
+                    if (data[id] && presenzaValue > 0) data[id].count++;
+                });
+            });
+            return data;
+        };
+        const pastSeasonsData = pastSeasons.map(season => computeAttendanceForSeason(season));
+
         const labels = combinedData.map(d => d.name);
         const presenzeData = combinedData.map(d => d.presenze);
         const assenzeGiustificateData = combinedData.map(d => d.assenzeGiustificate);
-        
+        const seasonColorsAtt = ['rgba(100, 116, 139, 0.8)', 'rgba(59, 130, 246, 0.8)', 'rgba(217, 119, 6, 0.8)'];
+        const pastSeasonDatasets = pastSeasons.map((season, idx) => ({
+            label: `Presenze ${season}`,
+            data: labels.map(name => {
+                const match = combinedData.find(d => d.name === name);
+                return match && pastSeasonsData[idx][match.id] ? pastSeasonsData[idx][match.id].count : 0;
+            }),
+            backgroundColor: seasonColorsAtt[idx % seasonColorsAtt.length]
+        }));
+
         if(chartInstances.attendance) chartInstances.attendance.destroy();
         const attendanceCanvas = document.getElementById('attendanceChart');
         if (!attendanceCanvas) return;
@@ -3419,7 +3459,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         label: 'Assenze Giustificate',
                         data: assenzeGiustificateData,
                         backgroundColor: 'rgba(217, 119, 6, 0.85)'
-                    }
+                    },
+                    ...pastSeasonDatasets
                 ]
             },
             plugins: [{
@@ -6516,6 +6557,39 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
             showSharedWarning: false,
             onDataChanged: () => { renderMatchResults(); if (typeof updateMatchAnalysisChart === 'function') updateMatchAnalysisChart(); }
         });
+
+        const refreshValutazioniSeasonWidget = initSeasonCompareWidget({
+            category: 'evaluations',
+            sectionLabel: 'Valutazioni',
+            toggleBtnId: 'valutazioni-season-compare-toggle',
+            menuId: 'valutazioni-season-compare-menu',
+            wipeButtonsContainerId: 'valutazioni-season-wipe-buttons',
+            currentLabelId: 'valutazioni-season-current-label',
+            showSharedWarning: true,
+            onDataChanged: () => { updateEvaluationCharts(); }
+        });
+
+        const refreshPresenzeSeasonWidget = initSeasonCompareWidget({
+            category: 'evaluations',
+            sectionLabel: 'Conteggio Presenze Atleti',
+            toggleBtnId: 'presenze-season-compare-toggle',
+            menuId: 'presenze-season-compare-menu',
+            wipeButtonsContainerId: 'presenze-season-wipe-buttons',
+            currentLabelId: 'presenze-season-current-label',
+            showSharedWarning: true,
+            onDataChanged: () => { updateAttendanceChart(); }
+        });
+
+        window.__seasonCompareSyncSibling = (category, wipedSeasonKey) => {
+            if (category !== 'evaluations') return;
+            if (typeof refreshValutazioniSeasonWidget === 'function') refreshValutazioniSeasonWidget();
+            if (typeof refreshPresenzeSeasonWidget === 'function') refreshPresenzeSeasonWidget();
+        };
+
+        window.__seasonCompareRefreshSiblingWidget = (originToggleBtnId) => {
+            if (originToggleBtnId === 'valutazioni-season-compare-toggle' && typeof refreshPresenzeSeasonWidget === 'function') refreshPresenzeSeasonWidget();
+            if (originToggleBtnId === 'presenze-season-compare-toggle' && typeof refreshValutazioniSeasonWidget === 'function') refreshValutazioniSeasonWidget();
+        };
     });
 });
 
