@@ -167,7 +167,7 @@ body { background-color: var(--sm-bg); color: var(--text-light); padding-top: 56
 .session-tipo-Varie       { background-color: #64748b; color: white; }   /* grigio */
 .session-tipo-Portieri    { background-color: #65a30d; color: white; }   /* lime */
 .session-tipo-Atletica    { background-color: #0284c7; color: white; }   /* azzurro */
-.deadline-status { font-size: 1.2rem; position: absolute; top: 50%; right: 70px; transform: translateY(-50%); }
+.deadline-status { font-size: 1.2rem; position: absolute; top: 50%; right: 115px; transform: translateY(-50%); }
 .text-purple { color: var(--custom-purple) !important; }
 .available-player.disabled { opacity: 0.5; cursor: not-allowed; background-color: #343a40 !important; }
 .dragging { opacity: 0.5; z-index: 1056; pointer-events: none; }
