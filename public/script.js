@@ -2067,6 +2067,50 @@ document.addEventListener('DOMContentLoaded', () => {
         window._currentSeasonArchive = entry;
     }
 
+    // Ripristina le categorie selezionate di un archivio nella stagione corrente
+    // (merge additivo lato server, mai sovrascrive). Solo admin.
+    window.restoreSeasonArchive = async (label) => {
+        const checked = Array.from(document.querySelectorAll('.season-restore-cat:checked')).map(el => el.value);
+        const resultBox = document.getElementById('season-restore-result');
+        if (checked.length === 0) {
+            alert('Seleziona almeno una categoria da ripristinare.');
+            return;
+        }
+        if (!confirm(`Stai per aggiungere ${checked.length} categoria/e dalla stagione "${label}" alla stagione corrente.\n\nI dati già presenti non verranno toccati: verranno aggiunti solo quelli mancanti.\n\nContinuare?`)) {
+            return;
+        }
+        const btn = document.getElementById('season-restore-btn');
+        if (btn) { btn.disabled = true; btn.textContent = 'Ripristino in corso…'; }
+        try {
+            const r = await fetch('/api/data?action=season-restore', {
+                method: 'POST',
+                headers: _seasonHeaders(true),
+                body: JSON.stringify({ label, categories: checked })
+            });
+            const d = await r.json();
+            if (!r.ok || !d.success) {
+                if (resultBox) { resultBox.className = 'small mt-2 text-danger'; resultBox.textContent = '❌ ' + (d.message || 'Errore nel ripristino'); }
+                return;
+            }
+            const LABELS = {
+                matchResults: 'Risultati Partite', trainingSessions: 'Allenamenti',
+                evaluations: 'Presenze/Valutazioni', awards: 'Hall of Fame',
+                calendarEvents: 'Calendario Eventi', calendarResponses: 'RSVP Calendario',
+                inventory: 'Materiale'
+            };
+            const lines = Object.entries(d.summary || {}).map(([cat, s]) =>
+                `${LABELS[cat] || cat}: ${s.added} aggiunte, ${s.skipped} già presenti`
+            );
+            if (resultBox) { resultBox.className = 'small mt-2 text-success'; resultBox.innerHTML = '✓ ' + lines.join('<br>'); }
+            await loadData();
+            updateAllUI();
+        } catch (e) {
+            if (resultBox) { resultBox.className = 'small mt-2 text-danger'; resultBox.textContent = '❌ Errore di rete'; }
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Ripristina selezionati'; }
+        }
+    };
+
     // Costruisce un workbook Excel da un archivio di stagione
     function _seasonArchiveToWorkbook(entry) {
         const d = entry.data || {};
