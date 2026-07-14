@@ -6123,6 +6123,30 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   </div>
 </div>
 
+<!-- Modal condiviso: conferma cancellazione dati annata (Risultati/Valutazioni/Presenze) -->
+<div class="modal fade" id="wipeAnnataModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Cancella dati annata</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+      </div>
+      <div class="modal-body">
+        <p id="wipeAnnataModalText"></p>
+        <div class="alert alert-warning no-print" id="wipeAnnataSharedWarning" style="display:none;">
+          ⚠️ Valutazioni e Presenze condividono gli stessi dati: cancellando qui, i dati di <strong id="wipeAnnataSharedWarningName"></strong> spariranno ANCHE dall'altra sezione (Presenze/Valutazioni).
+        </div>
+        <label for="wipeAnnataConfirmInput" class="form-label small">Scrivi il nome esatto dell'annata per confermare:</label>
+        <input type="text" id="wipeAnnataConfirmInput" class="form-control" autocomplete="off">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annulla</button>
+        <button type="button" class="btn btn-danger" id="wipeAnnataConfirmBtn" disabled>Cancella definitivamente</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── Web Push — Sport Monitoring ─────────────────────────────────────────────
 (function() {
