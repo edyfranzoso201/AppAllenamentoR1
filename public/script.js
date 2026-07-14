@@ -2700,11 +2700,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const resp = await fetch('/api/data?action=wipe-season', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Auth-Session': sessionStorage.getItem('gosport_session_token') || '',
-                        'X-Annata-Id': sessionStorage.getItem('gosport_current_annata') || ''
-                    },
+                    headers: _seasonHeaders(true),
                     body: JSON.stringify({ category: config.category, seasonKey: config.seasonKey })
                 });
                 const data = await resp.json();
@@ -2725,7 +2721,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         confirmBtn.onclick = onConfirm;
 
-        new bootstrap.Modal(modalEl).show();
+        (bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl)).show();
     };
 
     // Monta un widget "confronto stagione calcistica" per UNA sezione. `config`:
