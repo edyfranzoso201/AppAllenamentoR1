@@ -98,7 +98,7 @@ body { background-color: var(--sm-bg); color: var(--text-light); padding-top: 56
 .avatar-initials { display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 1.5rem; line-height: 1; flex-shrink: 0; text-transform: uppercase; }
 .athlete-card .card-title { font-size: 1.1rem; margin-bottom: 0.1rem; }
 .athlete-card .card-body { padding-bottom: 48px; }
-.shirt-number { font-size: 1rem; font-weight: bold; color: var(--text-light); background-color: var(--primary-red); min-width: 40px; height: 40px; padding: 0 8px; border-radius: 20px; display: flex; align-items: center; justify-content: center; position: absolute; top: 50%; right: 28px; transform: translateY(-50%); white-space: nowrap; }
+.shirt-number { font-size: 1.5rem; font-weight: bold; color: var(--text-light); background-color: var(--primary-red); min-width: 40px; height: 40px; padding: 0 8px; border-radius: 20px; display: flex; align-items: center; justify-content: center; position: absolute; top: 50%; right: 66px; transform: translateY(-50%); white-space: nowrap; }
 .is-captain { color: var(--gold-star); }
 .card-actions { position: absolute; bottom: 10px; right: 10px; z-index: 5; display: flex; gap: 5px; align-items: center; }
 .card-actions .btn { background: rgba(0,0,0,0.3); border: none; }
