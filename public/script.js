@@ -1980,10 +1980,64 @@ document.addEventListener('DOMContentLoaded', () => {
         // Giorni con valutazioni (= presenze allenamento) e allenamenti programmati
         const giorniVal = Object.keys(d.evaluations || {}).length;
         const allenamenti = Object.keys(d.trainingSessions || {}).length;
+        const inventoryCount = Array.isArray(d.inventory) ? d.inventory.length : 0;
 
         const awardHtml = awardItems.length
             ? '<ul class="mb-0 small">' + awardItems.map(a => `<li><strong>${escapeHtml(a.ath)}</strong>${a.reason ? ' — ' + escapeHtml(a.reason) : ''} <span class="text-muted">(${escapeHtml(a.date)})</span></li>`).join('') + '</ul>'
             : '<span class="text-muted small">Nessun premio.</span>';
+
+        const canRestoreSeason = !imported && sessionStorage.getItem('gosport_user_role') === 'admin';
+        const restorePanelHtml = canRestoreSeason ? `
+                <div class="border rounded p-2 mt-3" id="season-restore-panel">
+                    <h6 class="mb-2"><i class="bi bi-arrow-repeat"></i> Ripristina nella stagione corrente</h6>
+                    <p class="small text-muted mb-2">Aggiunge i dati selezionati alla stagione attiva. Non sovrascrive mai: gli elementi già presenti vengono saltati.</p>
+                    <div class="row g-2">
+                        <div class="col-6 col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input season-restore-cat" type="checkbox" value="matchResults" id="restore-cat-matches" ${partite === 0 ? 'disabled' : ''}>
+                                <label class="form-check-label small" for="restore-cat-matches">Risultati Partite (${partite})</label>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input season-restore-cat" type="checkbox" value="trainingSessions" id="restore-cat-training" ${allenamenti === 0 ? 'disabled' : ''}>
+                                <label class="form-check-label small" for="restore-cat-training">Allenamenti (${allenamenti})</label>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input season-restore-cat" type="checkbox" value="evaluations" id="restore-cat-evaluations" ${giorniVal === 0 ? 'disabled' : ''}>
+                                <label class="form-check-label small" for="restore-cat-evaluations">Presenze/Valutazioni (${giorniVal}g)</label>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input season-restore-cat" type="checkbox" value="awards" id="restore-cat-awards" ${awardItems.length === 0 ? 'disabled' : ''}>
+                                <label class="form-check-label small" for="restore-cat-awards">Hall of Fame (${awardItems.length})</label>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input season-restore-cat" type="checkbox" value="calendarEvents" id="restore-cat-calevents" ${eventi === 0 ? 'disabled' : ''}>
+                                <label class="form-check-label small" for="restore-cat-calevents">Calendario Eventi (${eventi})</label>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input season-restore-cat" type="checkbox" value="calendarResponses" id="restore-cat-calresponses" ${giorniPres === 0 ? 'disabled' : ''}>
+                                <label class="form-check-label small" for="restore-cat-calresponses">RSVP Calendario (${giorniPres}g)</label>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input season-restore-cat" type="checkbox" value="inventory" id="restore-cat-inventory" ${inventoryCount === 0 ? 'disabled' : ''}>
+                                <label class="form-check-label small" for="restore-cat-inventory">Materiale (${inventoryCount})</label>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-warning mt-2" id="season-restore-btn" onclick="window.restoreSeasonArchive('${escapeHtml(entry.label)}')"><i class="bi bi-arrow-repeat"></i> Ripristina selezionati</button>
+                    <div id="season-restore-result" class="small mt-2"></div>
+                </div>` : '';
 
         wrap.innerHTML = `<div class="card chart-card">
             <div class="card-body">
@@ -2002,6 +2056,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <h6><i class="bi bi-award-fill" style="color:#ea580c;"></i> Hall of Fame</h6>
                 ${awardHtml}
+                ${restorePanelHtml}
                 <div class="mt-3">
                     <button class="btn btn-sm btn-outline-success" onclick="window.exportSeasonArchiveObj()"><i class="bi bi-download"></i> Scarica questo archivio</button>
                 </div>
