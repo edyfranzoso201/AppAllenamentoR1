@@ -2104,6 +2104,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (resultBox) { resultBox.className = 'small mt-2 text-success'; resultBox.innerHTML = '✓ ' + lines.join('<br>'); }
             await loadData();
             updateAllUI();
+            if (checked.includes('inventory') && window.INV && typeof window.INV.load === 'function') {
+                window.INV.load(true);
+            }
         } catch (e) {
             if (resultBox) { resultBox.className = 'small mt-2 text-danger'; resultBox.textContent = '❌ Errore di rete'; }
         } finally {
