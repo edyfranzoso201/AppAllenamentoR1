@@ -1220,6 +1220,9 @@ if (req.query?.action === 'wipe-season' && req.method === 'POST') {
   if (seasonKey === currentSeasonKey()) {
     return res.status(400).json({ success: false, message: 'Non puoi cancellare la stagione corrente' });
   }
+  if (!annataId || !isValidId(annataId)) {
+    return res.status(400).json({ success: false, message: 'Annata non valida' });
+  }
   try {
     const key = `annate:${annataId}:${category}`;
     const current = (await kv.get(key)) || {};
