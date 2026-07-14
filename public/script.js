@@ -4519,14 +4519,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const bsModal = new bootstrap.Modal(modal);
             bsModal.show();
             try {
-                const resp = await fetch('/api/annate/list');
+                const resp = await fetch('/api/annate/list', {
+                    headers: { 'X-Auth-Session': sessionStorage.getItem('gosport_session_token') || '' }
+                });
                 const data = await resp.json();
                 const annateList = Array.isArray(data) ? data : (data.annate || []);
                 const filtered = annateList.filter(a => String(a.id) !== String(annataId));
                 if (filtered.length === 0) {
                     select.innerHTML = '<option value="">Nessuna altra annata disponibile</option>';
                 } else {
-                    select.innerHTML = filtered.map(a => `<option value="${a.id}">${a.name || a.id}</option>`).join('');
+                    select.innerHTML = filtered.map(a => `<option value="${a.id}">${a.nome || a.id}</option>`).join('');
                 }
             } catch (err) {
                 select.innerHTML = '<option value="">Errore caricamento annate</option>';
