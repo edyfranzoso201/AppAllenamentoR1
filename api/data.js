@@ -1185,59 +1185,6 @@ if (req.query?.action === 'season-restore' && req.method === 'POST') {
   }
 }
 
-// ── WIPE ANNATA CATEGORY: cancellazione mirata di UNA categoria per UNA
-// annata passata (Risultati Partite / Valutazioni-Presenze), senza toccare
-// le altre categorie né l'annata corrente. Solo Admin. ───────────────────
-const WIPE_CATEGORIES = ['matchResults', 'evaluations'];
-if (req.query?.action === 'wipe-annata-category' && req.method === 'POST') {
-  if (!session.isAuthenticated || String(session.role).toLowerCase() !== 'admin') {
-    return res.status(403).json({ success: false, message: 'Permesso negato: solo Admin può cancellare dati di un\'annata' });
-  }
-  const category = String((req.body && req.body.category) || '').trim();
-  if (!WIPE_CATEGORIES.includes(category)) {
-    return res.status(400).json({ success: false, message: 'Categoria non valida' });
-  }
-  const targetAnnataId = String((req.body && req.body.targetAnnataId) || '').trim();
-  if (!isValidId(targetAnnataId)) {
-    return res.status(400).json({ success: false, message: 'targetAnnataId non valido' });
-  }
-  try {
-    const annateListForWipe = (await kv.get('annate:list')) || [];
-    const annataMeta = annateListForWipe.find(a => String(a.id) === targetAnnataId);
-    if (annataMeta && (annataMeta.societyId || null) !== (session.societyId || null)) {
-      return res.status(403).json({ success: false, message: 'Accesso negato: annata di un\'altra società' });
-    }
-    if (targetAnnataId === annataId) {
-      return res.status(400).json({ success: false, message: 'Non puoi cancellare l\'annata attiva da qui, usa Cambio Stagione' });
-    }
-    const prefix = `annate:${targetAnnataId}`;
-    const key = `${prefix}:${category}`;
-    const current = (await kv.get(key)) || {};
-    let deletedCount = 0;
-    if (category === 'matchResults') {
-      deletedCount = Object.keys(current).length;
-    } else {
-      deletedCount = Object.values(current).reduce((sum, byAthlete) => sum + Object.keys(byAthlete || {}).length, 0);
-    }
-    await kv.set(key, {});
-    // Audit log: azione distruttiva, stesso pattern di logRetentionPurge.
-    try {
-      const logKey = 'audit:wipe-annata-log';
-      const log = (await kv.get(logKey)) || [];
-      log.push({
-        date: new Date().toISOString().split('T')[0],
-        targetAnnataId, category, deletedCount,
-        admin: session.username, societyId: session.societyId || null
-      });
-      await kv.set(logKey, log.slice(-500));
-    } catch (e) { /* non bloccante */ }
-    return res.status(200).json({ success: true, deletedCount });
-  } catch (e) {
-    console.error('[wipe-annata-category]', e?.message || e);
-    return res.status(500).json({ success: false, message: 'Errore durante la cancellazione' });
-  }
-}
-
 // ── PASSWORD INDIVIDUAL: cambio sicuro (verifica vecchia lato server) ────────
 // Per cambiare serve conoscere la password ATTUALE: il server la verifica e solo
 // allora salva la nuova. La password attuale non viene MAI restituita al client
