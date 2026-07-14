@@ -1672,6 +1672,11 @@
                     <label for="risultati-filter-end" class="form-label mb-0 small text-nowrap">A</label>
                     <input type="date" id="risultati-filter-end" class="form-control form-control-sm" style="max-width:150px;" title="Data fine">
                 </div>
+                <div class="col-md-12 d-flex align-items-center gap-2 flex-wrap no-print" id="risultati-annata-compare-bar">
+                    <label for="risultati-annata-compare-select" class="form-label mb-0 small text-nowrap">+ Aggiungi annata precedente:</label>
+                    <select id="risultati-annata-compare-select" class="form-select form-select-sm" style="max-width:220px;" multiple size="1"></select>
+                    <div id="risultati-annata-wipe-buttons" class="d-flex gap-1 flex-wrap"></div>
+                </div>
             </div>
             <div class="row" id="match-results-container">
                  <p class="text-muted">Nessun risultato inserito.</p>
@@ -3002,7 +3007,7 @@
     <script src="auth-multi-annata.js?v=1779800000"></script>
 
     <!-- Script personalizzato -->
-    <script src="script.js?v=1781310001"></script>
+    <script src="script.js?v=1781310002"></script>
     <script>
 
     // ========================================================================

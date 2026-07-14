@@ -2692,6 +2692,82 @@ document.addEventListener('DOMContentLoaded', () => {
         state.selectedIds = [];
     };
 
+    // Monta un widget "confronto annata" per UNA sezione. `config`:
+    //   category: 'matchResults' | 'evaluations'
+    //   sectionLabel: es. "Risultati Partite"
+    //   selectId: id della <select> nel DOM
+    //   buttonsContainerId: id del div dove appendere i pulsanti di cancellazione
+    //   onDataChanged: callback chiamata dopo merge/restore (per ri-renderizzare la sezione)
+    //   showSharedWarning: true per Valutazioni/Presenze (evaluations condivisa)
+    const initAnnataCompareWidget = async (config) => {
+        const select = document.getElementById(config.selectId);
+        const buttonsContainer = document.getElementById(config.buttonsContainerId);
+        if (!select || !buttonsContainer) return;
+
+        const annateOptions = await fetchAnnataListForCompare();
+        select.innerHTML = annateOptions.map(a => `<option value="${a.id}" data-nome="${a.nome || a.id}">${a.nome || a.id}</option>`).join('');
+
+        const renderWipeButtons = () => {
+            const state = annataCompareState[config.category];
+            const isAdmin = sessionStorage.getItem('gosport_user_role') === 'admin';
+            buttonsContainer.innerHTML = state.selectedIds.map(id => {
+                const opt = annateOptions.find(a => String(a.id) === String(id));
+                const nome = opt ? (opt.nome || opt.id) : id;
+                if (!isAdmin) return '';
+                return `<button type="button" class="btn btn-sm btn-outline-danger wipe-annata-btn" data-annata-id="${id}" data-nome="${nome}">🗑️ Cancella dati ${nome}</button>`;
+            }).join('');
+            buttonsContainer.querySelectorAll('.wipe-annata-btn').forEach(btn => {
+                btn.addEventListener('click', () => openWipeAnnataModal({
+                    category: config.category,
+                    sectionLabel: config.sectionLabel,
+                    annataId: btn.dataset.annataId,
+                    annataNome: btn.dataset.nome,
+                    showSharedWarning: !!config.showSharedWarning,
+                    onWiped: () => {
+                        const st = annataCompareState[config.category];
+                        st.selectedIds = st.selectedIds.filter(id => String(id) !== String(btn.dataset.annataId));
+                        if (st.selectedIds.length === 0) restoreCategoryFromSnapshot(config.category);
+                        Array.from(select.options).forEach(o => { if (String(o.value) === String(btn.dataset.annataId)) o.selected = false; });
+                        renderWipeButtons();
+                        config.onDataChanged();
+                        // Se la categoria è evaluations, invalida anche l'ALTRA sezione (Presenze/Valutazioni).
+                        if (config.category === 'evaluations' && typeof window.__annataCompareSyncSibling === 'function') {
+                            window.__annataCompareSyncSibling(config.selectId, btn.dataset.annataId);
+                        }
+                    }
+                }));
+            });
+        };
+
+        select.addEventListener('change', async () => {
+            const state = annataCompareState[config.category];
+            const chosenIds = Array.from(select.selectedOptions).map(o => o.value);
+            const newlySelected = chosenIds.filter(id => !state.selectedIds.includes(id));
+            const deselected = state.selectedIds.filter(id => !chosenIds.includes(id));
+
+            if (deselected.length > 0 && chosenIds.length === 0) {
+                restoreCategoryFromSnapshot(config.category);
+            }
+            if (!state.originalSnapshot && newlySelected.length > 0) {
+                state.originalSnapshot = JSON.parse(JSON.stringify(config.category === 'matchResults' ? matchResults : evaluations));
+            }
+            for (const id of newlySelected) {
+                try {
+                    const incoming = await fetchCategoryForAnnata(id, config.category);
+                    mergeCategoryData(config.category, incoming);
+                } catch (e) {
+                    console.error('[annataCompare] errore fetch', e);
+                    alert('Errore nel caricamento dei dati dell\'annata selezionata.');
+                }
+            }
+            state.selectedIds = chosenIds;
+            renderWipeButtons();
+            config.onDataChanged();
+        });
+
+        renderWipeButtons();
+    };
+
     const renderMatchResults = () => {
         elements.matchResultsContainer.innerHTML = '';
         const allMatches = Object.values(matchResults).sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -6361,6 +6437,20 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
             if (document.visibilityState !== 'visible') return;
             const currentDataSnapshot = JSON.stringify({ athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults });
             await loadData();
+            // Ri-applica il merge delle annate precedenti eventualmente selezionate,
+            // altrimenti il polling le farebbe sparire silenziosamente dalla vista.
+            for (const cat of ['matchResults', 'evaluations']) {
+                const state = annataCompareState[cat];
+                if (state.selectedIds.length > 0) {
+                    state.originalSnapshot = JSON.parse(JSON.stringify(cat === 'matchResults' ? matchResults : evaluations));
+                    for (const id of state.selectedIds) {
+                        try {
+                            const incoming = await fetchCategoryForAnnata(id, cat);
+                            mergeCategoryData(cat, incoming);
+                        } catch (e) { console.error('[annataCompare] errore re-merge dopo polling', e); }
+                    }
+                }
+            }
             const newDataSnapshot = JSON.stringify({ athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults });
             if (currentDataSnapshot !== newDataSnapshot) {
                 console.log("Dati aggiornati dal server. Ricarico l'interfaccia.");
@@ -6385,6 +6475,15 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
         // FIX v1.5.21: controlla documenti caricati dai genitori
         setTimeout(window._checkPendingAthleteDocs, 2000);
         setTimeout(window._checkPendingAthleteDocs, 6000); // secondo check per sicurezza
+
+        initAnnataCompareWidget({
+            category: 'matchResults',
+            sectionLabel: 'Risultati Partite',
+            selectId: 'risultati-annata-compare-select',
+            buttonsContainerId: 'risultati-annata-wipe-buttons',
+            showSharedWarning: false,
+            onDataChanged: () => { renderMatchResults(); if (typeof updateMatchAnalysisChart === 'function') updateMatchAnalysisChart(); }
+        });
     });
 });
 
