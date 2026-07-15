@@ -3723,7 +3723,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (s==='restituito') return { bg: isLight ? '#1d4ed8' : '#1e3a8a', color: isLight ? '#ffffff' : '#93c5fd', border:'#3b82f6', icon:'&#x21A9;&#xFE0F;', label:'Restituito' };
         return { bg: isLight ? '#f0f1f2' : '#1e293b', color: isLight ? '#000103' : '#64748b', border: isLight ? '#f0f1f2' : '#64748b', icon:'&mdash;', label:'Nessuno' };
     }
-    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
     function buildTable(people, editable, showArticleButtons) {
         if (people.length === 0) {
@@ -7050,7 +7050,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     setTimeout(function(){ window.INV.kitGenerate(); }, 300);
   };
 
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
   // ── Popover condizione badge ──
   var _badgePopover = null;
@@ -8592,7 +8592,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
   function canWrite() { return WL_WRITE_ROLES.includes(String(_wlRole || '').toLowerCase().replace(/ /g,'')); }
   function canDel()   { return WL_DEL_ROLES.includes(String(_wlRole || '').toLowerCase().replace(/ /g,'')); }
 
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
   function authHeaders() {
     return {
       'Content-Type': 'application/json',
