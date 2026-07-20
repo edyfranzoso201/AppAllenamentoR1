@@ -146,6 +146,26 @@ function canWrite(role) {
   return ['admin', 'coachl0', 'coachl1', 'coachl2', 'societal1', 'dirigentel1', 'dirigentel2'].includes(r);
 }
 
+// ── Firma link playlist pubblica (esercizi, senza login) ────────────────────
+// Scope SEPARATO dal link genitore (parentSign): una playlist pubblica non
+// deve mai poter essere aperta con la firma del calendario genitori e
+// viceversa. A differenza di parentSigOk, qui la firma è SEMPRE richiesta
+// (nessuna transizione "link legacy"): senza secret configurato l'endpoint
+// pubblico rifiuta, non apre in chiaro.
+function playlistSign(annataId, playlistId) {
+  const sec = parentSecret();
+  if (!sec) return '';
+  return crypto.createHmac('sha256', sec).update(`playlist:${annataId}:${playlistId}`).digest('hex').substring(0, 32);
+}
+function playlistSigOk(annataId, playlistId, providedSig) {
+  const sig = String(providedSig || '').trim();
+  const expected = playlistSign(annataId, playlistId);
+  if (!sig || !expected) return false;
+  const a = Buffer.from(sig), b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  try { return crypto.timingSafeEqual(a, b); } catch { return false; }
+}
+
 // Il cambio stagione è un'operazione delicata (archivia + azzera): consentita
 // SOLO ad admin, dirigente (D-L1) e coach_l1 (C-L1). Normalizza il ruolo
 // rimuovendo underscore così matcha sia 'coach_l1' sia 'coachl1'.
@@ -614,6 +634,82 @@ if (req.query?.action === 'area-tecnica') {
     await kv.set(key, items);
     return res.status(200).json({ success: true, items });
   }
+}
+
+// ── PLAYLIST PUBBLICHE ESERCIZI ──────────────────────────────────────────────
+// Storage annate:<id>:playlists = [ {id,nome,itemIds:[...],createdAt}, ... ].
+// itemIds referenzia le card di annate:<id>:areaTecnica (solo tipo 'esercizio'
+// è pensato per finirci, ma il filtro per tipo è responsabilità di chi crea la
+// playlist, non del server). Stessi permessi di area-tecnica (canWrite),
+// SOLO staff — la lettura pubblica passa dall'action separata sotto.
+if (req.query?.action === 'area-tecnica-playlist') {
+  if (!session.isAuthenticated || !canWrite(session.role)) {
+    return res.status(403).json({ success: false, message: 'Permesso negato' });
+  }
+  if (!annataId || !isValidId(annataId)) {
+    return res.status(400).json({ success: false, message: 'annataId non valido' });
+  }
+  const key = `annate:${annataId}:playlists`;
+
+  if (req.method === 'GET') {
+    const playlists = (await kv.get(key)) || [];
+    const withSig = playlists.map(p => ({ ...p, sig: playlistSign(annataId, p.id) }));
+    return res.status(200).json({ success: true, playlists: withSig });
+  }
+
+  if (req.method === 'POST') {
+    const { playlist, deleteId } = req.body || {};
+    let playlists = (await kv.get(key)) || [];
+    if (deleteId) {
+      playlists = playlists.filter(x => x.id !== deleteId);
+    } else if (playlist && typeof playlist === 'object') {
+      const itemIds = Array.isArray(playlist.itemIds) ? playlist.itemIds.map(String).slice(0, 200) : [];
+      const v = {
+        id: playlist.id || ('pl' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)),
+        nome: String(playlist.nome || '').slice(0, 120),
+        itemIds,
+        createdAt: playlist.createdAt || new Date().toISOString()
+      };
+      const idx = playlists.findIndex(x => x.id === v.id);
+      if (idx >= 0) playlists[idx] = v; else playlists.push(v);
+    }
+    await kv.set(key, playlists);
+    const withSig = playlists.map(p => ({ ...p, sig: playlistSign(annataId, p.id) }));
+    return res.status(200).json({ success: true, playlists: withSig });
+  }
+}
+
+// ── PLAYLIST PUBBLICA (lettura, SENZA login) ─────────────────────────────────
+// Usata da public/playlist.html?a=<annataId>&p=<playlistId>&sig=<firma>.
+// Nessuna sessione richiesta: la firma HMAC (scope 'playlist', separato dal
+// link genitore) è l'unica autorizzazione. Ritorna SOLO nome playlist + le
+// card di areaTecnica referenziate da itemIds — nessun altro dato dell'annata.
+if (req.query?.action === 'area-tecnica-playlist-pubblica' && req.method === 'GET') {
+  const pAnnataId = String(req.query?.a || '');
+  const playlistId = String(req.query?.p || '');
+  const sig = String(req.query?.sig || '');
+  if (!pAnnataId || !isValidId(pAnnataId) || !playlistId) {
+    return res.status(400).json({ success: false, message: 'Parametri mancanti' });
+  }
+  if (!playlistSigOk(pAnnataId, playlistId, sig)) {
+    return res.status(403).json({ success: false, message: 'Link non valido' });
+  }
+  const playlists = (await kv.get(`annate:${pAnnataId}:playlists`)) || [];
+  const pl = playlists.find(x => x.id === playlistId);
+  if (!pl) {
+    return res.status(404).json({ success: false, message: 'Playlist non trovata' });
+  }
+  const items = (await kv.get(`annate:${pAnnataId}:areaTecnica`)) || [];
+  const idSet = new Set(pl.itemIds || []);
+  const playlistItems = items.filter(x => idSet.has(x.id));
+  return res.status(200).json({
+    success: true,
+    nome: pl.nome,
+    items: playlistItems.map(x => ({
+      id: x.id, titolo: x.titolo, url: x.url, fonte: x.fonte,
+      categoria: x.categoria, note: x.note, colore: x.colore, cover: x.cover
+    }))
+  });
 }
 
 // ── PERSONALIZZA MENU: configurazione admin per società ──────────────────────

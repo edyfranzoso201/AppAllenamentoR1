@@ -277,5 +277,98 @@
   $('at-search').addEventListener('input', render);
   [$('at-form-overlay'), $('at-player-overlay')].forEach(ov => ov.addEventListener('click', (e) => { if (e.target === ov) { if (ov.id === 'at-player-overlay') window.atClosePlayer(); else ov.style.display = 'none'; } }));
 
+  // ── Playlist pubbliche (senza login) ──
+  let playlists = [];
+
+  async function loadPlaylists() {
+    try {
+      const r = await fetch('/api/data?action=area-tecnica-playlist', { headers: authHeaders(false) });
+      const d = await r.json();
+      playlists = (d.success && d.playlists) || [];
+      renderPlaylists();
+    } catch (e) { toast('Errore caricamento playlist'); }
+  }
+
+  function publicUrlFor(pl) {
+    return `${location.origin}/playlist.html?a=${encodeURIComponent(annataId())}&p=${encodeURIComponent(pl.id)}&sig=${encodeURIComponent(pl.sig)}`;
+  }
+
+  function renderPlaylists() {
+    const box = $('at-pl-list');
+    if (!playlists.length) {
+      box.innerHTML = '<div class="at-empty">Nessuna playlist creata.</div>';
+      return;
+    }
+    box.innerHTML = playlists.map(pl => `
+      <div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+        <div>
+          <div style="font-weight:700;">${esc(pl.nome)}</div>
+          <div style="font-size:0.78rem;color:var(--muted);">${(pl.itemIds || []).length} esercizi</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button class="at-btn-ghost" onclick="window.atPlCopyLink('${pl.id}')" title="Copia link pubblico">🔗 Copia link</button>
+          <button class="at-del" title="Modifica" onclick="window.atPlEdit('${pl.id}')">✏️</button>
+          <button class="at-del" title="Elimina" onclick="window.atPlDelete('${pl.id}')">🗑️</button>
+        </div>
+      </div>`).join('');
+  }
+
+  window.atPlCopyLink = function (id) {
+    const pl = playlists.find(p => p.id === id); if (!pl) return;
+    navigator.clipboard.writeText(publicUrlFor(pl));
+    toast('Link copiato ✓');
+  };
+
+  window.atPlDelete = async function (id) {
+    if (!confirm('Eliminare questa playlist? Il link pubblico smetterà di funzionare.')) return;
+    try {
+      const r = await fetch('/api/data?action=area-tecnica-playlist', { method:'POST', headers: authHeaders(true), body: JSON.stringify({ deleteId: id }) });
+      const d = await r.json();
+      if (d.success) { playlists = d.playlists; renderPlaylists(); toast('Eliminata ✓'); }
+    } catch (e) { toast('Errore'); }
+  };
+
+  function openPlaylistEditor(pl) {
+    $('at-pl-edit-title').textContent = pl ? '✏️ Modifica playlist' : '➕ Nuova playlist';
+    $('at-pl-edit-id').value = pl ? pl.id : '';
+    $('at-pl-nome').value = pl ? (pl.nome || '') : '';
+    const selected = new Set(pl ? (pl.itemIds || []) : []);
+    const eligible = items.filter(x => x.tipo === 'esercizio' || x.tipo === 'video');
+    const checklist = $('at-pl-checklist');
+    if (!eligible.length) {
+      checklist.innerHTML = '<div class="at-empty">Nessun contenuto disponibile in Area Tecnica.</div>';
+    } else {
+      checklist.innerHTML = eligible.map(x => `
+        <label style="display:flex;align-items:center;gap:8px;padding:5px 2px;cursor:pointer;">
+          <input type="checkbox" value="${x.id}" ${selected.has(x.id) ? 'checked' : ''}>
+          <span>${x._code ? `<span style="font-weight:800;color:${x.colore || '#e2e8f0'};margin-right:4px;">${esc(x._code)}</span>` : ''}${esc(x.titolo || '(senza titolo)')}</span>
+        </label>`).join('');
+    }
+    $('at-pl-edit-overlay').style.display = 'flex';
+    $('at-pl-nome').focus();
+  }
+  window.atPlEdit = function (id) { const pl = playlists.find(p => p.id === id); if (pl) openPlaylistEditor(pl); };
+
+  async function savePlaylist() {
+    const nome = $('at-pl-nome').value.trim();
+    if (!nome) { toast('Inserisci un nome per la playlist'); return; }
+    const itemIds = Array.from(document.querySelectorAll('#at-pl-checklist input[type=checkbox]:checked')).map(c => c.value);
+    if (!itemIds.length) { toast('Seleziona almeno un esercizio'); return; }
+    const playlist = { id: $('at-pl-edit-id').value || undefined, nome, itemIds };
+    try {
+      const r = await fetch('/api/data?action=area-tecnica-playlist', { method:'POST', headers: authHeaders(true), body: JSON.stringify({ playlist }) });
+      const d = await r.json();
+      if (!r.ok || !d.success) { toast(d.message || 'Errore salvataggio'); return; }
+      playlists = d.playlists; renderPlaylists();
+      $('at-pl-edit-overlay').style.display = 'none';
+      toast('Playlist salvata ✓');
+    } catch (e) { toast('Errore di rete'); }
+  }
+
+  $('at-playlist-btn').addEventListener('click', () => { $('at-pl-overlay').style.display = 'flex'; loadPlaylists(); });
+  $('at-pl-new-btn').addEventListener('click', () => openPlaylistEditor(null));
+  $('at-pl-save-btn').addEventListener('click', savePlaylist);
+  [$('at-pl-overlay'), $('at-pl-edit-overlay')].forEach(ov => ov.addEventListener('click', (e) => { if (e.target === ov) ov.style.display = 'none'; }));
+
   load();
 })();

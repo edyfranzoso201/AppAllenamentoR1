@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Playlist esercizi — Sport Monitoring</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <style>
+    :root{ --bg:#060f1e; --card:#0d1b2a; --panel:#1e293b; --border:#2d4a8a; --txt:#e2e8f0; --muted:#94a3b8; --accent:#1aa05e; }
+    *{box-sizing:border-box;}
+    body{margin:0;font-family:system-ui,Arial,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;}
+    .pl-header{background:var(--card);border-bottom:2px solid var(--accent);padding:16px 18px;text-align:center;}
+    .pl-header h1{font-size:1.15rem;margin:0;font-weight:700;}
+    .pl-main{max-width:720px;margin:0 auto;padding:18px;}
+    .pl-item{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden;}
+    .pl-item .tit{padding:12px 14px 4px;font-weight:700;font-size:0.98rem;}
+    .pl-item .note{padding:0 14px 12px;color:var(--muted);font-size:0.82rem;}
+    .pl-player{aspect-ratio:16/9;background:#000;}
+    .pl-player iframe{width:100%;height:100%;border:0;}
+    .pl-empty{text-align:center;color:var(--muted);padding:48px 16px;}
+  </style>
+</head>
+<body>
+  <div class="pl-header">
+    <h1 id="pl-title">🔗 Playlist esercizi</h1>
+  </div>
+  <div class="pl-main" id="pl-main">
+    <div class="pl-empty">Caricamento…</div>
+  </div>
+
+  <script>
+  (function () {
+    'use strict';
+    const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+    function detectFonte(url) {
+      const u = url.trim();
+      if (/youtube\.com|youtu\.be/i.test(u)) return 'youtube';
+      if (/drive\.google\.com|docs\.google\.com/i.test(u)) return 'drive';
+      return 'altro';
+    }
+    function youtubeId(url) {
+      let m = url.match(/[?&]v=([^&]+)/) || url.match(/youtu\.be\/([^?&]+)/) || url.match(/\/embed\/([^?&]+)/) || url.match(/\/shorts\/([^?&]+)/);
+      return m ? m[1] : null;
+    }
+    function youtubeStart(url) {
+      let m = url.match(/[?&](?:t|start)=([0-9hms]+)/i);
+      if (!m) return null;
+      const raw = m[1];
+      if (/^\d+$/.test(raw)) return parseInt(raw, 10);
+      const hms = raw.match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/i);
+      if (!hms) return null;
+      const h = parseInt(hms[1] || '0', 10), mi = parseInt(hms[2] || '0', 10), s = parseInt(hms[3] || '0', 10);
+      const total = h * 3600 + mi * 60 + s;
+      return total > 0 ? total : null;
+    }
+    function embedFor(item) {
+      const fonte = item.fonte || detectFonte(item.url);
+      if (fonte === 'youtube') {
+        const id = youtubeId(item.url);
+        if (id) {
+          const start = youtubeStart(item.url);
+          const src = `https://www.youtube.com/embed/${id}` + (start ? `?start=${start}` : '');
+          return `<div class="pl-player"><iframe src="${esc(src)}" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe></div>`;
+        }
+      }
+      if (fonte === 'drive') {
+        let m = item.url.match(/\/file\/d\/([^/]+)/) || item.url.match(/[?&]id=([^&]+)/);
+        const id = m ? m[1] : null;
+        const src = id ? `https://drive.google.com/file/d/${id}/preview` : item.url;
+        return `<div class="pl-player"><iframe src="${esc(src)}" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe></div>`;
+      }
+      return `<div style="padding:14px;"><a href="${esc(item.url)}" target="_blank" rel="noopener" style="color:var(--accent);">Apri il contenuto ↗</a></div>`;
+    }
+
+    async function load() {
+      const p = new URLSearchParams(location.search);
+      const a = p.get('a'), pl = p.get('p'), sig = p.get('sig');
+      const main = document.getElementById('pl-main');
+      if (!a || !pl || !sig) {
+        main.innerHTML = '<div class="pl-empty">Link non valido.</div>';
+        return;
+      }
+      try {
+        const r = await fetch(`/api/data?action=area-tecnica-playlist-pubblica&a=${encodeURIComponent(a)}&p=${encodeURIComponent(pl)}&sig=${encodeURIComponent(sig)}`);
+        const d = await r.json();
+        if (!r.ok || !d.success) {
+          main.innerHTML = '<div class="pl-empty">Playlist non trovata o link non più valido.</div>';
+          return;
+        }
+        document.getElementById('pl-title').textContent = '🔗 ' + (d.nome || 'Playlist esercizi');
+        document.title = (d.nome || 'Playlist esercizi') + ' — Sport Monitoring';
+        const list = d.items || [];
+        if (!list.length) {
+          main.innerHTML = '<div class="pl-empty">Nessun esercizio in questa playlist.</div>';
+          return;
+        }
+        main.innerHTML = list.map(x => `
+          <div class="pl-item">
+            <div class="tit" style="color:${esc(x.colore || '#e2e8f0')};">${esc(x.titolo || '')}</div>
+            ${embedFor(x)}
+            ${x.note ? `<div class="note">${esc(x.note)}</div>` : ''}
+          </div>`).join('');
+      } catch (e) {
+        main.innerHTML = '<div class="pl-empty">Errore di caricamento.</div>';
+      }
+    }
+    load();
+  })();
+  </script>
+</body>
+</html>
