@@ -52,12 +52,29 @@
     let m = url.match(/[?&]v=([^&]+)/) || url.match(/youtu\.be\/([^?&]+)/) || url.match(/\/embed\/([^?&]+)/) || url.match(/\/shorts\/([^?&]+)/);
     return m ? m[1] : null;
   }
+  // Estrae il tempo di partenza da un link YouTube: supporta ?t=287s, ?t=287, ?start=287,
+  // e il formato ?t=1h2m3s (usato talvolta condividendo da mobile).
+  function youtubeStart(url) {
+    let m = url.match(/[?&](?:t|start)=([0-9hms]+)/i);
+    if (!m) return null;
+    const raw = m[1];
+    if (/^\d+$/.test(raw)) return parseInt(raw, 10);
+    const hms = raw.match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/i);
+    if (!hms) return null;
+    const h = parseInt(hms[1] || '0', 10), mi = parseInt(hms[2] || '0', 10), s = parseInt(hms[3] || '0', 10);
+    const total = h * 3600 + mi * 60 + s;
+    return total > 0 ? total : null;
+  }
   // Ritorna { mode:'iframe', src } oppure { mode:'locale', path } oppure { mode:'link', href }
   function embedFor(item) {
     const fonte = item.fonte || detectFonte(item.url);
     if (fonte === 'youtube') {
       const id = youtubeId(item.url);
-      if (id) return { mode: 'iframe', src: `https://www.youtube.com/embed/${id}` };
+      if (id) {
+        const start = youtubeStart(item.url);
+        const src = `https://www.youtube.com/embed/${id}` + (start ? `?start=${start}` : '');
+        return { mode: 'iframe', src };
+      }
     }
     if (fonte === 'drive') {
       const id = driveId(item.url);
