@@ -333,7 +333,7 @@
     $('at-pl-edit-id').value = pl ? pl.id : '';
     $('at-pl-nome').value = pl ? (pl.nome || '') : '';
     const selected = new Set(pl ? (pl.itemIds || []) : []);
-    const eligible = items.filter(x => x.tipo === 'esercizio' || x.tipo === 'video');
+    const eligible = items;
     const checklist = $('at-pl-checklist');
     if (!eligible.length) {
       checklist.innerHTML = '<div class="at-empty">Nessun contenuto disponibile in Area Tecnica.</div>';
@@ -341,7 +341,7 @@
       checklist.innerHTML = eligible.map(x => `
         <label style="display:flex;align-items:center;gap:8px;padding:5px 2px;cursor:pointer;">
           <input type="checkbox" value="${x.id}" ${selected.has(x.id) ? 'checked' : ''}>
-          <span>${x._code ? `<span style="font-weight:800;color:${x.colore || '#e2e8f0'};margin-right:4px;">${esc(x._code)}</span>` : ''}${esc(x.titolo || '(senza titolo)')}</span>
+          <span>${TIPO_ICON[x.tipo] || ''} ${x._code ? `<span style="font-weight:800;color:${x.colore || '#e2e8f0'};margin-right:4px;">${esc(x._code)}</span>` : ''}${esc(x.titolo || '(senza titolo)')}</span>
         </label>`).join('');
     }
     $('at-pl-edit-overlay').style.display = 'flex';
