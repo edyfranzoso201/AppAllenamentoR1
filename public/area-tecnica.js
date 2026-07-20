@@ -328,11 +328,46 @@
     } catch (e) { toast('Errore'); }
   };
 
+  // Ordine corrente degli item scelti per la playlist in editing (array di id,
+  // nell'ordine in cui compariranno nella pagina pubblica).
+  let plOrder = [];
+
+  function itemLabel(x) {
+    return `${TIPO_ICON[x.tipo] || ''} ${x._code ? `<span style="font-weight:800;color:${x.colore || '#e2e8f0'};margin-right:4px;">${esc(x._code)}</span>` : ''}${esc(x.titolo || '(senza titolo)')}`;
+  }
+
+  function renderPlOrderList() {
+    const box = $('at-pl-order');
+    if (!plOrder.length) {
+      box.innerHTML = '<div class="at-empty" style="padding:10px;">Spunta gli esercizi qui sopra: l\'ordine di riproduzione apparirà qui.</div>';
+      return;
+    }
+    box.innerHTML = plOrder.map((id, i) => {
+      const x = items.find(it => it.id === id);
+      if (!x) return '';
+      return `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
+        <span style="color:var(--muted);font-size:0.78rem;min-width:18px;">${i + 1}.</span>
+        <span style="flex:1;">${itemLabel(x)}</span>
+        <button type="button" class="at-btn-ghost" style="padding:3px 8px;" title="Sposta su" ${i === 0 ? 'disabled' : ''} onclick="window.atPlMove('${id}',-1)">↑</button>
+        <button type="button" class="at-btn-ghost" style="padding:3px 8px;" title="Sposta giù" ${i === plOrder.length - 1 ? 'disabled' : ''} onclick="window.atPlMove('${id}',1)">↓</button>
+      </div>`;
+    }).join('');
+  }
+
+  window.atPlMove = function (id, dir) {
+    const i = plOrder.indexOf(id);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= plOrder.length) return;
+    [plOrder[i], plOrder[j]] = [plOrder[j], plOrder[i]];
+    renderPlOrderList();
+  };
+
   function openPlaylistEditor(pl) {
     $('at-pl-edit-title').textContent = pl ? '✏️ Modifica playlist' : '➕ Nuova playlist';
     $('at-pl-edit-id').value = pl ? pl.id : '';
     $('at-pl-nome').value = pl ? (pl.nome || '') : '';
-    const selected = new Set(pl ? (pl.itemIds || []) : []);
+    plOrder = pl ? (pl.itemIds || []).filter(id => items.some(x => x.id === id)) : [];
+    const selected = new Set(plOrder);
     const eligible = items;
     const checklist = $('at-pl-checklist');
     if (!eligible.length) {
@@ -341,9 +376,17 @@
       checklist.innerHTML = eligible.map(x => `
         <label style="display:flex;align-items:center;gap:8px;padding:5px 2px;cursor:pointer;">
           <input type="checkbox" value="${x.id}" ${selected.has(x.id) ? 'checked' : ''}>
-          <span>${TIPO_ICON[x.tipo] || ''} ${x._code ? `<span style="font-weight:800;color:${x.colore || '#e2e8f0'};margin-right:4px;">${esc(x._code)}</span>` : ''}${esc(x.titolo || '(senza titolo)')}</span>
+          <span>${itemLabel(x)}</span>
         </label>`).join('');
+      checklist.querySelectorAll('input[type=checkbox]').forEach(cb => {
+        cb.addEventListener('change', () => {
+          if (cb.checked) { if (!plOrder.includes(cb.value)) plOrder.push(cb.value); }
+          else { plOrder = plOrder.filter(id => id !== cb.value); }
+          renderPlOrderList();
+        });
+      });
     }
+    renderPlOrderList();
     $('at-pl-edit-overlay').style.display = 'flex';
     $('at-pl-nome').focus();
   }
@@ -352,7 +395,7 @@
   async function savePlaylist() {
     const nome = $('at-pl-nome').value.trim();
     if (!nome) { toast('Inserisci un nome per la playlist'); return; }
-    const itemIds = Array.from(document.querySelectorAll('#at-pl-checklist input[type=checkbox]:checked')).map(c => c.value);
+    const itemIds = plOrder.slice();
     if (!itemIds.length) { toast('Seleziona almeno un esercizio'); return; }
     const playlist = { id: $('at-pl-edit-id').value || undefined, nome, itemIds };
     try {
