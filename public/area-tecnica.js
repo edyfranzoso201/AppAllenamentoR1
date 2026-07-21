@@ -157,6 +157,7 @@
       return `<div class="at-card" onclick="window.atOpen('${x.id}')">
         <div class="at-thumb">${codeTag}${thumbHtml}<div class="play">▶</div></div>
         <div class="at-cardbody">
+          <div class="tit" title="${esc(x.titolo || '')}">${esc(x.titolo || '(senza titolo)')}</div>
           <div class="at-meta">
             <span>
               ${x._code ? `<span style="font-weight:800;color:${titColor};margin-right:4px;">${esc(x._code)}</span>` : ''}
