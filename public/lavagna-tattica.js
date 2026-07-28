@@ -87,11 +87,17 @@
       ctx.stroke();
     }
 
-    // Area di rigore (grande): x 21-79, y 100-78
+    // Area di rigore (grande): x 21-79, y 100-75.74
+    // y della linea d'area derivata dalle proporzioni reali di un campo 105x68m (area grande
+    // a 16.5m dalla linea di porta) usando la stessa scala logica del resto del disegno
+    // (100 unità ≈ 68m, coerente con la larghezza campo su x e con l'area 21-79 già presente):
+    // y = 100 - 16.5/0.68 ≈ 75.74. Questo mantiene il cerchio di raggio 9.15 (= cerchio di
+    // centrocampo, stessa unità) geometricamente in grado di intersecare la linea d'area,
+    // come nel calcio reale (vedi arco del rigore più sotto).
     {
       const pts = [
-        perspective(21, 78, w, h),
-        perspective(79, 78, w, h),
+        perspective(21, 75.74, w, h),
+        perspective(79, 75.74, w, h),
         perspective(79, 100, w, h),
         perspective(21, 100, w, h)
       ];
@@ -119,10 +125,12 @@
       ctx.stroke();
     }
 
-    // Dischetto del rigore: punto pieno a (50, 89)
+    // Dischetto del rigore: punto pieno a (50, 83.82)
+    // y derivato dalle proporzioni reali (dischetto a 11m dalla linea di porta, stessa scala
+    // logica ~0.68 m/unità di cui sopra): y = 100 - 11/0.68 ≈ 83.82.
     {
-      const p = perspective(50, 89, w, h);
-      const rp = perspective(51.2, 89, w, h); // riferimento per stimare un raggio in pixel coerente
+      const p = perspective(50, 83.82, w, h);
+      const rp = perspective(51.2, 83.82, w, h); // riferimento per stimare un raggio in pixel coerente
       const radius = Math.max(2, Math.hypot(rp.px - p.px, rp.py - p.py));
       ctx.beginPath();
       ctx.arc(p.px, p.py, radius, 0, Math.PI * 2);
@@ -130,30 +138,45 @@
       ctx.fill();
     }
 
-    // Arco del rigore (la parte del cerchio attorno al dischetto che sporge fuori
-    // dall'area di rigore, oltre la linea y=78)
+    // Arco del rigore ("la D"): porzione del cerchio di raggio 9.15 centrato sul dischetto
+    // (50, 83.82) che sta fuori dal rettangolo dell'area di rigore grande (x 21-79, y 75.74-100).
+    // Calcolo analitico in coordinate LOGICHE (non pixel): intersezione fra il cerchio e la retta
+    // y = boxEdgeY (il lato dell'area rivolto verso il centrocampo). Il centro del cerchio è più
+    // vicino alla porta rispetto a boxEdgeY, quindi l'arco "fuori area" è quello superiore
+    // (verso y minori). Gestiamo esplicitamente anche il caso degenere in cui il cerchio non
+    // raggiunge la linea dell'area (nessun arco fuori area) o la contiene interamente.
     {
-      const centerX = 50, centerY = 89, radius = 9.15;
-      const boxEdgeY = 78;
-      // Angolo (misurato da 0 = destra, in senso orario verso l'alto) al quale il
-      // cerchio interseca la linea y = boxEdgeY: sin(a) = (boxEdgeY - centerY) / radius
-      const sinLimit = (boxEdgeY - centerY) / radius; // negativo: il cerchio sale sopra centerY
-      const clamped = Math.max(-1, Math.min(1, sinLimit));
-      const halfSpan = Math.asin(clamped); // angolo (negativo) rispetto all'orizzontale
-      // L'arco visibile va da (PI/2 + halfSpan) a (PI/2 - halfSpan) passando per il top (PI/2 fisso qui è "in alto")
-      // Usiamo un parametro theta che va da -halfSpan a +halfSpan attorno alla verticale verso l'alto.
-      ctx.beginPath();
-      const steps = 40;
-      for (let i = 0; i <= steps; i++) {
-        const t = -1 + (2 * i) / steps; // -1..1
-        const theta = t * (-halfSpan); // -halfSpan..halfSpan (halfSpan è negativo, quindi range corretto)
-        const x = centerX + radius * Math.sin(theta);
-        const y = centerY - radius * Math.cos(theta);
-        const p = perspective(x, y, w, h);
-        if (i === 0) ctx.moveTo(p.px, p.py);
-        else ctx.lineTo(p.px, p.py);
+      const centerX = 50, centerY = 83.82, radius = 9.15;
+      const boxEdgeY = 75.74;
+      const boxX1 = 21, boxX2 = 79;
+      const distToEdge = centerY - boxEdgeY; // distanza (positiva) fra dischetto e linea area
+
+      if (distToEdge >= radius) {
+        // Il cerchio intero sta dentro l'area (non la raggiunge nemmeno): nessun arco onesto da
+        // disegnare fuori area. Non disegniamo nulla di fittizio.
+      } else {
+        // sin(a) = distToEdge / radius, con a angolo rispetto alla verticale (asse y verso l'alto)
+        // al quale il cerchio interseca la retta y = boxEdgeY.
+        const halfSpan = Math.asin(distToEdge / radius); // in [0, PI/2)
+        // Verifichiamo anche i limiti laterali dell'area (x = boxX1..boxX2): se l'intersezione
+        // cade oltre i bordi laterali, l'arco va comunque disegnato per intero verso il centrocampo
+        // (il dischetto è centrato in x=50, a metà strada fra 21 e 79: con raggio 9.15 il punto più
+        // laterale dell'arco, x = 50 ± 9.15*sin(halfSpan), resta ampiamente dentro [21,79], quindi
+        // qui i bordi laterali non tagliano ulteriormente l'arco).
+        ctx.beginPath();
+        const steps = 40;
+        for (let i = 0; i <= steps; i++) {
+          const t = -1 + (2 * i) / steps; // -1..1
+          const theta = t * halfSpan; // -halfSpan..halfSpan attorno alla verticale verso l'alto
+          const x = centerX + radius * Math.sin(theta);
+          const y = centerY - radius * Math.cos(theta);
+          const clampedX = Math.max(boxX1, Math.min(boxX2, x));
+          const p = perspective(clampedX, y, w, h);
+          if (i === 0) ctx.moveTo(p.px, p.py);
+          else ctx.lineTo(p.px, p.py);
+        }
+        ctx.stroke();
       }
-      ctx.stroke();
     }
 
     ctx.restore();
@@ -163,15 +186,9 @@
       const goalHalfWidth = 7.32 / 2; // larghezza porta in unità logiche coerenti col campo (~7.3 su 100)
       const goalX1 = 50 - goalHalfWidth;
       const goalX2 = 50 + goalHalfWidth;
-      const goalDepth = 4; // profondità visiva della porta oltre la linea di porta (y>100)
 
       const baseL = perspective(goalX1, 100, w, h);
       const baseR = perspective(goalX2, 100, w, h);
-      const topL = perspective(goalX1, 100 + goalDepth, w, h);
-      const topR = perspective(goalX2, 100 + goalDepth, w, h);
-      // Nota: y>100 esce dalla curva prospettica "naturale"; usiamo una piccola estensione
-      // lineare oltre h per dare l'idea di altezza dei pali sullo schermo.
-      const postHeight = (baseL.py - topL.py) * 0 + (h - baseL.py) * 0; // placeholder non usato
 
       // Calcoliamo l'altezza dei pali in pixel come frazione della larghezza porta a schermo
       const goalWidthPx = Math.abs(baseR.px - baseL.px);
