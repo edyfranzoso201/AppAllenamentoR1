@@ -3084,14 +3084,20 @@
         var root = document.getElementById('lavagna-tattica-root');
         if (root && window.LavagnaTattica) {
           var lavagnaUI = window.LavagnaTattica.initUI(document);
-          // window.tacticalBoards potrebbe popolarsi dopo il primo loadData() asincrono:
-          // ri-sincronizza la sola select una volta, dopo un breve ritardo, senza reinizializzare i listener.
-          setTimeout(function () {
+          // window.tacticalBoards potrebbe popolarsi dopo il primo loadData() asincrono, con tempi
+          // variabili (cold-start serverless, rete lenta): esegue un polling breve invece di un singolo
+          // timeout fisso, per ri-sincronizzare la select senza reinizializzare i listener.
+          var lavagnaSyncTries = 0;
+          var lavagnaSyncInterval = setInterval(function () {
+            lavagnaSyncTries++;
             var sel = document.getElementById('lavagna-select-schemi');
             if (sel && window.tacticalBoards && window.tacticalBoards.length && sel.options.length <= 1) {
               lavagnaUI.refreshSelect();
+              clearInterval(lavagnaSyncInterval);
+            } else if (lavagnaSyncTries >= 20) {
+              clearInterval(lavagnaSyncInterval);
             }
-          }, 1500);
+          }, 500);
         }
       });
     </script>
