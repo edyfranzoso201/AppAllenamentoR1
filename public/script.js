@@ -620,6 +620,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Rendi athletes disponibile globalmente per il calendario
     window.athletes = athletes;
     let formationData = { starters: [], bench: [], tokens: [] };
+    window.tacticalBoards = window.tacticalBoards || [];
     let chartInstances = {};
     window.chartInstances = chartInstances; // esposto per applyChartTheme
     let comparisonChartPeriod = 'annual';
@@ -638,16 +639,17 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('❌ saveData: nessuna annata selezionata!');
             return false;
         }
-        const allData = { 
-            athletes, 
-            evaluations, 
-            gpsData, 
-            awards, 
-            trainingSessions, 
-            formationData, 
+        const allData = {
+            athletes,
+            evaluations,
+            gpsData,
+            awards,
+            trainingSessions,
+            formationData,
             matchResults,
             calendarEvents: window.calendarEvents || {},
-            calendarResponses: window.calendarResponses || {}
+            calendarResponses: window.calendarResponses || {},
+            tacticalBoards: window.tacticalBoards || []
         };
         try {
             const response = await fetch('/api/data', { 
@@ -1119,6 +1121,7 @@ document.addEventListener('DOMContentLoaded', () => {
             awards = allData.awards || {};
             trainingSessions = allData.trainingSessions || {};
             formationData = allData.formationData || { starters: [], bench: [], tokens: [] };
+            window.tacticalBoards = allData.tacticalBoards || [];
             matchResults = allData.matchResults || {};
             window.calendarEvents = allData.calendarEvents || {};
             window.calendarResponses = allData.calendarResponses || {};
@@ -1171,7 +1174,8 @@ document.addEventListener('DOMContentLoaded', () => {
             gpsData = {}; 
             awards = {}; 
             trainingSessions = {}; 
-            formationData = { starters: [], bench: [], tokens: [] }; 
+            formationData = { starters: [], bench: [], tokens: [] };
+            window.tacticalBoards = [];
             matchResults = {};
             window.calendarEvents = {};
             window.calendarResponses = {};
