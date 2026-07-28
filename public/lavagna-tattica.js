@@ -3,15 +3,21 @@
 
   // Sistema di coordinate logico: x 0-100 (larghezza campo), y 0-100 (0 = linea di
   // centrocampo in alto, 100 = linea di porta in basso, dove il campo è più largo).
-  const PERSPECTIVE_TOP_INSET = 0.22; // quanto si restringe la larghezza in alto (0-1)
-  const PERSPECTIVE_Y_CURVE = 0.72;   // <1 comprime le linee lontane verso l'alto
+  // Costanti ricalibrate (2026-07-28) per allinearsi al trapezio reale dell'immagine
+  // di sfondo campo_Trasp.PNG (misurato via analisi pixel: widthFrac 0.65 in alto ->
+  // 0.99 in basso, fit quasi lineare INSET=0.34/CURVE=0.99).
+  const PERSPECTIVE_TOP_INSET = 0.34; // quanto si restringe la larghezza in alto (0-1)
+  const PERSPECTIVE_Y_CURVE = 0.99;   // <1 comprime le linee lontane verso l'alto
+  // Frazione della larghezza canvas occupata dal trapezio nell'immagine a y=100 (misurata
+  // su campo_Trasp.PNG: il trapezio non tocca i bordi del canvas nemmeno alla base).
+  const FIELD_IMAGE_WIDTH_FRAC = 0.991;
 
   function perspective(x, y, w, h) {
     const yNorm = y / 100;
     const yCurved = Math.pow(yNorm, PERSPECTIVE_Y_CURVE);
     const py = yCurved * h;
     const widthScale = (1 - PERSPECTIVE_TOP_INSET) + PERSPECTIVE_TOP_INSET * yCurved;
-    const centerOffset = (50 - x) * widthScale;
+    const centerOffset = (50 - x) * widthScale * FIELD_IMAGE_WIDTH_FRAC;
     const px = w / 2 - centerOffset * (w / 100);
     return { px, py };
   }
@@ -21,7 +27,7 @@
     const yNorm = Math.pow(yCurved, 1 / PERSPECTIVE_Y_CURVE);
     const y = yNorm * 100;
     const widthScale = (1 - PERSPECTIVE_TOP_INSET) + PERSPECTIVE_TOP_INSET * yCurved;
-    const centerOffset = (w / 2 - px) / (w / 100) / widthScale;
+    const centerOffset = (w / 2 - px) / (w / 100) / widthScale / FIELD_IMAGE_WIDTH_FRAC;
     const x = 50 - centerOffset;
     return { x, y };
   }
@@ -35,7 +41,31 @@
     ctx.closePath();
   }
 
+  // Immagine di sfondo del campo (fotografia/render con trasparenza fuori dal trapezio).
+  // Precaricata una sola volta a livello di modulo; drawField la disegna quando è pronta,
+  // altrimenti ricade sul disegno vettoriale (drawFieldVector) così il canvas non resta mai vuoto.
+  const fieldImage = new Image();
+  let fieldImageReady = false;
+  let onFieldImageReady = null; // callback opzionale impostata da initUI per un redraw immediato
+  fieldImage.onload = function () {
+    fieldImageReady = true;
+    if (typeof onFieldImageReady === 'function') onFieldImageReady();
+  };
+  fieldImage.onerror = function () {
+    console.warn('Lavagna Tattica: impossibile caricare campo_Trasp.PNG, uso il disegno vettoriale come fallback.');
+  };
+  fieldImage.src = 'campo_Trasp.PNG';
+
   function drawField(ctx, w, h) {
+    ctx.clearRect(0, 0, w, h);
+    if (fieldImageReady) {
+      ctx.drawImage(fieldImage, 0, 0, w, h);
+      return;
+    }
+    drawFieldVector(ctx, w, h);
+  }
+
+  function drawFieldVector(ctx, w, h) {
     ctx.clearRect(0, 0, w, h);
 
     // --- Sfondo a strisce orizzontali alternate ---
@@ -534,6 +564,11 @@
     const ctx = canvas.getContext('2d');
 
     const interaction = attachInteraction(canvas, ctx, () => interaction.redraw());
+
+    // Se il primo redraw avviene prima che l'immagine di sfondo sia pronta (probabile, dato
+    // il caricamento asincrono), ridisegna appena arriva così il campo non resta vettoriale.
+    onFieldImageReady = () => interaction.redraw();
+    if (fieldImageReady) interaction.redraw();
 
     root.querySelectorAll('[data-pedina-tool]').forEach(el => {
       el.addEventListener('click', () => {
