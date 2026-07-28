@@ -1323,6 +1323,21 @@ html.theme-light .btn-primary-custom,
 html[data-bs-theme="light"] .btn-primary-custom,
 body.theme-light .btn-primary-custom { color: #ffffff !important; }
 
+/* ── TEMA CHIARO: card Lavagna Tattica — stesso problema della select nei modal
+   (form-select globale ha color:var(--text-light) fisso bianco, illeggibile su
+   sfondo chiaro) — stesso pattern di fix già usato per .modal-content sopra. */
+html.theme-light #lavagna-tattica-card,
+html[data-bs-theme="light"] #lavagna-tattica-card {
+    background-color: #ffffff !important;
+    color: #1a202c !important;
+}
+html.theme-light #lavagna-tattica-card .form-select,
+html[data-bs-theme="light"] #lavagna-tattica-card .form-select {
+    background-color: #ffffff !important;
+    color: #1a202c !important;
+    border-color: #cbd5e0 !important;
+}
+
 /* ── TEMA CHIARO: btn Bootstrap — override regola globale * {color:#000103} ── */
 /* Pulsanti pieni (sfondo colorato): ripristina testo bianco */
 html.theme-light .btn-primary,   html[data-bs-theme="light"] .btn-primary,
