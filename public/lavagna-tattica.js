@@ -497,6 +497,8 @@
   function attachInteraction(canvas, ctx, onChange) {
     let modalitaFreccia = false;
     let onModalitaFrecciaChange = null;
+    let modalitaGomma = false;
+    let onModalitaGommaChange = null;
 
     function getCanvasPoint(evt) {
       const rect = canvas.getBoundingClientRect();
@@ -517,10 +519,38 @@
     function onDown(evt) {
       const { px, py } = getCanvasPoint(evt);
       const w = canvas.width, h = canvas.height;
+      if (modalitaGomma) {
+        // Modalita gomma attiva: cancella UN SOLO elemento per click (priorita' pedina >
+        // pallone > freccia/pallino di controllo), altrimenti un click su elementi sovrapposti
+        // (es. pallone sopra una freccia) cancellerebbe piu' cose in un colpo solo.
+        const pedina = findPedinaAt(px, py, w, h);
+        if (pedina) {
+          state.pedine = state.pedine.filter(p => p.id !== pedina.id);
+          redraw();
+          if (onChange) onChange();
+          return;
+        }
+        if (state.pallone) {
+          const bp = perspective(state.pallone.x, state.pallone.y, w, h);
+          if (Math.hypot(px - bp.px, py - bp.py) <= 12) {
+            state.pallone = null;
+            redraw();
+            if (onChange) onChange();
+            return;
+          }
+        }
+        const freccia = findFrecciaControlAt(px, py, w, h) || findFrecciaAt(px, py, w, h);
+        if (freccia) {
+          state.frecce = state.frecce.filter(f => f.id !== freccia.id);
+        }
+        redraw();
+        if (onChange) onChange();
+        return;
+      }
       // Il pallino del punto di controllo ha priorita' assoluta su tutto il resto (arrow-mode,
-      // shift/tasto destro, cancellazione-al-click della freccia stessa): controllato per primo
-      // cosi' trascinare un pallino esistente per curvare la freccia non viene mai reinterpretato
-      // come "click a vuoto" (che disarmerebbe la modalita freccia) ne' come cancellazione.
+      // shift/tasto destro): controllato per primo cosi' trascinare un pallino esistente per
+      // curvare la freccia non viene mai reinterpretato come "click a vuoto" (che disarmerebbe
+      // la modalita freccia).
       const frecciaControl = findFrecciaControlAt(px, py, w, h);
       if (frecciaControl) { dragTarget = { kind: 'frecciaControl', ref: frecciaControl }; return; }
       if (evt.button === 2 || evt.shiftKey || modalitaFreccia) {
@@ -534,9 +564,9 @@
         if (modalitaFreccia && evt.button !== 2) {
           // Click (sinistro/touch) a vuoto mentre la modalita freccia e' attiva: disarma
           // invece di lasciarla attiva per sempre, cosi le altre interazioni (drag pallone,
-          // click su freccia per cancellarla) restano disponibili senza dover ricliccare il
-          // bottone. Il tasto destro resta escluso da questo fallthrough: serve solo a
-          // sopprimere il menu contestuale, non deve anche cancellare/trascinare sotto il cursore.
+          // drag pedina) restano disponibili senza dover ricliccare il bottone. Il tasto
+          // destro resta escluso da questo fallthrough: serve solo a sopprimere il menu
+          // contestuale, non deve anche trascinare sotto il cursore.
           setModalitaFreccia(false);
         } else {
           return;
@@ -548,12 +578,7 @@
         const bp = perspective(state.pallone.x, state.pallone.y, w, h);
         if (Math.hypot(px - bp.px, py - bp.py) <= 12) { dragTarget = { kind: 'pallone', ref: state.pallone }; return; }
       }
-      const freccia = findFrecciaAt(px, py, w, h);
-      if (freccia) {
-        state.frecce = state.frecce.filter(f => f.id !== freccia.id);
-        redraw();
-        if (onChange) onChange();
-      }
+      // Nota: click su una freccia (fuori modalita gomma) non la cancella piu' - vedi gomma.
     }
 
     function onMove(evt) {
@@ -596,7 +621,14 @@
 
     function setModalitaFreccia(attiva) {
       modalitaFreccia = attiva;
+      if (attiva && modalitaGomma) setModalitaGomma(false);
       if (onModalitaFrecciaChange) onModalitaFrecciaChange(modalitaFreccia);
+    }
+
+    function setModalitaGomma(attiva) {
+      modalitaGomma = attiva;
+      if (attiva && modalitaFreccia) setModalitaFreccia(false);
+      if (onModalitaGommaChange) onModalitaGommaChange(modalitaGomma);
     }
 
     canvas.addEventListener('mousedown', onDown);
@@ -627,7 +659,12 @@
         setModalitaFreccia(!modalitaFreccia);
         return modalitaFreccia;
       },
-      onModalitaFrecciaChange(cb) { onModalitaFrecciaChange = cb; }
+      onModalitaFrecciaChange(cb) { onModalitaFrecciaChange = cb; },
+      toggleModalitaGomma() {
+        setModalitaGomma(!modalitaGomma);
+        return modalitaGomma;
+      },
+      onModalitaGommaChange(cb) { onModalitaGommaChange = cb; }
     };
   }
 
@@ -731,16 +768,33 @@
     }
 
     const frecciaBtn = root.querySelector('[data-freccia-tool]');
+    const gommaBtn = root.querySelector('[data-gomma-tool]');
+
+    // onModalitaFrecciaChange/onModalitaGommaChange accettano UN solo listener ciascuna (non
+    // una lista): registriamo qui un unico callback per modalita' che aggiorna entrambi i
+    // bottoni, cosi' la mutua esclusione freccia<->gomma (vedi setModalitaFreccia/
+    // setModalitaGomma in attachInteraction) si riflette sempre su entrambi senza che una
+    // registrazione sovrascriva l'altra.
     if (frecciaBtn) {
-      const aggiornaAspetto = (attiva) => {
+      interaction.onModalitaFrecciaChange((attiva) => {
         frecciaBtn.classList.toggle('active', attiva);
         frecciaBtn.classList.toggle('btn-outline-secondary', !attiva);
         frecciaBtn.classList.toggle('btn-warning', attiva);
-      };
-      frecciaBtn.addEventListener('click', () => {
-        aggiornaAspetto(interaction.toggleModalitaFreccia());
+        if (attiva && gommaBtn) gommaBtn.classList.remove('active', 'btn-danger');
+        if (attiva && gommaBtn) gommaBtn.classList.add('btn-outline-secondary');
       });
-      interaction.onModalitaFrecciaChange(aggiornaAspetto);
+      frecciaBtn.addEventListener('click', () => { interaction.toggleModalitaFreccia(); });
+    }
+
+    if (gommaBtn) {
+      interaction.onModalitaGommaChange((attiva) => {
+        gommaBtn.classList.toggle('active', attiva);
+        gommaBtn.classList.toggle('btn-outline-secondary', !attiva);
+        gommaBtn.classList.toggle('btn-danger', attiva);
+        if (attiva && frecciaBtn) frecciaBtn.classList.remove('active', 'btn-warning');
+        if (attiva && frecciaBtn) frecciaBtn.classList.add('btn-outline-secondary');
+      });
+      gommaBtn.addEventListener('click', () => { interaction.toggleModalitaGomma(); });
     }
 
     root.querySelector('[data-azione="nuovo"]').addEventListener('click', () => {
