@@ -155,9 +155,10 @@
         // Il cerchio intero sta dentro l'area (non la raggiunge nemmeno): nessun arco onesto da
         // disegnare fuori area. Non disegniamo nulla di fittizio.
       } else {
-        // sin(a) = distToEdge / radius, con a angolo rispetto alla verticale (asse y verso l'alto)
-        // al quale il cerchio interseca la retta y = boxEdgeY.
-        const halfSpan = Math.asin(distToEdge / radius); // in [0, PI/2)
+        // cos(a) = distToEdge / radius, con a angolo rispetto alla verticale (asse y verso l'alto)
+        // al quale il cerchio interseca la retta y = boxEdgeY (dato che y = centerY - radius*cos(theta),
+        // vedi calcolo di x/y nel loop sotto).
+        const halfSpan = Math.acos(distToEdge / radius); // in [0, PI/2)
         // Verifichiamo anche i limiti laterali dell'area (x = boxX1..boxX2): se l'intersezione
         // cade oltre i bordi laterali, l'arco va comunque disegnato per intero verso il centrocampo
         // (il dischetto è centrato in x=50, a metà strada fra 21 e 79: con raggio 9.15 il punto più
