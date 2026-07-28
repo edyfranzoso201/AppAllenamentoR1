@@ -253,5 +253,213 @@
     }
   }
 
-  window.LavagnaTattica = { perspective, inversePerspective, drawField };
+  const state = {
+    pedine: [],   // { id, tipo: 'blu'|'rosso'|'bianco', x, y, numero }
+    pallone: null, // { x, y } | null
+    frecce: [],   // { id, daX, daY, aX, aY }
+  };
+
+  const COLORI_PEDINA = { blu: '#2563eb', rosso: '#dc2626', bianco: '#f8fafc' };
+  const TESTO_PEDINA = { blu: '#ffffff', rosso: '#ffffff', bianco: '#111827' };
+  const RAGGIO_PEDINA = 16;
+
+  function nextId(prefix) {
+    return prefix + '_' + Date.now().toString(36) + '_' + Math.floor(Math.random() * 1e4).toString(36);
+  }
+
+  function drawPedina(ctx, p, w, h) {
+    const { px, py } = perspective(p.x, p.y, w, h);
+    ctx.beginPath();
+    ctx.fillStyle = COLORI_PEDINA[p.tipo] || '#888';
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.arc(px, py, RAGGIO_PEDINA, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    if (p.numero) {
+      ctx.fillStyle = TESTO_PEDINA[p.tipo] || '#000';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(p.numero).slice(0, 3), px, py);
+    }
+  }
+
+  function drawPallone(ctx, b, w, h) {
+    const { px, py } = perspective(b.x, b.y, w, h);
+    ctx.beginPath();
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#111827';
+    ctx.lineWidth = 1.5;
+    ctx.arc(px, py, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(px - 5, py - 2);
+    ctx.lineTo(px + 5, py - 2);
+    ctx.lineTo(px, py + 6);
+    ctx.closePath();
+    ctx.fillStyle = '#111827';
+    ctx.fill();
+  }
+
+  function drawAll(ctx, w, h) {
+    drawField(ctx, w, h);
+    state.frecce.forEach(f => drawFreccia(ctx, f, w, h));
+    state.pedine.forEach(p => drawPedina(ctx, p, w, h));
+    if (state.pallone) drawPallone(ctx, state.pallone, w, h);
+  }
+
+  function drawFreccia(ctx, f, w, h) {
+    const a = perspective(f.daX, f.daY, w, h);
+    const b = perspective(f.aX, f.aY, w, h);
+    ctx.strokeStyle = '#fbbf24';
+    ctx.fillStyle = '#fbbf24';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(a.px, a.py);
+    ctx.lineTo(b.px, b.py);
+    ctx.stroke();
+    const angle = Math.atan2(b.py - a.py, b.px - a.px);
+    const headLen = 12;
+    ctx.beginPath();
+    ctx.moveTo(b.px, b.py);
+    ctx.lineTo(b.px - headLen * Math.cos(angle - Math.PI / 6), b.py - headLen * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(b.px - headLen * Math.cos(angle + Math.PI / 6), b.py - headLen * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function findPedinaAt(px, py, w, h) {
+    for (let i = state.pedine.length - 1; i >= 0; i--) {
+      const p = state.pedine[i];
+      const { px: cx, py: cy } = perspective(p.x, p.y, w, h);
+      if (Math.hypot(px - cx, py - cy) <= RAGGIO_PEDINA) return p;
+    }
+    return null;
+  }
+
+  function findFrecciaAt(px, py, w, h) {
+    const TOLL = 8;
+    for (let i = state.frecce.length - 1; i >= 0; i--) {
+      const f = state.frecce[i];
+      const a = perspective(f.daX, f.daY, w, h);
+      const b = perspective(f.aX, f.aY, w, h);
+      const distToSegment = pointToSegmentDistance(px, py, a.px, a.py, b.px, b.py);
+      if (distToSegment <= TOLL) return f;
+    }
+    return null;
+  }
+
+  function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
+    const dx = x2 - x1, dy = y2 - y1;
+    const lenSq = dx * dx + dy * dy;
+    let t = lenSq === 0 ? 0 : ((px - x1) * dx + (py - y1) * dy) / lenSq;
+    t = Math.max(0, Math.min(1, t));
+    const projX = x1 + t * dx, projY = y1 + t * dy;
+    return Math.hypot(px - projX, py - projY);
+  }
+
+  let dragTarget = null; // { kind: 'pedina'|'pallone', ref }
+  let arrowDragFrom = null; // { x, y } in coordinate logiche, quando si trascina una freccia
+
+  function attachInteraction(canvas, ctx, onChange) {
+    function getCanvasPoint(evt) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+      const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+      return { px: clientX - rect.left, py: clientY - rect.top };
+    }
+
+    function redraw() {
+      drawAll(ctx, canvas.width, canvas.height);
+    }
+
+    function onDown(evt) {
+      const { px, py } = getCanvasPoint(evt);
+      const w = canvas.width, h = canvas.height;
+      if (evt.button === 2 || evt.shiftKey) {
+        // trascinamento con tasto destro / shift = disegna freccia da pedina esistente
+        const pedina = findPedinaAt(px, py, w, h);
+        if (pedina) {
+          arrowDragFrom = { x: pedina.x, y: pedina.y };
+          evt.preventDefault();
+        }
+        return;
+      }
+      const pedina = findPedinaAt(px, py, w, h);
+      if (pedina) { dragTarget = { kind: 'pedina', ref: pedina }; return; }
+      if (state.pallone) {
+        const bp = perspective(state.pallone.x, state.pallone.y, w, h);
+        if (Math.hypot(px - bp.px, py - bp.py) <= 12) { dragTarget = { kind: 'pallone', ref: state.pallone }; return; }
+      }
+      const freccia = findFrecciaAt(px, py, w, h);
+      if (freccia) {
+        state.frecce = state.frecce.filter(f => f.id !== freccia.id);
+        redraw();
+        if (onChange) onChange();
+      }
+    }
+
+    function onMove(evt) {
+      if (!dragTarget && !arrowDragFrom) return;
+      const { px, py } = getCanvasPoint(evt);
+      const w = canvas.width, h = canvas.height;
+      const { x, y } = inversePerspective(px, py, w, h);
+      if (dragTarget) {
+        dragTarget.ref.x = Math.max(0, Math.min(100, x));
+        dragTarget.ref.y = Math.max(0, Math.min(100, y));
+        redraw();
+      } else if (arrowDragFrom) {
+        redraw();
+        drawFreccia(ctx, { daX: arrowDragFrom.x, daY: arrowDragFrom.y, aX: x, aY: y }, w, h);
+      }
+    }
+
+    function onUp(evt) {
+      if (dragTarget) {
+        dragTarget = null;
+        if (onChange) onChange();
+      }
+      if (arrowDragFrom) {
+        const { px, py } = getCanvasPoint(evt);
+        const w = canvas.width, h = canvas.height;
+        const { x, y } = inversePerspective(px, py, w, h);
+        state.frecce.push({ id: nextId('fr'), daX: arrowDragFrom.x, daY: arrowDragFrom.y, aX: x, aY: y });
+        arrowDragFrom = null;
+        redraw();
+        if (onChange) onChange();
+      }
+    }
+
+    canvas.addEventListener('mousedown', onDown);
+    canvas.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    canvas.addEventListener('touchstart', onDown, { passive: false });
+    canvas.addEventListener('touchmove', onMove, { passive: false });
+    canvas.addEventListener('touchend', onUp);
+    canvas.addEventListener('contextmenu', evt => evt.preventDefault());
+    canvas.addEventListener('dblclick', evt => {
+      const { px, py } = getCanvasPoint(evt);
+      const w = canvas.width, h = canvas.height;
+      const pedina = findPedinaAt(px, py, w, h);
+      if (pedina) {
+        const nuovo = window.prompt('Numero maglia:', pedina.numero || '');
+        if (nuovo !== null) {
+          pedina.numero = nuovo.slice(0, 3);
+          redraw();
+          if (onChange) onChange();
+        }
+      }
+    });
+
+    redraw();
+    return { redraw };
+  }
+
+  window.LavagnaTattica = {
+    perspective, inversePerspective, drawField, drawAll,
+    state, nextId, findPedinaAt, findFrecciaAt, pointToSegmentDistance,
+    attachInteraction
+  };
 })();
