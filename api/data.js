@@ -2733,7 +2733,8 @@ athletes, evaluations, gpsData, awards, trainingSessions,
 formationData, matchResults, calendarEvents, calendarResponses,
 materiale, pagamenti, pagVoci, pagLabels, convocazioni, convSettings,
 convBg, convBg2, posts, globalPosts, individualPassword,
-ratingSheets, documents, athleteDocs, bachecaConfig, superadminBanners
+ratingSheets, documents, athleteDocs, bachecaConfig, superadminBanners,
+tacticalBoards
 ] = await Promise.all([
 kv.get(`${prefix}:athletes`),
 kv.get(`${prefix}:evaluations`),
@@ -2759,7 +2760,8 @@ kv.get(`${prefix}:ratingSheets`),
 kv.get(`${prefix}:documents`),
 kv.get(`${prefix}:athleteDocs`),
 kv.get('global:bachecaConfig'),
-kv.get('global:superadminBanners')
+kv.get('global:superadminBanners'),
+kv.get(`${prefix}:tacticalBoards`)
 ]);
 
 const data = {
@@ -2769,6 +2771,7 @@ gpsData: gpsData || {},
 awards: awards || {},
 trainingSessions: trainingSessions || {},
 formationData: formationData || { starters: [], bench: [], tokens: [] },
+tacticalBoards: tacticalBoards || [],
 matchResults: matchResults || {},
 calendarEvents: calendarEvents || {},
 calendarResponses: calendarResponses || {},
@@ -2898,6 +2901,7 @@ if (body.gpsData !== undefined) await kv.set(`${prefix}:gpsData`, body.gpsData);
 if (body.awards !== undefined) await kv.set(`${prefix}:awards`, body.awards);
 if (body.trainingSessions !== undefined) await kv.set(`${prefix}:trainingSessions`, body.trainingSessions);
 if (body.formationData !== undefined) await kv.set(`${prefix}:formationData`, body.formationData);
+if (body.tacticalBoards !== undefined) await kv.set(`${prefix}:tacticalBoards`, body.tacticalBoards);
 if (body.matchResults !== undefined) await kv.set(`${prefix}:matchResults`, body.matchResults);
 if (body.calendarEvents !== undefined) await kv.set(`${prefix}:calendarEvents`, body.calendarEvents);
 if (body.calendarResponses !== undefined) await kv.set(`${prefix}:calendarResponses`, body.calendarResponses);
