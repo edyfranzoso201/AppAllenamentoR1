@@ -1532,6 +1532,36 @@
                     </div>
                 </div>
             </div>
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card" style="background-color: var(--card-bg);">
+                        <div class="card-header fw-bold d-flex align-items-center flex-wrap gap-2">
+                            <span>Lavagna Tattica</span>
+                            <div class="btn-group btn-group-sm ms-auto" role="group">
+                                <button type="button" class="btn btn-outline-secondary" data-pedina-tool="blu" title="Aggiungi pedina Blu">🔵</button>
+                                <button type="button" class="btn btn-outline-secondary" data-pedina-tool="rosso" title="Aggiungi pedina Rossa">🔴</button>
+                                <button type="button" class="btn btn-outline-secondary" data-pedina-tool="bianco" title="Aggiungi pedina Bianca">⚪</button>
+                                <button type="button" class="btn btn-outline-secondary" data-pallone-tool title="Aggiungi pallone">⚽</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                                <select id="lavagna-select-schemi" class="form-select form-select-sm" style="max-width: 260px;">
+                                    <option value="">-- nessuno schema --</option>
+                                </select>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-azione="nuovo">Nuovo</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-azione="salva">Salva</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-azione="rinomina">Rinomina</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-azione="elimina">Elimina</button>
+                            </div>
+                            <div id="lavagna-tattica-root" style="max-width: 700px;">
+                                <canvas id="lavagna-canvas" width="700" height="460" style="width:100%; max-width:700px; height:auto; touch-action:none; border-radius: 8px;"></canvas>
+                            </div>
+                            <small class="text-muted d-block mt-2">Trascina le pedine per spostarle, doppio click per scrivere il numero. Shift+trascinamento da una pedina disegna una freccia; clicca una freccia per cancellarla.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         <hr class="my-5 no-print">
         <div id="calendario-section" class="tab-section printable-area">
@@ -3048,6 +3078,23 @@
 
     <!-- Script personalizzato -->
     <script src="script.js?v=1781310007"></script>
+    <script src="lavagna-tattica.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        var root = document.getElementById('lavagna-tattica-root');
+        if (root && window.LavagnaTattica) {
+          var lavagnaUI = window.LavagnaTattica.initUI(document);
+          // window.tacticalBoards potrebbe popolarsi dopo il primo loadData() asincrono:
+          // ri-sincronizza la sola select una volta, dopo un breve ritardo, senza reinizializzare i listener.
+          setTimeout(function () {
+            var sel = document.getElementById('lavagna-select-schemi');
+            if (sel && window.tacticalBoards && window.tacticalBoards.length && sel.options.length <= 1) {
+              lavagnaUI.refreshSelect();
+            }
+          }, 1500);
+        }
+      });
+    </script>
     <script>
 
     // ========================================================================
