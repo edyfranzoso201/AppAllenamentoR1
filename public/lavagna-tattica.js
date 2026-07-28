@@ -457,9 +457,161 @@
     return { redraw };
   }
 
+  function nuovoSchema() {
+    state.pedine = [];
+    state.pallone = null;
+    state.frecce = [];
+  }
+
+  function serializzaSchemaCorrente(nome, idEsistente) {
+    return {
+      id: idEsistente || nextId('tb'),
+      nome: nome,
+      pedine: state.pedine.map(p => ({ ...p })),
+      pallone: state.pallone ? { ...state.pallone } : null,
+      frecce: state.frecce.map(f => ({ ...f })),
+      updatedAt: new Date().toISOString()
+    };
+  }
+
+  function caricaSchema(schema) {
+    state.pedine = (schema.pedine || []).map(p => ({ ...p }));
+    state.pallone = schema.pallone ? { ...schema.pallone } : null;
+    state.frecce = (schema.frecce || []).map(f => ({ ...f }));
+  }
+
+  function salvaSchemaInLista(lista, nome, idEsistente) {
+    const schema = serializzaSchemaCorrente(nome, idEsistente);
+    const idx = lista.findIndex(s => s.id === schema.id);
+    if (idx >= 0) lista[idx] = schema; else lista.push(schema);
+    return schema;
+  }
+
+  function rinominaSchemaInLista(lista, id, nuovoNome) {
+    const schema = lista.find(s => s.id === id);
+    if (schema) schema.nome = nuovoNome;
+    return schema || null;
+  }
+
+  function eliminaSchemaDaLista(lista, id) {
+    const idx = lista.findIndex(s => s.id === id);
+    if (idx >= 0) lista.splice(idx, 1);
+    return idx >= 0;
+  }
+
+  function initUI(root) {
+    const canvas = root.querySelector('#lavagna-canvas');
+    const selectSchemi = root.querySelector('#lavagna-select-schemi');
+    let schemaCorrenteId = null;
+
+    function getLista() {
+      window.tacticalBoards = window.tacticalBoards || [];
+      return window.tacticalBoards;
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function refreshSelect() {
+      const lista = getLista();
+      selectSchemi.innerHTML = '<option value="">-- nessuno schema --</option>' +
+        lista.map(s => `<option value="${s.id}">${escapeHtml(s.nome)}</option>`).join('');
+      selectSchemi.value = schemaCorrenteId || '';
+    }
+
+    // Protezione anti-doppia-inizializzazione: initUI può essere richiamata più volte sullo
+    // stesso canvas (es. retry via setTimeout dopo il caricamento asincrono dei dati). Se è già
+    // stata inizializzata, non ri-attacchiamo attachInteraction né i listener dei bottoni (che
+    // altrimenti si accumulerebbero causando doppie push/onChange per ogni interazione): ci
+    // limitiamo ad aggiornare la select con eventuali schemi nel frattempo caricati.
+    if (canvas.dataset.lavagnaInitDone === 'true') {
+      refreshSelect();
+      return { refreshSelect };
+    }
+    canvas.dataset.lavagnaInitDone = 'true';
+
+    const ctx = canvas.getContext('2d');
+
+    const interaction = attachInteraction(canvas, ctx, () => interaction.redraw());
+
+    root.querySelectorAll('[data-pedina-tool]').forEach(el => {
+      el.addEventListener('click', () => {
+        const tipo = el.getAttribute('data-pedina-tool');
+        state.pedine.push({ id: nextId('pd'), tipo, x: 50, y: 50, numero: '' });
+        interaction.redraw();
+      });
+    });
+
+    const palloneBtn = root.querySelector('[data-pallone-tool]');
+    if (palloneBtn) {
+      palloneBtn.addEventListener('click', () => {
+        state.pallone = { x: 50, y: 50 };
+        interaction.redraw();
+      });
+    }
+
+    root.querySelector('[data-azione="nuovo"]').addEventListener('click', () => {
+      nuovoSchema();
+      schemaCorrenteId = null;
+      interaction.redraw();
+      refreshSelect();
+    });
+
+    root.querySelector('[data-azione="salva"]').addEventListener('click', () => {
+      const lista = getLista();
+      const esistente = lista.find(s => s.id === schemaCorrenteId);
+      const nome = window.prompt('Nome schema:', esistente ? esistente.nome : '');
+      if (!nome) return;
+      const schema = salvaSchemaInLista(lista, nome, schemaCorrenteId);
+      schemaCorrenteId = schema.id;
+      refreshSelect();
+      if (window.saveData) window.saveData();
+    });
+
+    root.querySelector('[data-azione="rinomina"]').addEventListener('click', () => {
+      if (!schemaCorrenteId) return;
+      const lista = getLista();
+      const esistente = lista.find(s => s.id === schemaCorrenteId);
+      const nome = window.prompt('Nuovo nome:', esistente ? esistente.nome : '');
+      if (!nome) return;
+      rinominaSchemaInLista(lista, schemaCorrenteId, nome);
+      refreshSelect();
+      if (window.saveData) window.saveData();
+    });
+
+    root.querySelector('[data-azione="elimina"]').addEventListener('click', () => {
+      if (!schemaCorrenteId) return;
+      if (!window.confirm('Eliminare questo schema?')) return;
+      eliminaSchemaDaLista(getLista(), schemaCorrenteId);
+      schemaCorrenteId = null;
+      nuovoSchema();
+      interaction.redraw();
+      refreshSelect();
+      if (window.saveData) window.saveData();
+    });
+
+    selectSchemi.addEventListener('change', () => {
+      const id = selectSchemi.value;
+      if (!id) { nuovoSchema(); schemaCorrenteId = null; interaction.redraw(); return; }
+      const schema = getLista().find(s => s.id === id);
+      if (schema) {
+        caricaSchema(schema);
+        schemaCorrenteId = id;
+        interaction.redraw();
+      }
+    });
+
+    refreshSelect();
+
+    return { refreshSelect };
+  }
+
   window.LavagnaTattica = {
     perspective, inversePerspective, drawField, drawAll,
     state, nextId, findPedinaAt, findFrecciaAt, pointToSegmentDistance,
-    attachInteraction
+    attachInteraction, initUI,
+    nuovoSchema, serializzaSchemaCorrente, caricaSchema,
+    salvaSchemaInLista, rinominaSchemaInLista, eliminaSchemaDaLista
   };
 })();
