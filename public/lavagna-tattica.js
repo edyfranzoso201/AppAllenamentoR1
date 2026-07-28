@@ -289,9 +289,13 @@
     frecce: [],   // { id, daX, daY, aX, aY }
   };
 
-  const COLORI_PEDINA = { blu: '#2563eb', rosso: '#dc2626', bianco: '#f8fafc' };
-  const TESTO_PEDINA = { blu: '#ffffff', rosso: '#ffffff', bianco: '#111827' };
-  const RAGGIO_PEDINA = 16;
+  const COLORI_PEDINA = { blu: '#2563eb', rosso: '#dc2626', bianco: '#f8fafc', verde: '#16a34a', azzurro: '#38bdf8' };
+  const TESTO_PEDINA = { blu: '#ffffff', rosso: '#ffffff', bianco: '#111827', verde: '#ffffff', azzurro: '#111827' };
+  // NB: RAGGIO_PEDINA (24) e' piu' grande della tolleranza di hit-test del pallino di
+  // controllo frecce (12, vedi findFrecciaControlAt): quando i due si sovrappongono su un
+  // campo affollato, la correttezza dipende dall'ORDINE dei controlli in onDown, che testa
+  // sempre prima findFrecciaControlAt. Non invertire quell'ordine senza motivo.
+  const RAGGIO_PEDINA = 24;
 
   function nextId(prefix) {
     return prefix + '_' + Date.now().toString(36) + '_' + Math.floor(Math.random() * 1e4).toString(36);
@@ -308,7 +312,7 @@
     ctx.stroke();
     if (p.numero) {
       ctx.fillStyle = TESTO_PEDINA[p.tipo] || '#000';
-      ctx.font = 'bold 13px sans-serif';
+      ctx.font = 'bold 20px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(String(p.numero).slice(0, 3), px, py);
@@ -317,40 +321,85 @@
 
   function drawPallone(ctx, b, w, h) {
     const { px, py } = perspective(b.x, b.y, w, h);
+    const r = 12;
+    ctx.save();
     ctx.beginPath();
-    ctx.fillStyle = '#ffffff';
-    ctx.strokeStyle = '#111827';
+    ctx.arc(px, py, r, 0, Math.PI * 2);
+    ctx.fillStyle = '#f8fafc';
+    ctx.fill();
     ctx.lineWidth = 1.5;
-    ctx.arc(px, py, 10, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.strokeStyle = '#111827';
     ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(px - 5, py - 2);
-    ctx.lineTo(px + 5, py - 2);
-    ctx.lineTo(px, py + 6);
-    ctx.closePath();
+    ctx.clip();
+
+    // Pentagono centrale nero, tipico pattern del pallone da calcio
     ctx.fillStyle = '#111827';
-    ctx.fill();
+    const drawPentagon = (cx, cy, radius, rotation) => {
+      ctx.beginPath();
+      for (let i = 0; i < 5; i++) {
+        const angle = rotation + (i * 2 * Math.PI) / 5 - Math.PI / 2;
+        const x = cx + radius * Math.cos(angle);
+        const y = cy + radius * Math.sin(angle);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fill();
+    };
+    drawPentagon(px, py, r * 0.42, 0);
+
+    // Pentagoni/linee radiali attorno al centro per suggerire la cucitura
+    ctx.strokeStyle = '#111827';
+    ctx.lineWidth = 1.1;
+    for (let i = 0; i < 5; i++) {
+      const angle = (i * 2 * Math.PI) / 5 - Math.PI / 2;
+      const x1 = px + (r * 0.42) * Math.cos(angle);
+      const y1 = py + (r * 0.42) * Math.sin(angle);
+      const x2 = px + r * Math.cos(angle);
+      const y2 = py + r * Math.sin(angle);
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   function drawAll(ctx, w, h) {
     drawField(ctx, w, h);
     state.frecce.forEach(f => drawFreccia(ctx, f, w, h));
+    // Pallino del punto di controllo disegnato sopra tutte le frecce (non per singola
+    // freccia dentro drawFreccia) cosi' resta sempre visibile/scopribile anche quando
+    // due frecce si sovrappongono.
+    state.frecce.forEach(f => drawFrecciaControlHandle(ctx, f, w, h));
     state.pedine.forEach(p => drawPedina(ctx, p, w, h));
     if (state.pallone) drawPallone(ctx, state.pallone, w, h);
+  }
+
+  // Punto di controllo (in coordinate logiche) della curva quadratica di una freccia.
+  // Le frecce salvate prima dell'introduzione della curva non hanno ctrlX/ctrlY: qui
+  // calcoliamo il default (punto medio esatto, che rende la bezier indistinguibile da
+  // una retta) cosi' non serve migrare i dati salvati negli schemi esistenti.
+  function getFrecciaControlPoint(f) {
+    if (typeof f.ctrlX === 'number' && typeof f.ctrlY === 'number') return { x: f.ctrlX, y: f.ctrlY };
+    return { x: (f.daX + f.aX) / 2, y: (f.daY + f.aY) / 2 };
   }
 
   function drawFreccia(ctx, f, w, h) {
     const a = perspective(f.daX, f.daY, w, h);
     const b = perspective(f.aX, f.aY, w, h);
+    const c = getFrecciaControlPoint(f);
+    const cp = perspective(c.x, c.y, w, h);
     ctx.strokeStyle = '#fbbf24';
     ctx.fillStyle = '#fbbf24';
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(a.px, a.py);
-    ctx.lineTo(b.px, b.py);
+    ctx.quadraticCurveTo(cp.px, cp.py, b.px, b.py);
     ctx.stroke();
-    const angle = Math.atan2(b.py - a.py, b.px - a.px);
+    // Tangente della bezier nel punto finale (derivata a t=1): punta verso B partendo
+    // dalla direzione "punto di controllo -> B", non piu' dalla retta A->B.
+    const angle = Math.atan2(b.py - cp.py, b.px - cp.px);
     const headLen = 12;
     ctx.beginPath();
     ctx.moveTo(b.px, b.py);
@@ -358,6 +407,23 @@
     ctx.lineTo(b.px - headLen * Math.cos(angle + Math.PI / 6), b.py - headLen * Math.sin(angle + Math.PI / 6));
     ctx.closePath();
     ctx.fill();
+  }
+
+  // Pallino trascinabile del punto di controllo: disegnato per OGNI freccia (vedi drawAll),
+  // non solo su hover/selezione, cosi' la possibilita' di curvare resta sempre scopribile
+  // anche senza passarci sopra col mouse.
+  function drawFrecciaControlHandle(ctx, f, w, h) {
+    const c = getFrecciaControlPoint(f);
+    const p = perspective(c.x, c.y, w, h);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(p.px, p.py, 6, 0, Math.PI * 2);
+    ctx.fillStyle = '#fbbf24';
+    ctx.strokeStyle = '#7c4a03';
+    ctx.lineWidth = 1.5;
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
   }
 
   function findPedinaAt(px, py, w, h) {
@@ -375,10 +441,45 @@
       const f = state.frecce[i];
       const a = perspective(f.daX, f.daY, w, h);
       const b = perspective(f.aX, f.aY, w, h);
-      const distToSegment = pointToSegmentDistance(px, py, a.px, a.py, b.px, b.py);
-      if (distToSegment <= TOLL) return f;
+      const c = getFrecciaControlPoint(f);
+      const cp = perspective(c.x, c.y, w, h);
+      const distToCurve = pointToQuadraticDistance(px, py, a.px, a.py, cp.px, cp.py, b.px, b.py);
+      if (distToCurve <= TOLL) return f;
     }
     return null;
+  }
+
+  // Trova il punto di controllo (in pixel) di una freccia sotto il cursore, per iniziare
+  // il trascinamento della curvatura. Distinto da findFrecciaAt: qui la tolleranza e'
+  // centrata solo sul pallino del controllo, non sull'intera curva.
+  function findFrecciaControlAt(px, py, w, h) {
+    const TOLL = 12;
+    for (let i = state.frecce.length - 1; i >= 0; i--) {
+      const f = state.frecce[i];
+      const c = getFrecciaControlPoint(f);
+      const p = perspective(c.x, c.y, w, h);
+      if (Math.hypot(px - p.px, py - p.py) <= TOLL) return f;
+    }
+    return null;
+  }
+
+  // Distanza approssimata punto-curva quadratica, campionando N punti sulla bezier e
+  // prendendo il minimo tra le distanze punto-segmento dei sotto-segmenti risultanti.
+  // Sufficiente per l'hit-testing (tolleranza 8px), non serve una soluzione analitica esatta.
+  function pointToQuadraticDistance(px, py, x0, y0, cx, cy, x1, y1) {
+    const STEPS = 16;
+    let minDist = Infinity;
+    let prevX = x0, prevY = y0;
+    for (let i = 1; i <= STEPS; i++) {
+      const t = i / STEPS;
+      const mt = 1 - t;
+      const x = mt * mt * x0 + 2 * mt * t * cx + t * t * x1;
+      const y = mt * mt * y0 + 2 * mt * t * cy + t * t * y1;
+      const d = pointToSegmentDistance(px, py, prevX, prevY, x, y);
+      if (d < minDist) minDist = d;
+      prevX = x; prevY = y;
+    }
+    return minDist;
   }
 
   function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
@@ -394,11 +495,19 @@
   let arrowDragFrom = null; // { x, y } in coordinate logiche, quando si trascina una freccia
 
   function attachInteraction(canvas, ctx, onChange) {
+    let modalitaFreccia = false;
+    let onModalitaFrecciaChange = null;
+
     function getCanvasPoint(evt) {
       const rect = canvas.getBoundingClientRect();
       const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
       const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
-      return { px: clientX - rect.left, py: clientY - rect.top };
+      // Il canvas e' scalato via CSS (width:100%) rispetto alla sua risoluzione interna
+      // (width/height attribute): senza questo fattore le coordinate calcolate sono errate
+      // ogni volta che la card e' renderizzata a una larghezza diversa da quella interna.
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      return { px: (clientX - rect.left) * scaleX, py: (clientY - rect.top) * scaleY };
     }
 
     function redraw() {
@@ -408,14 +517,30 @@
     function onDown(evt) {
       const { px, py } = getCanvasPoint(evt);
       const w = canvas.width, h = canvas.height;
-      if (evt.button === 2 || evt.shiftKey) {
-        // trascinamento con tasto destro / shift = disegna freccia da pedina esistente
+      // Il pallino del punto di controllo ha priorita' assoluta su tutto il resto (arrow-mode,
+      // shift/tasto destro, cancellazione-al-click della freccia stessa): controllato per primo
+      // cosi' trascinare un pallino esistente per curvare la freccia non viene mai reinterpretato
+      // come "click a vuoto" (che disarmerebbe la modalita freccia) ne' come cancellazione.
+      const frecciaControl = findFrecciaControlAt(px, py, w, h);
+      if (frecciaControl) { dragTarget = { kind: 'frecciaControl', ref: frecciaControl }; return; }
+      if (evt.button === 2 || evt.shiftKey || modalitaFreccia) {
+        // tasto destro / shift / modalita freccia attiva = disegna freccia da pedina esistente
         const pedina = findPedinaAt(px, py, w, h);
         if (pedina) {
           arrowDragFrom = { x: pedina.x, y: pedina.y };
           evt.preventDefault();
+          return;
         }
-        return;
+        if (modalitaFreccia && evt.button !== 2) {
+          // Click (sinistro/touch) a vuoto mentre la modalita freccia e' attiva: disarma
+          // invece di lasciarla attiva per sempre, cosi le altre interazioni (drag pallone,
+          // click su freccia per cancellarla) restano disponibili senza dover ricliccare il
+          // bottone. Il tasto destro resta escluso da questo fallthrough: serve solo a
+          // sopprimere il menu contestuale, non deve anche cancellare/trascinare sotto il cursore.
+          setModalitaFreccia(false);
+        } else {
+          return;
+        }
       }
       const pedina = findPedinaAt(px, py, w, h);
       if (pedina) { dragTarget = { kind: 'pedina', ref: pedina }; return; }
@@ -436,7 +561,11 @@
       const { px, py } = getCanvasPoint(evt);
       const w = canvas.width, h = canvas.height;
       const { x, y } = inversePerspective(px, py, w, h);
-      if (dragTarget) {
+      if (dragTarget && dragTarget.kind === 'frecciaControl') {
+        dragTarget.ref.ctrlX = Math.max(0, Math.min(100, x));
+        dragTarget.ref.ctrlY = Math.max(0, Math.min(100, y));
+        redraw();
+      } else if (dragTarget) {
         dragTarget.ref.x = Math.max(0, Math.min(100, x));
         dragTarget.ref.y = Math.max(0, Math.min(100, y));
         redraw();
@@ -455,11 +584,19 @@
         const { px, py } = getCanvasPoint(evt);
         const w = canvas.width, h = canvas.height;
         const { x, y } = inversePerspective(px, py, w, h);
-        state.frecce.push({ id: nextId('fr'), daX: arrowDragFrom.x, daY: arrowDragFrom.y, aX: x, aY: y });
+        if (x !== arrowDragFrom.x || y !== arrowDragFrom.y) {
+          state.frecce.push({ id: nextId('fr'), daX: arrowDragFrom.x, daY: arrowDragFrom.y, aX: x, aY: y });
+        }
         arrowDragFrom = null;
+        if (modalitaFreccia) setModalitaFreccia(false);
         redraw();
         if (onChange) onChange();
       }
+    }
+
+    function setModalitaFreccia(attiva) {
+      modalitaFreccia = attiva;
+      if (onModalitaFrecciaChange) onModalitaFrecciaChange(modalitaFreccia);
     }
 
     canvas.addEventListener('mousedown', onDown);
@@ -484,7 +621,14 @@
     });
 
     redraw();
-    return { redraw };
+    return {
+      redraw,
+      toggleModalitaFreccia() {
+        setModalitaFreccia(!modalitaFreccia);
+        return modalitaFreccia;
+      },
+      onModalitaFrecciaChange(cb) { onModalitaFrecciaChange = cb; }
+    };
   }
 
   function nuovoSchema() {
@@ -584,6 +728,19 @@
         state.pallone = { x: 50, y: 50 };
         interaction.redraw();
       });
+    }
+
+    const frecciaBtn = root.querySelector('[data-freccia-tool]');
+    if (frecciaBtn) {
+      const aggiornaAspetto = (attiva) => {
+        frecciaBtn.classList.toggle('active', attiva);
+        frecciaBtn.classList.toggle('btn-outline-secondary', !attiva);
+        frecciaBtn.classList.toggle('btn-warning', attiva);
+      };
+      frecciaBtn.addEventListener('click', () => {
+        aggiornaAspetto(interaction.toggleModalitaFreccia());
+      });
+      interaction.onModalitaFrecciaChange(aggiornaAspetto);
     }
 
     root.querySelector('[data-azione="nuovo"]').addEventListener('click', () => {

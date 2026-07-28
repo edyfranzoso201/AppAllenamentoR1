@@ -1540,8 +1540,11 @@
                             <div class="btn-group btn-group-sm ms-auto" role="group">
                                 <button type="button" class="btn btn-outline-secondary" data-pedina-tool="blu" title="Aggiungi pedina Blu">🔵</button>
                                 <button type="button" class="btn btn-outline-secondary" data-pedina-tool="rosso" title="Aggiungi pedina Rossa">🔴</button>
+                                <button type="button" class="btn btn-outline-secondary" data-pedina-tool="verde" title="Aggiungi pedina Verde">🟢</button>
+                                <button type="button" class="btn btn-outline-secondary" data-pedina-tool="azzurro" title="Aggiungi pedina Azzurra">🩵</button>
                                 <button type="button" class="btn btn-outline-secondary" data-pedina-tool="bianco" title="Aggiungi pedina Bianca">⚪</button>
                                 <button type="button" class="btn btn-outline-secondary" data-pallone-tool title="Aggiungi pallone">⚽</button>
+                                <button type="button" class="btn btn-outline-secondary" id="lavagna-freccia-tool" data-freccia-tool title="Disegna una freccia: attiva e trascina da una pedina">➡️</button>
                             </div>
                         </div>
                         <div class="card-body">
@@ -1554,10 +1557,10 @@
                                 <button type="button" class="btn btn-sm btn-outline-secondary" data-azione="rinomina">Rinomina</button>
                                 <button type="button" class="btn btn-sm btn-outline-secondary" data-azione="elimina">Elimina</button>
                             </div>
-                            <div id="lavagna-tattica-root" style="max-width: 700px;">
-                                <canvas id="lavagna-canvas" width="700" height="460" style="width:100%; max-width:700px; height:auto; touch-action:none; border-radius: 8px;"></canvas>
+                            <div id="lavagna-tattica-root" style="max-width: 1100px; margin: 0 auto;">
+                                <canvas id="lavagna-canvas" width="1100" height="722" style="width:100%; max-width:1100px; height:auto; display:block; touch-action:none; border-radius: 8px;"></canvas>
                             </div>
-                            <small class="text-muted d-block mt-2">Trascina le pedine per spostarle, doppio click per scrivere il numero. Shift+trascinamento da una pedina disegna una freccia; clicca una freccia per cancellarla.</small>
+                            <small class="text-muted d-block mt-2">Trascina le pedine per spostarle, doppio click per scrivere il numero. Per disegnare una freccia: premi ➡️ (o tieni Shift), poi trascina da una pedina; trascina il pallino sulla freccia per curvarla (es. tiro a rientrare/uscire); clicca una freccia per cancellarla.</small>
                         </div>
                     </div>
                 </div>
