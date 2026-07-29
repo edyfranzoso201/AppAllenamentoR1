@@ -138,6 +138,14 @@ export default async function handler(req, res) {
       return res.status(401).json({ success: false, message: 'Credenziali non valide' });
     }
 
+    // ── Blocco account scaduto ─────────────────────────────────
+    // expiryDate è 'YYYY-MM-DD': confronto lessicografico con la data odierna
+    // (stesso formato) è equivalente al confronto cronologico, senza fusi orari.
+    if (user.expiryDate && user.expiryDate < new Date().toISOString().split('T')[0]) {
+      console.log(`   ❌ Account scaduto: ${username} (expiryDate=${user.expiryDate})`);
+      return res.status(403).json({ success: false, message: 'Account scaduto. Contatta l\'amministratore per il rinnovo.' });
+    }
+
     // ── Verifica password con migrazione automatica ──────────────
     // verifyPassword gestisce scrypt (nuovo) + SHA256/base64 (legacy).
     // needsMigration=true quando la password era valida ma in formato legacy:
@@ -255,6 +263,7 @@ export default async function handler(req, res) {
         role: user.role,
         societyId: user.societyId || null,
         annate: user.annate || [],
+        expiryDate: user.expiryDate || null,
         permissions: getPermissions(user.role)
       }
     });

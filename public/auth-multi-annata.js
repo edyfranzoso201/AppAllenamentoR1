@@ -709,7 +709,14 @@
                         if (result.user && result.user.permissions) {
                             sessionStorage.setItem('gosport_permissions', JSON.stringify(result.user.permissions));
                         }
-                        
+
+                        // Salva scadenza account (se impostata) per l'alert nella Home
+                        if (result.user && result.user.expiryDate) {
+                            sessionStorage.setItem('gosport_user_expiry', result.user.expiryDate);
+                        } else {
+                            sessionStorage.removeItem('gosport_user_expiry');
+                        }
+
                         // Salva societyId per filtrare annate e utenti
                         if (result.societyId) {
                             sessionStorage.setItem(SESSION_SOCIETY, result.societyId);
@@ -1435,6 +1442,13 @@ async function loadUsersList() {
                         ${(user.nome || user.cognome) ? `<p style="color:#94a3b8;margin:3px 0 0 0;font-size:14px;">👤 ${[user.nome, user.cognome].filter(Boolean).join(' ')}</p>` : ''}
                         ${user.note ? `<p style="color:#94a3b8;margin:3px 0 0 0;font-size:14px;">📝 ${user.note}</p>` : ''}
                         <p style="color:#94a3b8;margin:5px 0 0 0;font-size:14px;">📅 Annate: ${annateText}</p>
+                        ${(() => {
+                            if (!user.expiryDate) return '';
+                            const oggi = new Date().toISOString().split('T')[0];
+                            const scaduto = user.expiryDate < oggi;
+                            const dataFmt = user.expiryDate.split('-').reverse().join('/');
+                            return `<p style="margin:5px 0 0 0;font-size:14px;color:${scaduto ? '#f87171' : '#fbbf24'};">${scaduto ? '🔴 Scaduto il' : '⏳ Scade il'} ${dataFmt}</p>`;
+                        })()}
                     </div>
                     <div style="display:flex;gap:10px;">
                         <button onclick="editUser('${user.username}')" style="background:#3b82f6;color:#ffffff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">
@@ -1506,6 +1520,11 @@ async function showUserModal(userData = null) {
                 <div>
                     <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Email</label>
                     <input type="email" id="user-email" value="${userData?.email || ''}" placeholder="email@esempio.com" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#ffffff;box-sizing:border-box;" />
+                </div>
+                <div>
+                    <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Scadenza account</label>
+                    <input type="date" id="user-expiry" value="${userData?.expiryDate || ''}" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#ffffff;box-sizing:border-box;" />
+                    <small style="color:#94a3b8;font-size:12px;">Lascia vuoto per utenza illimitata. Dopo questa data l'utente non potrà più accedere.</small>
                 </div>
                 <div style="display:flex;gap:10px;">
                     <div style="flex:1;">
@@ -1585,7 +1604,8 @@ async function showUserModal(userData = null) {
             cognome: document.getElementById('user-cognome').value.trim(),
             note: document.getElementById('user-note').value.trim(),
             role,
-            annate: annateSelezionate
+            annate: annateSelezionate,
+            expiryDate: document.getElementById('user-expiry').value || ''
         };
         
         // Invia la password solo se:
@@ -2090,6 +2110,13 @@ async function loadUsersList() {
                         ${(user.nome || user.cognome) ? `<p style="color:#94a3b8;margin:3px 0 0 0;font-size:14px;">👤 ${[user.nome, user.cognome].filter(Boolean).join(' ')}</p>` : ''}
                         ${user.note ? `<p style="color:#94a3b8;margin:3px 0 0 0;font-size:14px;">📝 ${user.note}</p>` : ''}
                         <p style="color:#94a3b8;margin:5px 0 0 0;font-size:14px;">📅 Annate: ${annateText}</p>
+                        ${(() => {
+                            if (!user.expiryDate) return '';
+                            const oggi = new Date().toISOString().split('T')[0];
+                            const scaduto = user.expiryDate < oggi;
+                            const dataFmt = user.expiryDate.split('-').reverse().join('/');
+                            return `<p style="margin:5px 0 0 0;font-size:14px;color:${scaduto ? '#f87171' : '#fbbf24'};">${scaduto ? '🔴 Scaduto il' : '⏳ Scade il'} ${dataFmt}</p>`;
+                        })()}
                     </div>
                     <div style="display:flex;gap:10px;">
                         <button onclick="editUser('${user.username}')" style="background:#3b82f6;color:#ffffff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">
@@ -2161,6 +2188,11 @@ async function showUserModal(userData = null) {
                 <div>
                     <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Email</label>
                     <input type="email" id="user-email" value="${userData?.email || ''}" placeholder="email@esempio.com" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#ffffff;box-sizing:border-box;" />
+                </div>
+                <div>
+                    <label style="color:#e2e8f0;font-size:14px;display:block;margin-bottom:5px;">Scadenza account</label>
+                    <input type="date" id="user-expiry" value="${userData?.expiryDate || ''}" style="width:100%;padding:10px;border:1px solid rgba(96,165,250,0.3);border-radius:8px;background:#0f172a;color:#ffffff;box-sizing:border-box;" />
+                    <small style="color:#94a3b8;font-size:12px;">Lascia vuoto per utenza illimitata. Dopo questa data l'utente non potrà più accedere.</small>
                 </div>
                 <div style="display:flex;gap:10px;">
                     <div style="flex:1;">
@@ -2240,7 +2272,8 @@ async function showUserModal(userData = null) {
             cognome: document.getElementById('user-cognome').value.trim(),
             note: document.getElementById('user-note').value.trim(),
             role,
-            annate: annateSelezionate
+            annate: annateSelezionate,
+            expiryDate: document.getElementById('user-expiry').value || ''
         };
         
         // Invia la password solo se:

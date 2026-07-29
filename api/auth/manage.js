@@ -108,6 +108,7 @@ export default async function handler(req, res) {
         role:      u.role      || 'coach_readonly',
         annate:    u.annate    || [],
         societyId: u.societyId || null,
+        expiryDate: u.expiryDate || null,
         createdAt: u.createdAt || null,
         updatedAt: u.updatedAt || null,
       }));
@@ -120,10 +121,15 @@ export default async function handler(req, res) {
     // POST — Azioni CRUD
     // ==========================================
     if (req.method === 'POST') {
-      const { action, username, password, email, nome, cognome, note, role, annate } = req.body;
+      const { action, username, password, email, nome, cognome, note, role, annate, expiryDate } = req.body;
 
       if (!action) {
         return res.status(400).json({ success: false, message: 'Parametro "action" obbligatorio' });
+      }
+
+      // Formato atteso: 'YYYY-MM-DD' (da <input type="date">) oppure vuoto/null = illimitata.
+      if (expiryDate && !/^\d{4}-\d{2}-\d{2}$/.test(expiryDate)) {
+        return res.status(400).json({ success: false, message: 'Data di scadenza non valida' });
       }
 
       const users = (await kv.get('auth:users')) || [];
@@ -160,6 +166,7 @@ export default async function handler(req, res) {
           role:      role || 'coach_readonly',
           annate:    role === 'admin' ? [] : (annate || []),
           societyId: societyId || null,
+          expiryDate: expiryDate || null,
           createdAt: new Date().toISOString(),
           createdBySuperAdmin: isSuperAdmin || false,
         };
@@ -205,6 +212,7 @@ export default async function handler(req, res) {
         if (note      !== undefined) updated.note      = note.trim();
         if (role      !== undefined) updated.role      = role;
         if (annate    !== undefined) updated.annate    = role === 'admin' ? [] : annate;
+        if (expiryDate !== undefined) updated.expiryDate = expiryDate || null;
         if (password  && password.trim() !== '') {
           updated.password = hashPassword(password.trim());
         }

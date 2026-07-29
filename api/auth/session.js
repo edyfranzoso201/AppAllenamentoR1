@@ -47,6 +47,17 @@ export default async function handler(req, res) {
       if (!data) {
         return res.status(200).json({ valid: false });
       }
+
+      // Account scaduto DURANTE una sessione già attiva (l'admin ha impostato
+      // una expiryDate dopo il login): revoca la sessione invece di rinnovarla,
+      // così il prossimo verify (già chiamato ad ogni caricamento dashboard)
+      // fa scattare il logout automatico lato client.
+      const user = await kv.get(`auth:user:${String(data.username || '').toLowerCase()}`);
+      if (user && user.expiryDate && user.expiryDate < new Date().toISOString().split('T')[0]) {
+        await kv.del(`session:${token}`);
+        return res.status(200).json({ valid: false, reason: 'expired' });
+      }
+
       // TTL scorrevole: ogni verifica di una sessione valida rinnova la
       // scadenza a 8 ore da ora. Le sessioni inattive >8h scadono comunque.
       await kv.expire(`session:${token}`, 8 * 60 * 60);

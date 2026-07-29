@@ -4252,11 +4252,33 @@ document.addEventListener('DOMContentLoaded', () => {
         
         elements.alertsContainer.innerHTML = '';
 
+        // Scadenza account utente: alert negli ultimi 15 giorni prima della
+        // data impostata dall'admin (sessionStorage, salvata al login in
+        // auth-multi-annata.js). Stesso formula giorni-residui di showLicenseBanner().
+        const expiredAccount = [];
+        const warningAccount = [];
+        const userExpiry = sessionStorage.getItem('gosport_user_expiry');
+        if (userExpiry) {
+            // Confronto su date normalizzate a mezzanotte locale (come `today` sopra),
+            // altrimenti l'ora corrente vs mezzanotte UTC della scadenza introduce
+            // un off-by-one dipendente dal fuso orario dell'utente.
+            const expiryDay = new Date(userExpiry + 'T00:00:00');
+            const daysLeft = Math.round((expiryDay - today) / (1000 * 60 * 60 * 24));
+            const dataFmt = userExpiry.split('-').reverse().join('/');
+            if (daysLeft < 0) {
+                expiredAccount.push(`Account scaduto il ${dataFmt}`);
+            } else if (daysLeft <= 15) {
+                warningAccount.push(`Account in scadenza il ${dataFmt} (tra ${daysLeft} giorn${daysLeft === 1 ? 'o' : 'i'}) — contatta l'amministratore per il rinnovo`);
+            }
+        }
+
         // Banner UNICO e compatto: una riga di "chip" contatori cliccabili.
         // Click su un chip → espande/chiude la lista dei nomi relativi.
         // Rosso = scaduti (urgente), ambra = in scadenza. Niente più 6 banderoni.
         const esc = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
         const groups = [
+            { key: 'acc-exp', sev: 'exp', icon: '🔒', label: 'Account scaduto',       items: expiredAccount },
+            { key: 'acc-warn', sev: 'warn', icon: '🔒', label: 'Account in scadenza',   items: warningAccount },
             { key: 'vis-exp', sev: 'exp', icon: '🩺', label: 'Visite scadute',        items: expiredVisita },
             { key: 'vis-warn', sev: 'warn', icon: '🩺', label: 'Visite in scadenza',    items: warningVisita },
             { key: 'tes-exp', sev: 'exp', icon: '🪪', label: 'Tessere scadute',        items: expiredTessera },
@@ -4276,7 +4298,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         const detail = (g) => `<div id="gsd-${g.key}" class="gs-alert-detail" style="display:none;font-size:0.85rem;color:#e2e8f0;padding:8px 4px 2px;line-height:1.6;">${g.items.map(esc).join(' · ')}</div>`;
 
-        const totExp = expiredVisita.length + expiredTessera.length + expiredPagamenti.length;
+        const totExp = expiredAccount.length + expiredVisita.length + expiredTessera.length + expiredPagamenti.length;
         const headTxt = totExp > 0 ? '⚠️ Scadenze da gestire' : '🔔 Promemoria scadenze';
 
         // Colori ancorati ai token --sm-*: l'alert segue automaticamente il tema
