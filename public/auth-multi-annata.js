@@ -1152,15 +1152,20 @@ async function loadAnnateList() {
                 }
             } catch (e) {}
             
+            const isHidden = !!annata.nascostaDashboard;
             const card = document.createElement('div');
-            card.style.cssText = 'background:#1e293b;padding:20px;border-radius:12px;border:1px solid rgba(96,165,250,0.2);';
+            card.style.cssText = `background:#1e293b;padding:20px;border-radius:12px;border:1px solid rgba(96,165,250,0.2);${isHidden ? 'opacity:0.6;' : ''}`;
             card.innerHTML = `
                 <div style="display:flex;justify-content:space-between;align-items:start;">
                     <div style="flex:1;">
-                        <h3 style="color:#60a5fa;margin:0 0 8px 0;font-size:18px;">${annata.nome}</h3>
+                        <h3 style="color:#60a5fa;margin:0 0 8px 0;font-size:18px;">${annata.nome}${isHidden ? ' <span style="color:#94a3b8;font-size:12px;font-weight:400;">(nascosta dal riepilogo)</span>' : ''}</h3>
                         <p style="color:#94a3b8;margin:0 0 5px 0;font-size:14px;">📅 ${annata.dataInizio} - ${annata.dataFine}</p>
                         <p style="color:#94a3b8;margin:0;font-size:14px;">👥 ${athletesCount} atleti</p>
                         ${annata.descrizione ? `<p style="color:#94a3b8;margin:10px 0 0 0;font-size:13px;">${annata.descrizione}</p>` : ''}
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:12px;cursor:pointer;color:#e2e8f0;font-size:13px;">
+                            <input type="checkbox" class="toggle-hidden-annata" data-id="${annata.id}" ${isHidden ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer;">
+                            <span>🙈 Nascondi dal riepilogo Home</span>
+                        </label>
                     </div>
                     <div style="display:flex;gap:10px;">
                         <button onclick="editAnnata('${annata.id}')" style="background:#3b82f6;color:#ffffff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">
@@ -1174,6 +1179,10 @@ async function loadAnnateList() {
             `;
             listDiv.appendChild(card);
         }
+
+        listDiv.querySelectorAll('.toggle-hidden-annata').forEach(cb => {
+            cb.addEventListener('change', () => toggleAnnataHidden(cb.dataset.id));
+        });
     } catch (error) {
         listDiv.innerHTML = `<div style="text-align:center;padding:40px;color:#d90429;"><p>Errore: ${escapeHtml(error.message)}</p></div>`;
     }
@@ -1343,6 +1352,28 @@ window.deleteAnnata = async function(annataId, nomeAnnata) {
         loadAnnateList();
     } catch (error) {
         alert('❌ ' + error.message);
+    }
+};
+
+window.toggleAnnataHidden = async function(annataId) {
+    try {
+        const _sid = sessionStorage.getItem('gosport_society_id');
+        const response = await fetch('/api/annate/manage', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(_sid ? { 'X-Society-Id': _sid } : {})
+            },
+            body: JSON.stringify({ action: 'toggle-hidden', id: annataId })
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Errore');
+        }
+        loadAnnateList();
+    } catch (error) {
+        alert('❌ ' + error.message);
+        loadAnnateList();
     }
 };
 
@@ -1820,15 +1851,20 @@ async function loadAnnateList() {
                 }
             } catch (e) {}
             
+            const isHidden = !!annata.nascostaDashboard;
             const card = document.createElement('div');
-            card.style.cssText = 'background:#1e293b;padding:20px;border-radius:12px;border:1px solid rgba(96,165,250,0.2);';
+            card.style.cssText = `background:#1e293b;padding:20px;border-radius:12px;border:1px solid rgba(96,165,250,0.2);${isHidden ? 'opacity:0.6;' : ''}`;
             card.innerHTML = `
                 <div style="display:flex;justify-content:space-between;align-items:start;">
                     <div style="flex:1;">
-                        <h3 style="color:#60a5fa;margin:0 0 8px 0;font-size:18px;">${annata.nome}</h3>
+                        <h3 style="color:#60a5fa;margin:0 0 8px 0;font-size:18px;">${annata.nome}${isHidden ? ' <span style="color:#94a3b8;font-size:12px;font-weight:400;">(nascosta dal riepilogo)</span>' : ''}</h3>
                         <p style="color:#94a3b8;margin:0 0 5px 0;font-size:14px;">📅 ${annata.dataInizio} - ${annata.dataFine}</p>
                         <p style="color:#94a3b8;margin:0;font-size:14px;">👥 ${athletesCount} atleti</p>
                         ${annata.descrizione ? `<p style="color:#94a3b8;margin:10px 0 0 0;font-size:13px;">${annata.descrizione}</p>` : ''}
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:12px;cursor:pointer;color:#e2e8f0;font-size:13px;">
+                            <input type="checkbox" class="toggle-hidden-annata" data-id="${annata.id}" ${isHidden ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer;">
+                            <span>🙈 Nascondi dal riepilogo Home</span>
+                        </label>
                     </div>
                     <div style="display:flex;gap:10px;">
                         <button onclick="editAnnata('${annata.id}')" style="background:#3b82f6;color:#ffffff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">
@@ -1842,6 +1878,10 @@ async function loadAnnateList() {
             `;
             listDiv.appendChild(card);
         }
+
+        listDiv.querySelectorAll('.toggle-hidden-annata').forEach(cb => {
+            cb.addEventListener('change', () => toggleAnnataHidden(cb.dataset.id));
+        });
     } catch (error) {
         listDiv.innerHTML = `<div style="text-align:center;padding:40px;color:#d90429;"><p>Errore: ${escapeHtml(error.message)}</p></div>`;
     }
@@ -2011,6 +2051,28 @@ window.deleteAnnata = async function(annataId, nomeAnnata) {
         loadAnnateList();
     } catch (error) {
         alert('❌ ' + error.message);
+    }
+};
+
+window.toggleAnnataHidden = async function(annataId) {
+    try {
+        const _sid = sessionStorage.getItem('gosport_society_id');
+        const response = await fetch('/api/annate/manage', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(_sid ? { 'X-Society-Id': _sid } : {})
+            },
+            body: JSON.stringify({ action: 'toggle-hidden', id: annataId })
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Errore');
+        }
+        loadAnnateList();
+    } catch (error) {
+        alert('❌ ' + error.message);
+        loadAnnateList();
     }
 };
 

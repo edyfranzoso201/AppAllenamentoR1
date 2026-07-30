@@ -208,6 +208,34 @@ export default async function handler(req, res) {
     }
 
     // ==========================================
+    // TOGGLE-HIDDEN - Nasconde/mostra un'annata dal riepilogo Home (dashboard)
+    // senza toccare i suoi dati: l'annata resta selezionabile normalmente
+    // ovunque si lavora sui dati (Presenze, Squadra, ecc.), viene solo esclusa
+    // dai conteggi e dalla tabella di riepilogo in Home.
+    // ==========================================
+    if (action === 'toggle-hidden') {
+      if (!id) {
+        return res.status(400).json({ success: false, message: 'ID annata obbligatorio' });
+      }
+      const idx = annate.findIndex(a => String(a.id) === String(id));
+      if (idx === -1) {
+        return res.status(404).json({ success: false, message: 'Annata non trovata' });
+      }
+      if (societyId && annate[idx].societyId && annate[idx].societyId !== societyId) {
+        return res.status(403).json({ success: false, message: 'Non autorizzato' });
+      }
+      annate[idx].nascostaDashboard = !annate[idx].nascostaDashboard;
+      annate[idx].updatedAt = new Date().toISOString();
+      await kv.set('annate:list', annate);
+      console.log(`✅ Annata ${annate[idx].nascostaDashboard ? 'nascosta' : 'mostrata'} in dashboard: ${annate[idx].nome} (${id})`);
+      return res.status(200).json({
+        success: true,
+        message: annate[idx].nascostaDashboard ? 'Annata nascosta dal riepilogo' : 'Annata visibile nel riepilogo',
+        nascostaDashboard: annate[idx].nascostaDashboard
+      });
+    }
+
+    // ==========================================
     // FIX_SOCIETY - Reclama UNA annata orfana specifica (per id)
     // ==========================================
     // Prima assegnava in blocco TUTTE le annate senza societyId a chi invocava:
@@ -242,7 +270,7 @@ export default async function handler(req, res) {
       });
     }
 
-    return res.status(400).json({ success: false, message: 'Azione non valida. Usa: create, update, delete, fix_society' });
+    return res.status(400).json({ success: false, message: 'Azione non valida. Usa: create, update, delete, toggle-hidden, fix_society' });
 
   } catch (error) {
     console.error('❌ Errore in /api/annate/manage:', error);

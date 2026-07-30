@@ -1633,7 +1633,11 @@
     if (!statsEl) return;
 
     try {
-      const annate = await fetchAnnate();
+      const allAnnate = await fetchAnnate();
+      // Le annate marcate "nascostaDashboard" (switch nel pannello admin) non
+      // entrano nei conteggi/tabella riepilogo Home, ma restano selezionabili
+      // normalmente in tutte le altre sezioni (Presenze, Squadra, ecc.).
+      const annate = allAnnate.filter(a => !a.nascostaDashboard);
 
       if (!annate.length) {
         statsEl.innerHTML = '<div class="placeholder-box" style="grid-column:1/-1"><div class="ph-icon">📭</div><div class="ph-title">Nessuna annata trovata</div></div>';
