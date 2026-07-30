@@ -153,6 +153,29 @@ export default async function handler(req, res) {
     }
 
     // ==========================================
+    // ACTION: society-name - Nome società da societyId (pubblica, no dati sensibili)
+    // Usata dal modulo di iscrizione pubblico (register.html) per mostrare
+    // il nome corretto senza doverlo passare (falsificabile) via query string.
+    // ==========================================
+    if (action === 'society-name' && req.method === 'GET') {
+      const { societyId } = req.query;
+      if (!societyId) {
+        return res.status(400).json({ success: false, message: 'societyId obbligatorio' });
+      }
+
+      const licenseKey = await kv.get(`licenze_society:${societyId}`);
+      if (!licenseKey) {
+        return res.status(404).json({ success: false, message: 'Società non trovata' });
+      }
+      const stored = await kv.get(`licenze:${licenseKey}`);
+      if (!stored) {
+        return res.status(404).json({ success: false, message: 'Società non trovata' });
+      }
+
+      return res.status(200).json({ success: true, societyName: stored.societyName });
+    }
+
+    // ==========================================
     // Da qui in poi: solo Super Admin
     // ==========================================
     // Confronto timing-safe + rate-limit per IP (helper condiviso). La chiave può
@@ -327,29 +350,6 @@ export default async function handler(req, res) {
       ]);
 
       return res.status(200).json({ success: true, message: 'Licenza eliminata' });
-    }
-
-    // ==========================================
-    // ACTION: society-name - Nome società da societyId (pubblica, no dati sensibili)
-    // Usata dal modulo di iscrizione pubblico (register.html) per mostrare
-    // il nome corretto senza doverlo passare (falsificabile) via query string.
-    // ==========================================
-    if (action === 'society-name' && req.method === 'GET') {
-      const { societyId } = req.query;
-      if (!societyId) {
-        return res.status(400).json({ success: false, message: 'societyId obbligatorio' });
-      }
-
-      const licenseKey = await kv.get(`licenze_society:${societyId}`);
-      if (!licenseKey) {
-        return res.status(404).json({ success: false, message: 'Società non trovata' });
-      }
-      const stored = await kv.get(`licenze:${licenseKey}`);
-      if (!stored) {
-        return res.status(404).json({ success: false, message: 'Società non trovata' });
-      }
-
-      return res.status(200).json({ success: true, societyName: stored.societyName });
     }
 
     // ==========================================
