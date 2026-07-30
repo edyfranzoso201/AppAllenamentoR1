@@ -112,20 +112,27 @@
 
     /* ── PRINT ── */
     @media print {
-      body { background:#fff; color:#000; }
-      .card { background:#fff; border:1px solid #ccc; box-shadow:none; page-break-inside:avoid; }
-      .card-title { color:#000; }
-      .form-label { color:#333; }
-      .form-control { border:1px solid #999; border-radius:4px; background:#fff; color:#000; padding:6px 8px; box-shadow:none; }
-      .privacy-box { background:#f9f9f9; border:1px solid #ccc; color:#333; box-shadow:none; }
-      .privacy-box strong { color:var(--accent-hover); }
-      .privacy-switch-row { background:#f0faf3; border:1px solid #ccc; }
+      body { background:#fff; color:#000; font-size:0.82rem; }
+      .page { padding:6px 14px 10px; max-width:100%; }
+      .card { background:#fff; border:1px solid #ccc; box-shadow:none; page-break-inside:avoid; padding:10px; margin-bottom:7px; }
+      .card-title { color:#000; margin-bottom:6px; }
+      .form-group { margin-bottom:6px; }
+      .form-label { color:#333; margin-bottom:2px; }
+      .form-control { border:1px solid #999; border-radius:4px; background:#fff; color:#000; padding:4px 6px; box-shadow:none; }
+      .privacy-box, .uscita-box { background:#f9f9f9; border:1px solid #ccc; color:#333; box-shadow:none; page-break-inside:avoid; padding:9px 12px; margin-bottom:8px; font-size:0.7rem; line-height:1.25; }
+      .privacy-box strong, .uscita-box strong { color:var(--accent-hover); }
+      .privacy-box br + br, .uscita-box br + br { display:none; }
+      .privacy-switch-row { background:#f0faf3; border:1px solid #ccc; padding:5px 8px; margin-top:6px; }
       .switch-label { color:#000; }
       .no-print, .btn-print, .btn-primary, #submit-btn { display:none !important; }
       .print-only { display:block !important; }
-      .header-title { color:#000; }
-      .header-society { background:var(--accent); -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-      .note-box { background:#fffbeb; border:1px solid #fbbf24; color:#78350f; }
+      .header { margin-bottom:10px; }
+      .header-logo { font-size:1.6rem; margin-bottom:2px; }
+      .header-title { color:#000; font-size:1.1rem; }
+      .header-society { background:var(--accent); -webkit-print-color-adjust:exact; print-color-adjust:exact; padding:2px 12px; font-size:0.8rem; }
+      .header-sub { font-size:0.72rem; margin-top:4px; }
+      .note-box { background:#fffbeb; border:1px solid #fbbf24; color:#78350f; padding:8px 10px; margin-bottom:10px; }
+      .divider { margin:8px 0; }
       .slider { display:none; }
     }
     .print-only { display:none; }
@@ -164,7 +171,7 @@
     <div class="header-logo">⚽</div>
     <div class="header-title">Sport Monitoring</div>
     <div class="header-society" id="society-name-display">Caricamento...</div>
-    <div class="header-sub">Modulo di richiesta iscrizione</div>
+    <div class="header-sub">Modulo di iscrizione all'app Sport Monitoring per l'uso della società</div>
   </div>
 
   <div id="alert-error" class="alert" style="display:none"></div>
@@ -313,12 +320,12 @@
     <strong>autorizzare</strong> / <strong>non autorizzare</strong> il proprio figlio/a
     a lasciare autonomamente la struttura sportiva al termine degli allenamenti e delle
     gare, <strong>senza necessità di accompagnamento da parte di un adulto</strong>.<br><br>
-    In caso di autorizzazione, la società sportiva/il club e il proprio staff tecnico sono
-    sollevati da qualsiasi responsabilità per quanto avviene al minore dal momento in cui
-    abbandona la struttura. Questa autorizzazione riguarda esclusivamente la società sportiva
-    presso cui il minore è iscritto: <strong>Sport Monitoring</strong> è unicamente la
-    piattaforma gestionale utilizzata dalla società e non ha alcun ruolo nella vigilanza
-    del minore.
+    In caso di autorizzazione, la società sportiva/il club <strong id="uscita-society-name">___</strong>
+    e il proprio staff tecnico sono sollevati da qualsiasi responsabilità per quanto avviene
+    al minore dal momento in cui abbandona la struttura: la responsabilità resta in capo al
+    genitore/tutore firmatario. Questa autorizzazione riguarda esclusivamente la società
+    sportiva sopra indicata: <strong>Sport Monitoring</strong> è unicamente la piattaforma
+    gestionale utilizzata dalla società e non ha alcun ruolo nella vigilanza del minore.
     <div class="privacy-switch-row uscita">
       <span class="switch-label">Autorizzo il/la minore a uscire autonomamente dalla struttura sportiva al termine delle attività</span>
       <label class="switch">
@@ -376,31 +383,25 @@ async function init() {
     showError('Link non valido. Contatta la società per ricevere il link corretto.');
     return;
   }
+  // Il nome società viene sempre risolto dal server (dato di licenza), mai dal
+  // parametro ?name= dell'URL: quel parametro è liberamente modificabile da chi
+  // costruisce il link e non va usato come fonte del nome mostrato.
+  const display = document.getElementById('society-name-display');
   try {
-    // Verifica che la società esista controllando le annate (endpoint pubblico)
-    const r = await fetch(`${API_BASE}/api/annate/list`, {
-      headers: { 'X-Society-Id': SOCIETY_ID }
-    });
+    const r = await fetch(`${API_BASE}/api/licenze?action=society-name&societyId=${encodeURIComponent(SOCIETY_ID)}`);
     const d = await r.json();
-    // Se risponde, la società esiste — prendiamo il nome dalla licenza
-    const lr = await fetch(`${API_BASE}/api/licenze?action=verify`, {
-      headers: { 'x-license-key': 'CHECK', 'x-license-email': 'check@check.com' }
-    });
-    // Usiamo societyId per recuperare nome — non abbiamo endpoint pubblico per nome
-    // Mostriamo un generico
-    document.getElementById('society-name-display').textContent = 'Modulo Iscrizione';
+    if (d.success && d.societyName) {
+      societyName = d.societyName;
+      display.textContent = societyName;
+    } else {
+      display.textContent = 'Modulo Iscrizione';
+    }
   } catch(e) {
     // Non bloccare il form anche se non si riesce a leggere il nome
-    document.getElementById('society-name-display').textContent = 'Modulo Iscrizione';
+    display.textContent = 'Modulo Iscrizione';
   }
-}
-
-// Recupera il nome società dal parametro opzionale
-const sidName = params.get('name');
-if (sidName) {
-  document.getElementById('society-name-display').textContent = decodeURIComponent(sidName);
-} else {
-  document.getElementById('society-name-display').textContent = 'Modulo Iscrizione';
+  const uscitaSocietyEl = document.getElementById('uscita-society-name');
+  if (uscitaSocietyEl) uscitaSocietyEl.textContent = societyName || '___';
 }
 
 function onNascitaChange() {
@@ -566,10 +567,12 @@ function fillUscitaPrintConsenso() {
   const autorizzato = document.getElementById('uscita-autonoma')?.checked;
   const gNome = document.getElementById('g-nome')?.value.trim();
   const gCognome = document.getElementById('g-cognome')?.value.trim();
+  const gCf = document.getElementById('g-cf')?.value.trim().toUpperCase();
   if (isMinor && autorizzato && gNome && gCognome) {
     const now = new Date();
     const dataOra = now.toLocaleDateString('it-IT') + ' alle ' + now.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'});
-    el.textContent = `Consenso espresso online da: ${gNome} ${gCognome} il ${dataOra}`;
+    const cfPart = gCf ? ` (CF: ${gCf})` : '';
+    el.textContent = `Consenso espresso online da: ${gNome} ${gCognome}${cfPart} il ${dataOra}`;
   } else {
     el.textContent = '';
   }
