@@ -780,6 +780,52 @@
         #navbarNav #app-header-info { display: none !important; }
     }
 
+    /* Desktop: dropdown "Admin" che racchiude Accessi/Alert/Stagioni per non
+       farle uscire dalla barra orizzontale su schermi stretti. Su mobile
+       (max-width:991px) il dropdown resta nascosto e i bottoni originali
+       restano nel loro posto normale nella tendina, comportamento invariato. */
+    /* Mobile: il wrapper non deve alterare il flusso della riga/tendina esistente,
+       e il trigger "Admin" (solo desktop) resta sempre nascosto qui, a prescindere
+       dallo style inline che il JS gli assegna in base al ruolo utente. */
+    .admin-menu-dropdown { display: contents; }
+    @media (max-width: 991px) {
+        .admin-menu-trigger { display: none !important; }
+    }
+    @media (min-width: 992px) {
+        .admin-menu-dropdown {
+            display: inline-flex;
+            position: relative;
+            flex-shrink: 0;
+        }
+        .admin-menu-panel {
+            display: none;
+            position: fixed;
+            top: 106px;
+            right: 12px;
+            flex-direction: column;
+            gap: 6px;
+            padding: 8px;
+            min-width: 190px;
+            background: var(--bg-card);
+            border: 1px solid rgba(96,165,250,0.25);
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.45);
+            z-index: 1030;
+        }
+        .admin-menu-dropdown.open .admin-menu-panel { display: flex; }
+        .admin-menu-panel .tab-nav-btn {
+            flex-direction: row;
+            justify-content: flex-start;
+            height: auto;
+            min-width: 0;
+            width: 100%;
+            padding: 8px 10px;
+            gap: 10px;
+        }
+        .admin-menu-panel .tab-nav-btn .tab-label { display: inline !important; }
+        .admin-menu-panel .tab-nav-btn i { font-size: 1.15rem; }
+    }
+
     /* Mobile: menu a tendina */
     @media (max-width: 991px) {
         #navbarNav { border-bottom: none !important; }
@@ -1352,9 +1398,20 @@
             <button class="tab-nav-btn" data-tab="materiale-section" onclick="switchTab('materiale-section')"><i class="bi bi-box-seam-fill"></i><span class="tab-label"> Materiale</span></button>
             <button class="tab-nav-btn" data-tab="pagamenti-section" onclick="switchTab('pagamenti-section')"><i class="bi bi-credit-card-fill"></i><span class="tab-label"> Pagamenti</span></button>
             <button class="tab-nav-btn" data-tab="convocazioni-section" onclick="switchTab('convocazioni-section')"><i class="bi bi-megaphone-fill"></i><span class="tab-label"> Convocazioni</span></button>
-            <button class="tab-nav-btn admin-only" data-tab="accessi-section" onclick="switchTab('accessi-section')" style="display:none;"><i class="bi bi-clock-history"></i><span class="tab-label"> Accessi</span></button>
-            <button class="tab-nav-btn admin-only" data-tab="alert-settings-section" onclick="switchTab('alert-settings-section')" style="display:none;"><i class="bi bi-bell-fill"></i><span class="tab-label"> Alert</span></button>
-            <button class="tab-nav-btn season-only" data-tab="stagioni-section" onclick="switchTab('stagioni-section')" style="display:none;"><i class="bi bi-archive-fill"></i><span class="tab-label"> Stagioni</span></button>
+            <!-- Su PC (>=992px) questi 3 bottoni admin/stagioni vengono raccolti in un
+                 menu a tendina (bottone "Admin" + pannello), per non farli uscire dalla
+                 barra. Su smartphone il wrapper è display:contents: i bottoni restano
+                 nella riga esattamente come prima, comportamento mobile invariato. -->
+            <div id="admin-menu-dropdown" class="admin-menu-dropdown">
+                <button type="button" class="tab-nav-btn admin-menu-trigger" id="admin-menu-trigger" style="display:none;" title="Altre voci amministrative">
+                    <i class="bi bi-three-dots"></i><span class="tab-label"> Admin</span>
+                </button>
+                <div class="admin-menu-panel" id="admin-menu-panel">
+                    <button class="tab-nav-btn admin-only" data-tab="accessi-section" onclick="switchTab('accessi-section')" style="display:none;"><i class="bi bi-clock-history"></i><span class="tab-label"> Accessi</span></button>
+                    <button class="tab-nav-btn admin-only" data-tab="alert-settings-section" onclick="switchTab('alert-settings-section')" style="display:none;"><i class="bi bi-bell-fill"></i><span class="tab-label"> Alert</span></button>
+                    <button class="tab-nav-btn season-only" data-tab="stagioni-section" onclick="switchTab('stagioni-section')" style="display:none;"><i class="bi bi-archive-fill"></i><span class="tab-label"> Stagioni</span></button>
+                </div>
+            </div>
             <!-- Guida: apre il manuale d'uso in una nuova scheda (pagina statica, non è una sezione) -->
             <button class="tab-nav-btn" type="button" title="Manuale d'uso (nuova scheda)" onclick="window.open('/manuale.html','_blank','noopener')"><i class="bi bi-question-circle-fill"></i><span class="tab-label"> Guida</span></button>
         </div>
@@ -4177,7 +4234,40 @@ document.addEventListener('DOMContentLoaded', function() {
         if (['admin', 'dirigente', 'coachl1'].includes(_r)) {
             document.querySelectorAll('.season-only').forEach(function(el){ el.style.display = ''; });
         }
+        refreshAdminMenuTrigger();
     }
+
+    // Dropdown "Admin" (solo desktop, >=992px): mostra il bottone trigger
+    // solo se almeno una delle voci Accessi/Alert/Stagioni è visibile per
+    // questo utente. Su mobile il wrapper è display:contents e questo
+    // bottone resta nascosto: comportamento smartphone invariato.
+    function refreshAdminMenuTrigger() {
+        var trigger = document.getElementById('admin-menu-trigger');
+        var panel = document.getElementById('admin-menu-panel');
+        if (!trigger || !panel) return;
+        var anyVisible = Array.prototype.some.call(
+            panel.querySelectorAll('.tab-nav-btn'),
+            function(btn) { return btn.style.display !== 'none'; }
+        );
+        trigger.style.display = anyVisible ? '' : 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var wrapper = document.getElementById('admin-menu-dropdown');
+        var trigger = document.getElementById('admin-menu-trigger');
+        if (!wrapper || !trigger) return;
+        trigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            wrapper.classList.toggle('open');
+        });
+        // Chiudi il pannello quando si sceglie una voce o si clicca fuori
+        wrapper.querySelectorAll('.admin-menu-panel .tab-nav-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() { wrapper.classList.remove('open'); });
+        });
+        document.addEventListener('click', function(e) {
+            if (!wrapper.contains(e.target)) wrapper.classList.remove('open');
+        });
+    });
 
     // Formatta data italiana
     function fmtDate(isoStr) {
