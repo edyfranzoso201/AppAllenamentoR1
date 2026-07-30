@@ -313,8 +313,12 @@
     <strong>autorizzare</strong> / <strong>non autorizzare</strong> il proprio figlio/a
     a lasciare autonomamente la struttura sportiva al termine degli allenamenti e delle
     gare, <strong>senza necessità di accompagnamento da parte di un adulto</strong>.<br><br>
-    In caso di autorizzazione, la società sportiva è sollevata da qualsiasi responsabilità
-    per quanto avviene al minore dal momento in cui abbandona la struttura.
+    In caso di autorizzazione, la società sportiva/il club e il proprio staff tecnico sono
+    sollevati da qualsiasi responsabilità per quanto avviene al minore dal momento in cui
+    abbandona la struttura. Questa autorizzazione riguarda esclusivamente la società sportiva
+    presso cui il minore è iscritto: <strong>Sport Monitoring</strong> è unicamente la
+    piattaforma gestionale utilizzata dalla società e non ha alcun ruolo nella vigilanza
+    del minore.
     <div class="privacy-switch-row uscita">
       <span class="switch-label">Autorizzo il/la minore a uscire autonomamente dalla struttura sportiva al termine delle attività</span>
       <label class="switch">
@@ -322,7 +326,8 @@
         <span class="slider"></span>
       </label>
     </div>
-    <div class="print-only" style="margin-top:12px;border-top:1px solid #fed7aa;padding-top:10px;font-size:0.78rem;color:#555">
+    <div class="print-only" id="uscita-print-consenso" style="margin-top:12px;border-top:1px solid #fed7aa;padding-top:10px;font-size:0.78rem;color:#555"></div>
+    <div class="print-only" style="margin-top:8px;padding-top:10px;font-size:0.78rem;color:#555">
       Firma genitore/tutore: _____________________________________ &nbsp;&nbsp; Data: _______________
     </div>
   </div>
@@ -554,6 +559,22 @@ async function submitForm() {
   }
 }
 
+function fillUscitaPrintConsenso() {
+  const el = document.getElementById('uscita-print-consenso');
+  if (!el) return;
+  const isMinor = document.getElementById('section-minor').style.display !== 'none';
+  const autorizzato = document.getElementById('uscita-autonoma')?.checked;
+  const gNome = document.getElementById('g-nome')?.value.trim();
+  const gCognome = document.getElementById('g-cognome')?.value.trim();
+  if (isMinor && autorizzato && gNome && gCognome) {
+    const now = new Date();
+    const dataOra = now.toLocaleDateString('it-IT') + ' alle ' + now.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'});
+    el.textContent = `Consenso espresso online da: ${gNome} ${gCognome} il ${dataOra}`;
+  } else {
+    el.textContent = '';
+  }
+}
+
 function printForm(mode) {
   if (mode === 'blank') {
     // Salva valori, svuota tutto, stampa, ripristina
@@ -570,12 +591,14 @@ function printForm(mode) {
     // Mostra entrambe le sezioni per il modulo vergine
     document.getElementById('section-adult').style.display = '';
     document.getElementById('section-minor').style.display = '';
+    document.getElementById('uscita-print-consenso').textContent = '';
     window.print();
     // Ripristina
     fields.forEach(id => { const el = document.getElementById(id); if (el) el.value = saved[id] || ''; });
     document.getElementById('privacy-switch').checked = privacySaved;
     onNascitaChange();
   } else {
+    fillUscitaPrintConsenso();
     window.print();
   }
 }
