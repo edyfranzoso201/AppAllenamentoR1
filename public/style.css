@@ -5,11 +5,10 @@
     /* Restyle 2026-07: accento di marca verde. Gli usi ACCENTO (nav border, titoli,
        pulsanti primari, giorno corrente, focus) puntano a --primary-accent; --primary-red
        resta il rosso SEMANTICO (avversario/trasferta, diff reti negativa). */
-    /* Restyle 2026-07-31: accento ciano/turchese (rif. mockup coach dashboard). */
-    --primary-accent: #22d3c5; --primary-accent-hover: #1ab8ab;
+    --primary-accent: #1aa05e; --primary-accent-hover: #15864e;
 }
 html.theme-light, body.theme-light {
-    --primary-accent: #0d9488; --primary-accent-hover: #0b7d73;
+    --primary-accent: #16884f; --primary-accent-hover: #127043;
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -20,26 +19,24 @@ html.theme-light, body.theme-light {
    da --primary-red/--card-bg (legacy) a questi token semantici.
    ────────────────────────────────────────────────────────────────────── */
 :root {
-    /* superfici / testo — TEMA SCURO (default)
-       Restyle 2026-07-31: nero/grigio neutro (rif. Garmin Connect) invece
-       della base blu-nero precedente. */
-    --sm-bg:        #0a0a0a;
-    --sm-bg-2:      #050505;
-    --sm-surface:   #1c1c1e;
-    --sm-surface-2: #262628;
-    --sm-border:    #333335;
-    --sm-border-soft:#2a2a2c;
-    --sm-text:      #f2f2f2;
-    --sm-text-muted:#9a9a9d;
-    --sm-text-dim:  #6c6c6f;
+    /* superfici / testo — TEMA SCURO (default) */
+    --sm-bg:        #0a1424;
+    --sm-bg-2:      #0d1b2a;
+    --sm-surface:   #13233a;
+    --sm-surface-2: #1a2d47;
+    --sm-border:    #263e63;
+    --sm-border-soft:#1d2f4d;
+    --sm-text:      #e8eef8;
+    --sm-text-muted:#8ea3c0;
+    --sm-text-dim:  #617694;
 
-    /* accento di marca (ciano/turchese, rif. mockup coach dashboard) */
-    --sm-brand:       #22d3c5;
-    --sm-brand-strong:#1ab8ab;
-    --sm-brand-soft:  rgba(34,211,197,0.14);
+    /* accento di marca (verde sportivo, dal colore PWA) */
+    --sm-brand:       #1aa05e;
+    --sm-brand-strong:#15864e;
+    --sm-brand-soft:  rgba(26,160,94,0.14);
 
     /* semantici — separati dall'accento di marca */
-    --sm-ok:     #22d3c5;
+    --sm-ok:     #1aa05e;
     --sm-warn:   #e0a53a;
     --sm-danger: #e5484d;
     --sm-info:   #4a90e2;
@@ -63,11 +60,11 @@ html.theme-light, body.theme-light {
     --sm-text-muted:#5a6b82;
     --sm-text-dim:  #8496ac;
 
-    --sm-brand:       #0d9488;
-    --sm-brand-strong:#0b7d73;
-    --sm-brand-soft:  rgba(13,148,136,0.10);
+    --sm-brand:       #16884f;
+    --sm-brand-strong:#127043;
+    --sm-brand-soft:  rgba(22,136,79,0.10);
 
-    --sm-ok:     #0d9488;
+    --sm-ok:     #16884f;
     --sm-warn:   #c98410;
     --sm-danger: #d23539;
     --sm-info:   #2f6fc4;
@@ -95,7 +92,7 @@ body { background-color: var(--sm-bg); color: var(--text-light); padding-top: 56
 }
 .athlete-card { background-color: var(--sm-surface); border: 1px solid var(--sm-border); border-radius: 12px; transition: all 0.3s ease; position: relative; overflow: hidden; }
 .athlete-card-clickable { cursor: pointer; }
-.athlete-card-clickable:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(34, 211, 197, 0.2); border-color: var(--primary-accent); }
+.athlete-card-clickable:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(26, 160, 94, 0.2); border-color: var(--primary-accent); }
 .athlete-avatar { width: 70px; height: 70px; border-radius: 50%; border: 3px solid var(--sm-border); object-fit: cover; background-color: var(--sm-surface-2); }
 /* Avatar con iniziali (quando manca la foto): stesso ingombro dell'avatar foto */
 .avatar-initials { display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 1.5rem; line-height: 1; flex-shrink: 0; text-transform: uppercase; }
@@ -129,7 +126,7 @@ body { background-color: var(--sm-bg); color: var(--text-light); padding-top: 56
 .btn-primary-custom:hover { background-color: var(--primary-accent-hover); border-color: var(--primary-accent-hover); }
 .form-control, .form-select { background-color: var(--sm-surface-2); color: var(--text-light); border-color: var(--sm-border); }
 .form-control::placeholder { color: #8a9fc1; }
-.form-control:focus, .form-select:focus { background-color: var(--sm-surface-2); color: var(--text-light); border-color: var(--primary-accent); box-shadow: 0 0 0 0.25rem rgba(34, 211, 197, 0.25); }
+.form-control:focus, .form-select:focus { background-color: var(--sm-surface-2); color: var(--text-light); border-color: var(--primary-accent); box-shadow: 0 0 0 0.25rem rgba(26, 160, 94, 0.25); }
 .award-card { background: linear-gradient(45deg, var(--gold-star), #d4af37); color: #000; border: 2px solid #fff; width: 180px; }
 .award-avatar { width: 50px; height: 50px; }
 .text-muted { color: rgba(255, 255, 255, 0.75) !important; }
