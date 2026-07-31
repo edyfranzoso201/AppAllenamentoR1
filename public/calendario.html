@@ -41,20 +41,20 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
         :root {
-            --bg-main:    #060f1e;
-            --bg-card:    #0d1b2a;
-            --bg-row-a:   #0f172a;
-            --bg-row-b:   #1a3a5f;
-            --bg-header:  #0d1b2a;
-            --border:     #3b5a9d;
+            --bg-main:    #0a0a0a;
+            --bg-card:    #1c1c1e;
+            --bg-row-a:   #141416;
+            --bg-row-b:   #262628;
+            --bg-header:  #1c1c1e;
+            --border:     #333335;
             --text:       #ffffff;
-            --text-muted: #64748b;
-            /* Restyle 2026-07: l'accento di marca ora è il verde unico (era rosso #d90429).
+            --text-muted: #9a9a9d;
+            /* Restyle 2026-07-31: l'accento di marca è ciano/turchese (era verde #1aa05e).
                --danger resta il rosso SEMANTICO (errori, assenze, elimina, gare fuori casa),
                distinto dall'accento. Allineato ai token --sm-* del resto dell'app. */
-            --accent:     #1aa05e;
+            --accent:     #22d3c5;
             --accent2:    #ffffff;
-            --red:        #1aa05e;   /* alias legacy dell'accento → verde */
+            --red:        #22d3c5;   /* alias legacy dell'accento → ciano */
             --danger:     #d90429;   /* rosso semantico */
         }
 
@@ -571,7 +571,7 @@
         .gare-day-header.domenica{background:#f59e0b;color:#000000;}
         .gare-block{margin-bottom:8px;border-radius:10px;overflow:hidden;border:1px solid #a0aab4;background:#f0f1f2;transition:border-color 0.2s,box-shadow 0.2s;}
         .gare-block:hover{border-color:#3b5a9d;box-shadow:0 2px 12px rgba(59,130,246,0.15);}
-        .gare-block.selected{border-color:var(--accent);box-shadow:0 0 0 2px rgba(26,160,94,0.3);}
+        .gare-block.selected{border-color:var(--accent);box-shadow:0 0 0 2px rgba(34,211,197,0.3);}
         /* Riga tempo e competizione */
         .gare-row-time{background:#1e293b;color:#e2e8f0;font-weight:600;padding:8px 12px;font-size:1.01rem;display:flex;align-items:center;gap:8px;border-bottom:1px solid #2d4a8a;}
         .gare-ora{background:#16a34a;color:#fff;font-weight:800;font-size:1.29rem;padding:3px 10px;border-radius:4px;white-space:nowrap;}
@@ -653,8 +653,8 @@
         .torneo-note-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
         .torneo-note-row label{color:var(--text-muted);font-size:0.78rem;white-space:nowrap;}
         .torneo-note-row input{background:#0d1b2a;border:1px solid #1e293b;color:var(--text-muted);border-radius:5px;padding:5px 7px;font-size:0.8rem;flex:1;}
-        .btn-add-match{background:#16a34a;color:#16a34a;border:1px solid #16a34a;border-radius:6px;padding:6px 12px;font-size:0.8rem;font-weight:700;cursor:pointer;margin-top:4px;}
-        .btn-add-match:hover{background:#16a34a;}
+        .btn-add-match{background:#22d3c5;color:#22d3c5;border:1px solid #22d3c5;border-radius:6px;padding:6px 12px;font-size:0.8rem;font-weight:700;cursor:pointer;margin-top:4px;}
+        .btn-add-match:hover{background:#22d3c5;}
 
         /* ── TEMA CHIARO ─────────────────────────────────────── */
         html.theme-light, body.theme-light {
@@ -662,6 +662,8 @@
             --bg-card: #f0f1f2;
             --text:    #000103;
             --border:  #9aa5b0;
+            --accent:  #0d9488;
+            --red:     #0d9488;
         }
         html.theme-light body, body.theme-light {
             background: var(--bg-main) !important;
@@ -2675,7 +2677,7 @@ function _gareRenderColonna(lista, tipo) {
                 html += '<span class="gare-comp">🎉 ' + compLabel + '</span>' + editBtn;
                 html += '</div>';
                 if (g.competizione) {
-                    html += '<div style="text-align:center;padding:10px 12px;background:#0a1f0e;color:#4ade80;font-weight:700;font-size:0.9rem;">' + g.competizione + '</div>';
+                    html += '<div style="text-align:center;padding:10px 12px;background:#0f2a28;color:#5eead4;font-weight:700;font-size:0.9rem;">' + g.competizione + '</div>';
                 }
                 if (g.note) {
                     html += '<div class="gare-row-note"><i class="bi bi-info-circle-fill"></i> ' + g.note + '</div>';
