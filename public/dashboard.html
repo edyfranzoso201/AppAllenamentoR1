@@ -2814,6 +2814,7 @@
   .uscita-box { background:#fff; border:1.5px solid #fed7aa; border-radius:10px; padding:14px; margin-bottom:10px; font-size:0.78rem; color:#475569; line-height:1.5; page-break-inside:avoid; }
   .uscita-box strong { color:#c2410c; }
   .privacy-switch-row { margin-top:10px; background:var(--accent-soft); border:1px solid var(--accent-border); border-radius:8px; padding:9px 12px; }
+  .privacy-switch-row.foto { background:#f0fdf4; border-color:#bbf7d0; margin-top:8px; }
   .privacy-switch-row.uscita { background:#fff7ed; border-color:#fed7aa; }
   .switch-label { font-size:0.78rem; color:#334155; font-weight:500; }
   .meta-banner { background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:0.75rem; color:#64748b; }
@@ -2858,10 +2859,13 @@
     I dati non verranno ceduti a terzi né utilizzati per finalità commerciali.
     <div style="margin-top:8px;font-size:0.7rem;opacity:0.7;">Informativa privacy versione ${infoVersione}</div>
     <div class="privacy-switch-row">
-      <span class="switch-label">✅ Informativa privacy accettata — Consenso foto/video: ${reg.consensoFoto ? '✅ Autorizzato' : '❌ Non autorizzato'}</span>
+      <span class="switch-label">Ho letto e accetto l'informativa privacy e le modalità di accesso sopra descritte: <strong>✅ Accettato</strong></span>
     </div>
-    <div style="margin-top:10px;border-top:1px solid #ccc;padding-top:8px;font-size:0.75rem;color:#555">
-      Consenso espresso online il ${dataConsensoStr}${c.ip ? ` (IP: ${esc(c.ip)})` : ''}
+    <div class="privacy-switch-row foto">
+      <span class="switch-label">Autorizzo la pubblicazione di foto e video che mi ritraggono (o ritraggono il minore) durante le attività sportive: <strong>${reg.consensoFoto ? '✅ Autorizzato' : '❌ Non autorizzato'}</strong></span>
+    </div>
+    <div style="margin-top:12px;border-top:1px solid #ccc;padding-top:10px;font-size:0.78rem;color:#16884f;font-weight:600;">
+      ✅ Accettato online il ${dataConsensoStr}${c.ip ? ` (IP: ${esc(c.ip)})` : ''}
     </div>
     <div style="margin-top:8px;border-top:1px solid #ccc;padding-top:8px;font-size:0.75rem;color:#555">
       Firma per accettazione: _____________________________________ &nbsp;&nbsp; Data: _______________
