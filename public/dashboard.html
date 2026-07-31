@@ -61,6 +61,9 @@
   html.theme-light .btn-reject {
     background: #dc2626 !important; border-color: #b91c1c !important; color: #ffffff !important;
   }
+  html.theme-light .btn-print-iscr {
+    background: #e2e8f0 !important; border-color: #94a3b8 !important; color: #334155 !important;
+  }
   html.theme-light .iscr-popup {
     background: #f0fdf4 !important; border-color: #86efac !important;
   }
@@ -302,6 +305,7 @@
   .btn-accept { background: #065f46; border: 1px solid #10b981; color: #6ee7b7; border-radius: 7px; padding: 6px 14px; cursor: pointer; font-size: 0.82rem; }
   .btn-reject { background: #450a0a; border: 1px solid #ef4444; color: #fca5a5; border-radius: 7px; padding: 6px 14px; cursor: pointer; font-size: 0.82rem; }
   .btn-del-iscr { background: none; border: 1px solid var(--border-soft); color: var(--text-muted); border-radius: 7px; padding: 6px 12px; cursor: pointer; font-size: 0.82rem; }
+  .btn-print-iscr { background: #1e293b; border: 1px solid #475569; color: #cbd5e1; border-radius: 7px; padding: 6px 14px; cursor: pointer; font-size: 0.82rem; }
   .annata-sel-inline { background: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-primary); border-radius: 7px; padding: 5px 10px; font-size: 0.82rem; }
   /* Popup richieste pendenti */
   .iscr-popup {
@@ -2599,6 +2603,8 @@
         </div>`;
       }
 
+      const stampaBtn = `<button type="button" class="btn-print-iscr" onclick="stampaModuloIscrizione('${reg.id}')" title="Stampa il modulo compilato">🖨️ Stampa modulo</button>`;
+
       const actionBtns = reg.status === 'pending' ? `
         <select class="annata-sel-inline" id="annata-sel-${reg.id}" title="Seleziona annata per accettazione">
           <option value="">— Seleziona annata —</option>
@@ -2606,6 +2612,7 @@
         </select>
         <button type="button" class="btn-accept" onclick="accettaIscrizione('${reg.id}')">✅ Accetta</button>
         <button type="button" class="btn-reject" onclick="rifiutaIscrizione('${reg.id}')">❌ Rifiuta</button>
+        ${stampaBtn}
         <button type="button" class="btn-del-iscr" onclick="eliminaIscrizione('${reg.id}')" title="Elimina">🗑️</button>
       ` : reg.status === 'rejected' ? `
         <select class="annata-sel-inline" id="annata-sel-${reg.id}" title="Seleziona annata per accettazione">
@@ -2613,8 +2620,10 @@
           ${annateOpts}
         </select>
         <button type="button" class="btn-accept" onclick="accettaIscrizione('${reg.id}')">✅ Accetta ora</button>
+        ${stampaBtn}
         <button type="button" class="btn-del-iscr" onclick="eliminaIscrizione('${reg.id}')" title="Elimina">🗑️</button>
       ` : `
+        ${stampaBtn}
         <button type="button" class="btn-del-iscr" onclick="eliminaIscrizione('${reg.id}')" title="Elimina">🗑️ Elimina</button>
       `;
 
@@ -2710,6 +2719,167 @@
       await initIscrizioni(true);
     } catch(e) { alert('Errore: ' + e.message); }
   }
+
+  window.stampaModuloIscrizione = function stampaModuloIscrizione(id) {
+    const reg = _iscrizioni.find(r => r.id === id);
+    if (!reg) { alert('Richiesta non trovata.'); return; }
+
+    const societyName = sessionStorage.getItem('gosport_society_name') || 'Sport Monitoring';
+    const eta = calcolaEta(reg.dataNascita);
+    const c = reg.consensi || {};
+    const dataConsenso = c.dataConsenso ? new Date(c.dataConsenso) : (reg.submittedAt ? new Date(reg.submittedAt) : null);
+    const dataConsensoStr = dataConsenso ? (dataConsenso.toLocaleDateString('it-IT') + ' alle ' + dataConsenso.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'})) : '—';
+    const infoVersione = esc(c.informativaVersione || 'n/d');
+
+    const datiGenitore = !reg.isAdult && reg.genitore ? reg.genitore : null;
+
+    const uscitaBoxHtml = !reg.isAdult ? `
+      <div class="uscita-box">
+        <strong>🚶 Autorizzazione Uscita Autonoma</strong><br><br>
+        Il/la sottoscritto/a genitore o tutore legale dell'atleta minore dichiara di
+        <strong>autorizzare</strong> / <strong>non autorizzare</strong> il proprio figlio/a
+        a lasciare autonomamente la struttura sportiva al termine degli allenamenti e delle
+        gare, <strong>senza necessità di accompagnamento da parte di un adulto</strong>.<br><br>
+        In caso di autorizzazione, la società sportiva/il club <strong>${esc(societyName)}</strong>
+        e il proprio staff tecnico sono sollevati da qualsiasi responsabilità per quanto avviene
+        al minore dal momento in cui abbandona la struttura: la responsabilità resta in capo al
+        genitore/tutore firmatario. Questa autorizzazione riguarda esclusivamente la società
+        sportiva sopra indicata: <strong>Sport Monitoring</strong> è unicamente la piattaforma
+        gestionale utilizzata dalla società e non ha alcun ruolo nella vigilanza del minore.
+        <div class="privacy-switch-row uscita">
+          <span class="switch-label">Autorizzazione uscita autonoma: <strong>${reg.uscitaAutonoma ? '✅ AUTORIZZATA' : '❌ NON autorizzata'}</strong></span>
+        </div>
+        <div style="margin-top:12px;border-top:1px solid #fed7aa;padding-top:10px;font-size:0.78rem;color:#555">
+          ${datiGenitore ? `Consenso espresso online da: ${esc(datiGenitore.nome)} ${esc(datiGenitore.cognome)} (CF: ${esc(datiGenitore.codiceFiscale)}) il ${dataConsensoStr}` : ''}
+        </div>
+        <div style="margin-top:8px;padding-top:10px;font-size:0.78rem;color:#555">
+          Firma genitore/tutore: _____________________________________ &nbsp;&nbsp; Data: _______________
+        </div>
+      </div>
+    ` : '';
+
+    const datiAnagraficiHtml = reg.isAdult ? `
+      <div class="form-group"><span class="form-label">Email</span><div class="form-control">${esc(reg.email)}</div></div>
+      <div class="row">
+        <div class="form-group"><span class="form-label">Numero Cellulare</span><div class="form-control">${esc(reg.cellulare)}</div></div>
+        <div class="form-group"><span class="form-label">Codice Fiscale</span><div class="form-control">${esc(reg.codiceFiscale)}</div></div>
+      </div>
+      <div class="form-group"><span class="form-label">Indirizzo di Residenza</span><div class="form-control">${esc(reg.indirizzo)}</div></div>
+    ` : '';
+
+    const genitoreHtml = !reg.isAdult ? `
+      <div class="card">
+        <div class="card-title">👨‍👩‍👧 Dati Genitore / Tutore</div>
+        <div class="form-group"><span class="form-label">Codice Fiscale Atleta</span><div class="form-control">${esc(reg.codiceFiscaleAtleta)}</div></div>
+        <hr class="divider">
+        <div class="row">
+          <div class="form-group"><span class="form-label">Nome</span><div class="form-control">${esc(datiGenitore?.nome)}</div></div>
+          <div class="form-group"><span class="form-label">Cognome</span><div class="form-control">${esc(datiGenitore?.cognome)}</div></div>
+        </div>
+        <div class="row">
+          <div class="form-group"><span class="form-label">Numero Cellulare</span><div class="form-control">${esc(datiGenitore?.cellulare)}</div></div>
+          <div class="form-group"><span class="form-label">Email</span><div class="form-control">${esc(datiGenitore?.email)}</div></div>
+        </div>
+        <div class="row">
+          <div class="form-group"><span class="form-label">Codice Fiscale</span><div class="form-control">${esc(datiGenitore?.codiceFiscale)}</div></div>
+          <div class="form-group"><span class="form-label">Indirizzo</span><div class="form-control">${esc(datiGenitore?.indirizzo)}</div></div>
+        </div>
+      </div>
+    ` : '';
+
+    const html = `<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Modulo Iscrizione — ${esc(reg.nome)} ${esc(reg.cognome)}</title>
+<style>
+  :root { --accent:#16884f; --accent-hover:#126f41; --accent-soft:#eafbf1; --accent-border:#a7e3c3; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:#fff; color:#1e293b; }
+  .page { max-width:640px; margin:0 auto; padding:24px 16px 60px; }
+  .header { text-align:center; margin-bottom:20px; }
+  .header-logo { font-size:2rem; margin-bottom:4px; }
+  .header-title { font-size:1.2rem; font-weight:700; color:#0f172a; }
+  .header-society { display:inline-block; margin-top:6px; background:${'#'}16884f; color:#fff; font-size:0.85rem; font-weight:700; padding:3px 14px; border-radius:20px; }
+  .header-sub { font-size:0.78rem; color:#64748b; margin-top:6px; }
+  .card { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:16px; margin-bottom:10px; page-break-inside:avoid; }
+  .card-title { font-size:0.9rem; font-weight:700; color:#0f172a; margin-bottom:10px; }
+  .form-group { margin-bottom:8px; }
+  .form-label { display:block; font-size:0.72rem; font-weight:600; color:#64748b; margin-bottom:2px; text-transform:uppercase; letter-spacing:0.03em; }
+  .form-control { width:100%; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px 9px; color:#1e293b; font-size:0.85rem; min-height:1.3em; }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .divider { border:none; border-top:1px solid #f1f5f9; margin:10px 0; }
+  .privacy-box { background:#fff; border:1.5px solid var(--accent-border); border-radius:10px; padding:14px; margin-bottom:10px; font-size:0.78rem; color:#475569; line-height:1.5; page-break-inside:avoid; }
+  .privacy-box strong { color:var(--accent-hover); }
+  .uscita-box { background:#fff; border:1.5px solid #fed7aa; border-radius:10px; padding:14px; margin-bottom:10px; font-size:0.78rem; color:#475569; line-height:1.5; page-break-inside:avoid; }
+  .uscita-box strong { color:#c2410c; }
+  .privacy-switch-row { margin-top:10px; background:var(--accent-soft); border:1px solid var(--accent-border); border-radius:8px; padding:9px 12px; }
+  .privacy-switch-row.uscita { background:#fff7ed; border-color:#fed7aa; }
+  .switch-label { font-size:0.78rem; color:#334155; font-weight:500; }
+  .meta-banner { background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:0.75rem; color:#64748b; }
+  @media print { .page { padding:8px 14px; } body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="header-logo">⚽</div>
+    <div class="header-title">Sport Monitoring</div>
+    <div class="header-society">${esc(societyName)}</div>
+    <div class="header-sub">Modulo di iscrizione compilato — copia stampata dai dati registrati</div>
+  </div>
+
+  <div class="meta-banner">
+    📋 Richiesta inviata il ${new Date(reg.submittedAt).toLocaleString('it-IT')}
+    ${reg.respondedAt ? `&nbsp;·&nbsp; ${reg.status === 'accepted' ? '✅ Accettata' : '❌ Rifiutata'} da ${esc(reg.respondedBy || '—')} il ${new Date(reg.respondedAt).toLocaleString('it-IT')}` : ''}
+  </div>
+
+  <div class="card">
+    <div class="card-title">👤 Dati Personali Atleta</div>
+    <div class="row">
+      <div class="form-group"><span class="form-label">Nome</span><div class="form-control">${esc(reg.nome)}</div></div>
+      <div class="form-group"><span class="form-label">Cognome</span><div class="form-control">${esc(reg.cognome)}</div></div>
+    </div>
+    <div class="form-group"><span class="form-label">Data di Nascita</span><div class="form-control">${esc(reg.dataNascita)} (${eta} anni)</div></div>
+    <div class="form-group"><span class="form-label">Sesso</span><div class="form-control">${reg.sesso === 'M' ? 'Maschio' : reg.sesso === 'F' ? 'Femmina' : '—'}</div></div>
+    <div class="form-group"><span class="form-label">Luogo di Nascita</span><div class="form-control">${esc(reg.luogoNascita)}</div></div>
+    ${datiAnagraficiHtml}
+  </div>
+
+  ${genitoreHtml}
+
+  <div class="privacy-box">
+    <strong>⚠️ Informativa Privacy e Modalità di Accesso</strong><br><br>
+    La presente piattaforma <strong>Sport Monitoring</strong> utilizza un sistema di accesso tramite link personale.
+    Chiunque sia in possesso del link ricevuto potrà accedere senza inserire una password e visualizzare
+    i dati presenti nella propria area (calendario, convocazioni, documenti).<br><br>
+    I dati forniti in questo modulo saranno trattati esclusivamente dalla società sportiva per finalità
+    di gestione dell'iscrizione, nel rispetto del Reg. UE 2016/679 (GDPR).<br><br>
+    I dati non verranno ceduti a terzi né utilizzati per finalità commerciali.
+    <div style="margin-top:8px;font-size:0.7rem;opacity:0.7;">Informativa privacy versione ${infoVersione}</div>
+    <div class="privacy-switch-row">
+      <span class="switch-label">✅ Informativa privacy accettata — Consenso foto/video: ${reg.consensoFoto ? '✅ Autorizzato' : '❌ Non autorizzato'}</span>
+    </div>
+    <div style="margin-top:10px;border-top:1px solid #ccc;padding-top:8px;font-size:0.75rem;color:#555">
+      Consenso espresso online il ${dataConsensoStr}${c.ip ? ` (IP: ${esc(c.ip)})` : ''}
+    </div>
+    <div style="margin-top:8px;border-top:1px solid #ccc;padding-top:8px;font-size:0.75rem;color:#555">
+      Firma per accettazione: _____________________________________ &nbsp;&nbsp; Data: _______________
+    </div>
+  </div>
+
+  ${uscitaBoxHtml}
+</div>
+<script>window.onload = function() { window.print(); };</script>
+</body>
+</html>`;
+
+    const w = window.open('', '_blank');
+    if (!w) { alert('Il browser ha bloccato l\'apertura della finestra di stampa. Consenti i popup per questo sito.'); return; }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  };
 
   window.copyRegLink = function() {
     const inp = document.getElementById('home-reg-link-input');
