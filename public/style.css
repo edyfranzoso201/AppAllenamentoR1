@@ -82,9 +82,7 @@ body { background-color: var(--sm-bg); color: var(--text-light); padding-top: 56
     border-bottom: 2px solid var(--primary-accent);
     color: #0a1424 !important;
 }
-.bg-dark-blue .navbar-brand,
-.bg-dark-blue #app-header-info,
-.bg-dark-blue #app-header-info * { color: #0a1424 !important; }
+.bg-dark-blue .navbar-brand { color: #0a1424 !important; }
 .bg-dark-blue #hamburger-btn { border-color: rgba(10,20,36,0.6) !important; color: #0a1424 !important; }
 .main-title { color: var(--text-light); border-left: 4px solid var(--primary-accent); padding-left: 1rem; }
 /* Spazio sopra l'alert: il body ha già padding-top:56px per l'header sticky,
