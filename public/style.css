@@ -77,7 +77,15 @@ html.theme-light, body.theme-light {
 
 html { scroll-behavior: smooth; }
 body { background-color: var(--sm-bg); color: var(--text-light); padding-top: 56px; }
-.bg-dark-blue { background-color: #051438 !important; border-bottom: 2px solid var(--primary-accent); }
+.bg-dark-blue {
+    background: linear-gradient(to right, #008C45 0% 33.33%, #F4F5F0 33.33% 66.66%, #CD212A 66.66% 100%) !important;
+    border-bottom: 2px solid var(--primary-accent);
+    color: #0a1424 !important;
+}
+.bg-dark-blue .navbar-brand,
+.bg-dark-blue #app-header-info,
+.bg-dark-blue #app-header-info * { color: #0a1424 !important; }
+.bg-dark-blue #hamburger-btn { border-color: rgba(10,20,36,0.6) !important; color: #0a1424 !important; }
 .main-title { color: var(--text-light); border-left: 4px solid var(--primary-accent); padding-left: 1rem; }
 /* Spazio sopra l'alert: il body ha già padding-top:56px per l'header sticky,
    quindi qui basta un piccolo respiro (prima erano altri 60px → ~116px di vuoto). */
