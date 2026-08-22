@@ -724,6 +724,7 @@
                 <th>Allenatori</th>
                 <th>Dirigenti</th>
                 <th>Ospiti</th>
+                <th>Multe</th>
               </tr>
             </thead>
             <tbody id="home-annate-tbody"></tbody>
@@ -1731,6 +1732,16 @@
     } catch { return []; }
   }
 
+  // ══ Carica atleti + multe di una singola annata ════════════════
+  async function fetchAthletesAndMulte(annataId) {
+    try {
+      const r = await fetch('/api/data', { headers: authHeaders(annataId) });
+      if (!r.ok) return { athletes: [], multe: {} };
+      const d = await r.json();
+      return { athletes: d.athletes || [], multe: d.multe || {} };
+    } catch { return { athletes: [], multe: {} }; }
+  }
+
   // ══ HOME — carica e mostra dati ═══════════════════════════════
   async function loadHomeData() {
     const statsEl  = document.getElementById('home-stats');
@@ -1753,7 +1764,7 @@
       // Fetch atleti di tutte le annate in parallelo
       const results = await Promise.all(
         annate.map(async ann => {
-          const athletes = await fetchAthletes(ann.id);
+          const { athletes, multe } = await fetchAthletesAndMulte(ann.id);
           const ufficiali = athletes.filter(a => !a.isGuest && !a.isStaff);
           const staff     = athletes.filter(a => a.isStaff && !a.isGuest);
           const ospiti    = athletes.filter(a => a.isGuest);
@@ -1767,7 +1778,14 @@
             else altroStaff++;
           });
 
-          return { ann, ufficiali: ufficiali.length, staff: staff.length, allenatori, dirigenti, altroStaff, ospiti: ospiti.length };
+          // Totale € e numero multe per questa annata
+          let multeImporto = 0, multeCount = 0;
+          Object.values(multe || {}).forEach(list => {
+            if (!Array.isArray(list)) return;
+            list.forEach(m => { multeImporto += parseFloat(m.importo) || 0; multeCount++; });
+          });
+
+          return { ann, ufficiali: ufficiali.length, staff: staff.length, allenatori, dirigenti, altroStaff, ospiti: ospiti.length, multeImporto, multeCount };
         })
       );
 
@@ -1776,6 +1794,9 @@
       const totStaff      = results.reduce((s, r) => s + r.staff, 0);
       const totAllenatori = results.reduce((s, r) => s + r.allenatori, 0);
       const totDirigenti  = results.reduce((s, r) => s + r.dirigenti, 0);
+      const totMulteImporto = results.reduce((s, r) => s + r.multeImporto, 0);
+      const totMulteCount   = results.reduce((s, r) => s + r.multeCount, 0);
+      const fmtEuro = n => n.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 
       // Stat cards
       statsEl.innerHTML = `
@@ -1801,6 +1822,11 @@
           <div class="stat-num">${totDirigenti}</div>
           <div class="stat-label">Dirigenti</div>
         </div>
+        <div class="stat-card red">
+          <div class="stat-num" style="font-size:1.6rem">${fmtEuro(totMulteImporto)}</div>
+          <div class="stat-label">Totale Multe</div>
+          <div class="stat-sub">${totMulteCount} multe · tutte le annate</div>
+        </div>
       `;
 
       // Tabella per annata (più recente prima)
@@ -1815,6 +1841,7 @@
           ${_num(r.allenatori)}
           ${_num(r.dirigenti)}
           ${_num(r.ospiti)}
+          <td style="color:${r.multeCount > 0 ? '#ef4444' : '#94a3b8'}">${r.multeCount > 0 ? fmtEuro(r.multeImporto) + ' (' + r.multeCount + ')' : '—'}</td>
         </tr>
       `).join('');
 
