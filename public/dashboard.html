@@ -376,6 +376,39 @@
   .placeholder-box .ph-title { font-size: 1rem; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); }
   .placeholder-box .ph-sub { font-size: 0.82rem; }
 
+  /* ══ MULTE ═════════════════════════════════════════════════════ */
+  .btn-multa {
+    background: var(--accent); border: none; color: #fff; border-radius: 8px;
+    padding: 6px 14px; cursor: pointer; font-size: 0.82rem; font-weight: 600;
+  }
+  .btn-multa:hover { background: var(--accent-hover); }
+  .btn-multa-sm {
+    background: var(--bg-panel); border: 1px solid var(--border-soft); color: var(--text-primary);
+    border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 0.75rem;
+  }
+  .btn-multa-sm:hover { border-color: var(--accent); }
+  .btn-multa-del {
+    background: rgba(239,68,68,0.12); border: 1px solid #ef4444; color: #ef4444;
+    border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 0.75rem; margin-left: 6px;
+  }
+  .btn-multa-del:hover { background: #ef4444; color: #fff; }
+  #multa-modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+    z-index: 1300; align-items: center; justify-content: center; padding: 16px;
+  }
+  #multa-modal-overlay.show { display: flex; }
+  .multa-modal-box {
+    background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 14px;
+    padding: 22px; width: 100%; max-width: 380px; box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  }
+  .multa-modal-box label {
+    display: block; font-size: 0.78rem; color: var(--text-muted); margin: 12px 0 4px;
+  }
+  .multa-modal-box input {
+    width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-soft);
+    background: var(--bg-panel); color: var(--text-primary); font-size: 0.88rem;
+  }
+
   /* ══ PLATINUM GATE ═════════════════════════════════════════════ */
   #platinum-gate {
     display: none;
@@ -600,6 +633,9 @@
     </div>
     <div class="nav-item" data-section="pagamenti" onclick="showSection('pagamenti', this)">
       <span class="nav-icon">💰</span> Pagamenti
+    </div>
+    <div class="nav-item" data-section="multe" onclick="showSection('multe', this)">
+      <span class="nav-icon">🚨</span> Multe
     </div>
     <div class="nav-item" data-section="gare" onclick="showSection('gare', this)">
       <span class="nav-icon">⚽</span> Gare da Disputare
@@ -872,6 +908,72 @@
               <tbody id="pagamenti-tbody"></tbody>
             </table>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MULTE -->
+    <div class="section-panel" id="section-multe">
+      <div class="section-title">🚨 Multe</div>
+      <div class="section-subtitle">Multe assegnate agli atleti durante la stagione</div>
+
+      <div class="card" style="margin-bottom:16px;padding:14px 16px;">
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <label style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap;">Annata:</label>
+            <select id="multe-annata-filter" onchange="loadMulteData()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;">
+              <option value="">Seleziona...</option>
+            </select>
+          </div>
+          <button type="button" class="btn-multa" id="multe-add-btn" onclick="window.multaOpenNew()" style="display:none;">➕ Nuova Multa</button>
+        </div>
+      </div>
+
+      <div class="stats-grid" id="multe-stats" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:16px;"></div>
+
+      <div class="card">
+        <div id="multe-loading" class="loading-spinner"><div class="spinner"></div> Caricamento...</div>
+        <div id="multe-content" style="display:none">
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Atleta</th>
+                  <th>Data</th>
+                  <th>Causale</th>
+                  <th style="text-align:right">Importo</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="multe-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="multe-empty" style="display:none;text-align:center;color:var(--text-muted);padding:32px;">
+          Nessuna multa registrata per questa annata
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Multa (nuova / modifica) -->
+    <div id="multa-modal-overlay" onclick="if(event.target===this) window.multaCloseModal()">
+      <div class="multa-modal-box">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <h3 id="multa-modal-title" style="font-size:1.05rem;">Nuova Multa</h3>
+          <button type="button" onclick="window.multaCloseModal()" style="background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;">✕</button>
+        </div>
+        <input type="hidden" id="multa-input-id">
+        <label for="multa-input-atleta">Atleta</label>
+        <select id="multa-input-atleta"></select>
+        <label for="multa-input-importo">Importo (€)</label>
+        <input type="number" id="multa-input-importo" min="0" step="0.01" placeholder="0.00">
+        <label for="multa-input-causale">Causale</label>
+        <input type="text" id="multa-input-causale" placeholder="Es. Ritardo allenamento">
+        <label for="multa-input-data">Data</label>
+        <input type="date" id="multa-input-data">
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px;">
+          <button type="button" class="btn-multa-del" id="multa-modal-delete-btn" onclick="window.multaDelete()" style="display:none;">🗑️ Elimina</button>
+          <button type="button" class="btn-multa" onclick="window.multaSave()">💾 Salva</button>
         </div>
       </div>
     </div>
@@ -2247,6 +2349,200 @@
     }
   };
 
+  // ══ MULTE ══════════════════════════════════════════════════════
+  let _multeInit = false;
+  let _multeAthletes = [];
+  let _multeData = {};
+
+  async function initMulte() {
+    if (_multeInit) return;
+    const annate = await fetchAnnate();
+    const sel = document.getElementById('multe-annata-filter');
+    if (!sel) return;
+    sel.innerHTML = '';
+    annate.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a.id;
+      opt.textContent = a.nome || a.id;
+      sel.appendChild(opt);
+    });
+    if (annate.length) sel.value = annate[0].id;
+    document.getElementById('multe-add-btn').style.display = annate.length ? 'inline-block' : 'none';
+    _multeInit = true;
+    await loadMulteData();
+  }
+
+  window.loadMulteData = async function() {
+    const annataId = document.getElementById('multe-annata-filter')?.value || '';
+    const loading  = document.getElementById('multe-loading');
+    const content  = document.getElementById('multe-content');
+    const emptyEl  = document.getElementById('multe-empty');
+    const statsEl  = document.getElementById('multe-stats');
+    if (!loading || !annataId) return;
+    loading.style.display = 'flex';
+    loading.innerHTML = '<div class="spinner"></div> Caricamento...';
+    if (content) content.style.display = 'none';
+    if (emptyEl) emptyEl.style.display = 'none';
+
+    try {
+      const r = await fetch('/api/data', { headers: authHeaders(annataId) });
+      if (!r.ok) throw new Error('Errore ' + r.status);
+      const data = await r.json();
+
+      const athletes = (data.athletes || []).filter(a => !a.isGuest);
+      _multeAthletes = athletes;
+      _multeData = data.multe || {};
+
+      const fmt = n => n.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+
+      let totImporto = 0, totCount = 0;
+      const rows = [];
+      athletes.forEach(a => {
+        const list = Array.isArray(_multeData[String(a.id)]) ? _multeData[String(a.id)] : [];
+        list.forEach(m => {
+          const importo = parseFloat(m.importo) || 0;
+          totImporto += importo; totCount++;
+          rows.push({ athleteId: a.id, athleteName: a.name, id: m.id, importo, causale: m.causale || '', data: m.data || '' });
+        });
+      });
+      rows.sort((x, y) => (y.data || '').localeCompare(x.data || ''));
+
+      if (statsEl) statsEl.innerHTML = `
+        <div class="stat-card red"><div class="stat-num" style="font-size:1.3rem">${fmt(totImporto)}</div><div class="stat-label">Totale Multe</div></div>
+        <div class="stat-card"><div class="stat-num" style="font-size:1.3rem">${totCount}</div><div class="stat-label">N. Multe</div></div>
+      `;
+
+      loading.style.display = 'none';
+
+      if (!rows.length) {
+        if (emptyEl) emptyEl.style.display = 'block';
+        return;
+      }
+
+      const tbody = document.getElementById('multe-tbody');
+      if (tbody) {
+        tbody.innerHTML = rows.map(row => {
+          const dateStr = row.data ? new Date(row.data + 'T00:00:00').toLocaleDateString('it-IT', { day:'2-digit', month:'2-digit', year:'numeric' }) : '—';
+          return `<tr>
+            <td><strong>${esc(row.athleteName)}</strong></td>
+            <td style="color:var(--text-muted)">${dateStr}</td>
+            <td>${esc(row.causale) || '—'}</td>
+            <td style="text-align:right;color:#ef4444">${fmt(row.importo)}</td>
+            <td style="text-align:right;white-space:nowrap"><button type="button" class="btn-multa-sm" onclick="window.multaOpenEdit('${row.athleteId}','${row.id}')">✏️ Modifica</button></td>
+          </tr>`;
+        }).join('');
+      }
+      if (content) content.style.display = 'block';
+    } catch(e) {
+      loading.innerHTML = `<div style="color:#ef4444">⚠️ ${esc(e.message)}</div>`;
+    }
+  };
+
+  window.multaOpenNew = function() {
+    const sel = document.getElementById('multa-input-atleta');
+    sel.innerHTML = _multeAthletes.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('');
+    document.getElementById('multa-input-id').value = '';
+    document.getElementById('multa-input-importo').value = '';
+    document.getElementById('multa-input-causale').value = '';
+    document.getElementById('multa-input-data').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('multa-modal-title').textContent = 'Nuova Multa';
+    document.getElementById('multa-modal-delete-btn').style.display = 'none';
+    document.getElementById('multa-modal-overlay').classList.add('show');
+  };
+
+  window.multaOpenEdit = function(athleteId, multaId) {
+    const list = Array.isArray(_multeData[String(athleteId)]) ? _multeData[String(athleteId)] : [];
+    const m = list.find(x => String(x.id) === String(multaId));
+    if (!m) return;
+    const sel = document.getElementById('multa-input-atleta');
+    sel.innerHTML = _multeAthletes.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('');
+    sel.value = String(athleteId);
+    document.getElementById('multa-input-id').value = m.id;
+    document.getElementById('multa-input-importo').value = m.importo;
+    document.getElementById('multa-input-causale').value = m.causale || '';
+    document.getElementById('multa-input-data').value = m.data || '';
+    document.getElementById('multa-modal-title').textContent = 'Modifica Multa';
+    document.getElementById('multa-modal-delete-btn').style.display = 'inline-block';
+    document.getElementById('multa-modal-overlay').classList.add('show');
+  };
+
+  window.multaCloseModal = function() {
+    document.getElementById('multa-modal-overlay').classList.remove('show');
+  };
+
+  async function _multaPersist() {
+    const annataId = document.getElementById('multe-annata-filter')?.value || '';
+    const r = await fetch('/api/data', {
+      method: 'POST',
+      headers: authHeaders(annataId),
+      body: JSON.stringify({ multe: _multeData })
+    });
+    if (!r.ok) throw new Error('Errore salvataggio (' + r.status + ')');
+  }
+
+  window.multaSave = async function() {
+    const athleteId = document.getElementById('multa-input-atleta').value;
+    const id        = document.getElementById('multa-input-id').value;
+    const importo   = parseFloat(document.getElementById('multa-input-importo').value);
+    const causale   = document.getElementById('multa-input-causale').value.trim();
+    const data      = document.getElementById('multa-input-data').value;
+
+    if (!athleteId || isNaN(importo) || importo < 0) {
+      alert('⚠️ Inserisci un importo valido.');
+      return;
+    }
+
+    if (!Array.isArray(_multeData[athleteId])) _multeData[athleteId] = [];
+
+    if (id) {
+      // Modifica: se l'atleta è cambiato, sposta la multa nell'array corretto
+      for (const aid of Object.keys(_multeData)) {
+        const idx = (_multeData[aid] || []).findIndex(x => String(x.id) === String(id));
+        if (idx !== -1) {
+          if (String(aid) === String(athleteId)) {
+            _multeData[aid][idx] = { id, importo, causale, data };
+          } else {
+            _multeData[aid].splice(idx, 1);
+            _multeData[athleteId].push({ id, importo, causale, data });
+          }
+          break;
+        }
+      }
+    } else {
+      _multeData[athleteId].push({
+        id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())),
+        importo, causale, data
+      });
+    }
+
+    try {
+      await _multaPersist();
+      window.multaCloseModal();
+      await loadMulteData();
+    } catch(e) {
+      alert('⚠️ ' + e.message);
+    }
+  };
+
+  window.multaDelete = async function() {
+    const id = document.getElementById('multa-input-id').value;
+    if (!id) return;
+    if (!confirm('Eliminare questa multa?')) return;
+
+    for (const aid of Object.keys(_multeData)) {
+      const idx = (_multeData[aid] || []).findIndex(x => String(x.id) === String(id));
+      if (idx !== -1) { _multeData[aid].splice(idx, 1); break; }
+    }
+
+    try {
+      await _multaPersist();
+      window.multaCloseModal();
+      await loadMulteData();
+    } catch(e) {
+      alert('⚠️ ' + e.message);
+    }
+  };
+
   // ══ GARE DA DISPUTARE ══════════════════════════════════════════
   let _gareInit = false;
   let _gareAnnate = [];
@@ -2456,6 +2752,7 @@
     else if (name === 'presenze')  initPresenze();
     else if (name === 'materiale') initMateriale();
     else if (name === 'pagamenti') initPagamenti();
+    else if (name === 'multe')       initMulte();
     else if (name === 'gare')        initGare();
     else if (name === 'iscrizioni')  initIscrizioni();
     else if (name === 'bacheca')     initBacheca();
