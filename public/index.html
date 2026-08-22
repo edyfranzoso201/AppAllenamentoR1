@@ -682,6 +682,7 @@
     .tab-nav-btn[data-tab="analisi-singolo-section"].active{background:linear-gradient(135deg,#38bdf8,#0369a1) !important;}
     .tab-nav-btn[data-tab="materiale-section"].active{background:linear-gradient(135deg,#fb923c,#c2410c) !important;}
     .tab-nav-btn[data-tab="pagamenti-section"].active{background:linear-gradient(135deg,#4ade80,#16a34a) !important;}
+    .tab-nav-btn[data-tab="multe-section"].active{background:linear-gradient(135deg,#f87171,#b91c1c) !important;}
     .tab-nav-btn[data-tab="convocazioni-section"].active{background:linear-gradient(135deg,#f87171,#dc2626) !important;}
     .tab-nav-btn[data-tab="accessi-section"].active{background:linear-gradient(135deg,#94a3b8,#475569) !important;}
     .tab-nav-btn[data-tab="stagioni-section"].active{background:linear-gradient(135deg,#a78bfa,#6d28d9) !important;}
@@ -1400,6 +1401,7 @@
             <a href="/dashboard.html" id="dashboard-nav-btn" class="tab-nav-btn tab-external" target="_blank" style="display:none;"><i class="bi bi-speedometer2"></i><span class="tab-label"> Dashboard</span></a>
             <button class="tab-nav-btn" data-tab="materiale-section" onclick="switchTab('materiale-section')"><i class="bi bi-box-seam-fill"></i><span class="tab-label"> Materiale</span></button>
             <button class="tab-nav-btn" data-tab="pagamenti-section" onclick="switchTab('pagamenti-section')"><i class="bi bi-credit-card-fill"></i><span class="tab-label"> Pagamenti</span></button>
+            <button class="tab-nav-btn" data-tab="multe-section" onclick="switchTab('multe-section')"><i class="bi bi-exclamation-triangle-fill"></i><span class="tab-label"> Multe</span></button>
             <button class="tab-nav-btn" data-tab="convocazioni-section" onclick="switchTab('convocazioni-section')"><i class="bi bi-megaphone-fill"></i><span class="tab-label"> Convocazioni</span></button>
             <!-- Su PC (>=992px) questi 3 bottoni admin/stagioni vengono raccolti in un
                  menu a tendina (bottone "Admin" + pannello), per non farli uscire dalla
@@ -1539,6 +1541,28 @@
                         <div class="card-body">
                             <h5 class="card-title">🎯 Top Assist Stagione</h5>
                             <div id="home-top-assists-container" style="max-height:200px;overflow-y:auto;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-4">
+                <div class="col-lg-4 col-md-5 mb-3 mb-md-0">
+                    <div class="card season-stats-card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title text-muted mb-3 text-center">🚨 Multe Stagione</h5>
+                            <div class="season-stats-grid">
+                                <div class="stat-item"><h6>Totale €</h6><p id="home-multe-totale">€ 0</p></div>
+                                <div class="stat-item"><h6>N. Multe</h6><p id="home-multe-count">0</p></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-8 col-md-7">
+                    <div class="card table-card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">🚨 Multe per Atleta</h5>
+                            <div id="home-multe-empty" style="display:none;color:var(--bs-secondary);">Nessuna multa registrata questa stagione.</div>
+                            <div style="height:220px;"><canvas id="homeMulteChart"></canvas></div>
                         </div>
                     </div>
                 </div>
@@ -2750,6 +2774,70 @@
         </div>
 
 
+        <!-- ===== SEZIONE MULTE ===== -->
+        <div id="multe-section" class="tab-section row my-4 printable-area">
+            <div class="col-12 d-flex align-items-center gap-2 mb-3 flex-wrap">
+                <h2 class="main-title mb-0">🚨 Gestione Multe</h2>
+                <button class="btn btn-sm btn-outline-secondary ms-2 no-print print-section-btn" title="Stampa"><i class="bi bi-printer-fill"></i></button>
+                <button class="btn btn-sm btn-danger ms-auto no-print admin-only" onclick="window.multeResetAll()" title="Elimina tutte le multe della stagione"><i class="bi bi-trash3-fill"></i> Reset Stagione</button>
+            </div>
+
+            <div class="col-12 mb-3">
+                <div class="card season-stats-card">
+                    <div class="card-body">
+                        <div class="season-stats-grid">
+                            <div class="stat-item"><h6>Totale Stagione</h6><p id="multe-tot-importo">€ 0</p></div>
+                            <div class="stat-item"><h6>N. Multe</h6><p id="multe-tot-count">0</p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card chart-card">
+                    <div class="card-body p-0" style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+                        <table id="multe-table" class="table table-dark table-bordered mb-0" style="border-color:var(--bg-blue);min-width:700px;"></table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Nuova/Modifica Multa -->
+        <div class="modal fade" id="multeModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="multeModalTitle">Nuova Multa</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="multe-edit-pid">
+                        <input type="hidden" id="multe-edit-id">
+                        <div class="mb-3">
+                            <label class="form-label">Importo (€)</label>
+                            <input type="number" class="form-control" id="multe-input-importo" min="0" step="0.01" placeholder="Es. 20">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Causale</label>
+                            <input type="text" class="form-control" id="multe-input-causale" maxlength="120" placeholder="Es. Ritardo allenamento">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Data</label>
+                            <input type="date" class="form-control" id="multe-input-data">
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-between">
+                        <button type="button" class="btn btn-danger" id="multe-delete-btn" onclick="window.multeDelete()" style="display:none;">🗑️ Elimina Multa</button>
+                        <div>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                            <button type="button" class="btn btn-primary-custom" onclick="window.multeSave()">💾 Salva</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
         <!-- ===== SEZIONE CONVOCAZIONI ===== -->
         <div id="convocazioni-section" class="tab-section row my-4">
             <div class="col-12 d-flex align-items-center gap-2 mb-3 flex-wrap">
@@ -3720,6 +3808,18 @@ function switchTab(sectionId) {
     if (sectionId === 'pagamenti-section') {
         setTimeout(function() {
             if (window.renderPagamenti) window.renderPagamenti();
+        }, 100);
+    }
+    // Se si va al tab Multe, renderizza
+    if (sectionId === 'multe-section') {
+        setTimeout(function() {
+            if (window.renderMulte) window.renderMulte();
+        }, 100);
+    }
+    // Se si va in Home, aggiorna anche il riepilogo multe (grafico + card)
+    if (sectionId === 'home-section') {
+        setTimeout(function() {
+            if (window.renderMulte) window.renderMulte();
         }, 100);
     }
     // Se si va al tab Convocazioni
@@ -5597,6 +5697,230 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     // ═══ FINE GESTIONE CONVOCAZIONI ══════════════════════════════════
 
+    // ═══ GESTIONE MULTE ══════════════════════════════════════════════
+    var _multeData = {};
+    var _multeLoaded = false;
+    var _multeModalInst = null;
+
+    function _multeAnnataId() { return sessionStorage.getItem('gosport_current_annata') || ''; }
+
+    async function _multeLoadData() {
+        try {
+            var res = await fetch('/api/data', {headers:{'x-annata-id':_multeAnnataId()}});
+            var d = await res.json();
+            if (d && d.multe) { _multeData = d.multe; window._multeData = _multeData; }
+        } catch(e) { console.warn('Multe load:', e); }
+        _multeLoaded = true;
+        _multeRender();
+    }
+
+    async function _multeSaveData() {
+        try {
+            await fetch('/api/data', {
+                method:'POST',
+                headers:{'Content-Type':'application/json','x-annata-id':_multeAnnataId()},
+                body:JSON.stringify({multe:_multeData})
+            });
+        } catch(e) { console.warn('Multe save:', e); }
+    }
+
+    function _multeTotals() {
+        var totImporto = 0, totCount = 0;
+        Object.keys(_multeData).forEach(function(pid) {
+            (_multeData[pid]||[]).forEach(function(m) {
+                totImporto += parseFloat(m.importo) || 0;
+                totCount++;
+            });
+        });
+        return {totImporto: totImporto, totCount: totCount};
+    }
+
+    function _multeBuildTable() {
+        var people = (window.athletes||[]).filter(function(a){ return !a.archived; });
+        if (!people.length) return '<tbody><tr><td colspan="99" style="color:#94a3b8;text-align:center;padding:16px;">Nessun membro</td></tr></tbody>';
+        var h = '<thead><tr style="background:var(--bg-body);position:sticky;top:0;z-index:2;">';
+        h += '<th style="min-width:160px;position:sticky;left:0;z-index:3;background:var(--bg-body);border-color:var(--bg-blue);color:#f87171;padding:10px 12px;">Nome</th>';
+        h += '<th style="min-width:280px;border-color:var(--bg-blue);color:var(--text-primary);padding:8px;">Multe</th>';
+        h += '<th style="min-width:100px;text-align:center;border-color:var(--bg-blue);color:var(--text-primary);padding:8px;">Totale</th>';
+        h += '<th style="min-width:110px;text-align:center;border-color:var(--bg-blue);color:var(--text-primary);padding:8px;" class="no-print">Azioni</th></tr></thead><tbody>';
+
+        people.forEach(function(person, pi) {
+            var pid = String(person.id);
+            var list = _multeData[pid] || [];
+            var rowBg = pi%2===0 ? '#0f172a' : '#0d1b2a';
+            var totale = list.reduce(function(s,m){ return s + (parseFloat(m.importo)||0); }, 0);
+            h += '<tr style="background:' + rowBg + ';">';
+            h += '<td style="font-weight:600;color:var(--text-primary);position:sticky;left:0;background:' + rowBg + ';border-color:var(--bg-blue);padding:8px 12px;vertical-align:top;">';
+            h += '<div>' + person.name + '</div>';
+            if (person.isStaff) h += '<div style="font-size:0.72rem;color:#f59e0b;margin-top:2px;">' + (person.role||'Staff') + '</div>';
+            h += '</td>';
+            h += '<td style="border-color:var(--bg-blue);padding:6px;vertical-align:top;">';
+            if (list.length) {
+                list.slice().sort(function(a,b){ return String(b.data||'').localeCompare(String(a.data||'')); }).forEach(function(m) {
+                    var dLabel = m.data ? new Date(m.data+'T00:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+                    h += '<div style="font-size:0.78rem;margin-bottom:4px;padding:4px 8px;border-radius:5px;background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d;">';
+                    h += '<strong>€ ' + (parseFloat(m.importo)||0).toFixed(2) + '</strong> · ' + (m.causale ? _multeEsc(m.causale) : '<span style="color:#94a3b8;">senza causale</span>') + ' · ' + dLabel;
+                    h += ' <button data-pid="'+pid+'" data-id="'+m.id+'" onclick="window.multeOpenModal(this.dataset.pid,this.dataset.id)" class="no-print" style="margin-left:6px;background:none;border:none;color:#f87171;cursor:pointer;font-size:0.78rem;">✏️</button>';
+                    h += '</div>';
+                });
+            } else {
+                h += '<span style="color:#94a3b8;font-size:0.78rem;">Nessuna multa</span>';
+            }
+            h += '</td>';
+            h += '<td style="text-align:center;border-color:var(--bg-blue);padding:8px;font-weight:700;color:#f87171;vertical-align:top;">';
+            h += totale>0 ? '€ '+totale.toFixed(2) : '<span style="color:#94a3b8;">—</span>';
+            h += '</td>';
+            h += '<td style="text-align:center;border-color:var(--bg-blue);padding:8px;vertical-align:top;" class="no-print">';
+            h += '<button data-pid="'+pid+'" onclick="window.multeOpenModal(this.dataset.pid,null)" style="background:var(--bg-blue);color:#f87171;border:none;border-radius:5px;padding:4px 10px;font-size:0.75rem;cursor:pointer;">+ Multa</button>';
+            h += '</td></tr>';
+        });
+        return h + '</tbody>';
+    }
+
+    function _multeEsc(s) {
+        var d = document.createElement('div');
+        d.textContent = String(s);
+        return d.innerHTML;
+    }
+
+    function _multeRender() {
+        var table = document.getElementById('multe-table');
+        if (table) table.innerHTML = _multeBuildTable();
+        var totals = _multeTotals();
+        var elImp = document.getElementById('multe-tot-importo');
+        var elCnt = document.getElementById('multe-tot-count');
+        if (elImp) elImp.textContent = '€ ' + totals.totImporto.toFixed(2);
+        if (elCnt) elCnt.textContent = String(totals.totCount);
+        window.updateHomeMulte && window.updateHomeMulte();
+    }
+
+    window.renderMulte = function() {
+        if (!_multeLoaded) { _multeLoadData(); return; }
+        _multeRender();
+    };
+
+    window.multeOpenModal = function(pid, id) {
+        var titleEl = document.getElementById('multeModalTitle');
+        var delBtn = document.getElementById('multe-delete-btn');
+        document.getElementById('multe-edit-pid').value = pid;
+        document.getElementById('multe-edit-id').value = id || '';
+        if (id) {
+            var m = (_multeData[pid]||[]).find(function(x){ return String(x.id) === String(id); });
+            titleEl.textContent = 'Modifica Multa';
+            delBtn.style.display = '';
+            document.getElementById('multe-input-importo').value = m ? m.importo : '';
+            document.getElementById('multe-input-causale').value = m ? (m.causale||'') : '';
+            document.getElementById('multe-input-data').value = m ? (m.data||'') : '';
+        } else {
+            titleEl.textContent = 'Nuova Multa';
+            delBtn.style.display = 'none';
+            document.getElementById('multe-input-importo').value = '';
+            document.getElementById('multe-input-causale').value = '';
+            document.getElementById('multe-input-data').value = new Date().toISOString().slice(0,10);
+        }
+        if (!_multeModalInst) _multeModalInst = new bootstrap.Modal(document.getElementById('multeModal'));
+        _multeModalInst.show();
+    };
+
+    window.multeSave = function() {
+        var pid = document.getElementById('multe-edit-pid').value;
+        var id = document.getElementById('multe-edit-id').value;
+        var importo = parseFloat(document.getElementById('multe-input-importo').value);
+        var causale = document.getElementById('multe-input-causale').value.trim();
+        var data = document.getElementById('multe-input-data').value;
+        if (!pid || isNaN(importo) || importo < 0) { alert('⚠️ Inserisci un importo valido.'); return; }
+        if (!_multeData[pid]) _multeData[pid] = [];
+        if (id) {
+            var m = _multeData[pid].find(function(x){ return String(x.id) === String(id); });
+            if (m) { m.importo = importo; m.causale = causale; m.data = data; }
+        } else {
+            _multeData[pid].push({ id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())), importo: importo, causale: causale, data: data });
+        }
+        _multeSaveData();
+        _multeRender();
+        if (_multeModalInst) _multeModalInst.hide();
+    };
+
+    window.multeDelete = function() {
+        var pid = document.getElementById('multe-edit-pid').value;
+        var id = document.getElementById('multe-edit-id').value;
+        if (!pid || !id) return;
+        if (!confirm('Eliminare questa multa?')) return;
+        _multeData[pid] = (_multeData[pid]||[]).filter(function(x){ return String(x.id) !== String(id); });
+        _multeSaveData();
+        _multeRender();
+        if (_multeModalInst) _multeModalInst.hide();
+    };
+
+    window.multeResetAll = function() {
+        if (!confirm('Eliminare TUTTE le multe della stagione? L\'operazione non è reversibile.')) return;
+        _multeData = {};
+        _multeSaveData();
+        _multeRender();
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() { if (!_multeLoaded) _multeLoadData(); }, 1200);
+    });
+
+    var _homeMulteChartInst = null;
+    window.updateHomeMulte = function() {
+        var elImp = document.getElementById('home-multe-totale');
+        var elCnt = document.getElementById('home-multe-count');
+        var totals = _multeTotals();
+        if (elImp) elImp.textContent = '€ ' + totals.totImporto.toFixed(2);
+        if (elCnt) elCnt.textContent = String(totals.totCount);
+
+        var canvas = document.getElementById('homeMulteChart');
+        var emptyBox = document.getElementById('home-multe-empty');
+        if (!canvas || typeof Chart === 'undefined') return;
+
+        var people = (window.athletes||[]).filter(function(a){ return !a.archived; });
+        var chartData = [];
+        people.forEach(function(person) {
+            var list = _multeData[String(person.id)] || [];
+            if (!list.length) return;
+            var totale = list.reduce(function(s,m){ return s + (parseFloat(m.importo)||0); }, 0);
+            chartData.push({ name: person.name, value: totale, count: list.length });
+        });
+        chartData.sort(function(a,b){ return b.value - a.value; });
+
+        if (emptyBox) emptyBox.style.display = chartData.length ? 'none' : '';
+        canvas.style.display = chartData.length ? '' : 'none';
+
+        if (_homeMulteChartInst) { _homeMulteChartInst.destroy(); _homeMulteChartInst = null; }
+        if (!chartData.length) return;
+
+        _homeMulteChartInst = new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: chartData.map(function(d){ return d.name; }),
+                datasets: [{
+                    label: 'Totale € multe',
+                    data: chartData.map(function(d){ return d.value; }),
+                    backgroundColor: 'rgba(248,113,113,0.8)'
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                responsive: true,
+                scales: { y: { beginAtZero: true } },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                var d = chartData[ctx.dataIndex];
+                                return '€ ' + d.value.toFixed(2) + ' (' + d.count + ' multe)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    };
+    // ═══ FINE GESTIONE MULTE ═════════════════════════════════════════
+
 </script>
 
 <!-- ═══ MODAL RESET FINE ANNATA ════════════════════════════════════════ -->
@@ -6509,6 +6833,7 @@ html.theme-light .btn-primary-custom,html[data-bs-theme="light"] .btn-primary-cu
     { key:'org-calendario',             label:'Org.',          ic:'📆', href:'/calendario.html' },
     { key:'materiale-section',          label:'Materiale',     ic:'📦' },
     { key:'pagamenti-section',          label:'Pagamenti',     ic:'💳' },
+    { key:'multe-section',              label:'Multe',         ic:'🚨' },
     { key:'convocazioni-section',       label:'Convocazioni',  ic:'📣' }
   ];
   var LS_PREF = 'gosport_menu_pref';            // preferenza utente (per device)

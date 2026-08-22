@@ -1091,7 +1091,7 @@ if (req.query?.action === 'inventory') {
 // report presenze allenamenti legge da lì, quindi vanno archiviate/azzerate
 // insieme; trainingSessions sono gli allenamenti a calendario.
 // Niente nuovo file serverless: tutto passa da data.js (limite Hobby 12 route).
-const SEASON_KEYS = ['matchResults', 'calendarResponses', 'awards', 'calendarEvents', 'evaluations', 'trainingSessions'];
+const SEASON_KEYS = ['matchResults', 'calendarResponses', 'awards', 'calendarEvents', 'evaluations', 'trainingSessions', 'multe'];
 
 if (req.query?.action === 'season-reset' && req.method === 'POST') {
   if (!session.isAuthenticated || !canSeasonReset(session.role)) {
@@ -1171,6 +1171,7 @@ if (req.query?.action === 'season-archive' && req.method === 'GET') {
         calendarEvents: d.calendarEvents ? Object.keys(d.calendarEvents).length : 0,
         evaluations: d.evaluations ? Object.keys(d.evaluations).length : 0,
         trainingSessions: d.trainingSessions ? Object.keys(d.trainingSessions).length : 0,
+        multe: d.multe ? Object.values(d.multe).reduce((n, arr) => n + (Array.isArray(arr) ? arr.length : 0), 0) : 0,
       },
     };
   }).sort((a, b) => String(b.archivedAt).localeCompare(String(a.archivedAt)));
@@ -1185,7 +1186,7 @@ if (req.query?.action === 'season-archive' && req.method === 'GET') {
 // Solo Admin: è un'operazione di scrittura sui dati della stagione attiva.
 const RESTORE_KEYED_BY_ID = ['matchResults', 'calendarEvents', 'trainingSessions'];
 const RESTORE_KEYED_BY_DATE = ['evaluations', 'calendarResponses'];
-const RESTORE_CATEGORIES = [...RESTORE_KEYED_BY_ID, ...RESTORE_KEYED_BY_DATE, 'awards', 'inventory'];
+const RESTORE_CATEGORIES = [...RESTORE_KEYED_BY_ID, ...RESTORE_KEYED_BY_DATE, 'awards', 'inventory', 'multe'];
 
 if (req.query?.action === 'season-restore' && req.method === 'POST') {
   if (!session.isAuthenticated || String(session.role).toLowerCase() !== 'admin') {
@@ -1269,6 +1270,27 @@ if (req.query?.action === 'season-restore' && req.method === 'POST') {
       }
       await kv.set(`${prefix}:awards`, current);
       summary.awards = { added, skipped };
+    }
+
+    // C-bis. multe: keyed per athleteId con valore ARRAY di {id, importo, causale, data}.
+    // Un elemento è "già presente" se stesso id (l'id della multa è un UUID generato al client).
+    if (categories.includes('multe')) {
+      const current = (await kv.get(`${prefix}:multe`)) || {};
+      const fromArchive = archData.multe || {};
+      let added = 0, skipped = 0;
+      for (const [athleteId, itemsArchive] of Object.entries(fromArchive)) {
+        const list = Array.isArray(itemsArchive) ? itemsArchive : [];
+        if (!Array.isArray(current[athleteId])) current[athleteId] = [];
+        for (const item of list) {
+          if (!item || typeof item !== 'object') continue;
+          const exists = current[athleteId].some(x => x && String(x.id) === String(item.id));
+          if (exists) { skipped++; continue; }
+          current[athleteId].push(item);
+          added++;
+        }
+      }
+      await kv.set(`${prefix}:multe`, current);
+      summary.multe = { added, skipped };
     }
 
     // D. inventory: array su chiave separata society:<sid>:inventory:<annataId>.
@@ -2734,7 +2756,7 @@ formationData, matchResults, calendarEvents, calendarResponses,
 materiale, pagamenti, pagVoci, pagLabels, convocazioni, convSettings,
 convBg, convBg2, posts, globalPosts, individualPassword,
 ratingSheets, documents, athleteDocs, bachecaConfig, superadminBanners,
-tacticalBoards
+tacticalBoards, multe
 ] = await Promise.all([
 kv.get(`${prefix}:athletes`),
 kv.get(`${prefix}:evaluations`),
@@ -2761,7 +2783,8 @@ kv.get(`${prefix}:documents`),
 kv.get(`${prefix}:athleteDocs`),
 kv.get('global:bachecaConfig'),
 kv.get('global:superadminBanners'),
-kv.get(`${prefix}:tacticalBoards`)
+kv.get(`${prefix}:tacticalBoards`),
+kv.get(`${prefix}:multe`)
 ]);
 
 const data = {
@@ -2792,7 +2815,8 @@ ratingSheets: ratingSheets || {},
 documents: documents || [],
 athleteDocs: athleteDocs || {},
 bachecaConfig: bachecaConfig || {},
-superadminBanners: superadminBanners || {}
+superadminBanners: superadminBanners || {},
+multe: multe || {}
 };
 
 console.log(`GET /api/data - annata=${annataId} user=${session.username} role=${session.role} atleti=${Array.isArray(data.athletes) ? data.athletes.length : 0} tempo=${Date.now() - t0}ms`);
@@ -2910,6 +2934,7 @@ if (body.individualPassword !== undefined) await kv.set(`${prefix}:individualPas
 if (body.pagamenti !== undefined) await kv.set(`${prefix}:pagamenti`, body.pagamenti);
 if (body.pagVoci !== undefined) await kv.set(`${prefix}:pagVoci`, body.pagVoci);
 if (body.pagLabels !== undefined) await kv.set(`${prefix}:pagLabels`, body.pagLabels);
+if (body.multe !== undefined) await kv.set(`${prefix}:multe`, body.multe);
 if (body.ratingSheets !== undefined) await kv.set(`${prefix}:ratingSheets`, body.ratingSheets);
 if (body.documents !== undefined) await kv.set(`${prefix}:documents`, body.documents);
 if (body.athleteDocs !== undefined) await kv.set(`${prefix}:athleteDocs`, body.athleteDocs);
