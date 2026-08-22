@@ -926,13 +926,16 @@
         var hamb = document.getElementById('hamburger-btn');
         var hambIcon = document.getElementById('hamburger-icon');
         var isLight = document.documentElement.classList.contains('theme-light');
-        // Hamburger: nero in tema chiaro, bianco in tema scuro
+        // Navbar con bandiera italiana: hamburger sempre scuro (sfondo bianco al centro), a prescindere dal tema
+        var navFlag = document.querySelector('.bg-dark-blue');
+        var hambColor = navFlag ? '#0a1424' : (isLight ? '#000000' : '#ffffff');
+        var hambBorder = navFlag ? 'rgba(10,20,36,0.6)' : (isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.6)');
         if (hamb) {
-            hamb.style.setProperty('color', isLight ? '#000000' : '#ffffff', 'important');
-            hamb.style.setProperty('border-color', isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.6)', 'important');
+            hamb.style.setProperty('color', hambColor, 'important');
+            hamb.style.setProperty('border-color', hambBorder, 'important');
         }
         if (hambIcon) {
-            hambIcon.style.setProperty('color', isLight ? '#000000' : '#ffffff', 'important');
+            hambIcon.style.setProperty('color', hambColor, 'important');
         }
         if (!btn) return;
         if (icon) icon.textContent = isLight ? '🌙' : '☀️';
@@ -1371,7 +1374,7 @@
         <button class="navbar-toggler d-lg-none ms-auto" type="button"
             onclick="(function(){var m=document.getElementById('navbarNav');m.classList.toggle('show');var tb=document.getElementById('mc-topbar');if(m.classList.contains('show')){if(tb)tb.style.display='none';if(window.populateMobileAdminMenu)window.populateMobileAdminMenu();}else{if(tb)tb.style.display='block';var ah=document.getElementById('app-header-mobile');if(ah){ah.style.display='none';ah.innerHTML='';}};})()"
             id="hamburger-btn"
-            style="border:1.5px solid rgba(255,255,255,0.6); padding:4px 10px; flex-shrink:0; background:transparent; color:#ffffff; font-size:1.4rem; line-height:1;">
+            style="border:1.5px solid rgba(10,20,36,0.6); padding:4px 10px; flex-shrink:0; background:transparent; color:#0a1424; font-size:1.4rem; line-height:1;">
             <i class="bi bi-list" id="hamburger-icon" style="color:inherit;"></i>
         </button>
         <button id="logout-btn" style="display:none !important; width:0 !important; height:0 !important; padding:0 !important; margin:0 !important; border:none !important; position:absolute !important; overflow:hidden !important; pointer-events:none !important;"></button>
