@@ -2645,6 +2645,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (range.end && d > range.end) return false;
         return true;
     };
+    // Di default limita ai risultati della stagione calcistica corrente,
+    // includendo anche le stagioni passate che l'utente ha spuntato
+    // esplicitamente in "Confronta stagione precedente" (matchResults).
+    // Usato da tutte le viste della sezione Risultati (elenco, grafico,
+    // classifiche marcatori/assist, riepilogo cartellini) cosi' che nessuna
+    // di esse mostri dati archiviati senza che l'utente li richiami.
+    const isMatchInActiveSeasons = (match) => {
+        const activeSeasons = seasonCompareState.matchResults.selectedSeasons.length > 0
+            ? [currentSeasonKey(), ...seasonCompareState.matchResults.selectedSeasons]
+            : null;
+        const matchSeason = seasonOfDate(match.date);
+        return activeSeasons ? activeSeasons.includes(matchSeason) : matchSeason === currentSeasonKey();
+    };
     // ── CONFRONTO/CANCELLAZIONE DATI PER STAGIONE CALCISTICA (Ago-Lug) ──
     // Stato: stagioni PASSATE attualmente aggiunte al confronto, per sezione.
     // Puro filtro client-side sui dati gia' caricati per l'annata attiva:
@@ -2815,16 +2828,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const filterLocation = document.getElementById('risultati-filter-location')?.value || '';
         const filterResult   = document.getElementById('risultati-filter-result')?.value || '';
         const dateRange = getMatchDateRangeFilter();
-        const activeSeasons = seasonCompareState.matchResults.selectedSeasons.length > 0
-            ? [currentSeasonKey(), ...seasonCompareState.matchResults.selectedSeasons]
-            : null; // null = nessun confronto attivo, si applica comunque il default stagione corrente sotto
         const sortedMatches = allMatches.filter(match => {
-            const matchSeason = seasonOfDate(match.date);
-            if (activeSeasons) {
-                if (!activeSeasons.includes(matchSeason)) return false;
-            } else if (matchSeason !== currentSeasonKey()) {
-                return false;
-            }
+            if (!isMatchInActiveSeasons(match)) return false;
             if (!isMatchInDateRange(match, dateRange)) return false;
             if (filterOpponent && !(match.opponentName || '').toLowerCase().includes(filterOpponent)) return false;
             if (filterLocation && match.location !== filterLocation) return false;
@@ -2902,6 +2907,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const dateRange = getMatchDateRangeFilter();
         const allCards = Object.values(matchResults)
             .filter(match => isMatchInDateRange(match, dateRange))
+            .filter(isMatchInActiveSeasons)
             .flatMap((match) =>
                 match.cards.map((card, cardIndex) => ({
                     ...card,
@@ -2951,7 +2957,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderTopScorers = () => {
         const goalCounts = {};
         const _dateRangeScorers = getMatchDateRangeFilter();
-        Object.values(matchResults).filter(match => isMatchInDateRange(match, _dateRangeScorers)).forEach(match => {
+        Object.values(matchResults).filter(match => isMatchInDateRange(match, _dateRangeScorers)).filter(isMatchInActiveSeasons).forEach(match => {
             match.scorers.forEach(scorer => {
                 goalCounts[scorer.athleteId] = (goalCounts[scorer.athleteId] || 0) + 1;
             });
@@ -2985,7 +2991,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderTopAssists = () => {
         const assistCounts = {};
         const _dateRangeAssists = getMatchDateRangeFilter();
-        Object.values(matchResults).filter(match => isMatchInDateRange(match, _dateRangeAssists)).forEach(match => {
+        Object.values(matchResults).filter(match => isMatchInDateRange(match, _dateRangeAssists)).filter(isMatchInActiveSeasons).forEach(match => {
             match.assists.forEach(assist => {
                 assistCounts[assist.athleteId] = (assistCounts[assist.athleteId] || 0) + 1;
             });
@@ -3025,6 +3031,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const _dateRangeChart = getMatchDateRangeFilter();
         let filteredMatches = Object.values(matchResults)
             .filter(m => isMatchInDateRange(m, _dateRangeChart))
+            .filter(isMatchInActiveSeasons)
             .filter(m => {
                 // Considero una partita come "giocata" solo se almeno uno dei punteggi è definito e diverso da null
                 const myScore = m.location === 'home' ? m.homeScore : m.awayScore;
