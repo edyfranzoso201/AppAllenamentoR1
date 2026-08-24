@@ -3300,7 +3300,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const semesterEndMonth = month <= 6 ? '12' : '12';
             const startDate = `${year}-${semesterStartMonth}-01`;
             const endDate = `${year}-${semesterEndMonth}-31`;
-            Object.keys(evaluations).filter(d => d >= startDate && d <= endDate).forEach(d => {
+            // Anche qui, vincolo aggiuntivo di stagione calcistica corrente
+            // (stesso motivo del ramo 'annual' sopra): l'intervallo date puro
+            // altrimenti include mesi della stagione precedente archiviata.
+            Object.keys(evaluations).filter(d => d >= startDate && d <= endDate && seasonOfDate(d) === currentSeasonKey()).forEach(d => {
                 Object.entries(evaluations[d]).forEach(([id, ev]) => {
                     // Salta gli atleti ospiti
                     if (isGuestAthlete(id)) return;
@@ -3316,8 +3319,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             });
         } else if (attendanceChartPeriod === 'annual') {
-            const year = date.substring(0, 4);
-            Object.keys(evaluations).filter(d => d.startsWith(year)).forEach(d => {
+            // Filtrato per STAGIONE CALCISTICA corrente (Ago-Lug), non per anno
+            // solare: senza questo, l'anno solare della data selezionata include
+            // anche mesi della stagione precedente gia' archiviata (es. Gen-Lug),
+            // che devono comparire solo se l'utente li richiama esplicitamente
+            // spuntando "Confronta stagione precedente" (vedi pastSeasons sotto).
+            Object.keys(evaluations).filter(d => seasonOfDate(d) === currentSeasonKey()).forEach(d => {
                 Object.entries(evaluations[d]).forEach(([id, ev]) => {
                     // Salta gli atleti ospiti
                     if (isGuestAthlete(id)) return;
@@ -3389,10 +3396,10 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (attendanceChartPeriod === 'semester') {
             const _sy = date.substring(0, 4), _smo = parseInt(date.substring(5, 7), 10);
             const _s0 = `${_sy}-${_smo <= 6 ? '01' : '07'}-01`, _s1 = `${_sy}-12-31`;
-            _pctDates = Object.keys(evaluations).filter(d => d >= _s0 && d <= _s1);
+            _pctDates = Object.keys(evaluations).filter(d => d >= _s0 && d <= _s1 && seasonOfDate(d) === currentSeasonKey());
         } else if (attendanceChartPeriod === 'annual') {
-            const _ay = date.substring(0, 4);
-            _pctDates = Object.keys(evaluations).filter(d => d.startsWith(_ay));
+            // Stesso filtro per stagione calcistica usato sopra per attendanceData.
+            _pctDates = Object.keys(evaluations).filter(d => seasonOfDate(d) === currentSeasonKey());
         } else if (customRange) {
             const _rs = rangeStartEl.value, _re = rangeEndEl.value;
             _pctDates = Object.keys(evaluations).filter(d => d >= _rs && d <= _re);
@@ -3406,10 +3413,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // A questo punto attendanceData/justifiedAbsenceData sono gia' calcolati
         // per il periodo selezionato (comportamento esistente, invariato sopra;
-        // non e' filtrato per stagione calcistica). Il confronto con stagioni
-        // passate, aggiunto come dataset extra qui sotto, applica lo STESSO
-        // periodo (attendanceChartPeriod) a ciascuna stagione passata, cosi'
-        // da confrontare grandezze omogenee (es. mese vs mese, non mese vs anno).
+        // il ramo 'annual' e 'semester' includono solo la stagione calcistica
+        // corrente - vedi filtro con seasonOfDate/currentSeasonKey sopra). Il
+        // confronto con stagioni passate, aggiunto come dataset extra qui sotto,
+        // applica lo STESSO periodo (attendanceChartPeriod) a ciascuna stagione
+        // passata, cosi' da confrontare grandezze omogenee (es. mese vs mese,
+        // non mese vs anno) - e compare SOLO se l'utente la spunta esplicitamente
+        // in "Confronta stagione precedente" (seasonCompareState.evaluations).
         const pastSeasons = seasonCompareState.evaluations.selectedSeasons;
         const computeAttendanceForSeason = (season) => {
             const data = {};
