@@ -2267,6 +2267,25 @@
                     <i class="bi bi-file-earmark-excel-fill"></i> Esporta Excel
                 </button>
             </div>
+            <!-- Barra filtri materiale -->
+            <div class="col-12">
+                <div class="row mb-3 g-2 no-print" id="materiale-filter-bar">
+                    <div class="col-md-5 col-sm-12">
+                        <input type="text" id="mat-filter-name" class="form-control form-control-sm" placeholder="Cerca per nome o cognome..." oninput="window.renderMateriale()">
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <select id="mat-filter-role" class="form-select form-select-sm" onchange="window.renderMateriale()">
+                            <option value="">Tutti i ruoli</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 col-sm-4">
+                        <input type="text" id="mat-filter-number" class="form-control form-control-sm" placeholder="N° maglia" maxlength="10" oninput="window.renderMateriale()">
+                    </div>
+                    <div class="col-md-2 col-sm-2 d-flex align-items-center gap-1">
+                        <button class="btn btn-sm btn-outline-secondary flex-fill" onclick="document.getElementById('mat-filter-name').value='';document.getElementById('mat-filter-role').value='';document.getElementById('mat-filter-number').value='';window.renderMateriale();" title="Azzera filtri"><i class="bi bi-x-circle"></i> Reset</button>
+                    </div>
+                </div>
+            </div>
             <!-- TABELLA ATLETI -->
             <div class="col-12 mb-4">
                 <div class="d-flex align-items-center gap-2 mb-2" style="cursor:pointer;" onclick="matToggleSection('atleti')">
@@ -4096,13 +4115,42 @@ document.addEventListener('DOMContentLoaded', function() {
         return html;
     }
 
+    // Applica i filtri della barra (#mat-filter-*) a un elenco di persone
+    // (atleti o staff), riusando lo stesso schema di Gestione Squadra:
+    // nome/cognome, ruolo, N° maglia (letto da getNumero, non da a.number).
+    function matApplyFilters(people) {
+        var name = (document.getElementById('mat-filter-name')?.value || '').trim().toLowerCase();
+        var role = document.getElementById('mat-filter-role')?.value || '';
+        var num  = (document.getElementById('mat-filter-number')?.value || '').trim().toLowerCase();
+        return people.filter(function(p) {
+            if (name && !(p.name || '').toLowerCase().includes(name)) return false;
+            if (role && (p.role || '') !== role) return false;
+            if (num && !getNumero(String(p.id)).toLowerCase().includes(num)) return false;
+            return true;
+        });
+    }
+
+    // Ripopola il select ruoli con i soli ruoli effettivamente presenti fra
+    // gli atleti/staff non archiviati, preservando la selezione corrente.
+    function matUpdateRoleOptions(all) {
+        var sel = document.getElementById('mat-filter-role');
+        if (!sel) return;
+        var current = sel.value;
+        var roles = Array.from(new Set(all.map(function(a) { return a.role || ''; }).filter(Boolean))).sort();
+        var html = '<option value="">Tutti i ruoli</option>';
+        roles.forEach(function(r) { html += '<option value="' + esc(r) + '">' + esc(r) + '</option>'; });
+        sel.innerHTML = html;
+        if (roles.indexOf(current) !== -1) sel.value = current;
+    }
+
     function renderMateriale() {
         var tA = document.getElementById('materiale-table-atleti');
         var tS = document.getElementById('materiale-table-staff');
         if (!tA || !tS) return;
         var all = (window.athletes || []).filter(function(a) { return !a.archived; });
-        var atleti = all.filter(function(a) { return !a.isStaff; });
-        var staff  = all.filter(function(a) { return  a.isStaff; });
+        matUpdateRoleOptions(all);
+        var atleti = matApplyFilters(all.filter(function(a) { return !a.isStaff; }));
+        var staff  = matApplyFilters(all.filter(function(a) { return  a.isStaff; }));
         var perm = getMatPerm();
         tA.innerHTML = buildTable(atleti, perm==='full'||perm==='athletes', perm==='full');
         tS.innerHTML  = buildTable(staff,  perm==='full',                   perm==='full');
