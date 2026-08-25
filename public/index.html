@@ -1640,6 +1640,13 @@
                                 <button type="button" class="btn btn-outline-warning" data-lavagna-sport="basket" title="Campo da Basket">🏀 Basket</button>
                                 <button type="button" class="btn btn-outline-info" data-lavagna-sport="volley" title="Campo da Pallavolo">🏐 Volley</button>
                             </div>
+                            <!-- Sotto-selettore variante campo da Calcio: visibile solo quando "⚽ Calcio" è
+                                 attivo. "Classico" (default) = campo_Trasp.PNG, "Nuovo" = lavagna-calcio.png
+                                 (aggiunta 2026-08-25). Mostrato/nascosto via JS in lavagna-tattica.js. -->
+                            <div class="btn-group btn-group-sm" role="group" aria-label="Variante campo da Calcio" data-lavagna-variante-wrap>
+                                <button type="button" class="btn btn-secondary active" data-lavagna-variante="calcio" title="Campo classico (prospettiva originale)">Classico</button>
+                                <button type="button" class="btn btn-outline-secondary" data-lavagna-variante="calcio_nuovo" title="Nuovo campo (prospettiva leggera)">Nuovo</button>
+                            </div>
                             <div class="btn-group btn-group-sm ms-auto" role="group">
                                 <button type="button" class="btn btn-outline-secondary" data-pedina-tool="blu" title="Aggiungi pedina Blu">🔵</button>
                                 <button type="button" class="btn btn-outline-secondary" data-pedina-tool="rosso" title="Aggiungi pedina Rossa">🔴</button>
@@ -1662,6 +1669,9 @@
                                 <button type="button" class="btn btn-sm btn-outline-secondary" data-azione="elimina">Elimina</button>
                             </div>
                             <div id="lavagna-tattica-root" style="max-width: 1100px; margin: 0 auto;">
+                                <!-- width/height del canvas impostati via JS in base allo sport corrente
+                                     (vedi CANVAS_SIZE_BY_SPORT in lavagna-tattica.js) così l'immagine di
+                                     sfondo non viene mai stirata fuori dal suo rapporto d'aspetto reale. -->
                                 <canvas id="lavagna-canvas" width="1100" height="722" style="width:100%; max-width:1100px; height:auto; display:block; touch-action:none; border-radius: 8px;"></canvas>
                             </div>
                             <small class="text-muted d-block mt-2">Trascina le pedine per spostarle, doppio click per scrivere il numero. Per disegnare una freccia: premi ➡️ (o tieni Shift), poi trascina da una pedina; trascina il pallino sulla freccia per curvarla (es. tiro a rientrare/uscire). Per cancellare pedine, pallone o frecce: premi 🧹 e clicca l'elemento.</small>

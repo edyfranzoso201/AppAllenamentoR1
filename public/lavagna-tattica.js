@@ -3,19 +3,36 @@
 
   // Sistema di coordinate logico: x 0-100 (larghezza campo), y 0-100 (0 = linea di
   // centrocampo in alto, 100 = linea di porta in basso, dove il campo è più largo).
-  // Ogni sport ha la propria calibrazione di prospettiva perché ogni immagine di sfondo
-  // ha un trapezio diverso (vedi PERSPECTIVE_BY_SPORT sotto). Le costanti "calcio" sono state
-  // ricalibrate (2026-07-28) per campo_Trasp.PNG e riadattate (2026-08-25) per
-  // lavagna-calcio.png, che ha un trapezio molto più leggero (quasi rettangolare).
+  // "currentSport" è in realtà una CHIAVE DI VARIANTE, non solo lo sport: per il calcio
+  // esistono due varianti selezionabili (vedi sotto-selettore in index.html) — 'calcio'
+  // (= 'Classico', DEFAULT, campo_Trasp.PNG con trapezio pronunciato, costanti ricalibrate
+  // 2026-07-28) e 'calcio_nuovo' ('Nuovo', lavagna-calcio.png aggiunta 2026-08-25, campo
+  // quasi rettangolare). Basket e Volley hanno una sola variante ciascuno per ora.
   let currentSport = 'calcio';
 
   const PERSPECTIVE_BY_SPORT = {
+    // campo_Trasp.PNG: trapezio pronunciato (misurato via analisi pixel: widthFrac 0.65 in
+    // alto -> 0.99 in basso, fit quasi lineare INSET=0.34/CURVE=0.99). Resta il DEFAULT.
+    calcio:        { topInset: 0.34, yCurve: 0.99, widthFrac: 0.991 },
     // lavagna-calcio.png: campo quasi rettangolare, leggerissimo effetto prospettico.
-    calcio:  { topInset: 0.08, yCurve: 0.99, widthFrac: 0.98 },
+    calcio_nuovo:  { topInset: 0.08, yCurve: 0.99, widthFrac: 0.98 },
     // Placeholder vettoriale (nessuna immagine ancora fornita): nessuna prospettiva,
     // il campo è disegnato piatto dall'alto (vedi drawFieldVectorBasket/Volley).
-    basket:  { topInset: 0,    yCurve: 1,    widthFrac: 1 },
-    volley:  { topInset: 0,    yCurve: 1,    widthFrac: 1 }
+    basket:        { topInset: 0,    yCurve: 1,    widthFrac: 1 },
+    volley:        { topInset: 0,    yCurve: 1,    widthFrac: 1 }
+  };
+
+  // Risoluzione interna del canvas per variante: DEVE rispecchiare il rapporto d'aspetto
+  // reale dell'immagine di sfondo, altrimenti drawImage(img, 0, 0, w, h) la stira fuori dal
+  // suo rapporto nativo e la prospettiva fotografata nell'immagine appare deformata/appiattita
+  // (visto in produzione 2026-08-25: canvas 1100x722 su un'immagine 1520x1400 schiacciava
+  // il campo rendendolo senza trapezio). campo_Trasp.PNG è 2109x817 -> 1100x722.
+  // lavagna-calcio.png è 1520x1400 -> 1100x1013.
+  const CANVAS_SIZE_BY_SPORT = {
+    calcio:       { w: 1100, h: 722 },
+    calcio_nuovo: { w: 1100, h: 1013 },
+    basket:       { w: 1100, h: 722 },
+    volley:       { w: 1100, h: 722 }
   };
 
   function getPerspectiveParams() {
@@ -54,18 +71,19 @@
   }
 
   // Immagine di sfondo del campo (fotografia/render con trasparenza fuori dal trapezio).
-  // Una immagine per sport, precaricata on-demand quando si passa a quello sport (vedi
-  // setSport). drawField disegna l'immagine dello sport corrente quando è pronta,
+  // Una immagine per variante, precaricata on-demand quando si passa a quella variante (vedi
+  // setSport). drawField disegna l'immagine della variante corrente quando è pronta,
   // altrimenti ricade sul disegno vettoriale (drawFieldVector*) così il canvas non
   // resta mai vuoto. Basket e Volley non hanno ancora un'immagine reale: restano senza
   // src e usano sempre il fallback vettoriale colorato.
   const FIELD_IMAGE_SRC = {
-    calcio: 'lavagna-calcio.png'
+    calcio: 'campo_Trasp.PNG',        // Classico, DEFAULT
+    calcio_nuovo: 'lavagna-calcio.png' // Nuovo, richiamabile dal sotto-selettore
     // basket: null,  // TODO: aggiungere quando disponibile
     // volley: null   // TODO: aggiungere quando disponibile
   };
 
-  const fieldImages = {}; // sport -> { img: Image, ready: bool }
+  const fieldImages = {}; // variante -> { img: Image, ready: bool }
   let onFieldImageReady = null; // callback opzionale impostata da initUI per un redraw immediato
 
   function preloadFieldImage(sport) {
@@ -102,6 +120,9 @@
   function drawFieldVector(ctx, w, h) {
     if (currentSport === 'basket') { drawFieldVectorBasket(ctx, w, h); return; }
     if (currentSport === 'volley') { drawFieldVectorVolley(ctx, w, h); return; }
+    // 'calcio' e 'calcio_nuovo' condividono lo stesso fallback vettoriale (nessun disegno
+    // vettoriale dedicato per la variante 'Nuovo': se la sua immagine non è ancora pronta,
+    // si vede temporaneamente il campo vettoriale classico, comunque coerente per sport).
     drawFieldVectorCalcio(ctx, w, h);
   }
 
@@ -902,6 +923,24 @@
 
     const ctx = canvas.getContext('2d');
 
+    // Applica la risoluzione interna del canvas corretta per lo sport corrente (vedi
+    // CANVAS_SIZE_BY_SPORT) PRIMA di ogni redraw, altrimenti l'immagine di sfondo verrebbe
+    // stirata fuori dal suo rapporto d'aspetto reale (visto in produzione 2026-08-25).
+    function applicaCanvasSize(sport) {
+      const size = CANVAS_SIZE_BY_SPORT[sport] || CANVAS_SIZE_BY_SPORT.calcio;
+      if (canvas.width !== size.w) canvas.width = size.w;
+      if (canvas.height !== size.h) canvas.height = size.h;
+    }
+
+    // Se lo sport era stato salvato in una sessione precedente, applichiamolo (con relativa
+    // dimensione canvas) PRIMA del primo redraw, così non si vede mai un frame intermedio
+    // con le proporzioni sbagliate.
+    const sportSalvato = localStorage.getItem('lavagnaSport');
+    if (sportSalvato && PERSPECTIVE_BY_SPORT[sportSalvato] && sportSalvato !== currentSport) {
+      setSport(sportSalvato);
+    }
+    applicaCanvasSize(currentSport);
+
     const interaction = attachInteraction(canvas, ctx, () => interaction.redraw());
 
     // Se il primo redraw avviene prima che l'immagine di sfondo sia pronta (probabile, dato
@@ -914,31 +953,69 @@
     // sfondo + calibrazione prospettiva, vedi setSport) senza toccare pedine/frecce/pallone
     // già posizionati sullo schema in corso. Stesso schema colore pieno/outline usato per i
     // pulsanti analoghi in Modulo Formazione (vedi switchField in index.html).
+    // NB: 'calcio' e 'calcio_nuovo' sono due VARIANTI dello stesso pulsante "⚽ Calcio" (vedi
+    // sotto-selettore Classico/Nuovo gestito più sotto), non due pulsanti sport distinti: il
+    // pulsante principale [data-lavagna-sport="calcio"] resta attivo per entrambe le varianti.
     const sportBtns = root.querySelectorAll('[data-lavagna-sport]');
-    const SPORT_COLOR = { calcio: 'success', basket: 'warning', volley: 'info' };
+    const SPORT_COLOR = { calcio: 'success', calcio_nuovo: 'success', basket: 'warning', volley: 'info' };
+    // Il pulsante sport "principale" a cui appartiene una variante (serve per evidenziare
+    // [data-lavagna-sport="calcio"] anche quando la variante attiva è 'calcio_nuovo').
+    function pulsantePrincipale(sport) {
+      return sport === 'calcio_nuovo' ? 'calcio' : sport;
+    }
     function aggiornaSportBtns(sport) {
+      const principale = pulsantePrincipale(sport);
       sportBtns.forEach(b => {
         const s = b.getAttribute('data-lavagna-sport');
         const color = SPORT_COLOR[s] || 'secondary';
-        b.classList.toggle('active', s === sport);
-        b.classList.toggle('btn-' + color, s === sport);
-        b.classList.toggle('btn-outline-' + color, s !== sport);
+        b.classList.toggle('active', s === principale);
+        b.classList.toggle('btn-' + color, s === principale);
+        b.classList.toggle('btn-outline-' + color, s !== principale);
       });
+    }
+    function applicaSport(sport) {
+      setSport(sport);
+      aggiornaSportBtns(sport);
+      aggiornaVarianteBtns(sport);
+      applicaCanvasSize(sport);
+      interaction.redraw();
+      localStorage.setItem('lavagnaSport', sport);
     }
     sportBtns.forEach(el => {
       el.addEventListener('click', () => {
-        const sport = el.getAttribute('data-lavagna-sport');
-        setSport(sport);
-        aggiornaSportBtns(sport);
-        interaction.redraw();
-        localStorage.setItem('lavagnaSport', sport);
+        const sportCliccato = el.getAttribute('data-lavagna-sport');
+        // Cliccando "⚽ Calcio" mentre si è già sul Calcio si mantiene la variante attiva
+        // (Classico o Nuovo) invece di forzare sempre 'calcio' (Classico).
+        const sport = (sportCliccato === 'calcio' && pulsantePrincipale(currentSport) === 'calcio')
+          ? currentSport
+          : sportCliccato;
+        applicaSport(sport);
       });
     });
-    const sportSalvato = localStorage.getItem('lavagnaSport');
-    if (sportSalvato && PERSPECTIVE_BY_SPORT[sportSalvato] && sportSalvato !== currentSport) {
-      setSport(sportSalvato);
-    }
     aggiornaSportBtns(currentSport);
+
+    // Sotto-selettore Classico/Nuovo: visibile solo quando lo sport principale attivo è il
+    // Calcio. "Classico" = campo_Trasp.PNG (default, prospettiva pronunciata), "Nuovo" =
+    // lavagna-calcio.png (aggiunta 2026-08-25, campo quasi rettangolare). Vedi FIELD_IMAGE_SRC.
+    const varianteWrap = root.querySelector('[data-lavagna-variante-wrap]');
+    const varianteBtns = root.querySelectorAll('[data-lavagna-variante]');
+    function aggiornaVarianteBtns(sport) {
+      if (!varianteWrap) return;
+      varianteWrap.classList.toggle('d-none', pulsantePrincipale(sport) !== 'calcio');
+      varianteBtns.forEach(b => {
+        const v = b.getAttribute('data-lavagna-variante');
+        b.classList.toggle('active', v === sport);
+        b.classList.toggle('btn-secondary', v === sport);
+        b.classList.toggle('btn-outline-secondary', v !== sport);
+      });
+    }
+    varianteBtns.forEach(el => {
+      el.addEventListener('click', () => {
+        const variante = el.getAttribute('data-lavagna-variante');
+        applicaSport(variante);
+      });
+    });
+    aggiornaVarianteBtns(currentSport);
 
     root.querySelectorAll('[data-pedina-tool]').forEach(el => {
       el.addEventListener('click', () => {
