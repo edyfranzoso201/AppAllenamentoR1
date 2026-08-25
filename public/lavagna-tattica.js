@@ -48,12 +48,13 @@
   // schiacciato") l'altezza di calcio/basket/volley è stata poi aumentata del 20% oltre il
   // rapporto nativo: è uno STIRAMENTO VERTICALE VOLUTO (aumenta la profondità percepita),
   // diverso dal bug del 2026-08-25 sopra citato (lì lo stiramento era involontario/eccessivo
-  // e appiattiva il trapezio anziché allungarlo). calcio_nuovo non è stato toccato (non
-  // richiesto, resta variante secondaria dietro sotto-selettore).
+  // e appiattiva il trapezio anziché allungarlo).
+  // Stesso giorno, richiesta successiva: anche calcio_nuovo (405 nativo) +20% -> 486, e un
+  // ULTERIORE +20% sul basket già stirato (542 -> 650, +44% totale rispetto al nativo 452).
   const CANVAS_SIZE_BY_SPORT = {
     calcio:       { w: 1100, h: 866 },
-    calcio_nuovo: { w: 1100, h: 405 },
-    basket:       { w: 1100, h: 542 },
+    calcio_nuovo: { w: 1100, h: 486 },
+    basket:       { w: 1100, h: 650 },
     volley:       { w: 1100, h: 779 }
   };
 
