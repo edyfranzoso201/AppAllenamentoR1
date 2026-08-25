@@ -58,8 +58,9 @@
   // (486 -> 583, +44% totale rispetto al nativo 405, stessa logica già usata per il Basket).
   // Stesso giorno, ultimo ritocco: +10% AGGIUNTIVO ancora sul Calcio Nuovo (583 -> 641).
   // Stesso giorno, richiesta successiva: -15% sul Volley (779 -> 662).
+  // Stesso giorno, ultima richiesta: -10% sul Calcio Classico (722 -> 650).
   const CANVAS_SIZE_BY_SPORT = {
-    calcio:       { w: 1100, h: 722 },
+    calcio:       { w: 1100, h: 650 },
     calcio_nuovo: { w: 1100, h: 641 },
     basket:       { w: 1100, h: 650 },
     volley:       { w: 1100, h: 662 }
