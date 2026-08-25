@@ -51,8 +51,11 @@
   // e appiattiva il trapezio anziché allungarlo).
   // Stesso giorno, richiesta successiva: anche calcio_nuovo (405 nativo) +20% -> 486, e un
   // ULTERIORE +20% sul basket già stirato (542 -> 650, +44% totale rispetto al nativo 452).
+  // Stesso giorno, ultima richiesta: il Calcio Classico "andava bene anche prima" -> RIPORTATO
+  // al rapporto nativo 722 (annullato il +20% solo per questa variante; Basket/Volley/Nuovo
+  // restano con lo stiramento applicato).
   const CANVAS_SIZE_BY_SPORT = {
-    calcio:       { w: 1100, h: 866 },
+    calcio:       { w: 1100, h: 722 },
     calcio_nuovo: { w: 1100, h: 486 },
     basket:       { w: 1100, h: 650 },
     volley:       { w: 1100, h: 779 }
