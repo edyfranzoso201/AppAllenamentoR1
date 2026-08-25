@@ -26,12 +26,15 @@
     // misurato via analisi pixel su bordo campo in alto (y=42px, width=1236px) e in
     // basso (y=752px, width=1895px) su immagine 1926x792 -> INSET=0.3805/FRAC=1.0032.
     basket:        { topInset: 0.3805, yCurve: 0.99, widthFrac: 1.0032 },
-    // lavagna-volley.png ("Pallavolo Prospettiva.jpg", sostituito 2026-08-25): immagine
-    // ORIGINALE ritagliata (tolta la rete sopra il campo, che altrimenti rompeva
-    // l'assunzione py=0..h = campo intero) a partire da y=395px -> 1819x739. Trapezio
-    // misurato sul ritaglio: bordo campo in alto (y=10px, width=1193px) e in basso
-    // (y=700px, width=1771px) -> INSET=0.3432/FRAC=0.9916.
-    volley:        { topInset: 0.3432, yCurve: 0.99, widthFrac: 0.9916 }
+    // lavagna-volley.png ("Pallavolo Prospettiva.jpg", sostituita di nuovo 2026-08-25 con
+    // una versione che include la RETE, su richiesta esplicita dell'utente — niente più
+    // ritaglio). Immagine intera 1905x1124: la rete occupa la fascia y=0..410px, il campo
+    // di gioco la fascia y=410..1100px (yTopFrac=0.3648). Trapezio misurato SOLO sulla
+    // fascia campo (bordo in alto y=410px width=1196px, in basso y=1100px width=1771px,
+    // normalizzati sulla propria fascia, non sull'immagine intera) -> INSET=0.3247/
+    // FRAC=0.9297. yTopFrac fa sì che le coordinate logiche 0-100 (pedine/frecce) restino
+    // ancorate solo alla zona di gioco sotto la rete (vedi yTopFrac in perspective()).
+    volley:        { topInset: 0.3247, yCurve: 0.99, widthFrac: 0.9297, yTopFrac: 0.3648 }
   };
 
   // Risoluzione interna del canvas per variante: la BASE deve rispecchiare il rapporto
@@ -40,7 +43,7 @@
   // deformata/appiattita (visto in produzione 2026-08-25: canvas 1100x722 su un'immagine
   // 1520x1400 schiacciava il campo rendendolo senza trapezio). Rapporti nativi: campo_Trasp.PNG
   // 2109x817 (1100x722), lavagna-calcio.png 1951x718 (1100x405), lavagna-basket.png 1926x792
-  // (1100x452), lavagna-volley.png 1819x739 (1100x447 dopo ritaglio rete).
+  // (1100x452), lavagna-volley.png 1905x1124 (1100x649, immagine INTERA con rete inclusa).
   // Su richiesta esplicita dell'utente 2026-08-25 ("aumenta l'altezza in Y, il campo è troppo
   // schiacciato") l'altezza di calcio/basket/volley è stata poi aumentata del 20% oltre il
   // rapporto nativo: è uno STIRAMENTO VERTICALE VOLUTO (aumenta la profondità percepita),
@@ -51,7 +54,7 @@
     calcio:       { w: 1100, h: 866 },
     calcio_nuovo: { w: 1100, h: 405 },
     basket:       { w: 1100, h: 542 },
-    volley:       { w: 1100, h: 536 }
+    volley:       { w: 1100, h: 779 }
   };
 
   function getPerspectiveParams() {
@@ -59,10 +62,14 @@
   }
 
   function perspective(x, y, w, h) {
-    const { topInset, yCurve, widthFrac } = getPerspectiveParams();
+    const { topInset, yCurve, widthFrac, yTopFrac } = getPerspectiveParams();
+    // yTopFrac (default 0): frazione dell'altezza immagine PRIMA dell'inizio del campo di
+    // gioco (es. la rete del volley). py=0..h resta la mappa dell'intera immagine di sfondo,
+    // ma il campo logico (y=0..100) occupa solo la fascia yTopFrac*h..h — vedi 'volley'.
+    const top = (yTopFrac || 0) * h;
     const yNorm = y / 100;
     const yCurved = Math.pow(yNorm, yCurve);
-    const py = yCurved * h;
+    const py = top + yCurved * (h - top);
     const widthScale = (1 - topInset) + topInset * yCurved;
     const centerOffset = (50 - x) * widthScale * widthFrac;
     const px = w / 2 - centerOffset * (w / 100);
@@ -70,8 +77,9 @@
   }
 
   function inversePerspective(px, py, w, h) {
-    const { topInset, yCurve, widthFrac } = getPerspectiveParams();
-    const yCurved = Math.max(0, Math.min(1, py / h));
+    const { topInset, yCurve, widthFrac, yTopFrac } = getPerspectiveParams();
+    const top = (yTopFrac || 0) * h;
+    const yCurved = Math.max(0, Math.min(1, (py - top) / (h - top)));
     const yNorm = Math.pow(yCurved, 1 / yCurve);
     const y = yNorm * 100;
     const widthScale = (1 - topInset) + topInset * yCurved;
