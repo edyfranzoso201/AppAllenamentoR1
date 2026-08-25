@@ -732,6 +732,20 @@
         .tab-nav-btn { height: 52px !important; min-width: 52px !important; }
         .tab-account-btn .tab-acc-label { display: none; }
     }
+
+    /* Nome società accanto a "Coach Dashboard" nella navbar (coerenza col
+       brand mostrato in dashboard.html). Su desktop appare per esteso; su
+       mobile resta nascosto per lasciare tutto lo spazio al pulsante hamburger,
+       che condivide la stessa riga fissa di 56px. */
+    #navbar-society-name {
+        font-weight: 500;
+        color: rgba(255,255,255,0.65);
+        font-size: 0.82rem;
+        margin-left: 6px;
+    }
+    @media (max-width: 991px) {
+        #navbar-society-name { display: none !important; }
+    }
     /* Navbar: altezza adeguata per i nuovi tab */
 
     /* ===== SECTION VISIBILITY ===== */
@@ -1367,7 +1381,7 @@
     <nav class="navbar navbar-dark bg-dark-blue fixed-top no-print"
          style="height:56px; padding:0 12px; flex-wrap:nowrap; z-index:1030; display:flex; align-items:center;">
         <a class="navbar-brand fw-bold mb-0" href="#" style="white-space:nowrap; flex-shrink:1; min-width:0; overflow:hidden; text-overflow:ellipsis; margin-right:8px;">
-            <i class="bi bi-person-workspace"></i> Coach Dashboard
+            <i class="bi bi-person-workspace"></i> Coach Dashboard<span id="navbar-society-name" style="display:none;"></span>
         </a>
         <!-- Admin: visibile su desktop, nascosto su mobile -->
         <div id="app-header-info" class="d-none d-lg-flex" style="flex-shrink:0; margin-left:auto; margin-right:8px; position:relative; align-items:center;"></div>
@@ -4600,6 +4614,24 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     document.addEventListener('DOMContentLoaded', showDashboardBtn);
     setTimeout(showDashboardBtn, 1500);
+
+    // Mostra il nome società accanto a "Coach Dashboard" nella navbar
+    // (solo desktop, vedi CSS #navbar-society-name). Stesso timing di
+    // showDashboardBtn: sessionStorage e' valorizzato dal login, non
+    // sempre pronto al primo DOMContentLoaded.
+    function showNavbarSocietyName() {
+        var el = document.getElementById('navbar-society-name');
+        if (!el) return;
+        var name = sessionStorage.getItem('gosport_society_name') || '';
+        if (name) {
+            el.textContent = '· ' + name;
+            el.style.display = '';
+        } else {
+            el.style.display = 'none';
+        }
+    }
+    document.addEventListener('DOMContentLoaded', showNavbarSocietyName);
+    setTimeout(showNavbarSocietyName, 1500);
 })();
 </script>
 
