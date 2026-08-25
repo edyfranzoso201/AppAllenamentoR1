@@ -54,9 +54,11 @@
   // Stesso giorno, ultima richiesta: il Calcio Classico "andava bene anche prima" -> RIPORTATO
   // al rapporto nativo 722 (annullato il +20% solo per questa variante; Basket/Volley/Nuovo
   // restano con lo stiramento applicato).
+  // Stesso giorno, richiesta successiva: ulteriore +20% AGGIUNTIVO sul solo Calcio Nuovo
+  // (486 -> 583, +44% totale rispetto al nativo 405, stessa logica già usata per il Basket).
   const CANVAS_SIZE_BY_SPORT = {
     calcio:       { w: 1100, h: 722 },
-    calcio_nuovo: { w: 1100, h: 486 },
+    calcio_nuovo: { w: 1100, h: 583 },
     basket:       { w: 1100, h: 650 },
     volley:       { w: 1100, h: 779 }
   };
