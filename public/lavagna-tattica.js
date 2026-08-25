@@ -3,31 +3,43 @@
 
   // Sistema di coordinate logico: x 0-100 (larghezza campo), y 0-100 (0 = linea di
   // centrocampo in alto, 100 = linea di porta in basso, dove il campo è più largo).
-  // Costanti ricalibrate (2026-07-28) per allinearsi al trapezio reale dell'immagine
-  // di sfondo campo_Trasp.PNG (misurato via analisi pixel: widthFrac 0.65 in alto ->
-  // 0.99 in basso, fit quasi lineare INSET=0.34/CURVE=0.99).
-  const PERSPECTIVE_TOP_INSET = 0.34; // quanto si restringe la larghezza in alto (0-1)
-  const PERSPECTIVE_Y_CURVE = 0.99;   // <1 comprime le linee lontane verso l'alto
-  // Frazione della larghezza canvas occupata dal trapezio nell'immagine a y=100 (misurata
-  // su campo_Trasp.PNG: il trapezio non tocca i bordi del canvas nemmeno alla base).
-  const FIELD_IMAGE_WIDTH_FRAC = 0.991;
+  // Ogni sport ha la propria calibrazione di prospettiva perché ogni immagine di sfondo
+  // ha un trapezio diverso (vedi PERSPECTIVE_BY_SPORT sotto). Le costanti "calcio" sono state
+  // ricalibrate (2026-07-28) per campo_Trasp.PNG e riadattate (2026-08-25) per
+  // lavagna-calcio.png, che ha un trapezio molto più leggero (quasi rettangolare).
+  let currentSport = 'calcio';
+
+  const PERSPECTIVE_BY_SPORT = {
+    // lavagna-calcio.png: campo quasi rettangolare, leggerissimo effetto prospettico.
+    calcio:  { topInset: 0.08, yCurve: 0.99, widthFrac: 0.98 },
+    // Placeholder vettoriale (nessuna immagine ancora fornita): nessuna prospettiva,
+    // il campo è disegnato piatto dall'alto (vedi drawFieldVectorBasket/Volley).
+    basket:  { topInset: 0,    yCurve: 1,    widthFrac: 1 },
+    volley:  { topInset: 0,    yCurve: 1,    widthFrac: 1 }
+  };
+
+  function getPerspectiveParams() {
+    return PERSPECTIVE_BY_SPORT[currentSport] || PERSPECTIVE_BY_SPORT.calcio;
+  }
 
   function perspective(x, y, w, h) {
+    const { topInset, yCurve, widthFrac } = getPerspectiveParams();
     const yNorm = y / 100;
-    const yCurved = Math.pow(yNorm, PERSPECTIVE_Y_CURVE);
+    const yCurved = Math.pow(yNorm, yCurve);
     const py = yCurved * h;
-    const widthScale = (1 - PERSPECTIVE_TOP_INSET) + PERSPECTIVE_TOP_INSET * yCurved;
-    const centerOffset = (50 - x) * widthScale * FIELD_IMAGE_WIDTH_FRAC;
+    const widthScale = (1 - topInset) + topInset * yCurved;
+    const centerOffset = (50 - x) * widthScale * widthFrac;
     const px = w / 2 - centerOffset * (w / 100);
     return { px, py };
   }
 
   function inversePerspective(px, py, w, h) {
+    const { topInset, yCurve, widthFrac } = getPerspectiveParams();
     const yCurved = Math.max(0, Math.min(1, py / h));
-    const yNorm = Math.pow(yCurved, 1 / PERSPECTIVE_Y_CURVE);
+    const yNorm = Math.pow(yCurved, 1 / yCurve);
     const y = yNorm * 100;
-    const widthScale = (1 - PERSPECTIVE_TOP_INSET) + PERSPECTIVE_TOP_INSET * yCurved;
-    const centerOffset = (w / 2 - px) / (w / 100) / widthScale / FIELD_IMAGE_WIDTH_FRAC;
+    const widthScale = (1 - topInset) + topInset * yCurved;
+    const centerOffset = (w / 2 - px) / (w / 100) / widthScale / widthFrac;
     const x = 50 - centerOffset;
     return { x, y };
   }
@@ -42,30 +54,176 @@
   }
 
   // Immagine di sfondo del campo (fotografia/render con trasparenza fuori dal trapezio).
-  // Precaricata una sola volta a livello di modulo; drawField la disegna quando è pronta,
-  // altrimenti ricade sul disegno vettoriale (drawFieldVector) così il canvas non resta mai vuoto.
-  const fieldImage = new Image();
-  let fieldImageReady = false;
+  // Una immagine per sport, precaricata on-demand quando si passa a quello sport (vedi
+  // setSport). drawField disegna l'immagine dello sport corrente quando è pronta,
+  // altrimenti ricade sul disegno vettoriale (drawFieldVector*) così il canvas non
+  // resta mai vuoto. Basket e Volley non hanno ancora un'immagine reale: restano senza
+  // src e usano sempre il fallback vettoriale colorato.
+  const FIELD_IMAGE_SRC = {
+    calcio: 'lavagna-calcio.png'
+    // basket: null,  // TODO: aggiungere quando disponibile
+    // volley: null   // TODO: aggiungere quando disponibile
+  };
+
+  const fieldImages = {}; // sport -> { img: Image, ready: bool }
   let onFieldImageReady = null; // callback opzionale impostata da initUI per un redraw immediato
-  fieldImage.onload = function () {
-    fieldImageReady = true;
-    if (typeof onFieldImageReady === 'function') onFieldImageReady();
-  };
-  fieldImage.onerror = function () {
-    console.warn('Lavagna Tattica: impossibile caricare campo_Trasp.PNG, uso il disegno vettoriale come fallback.');
-  };
-  fieldImage.src = 'campo_Trasp.PNG';
+
+  function preloadFieldImage(sport) {
+    if (fieldImages[sport] || !FIELD_IMAGE_SRC[sport]) return;
+    const entry = { img: new Image(), ready: false };
+    entry.img.onload = function () {
+      entry.ready = true;
+      if (typeof onFieldImageReady === 'function') onFieldImageReady();
+    };
+    entry.img.onerror = function () {
+      console.warn('Lavagna Tattica: impossibile caricare ' + FIELD_IMAGE_SRC[sport] + ', uso il disegno vettoriale come fallback.');
+    };
+    entry.img.src = FIELD_IMAGE_SRC[sport];
+    fieldImages[sport] = entry;
+  }
+  preloadFieldImage('calcio');
+
+  function setSport(sport) {
+    if (!PERSPECTIVE_BY_SPORT[sport]) return;
+    currentSport = sport;
+    preloadFieldImage(sport);
+  }
 
   function drawField(ctx, w, h) {
     ctx.clearRect(0, 0, w, h);
-    if (fieldImageReady) {
-      ctx.drawImage(fieldImage, 0, 0, w, h);
+    const entry = fieldImages[currentSport];
+    if (entry && entry.ready) {
+      ctx.drawImage(entry.img, 0, 0, w, h);
       return;
     }
     drawFieldVector(ctx, w, h);
   }
 
   function drawFieldVector(ctx, w, h) {
+    if (currentSport === 'basket') { drawFieldVectorBasket(ctx, w, h); return; }
+    if (currentSport === 'volley') { drawFieldVectorVolley(ctx, w, h); return; }
+    drawFieldVectorCalcio(ctx, w, h);
+  }
+
+  // Campo da basket (mezzo campo, vista dall'alto): placeholder vettoriale in attesa
+  // dell'immagine reale (vedi FIELD_IMAGE_SRC). Nessuna prospettiva (topInset 0).
+  function drawFieldVectorBasket(ctx, w, h) {
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#c2410c';
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.save();
+    ctx.strokeStyle = '#fed7aa';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+
+    const corners = [perspective(0, 0, w, h), perspective(100, 0, w, h), perspective(100, 100, w, h), perspective(0, 100, w, h)];
+    ctx.beginPath();
+    ctx.moveTo(corners[0].px, corners[0].py);
+    for (let i = 1; i < corners.length; i++) ctx.lineTo(corners[i].px, corners[i].py);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Cerchio di centrocampo
+    {
+      const c = perspective(50, 0, w, h);
+      const r = perspective(50 + 12, 0, w, h);
+      const radius = Math.hypot(r.px - c.px, r.py - c.py);
+      ctx.beginPath();
+      ctx.arc(c.px, c.py, radius, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Area (pitturato) sotto canestro: rettangolo x 30.5-69.5, y 100-81.7 + tiro libero
+    {
+      const pts = [perspective(30.5, 81.7, w, h), perspective(69.5, 81.7, w, h), perspective(69.5, 100, w, h), perspective(30.5, 100, w, h)];
+      polyPath(ctx, pts);
+      ctx.stroke();
+    }
+    {
+      const c = perspective(50, 81.7, w, h);
+      const r = perspective(50 + 9, 81.7, w, h);
+      const radius = Math.hypot(r.px - c.px, r.py - c.py);
+      ctx.beginPath();
+      ctx.arc(c.px, c.py, radius, Math.PI, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Linea del tiro da 3 punti (arco semplificato)
+    {
+      const centerX = 50, centerY = 100, radius = 45;
+      ctx.beginPath();
+      const steps = 40;
+      for (let i = 0; i <= steps; i++) {
+        const angle = Math.PI * (i / steps);
+        const x = centerX - radius * Math.cos(angle);
+        const y = centerY - radius * Math.sin(angle);
+        const p = perspective(Math.max(2, Math.min(98, x)), Math.max(0, y), w, h);
+        if (i === 0) ctx.moveTo(p.px, p.py);
+        else ctx.lineTo(p.px, p.py);
+      }
+      ctx.stroke();
+    }
+
+    // Canestro stilizzato
+    {
+      const p = perspective(50, 100, w, h);
+      ctx.fillStyle = '#fed7aa';
+      ctx.beginPath();
+      ctx.arc(p.px, p.py - 10, 8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  // Campo da pallavolo (mezzo campo, vista dall'alto): placeholder vettoriale in attesa
+  // dell'immagine reale (vedi FIELD_IMAGE_SRC). Nessuna prospettiva (topInset 0).
+  function drawFieldVectorVolley(ctx, w, h) {
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#1d4ed8';
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.save();
+    ctx.strokeStyle = '#dbeafe';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+
+    const corners = [perspective(0, 0, w, h), perspective(100, 0, w, h), perspective(100, 100, w, h), perspective(0, 100, w, h)];
+    ctx.beginPath();
+    ctx.moveTo(corners[0].px, corners[0].py);
+    for (let i = 1; i < corners.length; i++) ctx.lineTo(corners[i].px, corners[i].py);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Linea dei 3 metri (zona d'attacco): a 1/3 dal fondo verso il centro rete
+    {
+      const p1 = perspective(0, 66.7, w, h);
+      const p2 = perspective(100, 66.7, w, h);
+      ctx.beginPath();
+      ctx.moveTo(p1.px, p1.py);
+      ctx.lineTo(p2.px, p2.py);
+      ctx.stroke();
+    }
+
+    // Rete a bordo campo (y=0, lato centrocampo)
+    {
+      const p1 = perspective(0, 0, w, h);
+      const p2 = perspective(100, 0, w, h);
+      ctx.save();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#fef9c3';
+      ctx.beginPath();
+      ctx.moveTo(p1.px, p1.py);
+      ctx.lineTo(p2.px, p2.py);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    ctx.restore();
+  }
+
+  function drawFieldVectorCalcio(ctx, w, h) {
     ctx.clearRect(0, 0, w, h);
 
     // --- Sfondo a strisce orizzontali alternate ---
@@ -749,7 +907,38 @@
     // Se il primo redraw avviene prima che l'immagine di sfondo sia pronta (probabile, dato
     // il caricamento asincrono), ridisegna appena arriva così il campo non resta vettoriale.
     onFieldImageReady = () => interaction.redraw();
-    if (fieldImageReady) interaction.redraw();
+    const initialEntry = fieldImages[currentSport];
+    if (initialEntry && initialEntry.ready) interaction.redraw();
+
+    // Pulsanti Calcio/Basket/Volley: cambiano lo sport corrente (e quindi l'immagine di
+    // sfondo + calibrazione prospettiva, vedi setSport) senza toccare pedine/frecce/pallone
+    // già posizionati sullo schema in corso. Stesso schema colore pieno/outline usato per i
+    // pulsanti analoghi in Modulo Formazione (vedi switchField in index.html).
+    const sportBtns = root.querySelectorAll('[data-lavagna-sport]');
+    const SPORT_COLOR = { calcio: 'success', basket: 'warning', volley: 'info' };
+    function aggiornaSportBtns(sport) {
+      sportBtns.forEach(b => {
+        const s = b.getAttribute('data-lavagna-sport');
+        const color = SPORT_COLOR[s] || 'secondary';
+        b.classList.toggle('active', s === sport);
+        b.classList.toggle('btn-' + color, s === sport);
+        b.classList.toggle('btn-outline-' + color, s !== sport);
+      });
+    }
+    sportBtns.forEach(el => {
+      el.addEventListener('click', () => {
+        const sport = el.getAttribute('data-lavagna-sport');
+        setSport(sport);
+        aggiornaSportBtns(sport);
+        interaction.redraw();
+        localStorage.setItem('lavagnaSport', sport);
+      });
+    });
+    const sportSalvato = localStorage.getItem('lavagnaSport');
+    if (sportSalvato && PERSPECTIVE_BY_SPORT[sportSalvato] && sportSalvato !== currentSport) {
+      setSport(sportSalvato);
+    }
+    aggiornaSportBtns(currentSport);
 
     root.querySelectorAll('[data-pedina-tool]').forEach(el => {
       el.addEventListener('click', () => {
@@ -856,7 +1045,7 @@
   window.LavagnaTattica = {
     perspective, inversePerspective, drawField, drawAll,
     state, nextId, findPedinaAt, findFrecciaAt, pointToSegmentDistance,
-    attachInteraction, initUI,
+    attachInteraction, initUI, setSport,
     nuovoSchema, serializzaSchemaCorrente, caricaSchema,
     salvaSchemaInLista, rinominaSchemaInLista, eliminaSchemaDaLista
   };
