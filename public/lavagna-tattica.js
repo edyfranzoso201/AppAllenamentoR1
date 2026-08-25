@@ -6,16 +6,20 @@
   // "currentSport" è in realtà una CHIAVE DI VARIANTE, non solo lo sport: per il calcio
   // esistono due varianti selezionabili (vedi sotto-selettore in index.html) — 'calcio'
   // (= 'Classico', DEFAULT, campo_Trasp.PNG con trapezio pronunciato, costanti ricalibrate
-  // 2026-07-28) e 'calcio_nuovo' ('Nuovo', lavagna-calcio.png aggiunta 2026-08-25, campo
-  // quasi rettangolare). Basket e Volley hanno una sola variante ciascuno per ora.
+  // 2026-07-28) e 'calcio_nuovo' ('Nuovo', lavagna-calcio.png = "Calcio Prospettiva.jpg",
+  // sostituita 2026-08-25, campo isometrico con trapezio simile alla variante Classica).
+  // Basket e Volley hanno una sola variante ciascuno per ora.
   let currentSport = 'calcio';
 
   const PERSPECTIVE_BY_SPORT = {
     // campo_Trasp.PNG: trapezio pronunciato (misurato via analisi pixel: widthFrac 0.65 in
     // alto -> 0.99 in basso, fit quasi lineare INSET=0.34/CURVE=0.99). Resta il DEFAULT.
     calcio:        { topInset: 0.34, yCurve: 0.99, widthFrac: 0.991 },
-    // lavagna-calcio.png: campo quasi rettangolare, leggerissimo effetto prospettico.
-    calcio_nuovo:  { topInset: 0.08, yCurve: 0.99, widthFrac: 0.98 },
+    // lavagna-calcio.png (sostituita 2026-08-25 con "Calcio Prospettiva.jpg", isometrica):
+    // trapezio misurato via analisi pixel su centrocampo (y=87.5px, width=1350px) e linea di
+    // porta (y=651px, width=1864px) su immagine 1951x718 -> INSET=0.34/FRAC=0.987, stesso
+    // ordine di grandezza della variante Classica (fit quasi lineare, stesso yCurve).
+    calcio_nuovo:  { topInset: 0.34, yCurve: 0.99, widthFrac: 0.987 },
     // Placeholder vettoriale (nessuna immagine ancora fornita): nessuna prospettiva,
     // il campo è disegnato piatto dall'alto (vedi drawFieldVectorBasket/Volley).
     basket:        { topInset: 0,    yCurve: 1,    widthFrac: 1 },
@@ -27,10 +31,10 @@
   // suo rapporto nativo e la prospettiva fotografata nell'immagine appare deformata/appiattita
   // (visto in produzione 2026-08-25: canvas 1100x722 su un'immagine 1520x1400 schiacciava
   // il campo rendendolo senza trapezio). campo_Trasp.PNG è 2109x817 -> 1100x722.
-  // lavagna-calcio.png è 1520x1400 -> 1100x1013.
+  // lavagna-calcio.png (Calcio Prospettiva.jpg) è 1951x718 -> 1100x405.
   const CANVAS_SIZE_BY_SPORT = {
     calcio:       { w: 1100, h: 722 },
-    calcio_nuovo: { w: 1100, h: 1013 },
+    calcio_nuovo: { w: 1100, h: 405 },
     basket:       { w: 1100, h: 722 },
     volley:       { w: 1100, h: 722 }
   };
