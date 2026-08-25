@@ -34,20 +34,24 @@
     volley:        { topInset: 0.3432, yCurve: 0.99, widthFrac: 0.9916 }
   };
 
-  // Risoluzione interna del canvas per variante: DEVE rispecchiare il rapporto d'aspetto
-  // reale dell'immagine di sfondo, altrimenti drawImage(img, 0, 0, w, h) la stira fuori dal
-  // suo rapporto nativo e la prospettiva fotografata nell'immagine appare deformata/appiattita
-  // (visto in produzione 2026-08-25: canvas 1100x722 su un'immagine 1520x1400 schiacciava
-  // il campo rendendolo senza trapezio). campo_Trasp.PNG è 2109x817 -> 1100x722.
-  // lavagna-calcio.png (Calcio Prospettiva.jpg) è 1951x718 -> 1100x405.
-  // lavagna-basket.png (Basket Prospettiva.jpg) è 1926x792 -> 1100x452.
-  // lavagna-volley.png (Pallavolo Prospettiva.jpg, ritagliata per togliere la rete) è
-  // 1819x739 -> 1100x447.
+  // Risoluzione interna del canvas per variante: la BASE deve rispecchiare il rapporto
+  // d'aspetto reale dell'immagine di sfondo, altrimenti drawImage(img, 0, 0, w, h) la stira
+  // fuori dal suo rapporto nativo e la prospettiva fotografata nell'immagine appare
+  // deformata/appiattita (visto in produzione 2026-08-25: canvas 1100x722 su un'immagine
+  // 1520x1400 schiacciava il campo rendendolo senza trapezio). Rapporti nativi: campo_Trasp.PNG
+  // 2109x817 (1100x722), lavagna-calcio.png 1951x718 (1100x405), lavagna-basket.png 1926x792
+  // (1100x452), lavagna-volley.png 1819x739 (1100x447 dopo ritaglio rete).
+  // Su richiesta esplicita dell'utente 2026-08-25 ("aumenta l'altezza in Y, il campo è troppo
+  // schiacciato") l'altezza di calcio/basket/volley è stata poi aumentata del 20% oltre il
+  // rapporto nativo: è uno STIRAMENTO VERTICALE VOLUTO (aumenta la profondità percepita),
+  // diverso dal bug del 2026-08-25 sopra citato (lì lo stiramento era involontario/eccessivo
+  // e appiattiva il trapezio anziché allungarlo). calcio_nuovo non è stato toccato (non
+  // richiesto, resta variante secondaria dietro sotto-selettore).
   const CANVAS_SIZE_BY_SPORT = {
-    calcio:       { w: 1100, h: 722 },
+    calcio:       { w: 1100, h: 866 },
     calcio_nuovo: { w: 1100, h: 405 },
-    basket:       { w: 1100, h: 452 },
-    volley:       { w: 1100, h: 447 }
+    basket:       { w: 1100, h: 542 },
+    volley:       { w: 1100, h: 536 }
   };
 
   function getPerspectiveParams() {
