@@ -8,7 +8,9 @@
   // (= 'Classico', DEFAULT, campo_Trasp.PNG con trapezio pronunciato, costanti ricalibrate
   // 2026-07-28) e 'calcio_nuovo' ('Nuovo', lavagna-calcio.png = "Calcio Prospettiva.jpg",
   // sostituita 2026-08-25, campo isometrico con trapezio simile alla variante Classica).
-  // Basket e Volley hanno una sola variante ciascuno per ora.
+  // Basket e Volley hanno una sola variante ciascuno: foto reali in prospettiva
+  // (lavagna-basket.png / lavagna-volley.png), sostituite al placeholder vettoriale
+  // il 2026-08-25.
   let currentSport = 'calcio';
 
   const PERSPECTIVE_BY_SPORT = {
@@ -20,10 +22,16 @@
     // porta (y=651px, width=1864px) su immagine 1951x718 -> INSET=0.34/FRAC=0.987, stesso
     // ordine di grandezza della variante Classica (fit quasi lineare, stesso yCurve).
     calcio_nuovo:  { topInset: 0.34, yCurve: 0.99, widthFrac: 0.987 },
-    // Placeholder vettoriale (nessuna immagine ancora fornita): nessuna prospettiva,
-    // il campo è disegnato piatto dall'alto (vedi drawFieldVectorBasket/Volley).
-    basket:        { topInset: 0,    yCurve: 1,    widthFrac: 1 },
-    volley:        { topInset: 0,    yCurve: 1,    widthFrac: 1 }
+    // lavagna-basket.png ("Basket Prospettiva.jpg", sostituito 2026-08-25): trapezio
+    // misurato via analisi pixel su bordo campo in alto (y=42px, width=1236px) e in
+    // basso (y=752px, width=1895px) su immagine 1926x792 -> INSET=0.3805/FRAC=1.0032.
+    basket:        { topInset: 0.3805, yCurve: 0.99, widthFrac: 1.0032 },
+    // lavagna-volley.png ("Pallavolo Prospettiva.jpg", sostituito 2026-08-25): immagine
+    // ORIGINALE ritagliata (tolta la rete sopra il campo, che altrimenti rompeva
+    // l'assunzione py=0..h = campo intero) a partire da y=395px -> 1819x739. Trapezio
+    // misurato sul ritaglio: bordo campo in alto (y=10px, width=1193px) e in basso
+    // (y=700px, width=1771px) -> INSET=0.3432/FRAC=0.9916.
+    volley:        { topInset: 0.3432, yCurve: 0.99, widthFrac: 0.9916 }
   };
 
   // Risoluzione interna del canvas per variante: DEVE rispecchiare il rapporto d'aspetto
@@ -32,11 +40,14 @@
   // (visto in produzione 2026-08-25: canvas 1100x722 su un'immagine 1520x1400 schiacciava
   // il campo rendendolo senza trapezio). campo_Trasp.PNG è 2109x817 -> 1100x722.
   // lavagna-calcio.png (Calcio Prospettiva.jpg) è 1951x718 -> 1100x405.
+  // lavagna-basket.png (Basket Prospettiva.jpg) è 1926x792 -> 1100x452.
+  // lavagna-volley.png (Pallavolo Prospettiva.jpg, ritagliata per togliere la rete) è
+  // 1819x739 -> 1100x447.
   const CANVAS_SIZE_BY_SPORT = {
     calcio:       { w: 1100, h: 722 },
     calcio_nuovo: { w: 1100, h: 405 },
-    basket:       { w: 1100, h: 722 },
-    volley:       { w: 1100, h: 722 }
+    basket:       { w: 1100, h: 452 },
+    volley:       { w: 1100, h: 447 }
   };
 
   function getPerspectiveParams() {
@@ -78,13 +89,12 @@
   // Una immagine per variante, precaricata on-demand quando si passa a quella variante (vedi
   // setSport). drawField disegna l'immagine della variante corrente quando è pronta,
   // altrimenti ricade sul disegno vettoriale (drawFieldVector*) così il canvas non
-  // resta mai vuoto. Basket e Volley non hanno ancora un'immagine reale: restano senza
-  // src e usano sempre il fallback vettoriale colorato.
+  // resta mai vuoto (fallback usato solo nel breve istante di caricamento immagine).
   const FIELD_IMAGE_SRC = {
-    calcio: 'campo_Trasp.PNG',        // Classico, DEFAULT
-    calcio_nuovo: 'lavagna-calcio.png' // Nuovo, richiamabile dal sotto-selettore
-    // basket: null,  // TODO: aggiungere quando disponibile
-    // volley: null   // TODO: aggiungere quando disponibile
+    calcio: 'campo_Trasp.PNG',         // Classico, DEFAULT
+    calcio_nuovo: 'lavagna-calcio.png', // Nuovo, richiamabile dal sotto-selettore
+    basket: 'lavagna-basket.png',       // "Basket Prospettiva.jpg", sostituito 2026-08-25
+    volley: 'lavagna-volley.png'        // "Pallavolo Prospettiva.jpg", sostituito 2026-08-25
   };
 
   const fieldImages = {}; // variante -> { img: Image, ready: bool }
