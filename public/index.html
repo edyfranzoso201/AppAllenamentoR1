@@ -1457,12 +1457,13 @@
                 </div>
             </div>
             <div class="row">
-                <!-- Colonna sinistra: composizione rosa (Atleti/Staff) in un unico grafico a torta -->
-                <div class="col-lg-2 col-md-4 mb-4">
+                <!-- Colonna sinistra: composizione rosa (Atleti/Staff) in un unico grafico a torta.
+                     Larghezza pari alla col-lg-3 originale (25%) per non lasciare spazio vuoto in fondo alla riga. -->
+                <div class="col-md-4 mb-4" style="flex:0 0 auto;width:25%;min-width:240px;">
                     <div class="card summary-card h-100" style="--stripe:var(--sm-brand);">
                         <div class="card-body py-2 px-3 d-flex flex-column">
                             <h6 class="card-title text-muted mb-2" style="font-size:0.72rem;">COMPOSIZIONE ROSA</h6>
-                            <div style="position:relative;height:110px;">
+                            <div style="position:relative;height:150px;">
                                 <canvas id="home-roster-chart"></canvas>
                             </div>
                             <div id="home-roster-legend" class="d-flex justify-content-center gap-3 mt-2" style="font-size:0.78rem;">
@@ -1491,7 +1492,9 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-4 col-md-6 mb-4">
+                <!-- Azioni Rapide: espansa da 33.3% (col-lg-4) a 35% per compensare il ridimensionamento
+                     delle altre tre colonne (25%+20%+20%+35%=100%) ed eliminare lo spazio vuoto a destra. -->
+                <div class="col-md-6 mb-4" style="flex:0 0 auto;width:35%;min-width:280px;">
                     <div class="card summary-card h-100">
                         <div class="card-body" id="home-quick-actions">
                             <h5 class="card-title text-muted">AZIONI RAPIDE</h5>
