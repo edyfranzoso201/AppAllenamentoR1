@@ -1345,6 +1345,43 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (elements.homeStaffBreakdown) {
             elements.homeStaffBreakdown.innerHTML = '<span style="color:var(--bs-secondary)">Nessuno staff</span>';
         }
+
+        // Grafico a torta Composizione Rosa (Atleti/Staff), sostituisce i due
+        // box numerici impilati. Stesso pattern di homeMulteChart (Chart.js già
+        // caricato globalmente in pagina).
+        const rosterCanvas = document.getElementById('home-roster-chart');
+        if (rosterCanvas && typeof Chart !== 'undefined') {
+            if (window._homeRosterChartInst) { window._homeRosterChartInst.destroy(); window._homeRosterChartInst = null; }
+            const rosterCounts = [officialAthletes.length, staffMembers.length];
+            const rosterHasData = rosterCounts[0] + rosterCounts[1] > 0;
+            window._homeRosterChartInst = new Chart(rosterCanvas.getContext('2d'), {
+                type: 'pie',
+                data: {
+                    labels: ['Atleti', 'Staff'],
+                    datasets: [{
+                        data: rosterHasData ? rosterCounts : [1, 0],
+                        backgroundColor: ['#22c55e', '#38bdf8'],
+                        borderColor: 'transparent'
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            enabled: rosterHasData,
+                            callbacks: {
+                                label: function(ctx) {
+                                    return ctx.label + ': ' + ctx.raw;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
         const today = toLocalDateISO(new Date());
         const futureSessions = Object.entries(trainingSessions).filter(([date]) => date >= today).sort(([dateA], [dateB]) => new Date(dateA) - new Date(dateB)).flatMap(([date, sessions]) => sessions.map(s => ({...s, date})));
         if (futureSessions.length > 0) {

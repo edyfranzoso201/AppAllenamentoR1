@@ -1457,24 +1457,24 @@
                 </div>
             </div>
             <div class="row">
-                <!-- Colonna sinistra: Atleti + Staff impilati -->
-                <div class="col-lg-2 col-md-4 mb-4 d-flex flex-column gap-3">
-                    <div class="card summary-card" style="--stripe:var(--sm-brand);">
-                        <div class="card-body py-2 px-3">
-                            <h6 class="card-title text-muted mb-1" style="font-size:0.72rem;">ATLETI IN ROSA</h6>
-                            <p class="mb-0" style="font-size:2.2rem;font-weight:700;line-height:1;" id="home-total-athletes">0</p>
-                        </div>
-                    </div>
-                    <div class="card summary-card" style="--stripe:var(--sm-info);">
-                        <div class="card-body py-2 px-3" id="home-staff-box">
-                            <h6 class="card-title text-muted mb-1" style="font-size:0.72rem;">STAFF TECNICO</h6>
-                            <p class="mb-1" style="font-size:2.2rem;font-weight:700;line-height:1;" id="home-total-staff">0</p>
-                            <div id="home-staff-breakdown" style="font-size:0.75rem;color:var(--bs-secondary);line-height:1.7;"></div>
+                <!-- Colonna sinistra: composizione rosa (Atleti/Staff) in un unico grafico a torta -->
+                <div class="col-lg-2 col-md-4 mb-4">
+                    <div class="card summary-card h-100" style="--stripe:var(--sm-brand);">
+                        <div class="card-body py-2 px-3 d-flex flex-column">
+                            <h6 class="card-title text-muted mb-2" style="font-size:0.72rem;">COMPOSIZIONE ROSA</h6>
+                            <div style="position:relative;height:110px;">
+                                <canvas id="home-roster-chart"></canvas>
+                            </div>
+                            <div id="home-roster-legend" class="d-flex justify-content-center gap-3 mt-2" style="font-size:0.78rem;">
+                                <span style="color:var(--sm-brand);"><i class="bi bi-circle-fill" style="font-size:0.6rem;"></i> Atleti: <strong id="home-total-athletes" style="color:var(--sm-text);">0</strong></span>
+                                <span style="color:var(--sm-info);"><i class="bi bi-circle-fill" style="font-size:0.6rem;"></i> Staff: <strong id="home-total-staff" style="color:var(--sm-text);">0</strong></span>
+                            </div>
+                            <div id="home-staff-breakdown" style="font-size:0.72rem;color:var(--bs-secondary);line-height:1.6;text-align:center;margin-top:4px;"></div>
                         </div>
                     </div>
                 </div>
-                <!-- Prossima sessione -->
-                <div class="col-lg-3 col-md-4 mb-4">
+                <!-- Prossima sessione (ridotta in X del 20% su richiesta utente 2026-08-26: da col-lg-3 (25% larghezza) a 20% (25% * 0.8)) -->
+                <div class="col-md-4 mb-4" style="flex:0 0 auto;width:20%;min-width:220px;">
                     <div class="card summary-card h-100">
                         <div class="card-body" id="home-next-session">
                             <h5 class="card-title text-muted">PROSSIMA SESSIONE</h5>
@@ -1482,8 +1482,8 @@
                         </div>
                     </div>
                 </div>
-                <!-- Top performer -->
-                <div class="col-lg-3 col-md-4 mb-4">
+                <!-- Top performer (ridotto in X del 20% su richiesta utente 2026-08-26: da col-lg-3 (25% larghezza) a 20% (25% * 0.8)) -->
+                <div class="col-md-4 mb-4" style="flex:0 0 auto;width:20%;min-width:220px;">
                     <div class="card summary-card h-100">
                         <div class="card-body" id="home-top-performer">
                             <h5 class="card-title text-muted">TOP PERFORMER MENSILE</h5>
