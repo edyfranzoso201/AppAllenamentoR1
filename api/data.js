@@ -806,25 +806,15 @@ function sanitizeInvItem(raw) {
   return item;
 }
 
-// Le foto (inventoryCatPhotos) sono per società, condivise fra tutte le annate.
-// Prima di ripulirle su un delete-kit/delete-cat verifica che nessun'ALTRA annata
-// della stessa società usi ancora quel kit/categoria (altrimenti si perderebbero
-// foto tuttora agganciate a voci esistenti in un'altra annata).
-async function kitOrCatStillUsed(sid, currentAnnataId, matchFn) {
-  const allAnnate = (await kv.get('annate:list')) || [];
-  const otherAnnate = allAnnate.filter(a => (!a.societyId || a.societyId === sid) && a.id !== currentAnnataId);
-  for (const a of otherAnnate) {
-    const items = await kv.get(`society:${sid}:inventory:${a.id}`);
-    if (Array.isArray(items) && items.some(matchFn)) return true;
-  }
-  return false;
-}
-
 if (req.query?.action === 'inventory') {
   if (!session.isAuthenticated) return res.status(401).json({ success: false, message: 'Non autorizzato' });
   const sid    = session.societyId || '_default';
   const catKey = `society:${sid}:inventoryCategories`;
-  const photosKey = `society:${sid}:inventoryCatPhotos`; // { "<categoria>": ["link1",...max5] }
+  // Le foto sono per ANNATA (non più per società): due annate diverse possono avere
+  // un kit/categoria con lo stesso nome ma foto diverse. Bug segnalato dall'utente:
+  // prima la chiave non includeva annataId e le foto "sparivano" perché finivano
+  // condivise/sovrascritte fra annate con nomi coincidenti.
+  const photosKeyFor = (aid) => `society:${sid}:inventoryCatPhotos:${aid}`; // { "<categoria>": ["link1",...max5] }
 
   // save-categories è per-società (non per-annata): gestito prima del check annataId
   if (req.method === 'POST' && String((req.body && req.body.act) || '') === 'save-categories') {
@@ -836,8 +826,15 @@ if (req.query?.action === 'inventory') {
     return res.status(200).json({ success: true, categories: [...INV_DEFAULT_CATS, ...cats] });
   }
 
+  // Tutte le altre operazioni richiedono annataId (incluso save-cat-photos, ora per-annata)
+  if (!annataId || !isValidId(annataId)) return res.status(400).json({ success: false, message: 'annataId mancante' });
+  const invKey = `society:${sid}:inventory:${annataId}`;
+  const photosKey = photosKeyFor(annataId);
+
+  const wlKey = `society:${sid}:wishlist:${annataId}`;
+
   // save-cat-photos: fino a 5 link foto (Google Drive o URL http) per categoria O per kit.
-  // Per società, non per annata (come le categorie). Solo admin/dirigente.
+  // Per annata (come l'inventario stesso). Solo admin/dirigente.
   // Le foto di un kit sono salvate nella stessa mappa sotto la chiave "kit:<nomeKit>".
   if (req.method === 'POST' && String((req.body && req.body.act) || '') === 'save-cat-photos') {
     if (!canInventoryCat(session.role)) return res.status(403).json({ success: false, message: 'Solo admin o dirigente' });
@@ -859,12 +856,6 @@ if (req.query?.action === 'inventory') {
     await kv.set(photosKey, map);
     return res.status(200).json({ success: true, categoria, kit: kitName, photos });
   }
-
-  // Tutte le altre operazioni richiedono annataId
-  if (!annataId || !isValidId(annataId)) return res.status(400).json({ success: false, message: 'annataId mancante' });
-  const invKey = `society:${sid}:inventory:${annataId}`;
-
-  const wlKey = `society:${sid}:wishlist:${annataId}`;
 
   if (req.method === 'GET') {
     const [items, customCats, wishlist, catPhotos] = await Promise.all([kv.get(invKey), kv.get(catKey), kv.get(wlKey), kv.get(photosKey)]);
@@ -919,6 +910,7 @@ if (req.query?.action === 'inventory') {
       // Se il client ha inviato newKitName diverso da kitName, aggiorna _kitName su tutti i nuovi item
       // e MIGRA le foto associate al kit (altrimenti restano orfane sotto il nome vecchio,
       // invisibili dall'UI che cerca sempre col nome corrente — bug segnalato dall'utente).
+      // Le foto sono per questa stessa annata (photosKey già calcolata sopra).
       if (newKitName && newKitName !== kitName) {
         sanitized.forEach(it => { if (it._kitName) it._kitName = newKitName; });
         if (kitName) {
@@ -1014,14 +1006,9 @@ if (req.query?.action === 'inventory') {
       const before = items.length;
       items = items.filter(i => i._kitName !== kitName && i._ktName !== kitName);
       await kv.set(invKey, items);
-      // Le foto (inventoryCatPhotos) sono per società, condivise fra tutte le annate:
-      // rimuovile SOLO se nessun'altra annata usa ancora un kit con questo nome,
-      // altrimenti resterebbero senza foto voci di kit tuttora esistenti altrove.
-      const stillUsedElsewhere = await kitOrCatStillUsed(sid, annataId, i => i._kitName === kitName || i._ktName === kitName);
-      if (!stillUsedElsewhere) {
-        const photosMap = (await kv.get(photosKey)) || {};
-        if (photosMap[`kit:${kitName}`]) { delete photosMap[`kit:${kitName}`]; await kv.set(photosKey, photosMap); }
-      }
+      // Le foto sono per-annata: rimuovile senza dover controllare altre annate.
+      const photosMap = (await kv.get(photosKey)) || {};
+      if (photosMap[`kit:${kitName}`]) { delete photosMap[`kit:${kitName}`]; await kv.set(photosKey, photosMap); }
       return res.status(200).json({ success: true, deleted: before - items.length });
     }
 
@@ -1033,13 +1020,9 @@ if (req.query?.action === 'inventory') {
       const before = items.length;
       items = items.filter(i => (i.categoria || 'Altro') !== categoria);
       await kv.set(invKey, items);
-      // Stessa cautela di delete-kit: non toccare le foto se la categoria è ancora
-      // usata in un'altra annata della stessa società.
-      const stillUsedElsewhere = await kitOrCatStillUsed(sid, annataId, i => (i.categoria || 'Altro') === categoria);
-      if (!stillUsedElsewhere) {
-        const photosMap = (await kv.get(photosKey)) || {};
-        if (photosMap[categoria]) { delete photosMap[categoria]; await kv.set(photosKey, photosMap); }
-      }
+      // Le foto sono per-annata: rimuovile senza dover controllare altre annate.
+      const photosMap = (await kv.get(photosKey)) || {};
+      if (photosMap[categoria]) { delete photosMap[categoria]; await kv.set(photosKey, photosMap); }
       return res.status(200).json({ success: true, deleted: before - items.length });
     }
 
