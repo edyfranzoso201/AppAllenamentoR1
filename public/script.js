@@ -1354,13 +1354,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (window._homeRosterChartInst) { window._homeRosterChartInst.destroy(); window._homeRosterChartInst = null; }
             const rosterCounts = [officialAthletes.length, staffMembers.length];
             const rosterHasData = rosterCounts[0] + rosterCounts[1] > 0;
+            // Stessi colori della didascalia sotto il grafico (var(--sm-brand)/var(--sm-info)),
+            // letti a runtime cosi restano coerenti col tema chiaro/scuro attivo.
+            const rootStyles = getComputedStyle(document.documentElement);
+            const brandColor = rootStyles.getPropertyValue('--sm-brand').trim() || '#22c55e';
+            const infoColor = rootStyles.getPropertyValue('--sm-info').trim() || '#38bdf8';
             window._homeRosterChartInst = new Chart(rosterCanvas.getContext('2d'), {
                 type: 'pie',
                 data: {
                     labels: ['Atleti', 'Staff'],
                     datasets: [{
                         data: rosterHasData ? rosterCounts : [1, 0],
-                        backgroundColor: ['#22c55e', '#38bdf8'],
+                        backgroundColor: [brandColor, infoColor],
                         borderColor: 'transparent'
                     }]
                 },
