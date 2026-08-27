@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conferma prova gratuita — Sport Monitoring</title>
+<style>
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; background:#060f1e; color:#e2e8f0; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; }
+  .card { background:#0f1c33; border:1px solid #1e293b; border-radius:14px; padding:32px; max-width:400px; width:90%; }
+  h1 { font-size:1.3rem; margin:0 0 8px; color:#fff; }
+  p { color:#94a3b8; font-size:0.9rem; line-height:1.5; }
+  input { width:100%; box-sizing:border-box; padding:10px 12px; border-radius:8px; border:1px solid #334155; background:#0a1628; color:#e2e8f0; margin:8px 0; font-size:0.95rem; }
+  button { width:100%; padding:11px; border:none; border-radius:8px; background:#198754; color:#fff; font-weight:600; cursor:pointer; font-size:0.95rem; margin-top:8px; }
+  button:disabled { opacity:0.6; cursor:not-allowed; }
+  .msg { margin-top:12px; font-size:0.85rem; }
+  .msg.error { color:#ef4444; }
+  .msg.success { color:#10b981; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🎉 Conferma la tua prova gratuita</h1>
+  <div id="content">
+    <p>Verifica in corso...</p>
+  </div>
+</div>
+<script>
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+const API_BASE = '';
+const params = new URLSearchParams(location.search);
+const token = params.get('token') || '';
+const content = document.getElementById('content');
+
+async function init() {
+  if (!token) {
+    content.innerHTML = '<p class="msg error">Link non valido: token mancante.</p>';
+    return;
+  }
+  try {
+    const r = await fetch(`${API_BASE}/api/data?action=demo-verify&token=${encodeURIComponent(token)}`);
+    const d = await r.json();
+    if (!d.success) {
+      content.innerHTML = `<p class="msg error">${d.message}</p>`;
+      return;
+    }
+    content.innerHTML = `
+      <p>Società: <strong>${esc(d.societyName)}</strong><br>Email: <strong>${esc(d.email)}</strong></p>
+      <p>Scegli una password per accedere (minimo 8 caratteri):</p>
+      <input type="password" id="pwd" placeholder="Password" autocomplete="new-password">
+      <input type="password" id="pwd2" placeholder="Conferma password" autocomplete="new-password">
+      <button id="btn-activate">Attiva account</button>
+      <div id="msg" class="msg"></div>
+    `;
+    document.getElementById('btn-activate').addEventListener('click', activate);
+  } catch (e) {
+    content.innerHTML = '<p class="msg error">Errore di rete. Riprova.</p>';
+  }
+}
+
+async function activate() {
+  const pwd = document.getElementById('pwd').value;
+  const pwd2 = document.getElementById('pwd2').value;
+  const msg = document.getElementById('msg');
+  const btn = document.getElementById('btn-activate');
+  if (pwd.length < 8) { msg.textContent = 'La password deve avere almeno 8 caratteri'; msg.className = 'msg error'; return; }
+  if (pwd !== pwd2) { msg.textContent = 'Le password non coincidono'; msg.className = 'msg error'; return; }
+  btn.disabled = true; btn.textContent = 'Attivazione...';
+  try {
+    const r = await fetch(`${API_BASE}/api/data?action=demo-activate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, password: pwd })
+    });
+    const d = await r.json();
+    if (!d.success) {
+      msg.textContent = d.message; msg.className = 'msg error';
+      btn.disabled = false; btn.textContent = 'Attiva account';
+      return;
+    }
+    msg.textContent = 'Account attivato! Ti reindirizziamo al login...'; msg.className = 'msg success';
+    setTimeout(() => { location.href = '/index.html'; }, 2000);
+  } catch (e) {
+    msg.textContent = 'Errore di rete. Riprova.'; msg.className = 'msg error';
+    btn.disabled = false; btn.textContent = 'Attiva account';
+  }
+}
+
+init();
+</script>
+</body>
+</html>
