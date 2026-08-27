@@ -16,7 +16,10 @@ const SA_RL_WINDOW_SEC = 15 * 60; // durata blocco: 15 minuti
 
 // Confronto timing-safe di due stringhe. Ritorna false se lunghezze diverse
 // (senza rivelare la lunghezza tramite timing: si confronta comunque un buffer).
-function timingSafeStrEq(a, b) {
+// Esportata (oltre che usata internamente) perché altri moduli con lo stesso
+// bisogno — es. verifica di token HMAC one-time in api/data.js — la riusano
+// invece di reimplementare un confronto debole con `===`.
+export function timingSafeStrEq(a, b) {
   const ba = Buffer.from(String(a || ''));
   const bb = Buffer.from(String(b || ''));
   if (ba.length !== bb.length) return false;

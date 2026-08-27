@@ -2,7 +2,7 @@
 import { createClient } from '@vercel/kv';
 import { gzipSync } from 'zlib';
 import crypto from 'crypto';
-import { verifySuperAdmin } from './_sa-auth.js';
+import { verifySuperAdmin, timingSafeStrEq } from './_sa-auth.js';
 
 const kv = createClient({
 url: process.env.UPSTASH_KV_REST_API_URL || process.env.KV_REST_API_URL,
@@ -112,7 +112,7 @@ function verifyDemoToken(token) {
     if (parts.length !== 3) return { ok: false };
     const [email, ts, sig] = parts;
     const expected = crypto.createHmac('sha256', demoTokenSecret()).update(`demo:${email}:${ts}`).digest('hex').substring(0, 32);
-    if (sig !== expected) return { ok: false };
+    if (!timingSafeStrEq(sig, expected)) return { ok: false };
     const ageMs = Date.now() - Number(ts);
     if (!Number.isFinite(ageMs) || ageMs < 0 || ageMs > 48 * 60 * 60 * 1000) return { ok: false, expired: true };
     return { ok: true, email, ts: Number(ts) };
