@@ -36,12 +36,14 @@ function isDemoAccount() {
 
 | # | Elemento | File | Funzione |
 |---|----------|------|----------|
-| 1 | `#export-excel-btn` | index.html:1508 | Backup Excel (Quick Actions) |
-| 2 | `#restore-backup-btn` | index.html:1510 | Ripristina Backup (apre il file picker) |
-| 3 | label `for="import-file-input"` + `#import-file-input` | index.html:1757-1758 | Importa Dati |
-| 4 | `#export-excel` / `#export-pdf` | script.js:4015 (generati dinamicamente) | Export Excel/PDF di report |
-| 5 | `window.exportSeasonArchive(...)` bottoni | script.js:2000 | Backup singola stagione archiviata |
-| 6 | `window.exportSeasonArchiveObj()` bottone | script.js:2128 | Scarica archivio corrente |
+| 1 | `#export-all-data-btn` | index.html:1507 | Backup Dati (JSON completo) |
+| 2 | `#export-excel-btn` | index.html:1508 | Backup Excel (Quick Actions) |
+| 3 | `#restore-backup-btn` | index.html:1510 | Ripristina Backup (apre il file picker) |
+| 4 | label `for="import-file-input"` + `#import-file-input` | index.html:1757-1758 | Importa Dati |
+| 5 | `#export-excel` / `#export-pdf` | script.js:4015 (generati dinamicamente) | Export Excel/PDF di report |
+| 6 | `window.exportSeasonArchive(...)` bottoni | script.js:2000 | Backup singola stagione archiviata |
+| 7 | `window.exportSeasonArchiveObj()` bottone | script.js:2128 | Scarica archivio corrente |
+| 8 | `#season-import-input` | index.html:3167 | Importa archivio stagione (tab "Stagioni") |
 
 ## Comportamento UI
 

@@ -581,6 +581,37 @@ document.addEventListener('DOMContentLoaded', () => {
     let authSuccessCallback = null;
     let authCancelCallback = null;
     const isAuthenticated = () => sessionStorage.getItem('isAuthenticated') === 'true';
+    // Account demo (licenseStatus.plan salvato al login da auth-multi-annata.js):
+    // niente estrazioni/backup/importazioni per una prova gratuita — vedi
+    // docs/superpowers/specs/2026-08-27-disabilita-export-demo-design.md
+    const isDemoAccount = () => sessionStorage.getItem('gosport_license_plan') === 'demo';
+    const DEMO_EXPORT_TITLE = 'Non disponibile nella versione demo';
+    // Attributi HTML da iniettare nei template string dei pulsanti generati
+    // dinamicamente (export/backup ricostruiti via innerHTML ad ogni render):
+    // così nascono già disabilitati senza dover richiamare un disable esplicito
+    // dopo ogni singolo blocco innerHTML.
+    const demoExportAttrs = () => isDemoAccount() ? `disabled title="${DEMO_EXPORT_TITLE}"` : '';
+    // Disabilita i pulsanti export/backup/import statici (già presenti in
+    // index.html al caricamento pagina) — chiamata dopo il login e all'avvio
+    // se la sessione è già attiva.
+    function applyDemoRestrictions() {
+        if (!isDemoAccount()) return;
+        const staticIds = ['export-all-data-btn', 'export-excel-btn', 'restore-backup-btn', 'import-file-input', 'season-import-input'];
+        staticIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.disabled = true;
+            el.title = DEMO_EXPORT_TITLE;
+        });
+        // La label che avvolge l'input file non supporta l'attributo disabled:
+        // va disattivata via stile + blocco del click.
+        const importLabel = document.querySelector('label[for="import-file-input"]');
+        if (importLabel) {
+            importLabel.style.pointerEvents = 'none';
+            importLabel.style.opacity = '0.5';
+            importLabel.title = DEMO_EXPORT_TITLE;
+        }
+    }
     const requestAuthentication = (onSuccess, onCancel = () => {}) => {
         if (isAuthenticated()) {
             onSuccess();
@@ -1997,7 +2028,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="d-flex gap-1 flex-wrap">
                         <button class="btn btn-sm btn-outline-primary" onclick="window.viewSeasonArchive('${encodeURIComponent(a.label)}')"><i class="bi bi-eye"></i> Vedi</button>
-                        <button class="btn btn-sm btn-outline-success" onclick="window.exportSeasonArchive('${encodeURIComponent(a.label)}')"><i class="bi bi-download"></i> Backup</button>
+                        <button class="btn btn-sm btn-outline-success" ${demoExportAttrs()} onclick="window.exportSeasonArchive('${encodeURIComponent(a.label)}')"><i class="bi bi-download"></i> Backup</button>
                     </div>
                 </div>`;
             }).join('');
@@ -2125,7 +2156,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${awardHtml}
                 ${restorePanelHtml}
                 <div class="mt-3">
-                    <button class="btn btn-sm btn-outline-success" onclick="window.exportSeasonArchiveObj()"><i class="bi bi-download"></i> Scarica questo archivio</button>
+                    <button class="btn btn-sm btn-outline-success" ${demoExportAttrs()} onclick="window.exportSeasonArchiveObj()"><i class="bi bi-download"></i> Scarica questo archivio</button>
                 </div>
             </div>
         </div>`;
@@ -4012,7 +4043,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return `<tr><td>${athlete?.name || 'N/A'}</td><td>${new Date(data.date).toLocaleDateString('it-IT')}</td><td>${data.ora_registrazione || 'N/A'}</td><td>${data.tipo_sessione || 'N/A'}</td>${cells}</tr>`;
         }).join('');
         elements.tableContainer.innerHTML = `<table class="table table-dark table-striped table-hover"><thead><tr><th>Atleta</th><th>Data</th><th>Ora</th><th>Tipo</th>${Object.values(gpsFieldsForDisplay).filter(label => !['Data', 'Ora', 'Tipo'].includes(label)).map(label => `<th>${label}</th>`).join('')}</tr></thead><tbody>${tableBody}</tbody></table>`;
-        elements.exportButtonsContainer.innerHTML = `<button class="btn btn-success btn-sm" id="export-excel"><i class="bi bi-file-excel"></i> Excel</button><button class="btn btn-danger btn-sm" id="export-pdf"><i class="bi bi-file-pdf"></i> PDF</button>`;
+        elements.exportButtonsContainer.innerHTML = `<button class="btn btn-success btn-sm" id="export-excel" ${demoExportAttrs()}><i class="bi bi-file-excel"></i> Excel</button><button class="btn btn-danger btn-sm" id="export-pdf" ${demoExportAttrs()}><i class="bi bi-file-pdf"></i> PDF</button>`;
     };
     const populateAnalysisSelectors = () => {
         const athleteOptions = athletes.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
@@ -6751,6 +6782,7 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
         elements.evaluationDatePicker2.valueAsDate = today;
         elements.multiAthleteDatepicker.valueAsDate = today;
         updateAllUI();
+        applyDemoRestrictions();
         startPolling();
     }
     initializeApp().then(() => {
