@@ -146,6 +146,18 @@ export default async function handler(req, res) {
       return res.status(403).json({ success: false, message: 'Account scaduto. Contatta l\'amministratore per il rinnovo.' });
     }
 
+    // ── Blocco demo scaduta (qualsiasi ruolo, non solo admin) ─────────────
+    if (user.societyId) {
+      try {
+        const licKey = await kv.get(`licenze_society:${user.societyId}`);
+        const lic = licKey ? await kv.get(`licenze:${licKey}`) : null;
+        if (lic && lic.plan === 'demo' && lic.demoStatus === 'expired') {
+          console.log(`   ❌ Demo scaduta: ${username} (societyId=${user.societyId})`);
+          return res.status(403).json({ success: false, message: 'Prova gratuita scaduta. Contattaci per continuare a usare Sport Monitoring.' });
+        }
+      } catch (e) { /* non bloccante: se la lettura licenza fallisce, non impedire il login */ }
+    }
+
     // ── Verifica password con migrazione automatica ──────────────
     // verifyPassword gestisce scrypt (nuovo) + SHA256/base64 (legacy).
     // needsMigration=true quando la password era valida ma in formato legacy:
