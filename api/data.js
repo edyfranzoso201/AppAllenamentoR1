@@ -1951,6 +1951,12 @@ if (req.query?.action === 'cron-remind' && req.method === 'GET') {
       await kv.set('gdpr:retention-log', retentionLog);
 
       lic.demoStatus = 'purged';
+      // 'active:false' evita che il check 'esiste già una licenza attiva per questa
+      // email' in api/licenze.js (action=create) blocchi per sempre la creazione di
+      // una licenza a pagamento per la stessa email dopo che i dati demo sono già
+      // stati cancellati — senza questo, l'unico modo per sbloccarla sarebbe
+      // l'eliminazione manuale della voce dal pannello superadmin.
+      lic.active = false;
       await kv.set(`licenze:${licKey}`, lic);
     }
 
@@ -3365,7 +3371,7 @@ if (body.athletes !== undefined && session.societyId) {
   const licKey = await kv.get(`licenze_society:${session.societyId}`);
   const lic = licKey ? await kv.get(`licenze:${licKey}`) : null;
   if (lic && lic.plan === 'demo' && lic.demoLimits) {
-    const nonGuestCount = (body.athletes || []).filter(a => !a.isGuest).length;
+    const nonGuestCount = (body.athletes || []).filter(a => !a.isGuest && !a.isStaff).length;
     if (nonGuestCount > lic.demoLimits.maxAtleti) {
       return res.status(403).json({
         success: false,
