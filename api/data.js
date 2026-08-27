@@ -97,6 +97,28 @@ function icalSecret() { return process.env.ICAL_SECRET || process.env.BACKUP_SEC
 function icalSign(athleteId, annataId) {
   return crypto.createHmac('sha256', icalSecret()).update(`${athleteId}:${annataId}`).digest('hex').substring(0, 32);
 }
+
+// ── Demo gratuita: token HMAC per conferma email (stesso meccanismo di icalSign,
+//    riusato qui per non introdurre una nuova dipendenza) ──────────────────────
+function demoTokenSecret() { return process.env.ICAL_SECRET || process.env.BACKUP_SECRET || ''; }
+function generateDemoToken(email, ts) {
+  const sig = crypto.createHmac('sha256', demoTokenSecret()).update(`demo:${email}:${ts}`).digest('hex').substring(0, 32);
+  return Buffer.from(`${email}:${ts}:${sig}`).toString('base64url');
+}
+function verifyDemoToken(token) {
+  try {
+    const decoded = Buffer.from(String(token || ''), 'base64url').toString('utf8');
+    const parts = decoded.split(':');
+    if (parts.length !== 3) return { ok: false };
+    const [email, ts, sig] = parts;
+    const expected = crypto.createHmac('sha256', demoTokenSecret()).update(`demo:${email}:${ts}`).digest('hex').substring(0, 32);
+    if (sig !== expected) return { ok: false };
+    const ageMs = Date.now() - Number(ts);
+    if (!Number.isFinite(ageMs) || ageMs < 0 || ageMs > 48 * 60 * 60 * 1000) return { ok: false, expired: true };
+    return { ok: true, email, ts: Number(ts) };
+  } catch (e) { return { ok: false }; }
+}
+
 function icalEsc(s) {
   return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
 }
