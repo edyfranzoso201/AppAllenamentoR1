@@ -41,7 +41,7 @@ async function init() {
     const r = await fetch(`${API_BASE}/api/data?action=demo-verify&token=${encodeURIComponent(token)}`);
     const d = await r.json();
     if (!d.success) {
-      content.innerHTML = `<p class="msg error">${d.message}</p>`;
+      content.innerHTML = `<p class="msg error">${esc(d.message)}</p>`;
       return;
     }
     content.innerHTML = `
