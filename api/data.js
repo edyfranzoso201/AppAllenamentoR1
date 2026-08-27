@@ -3,6 +3,7 @@ import { createClient } from '@vercel/kv';
 import { gzipSync } from 'zlib';
 import crypto from 'crypto';
 import { verifySuperAdmin, timingSafeStrEq } from './_sa-auth.js';
+import { hashPasswordScrypt } from './auth/_password.js';
 
 const kv = createClient({
 url: process.env.UPSTASH_KV_REST_API_URL || process.env.KV_REST_API_URL,
@@ -628,6 +629,66 @@ if (req.query?.action === 'demo-signup' && req.method === 'POST') {
   }
 
   return res.status(200).json({ success: true, message: 'Controlla la tua email per confermare la registrazione.' });
+}
+
+// ── DEMO GRATUITA: verifica token di conferma (chiamato da verify-demo.html) ──
+if (req.query?.action === 'demo-verify' && req.method === 'GET') {
+  const check = verifyDemoToken(req.query.token);
+  if (!check.ok) {
+    return res.status(400).json({ success: false, message: check.expired ? 'Link scaduto.' : 'Link non valido.' });
+  }
+  const pendingKey = `demo:pending:${check.email}`;
+  const pending = await kv.get(pendingKey);
+  if (!pending) {
+    return res.status(400).json({ success: false, message: 'Registrazione non trovata o già confermata.' });
+  }
+  return res.status(200).json({ success: true, email: check.email, societyName: (await kv.get(`licenze:${pending.licenseKey}`))?.societyName || '' });
+}
+
+// ── DEMO GRATUITA: attivazione — imposta password, marca attiva, avvia i 90gg ──
+if (req.query?.action === 'demo-activate' && req.method === 'POST') {
+  const { token, password } = req.body || {};
+  const check = verifyDemoToken(token);
+  if (!check.ok) {
+    return res.status(400).json({ success: false, message: check.expired ? 'Link scaduto.' : 'Link non valido.' });
+  }
+  if (!password || String(password).length < 8) {
+    return res.status(400).json({ success: false, message: 'La password deve avere almeno 8 caratteri' });
+  }
+  const pendingKey = `demo:pending:${check.email}`;
+  const pending = await kv.get(pendingKey);
+  if (!pending) {
+    return res.status(400).json({ success: false, message: 'Registrazione non trovata o già confermata.' });
+  }
+
+  const license = await kv.get(`licenze:${pending.licenseKey}`);
+  if (!license) return res.status(404).json({ success: false, message: 'Licenza non trovata' });
+
+  const demoExpiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+  license.demoExpiresAt = demoExpiresAt.toISOString();
+  license.expiry = demoExpiresAt.toISOString().split('T')[0];
+  license.demoStatus = 'active';
+
+  const hashed = hashPasswordScrypt(String(password));
+  const users = (await kv.get('auth:users')) || [];
+  const idx = users.findIndex(u => u.username === pending.username);
+  if (idx === -1) return res.status(404).json({ success: false, message: 'Utente non trovato' });
+  users[idx].password = hashed;
+  users[idx].demoPending = false;
+
+  const indUser = await kv.get(`auth:user:${pending.username}`);
+  if (indUser) { indUser.password = hashed; indUser.demoPending = false; }
+
+  await Promise.all([
+    kv.set(`licenze:${pending.licenseKey}`, license),
+    kv.set('auth:users', users),
+    indUser ? kv.set(`auth:user:${pending.username}`, indUser) : Promise.resolve(),
+    kv.sadd('demo:usedEmails', pending.email),
+    kv.sadd('demo:usedPhones', pending.phone),
+    kv.del(pendingKey),
+  ]);
+
+  return res.status(200).json({ success: true, message: 'Account attivato. Ora puoi accedere.', username: pending.username });
 }
 
 try {
