@@ -88,7 +88,7 @@ async function activate() {
       btn.disabled = false; btn.textContent = 'Attiva account';
       return;
     }
-    msg.innerHTML = `Account attivato! Nome utente: <strong>${esc(d.username)}</strong><br>Ti reindirizziamo al login...`; msg.className = 'msg success';
+    msg.innerHTML = `Account attivato! Nome utente: <strong>${esc(d.username)}</strong><br>Ti reindirizziamo al login... <a href="/index.html" style="color:#10b981;">Vai subito</a>`; msg.className = 'msg success';
     setTimeout(() => { location.href = '/index.html'; }, 4000);
   } catch (e) {
     msg.textContent = 'Errore di rete. Riprova.'; msg.className = 'msg error';

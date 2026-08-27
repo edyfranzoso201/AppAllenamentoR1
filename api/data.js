@@ -609,6 +609,7 @@ if (req.query?.action === 'demo-signup' && req.method === 'POST') {
     const { createTransport } = await import('nodemailer');
     const transporter = createTransport({ service: 'gmail', auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS } });
     const confirmUrl = `https://app-allenamento-r1.vercel.app/verify-demo.html?token=${encodeURIComponent(demoToken)}`;
+    const appLoginUrl = 'https://app-allenamento-r1.vercel.app/index.html';
     // Stesso escaping HTML del blocco 'contact' sopra (funzione locale a
     // quello scope, quindi replicata qui identica): nomeReferente/nomeSocieta/
     // email/phone sono input utente e vanno escapati prima di finire nell'HTML.
@@ -617,7 +618,7 @@ if (req.query?.action === 'demo-signup' && req.method === 'POST') {
       from: process.env.GMAIL_USER,
       to: email,
       subject: 'Conferma la tua prova gratuita — Sport Monitoring',
-      html: `<p>Ciao ${esc(nomeReferente)},</p><p>Conferma la tua registrazione a Sport Monitoring cliccando qui:</p><p><a href="${confirmUrl}">${confirmUrl}</a></p><p>Il tuo nome utente per accedere sarà: <strong>${esc(usernameDemo)}</strong> (te lo richiederemo anche nella pagina di conferma).</p><p>Il link scade tra 48 ore.</p>`,
+      html: `<p>Ciao ${esc(nomeReferente)},</p><p>Conferma la tua registrazione a Sport Monitoring cliccando qui:</p><p><a href="${confirmUrl}">${confirmUrl}</a></p><p>Il tuo nome utente per accedere sarà: <strong>${esc(usernameDemo)}</strong> (te lo richiederemo anche nella pagina di conferma).</p><p>Dopo aver confermato e scelto la password, potrai accedere all'app da qui: <a href="${appLoginUrl}">${appLoginUrl}</a></p><p>Il link scade tra 48 ore.</p>`,
     });
     await transporter.sendMail({
       from: process.env.GMAIL_USER,
