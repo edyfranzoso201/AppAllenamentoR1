@@ -1564,8 +1564,8 @@
       return;
     }
 
-    // Licenza non Platinum (l'admin bypassa il controllo piano)
-    if (role !== 'admin' && plan !== 'platinum') {
+    // Licenza non Platinum/Demo (l'admin bypassa il controllo piano)
+    if (role !== 'admin' && plan !== 'platinum' && plan !== 'demo') {
       document.getElementById('platinum-gate').classList.add('show');
       return;
     }

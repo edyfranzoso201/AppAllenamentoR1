@@ -4429,9 +4429,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function showAccessTabIfAdmin() {
         if (getUserRole() === 'admin') {
             document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
-            // Accessi (admin): solo Platinum — riapplica piano dopo aver mostrato admin-only
+            // Accessi (admin): solo Platinum (+ demo, stessa esperienza) — riapplica piano dopo aver mostrato admin-only
             var _plan = sessionStorage.getItem('gosport_license_plan') || 'platinum';
-            if (_plan !== 'platinum') {
+            if (_plan !== 'platinum' && _plan !== 'demo') {
                 var acBtn = document.querySelector('[data-tab="accessi-section"]');
                 if (acBtn) acBtn.style.display = 'none';
             }
@@ -4596,7 +4596,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(showAccessTabIfAdmin, 1500);
 })();
 
-// ── Pulsante Dashboard (solo Platinum + has_dashboard) ──
+// ── Pulsante Dashboard (solo Platinum + demo + has_dashboard) ──
 (function() {
     function showDashboardBtn() {
         var hasDashboard = sessionStorage.getItem('gosport_has_dashboard') === 'true';
@@ -4604,7 +4604,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var plan         = sessionStorage.getItem('gosport_license_plan')   || '';
         var btn          = document.getElementById('dashboard-nav-btn');
         var allowed      = hasDashboard || role === 'admin';
-        if (!btn || !allowed || plan !== 'platinum') return;
+        if (!btn || !allowed || (plan !== 'platinum' && plan !== 'demo')) return;
 
         // Passa la sessione nel hash dell'URL in modo che dashboard.html
         // possa inizializzare sessionStorage nel nuovo tab (non condiviso).

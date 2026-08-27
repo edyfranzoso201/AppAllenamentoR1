@@ -620,7 +620,7 @@ async function render(loadedData) {
     if (!_noEvIsParent) {
       if (typeof showBachecaTab === 'function') showBachecaTab();
       var _noEvPlan = sessionStorage.getItem('gosport_license_plan') || 'platinum';
-      if (_noEvPlan === 'platinum' && typeof showDocumentiTab === 'function') {
+      if ((_noEvPlan === 'platinum' || _noEvPlan === 'demo') && typeof showDocumentiTab === 'function') {
         var _noEvRole = sessionStorage.getItem('gosport_user_role') || '';
         showDocumentiTab(['admin','coach_l1','coach_l2'].indexOf(_noEvRole) >= 0);
       }
@@ -697,7 +697,7 @@ if (themeBtn) {
     if (typeof showBachecaTab === 'function') showBachecaTab();
     // Documenti Società + Atleti: solo Platinum
     var _calPlan = sessionStorage.getItem('gosport_license_plan') || 'platinum';
-    if (_calPlan === 'platinum' && typeof showDocumentiTab === 'function') {
+    if ((_calPlan === 'platinum' || _calPlan === 'demo') && typeof showDocumentiTab === 'function') {
       var _dRole = sessionStorage.getItem('gosport_user_role') || '';
       showDocumentiTab(['admin','coach_l1','coach_l2'].indexOf(_dRole) >= 0);
     }

@@ -2510,6 +2510,10 @@ window.deleteUser = async function(username) {
                            'match-results-section', 'report-valutazioni-section',
                            'hall-of-fame-section', 'accessi-section']
             };
+            // Demo: stessa esperienza di Platinum (tutte le tab) — l'unica
+            // restrizione per la prova gratuita è export/backup/import,
+            // già gestita altrove da isDemoAccount() in script.js.
+            PLAN_TABS.demo = PLAN_TABS.platinum;
 
             var allowedByPlan = PLAN_TABS[licensePlan] || PLAN_TABS['silver'];
 
@@ -2528,8 +2532,8 @@ window.deleteUser = async function(username) {
                 });
             }
 
-            // Pagelle (.rating-btn): solo Platinum — nasconde anche quelli aggiunti dinamicamente
-            if (licensePlan !== 'platinum') {
+            // Pagelle (.rating-btn): solo Platinum (+ demo, che ha la stessa esperienza) — nasconde anche quelli aggiunti dinamicamente
+            if (licensePlan !== 'platinum' && licensePlan !== 'demo') {
                 var _hidePagelle = function() {
                     document.querySelectorAll('.rating-btn').forEach(function(el) {
                         el.style.display = 'none';
@@ -2541,11 +2545,11 @@ window.deleteUser = async function(username) {
 
             console.log('🎫 Piano licenza: ' + licensePlan + ' | Tab consentiti: ' + allowedByPlan.length);
 
-            // Pulsante Dashboard: visibile per utenti con has_dashboard o admin, solo Platinum
+            // Pulsante Dashboard: visibile per utenti con has_dashboard o admin, solo Platinum (+ demo)
             var hasDashboardFlag = sessionStorage.getItem('gosport_has_dashboard') === 'true';
             var dashBtn = document.getElementById('dashboard-nav-btn');
             if (dashBtn) {
-                if ((hasDashboardFlag || role === 'admin') && licensePlan === 'platinum') {
+                if ((hasDashboardFlag || role === 'admin') && (licensePlan === 'platinum' || licensePlan === 'demo')) {
                     dashBtn.style.display = '';
                 } else {
                     dashBtn.style.display = 'none';
