@@ -448,6 +448,156 @@ if (req.query?.action === 'contact' && req.method === 'POST') {
   }
 }
 
+// ── DEMO GRATUITA: registrazione self-service (3 mesi, 3 atleti + 1 dirigente + 1 coach) ──
+if (req.query?.action === 'demo-signup' && req.method === 'POST') {
+  const { societyName, refName, email: rawEmail, phone: rawPhone } = req.body || {};
+
+  const email = String(rawEmail || '').trim().toLowerCase();
+  const phone = String(rawPhone || '').replace(/[^\d+]/g, '');
+  const nomeSocieta = String(societyName || '').trim().slice(0, 120);
+  const nomeReferente = String(refName || '').trim().slice(0, 120);
+
+  if (!nomeSocieta || !nomeReferente) {
+    return res.status(400).json({ success: false, message: 'Nome società e nome referente obbligatori' });
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ success: false, message: 'Email non valida' });
+  }
+  if (!/^(\+39)?3\d{8,9}$/.test(phone)) {
+    return res.status(400).json({ success: false, message: 'Numero di telefono non valido (formato italiano)' });
+  }
+
+  // ── Anti-abuso: blocca se email O telefono hanno già usufruito della demo ──
+  const [emailUsed, phoneUsed] = await Promise.all([
+    kv.sismember('demo:usedEmails', email),
+    kv.sismember('demo:usedPhones', phone),
+  ]);
+  if (emailUsed || phoneUsed) {
+    return res.status(400).json({ success: false, message: 'Questa email o questo numero ha già usufruito della prova gratuita.' });
+  }
+
+  // ── Blocca anche un pending non ancora confermato con stesso contatto ──
+  const pendingKey = `demo:pending:${email}`;
+  const existingPending = await kv.get(pendingKey);
+  if (existingPending && (Date.now() - existingPending.ts) < 48 * 60 * 60 * 1000) {
+    return res.status(400).json({ success: false, message: 'Hai già una registrazione in attesa di conferma. Controlla la tua email.' });
+  }
+
+  // ── Crea società/annata/licenza/utente pending ──
+  const societyId = crypto.randomUUID().replace(/-/g, '').substring(0, 20);
+  const annataId = crypto.randomBytes(8).toString('hex');
+  const now = new Date();
+  const annataNome = String(now.getFullYear());
+
+  const newAnnata = {
+    id: annataId,
+    nome: annataNome,
+    societyId,
+    dataInizio: '',
+    dataFine: '',
+    descrizione: 'Annata demo',
+    createdAt: now.toISOString(),
+  };
+  const annate = (await kv.get('annate:list')) || [];
+  annate.push(newAnnata);
+
+  const licenseTs = Date.now();
+  const licensePayload = { email, expiry: '2099-01-01', societyId, ts: licenseTs };
+  const licenseSignature = crypto
+    .createHmac('sha256', process.env.LICENSE_SECRET_KEY || '')
+    .update(JSON.stringify(licensePayload))
+    .digest('hex')
+    .substring(0, 16)
+    .toUpperCase();
+  const licenseKey = 'DEMO-' + crypto.randomBytes(6).toString('hex').toUpperCase();
+
+  const licenseData = {
+    email,
+    societyName: nomeSocieta,
+    societyId,
+    expiry: '2099-01-01', // placeholder finché non confermata: demoExpiresAt parte dalla conferma
+    plan: 'demo',
+    notes: `Referente: ${nomeReferente} · Tel: ${phone}`,
+    active: true,
+    signature: licenseSignature,
+    ts: licenseTs,
+    createdAt: now.toISOString(),
+    lastAccess: null,
+    demoExpiresAt: null,
+    demoLimits: { maxAtleti: 3, maxDirigenti: 1, maxCoach: 1 },
+    demoStatus: 'pending',
+    demoReminder15Sent: false,
+    demoReminder3Sent: false,
+  };
+
+  const usernameDemo = ('demo_' + email.split('@')[0]).replace(/[^a-z0-9_]/gi, '').slice(0, 30).toLowerCase();
+  const users = (await kv.get('auth:users')) || [];
+  if (users.find(u => String(u.username || '').toLowerCase() === usernameDemo)) {
+    return res.status(400).json({ success: false, message: 'Riprova tra qualche istante (conflitto temporaneo).' });
+  }
+  const newUser = {
+    username: usernameDemo,
+    password: null, // impostata alla conferma (Flusso 2)
+    email,
+    nome: nomeReferente,
+    cognome: '',
+    note: 'Utente demo — pending conferma email',
+    role: 'dirigente_l1',
+    annate: [annataId],
+    societyId,
+    expiryDate: null,
+    createdAt: now.toISOString(),
+    createdBySuperAdmin: false,
+    demoPending: true,
+  };
+
+  const demoToken = generateDemoToken(email, licenseTs);
+
+  await Promise.all([
+    kv.set('annate:list', annate),
+    kv.set(`annate:${annataId}:athletes`, []),
+    kv.set(`annate:${annataId}:evaluations`, {}),
+    kv.set(`annate:${annataId}:gpsData`, {}),
+    kv.set(`annate:${annataId}:awards`, {}),
+    kv.set(`annate:${annataId}:trainingSessions`, {}),
+    kv.set(`annate:${annataId}:formationData`, { starters: [], bench: [], tokens: [] }),
+    kv.set(`annate:${annataId}:matchResults`, {}),
+    kv.set(`annate:${annataId}:calendarEvents`, {}),
+    kv.set(`annate:${annataId}:calendarResponses`, {}),
+    kv.set(`licenze:${licenseKey}`, licenseData),
+    kv.set(`licenze_email:${email}`, licenseKey),
+    kv.set(`licenze_society:${societyId}`, licenseKey),
+    kv.sadd('licenze:index', licenseKey),
+    kv.set('auth:users', [...users, newUser]),
+    kv.set(`auth:user:${usernameDemo}`, newUser),
+    kv.set(pendingKey, { ts: Date.now(), email, phone, societyId, licenseKey, username: usernameDemo }),
+  ]);
+  await kv.expire(pendingKey, 48 * 60 * 60);
+
+  // ── Email di conferma al referente ──
+  try {
+    const { createTransport } = await import('nodemailer');
+    const transporter = createTransport({ service: 'gmail', auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS } });
+    const confirmUrl = `https://app-allenamento-r1.vercel.app/verify-demo.html?token=${encodeURIComponent(demoToken)}`;
+    await transporter.sendMail({
+      from: process.env.GMAIL_USER,
+      to: email,
+      subject: 'Conferma la tua prova gratuita — Sport Monitoring',
+      html: `<p>Ciao ${nomeReferente},</p><p>Conferma la tua registrazione a Sport Monitoring cliccando qui:</p><p><a href="${confirmUrl}">${confirmUrl}</a></p><p>Il link scade tra 48 ore.</p>`,
+    });
+    await transporter.sendMail({
+      from: process.env.GMAIL_USER,
+      to: process.env.GMAIL_USER,
+      subject: `🆕 Nuovo lead demo: ${nomeSocieta}`,
+      html: `<p>Società: ${nomeSocieta}<br>Referente: ${nomeReferente}<br>Email: ${email}<br>Telefono: ${phone}</p>`,
+    });
+  } catch (e) {
+    console.error('[demo-signup] invio email fallito:', e?.message || e);
+  }
+
+  return res.status(200).json({ success: true, message: 'Controlla la tua email per confermare la registrazione.' });
+}
+
 try {
 const session = await getSessionInfo(req);
 
