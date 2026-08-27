@@ -152,6 +152,28 @@ export default async function handler(req, res) {
           return res.status(400).json({ success: false, message: 'Username già esistente' });
         }
 
+        // ── Limite demo: max 1 coach, max 1 dirigente (fisso) per società demo ──
+        if (societyId) {
+          const licKey = await kv.get(`licenze_society:${societyId}`);
+          const lic = licKey ? await kv.get(`licenze:${licKey}`) : null;
+          if (lic && lic.plan === 'demo' && lic.demoLimits) {
+            const isCoachRole = String(role || '').startsWith('coach');
+            const isDirigenteRole = String(role || '').startsWith('dirigente');
+            if (isCoachRole) {
+              const coachCount = users.filter(u => u.societyId === societyId && String(u.role || '').startsWith('coach')).length;
+              if (coachCount >= lic.demoLimits.maxCoach) {
+                return res.status(403).json({ success: false, message: `Hai raggiunto il limite di ${lic.demoLimits.maxCoach} coach della prova gratuita. Contattaci per passare a un piano a pagamento.` });
+              }
+            }
+            if (isDirigenteRole) {
+              const dirigenteCount = users.filter(u => u.societyId === societyId && String(u.role || '').startsWith('dirigente')).length;
+              if (dirigenteCount >= lic.demoLimits.maxDirigenti) {
+                return res.status(403).json({ success: false, message: `Hai raggiunto il limite di ${lic.demoLimits.maxDirigenti} dirigente della prova gratuita. Contattaci per passare a un piano a pagamento.` });
+              }
+            }
+          }
+        }
+
         if (role && !VALID_ROLES.includes(role)) {
           return res.status(400).json({ success: false, message: `Ruolo non valido: ${role}` });
         }

@@ -3230,6 +3230,21 @@ if (!canWrite(session.role)) {
 return res.status(403).json({ success: false, message: 'Permesso negato' });
 }
 
+// ── Limite demo: max atleti (esclusi ospiti) per società con plan 'demo' ──
+if (body.athletes !== undefined && session.societyId) {
+  const licKey = await kv.get(`licenze_society:${session.societyId}`);
+  const lic = licKey ? await kv.get(`licenze:${licKey}`) : null;
+  if (lic && lic.plan === 'demo' && lic.demoLimits) {
+    const nonGuestCount = (body.athletes || []).filter(a => !a.isGuest).length;
+    if (nonGuestCount > lic.demoLimits.maxAtleti) {
+      return res.status(403).json({
+        success: false,
+        message: `Hai raggiunto il limite di ${lic.demoLimits.maxAtleti} atleti della prova gratuita. Contattaci per passare a un piano a pagamento.`
+      });
+    }
+  }
+}
+
 if (body.athletes !== undefined) await kv.set(`${prefix}:athletes`, body.athletes);
 if (body.evaluations !== undefined) await kv.set(`${prefix}:evaluations`, body.evaluations);
 if (body.gpsData !== undefined) await kv.set(`${prefix}:gpsData`, body.gpsData);
