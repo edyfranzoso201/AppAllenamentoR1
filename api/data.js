@@ -655,6 +655,18 @@ if (req.query?.action === 'demo-activate' && req.method === 'POST') {
   if (!password || String(password).length < 8) {
     return res.status(400).json({ success: false, message: 'La password deve avere almeno 8 caratteri' });
   }
+
+  // ── Lock atomico anti-race sull'email verificata: due conferme quasi
+  // simultanee con lo stesso token non devono poter eseguire due volte le
+  // scritture sotto (licenza/utente/pending) in parallelo. Stesso pattern di
+  // demo-signup (nx+ex nella stessa set()), TTL breve perché le operazioni
+  // sono rapide; non serve rilascio esplicito, scade da solo.
+  const activateLockKey = `demo:activate-lock:${check.email}`;
+  const gotActivateLock = await kv.set(activateLockKey, '1', { nx: true, ex: 30 });
+  if (!gotActivateLock) {
+    return res.status(400).json({ success: false, message: 'Riprova tra qualche istante (conflitto temporaneo).' });
+  }
+
   const pendingKey = `demo:pending:${check.email}`;
   const pending = await kv.get(pendingKey);
   if (!pending) {
@@ -679,6 +691,12 @@ if (req.query?.action === 'demo-activate' && req.method === 'POST') {
   const indUser = await kv.get(`auth:user:${pending.username}`);
   if (indUser) { indUser.password = hashed; indUser.demoPending = false; }
 
+  // ── Scrittura non atomica (comportamento noto, non risolto qui): se una di
+  // queste operazioni fallisce dopo che altre sono già andate a buon fine, lo
+  // stato può restare temporaneamente incoerente (es. password già impostata
+  // ma pendingKey non ancora cancellato). È recuperabile: un retry con lo
+  // stesso token ritrova comunque il pending presente e riscrive tutto in modo
+  // idempotente (stessi valori), quindi non serve una transazione qui.
   await Promise.all([
     kv.set(`licenze:${pending.licenseKey}`, license),
     kv.set('auth:users', users),
