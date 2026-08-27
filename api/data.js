@@ -617,7 +617,7 @@ if (req.query?.action === 'demo-signup' && req.method === 'POST') {
       from: process.env.GMAIL_USER,
       to: email,
       subject: 'Conferma la tua prova gratuita — Sport Monitoring',
-      html: `<p>Ciao ${esc(nomeReferente)},</p><p>Conferma la tua registrazione a Sport Monitoring cliccando qui:</p><p><a href="${confirmUrl}">${confirmUrl}</a></p><p>Il link scade tra 48 ore.</p>`,
+      html: `<p>Ciao ${esc(nomeReferente)},</p><p>Conferma la tua registrazione a Sport Monitoring cliccando qui:</p><p><a href="${confirmUrl}">${confirmUrl}</a></p><p>Il tuo nome utente per accedere sarà: <strong>${esc(usernameDemo)}</strong> (te lo richiederemo anche nella pagina di conferma).</p><p>Il link scade tra 48 ore.</p>`,
     });
     await transporter.sendMail({
       from: process.env.GMAIL_USER,
@@ -643,7 +643,7 @@ if (req.query?.action === 'demo-verify' && req.method === 'GET') {
   if (!pending) {
     return res.status(400).json({ success: false, message: 'Registrazione non trovata o già confermata.' });
   }
-  return res.status(200).json({ success: true, email: check.email, societyName: (await kv.get(`licenze:${pending.licenseKey}`))?.societyName || '' });
+  return res.status(200).json({ success: true, email: check.email, username: pending.username, societyName: (await kv.get(`licenze:${pending.licenseKey}`))?.societyName || '' });
 }
 
 // ── DEMO GRATUITA: attivazione — imposta password, marca attiva, avvia i 90gg ──

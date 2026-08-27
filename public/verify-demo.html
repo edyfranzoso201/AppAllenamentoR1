@@ -46,12 +46,22 @@ async function init() {
     }
     content.innerHTML = `
       <p>Società: <strong>${esc(d.societyName)}</strong><br>Email: <strong>${esc(d.email)}</strong></p>
+      <p>Il tuo nome utente per accedere sarà: <strong>${esc(d.username)}</strong> (annotalo, ti servirà insieme alla password per il login).</p>
       <p>Scegli una password per accedere (minimo 8 caratteri):</p>
       <input type="password" id="pwd" placeholder="Password" autocomplete="new-password">
+      <button type="button" id="toggle-pwd" style="width:auto;background:none;border:none;color:#94a3b8;font-size:0.8rem;padding:2px 0;margin:-4px 0 4px;cursor:pointer;text-decoration:underline;">Mostra password</button>
       <input type="password" id="pwd2" placeholder="Conferma password" autocomplete="new-password">
       <button id="btn-activate">Attiva account</button>
       <div id="msg" class="msg"></div>
     `;
+    document.getElementById('toggle-pwd').addEventListener('click', function () {
+      const p1 = document.getElementById('pwd');
+      const p2 = document.getElementById('pwd2');
+      const showing = p1.type === 'text';
+      p1.type = showing ? 'password' : 'text';
+      p2.type = showing ? 'password' : 'text';
+      this.textContent = showing ? 'Mostra password' : 'Nascondi password';
+    });
     document.getElementById('btn-activate').addEventListener('click', activate);
   } catch (e) {
     content.innerHTML = '<p class="msg error">Errore di rete. Riprova.</p>';
@@ -78,8 +88,8 @@ async function activate() {
       btn.disabled = false; btn.textContent = 'Attiva account';
       return;
     }
-    msg.textContent = 'Account attivato! Ti reindirizziamo al login...'; msg.className = 'msg success';
-    setTimeout(() => { location.href = '/index.html'; }, 2000);
+    msg.innerHTML = `Account attivato! Nome utente: <strong>${esc(d.username)}</strong><br>Ti reindirizziamo al login...`; msg.className = 'msg success';
+    setTimeout(() => { location.href = '/index.html'; }, 4000);
   } catch (e) {
     msg.textContent = 'Errore di rete. Riprova.'; msg.className = 'msg error';
     btn.disabled = false; btn.textContent = 'Attiva account';
