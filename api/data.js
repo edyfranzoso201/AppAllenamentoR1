@@ -10,6 +10,80 @@ url: process.env.UPSTASH_KV_REST_API_URL || process.env.KV_REST_API_URL,
 token: process.env.UPSTASH_KV_REST_API_TOKEN || process.env.KV_REST_API_TOKEN,
 });
 
+// Purge completo dati società demo: cancella prima i dati figli
+// (annate/atleti/utenti), marca 'purged' sulla licenza SOLO alla fine.
+// Se il processo si interrompe a metà resta in uno stato "parzialmente
+// pulito" recuperabile al giro successivo, invece di un falso 'purged'
+// con dati orfani invisibili.
+// Estratta a livello di modulo (non più chiusura locale del blocco cron)
+// per essere riusabile anche da un reset manuale superadmin.
+// releaseAntiAbuse: di default false (comportamento cron invariato — una
+// demo scaduta naturalmente NON deve permettere una seconda demo gratuita
+// con la stessa email/telefono). Va messo a true SOLO per un reset
+// manuale esplicito da superadmin (es. demo di test creata per errore),
+// mai dal ciclo automatico del cron.
+async function purgeDemoSociety(lic, licKey, releaseAntiAbuse = false) {
+  const societyId = lic.societyId;
+  const allAnnate = (await kv.get('annate:list')) || [];
+  const societyAnnate = allAnnate.filter(a => a.societyId === societyId);
+  const remainingAnnate = allAnnate.filter(a => a.societyId !== societyId);
+
+  for (const annata of societyAnnate) {
+    const keysToDelete = [
+      `annate:${annata.id}:athletes`, `annate:${annata.id}:evaluations`, `annate:${annata.id}:gpsData`,
+      `annate:${annata.id}:awards`, `annate:${annata.id}:trainingSessions`, `annate:${annata.id}:formationData`,
+      `annate:${annata.id}:matchResults`, `annate:${annata.id}:calendarEvents`, `annate:${annata.id}:calendarResponses`,
+      `society:${societyId}:inventoryCatPhotos:${annata.id}`,
+    ];
+    for (const k of keysToDelete) { try { await kv.del(k); } catch (e) { /* già assente: ok, idempotente */ } }
+  }
+  await kv.set('annate:list', remainingAnnate);
+
+  const allUsers = (await kv.get('auth:users')) || [];
+  const remainingUsers = allUsers.filter(u => u.societyId !== societyId);
+  const removedUsers = allUsers.filter(u => u.societyId === societyId);
+  await kv.set('auth:users', remainingUsers);
+  for (const u of removedUsers) { try { await kv.del(`auth:user:${String(u.username).toLowerCase()}`); } catch (e) { /* idempotente */ } }
+
+  try { await kv.del(`licenze_society:${societyId}`); } catch (e) { /* idempotente */ }
+
+  // Retention-log PRIMA del flag 'purged': se questa scrittura fallisce,
+  // l'eccezione risale con la licenza ancora non marcata, così il prossimo
+  // giro del cron ritenta l'intero purge (idempotente) invece di perdere
+  // per sempre la voce di audit GDPR con la licenza già 'purged'.
+  const retentionLog = (await kv.get('gdpr:retention-log')) || [];
+  retentionLog.push({
+    type: 'demo-purge', societyId, societyName: lic.societyName,
+    email: lic.email, purgedAt: new Date().toISOString(),
+    manualReset: !!releaseAntiAbuse,
+  });
+  await kv.set('gdpr:retention-log', retentionLog);
+
+  if (releaseAntiAbuse) {
+    // Reset manuale esplicito (superadmin): libera email/telefono in modo che
+    // la stessa persona possa registrare una nuova demo. Il cron automatico
+    // non passa mai releaseAntiAbuse:true, quindi il comportamento standard
+    // (una demo scaduta blocca per sempre una seconda demo) resta invariato.
+    try {
+      await Promise.all([
+        kv.srem('demo:usedEmails', lic.email),
+        lic.notes && /Tel:\s*([+\d]+)/.test(lic.notes)
+          ? kv.srem('demo:usedPhones', lic.notes.match(/Tel:\s*([+\d]+)/)[1])
+          : Promise.resolve(),
+      ]);
+    } catch (e) { /* non bloccante: il reset manuale prosegue comunque */ }
+  }
+
+  lic.demoStatus = 'purged';
+  // 'active:false' evita che il check 'esiste già una licenza attiva per questa
+  // email' in api/licenze.js (action=create) blocchi per sempre la creazione di
+  // una licenza a pagamento per la stessa email dopo che i dati demo sono già
+  // stati cancellati — senza questo, l'unico modo per sbloccarla sarebbe
+  // l'eliminazione manuale della voce dal pannello superadmin.
+  lic.active = false;
+  await kv.set(`licenze:${licKey}`, lic);
+}
+
 function setCors(req, res) {
 const origin = req.headers['origin'] || '';
 const allowed = [
@@ -1910,56 +1984,10 @@ if (req.query?.action === 'cron-remind' && req.method === 'GET') {
       auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
     });
 
-    // Purge completo dati società demo: cancella prima i dati figli
-    // (annate/atleti/utenti), marca 'purged' sulla licenza SOLO alla fine.
-    // Se il processo si interrompe a metà resta in uno stato "parzialmente
-    // pulito" recuperabile al giro successivo, invece di un falso 'purged'
-    // con dati orfani invisibili.
-    async function purgeDemoSociety(lic, licKey) {
-      const societyId = lic.societyId;
-      const allAnnate = (await kv.get('annate:list')) || [];
-      const societyAnnate = allAnnate.filter(a => a.societyId === societyId);
-      const remainingAnnate = allAnnate.filter(a => a.societyId !== societyId);
-
-      for (const annata of societyAnnate) {
-        const keysToDelete = [
-          `annate:${annata.id}:athletes`, `annate:${annata.id}:evaluations`, `annate:${annata.id}:gpsData`,
-          `annate:${annata.id}:awards`, `annate:${annata.id}:trainingSessions`, `annate:${annata.id}:formationData`,
-          `annate:${annata.id}:matchResults`, `annate:${annata.id}:calendarEvents`, `annate:${annata.id}:calendarResponses`,
-          `society:${societyId}:inventoryCatPhotos:${annata.id}`,
-        ];
-        for (const k of keysToDelete) { try { await kv.del(k); } catch (e) { /* già assente: ok, idempotente */ } }
-      }
-      await kv.set('annate:list', remainingAnnate);
-
-      const allUsers = (await kv.get('auth:users')) || [];
-      const remainingUsers = allUsers.filter(u => u.societyId !== societyId);
-      const removedUsers = allUsers.filter(u => u.societyId === societyId);
-      await kv.set('auth:users', remainingUsers);
-      for (const u of removedUsers) { try { await kv.del(`auth:user:${String(u.username).toLowerCase()}`); } catch (e) { /* idempotente */ } }
-
-      try { await kv.del(`licenze_society:${societyId}`); } catch (e) { /* idempotente */ }
-
-      // Retention-log PRIMA del flag 'purged': se questa scrittura fallisce,
-      // l'eccezione risale con la licenza ancora non marcata, così il prossimo
-      // giro del cron ritenta l'intero purge (idempotente) invece di perdere
-      // per sempre la voce di audit GDPR con la licenza già 'purged'.
-      const retentionLog = (await kv.get('gdpr:retention-log')) || [];
-      retentionLog.push({
-        type: 'demo-purge', societyId, societyName: lic.societyName,
-        email: lic.email, purgedAt: new Date().toISOString(),
-      });
-      await kv.set('gdpr:retention-log', retentionLog);
-
-      lic.demoStatus = 'purged';
-      // 'active:false' evita che il check 'esiste già una licenza attiva per questa
-      // email' in api/licenze.js (action=create) blocchi per sempre la creazione di
-      // una licenza a pagamento per la stessa email dopo che i dati demo sono già
-      // stati cancellati — senza questo, l'unico modo per sbloccarla sarebbe
-      // l'eliminazione manuale della voce dal pannello superadmin.
-      lic.active = false;
-      await kv.set(`licenze:${licKey}`, lic);
-    }
+    // purgeDemoSociety è definita a livello di modulo (sopra, subito dopo
+    // la creazione del client kv) per essere riusabile anche dal reset
+    // manuale superadmin — qui il cron la richiama sempre con
+    // releaseAntiAbuse di default (false), comportamento invariato.
 
     const demoKeys = await kv.smembers('licenze:index');
     const nowMs = Date.now();
@@ -2565,6 +2593,33 @@ if (req.query?.action === 'restore') {
     }
   }
   return res.status(200).json({ success: true, keysRestored, errors });
+}
+
+// ── RESET-DEMO: purge manuale di una licenza demo (solo superadmin) ──────
+// Serve per demo di test/errore create per sbaglio: a differenza del purge
+// automatico del cron (che NON libera mai l'anti-abuso, di proposito — una
+// demo scaduta naturalmente non deve permettere una seconda demo gratis),
+// questo endpoint libera esplicitamente email/telefono così la stessa
+// persona può registrarsi di nuovo subito. Da usare con cautela: cancella
+// per sempre annate/atleti/utenti della società, azione irreversibile.
+if (req.query?.action === 'reset-demo') {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const sa = await verifySuperAdmin(req, kv);
+  if (sa.blocked) return res.status(429).json({ error: `Troppi tentativi. Riprova tra ${sa.retryAfterMin} min.` });
+  if (!sa.ok) return res.status(401).json({ error: 'Non autorizzato — solo superadmin' });
+
+  const { licenseKey } = req.body || {};
+  if (!licenseKey) return res.status(400).json({ success: false, message: 'licenseKey obbligatorio' });
+
+  const lic = await kv.get(`licenze:${licenseKey}`);
+  if (!lic) return res.status(404).json({ success: false, message: 'Licenza non trovata' });
+  if (lic.plan !== 'demo') return res.status(403).json({ success: false, message: 'Solo licenze demo' });
+  if (lic.demoStatus === 'purged') return res.status(409).json({ success: false, message: 'Licenza già purgata in precedenza' });
+
+  await purgeDemoSociety(lic, licenseKey, true);
+
+  return res.status(200).json({ success: true, message: 'Demo resettata: dati cancellati, email/telefono liberati per una nuova registrazione' });
 }
 
 // ── MONITORING: Redis INFO + Vercel usage (solo superadmin) ──────────────
