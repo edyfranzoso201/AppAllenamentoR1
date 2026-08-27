@@ -1938,15 +1938,19 @@ if (req.query?.action === 'cron-remind' && req.method === 'GET') {
 
       try { await kv.del(`licenze_society:${societyId}`); } catch (e) { /* idempotente */ }
 
-      lic.demoStatus = 'purged';
-      await kv.set(`licenze:${licKey}`, lic);
-
+      // Retention-log PRIMA del flag 'purged': se questa scrittura fallisce,
+      // l'eccezione risale con la licenza ancora non marcata, così il prossimo
+      // giro del cron ritenta l'intero purge (idempotente) invece di perdere
+      // per sempre la voce di audit GDPR con la licenza già 'purged'.
       const retentionLog = (await kv.get('gdpr:retention-log')) || [];
       retentionLog.push({
         type: 'demo-purge', societyId, societyName: lic.societyName,
         email: lic.email, purgedAt: new Date().toISOString(),
       });
       await kv.set('gdpr:retention-log', retentionLog);
+
+      lic.demoStatus = 'purged';
+      await kv.set(`licenze:${licKey}`, lic);
     }
 
     const demoKeys = await kv.smembers('licenze:index');
@@ -1965,7 +1969,7 @@ if (req.query?.action === 'cron-remind' && req.method === 'GET') {
           try {
             await purgeDemoSociety(lic, licKey);
             demoProcessed++;
-          } catch (e) { console.error('[cron-remind] errore purge pending demo:', e?.message || e); }
+          } catch (e) { console.error('[cron-remind] errore purge pending demo (licKey=' + licKey + ', societyId=' + (lic?.societyId || '?') + ', societyName=' + (lic?.societyName || '?') + '):', e?.message || e); }
         }
         continue;
       }
@@ -2012,7 +2016,7 @@ if (req.query?.action === 'cron-remind' && req.method === 'GET') {
         try {
           await purgeDemoSociety(lic, licKey);
           demoProcessed++;
-        } catch (e) { console.error('[cron-remind] errore purge expired demo:', e?.message || e); }
+        } catch (e) { console.error('[cron-remind] errore purge expired demo (licKey=' + licKey + ', societyId=' + (lic?.societyId || '?') + ', societyName=' + (lic?.societyName || '?') + '):', e?.message || e); }
       }
     }
   } catch (e) {
