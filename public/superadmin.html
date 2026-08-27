@@ -913,7 +913,8 @@ function renderTable(licenze) {
                 <div style="font-size:0.72rem;color:#94a3b8">Creata: ${createdFormatted}</div>
             </td>
             <td>
-                ${l.plan === 'platinum' ? '<span class="badge" style="background:#7c3aed;color:#ede9fe">💎 Platinum</span>' : l.plan === 'gold' ? '<span class="badge" style="background:#b45309;color:#fef3c7">🥇 Gold</span>' : '<span class="badge" style="background:#374151;color:#d1d5db">🥈 Silver</span>'}
+                ${l.plan === 'demo' ? '<span class="badge" style="background:#0891b2;color:#cffafe">🎁 DEMO</span>' : l.plan === 'platinum' ? '<span class="badge" style="background:#7c3aed;color:#ede9fe">💎 Platinum</span>' : l.plan === 'gold' ? '<span class="badge" style="background:#b45309;color:#fef3c7">🥇 Gold</span>' : '<span class="badge" style="background:#374151;color:#d1d5db">🥈 Silver</span>'}
+                ${l.plan === 'demo' ? `<div style="font-size:0.72rem;color:#94a3b8;margin-top:3px">Atleti: ${(l.demoAtletiCount ?? 0)}/${l.demoLimits?.maxAtleti ?? 3} · Coach: ${(l.demoCoachCount ?? 0)}/${l.demoLimits?.maxCoach ?? 1}</div>` : ''}
             </td>
             <td style="text-align:center">
                 ${l.plan === 'platinum'
@@ -939,6 +940,11 @@ function renderTable(licenze) {
                     <button class="btn btn-warning btn-sm" onclick="openEdit('${l.licenseKey}')">✏️</button>
                     <button class="btn btn-danger btn-sm" onclick="openDelete('${l.licenseKey}', '${l.societyName.replace(/'/g,"\\'")}')">🗑️</button>
                     <button class="btn btn-sm" id="btn-det-${safeKey}" style="background:#0369a1;color:#fff;font-size:0.78rem;padding:3px 8px" title="Vedi atleti e staff" onclick="toggleDetails('${l.licenseKey}','${(l.societyId||'').replace(/'/g,"\\'")}','${safeKey}')">👁 Dettagli</button>
+                    ${l.plan === 'demo' ? `
+                    <button class="btn btn-sm" style="background:#0891b2;color:#fff;font-size:0.72rem;padding:3px 6px" title="Aggiungi 30 giorni" onclick="updateDemoLimit('${l.licenseKey}','${safeKey}','expiry',30)">+30gg</button>
+                    <button class="btn btn-sm" style="background:#0891b2;color:#fff;font-size:0.72rem;padding:3px 6px" title="Aggiungi 1 atleta" onclick="updateDemoLimit('${l.licenseKey}','${safeKey}','maxAtleti',1)">+1 atl.</button>
+                    <button class="btn btn-sm" style="background:#0891b2;color:#fff;font-size:0.72rem;padding:3px 6px" title="Aggiungi 1 coach" onclick="updateDemoLimit('${l.licenseKey}','${safeKey}','maxCoach',1)">+1 coach</button>
+                    ` : ''}
                 </div>
             </td>
         </tr>
@@ -1290,6 +1296,22 @@ async function toggleAI(licenseKey, safeKey) {
         showToast(d.aiEnabled ? '🤖 AI attivata per questa licenza' : '⏸ AI disattivata per questa licenza');
     } catch(e) {
         if (btn) { btn.disabled = false; btn.textContent = 'Errore'; }
+        showToast('❌ ' + e.message);
+    }
+}
+
+async function updateDemoLimit(licenseKey, safeKey, field, delta) {
+    try {
+        const r = await fetch(`${API_BASE}/api/licenze?action=update-demo-limits`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Super-Admin-Password': ADMIN_PWD },
+            body: JSON.stringify({ licenseKey, field, delta })
+        });
+        const d = await r.json();
+        if (!d.success) throw new Error(d.message || 'Errore');
+        showToast(field === 'expiry' ? `✅ +${delta} giorni aggiunti` : `✅ Limite ${field} aggiornato`);
+        loadLicenze(); // ricarica l'intera tabella per riflettere il nuovo stato
+    } catch (e) {
         showToast('❌ ' + e.message);
     }
 }
