@@ -302,6 +302,46 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, emailAlertsEnabled: stored.emailAlertsEnabled });
     }
 
+    // ==========================================
+    // ACTION: update-demo-limits - Superadmin amplia mesi/limiti di una demo
+    // ==========================================
+    if (action === 'update-demo-limits' && req.method === 'POST') {
+      const saCheck = await verifySuperAdmin(req, kv);
+      if (!saCheck.ok) {
+        if (saCheck.blocked) return res.status(429).json({ success: false, message: `Troppi tentativi. Riprova tra ${saCheck.retryAfterMin} minuti.` });
+        return res.status(401).json({ success: false, message: 'Non autorizzato' });
+      }
+      const { licenseKey, field, delta } = req.body || {};
+      if (!licenseKey || !field) return res.status(400).json({ success: false, message: 'licenseKey e field obbligatori' });
+      const deltaNum = Number(delta);
+      if (!Number.isFinite(deltaNum)) return res.status(400).json({ success: false, message: 'delta non valido' });
+
+      const stored = await kv.get(`licenze:${licenseKey}`);
+      if (!stored) return res.status(404).json({ success: false, message: 'Licenza non trovata' });
+      if (stored.plan !== 'demo') return res.status(403).json({ success: false, message: 'Solo licenze demo' });
+
+      if (field === 'expiry') {
+        const current = stored.demoExpiresAt ? new Date(stored.demoExpiresAt) : new Date();
+        current.setDate(current.getDate() + deltaNum);
+        stored.demoExpiresAt = current.toISOString();
+        stored.expiry = current.toISOString().split('T')[0];
+        if (stored.demoStatus === 'expired' && current.getTime() > Date.now()) {
+          stored.demoStatus = 'active';
+          stored.demoReminder15Sent = false;
+          stored.demoReminder3Sent = false;
+        }
+      } else if (field === 'maxAtleti' || field === 'maxCoach') {
+        if (!stored.demoLimits) stored.demoLimits = { maxAtleti: 3, maxDirigenti: 1, maxCoach: 1 };
+        stored.demoLimits[field] = Math.max(0, (stored.demoLimits[field] || 0) + deltaNum);
+      } else {
+        return res.status(400).json({ success: false, message: 'field non valido (usa: expiry, maxAtleti, maxCoach)' });
+      }
+
+      stored.updatedAt = new Date().toISOString();
+      await kv.set(`licenze:${licenseKey}`, stored);
+      return res.status(200).json({ success: true, licenza: { ...stored, licenseKey } });
+    }
+
     // ACTION: update - Modifica licenza (rinnovo, revoca)
     // ==========================================
     if (action === 'update' && req.method === 'PUT') {
