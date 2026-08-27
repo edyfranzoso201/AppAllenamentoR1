@@ -208,11 +208,8 @@ export default async function handler(req, res) {
           };
           if (data.plan === 'demo') {
             const societyAnnate = allAnnateForCount.filter(a => a.societyId === data.societyId);
-            let atletiCount = 0;
-            for (const annata of societyAnnate) {
-              const athletes = (await kv.get(`annate:${annata.id}:athletes`)) || [];
-              atletiCount += athletes.filter(a => !a.isGuest).length;
-            }
+            const athleteLists = await Promise.all(societyAnnate.map(annata => kv.get(`annate:${annata.id}:athletes`)));
+            const atletiCount = athleteLists.reduce((sum, athletes) => sum + ((athletes || []).filter(a => !a.isGuest && !a.isStaff).length), 0);
             const coachCount = allUsersForCount.filter(u => u.societyId === data.societyId && String(u.role || '').startsWith('coach')).length;
             base.demoAtletiCount = atletiCount;
             base.demoCoachCount = coachCount;
