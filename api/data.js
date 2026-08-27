@@ -1894,6 +1894,131 @@ if (req.query?.action === 'cron-remind' && req.method === 'GET') {
     console.error('❌ Errore email alerts:', emailErr.message);
   }
 
+  // ── DEMO GRATUITA: promemoria scadenza + blocco + oblio dopo 30gg di grazia
+  // + purge dei pending mai confermati (>48h) ─────────────────────────────
+  // NOTA: qui NON possiamo riusare il `transporter` del blocco email-alerts
+  // sopra: è dichiarato con `const` dentro quel `try { }` ed esce di scope
+  // alla sua chiusura (stesso motivo per cui il blocco R3 sotto ne crea uno
+  // suo, `transR3`). Ne creiamo uno dedicato, stesso pattern.
+  let demoProcessed = 0;
+  try {
+    const { createTransport: ctDemo } = await import('nodemailer');
+    const transporter = ctDemo({
+      service: 'gmail',
+      auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
+    });
+
+    // Purge completo dati società demo: cancella prima i dati figli
+    // (annate/atleti/utenti), marca 'purged' sulla licenza SOLO alla fine.
+    // Se il processo si interrompe a metà resta in uno stato "parzialmente
+    // pulito" recuperabile al giro successivo, invece di un falso 'purged'
+    // con dati orfani invisibili.
+    async function purgeDemoSociety(lic, licKey) {
+      const societyId = lic.societyId;
+      const allAnnate = (await kv.get('annate:list')) || [];
+      const societyAnnate = allAnnate.filter(a => a.societyId === societyId);
+      const remainingAnnate = allAnnate.filter(a => a.societyId !== societyId);
+
+      for (const annata of societyAnnate) {
+        const keysToDelete = [
+          `annate:${annata.id}:athletes`, `annate:${annata.id}:evaluations`, `annate:${annata.id}:gpsData`,
+          `annate:${annata.id}:awards`, `annate:${annata.id}:trainingSessions`, `annate:${annata.id}:formationData`,
+          `annate:${annata.id}:matchResults`, `annate:${annata.id}:calendarEvents`, `annate:${annata.id}:calendarResponses`,
+          `society:${societyId}:inventoryCatPhotos:${annata.id}`,
+        ];
+        for (const k of keysToDelete) { try { await kv.del(k); } catch (e) { /* già assente: ok, idempotente */ } }
+      }
+      await kv.set('annate:list', remainingAnnate);
+
+      const allUsers = (await kv.get('auth:users')) || [];
+      const remainingUsers = allUsers.filter(u => u.societyId !== societyId);
+      const removedUsers = allUsers.filter(u => u.societyId === societyId);
+      await kv.set('auth:users', remainingUsers);
+      for (const u of removedUsers) { try { await kv.del(`auth:user:${String(u.username).toLowerCase()}`); } catch (e) { /* idempotente */ } }
+
+      try { await kv.del(`licenze_society:${societyId}`); } catch (e) { /* idempotente */ }
+
+      lic.demoStatus = 'purged';
+      await kv.set(`licenze:${licKey}`, lic);
+
+      const retentionLog = (await kv.get('gdpr:retention-log')) || [];
+      retentionLog.push({
+        type: 'demo-purge', societyId, societyName: lic.societyName,
+        email: lic.email, purgedAt: new Date().toISOString(),
+      });
+      await kv.set('gdpr:retention-log', retentionLog);
+    }
+
+    const demoKeys = await kv.smembers('licenze:index');
+    const nowMs = Date.now();
+    for (const licKey of (demoKeys || [])) {
+      const lic = await kv.get(`licenze:${licKey}`);
+      if (!lic || lic.plan !== 'demo') continue;
+
+      // ── Pending mai confermato (nessun demoExpiresAt): dopo 48h dalla
+      // creazione, la società/annata/utente creati da demo-signup restano
+      // orfani per sempre se l'utente non conferma mai via email — vanno
+      // ripuliti qui (stessa purge, promessa nel commento di demo-signup).
+      if (lic.demoStatus === 'pending') {
+        const createdMs = lic.createdAt ? new Date(lic.createdAt).getTime() : NaN;
+        if (!isNaN(createdMs) && (nowMs - createdMs) >= 48 * 60 * 60 * 1000) {
+          try {
+            await purgeDemoSociety(lic, licKey);
+            demoProcessed++;
+          } catch (e) { console.error('[cron-remind] errore purge pending demo:', e?.message || e); }
+        }
+        continue;
+      }
+
+      if (!lic.demoExpiresAt) continue;
+
+      const expiresMs = new Date(lic.demoExpiresAt).getTime();
+      const msLeft = expiresMs - nowMs;
+      const daysLeft = Math.ceil(msLeft / (24 * 60 * 60 * 1000));
+
+      // Promemoria 15gg / 3gg (solo se ancora attiva)
+      if (lic.demoStatus === 'active') {
+        if (daysLeft <= 15 && daysLeft > 3 && !lic.demoReminder15Sent) {
+          await transporter.sendMail({
+            from: process.env.GMAIL_USER, to: lic.email,
+            subject: '⏳ La tua prova gratuita sta per scadere',
+            html: `<p>Ciao,</p><p>La tua prova gratuita di Sport Monitoring per <strong>${lic.societyName}</strong> scade tra ${daysLeft} giorni. Contattaci per continuare a usarla senza interruzioni.</p>`
+          });
+          lic.demoReminder15Sent = true;
+          await kv.set(`licenze:${licKey}`, lic);
+          demoProcessed++;
+        } else if (daysLeft <= 3 && daysLeft >= 0 && !lic.demoReminder3Sent) {
+          await transporter.sendMail({
+            from: process.env.GMAIL_USER, to: lic.email,
+            subject: '🚨 Ultimi giorni di prova gratuita',
+            html: `<p>Ciao,</p><p>La tua prova gratuita per <strong>${lic.societyName}</strong> scade tra ${daysLeft} giorni. Contattaci subito per non perdere i tuoi dati.</p>`
+          });
+          lic.demoReminder3Sent = true;
+          await kv.set(`licenze:${licKey}`, lic);
+          demoProcessed++;
+        }
+      }
+
+      // Scadenza: passa a 'expired' (blocco login gestito in auth/login.js)
+      if (lic.demoStatus === 'active' && msLeft <= 0) {
+        lic.demoStatus = 'expired';
+        await kv.set(`licenze:${licKey}`, lic);
+        demoProcessed++;
+      }
+
+      // Fine periodo di grazia (30gg dopo la scadenza): purge completo
+      const graceMs = expiresMs + 30 * 24 * 60 * 60 * 1000;
+      if (lic.demoStatus === 'expired' && nowMs >= graceMs) {
+        try {
+          await purgeDemoSociety(lic, licKey);
+          demoProcessed++;
+        } catch (e) { console.error('[cron-remind] errore purge expired demo:', e?.message || e); }
+      }
+    }
+  } catch (e) {
+    console.error('[cron-remind] errore ciclo vita demo:', e?.message || e);
+  }
+
   // ── R3: gestione link certificato medico (dato sanitario minore) ─────────
   // Il genitore carica il link Drive del certificato (athleteDocs[id].certificato).
   // Per limitare l'esposizione: dopo 60gg dall'upload il LINK viene RIMOSSO
@@ -2123,7 +2248,7 @@ if (req.query?.action === 'cron-remind' && req.method === 'GET') {
     console.error('❌ Errore alert 57h partita:', matchErr.message);
   }
 
-  return res.status(200).json({ success: true, totalSent });
+  return res.status(200).json({ success: true, totalSent, demoProcessed });
 }
 
 // ── PRESENCE-REMIND: promemoria settimanale "segnala le assenze" ───────────
