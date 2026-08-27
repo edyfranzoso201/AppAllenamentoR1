@@ -195,13 +195,29 @@ export default async function handler(req, res) {
       const keys = await kv.smembers('licenze:index');
       const today = new Date().toISOString().split('T')[0];
       const results = await Promise.all(keys.map(k => kv.get(`licenze:${k}`)));
-      const licenze = results
+      const allAnnateForCount = results.some(d => d && d.plan === 'demo') ? ((await kv.get('annate:list')) || []) : [];
+      const allUsersForCount = results.some(d => d && d.plan === 'demo') ? ((await kv.get('auth:users')) || []) : [];
+      const licenze = await Promise.all(results
         .filter(Boolean)
-        .map((data, i) => ({
-          ...data,
-          licenseKey: keys[i],
-          isExpired: data.expiry < today,
-          daysLeft: Math.ceil((new Date(data.expiry) - new Date()) / (1000 * 60 * 60 * 24))
+        .map(async (data, i) => {
+          const base = {
+            ...data,
+            licenseKey: keys[i],
+            isExpired: data.expiry < today,
+            daysLeft: Math.ceil((new Date(data.expiry) - new Date()) / (1000 * 60 * 60 * 24))
+          };
+          if (data.plan === 'demo') {
+            const societyAnnate = allAnnateForCount.filter(a => a.societyId === data.societyId);
+            let atletiCount = 0;
+            for (const annata of societyAnnate) {
+              const athletes = (await kv.get(`annate:${annata.id}:athletes`)) || [];
+              atletiCount += athletes.filter(a => !a.isGuest).length;
+            }
+            const coachCount = allUsersForCount.filter(u => u.societyId === data.societyId && String(u.role || '').startsWith('coach')).length;
+            base.demoAtletiCount = atletiCount;
+            base.demoCoachCount = coachCount;
+          }
+          return base;
         }));
 
       licenze.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
