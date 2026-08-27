@@ -319,6 +319,9 @@ export default async function handler(req, res) {
       const stored = await kv.get(`licenze:${licenseKey}`);
       if (!stored) return res.status(404).json({ success: false, message: 'Licenza non trovata' });
       if (stored.plan !== 'demo') return res.status(403).json({ success: false, message: 'Solo licenze demo' });
+      // Una demo già "purged" ha i dati società già cancellati dal cron: estendere
+      // la scadenza qui darebbe uno stato incoerente (scadenza futura ma nulla da riattivare).
+      if (stored.demoStatus === 'purged') return res.status(409).json({ success: false, message: 'Licenza già cancellata (dati purgati): impossibile modificarla' });
 
       if (field === 'expiry') {
         const current = stored.demoExpiresAt ? new Date(stored.demoExpiresAt) : new Date();
@@ -330,11 +333,11 @@ export default async function handler(req, res) {
           stored.demoReminder15Sent = false;
           stored.demoReminder3Sent = false;
         }
-      } else if (field === 'maxAtleti' || field === 'maxCoach') {
+      } else if (field === 'maxAtleti' || field === 'maxCoach' || field === 'maxDirigenti') {
         if (!stored.demoLimits) stored.demoLimits = { maxAtleti: 3, maxDirigenti: 1, maxCoach: 1 };
         stored.demoLimits[field] = Math.max(0, (stored.demoLimits[field] || 0) + deltaNum);
       } else {
-        return res.status(400).json({ success: false, message: 'field non valido (usa: expiry, maxAtleti, maxCoach)' });
+        return res.status(400).json({ success: false, message: 'field non valido (usa: expiry, maxAtleti, maxDirigenti, maxCoach)' });
       }
 
       stored.updatedAt = new Date().toISOString();
