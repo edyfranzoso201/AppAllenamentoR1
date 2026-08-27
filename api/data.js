@@ -572,7 +572,7 @@ if (req.query?.action === 'demo-signup' && req.method === 'POST') {
     nome: nomeReferente,
     cognome: '',
     note: 'Utente demo — pending conferma email',
-    role: 'dirigente_l1',
+    role: 'admin',
     annate: [annataId],
     societyId,
     expiryDate: null,
