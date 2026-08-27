@@ -14,6 +14,7 @@ function setCors(req, res) {
 const origin = req.headers['origin'] || '';
 const allowed = [
 'https://app-allenamento-r1.vercel.app',
+'https://sport-monitoring.vercel.app',
 'http://localhost:3000',
 'http://localhost:3001',
 'http://127.0.0.1:3000'
