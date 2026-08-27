@@ -450,6 +450,17 @@ if (req.query?.action === 'contact' && req.method === 'POST') {
 
 // ── DEMO GRATUITA: registrazione self-service (3 mesi, 3 atleti + 1 dirigente + 1 coach) ──
 if (req.query?.action === 'demo-signup' && req.method === 'POST') {
+  // Rate limit 5 richieste/ora per IP, stesso pattern del blocco 'contact' sopra.
+  try {
+    const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'noip';
+    const rlKey = `demo-signup:rl:${ip}`;
+    const n = await kv.incr(rlKey);
+    if (n === 1) await kv.expire(rlKey, 3600);
+    if (n > 5) {
+      return res.status(429).json({ success: false, message: 'Troppi tentativi. Riprova più tardi.' });
+    }
+  } catch (e) { /* rate limit soft: un errore KV non blocca la richiesta, coerente con 'contact' */ }
+
   const { societyName, refName, email: rawEmail, phone: rawPhone } = req.body || {};
 
   const email = String(rawEmail || '').trim().toLowerCase();
@@ -483,7 +494,24 @@ if (req.query?.action === 'demo-signup' && req.method === 'POST') {
     return res.status(400).json({ success: false, message: 'Hai già una registrazione in attesa di conferma. Controlla la tua email.' });
   }
 
+  // ── Lock atomico anti-race sulla email normalizzata: due richieste quasi
+  // simultanee con la stessa email non devono poter creare due utenti/società
+  // in parallelo (il controllo duplicati sopra + il read-modify-write di
+  // auth:users più sotto, da soli, hanno una finestra di race). Il client
+  // @vercel/kv (basato su @upstash/redis) supporta nx+ex nella stessa set().
+  const signupLockKey = `demo:signup-lock:${email}`;
+  const gotLock = await kv.set(signupLockKey, '1', { nx: true, ex: 60 });
+  if (!gotLock) {
+    return res.status(400).json({ success: false, message: 'Riprova tra qualche istante (conflitto temporaneo).' });
+  }
+
   // ── Crea società/annata/licenza/utente pending ──
+  // NOTA (comportamento noto, non risolto qui): se l'utente non conferma mai
+  // il link entro 48h, il pending (demo:pending:<email>) scade da solo (TTL),
+  // ma società/annata/licenza/utente creati qui sotto restano orfani a tempo
+  // indeterminato — nessun TTL su quelle chiavi. La pulizia va aggiunta al
+  // cron esistente (Task 7 del piano): quando demoStatus === 'pending' e sono
+  // passate più di 48h dalla creazione, fare purge come per le demo scadute.
   const societyId = crypto.randomUUID().replace(/-/g, '').substring(0, 20);
   const annataId = crypto.randomBytes(8).toString('hex');
   const now = new Date();
@@ -579,17 +607,21 @@ if (req.query?.action === 'demo-signup' && req.method === 'POST') {
     const { createTransport } = await import('nodemailer');
     const transporter = createTransport({ service: 'gmail', auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS } });
     const confirmUrl = `https://app-allenamento-r1.vercel.app/verify-demo.html?token=${encodeURIComponent(demoToken)}`;
+    // Stesso escaping HTML del blocco 'contact' sopra (funzione locale a
+    // quello scope, quindi replicata qui identica): nomeReferente/nomeSocieta/
+    // email/phone sono input utente e vanno escapati prima di finire nell'HTML.
+    const esc = s => String(s).replace(/</g, '&lt;').replace(/>/g, '&gt;');
     await transporter.sendMail({
       from: process.env.GMAIL_USER,
       to: email,
       subject: 'Conferma la tua prova gratuita — Sport Monitoring',
-      html: `<p>Ciao ${nomeReferente},</p><p>Conferma la tua registrazione a Sport Monitoring cliccando qui:</p><p><a href="${confirmUrl}">${confirmUrl}</a></p><p>Il link scade tra 48 ore.</p>`,
+      html: `<p>Ciao ${esc(nomeReferente)},</p><p>Conferma la tua registrazione a Sport Monitoring cliccando qui:</p><p><a href="${confirmUrl}">${confirmUrl}</a></p><p>Il link scade tra 48 ore.</p>`,
     });
     await transporter.sendMail({
       from: process.env.GMAIL_USER,
       to: process.env.GMAIL_USER,
       subject: `🆕 Nuovo lead demo: ${nomeSocieta}`,
-      html: `<p>Società: ${nomeSocieta}<br>Referente: ${nomeReferente}<br>Email: ${email}<br>Telefono: ${phone}</p>`,
+      html: `<p>Società: ${esc(nomeSocieta)}<br>Referente: ${esc(nomeReferente)}<br>Email: ${esc(email)}<br>Telefono: ${esc(phone)}</p>`,
     });
   } catch (e) {
     console.error('[demo-signup] invio email fallito:', e?.message || e);
