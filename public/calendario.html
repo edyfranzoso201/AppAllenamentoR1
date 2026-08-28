@@ -2530,6 +2530,317 @@ function showSondaggiTab(canEdit) {
     if (newBtn) newBtn.style.display = canEdit ? '' : 'none';
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// ████  SONDAGGI: dati/business logic (staff)  ████
+// ═══════════════════════════════════════════════════════════════════
+var _sondaggiSurveys   = {};
+var _sondaggiResponses = {};
+var _sondaggiAthletes  = [];
+
+function _sondaggiBadge(survey) {
+    var isOpen = survey.status === 'open' && (survey.closesAt === null || survey.closesAt === undefined || survey.closesAt > Date.now());
+    return isOpen
+        ? '<span style="color:#16a34a;font-weight:600;">🟢 Aperto</span>'
+        : '<span style="color:#64748b;font-weight:600;">⚫ Chiuso</span>';
+}
+
+function _sondaggiIsOpen(survey) {
+    return survey.status === 'open' && (survey.closesAt === null || survey.closesAt === undefined || survey.closesAt > Date.now());
+}
+
+async function sondaggiLoad() {
+    var aid = _bAnnataId();
+    var container = document.getElementById('sondaggi-list-container');
+    if (container) container.innerHTML = '<p style="color:#94a3b8;font-size:0.85rem;">Caricamento...</p>';
+    try {
+        var res = await fetch('/api/data', { cache: 'no-store', headers: { 'x-annata-id': aid } });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var d = await res.json();
+        _sondaggiSurveys   = (d && d.surveys)         || {};
+        _sondaggiResponses = (d && d.surveyResponses) || {};
+        _sondaggiAthletes  = (d && d.athletes || []).filter(function(a){ return !a.isGuest && !a.isStaff; });
+        window._sondaggiData = { surveys: _sondaggiSurveys, surveyResponses: _sondaggiResponses };
+    } catch(e) {
+        console.warn('[Sondaggi] load err:', e);
+        if (container) container.innerHTML = '<p style="color:#d90429;">Errore caricamento sondaggi: ' + e.message + '</p>';
+        return;
+    }
+    sondaggiRenderList();
+}
+
+function sondaggiRenderList() {
+    var container = document.getElementById('sondaggi-list-container');
+    if (!container) return;
+
+    var ids = Object.keys(_sondaggiSurveys);
+    if (!ids.length) {
+        container.innerHTML = '<p style="color:#94a3b8;font-size:0.85rem;">Nessun sondaggio creato.</p>';
+        return;
+    }
+
+    var list = ids.map(function(id){ return _sondaggiSurveys[id]; }).sort(function(a,b){
+        return (b.createdAt || 0) - (a.createdAt || 0);
+    });
+
+    var totAthletes = _sondaggiAthletes.length;
+    var html = '<div style="display:flex;flex-direction:column;gap:10px;">';
+    list.forEach(function(survey){
+        var responses = _sondaggiResponses[survey.id] || {};
+        var respCount = Object.keys(responses).length;
+        var closesInfo = '';
+        if (survey.closesAt) {
+            closesInfo = '<div style="font-size:0.75rem;color:#94a3b8;margin-top:2px;">Scadenza: ' + new Date(survey.closesAt).toLocaleString('it-IT') + '</div>';
+        }
+        html += '<div onclick="window.sondaggiOpenDetail(\'' + survey.id + '\')" style="cursor:pointer;background:var(--bg-blue,#0f172a);border:1px solid rgba(59,90,157,0.3);border-radius:8px;padding:12px 14px;">'
+            + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+            + '<strong style="color:var(--text-primary,#e2e8f0);font-size:0.92rem;">' + survey.question + '</strong>'
+            + '<span style="margin-left:auto;font-size:0.8rem;">' + _sondaggiBadge(survey) + '</span>'
+            + '</div>'
+            + closesInfo
+            + '<div style="font-size:0.78rem;color:#94a3b8;margin-top:6px;">' + respCount + '/' + totAthletes + ' hanno risposto</div>'
+            + '</div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function sondaggiOpenForm(existingSurvey) {
+    var listC = document.getElementById('sondaggi-list-container');
+    var formC = document.getElementById('sondaggi-form-container');
+    if (!formC) return;
+    if (listC) listC.style.display = 'none';
+
+    var html = '<div style="background:var(--bg-blue,#0f172a);border:1px solid rgba(59,90,157,0.3);border-radius:8px;padding:16px;">'
+        + '<h4 style="margin:0 0 12px 0;color:var(--text-primary,#e2e8f0);font-size:0.95rem;">Nuovo Sondaggio</h4>'
+        + '<div style="margin-bottom:10px;">'
+        + '<label style="display:block;font-size:0.82rem;color:#94a3b8;margin-bottom:4px;">Domanda *</label>'
+        + '<input type="text" id="sondaggi-form-question" style="width:100%;padding:8px 10px;border-radius:6px;border:1px solid #3b5a9d;background:transparent;color:inherit;" placeholder="Es. Preferite allenarvi il martedì o il giovedì?">'
+        + '</div>'
+        + '<div style="margin-bottom:10px;">'
+        + '<label style="display:block;font-size:0.82rem;color:#94a3b8;margin-bottom:4px;">Opzioni *</label>'
+        + '<div id="sondaggi-form-options">'
+        + '<input type="text" class="sondaggi-option-input" style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid #3b5a9d;background:transparent;color:inherit;margin-bottom:6px;" placeholder="Opzione 1">'
+        + '<input type="text" class="sondaggi-option-input" style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid #3b5a9d;background:transparent;color:inherit;margin-bottom:6px;" placeholder="Opzione 2">'
+        + '</div>'
+        + '<button type="button" onclick="window.sondaggiAddOption()" style="background:none;border:1px dashed #3b5a9d;color:#94a3b8;border-radius:6px;padding:5px 10px;font-size:0.8rem;cursor:pointer;">+ Aggiungi opzione</button>'
+        + '</div>'
+        + '<div style="margin-bottom:10px;display:flex;gap:16px;">'
+        + '<label style="font-size:0.85rem;"><input type="radio" name="sondaggi-multiple" value="single" checked> Scelta singola</label>'
+        + '<label style="font-size:0.85rem;"><input type="radio" name="sondaggi-multiple" value="multiple"> Scelta multipla</label>'
+        + '</div>'
+        + '<div style="margin-bottom:10px;">'
+        + '<label style="display:block;font-size:0.82rem;color:#94a3b8;margin-bottom:4px;">Scadenza (opzionale)</label>'
+        + '<input type="datetime-local" id="sondaggi-form-closes" style="padding:7px 10px;border-radius:6px;border:1px solid #3b5a9d;background:transparent;color:inherit;">'
+        + '</div>'
+        + '<div style="margin-bottom:6px;">'
+        + '<label style="font-size:0.85rem;"><input type="checkbox" id="sondaggi-form-showresults" checked onchange="var n=document.getElementById(\'sondaggi-form-shownames-wrap\'); if(n) n.style.display=this.checked?\'\':\'none\'; if(!this.checked){var c=document.getElementById(\'sondaggi-form-shownames\'); if(c)c.checked=false;}"> Mostra risultati ai genitori</label>'
+        + '</div>'
+        + '<div id="sondaggi-form-shownames-wrap" style="margin-bottom:14px;margin-left:20px;">'
+        + '<label style="font-size:0.85rem;"><input type="checkbox" id="sondaggi-form-shownames"> Mostra anche chi ha risposto cosa</label>'
+        + '</div>'
+        + '<div style="display:flex;gap:10px;">'
+        + '<button type="button" onclick="window.sondaggiSaveForm()" style="background:#16a34a;color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:0.85rem;font-weight:600;cursor:pointer;">Salva</button>'
+        + '<button type="button" onclick="window.sondaggiCancelForm()" style="background:none;border:1px solid #3b5a9d;color:#94a3b8;border-radius:6px;padding:8px 16px;font-size:0.85rem;cursor:pointer;">Annulla</button>'
+        + '</div>'
+        + '</div>';
+    formC.innerHTML = html;
+    formC.style.display = '';
+}
+
+function sondaggiAddOption() {
+    var optsC = document.getElementById('sondaggi-form-options');
+    if (!optsC) return;
+    var inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'sondaggi-option-input';
+    inp.placeholder = 'Opzione ' + (optsC.querySelectorAll('.sondaggi-option-input').length + 1);
+    inp.style.cssText = 'width:100%;padding:7px 10px;border-radius:6px;border:1px solid #3b5a9d;background:transparent;color:inherit;margin-bottom:6px;';
+    optsC.appendChild(inp);
+}
+
+function sondaggiCancelForm() {
+    var formC = document.getElementById('sondaggi-form-container');
+    var listC = document.getElementById('sondaggi-list-container');
+    if (formC) { formC.style.display = 'none'; formC.innerHTML = ''; }
+    if (listC) listC.style.display = '';
+}
+
+async function sondaggiSaveForm() {
+    var qEl = document.getElementById('sondaggi-form-question');
+    var question = qEl ? qEl.value.trim() : '';
+    if (!question) { alert('Inserisci la domanda del sondaggio.'); return; }
+
+    var optionInputs = document.querySelectorAll('#sondaggi-form-options .sondaggi-option-input');
+    var options = [];
+    optionInputs.forEach(function(inp){
+        var v = inp.value.trim();
+        if (v) options.push(v);
+    });
+    if (options.length < 2) { alert('Inserisci almeno 2 opzioni.'); return; }
+
+    var multipleEl = document.querySelector('input[name="sondaggi-multiple"]:checked');
+    var multiple = !!multipleEl && multipleEl.value === 'multiple';
+
+    var closesEl = document.getElementById('sondaggi-form-closes');
+    var closesAt = (closesEl && closesEl.value) ? new Date(closesEl.value).getTime() : null;
+
+    var showResultsEl = document.getElementById('sondaggi-form-showresults');
+    var showResultsToParents = !showResultsEl || showResultsEl.checked;
+    var showNamesEl = document.getElementById('sondaggi-form-shownames');
+    var showNamesInResults = showResultsToParents && !!(showNamesEl && showNamesEl.checked);
+
+    var user = sessionStorage.getItem('gosport_auth_user') || 'coach';
+    var id = 'sondaggio_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
+    var survey = {
+        id: id,
+        question: question,
+        options: options,
+        multiple: multiple,
+        createdAt: Date.now(),
+        closesAt: closesAt,
+        status: 'open',
+        showResultsToParents: showResultsToParents,
+        showNamesInResults: showNamesInResults,
+        createdBy: user
+    };
+
+    _sondaggiSurveys[id] = survey;
+    await sondaggiPersist();
+    sondaggiCancelForm();
+}
+
+async function sondaggiPersist() {
+    var aid = _bAnnataId();
+    try {
+        var res = await fetch('/api/data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-annata-id': aid },
+            body: JSON.stringify({ surveys: _sondaggiSurveys })
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+    } catch(e) {
+        console.warn('[Sondaggi] save err:', e);
+        alert('❌ Errore salvataggio sondaggio: ' + e.message);
+        return;
+    }
+    await sondaggiLoad();
+}
+
+function sondaggiOpenDetail(surveyId) {
+    var listC = document.getElementById('sondaggi-list-container');
+    var detailC = document.getElementById('sondaggi-detail-container');
+    if (!detailC) return;
+    var survey = _sondaggiSurveys[surveyId];
+    if (!survey) return;
+    if (listC) listC.style.display = 'none';
+
+    var responses = _sondaggiResponses[surveyId] || {};
+    var respIds = Object.keys(responses);
+    var totResp = respIds.length;
+
+    // Barre percentuale per opzione
+    var barsHtml = '';
+    if (!totResp) {
+        barsHtml = '<p style="color:#94a3b8;font-size:0.85rem;">Nessuna risposta ancora.</p>';
+    } else {
+        survey.options.forEach(function(opt){
+            var count = 0;
+            respIds.forEach(function(aid){
+                var choices = (responses[aid] && responses[aid].choices) || [];
+                if (choices.indexOf(opt) !== -1) count++;
+            });
+            var pct = totResp ? Math.round((count / totResp) * 100) : 0;
+            barsHtml += '<div style="margin-bottom:8px;">'
+                + '<div style="display:flex;justify-content:space-between;font-size:0.82rem;color:var(--text-primary,#e2e8f0);margin-bottom:3px;">'
+                + '<span>' + opt + '</span><span>' + count + ' (' + pct + '%)</span></div>'
+                + '<div style="background:rgba(255,255,255,0.08);border-radius:4px;height:8px;overflow:hidden;">'
+                + '<div style="background:#3b82f6;height:100%;width:' + pct + '%;"></div>'
+                + '</div></div>';
+        });
+    }
+
+    // Chi ha risposto / chi non ha risposto
+    var athleteName = function(aid){
+        var a = _sondaggiAthletes.find(function(x){ return String(x.id) === String(aid); });
+        return a ? a.name : ('Atleta #' + aid);
+    };
+    var respondedHtml = '';
+    if (!respIds.length) {
+        respondedHtml = '<p style="color:#94a3b8;font-size:0.82rem;">Nessuno ha risposto.</p>';
+    } else {
+        respondedHtml = '<ul style="list-style:none;padding:0;margin:0;">' + respIds.map(function(aid){
+            var choices = (responses[aid] && responses[aid].choices) || [];
+            return '<li style="padding:4px 0;border-bottom:1px solid rgba(59,90,157,0.2);font-size:0.82rem;">'
+                + '<strong>' + athleteName(aid) + '</strong>: ' + choices.join(', ') + '</li>';
+        }).join('') + '</ul>';
+    }
+
+    var notRespondedIds = _sondaggiAthletes.filter(function(a){ return respIds.indexOf(String(a.id)) === -1; });
+    var notRespondedHtml = '';
+    if (!notRespondedIds.length) {
+        notRespondedHtml = '<p style="color:#94a3b8;font-size:0.82rem;">Tutti hanno risposto.</p>';
+    } else {
+        notRespondedHtml = '<ul style="list-style:none;padding:0;margin:0;">' + notRespondedIds.map(function(a){
+            return '<li style="padding:4px 0;border-bottom:1px solid rgba(59,90,157,0.2);font-size:0.82rem;color:#94a3b8;">' + a.name + '</li>';
+        }).join('') + '</ul>';
+    }
+
+    var closeBtn = '';
+    if (window._sondaggiCanEdit && _sondaggiIsOpen(survey)) {
+        closeBtn = '<button type="button" onclick="window.sondaggiCloseSurvey(\'' + survey.id + '\')" style="background:#d90429;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:0.82rem;font-weight:600;cursor:pointer;">Chiudi sondaggio</button>';
+    }
+
+    var html = '<div style="background:var(--bg-blue,#0f172a);border:1px solid rgba(59,90,157,0.3);border-radius:8px;padding:16px;">'
+        + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">'
+        + '<h4 style="margin:0;color:var(--text-primary,#e2e8f0);font-size:0.95rem;">' + survey.question + '</h4>'
+        + '<span style="margin-left:auto;font-size:0.8rem;">' + _sondaggiBadge(survey) + '</span>'
+        + '</div>'
+        + (survey.closesAt ? '<div style="font-size:0.75rem;color:#94a3b8;margin-bottom:10px;">Scadenza: ' + new Date(survey.closesAt).toLocaleString('it-IT') + '</div>' : '<div style="margin-bottom:10px;"></div>')
+        + '<div style="margin-bottom:14px;">' + barsHtml + '</div>'
+        + '<div style="margin-bottom:14px;">'
+        + '<h5 style="font-size:0.85rem;color:var(--text-primary,#e2e8f0);margin:0 0 6px 0;">Chi ha risposto</h5>'
+        + respondedHtml
+        + '</div>'
+        + '<div style="margin-bottom:14px;">'
+        + '<h5 style="font-size:0.85rem;color:var(--text-primary,#e2e8f0);margin:0 0 6px 0;">Non ha ancora risposto</h5>'
+        + notRespondedHtml
+        + '</div>'
+        + '<div style="display:flex;gap:10px;">'
+        + closeBtn
+        + '<button type="button" onclick="window.sondaggiCloseDetail()" style="background:none;border:1px solid #3b5a9d;color:#94a3b8;border-radius:6px;padding:7px 14px;font-size:0.82rem;cursor:pointer;">Torna alla lista</button>'
+        + '</div>'
+        + '</div>';
+
+    detailC.innerHTML = html;
+    detailC.style.display = '';
+}
+
+function sondaggiCloseDetail() {
+    var detailC = document.getElementById('sondaggi-detail-container');
+    var listC = document.getElementById('sondaggi-list-container');
+    if (detailC) { detailC.style.display = 'none'; detailC.innerHTML = ''; }
+    if (listC) listC.style.display = '';
+}
+
+async function sondaggiCloseSurvey(surveyId) {
+    var survey = _sondaggiSurveys[surveyId];
+    if (!survey) return;
+    survey.status = 'closed';
+    await sondaggiPersist();
+    sondaggiOpenDetail(surveyId);
+}
+
+window.sondaggiLoad         = sondaggiLoad;
+window.sondaggiRenderList   = sondaggiRenderList;
+window.sondaggiOpenForm     = sondaggiOpenForm;
+window.sondaggiAddOption    = sondaggiAddOption;
+window.sondaggiCancelForm   = sondaggiCancelForm;
+window.sondaggiSaveForm     = sondaggiSaveForm;
+window.sondaggiPersist      = sondaggiPersist;
+window.sondaggiOpenDetail   = sondaggiOpenDetail;
+window.sondaggiCloseDetail  = sondaggiCloseDetail;
+window.sondaggiCloseSurvey  = sondaggiCloseSurvey;
+
 // ── switchTab hook: carica gare se necessario ────────────────────
 
 // ── Calcola lunedì della settimana corrente + offset ────────────────
