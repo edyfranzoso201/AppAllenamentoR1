@@ -2045,7 +2045,7 @@ const response = await fetch(`/api/data?parentMode=1`, {
     // Mostra sezione documenti nella pagina genitore (sempre visibile)
     if (athleteIdParam) {
       window._renderParentDocsSection(athleteIdParam, annataId, d.athleteDocs || {});
-      window._renderParentSurveysSection(athleteIdParam, annataId, d.surveys || {}, d.surveyResponses || {});
+      window._renderParentSurveysSection(athleteIdParam, annataId, d.surveys || {}, d.surveyResponses || {}, d.athletes || []);
     }
 
     // Mostra documenti pubblici
@@ -2514,10 +2514,15 @@ window._renderParentDocsSection = function(athleteId, annataId, allDocs) {
 };
 
 // Renderizza la sezione sondaggi nella pagina genitore (solo se c'è almeno un sondaggio aperto)
-window._renderParentSurveysSection = function(athleteId, annataId, surveys, surveyResponses) {
+window._renderParentSurveysSection = function(athleteId, annataId, surveys, surveyResponses, athletesList) {
   surveys = surveys || {};
   surveyResponses = surveyResponses || {};
+  athletesList = athletesList || [];
   var athleteIdStr = String(athleteId);
+  var _athleteNameById = {};
+  athletesList.forEach(function(a) {
+    if (a && a.id !== undefined) _athleteNameById[String(a.id)] = a.name;
+  });
 
   // Filtro sondaggi aperti a runtime: status === 'open' E (closesAt assente OPPURE non ancora scaduto)
   var openIds = Object.keys(surveys).filter(function(sid) {
@@ -2609,7 +2614,7 @@ window._renderParentSurveysSection = function(athleteId, annataId, surveys, surv
           html += '<div style="margin-top:8px;">';
           html += '<ul style="list-style:none;padding:0;margin:0;">' + respIds.map(function(aid) {
             var choices = (responsesForSurvey[aid] && responsesForSurvey[aid].choices) || [];
-            var nm = (responsesForSurvey[aid] && responsesForSurvey[aid].athleteName) || ('Atleta #' + aid);
+            var nm = _athleteNameById[String(aid)] || ('Atleta #' + aid);
             return '<li style="padding:3px 0;font-size:0.78rem;color:#94a3b8;"><strong style="color:#e2e8f0;">' + nm + '</strong>: ' + choices.join(', ') + '</li>';
           }).join('') + '</ul>';
           html += '</div>';
@@ -2669,7 +2674,7 @@ window._submitSurveyResponse = async function(surveyId, athleteId, annataId) {
         if (freshRes.ok) {
           var fd = await freshRes.json();
           var fdata = fd.data || fd;
-          window._renderParentSurveysSection(athleteId, annataId, fdata.surveys || {}, fdata.surveyResponses || {});
+          window._renderParentSurveysSection(athleteId, annataId, fdata.surveys || {}, fdata.surveyResponses || {}, fdata.athletes || []);
         }
       } catch(e) { console.warn('[Sondaggi] refresh err:', e); }
     } else {
