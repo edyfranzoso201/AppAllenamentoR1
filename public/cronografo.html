@@ -222,6 +222,33 @@
     text-align: center;
     padding: 20px 0;
   }
+  .cr-group-search {
+    margin-bottom: 10px;
+  }
+  .cr-group-list {
+    max-height: 280px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .cr-group-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+  .cr-group-row:last-child { border-bottom: none; }
+  .cr-group-row.has-laps { background: rgba(74, 222, 128, 0.08); }
+  .cr-group-row.disabled-row {
+    pointer-events: none;
+    opacity: 0.5;
+    cursor: default;
+  }
+  .cr-group-row .cr-group-name { font-weight: 600; }
+  .cr-group-row .cr-group-meta { color: var(--text-dim); font-size: 0.8rem; }
 </style>
 </head>
 <body>
@@ -234,6 +261,10 @@
 
   <div class="cr-card">
     <h2>Cronometro</h2>
+    <div class="cr-tabs">
+      <div class="cr-tab active" id="cr-mode-individuale" data-mode="individuale">Individuale</div>
+      <div class="cr-tab" id="cr-mode-gruppo" data-mode="gruppo">Gruppo</div>
+    </div>
     <label for="cr-circuito">Nome circuito</label>
     <input type="text" id="cr-circuito" list="cr-circuiti-list" placeholder="Es. Slalom 20m">
     <datalist id="cr-circuiti-list"></datalist>
@@ -249,12 +280,19 @@
 
     <div class="cr-laps" id="cr-laps"></div>
 
-    <div class="cr-assign">
-      <div style="flex:1;">
-        <label for="cr-atleta">Assegna a</label>
-        <select id="cr-atleta" disabled></select>
+    <div id="cr-panel-individuale">
+      <div class="cr-assign">
+        <div style="flex:1;">
+          <label for="cr-atleta">Assegna a</label>
+          <select id="cr-atleta" disabled></select>
+        </div>
+        <button id="cr-btn-assign" disabled>+ Aggiungi alla lista</button>
       </div>
-      <button id="cr-btn-assign" disabled>+ Aggiungi alla lista</button>
+    </div>
+
+    <div id="cr-panel-gruppo" style="display:none;">
+      <input type="text" id="cr-group-search" class="cr-group-search" placeholder="Cerca atleta…">
+      <div class="cr-group-list" id="cr-group-list"></div>
     </div>
   </div>
 
@@ -349,6 +387,12 @@ let timerStart = 0;
 let lapMarks = []; // secondi assoluti dall'inizio, per calcolare i parziali
 let running = false;
 let atletaChart = null;
+let crMode = 'individuale'; // 'individuale' | 'gruppo'
+let groupLastMark = {}; // athleteId -> ultimo tempo assoluto (s) registrato in modalità Gruppo
+
+function renderGroupAthleteList() {
+  // Implementata nel Task 4 (pannello atleti con filtro e conteggio giri)
+}
 
 async function loadData() {
   const res = await fetch('/api/data', { headers: authHeaders(false) });
