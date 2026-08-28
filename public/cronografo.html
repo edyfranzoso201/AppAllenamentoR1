@@ -111,6 +111,7 @@
   .cr-btn-start { background: var(--accent); color: #04140b; }
   .cr-btn-lap { background: #1e3a52; color: var(--text); }
   .cr-btn-stop { background: var(--danger); color: #fff; }
+  .cr-btn-reset { background: #1e3a52; color: var(--text-dim); }
   .cr-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .cr-laps {
     margin-top: 12px;
@@ -243,6 +244,7 @@
       <button class="cr-btn cr-btn-start" id="cr-btn-start">▶ Start</button>
       <button class="cr-btn cr-btn-lap" id="cr-btn-lap" disabled>🏁 Lap</button>
       <button class="cr-btn cr-btn-stop" id="cr-btn-stop" disabled>⏹ Stop</button>
+      <button class="cr-btn cr-btn-reset" id="cr-btn-reset" disabled>↺ Reset</button>
     </div>
 
     <div class="cr-laps" id="cr-laps"></div>
@@ -792,6 +794,7 @@ function startTimer() {
   document.getElementById('cr-btn-lap').disabled = false;
   document.getElementById('cr-btn-stop').disabled = false;
   document.getElementById('cr-circuito').disabled = true;
+  updateResetButtonState();
 }
 
 function lapTimer() {
@@ -817,6 +820,7 @@ function stopTimer() {
   document.getElementById('cr-btn-stop').disabled = true;
   document.getElementById('cr-atleta').disabled = false;
   document.getElementById('cr-btn-assign').disabled = false;
+  updateResetButtonState();
 }
 
 function resetTimerKeepCircuit() {
@@ -830,9 +834,38 @@ function resetTimerKeepCircuit() {
   document.getElementById('cr-btn-assign').disabled = true;
 }
 
+function updateResetButtonState() {
+  const resetBtn = document.getElementById('cr-btn-reset');
+  resetBtn.disabled = !running && lastElapsed === 0;
+}
+
+function resetTimer() {
+  if (!running && lastElapsed === 0) return; // stato "pronto", nulla da azzerare
+  if (running) {
+    running = false;
+    clearInterval(timerInterval);
+  }
+  lastElapsed = 0;
+  lapMarks = [];
+  groupLastMark = {};
+  document.getElementById('cr-display').textContent = '00:00.00';
+  document.getElementById('cr-laps').innerHTML = '';
+  document.getElementById('cr-circuito').disabled = false;
+  document.getElementById('cr-atleta').value = '';
+  document.getElementById('cr-atleta').disabled = true;
+  document.getElementById('cr-btn-assign').disabled = true;
+  document.getElementById('cr-btn-start').disabled = false;
+  document.getElementById('cr-btn-lap').disabled = true;
+  document.getElementById('cr-btn-stop').disabled = true;
+  updateResetButtonState();
+  if (crMode === 'gruppo') renderGroupAthleteList();
+  toast('Cronometro azzerato');
+}
+
 document.getElementById('cr-btn-start').addEventListener('click', startTimer);
 document.getElementById('cr-btn-lap').addEventListener('click', lapTimer);
 document.getElementById('cr-btn-stop').addEventListener('click', stopTimer);
+document.getElementById('cr-btn-reset').addEventListener('click', resetTimer);
 
 document.getElementById('cr-btn-assign').addEventListener('click', () => {
   const athleteId = document.getElementById('cr-atleta').value;
