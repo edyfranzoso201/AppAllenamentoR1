@@ -111,8 +111,10 @@ Due viste selezionabili con due tab/pulsanti: **"Per atleta"** e **"Confronto sq
 
 **Per atleta:**
 - `<select>` atleta.
-- Tabella con tutte le righe di quell'atleta da `circuitTimes`, ordinate per data decrescente: Data, Circuito, Tempo, Variazione.
-- Variazione: confronta il tempo con quello **immediatamente precedente sullo stesso circuito** (per nome circuito, case-insensitive). `▼ 0.28s` in verde se il nuovo tempo è minore (migliorato), `▲ 0.15s` in rosso se maggiore (peggiorato), `—` se è il primo tempo registrato per quel circuito.
+- `<select>` circuito, popolato SOLO con i circuiti che quell'atleta ha effettivamente già cronometrato (evita di scegliere una combinazione senza dati). Selezionato di default il circuito con la sessione più recente per quell'atleta.
+- **Grafico a linee** (Chart.js, già usato nel progetto — vedi `dashboard.html`, CDN `chart.js@4.4.0`, nessuna nuova libreria introdotta): asse X = data, asse Y = tempo totale (secondi), una sola serie per il circuito selezionato, ordinata cronologicamente. Tooltip al passaggio mostra data e tempo esatto. Se l'atleta ha una sola sessione su quel circuito, il grafico mostra un singolo punto (nessun errore).
+- Sotto il grafico, la tabella dettaglio con tutte le righe di quell'atleta per il circuito selezionato, ordinate per data decrescente: Data, Tempo, Variazione.
+- Variazione: confronta il tempo con quello **immediatamente precedente sullo stesso circuito**. `▼ 0.28s` in verde se il nuovo tempo è minore (migliorato), `▲ 0.15s` in rosso se maggiore (peggiorato), `—` se è il primo tempo registrato per quel circuito.
 
 **Confronto squadra:**
 - `<select>` circuito (nomi distinti presenti in `circuitTimes` per l'annata).
