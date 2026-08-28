@@ -2551,9 +2551,9 @@ window._renderParentSurveysSection = function(athleteId, annataId, surveys, surv
     }
   }
 
-  var html = '<div style="background:#1a3a5f;border:1px solid #3b5a9d;border-radius:12px;padding:20px;">'
+  var html = '<div style="background:#1a3a5f;border:3px solid #eeff00;border-radius:12px;padding:20px;">'
     + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">'
-    + '<span style="color:#ffffff;font-size:1rem;font-weight:700;">📊 Sondaggi</span>'
+    + '<span style="color:#000000;font-size:1rem;font-weight:700;">📊 Sondaggi</span>'
     + '</div>';
 
   openIds.forEach(function(sid) {
