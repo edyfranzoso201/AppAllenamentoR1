@@ -2601,6 +2601,23 @@ window.deleteUser = async function(username) {
 
             // Mostra pulsante Reset Fine Annata per i ruoli abilitati
             if (window.setupResetAnnataBtn) window.setupResetAnnataBtn();
+
+            // FIX: link esterni (.tab-external, es. "Org. ↗" → calendario.html,
+            // "Area Tecnica ↗") aprono una NUOVA tab con target="_blank". Una tab
+            // nuova parte sempre con sessionStorage vuoto e restoreSessionFromLocal()
+            // ripesca da localStorage — che è condiviso da TUTTE le tab del browser
+            // e viene aggiornato solo al login (saveSessionToLocal()). Se nel
+            // frattempo si lavora in un'altra tab su un account diverso da quello
+            // dell'ultimo login (es. si era loggati anche su un account demo),
+            // la nuova tab riprende quell'ultima sessione salvata invece di quella
+            // della tab da cui si è cliccato. Fix: risalviamo sempre la sessione
+            // ATTIVA in localStorage subito prima di navigare, cosí la nuova tab
+            // eredita il contesto corretto.
+            document.querySelectorAll('.tab-external').forEach(function(el) {
+                el.addEventListener('click', function() {
+                    try { saveSessionToLocal(); } catch (e) {}
+                });
+            });
         }
 
         function addLogoutButton() {
