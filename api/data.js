@@ -3390,6 +3390,41 @@ await kv.set(`${prefix}:calendarResponses`, body.calendarResponses);
 return res.status(200).json({ success: true });
 }
 
+// Sondaggi: il genitore scrive SOLO surveyResponses (mai surveys), stesso
+// schema di calendarResponses sopra. Validiamo ogni risposta prima di salvarla:
+// un body malformato o un sondaggio già chiuso non deve scrivere silenziosamente.
+if (body.surveyResponses !== undefined && Object.keys(body).length === 1) {
+  const existingSurveys = (await kv.get(`${prefix}:surveys`)) || {};
+  const incoming = body.surveyResponses || {};
+  const validated = {};
+  for (const surveyId of Object.keys(incoming)) {
+    const perAthlete = incoming[surveyId] || {};
+    const validAthleteEntries = {};
+    for (const athleteId of Object.keys(perAthlete)) {
+      const entry = perAthlete[athleteId];
+      if (entry && isValidSurveyResponse(existingSurveys, surveyId, entry.choices)) {
+        validAthleteEntries[athleteId] = {
+          choices: entry.choices,
+          respondedAt: Date.now()
+        };
+      }
+    }
+    if (Object.keys(validAthleteEntries).length > 0) {
+      validated[surveyId] = validAthleteEntries;
+    }
+  }
+  if (Object.keys(validated).length === 0) {
+    return res.status(400).json({ success: false, message: 'Risposta sondaggio non valida o sondaggio chiuso' });
+  }
+  // Merge con le risposte esistenti (altri sondaggi/atleti non toccati da questa richiesta)
+  const existingResponses = (await kv.get(`${prefix}:surveyResponses`)) || {};
+  for (const surveyId of Object.keys(validated)) {
+    existingResponses[surveyId] = Object.assign({}, existingResponses[surveyId] || {}, validated[surveyId]);
+  }
+  await kv.set(`${prefix}:surveyResponses`, existingResponses);
+  return res.status(200).json({ success: true });
+}
+
 // athleteDocs: documenti caricati dai genitori (link Google Drive)
 // Accessibile senza canWrite — il genitore carica il proprio documento
 if (body.athleteDocs !== undefined && Object.keys(body).length === 1) {
@@ -3528,6 +3563,7 @@ if (body.convBg !== undefined) { if (body.convBg) await kv.set(`${prefix}:convBg
 if (body.convBg2 !== undefined) { if (body.convBg2) await kv.set(`${prefix}:convBg2`, body.convBg2); else await kv.del(`${prefix}:convBg2`); }
 
 if (body.posts !== undefined) await kv.set(`${prefix}:posts`, body.posts);
+if (body.surveys !== undefined) await kv.set(`${prefix}:surveys`, body.surveys);
 
 const globalPostIds = ((await kv.get('global:posts')) || []).map(p => p.id);
 for (const key of Object.keys(body)) {
