@@ -2414,6 +2414,10 @@ document.addEventListener('DOMContentLoaded', function() {
 var _bachecaTabReady = false;
 function showBachecaTab() {
     if (_bachecaTabReady) return;
+    // Modalità genitore (link ?athleteId=...): niente tab coach, anche se il
+    // browser ha ancora una sessione coach attiva in sessionStorage/localStorage
+    // (vedi anche showGareTab/showDocumentiTab più sotto, stesso guard).
+    if (new URLSearchParams(location.search).get('athleteId')) return;
     _bachecaTabReady = true;
     var tab = document.getElementById('tab-bacheca');
     if (tab) tab.style.display = '';
@@ -2448,6 +2452,8 @@ function _gareAnnataId() {
 // ── Mostra tab (chiamato dall'auth, simile a showBachecaTab) ────────
 function showGareTab(canEdit) {
     if (_gareTabReady) return;
+    // Modalità genitore: niente tab coach (vedi showBachecaTab per il perché).
+    if (new URLSearchParams(location.search).get('athleteId')) return;
     _gareTabReady = true;
     _gareCanEdit = !!canEdit;
     var tab = document.getElementById('tab-gare');
@@ -2463,6 +2469,9 @@ function showDocumentiTab(canEdit) {
         console.log('[Documenti] Tab già pronto, skip');
         return;
     }
+    // Modalità genitore: niente tab coach (vedi showBachecaTab per il perché).
+    var _isParentLink = !!new URLSearchParams(location.search).get('athleteId');
+    if (_isParentLink) return;
     _documentiTabReady = true;
     window._docCanEdit = !!canEdit;
     var tab = document.getElementById('tab-documenti');
@@ -2474,7 +2483,7 @@ function showDocumentiTab(canEdit) {
     }
     // Mostra anche tab Documenti Atleti (solo per coach, non genitore)
     var tabAd = document.getElementById('tab-athlete-docs');
-    if (tabAd && !new URLSearchParams(location.search).get('athleteId')) {
+    if (tabAd) {
         tabAd.style.display = '';
     }
 }

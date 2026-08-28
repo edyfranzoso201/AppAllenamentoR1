@@ -15,16 +15,30 @@
 
     console.log('[PRESENZA MODE] ⚡ Modalità genitore attivata per ID:', athleteId);
 
+    // FIX: nascondi subito i controlli coach e il titolo, PRIMA di aspettare
+    // che la tabella sia renderizzata. In precedenza questo avveniva solo
+    // dentro applyPresenzaMode(), chiamata dal polling una volta trovate righe
+    // in tabella: due difetti concreti ne derivavano —
+    // 1) con calendario popolato, il pannello coach restava visibile per il
+    //    tempo del polling (flash prima della vista genitore);
+    // 2) con calendario VUOTO (nessuna riga, es. nessuna attività
+    //    programmata), il polling andava sempre in timeout e
+    //    hideCoachControls() non veniva mai chiamata: il genitore restava
+    //    bloccato sul pannello staff completo (Nuovo/Importa/Elimina/Bacheca).
+    // Nascondendoli subito, sono già invisibili in entrambi i casi.
+    hideCoachControls();
+    updateTitle();
+
     // ===== ASPETTA CHE IL CALENDARIO SIA RENDERIZZATO =====
     function waitForCalendar() {
         let attempts = 0;
         const maxAttempts = 150; // 15 secondi
-        
+
         const interval = setInterval(() => {
             attempts++;
             const table = document.querySelector('.calendar-table');
             const rows = table ? table.querySelectorAll('tbody tr') : [];
-            
+
             // Aspetta che la tabella abbia righe (almeno 1)
             if (table && rows.length > 0) {
                 clearInterval(interval);
@@ -42,7 +56,9 @@
     function applyPresenzaMode(athleteId) {
         console.log('[PRESENZA MODE] 🔧 Applicazione modalità presenza...');
 
-        // 1. NASCONDI TUTTI I CONTROLLI COACH
+        // 1. NASCONDI TUTTI I CONTROLLI COACH (già fatto subito all'avvio, ma
+        // rifatto qui per sicurezza: alcuni pulsanti potrebbero essere stati
+        // reinseriti nel DOM dal render del calendario nel frattempo).
         hideCoachControls();
 
         // 2. CAMBIA TITOLO
