@@ -292,7 +292,7 @@ function authHeaders(json) {
   const h = {};
   if (json) h['Content-Type'] = 'application/json';
   h['X-Annata-Id'] = annataId();
-  h['X-Auth-Session'] = ss('gosport_session_token');
+  h['X-Auth-Session'] = ss('gosport_session_token') || ss('gosport_auth_session') || '';
   h['X-Auth-User'] = ss('gosport_auth_user');
   h['X-User-Role'] = ss('gosport_user_role');
   h['X-Society-Id'] = ss('gosport_society_id');
@@ -369,6 +369,7 @@ function updateDisplay() {
 let lastElapsed = 0;
 
 function startTimer() {
+  if (running) return;
   if (!document.getElementById('cr-circuito').value.trim()) {
     toast('Inserisci il nome del circuito prima di partire');
     return;
