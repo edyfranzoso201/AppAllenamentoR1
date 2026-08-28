@@ -3564,6 +3564,11 @@ if (body.convBg2 !== undefined) { if (body.convBg2) await kv.set(`${prefix}:conv
 
 if (body.posts !== undefined) await kv.set(`${prefix}:posts`, body.posts);
 if (body.surveys !== undefined) await kv.set(`${prefix}:surveys`, body.surveys);
+// Scrittura staff di surveyResponses: solo per eliminare un sondaggio (rimuove
+// anche le sue risposte in un'unica richiesta insieme a body.surveys). Diverso
+// dal ramo genitore (riga ~3396): qui siamo già dentro canWrite(), nessun
+// vincolo di "una sola chiave" perché la richiesta è autenticata staff.
+if (body.surveyResponses !== undefined) await kv.set(`${prefix}:surveyResponses`, body.surveyResponses);
 
 const globalPostIds = ((await kv.get('global:posts')) || []).map(p => p.id);
 for (const key of Object.keys(body)) {

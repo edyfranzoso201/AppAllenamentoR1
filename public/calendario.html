@@ -2790,6 +2790,11 @@ function sondaggiOpenDetail(surveyId) {
         closeBtn = '<button type="button" onclick="window.sondaggiCloseSurvey(\'' + survey.id + '\')" style="background:#d90429;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:0.82rem;font-weight:600;cursor:pointer;">Chiudi sondaggio</button>';
     }
 
+    var deleteBtn = '';
+    if (window._sondaggiCanEdit) {
+        deleteBtn = '<button type="button" onclick="window.sondaggiDeleteSurvey(\'' + survey.id + '\')" style="background:none;border:1px solid #d90429;color:#d90429;border-radius:6px;padding:7px 14px;font-size:0.82rem;font-weight:600;cursor:pointer;">Elimina sondaggio</button>';
+    }
+
     var html = '<div style="background:var(--bg-blue,#0f172a);border:1px solid rgba(59,90,157,0.3);border-radius:8px;padding:16px;">'
         + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">'
         + '<h4 style="margin:0;color:var(--text-primary,#e2e8f0);font-size:0.95rem;">' + survey.question + '</h4>'
@@ -2805,8 +2810,9 @@ function sondaggiOpenDetail(surveyId) {
         + '<h5 style="font-size:0.85rem;color:var(--text-primary,#e2e8f0);margin:0 0 6px 0;">Non ha ancora risposto</h5>'
         + notRespondedHtml
         + '</div>'
-        + '<div style="display:flex;gap:10px;">'
+        + '<div style="display:flex;gap:10px;flex-wrap:wrap;">'
         + closeBtn
+        + deleteBtn
         + '<button type="button" onclick="window.sondaggiCloseDetail()" style="background:none;border:1px solid #3b5a9d;color:#94a3b8;border-radius:6px;padding:7px 14px;font-size:0.82rem;cursor:pointer;">Torna alla lista</button>'
         + '</div>'
         + '</div>';
@@ -2830,6 +2836,33 @@ async function sondaggiCloseSurvey(surveyId) {
     sondaggiOpenDetail(surveyId);
 }
 
+async function sondaggiDeleteSurvey(surveyId) {
+    var survey = _sondaggiSurveys[surveyId];
+    if (!survey) return;
+    var ok = confirm('Eliminare definitivamente il sondaggio "' + survey.question + '"?\n\nQuesta azione è irreversibile: verranno eliminate anche tutte le risposte già ricevute.');
+    if (!ok) return;
+
+    delete _sondaggiSurveys[surveyId];
+    if (_sondaggiResponses[surveyId]) delete _sondaggiResponses[surveyId];
+
+    var aid = _bAnnataId();
+    try {
+        var res = await fetch('/api/data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-annata-id': aid },
+            body: JSON.stringify({ surveys: _sondaggiSurveys, surveyResponses: _sondaggiResponses })
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+    } catch(e) {
+        console.warn('[Sondaggi] delete err:', e);
+        alert('❌ Errore eliminazione sondaggio: ' + e.message);
+        return;
+    }
+
+    await sondaggiLoad();
+    sondaggiCloseDetail();
+}
+
 window.sondaggiLoad         = sondaggiLoad;
 window.sondaggiRenderList   = sondaggiRenderList;
 window.sondaggiOpenForm     = sondaggiOpenForm;
@@ -2837,6 +2870,7 @@ window.sondaggiAddOption    = sondaggiAddOption;
 window.sondaggiCancelForm   = sondaggiCancelForm;
 window.sondaggiSaveForm     = sondaggiSaveForm;
 window.sondaggiPersist      = sondaggiPersist;
+window.sondaggiDeleteSurvey = sondaggiDeleteSurvey;
 window.sondaggiOpenDetail   = sondaggiOpenDetail;
 window.sondaggiCloseDetail  = sondaggiCloseDetail;
 window.sondaggiCloseSurvey  = sondaggiCloseSurvey;
