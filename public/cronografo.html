@@ -520,6 +520,7 @@ function setCrMode(mode) {
   document.getElementById('cr-mode-gruppo').classList.toggle('active', mode === 'gruppo');
   document.getElementById('cr-panel-individuale').style.display = mode === 'individuale' ? '' : 'none';
   document.getElementById('cr-panel-gruppo').style.display = mode === 'gruppo' ? '' : 'none';
+  document.getElementById('cr-btn-lap').style.display = mode === 'gruppo' ? 'none' : '';
   if (mode === 'gruppo') {
     groupLastMark = {};
     renderGroupAthleteList();
