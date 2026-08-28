@@ -47,20 +47,29 @@ type Response = {
 
 ## Endpoint (dentro `api/data.js`, nessun nuovo file)
 
-**Lettura**: `surveys` e `surveyResponses` vengono aggiunti al payload già restituito per annata (stesso `Promise.all` che oggi carica `calendarEvents, calendarResponses, posts, ...` — righe ~3171-3193 e ~3283-3289 di `api/data.js`), così sono già disponibili sia in Org. che nella vista genitore senza un endpoint dedicato.
+**Come carica oggi i dati la vista genitore**: `calendario-standalone.js` non chiama un endpoint dedicato per `?athleteId=` — fa `GET /api/data?parentMode=1` con header `X-Annata-Id` (righe 172 e 248 di `calendario-standalone.js`), e se il link include una firma la manda come header `x-parent-sig` o query `psig` (verificata da `parentSigOk()` in `api/data.js:3129-3134`). Lato server questo attiva il ramo `isParentMode` (`api/data.js:3114`, `3183-3219`), che restituisce un payload ridotto (solo i campi elencati esplicitamente, non l'intero stato annata). **`surveys` e `surveyResponses` vanno aggiunti a quel `Promise.all` e a quell'oggetto di risposta** (righe 3184-3219), altrimenti la vista genitore non li riceve mai. Vanno aggiunti anche al `Promise.all`/risposta usato per lo staff autenticato (righe 3260-3322), così Org. li vede allo stesso modo degli altri dati per annata.
 
 **Scrittura staff** (crea/modifica sondaggio, richiede sessione con permesso `canEditGeneral` — stesso ruolo che oggi gestisce eventi/bacheca): `POST` con `body.surveys` — stesso pattern già usato per `body.posts` (`api/data.js:3500`, scrittura per annata via `kv.set(\`${prefix}:surveys\`, body.surveys)`).
 
-**Scrittura genitore** (risposta): `POST` con **solo** `body.surveyResponses` (nessun'altra chiave nel body). Replica esatta del blocco esistente per `calendarResponses`:
+**Scrittura genitore** (risposta): `POST` con **solo** `body.surveyResponses` (nessun'altra chiave nel body). Il body arriva senza sessione (stesso `_authHeaders`/`_authH` vuoti usati oggi dal genitore in `calendario-standalone.js:164-170` e `240-246`), quindi va abilitato esplicitamente nel guard di autorizzazione già esistente:
 
 ```js
-// Pattern esistente (api/data.js:3356-3359), da replicare identico per i sondaggi:
+// api/data.js:3116-3118 — guard esistente, da estendere con surveyResponses:
+const isCalendarResponsePost = req.method === 'POST' &&
+  req.body && (req.body.calendarResponses !== undefined || req.body.athleteDocs !== undefined
+    || req.body.surveyResponses !== undefined) &&
+  Object.keys(req.body).length === 1;
+```
+
+E nel blocco di scrittura effettivo (accanto a `api/data.js:3356-3359`):
+
+```js
+// Pattern esistente, da replicare identico per i sondaggi:
 if (body.calendarResponses !== undefined && Object.keys(body).length === 1) {
     await kv.set(`${prefix}:calendarResponses`, body.calendarResponses);
 }
-// Nuovo, stesso identico schema:
+// Nuovo, stesso identico schema, con validazione minima (vedi sotto) prima del kv.set:
 if (body.surveyResponses !== undefined && Object.keys(body).length === 1) {
-    // validazione minima prima di salvare (vedi sotto)
     await kv.set(`${prefix}:surveyResponses`, body.surveyResponses);
 }
 ```
