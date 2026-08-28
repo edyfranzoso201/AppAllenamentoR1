@@ -3571,6 +3571,7 @@ if (body.surveys !== undefined) await kv.set(`${prefix}:surveys`, body.surveys);
 // dal ramo genitore (riga ~3396): qui siamo già dentro canWrite(), nessun
 // vincolo di "una sola chiave" perché la richiesta è autenticata staff.
 if (body.surveyResponses !== undefined) await kv.set(`${prefix}:surveyResponses`, body.surveyResponses);
+if (body.circuitTimes !== undefined) await kv.set(`${prefix}:circuitTimes`, body.circuitTimes);
 
 const globalPostIds = ((await kv.get('global:posts')) || []).map(p => p.id);
 for (const key of Object.keys(body)) {
