@@ -898,6 +898,7 @@ function startTimer() {
   document.getElementById('cr-btn-stop').disabled = false;
   document.getElementById('cr-circuito').disabled = true;
   updateResetButtonState();
+  if (crMode === 'gruppo') renderGroupAthleteList();
 }
 
 function lapTimer() {
@@ -924,6 +925,13 @@ function stopTimer() {
   document.getElementById('cr-atleta').disabled = false;
   document.getElementById('cr-btn-assign').disabled = false;
   updateResetButtonState();
+  if (crMode === 'gruppo') {
+    // In modalità Gruppo non c'è un passo di assegnazione successivo: il campo
+    // circuito va riabilitato subito per permettere la sessione successiva
+    // (in modalità Individuale resta disabilitato fino all'assegnazione, invariato).
+    document.getElementById('cr-circuito').disabled = false;
+    renderGroupAthleteList();
+  }
 }
 
 function resetTimerKeepCircuit() {
@@ -990,6 +998,30 @@ document.getElementById('cr-btn-assign').addEventListener('click', () => {
   renderSessionList();
   resetTimerKeepCircuit();
   toast('Tempo assegnato a ' + athlete.name);
+});
+
+document.getElementById('cr-group-list').addEventListener('click', (ev) => {
+  const row = ev.target.closest('.cr-group-row');
+  if (!row || !running) return;
+  const athleteId = row.dataset.athleteId;
+  const athlete = ATHLETES.find(a => String(a.id) === String(athleteId));
+  if (!athlete) return;
+
+  const circuito = document.getElementById('cr-circuito').value.trim();
+  const elapsed = (Date.now() - timerStart) / 1000;
+  const prevMark = Object.prototype.hasOwnProperty.call(groupLastMark, athleteId) ? groupLastMark[athleteId] : 0;
+  const tempoGiro = Math.round((elapsed - prevMark) * 100) / 100;
+  groupLastMark[athleteId] = elapsed;
+
+  sessionList.push({
+    athleteId: athlete.id,
+    athleteName: athlete.name,
+    circuito,
+    tempoTotale: tempoGiro,
+    laps: []
+  });
+  renderSessionList();
+  renderGroupAthleteList();
 });
 
 // ── Lista sessione ──────────────────────────────────────────────────────
