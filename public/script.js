@@ -683,18 +683,31 @@ document.addEventListener('DOMContentLoaded', () => {
             tacticalBoards: window.tacticalBoards || []
         };
         try {
-            const response = await fetch('/api/data', { 
-                method: 'POST', 
-                headers: { 
+            const response = await fetch('/api/data', {
+                method: 'POST',
+                headers: {
                     'Content-Type': 'application/json',
                     'X-Annata-Id': annataId
-                }, 
-                body: JSON.stringify(allData) 
+                },
+                body: JSON.stringify(allData)
             });
-            if (!response.ok) throw new Error('Errore salvataggio');
+            if (!response.ok) {
+                // Propaga il messaggio del server (es. limite demo raggiunto) invece di perderlo:
+                // senza questo, i chiamanti con saveData().then(...) senza controllare l'esito
+                // mostravano "successo" anche quando il server rifiutava il salvataggio (403/altro).
+                let serverMessage = 'Errore salvataggio';
+                try {
+                    const errBody = await response.json();
+                    if (errBody?.message) serverMessage = errBody.message;
+                } catch (_) { /* body non JSON, usa messaggio generico */ }
+                saveData.lastError = serverMessage;
+                return false;
+            }
+            saveData.lastError = null;
             return true;
-        } catch (error) { 
+        } catch (error) {
             console.error('Errore nel salvataggio dei dati sul server:', error);
+            saveData.lastError = error.message || 'Errore di rete';
             return false;
         }
     };
@@ -5141,16 +5154,32 @@ document.addEventListener('DOMContentLoaded', () => {
             athleteData.avatar = existingAthlete.avatar; // mantieni foto esistente
         }
 
+        let rollbackIndex = -1;
         if (existingAthlete) {
             // Aggiorna atleta esistente - merge per preservare campi non nel form
-            const index = athletes.findIndex(a => a.id === existingAthlete.id);
-            athletes[index] = { ...existingAthlete, ...athleteData };
+            rollbackIndex = athletes.findIndex(a => a.id === existingAthlete.id);
+            athletes[rollbackIndex] = { ...existingAthlete, ...athleteData };
         } else {
             // Aggiungi nuovo atleta
             athletes.push(athleteData);
         }
 
-        saveData().then(() => {
+        saveData().then((ok) => {
+            if (!ok) {
+                // Il server ha rifiutato il salvataggio (es. limite atleti raggiunto nella
+                // versione demo): senza questo rollback l'atleta restava visibile in UI
+                // pur non essendo mai stato persistito, dando la falsa impressione che il
+                // limite non fosse rispettato.
+                if (existingAthlete && rollbackIndex !== -1) {
+                    athletes[rollbackIndex] = existingAthlete;
+                } else {
+                    const idx = athletes.findIndex(a => a.id === athleteData.id);
+                    if (idx !== -1) athletes.splice(idx, 1);
+                }
+                updateAllUI();
+                alert(saveData.lastError || 'Errore durante il salvataggio.');
+                return;
+            }
             updateAllUI();
             athleteModal.hide();
             alert(`${existingAthlete ? 'Atleta aggiornato' : 'Atleta aggiunto'} con successo!`);
