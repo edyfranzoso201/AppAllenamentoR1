@@ -278,7 +278,21 @@
       <select id="cr-storico-circuito"></select>
       <div id="cr-storico-atleta-content"></div>
     </div>
-    <div id="cr-view-squadra" style="display:none;"></div>
+    <div id="cr-view-squadra" style="display:none;">
+      <label for="cr-squadra-circuito">Circuito</label>
+      <select id="cr-squadra-circuito"></select>
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <label for="cr-squadra-data-a">Data A</label>
+          <select id="cr-squadra-data-a"></select>
+        </div>
+        <div style="flex:1;">
+          <label for="cr-squadra-data-b">Data B</label>
+          <select id="cr-squadra-data-b"></select>
+        </div>
+      </div>
+      <div id="cr-squadra-content"></div>
+    </div>
   </div>
 
 </div>
@@ -342,6 +356,7 @@ async function init() {
   populateAthleteSelect();
   populateCircuitDatalist();
   setupAtletaViewListeners();
+  setupSquadraViewListeners();
   setupTabListeners();
   renderAtletaView();
   renderSquadraView();
@@ -540,9 +555,173 @@ function renderAtletaViewContent() {
   });
 }
 
-// ── Storico: vista Confronto squadra (implementata nel Task 7) ──────────
+// ── Storico: vista Confronto squadra ─────────────────────────────────────
+function allCircuitNames() {
+  const names = new Set();
+  Object.values(CIRCUIT_TIMES).forEach(list => {
+    (list || []).forEach(e => names.add(e.circuito));
+  });
+  return Array.from(names);
+}
+
+function allEntriesForCircuit(circuito) {
+  const out = [];
+  ATHLETES.forEach(a => {
+    (CIRCUIT_TIMES[a.id] || []).forEach(e => {
+      if (e.circuito === circuito) out.push(Object.assign({ athleteId: a.id, athleteName: a.name }, e));
+    });
+  });
+  return out;
+}
+
+// Confronta due date (stringhe) usando, a parità di data, il timestamp
+// della entry più recente di quella data tra le entries fornite.
+function distinctDatesForCircuit(circuito) {
+  const entries = allEntriesForCircuit(circuito);
+  const dates = Array.from(new Set(entries.map(e => e.date)));
+  const latestTsForDate = {};
+  dates.forEach(d => {
+    const forDate = entries.filter(e => e.date === d);
+    latestTsForDate[d] = forDate.reduce((best, e) => Math.max(best, timestampFromId(e.id)), 0);
+  });
+  dates.sort((d1, d2) => {
+    if (d1 !== d2) return d1 < d2 ? -1 : 1;
+    return latestTsForDate[d1] - latestTsForDate[d2];
+  });
+  return dates;
+}
+
+// Ultima entry (per timestamp) di un atleta per un dato circuito+data
+function latestEntryForAthleteDate(athleteId, circuito, date) {
+  const entries = (CIRCUIT_TIMES[athleteId] || []).filter(e => e.circuito === circuito && e.date === date);
+  if (!entries.length) return null;
+  return entries.reduce((best, e) => (!best || timestampFromId(e.id) > timestampFromId(best.id)) ? e : best, null);
+}
+
+function setupSquadraViewListeners() {
+  document.getElementById('cr-squadra-circuito').addEventListener('change', () => {
+    populateSquadraDateSelects();
+    renderSquadraViewContent();
+  });
+  document.getElementById('cr-squadra-data-a').addEventListener('change', () => {
+    renderSquadraViewContent();
+  });
+  document.getElementById('cr-squadra-data-b').addEventListener('change', () => {
+    renderSquadraViewContent();
+  });
+}
+
+function populateSquadraCircuitSelect() {
+  const sel = document.getElementById('cr-squadra-circuito');
+  const prevValue = sel.value;
+  const names = allCircuitNames();
+  sel.innerHTML = names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  if (names.includes(prevValue)) {
+    sel.value = prevValue;
+  }
+}
+
+function populateSquadraDateSelects() {
+  const circuito = document.getElementById('cr-squadra-circuito').value;
+  const dateASel = document.getElementById('cr-squadra-data-a');
+  const dateBSel = document.getElementById('cr-squadra-data-b');
+  const dates = circuito ? distinctDatesForCircuit(circuito) : [];
+
+  if (dates.length < 2) {
+    dateASel.innerHTML = dates.map(d => `<option value="${esc(d)}">${esc(d)}</option>`).join('');
+    dateBSel.innerHTML = dateASel.innerHTML;
+    return;
+  }
+
+  const options = dates.map(d => `<option value="${esc(d)}">${esc(d)}</option>`).join('');
+  dateASel.innerHTML = options;
+  dateBSel.innerHTML = options;
+  // Default: le due sessioni più recenti (penultima vs ultima)
+  dateASel.value = dates[dates.length - 2];
+  dateBSel.value = dates[dates.length - 1];
+}
+
 function renderSquadraView() {
-  // Stub: sarà implementata nel Task 7
+  populateSquadraCircuitSelect();
+  populateSquadraDateSelects();
+  renderSquadraViewContent();
+}
+
+function renderSquadraViewContent() {
+  const content = document.getElementById('cr-squadra-content');
+  const circuito = document.getElementById('cr-squadra-circuito').value;
+  const dateA = document.getElementById('cr-squadra-data-a').value;
+  const dateB = document.getElementById('cr-squadra-data-b').value;
+
+  if (!circuito) {
+    content.innerHTML = '<div class="cr-empty">Nessun tempo cronometrato ancora</div>';
+    return;
+  }
+
+  const dates = distinctDatesForCircuit(circuito);
+  if (dates.length < 2) {
+    content.innerHTML = '<div class="cr-empty">Servono almeno due sessioni per questo circuito per fare un confronto</div>';
+    return;
+  }
+
+  if (!dateA || !dateB) {
+    content.innerHTML = '<div class="cr-empty">Servono almeno due sessioni per questo circuito per fare un confronto</div>';
+    return;
+  }
+
+  const rows = [];
+  ATHLETES.forEach(a => {
+    const entryA = latestEntryForAthleteDate(a.id, circuito, dateA);
+    const entryB = latestEntryForAthleteDate(a.id, circuito, dateB);
+    if (entryA && entryB) {
+      rows.push({ athleteName: a.name, tempoA: entryA.tempoTotale, tempoB: entryB.tempoTotale });
+    }
+  });
+
+  if (!rows.length) {
+    content.innerHTML = '<div class="cr-empty">Nessun atleta ha tempi in entrambe le date selezionate</div>';
+    return;
+  }
+
+  function variazioneHtml(tempoA, tempoB) {
+    const delta = Math.round((tempoB - tempoA) * 100) / 100;
+    if (delta < 0) {
+      return `<span class="cr-delta-down">▼ ${delta.toFixed(2)}s</span>`;
+    } else if (delta > 0) {
+      return `<span class="cr-delta-up">▲ +${delta.toFixed(2)}s</span>`;
+    }
+    return '<span>= 0.00s</span>';
+  }
+
+  content.innerHTML = `
+    <table>
+      <thead><tr><th>Atleta</th><th>Tempo A</th><th>Tempo B</th><th>Variazione</th></tr></thead>
+      <tbody id="cr-squadra-body"></tbody>
+    </table>
+  `;
+
+  const body = document.getElementById('cr-squadra-body');
+  const rowsHtml = rows.map(r => `
+    <tr>
+      <td>${esc(r.athleteName)}</td>
+      <td class="num">${fmtTime(r.tempoA)}</td>
+      <td class="num">${fmtTime(r.tempoB)}</td>
+      <td>${variazioneHtml(r.tempoA, r.tempoB)}</td>
+    </tr>
+  `).join('');
+
+  const mediaA = Math.round((rows.reduce((sum, r) => sum + r.tempoA, 0) / rows.length) * 100) / 100;
+  const mediaB = Math.round((rows.reduce((sum, r) => sum + r.tempoB, 0) / rows.length) * 100) / 100;
+  const mediaRowHtml = `
+    <tr style="font-weight:600;">
+      <td>Media squadra</td>
+      <td class="num">${fmtTime(mediaA)}</td>
+      <td class="num">${fmtTime(mediaB)}</td>
+      <td>${variazioneHtml(mediaA, mediaB)}</td>
+    </tr>
+  `;
+
+  body.innerHTML = rowsHtml + mediaRowHtml;
 }
 
 // ── Cronometro ──────────────────────────────────────────────────────────
