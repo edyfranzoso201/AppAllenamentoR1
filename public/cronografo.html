@@ -291,7 +291,7 @@
     </div>
 
     <div id="cr-panel-gruppo" style="display:none;">
-      <input type="text" id="cr-group-search" class="cr-group-search" placeholder="Cerca atleta…">
+      <input type="text" id="cr-group-search" class="cr-group-search" placeholder="Cerca atleta…" aria-label="Cerca atleta">
       <div class="cr-group-list" id="cr-group-list"></div>
     </div>
   </div>
@@ -412,6 +412,7 @@ async function init() {
   setupAtletaViewListeners();
   setupSquadraViewListeners();
   setupTabListeners();
+  setupModeToggle();
   renderAtletaView();
   renderSquadraView();
 }
@@ -465,6 +466,31 @@ function setupTabListeners() {
     document.getElementById('cr-view-atleta').style.display = 'none';
     renderSquadraView();
   });
+}
+
+// ── Toggle Individuale / Gruppo ──────────────────────────────────────────
+function setupModeToggle() {
+  document.getElementById('cr-mode-individuale').addEventListener('click', () => {
+    if (running) { toast('Ferma il cronometro prima di cambiare modalità'); return; }
+    setCrMode('individuale');
+  });
+  document.getElementById('cr-mode-gruppo').addEventListener('click', () => {
+    if (running) { toast('Ferma il cronometro prima di cambiare modalità'); return; }
+    setCrMode('gruppo');
+  });
+  document.getElementById('cr-group-search').addEventListener('input', renderGroupAthleteList);
+}
+
+function setCrMode(mode) {
+  crMode = mode;
+  document.getElementById('cr-mode-individuale').classList.toggle('active', mode === 'individuale');
+  document.getElementById('cr-mode-gruppo').classList.toggle('active', mode === 'gruppo');
+  document.getElementById('cr-panel-individuale').style.display = mode === 'individuale' ? '' : 'none';
+  document.getElementById('cr-panel-gruppo').style.display = mode === 'gruppo' ? '' : 'none';
+  if (mode === 'gruppo') {
+    groupLastMark = {};
+    renderGroupAthleteList();
+  }
 }
 
 // ── Storico: vista Per atleta ────────────────────────────────────────────
