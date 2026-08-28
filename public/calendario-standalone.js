@@ -2543,9 +2543,11 @@ window._renderParentSurveysSection = function(athleteId, annataId, surveys, surv
     container = document.createElement('div');
     container.id = 'parent-surveys-section';
     container.style.cssText = 'margin-top:12px;';
+    // Inserita PRIMA della bacheca (tra calendario presenze e bacheca), su richiesta esplicita:
+    // in precedenza veniva agganciata dopo bacheca-genitori-container (quindi sotto la bacheca).
     var bachecaBox = document.getElementById('bacheca-genitori-container');
     if (bachecaBox && bachecaBox.parentNode) {
-      bachecaBox.parentNode.insertBefore(container, bachecaBox.nextSibling);
+      bachecaBox.parentNode.insertBefore(container, bachecaBox);
     }
   }
 
