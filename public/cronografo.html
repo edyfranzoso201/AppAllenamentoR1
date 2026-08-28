@@ -558,8 +558,8 @@ function renderAtletaViewContent() {
 // ── Storico: vista Confronto squadra ─────────────────────────────────────
 function allCircuitNames() {
   const names = new Set();
-  Object.values(CIRCUIT_TIMES).forEach(list => {
-    (list || []).forEach(e => names.add(e.circuito));
+  ATHLETES.forEach(a => {
+    (CIRCUIT_TIMES[a.id] || []).forEach(e => names.add(e.circuito));
   });
   return Array.from(names);
 }
