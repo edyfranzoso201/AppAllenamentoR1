@@ -2707,6 +2707,18 @@ async function sondaggiSaveForm() {
     _sondaggiSurveys[id] = survey;
     await sondaggiPersist();
     sondaggiCancelForm();
+
+    // Notifica push ai genitori dell'annata: un sondaggio senza notifica
+    // rischia di passare inosservato (a differenza degli eventi calendario).
+    // Fire-and-forget, stesso pattern usato per i nuovi post in Bacheca.
+    var _pushAid = _bAnnataId();
+    var _pushTok = sessionStorage.getItem('gosport_session_token') || 'true';
+    var _pushRole = sessionStorage.getItem('gosport_user_role') || '';
+    fetch('/api/data?action=push-send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Auth-Session': _pushTok, 'X-Annata-Id': _pushAid, 'X-User-Role': _pushRole },
+        body: JSON.stringify({ title: '📊 Nuovo sondaggio', body: question, url: '/', annataId: _pushAid })
+    }).catch(function(){});
 }
 
 async function sondaggiPersist() {
