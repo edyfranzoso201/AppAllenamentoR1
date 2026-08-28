@@ -3788,6 +3788,14 @@ function switchTab(sectionId) {
         var _sec = document.getElementById(sectionId);
         if (_sec && _sec.style.display === 'none') return;
     }
+    // Demo: Hall of Fame/GPS/Analisi restano visibili in menu ma non apribili
+    // (il pulsante nav è già "disabled" via auth-multi-annata.js — questo è
+    // il blocco funzionale di riserva, es. se richiamato da hash o altro hook).
+    if (sessionStorage.getItem('gosport_license_plan') === 'demo' &&
+        (sectionId === 'hall-of-fame-section' || sectionId === 'monitoraggio-gps-section' ||
+         sectionId === 'analisi-singolo-section')) {
+        return;
+    }
     // Mostra la sezione corretta
     document.querySelectorAll('.tab-section').forEach(function(s) {
         s.classList.remove('tab-active');

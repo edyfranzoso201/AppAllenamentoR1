@@ -2510,9 +2510,10 @@ window.deleteUser = async function(username) {
                            'match-results-section', 'report-valutazioni-section',
                            'hall-of-fame-section', 'accessi-section']
             };
-            // Demo: stessa esperienza di Platinum (tutte le tab) — l'unica
-            // restrizione per la prova gratuita è export/backup/import,
-            // già gestita altrove da isDemoAccount() in script.js.
+            // Demo: stessa esperienza di Platinum (tutte le tab visibili) — oltre
+            // a export/backup/import (già gestiti da isDemoAccount() in script.js),
+            // in demo 4 tab restano visibili ma disabilitate (vedi DEMO_LOCKED_TABS
+            // più sotto): niente le nasconde qui.
             PLAN_TABS.demo = PLAN_TABS.platinum;
 
             var allowedByPlan = PLAN_TABS[licensePlan] || PLAN_TABS['silver'];
@@ -2524,6 +2525,48 @@ window.deleteUser = async function(username) {
                     btn.style.display = 'none';
                 }
             });
+
+            // ── Demo: tab visibili ma non cliccabili (Hall of Fame, GPS, Analisi,
+            // Area Tecnica) — stesso pattern "disabled + tooltip" già usato per
+            // export/backup/import via isDemoAccount() in script.js. Il blocco
+            // funzionale vero e proprio per le tab interne è in switchTab()
+            // (index.html): qui ci limitiamo all'aspetto visivo (disabled nativo
+            // blocca già l'onclick dei <button>).
+            if (licensePlan === 'demo') {
+                var DEMO_LOCKED_TABS = [
+                    'hall-of-fame-section',
+                    'monitoraggio-gps-section',
+                    'analisi-singolo-section'
+                ];
+                DEMO_LOCKED_TABS.forEach(function(tabId) {
+                    var btn = document.querySelector('.tab-nav-btn[data-tab="' + tabId + '"]');
+                    if (!btn) return;
+                    btn.disabled = true;
+                    btn.classList.add('demo-locked-tab');
+                    btn.title = 'Non disponibile nella versione demo';
+                });
+
+                // Area Tecnica è un <a href="/area-tecnica.html" target="_blank">,
+                // non un data-tab: niente attributo disabled nativo, va bloccato
+                // rimuovendo l'href e impedendo il click (stesso approccio già
+                // usato per importLabel in script.js: pointerEvents + opacity).
+                var atLink = document.querySelector('.tab-nav-btn.tab-external[href="/area-tecnica.html"]');
+                if (atLink) {
+                    atLink.removeAttribute('href');
+                    atLink.classList.add('demo-locked-tab');
+                    atLink.style.pointerEvents = 'none';
+                    atLink.title = 'Non disponibile nella versione demo';
+                    atLink.addEventListener('click', function(e) { e.preventDefault(); });
+                }
+
+                // Aspetto visivo uniforme per bottoni disabled e link bloccato
+                // (i bottoni hanno già l'opacità nativa di :disabled, ma alcuni
+                // temi/gradient .active sono !important e potrebbero sovrastarla).
+                var demoLockedStyle = document.createElement('style');
+                demoLockedStyle.textContent =
+                    '.tab-nav-btn.demo-locked-tab { opacity: 0.45 !important; cursor: not-allowed !important; }';
+                document.head.appendChild(demoLockedStyle);
+            }
 
             // Cal. ↗ esterno: visibile da Gold in su
             if (licensePlan === 'silver') {
