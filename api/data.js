@@ -231,6 +231,26 @@ function parentSigOk(annataId, providedSig) {
   try { return crypto.timingSafeEqual(a, b); } catch { return false; }
 }
 
+// Valida una risposta a sondaggio prima di salvarla. Ritorna true se valida,
+// false altrimenti — nessuna eccezione, il chiamante decide cosa rispondere.
+// Regole (spec docs/superpowers/specs/2026-08-28-sondaggi-org-design.md):
+// 1) il surveyId deve esistere in surveys
+// 2) il sondaggio deve essere aperto: status === "open" e (closesAt nullo o non ancora passata)
+// 3) le choices devono essere tutte incluse in options
+// 4) se multiple === false, choices deve avere esattamente 1 elemento
+function isValidSurveyResponse(surveys, surveyId, choices) {
+  if (!surveys || typeof surveys !== 'object') return false;
+  const survey = surveys[surveyId];
+  if (!survey) return false;
+  if (survey.status !== 'open') return false;
+  if (survey.closesAt !== null && survey.closesAt !== undefined && Date.now() > survey.closesAt) return false;
+  if (!Array.isArray(choices) || choices.length === 0) return false;
+  const validOptions = new Set(survey.options || []);
+  if (!choices.every(c => validOptions.has(c))) return false;
+  if (!survey.multiple && choices.length !== 1) return false;
+  return true;
+}
+
 // Chi può scrivere i dati generali (creare/editare atleti, calendario, ecc.).
 // DEVE combaciare con i ruoli che hanno canEditGeneral:true in:
 //   - api/auth/login.js getPermissions()  → admin, coach_l0/l1/l2
@@ -3113,8 +3133,10 @@ return res.status(400).json({ success: false, message: 'Header X-Annata-Id obbli
 
 const isParentMode = req.query?.parentMode === '1' && req.method === 'GET';
 // FIX v1.5.21: POST con solo calendarResponses o athleteDocs è permessa anche ai genitori non autenticati
+// Estensione sondaggi: stesso trattamento per surveyResponses (validato più sotto prima del kv.set).
 const isCalendarResponsePost = req.method === 'POST' &&
-  req.body && (req.body.calendarResponses !== undefined || req.body.athleteDocs !== undefined) &&
+  req.body && (req.body.calendarResponses !== undefined || req.body.athleteDocs !== undefined
+    || req.body.surveyResponses !== undefined) &&
   Object.keys(req.body).length === 1;
 
 if (!session.isAuthenticated && !isParentMode && !isCalendarResponsePost) {
