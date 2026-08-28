@@ -628,6 +628,11 @@ async function render(loadedData) {
         var _noEvGareRole = sessionStorage.getItem('gosport_user_role') || '';
         showGareTab(['admin','coach_l1','coach_l2'].indexOf(_noEvGareRole) >= 0);
       }
+      if (typeof showSondaggiTab === 'function') {
+        var _noEvSondaggiRole = sessionStorage.getItem('gosport_user_role') || '';
+        var _noEvCanEditSondaggi = ['admin','coach_l1','coach_l2','dirigente_l1'].indexOf(_noEvSondaggiRole) >= 0;
+        showSondaggiTab(_noEvCanEditSondaggi);
+      }
     }
     return;
   }
@@ -706,6 +711,12 @@ if (themeBtn) {
       var _gareRole = sessionStorage.getItem('gosport_user_role') || '';
       var _gareEdit = ['admin','coach_l1','coach_l2'].indexOf(_gareRole) >= 0;
       showGareTab(_gareEdit);
+    }
+    // Mostra tab Sondaggi per lo staff (permessi di modifica estesi a dirigente_l1)
+    if (typeof showSondaggiTab === 'function') {
+      var _sondaggiRole = sessionStorage.getItem('gosport_user_role') || '';
+      var _canEditSondaggi = ['admin','coach_l1','coach_l2','dirigente_l1'].indexOf(_sondaggiRole) >= 0;
+      showSondaggiTab(_canEditSondaggi);
     }
   }
 
@@ -2034,6 +2045,7 @@ const response = await fetch(`/api/data?parentMode=1`, {
     // Mostra sezione documenti nella pagina genitore (sempre visibile)
     if (athleteIdParam) {
       window._renderParentDocsSection(athleteIdParam, annataId, d.athleteDocs || {});
+      window._renderParentSurveysSection(athleteIdParam, annataId, d.surveys || {}, d.surveyResponses || {});
     }
 
     // Mostra documenti pubblici
