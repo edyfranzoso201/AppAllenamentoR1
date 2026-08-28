@@ -3424,16 +3424,37 @@ if (!canWrite(session.role)) {
 return res.status(403).json({ success: false, message: 'Permesso negato' });
 }
 
-// ── Limite demo: max atleti (esclusi ospiti) per società con plan 'demo' ──
+// ── Limite demo: max atleti/dirigenti/allenatori (schede rosa) per società con plan 'demo' ──
 if (body.athletes !== undefined && session.societyId) {
   const licKey = await kv.get(`licenze_society:${session.societyId}`);
   const lic = licKey ? await kv.get(`licenze:${licKey}`) : null;
   if (lic && lic.plan === 'demo' && lic.demoLimits) {
-    const nonGuestCount = (body.athletes || []).filter(a => !a.isGuest && !a.isStaff).length;
+    const list = body.athletes || [];
+    const nonGuestCount = list.filter(a => !a.isGuest && !a.isStaff).length;
     if (nonGuestCount > lic.demoLimits.maxAtleti) {
       return res.status(403).json({
         success: false,
         message: `Hai raggiunto il limite di ${lic.demoLimits.maxAtleti} atleti della prova gratuita. Contattaci per passare a un piano a pagamento.`
+      });
+    }
+    // Le schede "Staff" (isStaff:true) sono membri della rosa senza credenziali
+    // proprie (diverse dagli account utente con login, già limitati in
+    // api/auth/manage.js) — stessa convenzione già usata lato client
+    // (script.js) per distinguere dirigente da allenatore: sottostringa
+    // "dirigente" nel campo role, case-insensitive.
+    const isDirigenteStaff = a => a.isStaff && String(a.role || '').toLowerCase().includes('dirigente');
+    const dirigentiCount = list.filter(isDirigenteStaff).length;
+    if (dirigentiCount > lic.demoLimits.maxDirigenti) {
+      return res.status(403).json({
+        success: false,
+        message: `Hai raggiunto il limite di ${lic.demoLimits.maxDirigenti} dirigente della prova gratuita. Contattaci per passare a un piano a pagamento.`
+      });
+    }
+    const allenatoriCount = list.filter(a => a.isStaff && !isDirigenteStaff(a)).length;
+    if (allenatoriCount > lic.demoLimits.maxCoach) {
+      return res.status(403).json({
+        success: false,
+        message: `Hai raggiunto il limite di ${lic.demoLimits.maxCoach} allenatore della prova gratuita. Contattaci per passare a un piano a pagamento.`
       });
     }
   }
