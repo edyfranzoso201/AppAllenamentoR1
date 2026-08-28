@@ -1145,6 +1145,9 @@ document.addEventListener('DOMContentLoaded', function() {
             <button class="page-tab" id="tab-athlete-docs" style="display:none;" onclick="switchTab('athlete-docs')">
                 <i class="bi bi-file-earmark-check-fill"></i> Documenti Atleti
             </button>
+            <button class="page-tab" id="tab-sondaggi" style="display:none;" onclick="switchTab('sondaggi')">
+                <i class="bi bi-bar-chart-fill"></i> Sondaggi
+            </button>
         </div>
 
         <!-- ── Azioni Calendario ── -->
@@ -1572,6 +1575,26 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         </div>
 
+        <!-- ── TAB: Sondaggi ── -->
+        <div class="tab-content" id="tab-content-sondaggi" style="display:none;">
+            <div style="padding:8px 0;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+                    <h3 style="color:var(--text-primary);margin:0;font-size:1rem;font-weight:700;">
+                        <i class="bi bi-bar-chart-fill" style="color:#3b82f6;"></i>
+                        Sondaggi
+                    </h3>
+                    <button id="sondaggi-new-btn" onclick="window.sondaggiOpenForm()" style="margin-left:auto;background:#16a34a;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:0.82rem;font-weight:600;cursor:pointer;">
+                        <i class="bi bi-plus-circle"></i> Nuovo Sondaggio
+                    </button>
+                </div>
+                <div id="sondaggi-list-container">
+                    <p style="color:#94a3b8;font-size:0.85rem;">Caricamento...</p>
+                </div>
+                <div id="sondaggi-form-container" style="display:none;"></div>
+                <div id="sondaggi-detail-container" style="display:none;"></div>
+            </div>
+        </div>
+
 
         <!-- Bacheca Genitori - FUORI dal calendario collassabile -->
         <div id="bacheca-genitori-container" style="display:none;ma
@@ -1590,6 +1613,7 @@ var _bachecaTabReady=false;
 var _gareTabReady=false;
 var _gareCanEdit=false;
 var _documentiTabReady=false;
+var _sondaggiTabReady=false;
 
 // switchTab definita più avanti da calendario-standalone.js
 window.toggleCalendario=function(){
@@ -1666,8 +1690,9 @@ window.switchTab = function(tab) {
         if(typeof docLoad==='function')docLoad();
     }
     if(tab==='athlete-docs'){ window._loadAthleteDocsTab(); }
+    if(tab==='sondaggi'){ if(typeof window.sondaggiLoad==='function') window.sondaggiLoad(); }
     // ── HAMBURGER mobile (v1.5.3): aggiorna label e chiudi menu ──
-    var labelMap = { calendario: 'Calendario Squadra', bacheca: 'Bacheca Comunicazioni', gare: 'Gare da Disputare', documenti: 'Documenti Società', 'athlete-docs': 'Documenti Atleti' };
+    var labelMap = { calendario: 'Calendario Squadra', bacheca: 'Bacheca Comunicazioni', gare: 'Gare da Disputare', documenti: 'Documenti Società', 'athlete-docs': 'Documenti Atleti', sondaggi: 'Sondaggi' };
     var lblEl = document.getElementById('cal-current-tab-label');
     if (lblEl && labelMap[tab]) lblEl.textContent = labelMap[tab];
     var pageTabs = document.getElementById('page-tabs');
@@ -2486,6 +2511,23 @@ function showDocumentiTab(canEdit) {
     if (tabAd) {
         tabAd.style.display = '';
     }
+}
+
+// ── Mostra tab Sondaggi (chiamato dall'auth, simile a showBachecaTab) ──
+// NOTA permessi: a differenza di Bacheca/Gare/Documenti (solo admin/coach_l1/
+// coach_l2), i Sondaggi includono ANCHE dirigente_l1 — scelta esplicita
+// dell'utente (vedi docs/superpowers/specs/2026-08-28-sondaggi-org-design.md,
+// sezione Permessi), non un allineamento al pattern degli altri tab.
+function showSondaggiTab(canEdit) {
+    if (_sondaggiTabReady) return;
+    // Modalità genitore: niente tab coach (vedi showBachecaTab per il perché).
+    if (new URLSearchParams(location.search).get('athleteId')) return;
+    _sondaggiTabReady = true;
+    var tab = document.getElementById('tab-sondaggi');
+    if (tab) tab.style.display = '';
+    window._sondaggiCanEdit = !!canEdit;
+    var newBtn = document.getElementById('sondaggi-new-btn');
+    if (newBtn) newBtn.style.display = canEdit ? '' : 'none';
 }
 
 // ── switchTab hook: carica gare se necessario ────────────────────
