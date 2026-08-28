@@ -470,18 +470,14 @@ function setupTabListeners() {
 
 // ── Toggle Individuale / Gruppo ──────────────────────────────────────────
 function setupModeToggle() {
-  document.getElementById('cr-mode-individuale').addEventListener('click', () => {
-    if (running) { toast('Ferma il cronometro prima di cambiare modalità'); return; }
-    setCrMode('individuale');
-  });
-  document.getElementById('cr-mode-gruppo').addEventListener('click', () => {
-    if (running) { toast('Ferma il cronometro prima di cambiare modalità'); return; }
-    setCrMode('gruppo');
-  });
+  document.getElementById('cr-mode-individuale').addEventListener('click', () => setCrMode('individuale'));
+  document.getElementById('cr-mode-gruppo').addEventListener('click', () => setCrMode('gruppo'));
   document.getElementById('cr-group-search').addEventListener('input', renderGroupAthleteList);
 }
 
 function setCrMode(mode) {
+  if (mode === crMode) return;
+  if (running) { toast('Ferma il cronometro prima di cambiare modalità'); return; }
   crMode = mode;
   document.getElementById('cr-mode-individuale').classList.toggle('active', mode === 'individuale');
   document.getElementById('cr-mode-gruppo').classList.toggle('active', mode === 'gruppo');
