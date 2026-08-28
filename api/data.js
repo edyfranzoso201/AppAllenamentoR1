@@ -3203,7 +3203,7 @@ return res.status(200).json({ success: true, postImages });
 
 // ── Risposta ridotta per genitori ────────────────────────────────────────
 if (isParentMode) {
-const [calendarEvents, calendarResponses, convSettings, athletes, posts, globalPosts, documents, materiale, bachecaConfig, superadminBanners, convBg, convBg2, athleteDocs] = await Promise.all([
+const [calendarEvents, calendarResponses, convSettings, athletes, posts, globalPosts, documents, materiale, bachecaConfig, superadminBanners, convBg, convBg2, athleteDocs, surveys, surveyResponses] = await Promise.all([
 kv.get(`${prefix}:calendarEvents`),
 kv.get(`${prefix}:calendarResponses`),
 kv.get(`${prefix}:convSettings`),
@@ -3216,7 +3216,9 @@ kv.get('global:bachecaConfig'),
 kv.get('global:superadminBanners'),
 kv.get(`${prefix}:convBg`),
 kv.get(`${prefix}:convBg2`),
-kv.get(`${prefix}:athleteDocs`)  // ← documenti caricati dai genitori
+kv.get(`${prefix}:athleteDocs`),  // ← documenti caricati dai genitori
+kv.get(`${prefix}:surveys`),
+kv.get(`${prefix}:surveyResponses`)
 ]);
 
 return res.status(200).json({
@@ -3237,7 +3239,9 @@ documents: (documents || []).filter(d => (d.visibility || []).includes('pubblica
 materiale: materiale || { items: [], assignments: {} },
 bachecaConfig: bachecaConfig || {},
 superadminBanners: superadminBanners || {},
-athleteDocs: athleteDocs || {}  // ← incluso nella risposta
+athleteDocs: athleteDocs || {},  // ← incluso nella risposta
+surveys: surveys || {},
+surveyResponses: surveyResponses || {}
 });
 }
 
@@ -3283,7 +3287,7 @@ formationData, matchResults, calendarEvents, calendarResponses,
 materiale, pagamenti, pagVoci, pagLabels, convocazioni, convSettings,
 convBg, convBg2, posts, globalPosts, individualPassword,
 ratingSheets, documents, athleteDocs, bachecaConfig, superadminBanners,
-tacticalBoards, multe
+tacticalBoards, multe, surveys, surveyResponses
 ] = await Promise.all([
 kv.get(`${prefix}:athletes`),
 kv.get(`${prefix}:evaluations`),
@@ -3311,7 +3315,9 @@ kv.get(`${prefix}:athleteDocs`),
 kv.get('global:bachecaConfig'),
 kv.get('global:superadminBanners'),
 kv.get(`${prefix}:tacticalBoards`),
-kv.get(`${prefix}:multe`)
+kv.get(`${prefix}:multe`),
+kv.get(`${prefix}:surveys`),
+kv.get(`${prefix}:surveyResponses`)
 ]);
 
 const data = {
@@ -3343,7 +3349,9 @@ documents: documents || [],
 athleteDocs: athleteDocs || {},
 bachecaConfig: bachecaConfig || {},
 superadminBanners: superadminBanners || {},
-multe: multe || {}
+multe: multe || {},
+surveys: surveys || {},
+surveyResponses: surveyResponses || {}
 };
 
 console.log(`GET /api/data - annata=${annataId} user=${session.username} role=${session.role} atleti=${Array.isArray(data.athletes) ? data.athletes.length : 0} tempo=${Date.now() - t0}ms`);
