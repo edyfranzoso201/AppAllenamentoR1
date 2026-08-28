@@ -390,8 +390,45 @@ let atletaChart = null;
 let crMode = 'individuale'; // 'individuale' | 'gruppo'
 let groupLastMark = {}; // athleteId -> ultimo tempo assoluto (s) registrato in modalità Gruppo
 
+function groupLapCountFor(athleteId) {
+  // Conta solo le entry di QUESTA sessione (sessionList), non lo storico già salvato:
+  // il contatore deve riflettere i giri segnati "adesso", per dare feedback immediato.
+  return sessionList.filter(e => String(e.athleteId) === String(athleteId)).length;
+}
+
+function groupLastTimeFor(athleteId) {
+  const entries = sessionList.filter(e => String(e.athleteId) === String(athleteId));
+  if (!entries.length) return null;
+  return entries[entries.length - 1].tempoTotale;
+}
+
 function renderGroupAthleteList() {
-  // Implementata nel Task 4 (pannello atleti con filtro e conteggio giri)
+  const list = document.getElementById('cr-group-list');
+  const filterText = (document.getElementById('cr-group-search').value || '').trim().toLowerCase();
+  const filtered = ATHLETES
+    .filter(a => a.name.toLowerCase().includes(filterText))
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name, 'it'));
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="cr-empty">Nessun atleta trovato</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(a => {
+    const count = groupLapCountFor(a.id);
+    const lastTime = groupLastTimeFor(a.id);
+    const meta = count > 0 ? `${count} gir${count === 1 ? 'o' : 'i'} · ultimo ${fmtTime(lastTime)}` : 'nessun giro';
+    const rowClasses = ['cr-group-row'];
+    if (count > 0) rowClasses.push('has-laps');
+    if (!running) rowClasses.push('disabled-row');
+    return `
+      <div class="${rowClasses.join(' ')}" data-athlete-id="${esc(a.id)}">
+        <span class="cr-group-name">${esc(a.name)}</span>
+        <span class="cr-group-meta">${esc(meta)}</span>
+      </div>
+    `;
+  }).join('');
 }
 
 async function loadData() {
