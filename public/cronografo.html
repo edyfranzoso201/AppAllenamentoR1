@@ -328,6 +328,14 @@ function toast(msg) {
 function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+// Chiave normalizzata per confronti/raggruppamenti case-insensitive sul nome
+// circuito. NON usare per il valore persistito in entry.circuito (quello
+// resta con la grafia originale scritta dall'utente) né per il testo
+// mostrato all'utente: per quello si sceglie la grafia dell'entry più
+// recente del gruppo (vedi groupEntriesByCircuitKey).
+function circuitKey(name) {
+  return String(name || '').trim().toLowerCase();
+}
 
 // ── Stato applicazione ──────────────────────────────────────────────────
 let ATHLETES = [];
@@ -368,13 +376,32 @@ function populateAthleteSelect() {
     ATHLETES.map(a => `<option value="${esc(a.id)}">${esc(a.name)}</option>`).join('');
 }
 
-function populateCircuitDatalist() {
-  const names = new Set();
-  Object.values(CIRCUIT_TIMES).forEach(list => {
-    (list || []).forEach(e => names.add(e.circuito));
+// Raggruppa un elenco di entries (stesso circuito, grafie eventualmente
+// diverse) per circuitKey e restituisce, per ciascun gruppo, la grafia
+// dell'entry più recente (cronologicamente) — criterio "ultima scrittura
+// vince" per il testo mostrato all'utente.
+function groupEntriesByCircuitKey(entries) {
+  const groups = new Map(); // key -> { latestEntry, entries: [] }
+  entries.forEach(e => {
+    const key = circuitKey(e.circuito);
+    if (!key) return;
+    let g = groups.get(key);
+    if (!g) { g = { latestEntry: e, entries: [] }; groups.set(key, g); }
+    g.entries.push(e);
+    if (compareEntriesChrono(g.latestEntry, e) < 0) g.latestEntry = e;
   });
+  return groups;
+}
+
+function populateCircuitDatalist() {
+  const allEntries = [];
+  Object.values(CIRCUIT_TIMES).forEach(list => {
+    (list || []).forEach(e => allEntries.push(e));
+  });
+  const groups = groupEntriesByCircuitKey(allEntries);
+  const displayNames = Array.from(groups.values()).map(g => g.latestEntry.circuito);
   const dl = document.getElementById('cr-circuiti-list');
-  dl.innerHTML = Array.from(names).map(n => `<option value="${esc(n)}"></option>`).join('');
+  dl.innerHTML = displayNames.map(n => `<option value="${esc(n)}"></option>`).join('');
 }
 
 // ── Gestione tab Storico ────────────────────────────────────────────────
@@ -439,21 +466,24 @@ function populateStoricoCircuitSelect() {
     circuitSel.innerHTML = '';
     return;
   }
-  // Nomi univoci dei circuiti cronometrati da questo atleta
-  const names = Array.from(new Set(entries.map(e => e.circuito)));
-  // Circuito con la sessione più recente (default)
-  let mostRecentName = names[0];
+  // Gruppi di circuiti (case-insensitive) cronometrati da questo atleta,
+  // con la grafia da mostrare = quella dell'entry più recente del gruppo.
+  const groups = groupEntriesByCircuitKey(entries);
+  // value dell'option = circuitKey (stabile), testo = grafia più recente
+  let mostRecentKey = null;
   let mostRecentEntry = null;
-  names.forEach(name => {
-    const entriesForName = entries.filter(e => e.circuito === name);
-    const latest = entriesForName.reduce((best, e) => (!best || compareEntriesChrono(best, e) < 0) ? e : best, null);
-    if (!mostRecentEntry || compareEntriesChrono(mostRecentEntry, latest) < 0) {
-      mostRecentEntry = latest;
-      mostRecentName = name;
+  groups.forEach((g, key) => {
+    if (!mostRecentEntry || compareEntriesChrono(mostRecentEntry, g.latestEntry) < 0) {
+      mostRecentEntry = g.latestEntry;
+      mostRecentKey = key;
     }
   });
-  circuitSel.innerHTML = names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
-  circuitSel.value = mostRecentName;
+  const optionsHtml = [];
+  groups.forEach((g, key) => {
+    optionsHtml.push(`<option value="${esc(key)}">${esc(g.latestEntry.circuito)}</option>`);
+  });
+  circuitSel.innerHTML = optionsHtml.join('');
+  circuitSel.value = mostRecentKey;
 }
 
 function renderAtletaView() {
@@ -465,20 +495,20 @@ function renderAtletaView() {
 function renderAtletaViewContent() {
   const content = document.getElementById('cr-storico-atleta-content');
   const athleteId = document.getElementById('cr-storico-atleta').value;
-  const circuito = document.getElementById('cr-storico-circuito').value;
+  const circuitoKey = document.getElementById('cr-storico-circuito').value;
 
   if (atletaChart) {
     atletaChart.destroy();
     atletaChart = null;
   }
 
-  if (!athleteId || !circuito || !Array.isArray(CIRCUIT_TIMES[athleteId]) || !CIRCUIT_TIMES[athleteId].length) {
+  if (!athleteId || !circuitoKey || !Array.isArray(CIRCUIT_TIMES[athleteId]) || !CIRCUIT_TIMES[athleteId].length) {
     content.innerHTML = '<div class="cr-empty">Nessun tempo cronometrato ancora</div>';
     return;
   }
 
   const entries = CIRCUIT_TIMES[athleteId]
-    .filter(e => e.circuito === circuito)
+    .filter(e => circuitKey(e.circuito) === circuitoKey)
     .slice()
     .sort(compareEntriesChrono);
 
@@ -486,6 +516,9 @@ function renderAtletaViewContent() {
     content.innerHTML = '<div class="cr-empty">Nessun tempo cronometrato ancora</div>';
     return;
   }
+
+  // Grafia da mostrare in etichetta/grafico: quella dell'entry più recente del gruppo
+  const circuito = entries.reduce((best, e) => (!best || compareEntriesChrono(best, e) < 0) ? e : best, null).circuito;
 
   content.innerHTML = `
     <div style="position:relative; height:220px; margin:14px 0;">
@@ -556,19 +589,24 @@ function renderAtletaViewContent() {
 }
 
 // ── Storico: vista Confronto squadra ─────────────────────────────────────
-function allCircuitNames() {
-  const names = new Set();
+// Restituisce l'elenco dei gruppi circuito (uno per circuitKey) su tutti
+// gli atleti: { key, label } dove label è la grafia più recente del gruppo.
+function allCircuitGroups() {
+  const allEntries = [];
   ATHLETES.forEach(a => {
-    (CIRCUIT_TIMES[a.id] || []).forEach(e => names.add(e.circuito));
+    (CIRCUIT_TIMES[a.id] || []).forEach(e => allEntries.push(e));
   });
-  return Array.from(names);
+  const groups = groupEntriesByCircuitKey(allEntries);
+  const out = [];
+  groups.forEach((g, key) => out.push({ key, label: g.latestEntry.circuito }));
+  return out;
 }
 
-function allEntriesForCircuit(circuito) {
+function allEntriesForCircuit(circuitoKey) {
   const out = [];
   ATHLETES.forEach(a => {
     (CIRCUIT_TIMES[a.id] || []).forEach(e => {
-      if (e.circuito === circuito) out.push(Object.assign({ athleteId: a.id, athleteName: a.name }, e));
+      if (circuitKey(e.circuito) === circuitoKey) out.push(Object.assign({ athleteId: a.id, athleteName: a.name }, e));
     });
   });
   return out;
@@ -576,8 +614,8 @@ function allEntriesForCircuit(circuito) {
 
 // Confronta due date (stringhe) usando, a parità di data, il timestamp
 // della entry più recente di quella data tra le entries fornite.
-function distinctDatesForCircuit(circuito) {
-  const entries = allEntriesForCircuit(circuito);
+function distinctDatesForCircuit(circuitoKey) {
+  const entries = allEntriesForCircuit(circuitoKey);
   const dates = Array.from(new Set(entries.map(e => e.date)));
   const latestTsForDate = {};
   dates.forEach(d => {
@@ -591,9 +629,9 @@ function distinctDatesForCircuit(circuito) {
   return dates;
 }
 
-// Ultima entry (per timestamp) di un atleta per un dato circuito+data
-function latestEntryForAthleteDate(athleteId, circuito, date) {
-  const entries = (CIRCUIT_TIMES[athleteId] || []).filter(e => e.circuito === circuito && e.date === date);
+// Ultima entry (per timestamp) di un atleta per un dato circuito (chiave)+data
+function latestEntryForAthleteDate(athleteId, circuitoKey, date) {
+  const entries = (CIRCUIT_TIMES[athleteId] || []).filter(e => circuitKey(e.circuito) === circuitoKey && e.date === date);
   if (!entries.length) return null;
   return entries.reduce((best, e) => (!best || timestampFromId(e.id) > timestampFromId(best.id)) ? e : best, null);
 }
@@ -614,9 +652,9 @@ function setupSquadraViewListeners() {
 function populateSquadraCircuitSelect() {
   const sel = document.getElementById('cr-squadra-circuito');
   const prevValue = sel.value;
-  const names = allCircuitNames();
-  sel.innerHTML = names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
-  if (names.includes(prevValue)) {
+  const groups = allCircuitGroups();
+  sel.innerHTML = groups.map(g => `<option value="${esc(g.key)}">${esc(g.label)}</option>`).join('');
+  if (groups.some(g => g.key === prevValue)) {
     sel.value = prevValue;
   }
 }
@@ -819,6 +857,13 @@ document.getElementById('cr-btn-assign').addEventListener('click', () => {
 });
 
 // ── Lista sessione ──────────────────────────────────────────────────────
+// Testo leggibile dei lap di una entry sessione, per il tooltip title della
+// cella tempo. Restituisce '' se non ci sono lap (nessun title da mostrare).
+function lapsTooltipText(entry) {
+  if (!entry || !Array.isArray(entry.laps) || !entry.laps.length) return '';
+  return entry.laps.map((lap, i) => `Lap ${i + 1}: ${fmtTime(lap)}`).join('\n');
+}
+
 function renderSessionList() {
   const card = document.getElementById('cr-session-card');
   const body = document.getElementById('cr-session-body');
@@ -827,16 +872,20 @@ function renderSessionList() {
     return;
   }
   card.style.display = 'block';
-  body.innerHTML = sessionList.map((e, i) => `
+  body.innerHTML = sessionList.map((e, i) => {
+    const lapsText = lapsTooltipText(e);
+    const titleAttr = lapsText ? ` title="${esc(lapsText)}"` : '';
+    return `
     <tr>
       <td>${esc(e.athleteName)}</td>
-      <td class="num">${fmtTime(e.tempoTotale)}</td>
+      <td class="num"${titleAttr}>${fmtTime(e.tempoTotale)}</td>
       <td>
         <button class="cr-icon-btn" data-action="edit" data-idx="${i}" title="Modifica">✏️</button>
         <button class="cr-icon-btn" data-action="del" data-idx="${i}" title="Rimuovi">🗑️</button>
       </td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
   document.getElementById('cr-btn-save').textContent = `💾 Salva tutti i tempi (${sessionList.length})`;
 }
 
