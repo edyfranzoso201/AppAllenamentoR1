@@ -2501,6 +2501,173 @@ window._renderParentDocsSection = function(athleteId, annataId, allDocs) {
   });
 };
 
+// Renderizza la sezione sondaggi nella pagina genitore (solo se c'è almeno un sondaggio aperto)
+window._renderParentSurveysSection = function(athleteId, annataId, surveys, surveyResponses) {
+  surveys = surveys || {};
+  surveyResponses = surveyResponses || {};
+  var athleteIdStr = String(athleteId);
+
+  // Filtro sondaggi aperti a runtime: status === 'open' E (closesAt assente OPPURE non ancora scaduto)
+  var openIds = Object.keys(surveys).filter(function(sid) {
+    var s = surveys[sid];
+    if (!s) return false;
+    return s.status === 'open' && (s.closesAt === null || s.closesAt === undefined || s.closesAt > Date.now());
+  });
+
+  var container = document.getElementById('parent-surveys-section');
+
+  if (openIds.length === 0) {
+    // Nessun sondaggio aperto: nessuna sezione (rimuove eventuale sezione residua da un render precedente)
+    if (container) container.remove();
+    return;
+  }
+
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'parent-surveys-section';
+    container.style.cssText = 'margin-top:12px;';
+    var bachecaBox = document.getElementById('bacheca-genitori-container');
+    if (bachecaBox && bachecaBox.parentNode) {
+      bachecaBox.parentNode.insertBefore(container, bachecaBox.nextSibling);
+    }
+  }
+
+  var html = '<div style="background:#1a3a5f;border:1px solid #3b5a9d;border-radius:12px;padding:20px;">'
+    + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">'
+    + '<span style="color:#ffffff;font-size:1rem;font-weight:700;">📊 Sondaggi</span>'
+    + '</div>';
+
+  openIds.forEach(function(sid) {
+    var survey = surveys[sid];
+    var options = survey.options || [];
+    var multiple = !!survey.multiple;
+    var inputType = multiple ? 'checkbox' : 'radio';
+    var inputName = 'survey-' + sid + '-group';
+
+    var myResponse = (surveyResponses[sid] && surveyResponses[sid][athleteIdStr]) || null;
+    var myChoices = (myResponse && myResponse.choices) || [];
+    var hasResponded = myChoices.length > 0;
+
+    html += '<div data-survey-id="' + sid + '" style="background:#0d1b2a;border:1px solid #2d4a8a;border-radius:8px;padding:14px;margin-bottom:14px;">';
+    html += '<div style="color:#e2e8f0;font-size:0.92rem;font-weight:600;margin-bottom:10px;">' + survey.question + '</div>';
+
+    if (survey.closesAt) {
+      html += '<div style="color:#94a3b8;font-size:0.75rem;margin-bottom:10px;">Scadenza: ' + new Date(survey.closesAt).toLocaleString('it-IT') + '</div>';
+    }
+
+    options.forEach(function(opt, idx) {
+      var optId = 'survey-' + sid + '-opt-' + idx;
+      var checked = myChoices.indexOf(opt) !== -1 ? ' checked' : '';
+      html += '<label for="' + optId + '" style="display:flex;align-items:center;gap:8px;padding:6px 0;color:#e2e8f0;font-size:0.85rem;cursor:pointer;">'
+        + '<input type="' + inputType + '" id="' + optId + '" name="' + inputName + '" value="' + String(opt).replace(/"/g,'&quot;') + '"' + checked + '>'
+        + '<span>' + opt + '</span>'
+        + '</label>';
+    });
+
+    var btnLabel = hasResponded ? 'Aggiorna risposta' : 'Invia risposta';
+    html += '<button type="button" class="survey-submit-btn" data-survey-id="' + sid + '" data-athlete-id="' + athleteIdStr + '" data-annata-id="' + annataId + '" '
+      + 'style="margin-top:10px;background:#16a34a;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:0.85rem;font-weight:700;cursor:pointer;">' + btnLabel + '</button>';
+
+    // Risultati aggregati (solo se lo staff li ha resi visibili ai genitori)
+    if (survey.showResultsToParents === true) {
+      var responsesForSurvey = surveyResponses[sid] || {};
+      var respIds = Object.keys(responsesForSurvey);
+      var totResp = respIds.length;
+
+      html += '<div style="margin-top:14px;border-top:1px solid rgba(59,90,157,0.4);padding-top:10px;">';
+      if (!totResp) {
+        html += '<p style="color:#94a3b8;font-size:0.82rem;margin:0;">Nessuna risposta ancora.</p>';
+      } else {
+        options.forEach(function(opt) {
+          var count = 0;
+          respIds.forEach(function(aid) {
+            var choices = (responsesForSurvey[aid] && responsesForSurvey[aid].choices) || [];
+            if (choices.indexOf(opt) !== -1) count++;
+          });
+          var pct = totResp ? Math.round((count / totResp) * 100) : 0;
+          html += '<div style="margin-bottom:8px;">'
+            + '<div style="display:flex;justify-content:space-between;font-size:0.8rem;color:#e2e8f0;margin-bottom:3px;">'
+            + '<span>' + opt + '</span><span>' + count + ' (' + pct + '%)</span></div>'
+            + '<div style="background:rgba(255,255,255,0.08);border-radius:4px;height:8px;overflow:hidden;">'
+            + '<div style="background:#3b82f6;height:100%;width:' + pct + '%;"></div>'
+            + '</div></div>';
+        });
+
+        if (survey.showNamesInResults === true) {
+          html += '<div style="margin-top:8px;">';
+          html += '<ul style="list-style:none;padding:0;margin:0;">' + respIds.map(function(aid) {
+            var choices = (responsesForSurvey[aid] && responsesForSurvey[aid].choices) || [];
+            var nm = (responsesForSurvey[aid] && responsesForSurvey[aid].athleteName) || ('Atleta #' + aid);
+            return '<li style="padding:3px 0;font-size:0.78rem;color:#94a3b8;"><strong style="color:#e2e8f0;">' + nm + '</strong>: ' + choices.join(', ') + '</li>';
+          }).join('') + '</ul>';
+          html += '</div>';
+        }
+      }
+      html += '</div>';
+    }
+
+    html += '</div>';
+  });
+
+  html += '</div>';
+  container.innerHTML = html;
+
+  container.querySelectorAll('.survey-submit-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      window._submitSurveyResponse(btn.dataset.surveyId, btn.dataset.athleteId, btn.dataset.annataId);
+    });
+  });
+};
+
+// Invia (o aggiorna) la risposta genitore a un sondaggio
+window._submitSurveyResponse = async function(surveyId, athleteId, annataId) {
+  var block = document.querySelector('#parent-surveys-section [data-survey-id="' + surveyId + '"]');
+  if (!block) return;
+
+  var checkedInputs = block.querySelectorAll('input[type="checkbox"]:checked, input[type="radio"]:checked');
+  var choices = Array.prototype.map.call(checkedInputs, function(inp) { return inp.value; });
+
+  var isMultiple = block.querySelector('input[type="checkbox"]') !== null;
+  if (isMultiple && choices.length === 0) {
+    alert('Seleziona almeno un\'opzione prima di inviare la risposta.');
+    return;
+  }
+  if (!isMultiple && choices.length === 0) {
+    alert('Seleziona un\'opzione prima di inviare la risposta.');
+    return;
+  }
+
+  try {
+    var payload = {};
+    payload[String(surveyId)] = {};
+    payload[String(surveyId)][String(athleteId)] = { choices: choices };
+    var res = await fetch('/api/data?parentMode=1', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Annata-Id': annataId },
+      body: JSON.stringify({ surveyResponses: payload })
+    });
+    if (res.ok) {
+      alert('✅ Risposta inviata con successo!');
+      // Ricarica dati freschi e ri-renderizza la sezione (stesso pattern di _renderParentDocsSection)
+      try {
+        var freshRes = await fetch('/api/data?parentMode=1', {
+          cache: 'no-store',
+          headers: { 'Content-Type': 'application/json', 'X-Annata-Id': annataId }
+        });
+        if (freshRes.ok) {
+          var fd = await freshRes.json();
+          var fdata = fd.data || fd;
+          window._renderParentSurveysSection(athleteId, annataId, fdata.surveys || {}, fdata.surveyResponses || {});
+        }
+      } catch(e) { console.warn('[Sondaggi] refresh err:', e); }
+    } else {
+      alert('❌ Errore nel salvataggio: HTTP ' + res.status);
+    }
+  } catch(e) {
+    alert('❌ Errore: ' + e.message);
+  }
+};
+
 // FIX v1.5.21: apre la convocazione con layout originale (sfondo, loghi, colori societari)
 // Recupera i settings dal backend e ricostruisce l'HTML identico a convStampa in index.html
 window._openConvPdf = async function(cdEncoded) {
