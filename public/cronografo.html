@@ -489,6 +489,90 @@ document.getElementById('cr-session-body').addEventListener('click', (ev) => {
 
 document.getElementById('cr-btn-save').addEventListener('click', saveSession);
 
+// ── Salvataggio (rileggi prima di scrivere) ──────────────────────────────
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function makeCircuitTimeId() {
+  return 'ctime_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+}
+
+async function saveSession() {
+  if (!sessionList.length) return;
+  const btn = document.getElementById('cr-btn-save');
+  btn.disabled = true;
+  btn.textContent = 'Salvataggio…';
+
+  try {
+    // 1. Rilettura fresca dello stato corrente (evita di sovrascrivere modifiche concorrenti)
+    const fresh = await loadData();
+    if (!fresh) throw new Error('reload-failed');
+    const freshCircuitTimes = fresh.circuitTimes || {};
+    const freshGpsData = fresh.gpsData || {};
+    const today = todayStr();
+
+    // 2. Merge additivo di circuitTimes
+    sessionList.forEach(entry => {
+      const athleteId = String(entry.athleteId);
+      if (!freshCircuitTimes[athleteId]) freshCircuitTimes[athleteId] = [];
+      freshCircuitTimes[athleteId].push({
+        id: makeCircuitTimeId(),
+        date: today,
+        circuito: entry.circuito,
+        tempoTotale: entry.tempoTotale,
+        laps: entry.laps,
+        createdBy: ss('gosport_auth_user') || ''
+      });
+    });
+
+    // 3. Collegamento con Dati Performance (gpsData): aggiorna/crea la sessione odierna,
+    //    sempre indice [0] dell'array, mai indovinare quale sessione tra più di una.
+    sessionList.forEach(entry => {
+      const athleteId = String(entry.athleteId);
+      if (!freshGpsData[athleteId]) freshGpsData[athleteId] = {};
+      if (!freshGpsData[athleteId][today] || !Array.isArray(freshGpsData[athleteId][today]) || !freshGpsData[athleteId][today].length) {
+        freshGpsData[athleteId][today] = [{
+          tempo_circuito_totale_s: entry.tempoTotale,
+          distanza_circuito: null,
+          velocita_circuito: null,
+          fonte: 'cronografo'
+        }];
+      } else {
+        const session0 = freshGpsData[athleteId][today][0];
+        session0.tempo_circuito_totale_s = entry.tempoTotale;
+        if (session0.distanza_circuito) {
+          session0.velocita_circuito = parseFloat(((session0.distanza_circuito / entry.tempoTotale) * 3.6).toFixed(2));
+        }
+      }
+    });
+
+    // 4. POST del merge
+    const res = await fetch('/api/data', {
+      method: 'POST',
+      headers: authHeaders(true),
+      body: JSON.stringify({ circuitTimes: freshCircuitTimes, gpsData: freshGpsData })
+    });
+    if (!res.ok) throw new Error('save-failed');
+
+    // 5. Successo: aggiorna stato locale, svuota lista, ricarica storico
+    CIRCUIT_TIMES = freshCircuitTimes;
+    GPS_DATA = freshGpsData;
+    sessionList = [];
+    renderSessionList();
+    populateCircuitDatalist();
+    renderAtletaView();
+    renderSquadraView();
+    toast('Tempi salvati con successo');
+  } catch (err) {
+    // Errore di rete: la lista sessione resta intatta, l'utente può ritentare
+    toast('Errore di salvataggio — riprova, la lista è stata mantenuta');
+    btn.disabled = false;
+    btn.textContent = `💾 Salva tutti i tempi (${sessionList.length})`;
+  }
+}
+
 init();
 </script>
 </body>
