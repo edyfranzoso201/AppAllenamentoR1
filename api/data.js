@@ -3287,7 +3287,7 @@ formationData, matchResults, calendarEvents, calendarResponses,
 materiale, pagamenti, pagVoci, pagLabels, convocazioni, convSettings,
 convBg, convBg2, posts, globalPosts, individualPassword,
 ratingSheets, documents, athleteDocs, bachecaConfig, superadminBanners,
-tacticalBoards, multe, surveys, surveyResponses
+tacticalBoards, multe, surveys, surveyResponses, circuitTimes
 ] = await Promise.all([
 kv.get(`${prefix}:athletes`),
 kv.get(`${prefix}:evaluations`),
@@ -3317,7 +3317,8 @@ kv.get('global:superadminBanners'),
 kv.get(`${prefix}:tacticalBoards`),
 kv.get(`${prefix}:multe`),
 kv.get(`${prefix}:surveys`),
-kv.get(`${prefix}:surveyResponses`)
+kv.get(`${prefix}:surveyResponses`),
+kv.get(`${prefix}:circuitTimes`)
 ]);
 
 const data = {
@@ -3351,7 +3352,8 @@ bachecaConfig: bachecaConfig || {},
 superadminBanners: superadminBanners || {},
 multe: multe || {},
 surveys: surveys || {},
-surveyResponses: surveyResponses || {}
+surveyResponses: surveyResponses || {},
+circuitTimes: circuitTimes || {}
 };
 
 console.log(`GET /api/data - annata=${annataId} user=${session.username} role=${session.role} atleti=${Array.isArray(data.athletes) ? data.athletes.length : 0} tempo=${Date.now() - t0}ms`);
