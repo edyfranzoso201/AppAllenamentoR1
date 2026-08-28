@@ -343,8 +343,8 @@ export default async function handler(req, res) {
         stored.expiry = current.toISOString().split('T')[0];
         if (stored.demoStatus === 'expired' && current.getTime() > Date.now()) {
           stored.demoStatus = 'active';
-          stored.demoReminder15Sent = false;
-          stored.demoReminder3Sent = false;
+          stored.demoReminder7Sent = false;
+          stored.demoReminder2Sent = false;
         }
       } else if (field === 'maxAtleti' || field === 'maxCoach' || field === 'maxDirigenti') {
         if (!stored.demoLimits) stored.demoLimits = { maxAtleti: 3, maxDirigenti: 1, maxCoach: 1 };

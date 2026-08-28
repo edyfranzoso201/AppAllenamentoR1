@@ -524,7 +524,7 @@ if (req.query?.action === 'contact' && req.method === 'POST') {
   }
 }
 
-// ── DEMO GRATUITA: registrazione self-service (3 mesi, 3 atleti + 1 dirigente + 1 coach) ──
+// ── DEMO GRATUITA: registrazione self-service (15 giorni, 3 atleti + 1 dirigente + 1 coach) ──
 if (req.query?.action === 'demo-signup' && req.method === 'POST') {
   // Rate limit 5 richieste/ora per IP, stesso pattern del blocco 'contact' sopra.
   try {
@@ -630,8 +630,8 @@ if (req.query?.action === 'demo-signup' && req.method === 'POST') {
     demoExpiresAt: null,
     demoLimits: { maxAtleti: 3, maxDirigenti: 1, maxCoach: 1 },
     demoStatus: 'pending',
-    demoReminder15Sent: false,
-    demoReminder3Sent: false,
+    demoReminder7Sent: false,
+    demoReminder2Sent: false,
   };
 
   const usernameDemo = ('demo_' + email.split('@')[0]).replace(/[^a-z0-9_]/gi, '').slice(0, 30).toLowerCase();
@@ -692,7 +692,7 @@ if (req.query?.action === 'demo-signup' && req.method === 'POST') {
       from: process.env.GMAIL_USER,
       to: email,
       subject: 'Conferma la tua prova gratuita — Sport Monitoring',
-      html: `<p>Ciao ${esc(nomeReferente)},</p><p>Conferma la tua registrazione a Sport Monitoring cliccando qui:</p><p><a href="${confirmUrl}">${confirmUrl}</a></p><p>Il tuo nome utente per accedere sarà: <strong>${esc(usernameDemo)}</strong> (te lo richiederemo anche nella pagina di conferma).</p><p>Dopo aver confermato e scelto la password, potrai accedere all'app da qui: <a href="${appLoginUrl}">${appLoginUrl}</a></p><p>Il link scade tra 48 ore.</p>`,
+      html: `<p>Ciao ${esc(nomeReferente)},</p><p>Conferma la tua registrazione a Sport Monitoring cliccando qui:</p><p><a href="${confirmUrl}">${confirmUrl}</a></p><p>Il tuo nome utente per accedere sarà: <strong>${esc(usernameDemo)}</strong> (te lo richiederemo anche nella pagina di conferma).</p><p>Dopo aver confermato e scelto la password, potrai accedere all'app da qui: <a href="${appLoginUrl}">${appLoginUrl}</a></p><p><strong>Demo valida 15 giorni</strong>, contatta SPORT MONITORING per estendere la prova o acquistare la licenza che fa per te.</p><p>Nella prova gratuita puoi caricare al massimo <strong>3 atleti e 1 dirigente</strong>.</p><p>Il link scade tra 48 ore.</p>`,
     });
     await transporter.sendMail({
       from: process.env.GMAIL_USER,
@@ -721,7 +721,7 @@ if (req.query?.action === 'demo-verify' && req.method === 'GET') {
   return res.status(200).json({ success: true, email: check.email, username: pending.username, societyName: (await kv.get(`licenze:${pending.licenseKey}`))?.societyName || '' });
 }
 
-// ── DEMO GRATUITA: attivazione — imposta password, marca attiva, avvia i 90gg ──
+// ── DEMO GRATUITA: attivazione — imposta password, marca attiva, avvia i 15gg ──
 if (req.query?.action === 'demo-activate' && req.method === 'POST') {
   const { token, password } = req.body || {};
   const check = verifyDemoToken(token);
@@ -752,7 +752,7 @@ if (req.query?.action === 'demo-activate' && req.method === 'POST') {
   const license = await kv.get(`licenze:${pending.licenseKey}`);
   if (!license) return res.status(404).json({ success: false, message: 'Licenza non trovata' });
 
-  const demoExpiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+  const demoExpiresAt = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000);
   license.demoExpiresAt = demoExpiresAt.toISOString();
   license.expiry = demoExpiresAt.toISOString().split('T')[0];
   license.demoStatus = 'active';
@@ -2016,24 +2016,26 @@ if (req.query?.action === 'cron-remind' && req.method === 'GET') {
       const msLeft = expiresMs - nowMs;
       const daysLeft = Math.ceil(msLeft / (24 * 60 * 60 * 1000));
 
-      // Promemoria 15gg / 3gg (solo se ancora attiva)
+      // Promemoria 7gg / 2gg (solo se ancora attiva) — soglie dimezzate rispetto
+      // alle originali 15gg/3gg quando la demo è passata da 90 a 15 giorni totali:
+      // con la durata breve, la soglia a metà prova cade a 7gg residui.
       if (lic.demoStatus === 'active') {
-        if (daysLeft <= 15 && daysLeft > 3 && !lic.demoReminder15Sent) {
+        if (daysLeft <= 7 && daysLeft > 2 && !lic.demoReminder7Sent) {
           await transporter.sendMail({
             from: process.env.GMAIL_USER, to: lic.email,
             subject: '⏳ La tua prova gratuita sta per scadere',
             html: `<p>Ciao,</p><p>La tua prova gratuita di Sport Monitoring per <strong>${lic.societyName}</strong> scade tra ${daysLeft} giorni. Contattaci per continuare a usarla senza interruzioni.</p>`
           });
-          lic.demoReminder15Sent = true;
+          lic.demoReminder7Sent = true;
           await kv.set(`licenze:${licKey}`, lic);
           demoProcessed++;
-        } else if (daysLeft <= 3 && daysLeft >= 0 && !lic.demoReminder3Sent) {
+        } else if (daysLeft <= 2 && daysLeft >= 0 && !lic.demoReminder2Sent) {
           await transporter.sendMail({
             from: process.env.GMAIL_USER, to: lic.email,
             subject: '🚨 Ultimi giorni di prova gratuita',
             html: `<p>Ciao,</p><p>La tua prova gratuita per <strong>${lic.societyName}</strong> scade tra ${daysLeft} giorni. Contattaci subito per non perdere i tuoi dati.</p>`
           });
-          lic.demoReminder3Sent = true;
+          lic.demoReminder2Sent = true;
           await kv.set(`licenze:${licKey}`, lic);
           demoProcessed++;
         }
