@@ -1117,21 +1117,31 @@ async function saveSession() {
 
     // 3. Collegamento con Dati Performance (gpsData): aggiorna/crea la sessione odierna,
     //    sempre indice [0] dell'array, mai indovinare quale sessione tra più di una.
+    //    Quando un atleta ha più entry nella stessa sessione (modalità Gruppo, un
+    //    giro per tocco), si collega il MIGLIOR giro (tempo minimo) a gpsData —
+    //    lo storico in circuitTimes resta comunque granulare, un'entry per giro.
+    const bestTimeByAthlete = {};
     sessionList.forEach(entry => {
       const athleteId = String(entry.athleteId);
+      if (!(athleteId in bestTimeByAthlete) || entry.tempoTotale < bestTimeByAthlete[athleteId]) {
+        bestTimeByAthlete[athleteId] = entry.tempoTotale;
+      }
+    });
+    Object.keys(bestTimeByAthlete).forEach(athleteId => {
+      const bestTime = bestTimeByAthlete[athleteId];
       if (!freshGpsData[athleteId]) freshGpsData[athleteId] = {};
       if (!freshGpsData[athleteId][today] || !Array.isArray(freshGpsData[athleteId][today]) || !freshGpsData[athleteId][today].length) {
         freshGpsData[athleteId][today] = [{
-          tempo_circuito_totale_s: entry.tempoTotale,
+          tempo_circuito_totale_s: bestTime,
           distanza_circuito: null,
           velocita_circuito: null,
           fonte: 'cronografo'
         }];
       } else {
         const session0 = freshGpsData[athleteId][today][0];
-        session0.tempo_circuito_totale_s = entry.tempoTotale;
+        session0.tempo_circuito_totale_s = bestTime;
         if (session0.distanza_circuito) {
-          session0.velocita_circuito = parseFloat(((session0.distanza_circuito / entry.tempoTotale) * 3.6).toFixed(2));
+          session0.velocita_circuito = parseFloat(((session0.distanza_circuito / bestTime) * 3.6).toFixed(2));
         }
       }
     });
