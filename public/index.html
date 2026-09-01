@@ -5762,7 +5762,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var righeGiocatori = '';
         d.giocatori.forEach(function(g) {
             var a = atletiMap[String(g.athleteId)];
-            var nome = a ? a.name : '';
+            var nome = a ? a.name : '(atleta rimosso)';
             var dn = fmtDataParti(a ? a.dataNascita : '');
             var matricola = a ? (a.numeroMatricola || '') : '';
             righeGiocatori += '<tr>'
