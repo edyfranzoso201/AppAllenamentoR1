@@ -5722,7 +5722,7 @@ document.addEventListener('DOMContentLoaded', function() {
         window._distintaState.staffRuoli[ruoloKey][campo] = val;
     };
 
-    window.convDistintaSalva = function() {
+    window.convDistintaSalva = function(silenzioso) {
         var id = document.getElementById('distinta-conv-id').value;
         var conv = _convData.find(function(x){ return x.id === id; });
         if (!conv) { alert('Convocazione non trovata.'); return; }
@@ -5738,10 +5738,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
         conv.distinta = d;
         _convSaveData();
-        alert('✅ Distinta salvata!');
+        if (!silenzioso) alert('✅ Distinta salvata!');
     };
 
     window.convStampaDistinta = function(id) {
+        // Se il pannello Distinta di questa stessa convocazione è aperto, salva prima
+        // le modifiche in corso (senza alert): evita di stampare dati non ancora persistiti.
+        var distintaConvIdEl = document.getElementById('distinta-conv-id');
+        if (window._distintaState && distintaConvIdEl && distintaConvIdEl.value === id) {
+            window.convDistintaSalva(true);
+        }
+
         var conv = _convData.find(function(x){ return x.id === id; });
         if (!conv) { alert('Convocazione non trovata.'); return; }
         var d = conv.distinta;
