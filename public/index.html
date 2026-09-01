@@ -5741,6 +5741,133 @@ document.addEventListener('DOMContentLoaded', function() {
         alert('✅ Distinta salvata!');
     };
 
+    window.convStampaDistinta = function(id) {
+        var conv = _convData.find(function(x){ return x.id === id; });
+        if (!conv) { alert('Convocazione non trovata.'); return; }
+        var d = conv.distinta;
+        if (!d) { alert('Compila e salva prima la Distinta.'); return; }
+
+        var s = _convSettings || {};
+        var atletiMap = {};
+        (window.athletes || []).forEach(function(a){ atletiMap[String(a.id)] = a; });
+
+        function fmtDataParti(iso) {
+            if (!iso) return { g:'', m:'', a:'' };
+            var parts = iso.split('-'); // YYYY-MM-DD
+            return { g: parts[2]||'', m: parts[1]||'', a: parts[0]||'' };
+        }
+        function esc(v) { return (v===undefined||v===null) ? '' : String(v); }
+
+        // ── Tabella giocatori ──────────────────────────────────────────
+        var righeGiocatori = '';
+        d.giocatori.forEach(function(g) {
+            var a = atletiMap[String(g.athleteId)];
+            var nome = a ? a.name : '';
+            var dn = fmtDataParti(a ? a.dataNascita : '');
+            var matricola = a ? (a.numeroMatricola || '') : '';
+            righeGiocatori += '<tr>'
+                + '<td class="tc">'+esc(g.ruolo)+'</td>'
+                + '<td class="tc">'+dn.g+'</td>'
+                + '<td class="tc">'+dn.m+'</td>'
+                + '<td class="tc">'+dn.a+'</td>'
+                + '<td class="tl">'+esc(nome)+'</td>'
+                + '<td class="tc">'+esc(g.riserva)+'</td>'
+                + '<td class="tc">'+esc(g.capitano)+'</td>'
+                + '<td class="tc">'+esc(matricola)+'</td>'
+                + '<td class="tc">'+esc(g.docTipo)+'</td>'
+                + '<td class="tc">'+esc(g.docNumero)+'</td>'
+                + '<td class="tc">'+esc(g.docRilasciato)+'</td>'
+                + '<td class="tc"></td>'
+                + '<td class="tc"></td>'
+                + '</tr>';
+        });
+
+        // ── Sezione firme ────────────────────────────────────────────
+        var labelRuolo = {
+            dirigenteAccompagnatore: 'Dirigente Accompagnatore Ufficiale',
+            dirigenteUfficialiGara:  'Dirigente add. Ufficiali di Gara',
+            medicoSociale:           'Medico Sociale',
+            allenatoreSeconda:       'Allenatore / 2° Allenatore',
+            dirigenteMassaggiatore:  'Massaggiatore',
+            preparatoreAtletico:     'Preparatore Atletico',
+            preparatorePortieri:     'Preparatore Portieri'
+        };
+        var righeFirme = '';
+        Object.keys(labelRuolo).forEach(function(key) {
+            var r = d.staffRuoli[key];
+            if (!r || !r.athleteId) return;
+            righeFirme += '<div class="firma-row"><span class="firma-label">'+labelRuolo[key]+':</span> '
+                + '<span class="firma-nome">'+esc(r.nome)+'</span>'
+                + (r.matricola ? ' <span class="firma-matricola">(matr. '+esc(r.matricola)+')</span>' : '')
+                + '</div>';
+        });
+
+        var logoLnd  = s.lnd  || '';
+        var logoSoc  = s.logo || '';
+        var logoFigc = s.figc || '';
+
+        var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Distinta F.I.G.C.</title>'
+            + '<style>'
+            + '@page{size:A4 portrait;margin:10mm;}'
+            + 'body{font-family:Arial,Helvetica,sans-serif;color:#000;background:#fff;margin:0;padding:0;}'
+            + '.page{width:100%;max-width:190mm;margin:0 auto;}'
+            + '.loghi-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}'
+            + '.loghi-row img{max-height:60px;max-width:110px;object-fit:contain;}'
+            + '.loghi-row .spacer{flex:1;}'
+            + '.testata{text-align:center;margin-bottom:6px;}'
+            + '.testata h1{font-size:1.1rem;margin:2px 0;}'
+            + '.testata h2{font-size:0.95rem;margin:2px 0;font-weight:700;}'
+            + '.testata .riga{font-size:0.85rem;margin:2px 0;}'
+            + 'table.distinta{width:100%;border-collapse:collapse;margin-top:8px;font-size:0.72rem;}'
+            + 'table.distinta th,table.distinta td{border:1px solid #000;padding:3px 4px;}'
+            + 'table.distinta th{background:#f0f0f0;font-size:0.68rem;text-align:center;}'
+            + '.tc{text-align:center;}.tl{text-align:left;}'
+            + '.firme-box{margin-top:14px;font-size:0.8rem;}'
+            + '.firma-row{margin-bottom:4px;}'
+            + '.firma-label{font-weight:700;}'
+            + '.firme-finali{display:flex;justify-content:space-between;margin-top:24px;}'
+            + '.firme-finali div{width:45%;border-top:1px solid #000;text-align:center;padding-top:4px;font-size:0.78rem;}'
+            + '@media print{.conv-toolbar{display:none!important;}}'
+            + '</style></head><body>'
+            + '<div class="page">'
+            + '<div class="loghi-row">'
+            +   (logoLnd  ? '<img src="'+logoLnd+'">'  : '<div class="spacer"></div>')
+            +   (logoSoc  ? '<img src="'+logoSoc+'">'  : '<div class="spacer"></div>')
+            +   (logoFigc ? '<img src="'+logoFigc+'">' : '<div class="spacer"></div>')
+            + '</div>'
+            + '<div class="testata">'
+            +   '<h1>DISTINTA</h1>'
+            +   '<h2>F.I.G.C. — LEGA NAZIONALE DILETTANTI</h2>'
+            +   '<div class="riga">'+(d.affiliazione ? 'N° Affiliazione: '+esc(d.affiliazione)+' — ' : '')+esc(d.societa)+'</div>'
+            +   '<div class="riga">Distinta dei giocatori partecipanti alla gara: '+esc(d.societa)+(d.avversario ? ' — '+esc(d.avversario) : '')+'</div>'
+            +   '<div class="riga">'+(d.campionato ? esc(d.campionato)+' · ' : '')+(d.data ? new Date(d.data+'T00:00:00').toLocaleDateString('it-IT') : '')+(d.luogo ? ' · '+esc(d.luogo) : '')+'</div>'
+            + '</div>'
+            + '<table class="distinta"><thead><tr>'
+            +   '<th rowspan="2">N.</th><th colspan="3">Data Nascita</th><th rowspan="2">Cognome e Nome</th>'
+            +   '<th rowspan="2">Riserve</th><th rowspan="2">Cap/<br>V.Cap.</th><th rowspan="2">N. Matricola<br>F.I.G.C.</th>'
+            +   '<th colspan="3">Documento di identificazione</th><th rowspan="2">Espulsi</th><th rowspan="2">Ammoniti</th>'
+            + '</tr><tr>'
+            +   '<th>G</th><th>M</th><th>A</th><th>Tipo</th><th>Numero</th><th>Rilasciato</th>'
+            + '</tr></thead><tbody>'
+            + righeGiocatori
+            + '</tbody></table>'
+            + '<div class="firme-box">'
+            + righeFirme
+            + '</div>'
+            + '<div class="firme-finali"><div>L\'ARBITRO</div><div>IL DIRIGENTE ACCOMPAGNATORE UFFICIALE</div></div>'
+            + (d.note ? '<div style="margin-top:10px;font-size:0.78rem;"><strong>Note:</strong> '+esc(d.note)+'</div>' : '')
+            + '</div>'
+            + '<div class="conv-toolbar" style="position:fixed;top:10px;right:10px;z-index:9999;display:flex;gap:8px;">'
+            + '<button onclick="window.print()" style="padding:8px 18px;background:#16a34a;color:white;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:700;">🖨️ Stampa / Salva PDF</button>'
+            + '<button onclick="window.close()" style="padding:8px 14px;background:#64748b;color:white;border:none;border-radius:6px;cursor:pointer;font-size:14px;">✕ Chiudi</button>'
+            + '</div>'
+            + '</body></html>';
+
+        var w = window.open('', '_blank', 'width=900,height=1200');
+        w.document.write(html);
+        w.document.close();
+    };
+
     // Ponte dal form: richiede che la convocazione sia già salvata (serve un id)
     window.convDistintaDaForm = function() {
         var id = document.getElementById('conv-edit-id').value;
