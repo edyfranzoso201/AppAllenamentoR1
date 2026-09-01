@@ -5552,6 +5552,54 @@ document.addEventListener('DOMContentLoaded', function() {
         giocatori.forEach(function(g, i) { g.ruolo = i + 1; });
     }
 
+    // ── Apri pannello Distinta per una convocazione esistente ───────
+    window.convDistintaApri = function(id) {
+        var conv = _convData.find(function(x){ return x.id === id; });
+        if (!conv) { alert('Convocazione non trovata.'); return; }
+        document.getElementById('conv-form-panel').style.display = 'none';
+        document.getElementById('conv-distinta-panel').style.display = '';
+        document.getElementById('distinta-conv-id').value = id;
+
+        var d = conv.distinta ? JSON.parse(JSON.stringify(conv.distinta)) : _convDistintaVuota(conv);
+        // Se mancano giocatori e la convocazione ha atleti selezionati, precompila da quelli
+        if (!d.giocatori.length && (conv.atletiIds || []).length) {
+            var all = (window.athletes || []).filter(function(a){ return !a.isGuest && !a.isStaff; });
+            conv.atletiIds.forEach(function(aid) {
+                var a = all.find(function(x){ return String(x.id) === String(aid); });
+                if (a) d.giocatori.push(_convDistintaRigaDaAtleta(a));
+            });
+            _convDistintaRinumera(d.giocatori);
+        }
+        window._distintaState = d;
+
+        document.getElementById('distinta-affiliazione').value = d.affiliazione || '';
+        document.getElementById('distinta-societa').value      = d.societa || '';
+        document.getElementById('distinta-campionato').value   = d.campionato || '';
+        document.getElementById('distinta-avversario').value   = d.avversario || '';
+        document.getElementById('distinta-data').value          = d.data || '';
+        document.getElementById('distinta-luogo').value          = d.luogo || '';
+        document.getElementById('distinta-note').value           = d.note || '';
+
+        _convDistintaPopolaSelectAggiungi();
+        _convDistintaRenderGiocatori();
+        _convDistintaRenderStaff();
+    };
+
+    // Menu a tendina "+ Aggiungi giocatore": tutti gli atleti non staff/non ospiti,
+    // esclusi quelli già in tabella
+    function _convDistintaPopolaSelectAggiungi() {
+        var sel = document.getElementById('distinta-add-giocatore-sel');
+        var d = window._distintaState;
+        var giaPresenti = d.giocatori.map(function(g){ return String(g.athleteId); });
+        var all = (window.athletes || []).filter(function(a){ return !a.isGuest && !a.isStaff; });
+        var html = '<option value="">— seleziona atleta —</option>';
+        all.forEach(function(a) {
+            if (giaPresenti.indexOf(String(a.id)) !== -1) return;
+            html += '<option value="'+a.id+'">'+a.name+'</option>';
+        });
+        sel.innerHTML = html;
+    }
+
     // Ponte dal form: richiede che la convocazione sia già salvata (serve un id)
     window.convDistintaDaForm = function() {
         var id = document.getElementById('conv-edit-id').value;
