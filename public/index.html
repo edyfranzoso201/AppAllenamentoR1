@@ -5451,6 +5451,46 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.conv-atleta-chk').forEach(function(c){c.checked=val;});
     };
 
+    // ── Distinta F.I.G.C. — factory oggetto vuoto/precompilato ──────
+    function _convDistintaVuota(conv) {
+        return {
+            affiliazione: '',
+            societa: (window.appName || document.title || 'Sport Monitoring').replace(/\s*[-–—].*$/, '').trim() || 'Sport Monitoring',
+            campionato: [conv.tipo, conv.categoria].filter(Boolean).join(' — '),
+            avversario: conv.avversario || '',
+            data: conv.data || '',
+            luogo: conv.luogo || '',
+            giocatori: [],
+            staffRuoli: {
+                dirigenteAccompagnatore: { athleteId:'', nome:'', matricola:'' },
+                dirigenteUfficialiGara:  { athleteId:'', nome:'', matricola:'' },
+                medicoSociale:           { athleteId:'', nome:'', matricola:'' },
+                allenatoreSeconda:       { athleteId:'', nome:'', matricola:'' },
+                dirigenteMassaggiatore:  { athleteId:'', nome:'', matricola:'' },
+                preparatoreAtletico:     { athleteId:'', nome:'', matricola:'' },
+                preparatorePortieri:     { athleteId:'', nome:'', matricola:'' }
+            },
+            note: ''
+        };
+    }
+
+    // Costruisce una riga giocatore a partire da un atleta di Gestione Squadra
+    function _convDistintaRigaDaAtleta(athlete) {
+        return {
+            athleteId: String(athlete.id),
+            ruolo: 0, // rinumerato da _convDistintaRinumera()
+            riserva: '',
+            capitano: athlete.isCaptain ? 'C' : (athlete.isViceCaptain ? 'VC' : ''),
+            docTipo: 'Tess.',
+            docNumero: athlete.numeroTessera || '',
+            docRilasciato: 'FIGC'
+        };
+    }
+
+    function _convDistintaRinumera(giocatori) {
+        giocatori.forEach(function(g, i) { g.ruolo = i + 1; });
+    }
+
     // ── Salva convocazione ─────────────────────────────────────────
     window.convSalva = function() {
         var id = document.getElementById('conv-edit-id').value || ('conv_'+Date.now());
