@@ -5758,10 +5758,11 @@ document.addEventListener('DOMContentLoaded', function() {
         var atletiMap = {};
         (window.athletes || []).forEach(function(a){ atletiMap[String(a.id)] = a; });
 
-        function fmtDataParti(iso) {
-            if (!iso) return { g:'', m:'', a:'' };
+        function fmtDataNascita(iso) {
+            if (!iso) return '';
             var parts = iso.split('-'); // YYYY-MM-DD
-            return { g: parts[2]||'', m: parts[1]||'', a: parts[0]||'' };
+            if (parts.length < 3) return '';
+            return (parts[2]||'')+'/'+(parts[1]||'')+'/'+(parts[0]||'');
         }
         function esc(v) { return (v===undefined||v===null) ? '' : String(v); }
 
@@ -5773,14 +5774,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (g) {
                 var a = atletiMap[String(g.athleteId)];
                 var nome = a ? a.name : '(atleta rimosso)';
-                var dn = fmtDataParti(a ? a.dataNascita : '');
+                var dataNascita = fmtDataNascita(a ? a.dataNascita : '');
                 var matricola = a ? (a.numeroMatricola || '') : '';
                 righeGiocatori += '<tr>'
                     + '<td class="tc">'+(i+1)+'</td>'
                     + '<td class="tc">'+esc(g.ruolo)+'</td>'
-                    + '<td class="tc">'+dn.g+'</td>'
-                    + '<td class="tc">'+dn.m+'</td>'
-                    + '<td class="tc">'+dn.a+'</td>'
+                    + '<td class="tc">'+dataNascita+'</td>'
                     + '<td class="tl">'+esc(nome)+'</td>'
                     + '<td class="tc">'+esc(g.riserva)+'</td>'
                     + '<td class="tc">'+esc(g.capitano)+'</td>'
@@ -5796,7 +5795,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 righeGiocatori += '<tr>'
                     + '<td class="tc">'+(i+1)+'</td>'
                     + '<td class="tc"></td>'
-                    + '<td class="tc"></td><td class="tc"></td><td class="tc"></td>'
+                    + '<td class="tc"></td>'
                     + '<td class="tl"></td><td class="tc"></td><td class="tc"></td>'
                     + '<td class="tc"></td>'
                     + '<td class="tc">Tess.</td><td class="tc"></td><td class="tc">FIGC</td>'
@@ -5849,16 +5848,17 @@ document.addEventListener('DOMContentLoaded', function() {
             + '.info-grid{border-top:1px solid #000;font-size:0.68rem;}'
             + '.info-grid .info-row{display:flex;border-bottom:1px solid #000;}'
             + '.info-grid .info-row:last-child{border-bottom:none;}'
-            + '.info-grid .info-label{flex:0 0 230px;padding:2px 6px;border-right:1px solid #000;font-weight:400;}'
+            + '.info-grid .info-label{flex:0 0 170px;padding:2px 6px;border-right:1px solid #000;font-weight:400;}'
             + '.info-grid .info-value{flex:1;padding:2px 6px;}'
             + 'table.distinta{width:100%;border-collapse:collapse;margin-top:6px;font-size:0.56rem;table-layout:fixed;}'
             + 'table.distinta th,table.distinta td{border:1px solid #000;padding:1px 2px;overflow:hidden;}'
             + 'table.distinta th{background:#f0f0f0;font-size:0.5rem;text-align:center;vertical-align:middle;}'
             + '.tc{text-align:center;}.tl{text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
-            + '.col-n{width:3%;}.col-ruolo{width:6%;}.col-gma{width:3.5%;}.col-nome{width:18.5%;}'
-            + '.col-riserve{width:4%;}.col-cap{width:4%;}.col-matricola{width:12%;}'
-            + '.col-doctipo{width:8.5%;}.col-docnum{width:12%;}.col-docril{width:7.5%;}.col-esp-amm{width:7%;}'
-            + 'th.th-vert{writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;padding:4px 1px;height:1px;}'
+            + '.col-n{width:3%;}.col-ruolo{width:6%;}.col-data{width:9%;}.col-nome{width:31%;}'
+            + '.col-riserve{width:4%;}.col-cap{width:4%;}.col-matricola{width:9%;}'
+            + '.col-doctipo{width:7.5%;}.col-docnum{width:10%;}.col-docril{width:6.5%;}.col-esp-amm{width:5%;}'
+            + 'th.th-vert{writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;padding:3px 1px;height:1px;font-size:0.42rem;letter-spacing:-0.2px;}'
+            + 'table.distinta thead tr:first-child{height:105px;}'
             + '.staff-box{margin-top:0;font-size:0.66rem;border:1px solid #000;border-top:none;}'
             + '.staff-row{display:flex;align-items:stretch;border-top:1px solid #000;}'
             + '.staff-label{font-weight:700;flex:0 0 230px;padding:2px 6px;border-right:1px solid #000;}'
@@ -5898,16 +5898,16 @@ document.addEventListener('DOMContentLoaded', function() {
             + '</div>'
             + '</div>'
             + '<table class="distinta"><colgroup>'
-            +   '<col class="col-n"><col class="col-ruolo"><col class="col-gma"><col class="col-gma"><col class="col-gma">'
+            +   '<col class="col-n"><col class="col-ruolo"><col class="col-data">'
             +   '<col class="col-nome"><col class="col-riserve"><col class="col-cap"><col class="col-matricola">'
             +   '<col class="col-doctipo"><col class="col-docnum"><col class="col-docril">'
             +   '<col class="col-esp-amm"><col class="col-esp-amm">'
             + '</colgroup><thead><tr>'
-            +   '<th rowspan="2">N.</th><th rowspan="2">N. del<br>ruolo</th><th colspan="3">Data Nascita</th><th rowspan="2">Cognome e Nome</th>'
+            +   '<th rowspan="2">N.</th><th rowspan="2">N. del<br>ruolo</th><th rowspan="2">Data<br>Nascita</th><th rowspan="2">Cognome e Nome</th>'
             +   '<th rowspan="2" class="th-vert">Riserve</th><th rowspan="2" class="th-vert">Capitano V.Capit.</th><th rowspan="2">N. Matricola<br>F.I.G.C.</th>'
             +   '<th colspan="3">Documento di identificazione</th><th rowspan="2">Espulsi</th><th rowspan="2">Ammoniti</th>'
             + '</tr><tr>'
-            +   '<th>G</th><th>M</th><th>A</th><th>Tipo</th><th>Numero</th><th>Rilasciato</th>'
+            +   '<th>Tipo</th><th>Numero</th><th>Rilasciato</th>'
             + '</tr></thead><tbody>'
             + righeGiocatori
             + '</tbody></table>'
