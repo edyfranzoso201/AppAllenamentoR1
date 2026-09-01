@@ -5832,7 +5832,7 @@ document.addEventListener('DOMContentLoaded', function() {
             + '@page{size:A4 portrait;margin:8mm;}'
             + '*{box-sizing:border-box;}'
             + 'body{font-family:Arial,Helvetica,sans-serif;color:#000;background:#fff;margin:0;padding:0;}'
-            + '.page{width:100%;height:100%;}'
+            + '.page{width:100%;max-width:194mm;margin:0 auto;}'
             + '.intestazione{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px;}'
             + '.intestazione img{max-height:44px;max-width:70px;object-fit:contain;}'
             + '.intestazione .logo-slot{flex:0 0 70px;height:44px;display:flex;align-items:center;justify-content:center;}'
@@ -5846,9 +5846,9 @@ document.addEventListener('DOMContentLoaded', function() {
             + 'table.distinta th,table.distinta td{border:1px solid #000;padding:1px 2px;overflow:hidden;}'
             + 'table.distinta th{background:#f0f0f0;font-size:0.5rem;text-align:center;}'
             + '.tc{text-align:center;}.tl{text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
-            + '.col-n{width:2.2%;}.col-ruolo{width:4%;}.col-gma{width:3.2%;}.col-nome{width:20%;}'
-            + '.col-riserve{width:6%;}.col-cap{width:5%;}.col-matricola{width:8%;}'
-            + '.col-doctipo{width:6%;}.col-docnum{width:9%;}.col-docril{width:7%;}.col-esp-amm{width:4%;}'
+            + '.col-n{width:3%;}.col-ruolo{width:6%;}.col-gma{width:5%;}.col-nome{width:15%;}'
+            + '.col-riserve{width:8%;}.col-cap{width:7%;}.col-matricola{width:9%;}'
+            + '.col-doctipo{width:8%;}.col-docnum{width:10%;}.col-docril{width:7%;}.col-esp-amm{width:6%;}'
             + '.staff-box{margin-top:6px;font-size:0.6rem;border:1px solid #000;border-top:none;}'
             + '.staff-row{display:flex;align-items:center;border-top:1px solid #000;padding:2px 4px;gap:6px;flex-wrap:wrap;}'
             + '.staff-label{font-weight:700;flex:0 0 190px;}'
@@ -5870,7 +5870,7 @@ document.addEventListener('DOMContentLoaded', function() {
             +   '<div class="logo-slot">'+(logoLnd  ? '<img src="'+logoLnd+'">'  : '')+'</div>'
             +   '<div class="testata">'
             +     '<div class="distinta-n">Distinta n° _______________</div>'
-            +     '<h1>DISTINTA</h1>'
+            +     '<h1>DISTINTA (No Ufficiale)</h1>'
             +     '<h2>F.I.G.C. — LEGA NAZIONALE DILETTANTI</h2>'
             +     '<div class="riga forte">'+(d.affiliazione ? esc(d.affiliazione)+' ' : '')+esc(d.societa)+'</div>'
             +     '<div class="riga">Distinta dei/delle giuocatori/trici partecipanti alla gara: '+esc(d.societa)+(d.avversario ? ' — '+esc(d.avversario) : '')+'</div>'
@@ -5913,7 +5913,7 @@ document.addEventListener('DOMContentLoaded', function() {
             + '</div>'
             + '</body></html>';
 
-        var w = window.open('', '_blank', 'width=900,height=1150');
+        var w = window.open('', '_blank', 'width=800,height=1130');
         w.document.write(html);
         w.document.close();
     };
