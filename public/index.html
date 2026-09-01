@@ -5720,6 +5720,25 @@ document.addEventListener('DOMContentLoaded', function() {
         window._distintaState.staffRuoli[ruoloKey][campo] = val;
     };
 
+    window.convDistintaSalva = function() {
+        var id = document.getElementById('distinta-conv-id').value;
+        var conv = _convData.find(function(x){ return x.id === id; });
+        if (!conv) { alert('Convocazione non trovata.'); return; }
+
+        var d = window._distintaState;
+        d.affiliazione = document.getElementById('distinta-affiliazione').value;
+        d.societa      = document.getElementById('distinta-societa').value;
+        d.campionato   = document.getElementById('distinta-campionato').value;
+        d.avversario   = document.getElementById('distinta-avversario').value;
+        d.data         = document.getElementById('distinta-data').value;
+        d.luogo        = document.getElementById('distinta-luogo').value;
+        d.note         = document.getElementById('distinta-note').value;
+
+        conv.distinta = d;
+        _convSaveData();
+        alert('✅ Distinta salvata!');
+    };
+
     // Ponte dal form: richiede che la convocazione sia già salvata (serve un id)
     window.convDistintaDaForm = function() {
         var id = document.getElementById('conv-edit-id').value;
