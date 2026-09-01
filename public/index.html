@@ -5979,6 +5979,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!confirm('Eliminare questa convocazione?')) return;
         _convData = _convData.filter(function(x){return x.id!==id;});
         _convSaveData();
+        // Se il pannello Distinta aperto apparteneva proprio a questa convocazione, chiudilo:
+        // evita di lasciarlo visibile con dati riferiti a una convocazione ormai cancellata.
+        var distintaConvIdEl = document.getElementById('distinta-conv-id');
+        var distintaPanel = document.getElementById('conv-distinta-panel');
+        if (distintaConvIdEl && distintaConvIdEl.value === id && distintaPanel) {
+            distintaPanel.style.display = 'none';
+        }
         _convRender();
     };
 
