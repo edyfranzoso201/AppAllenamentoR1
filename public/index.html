@@ -5765,47 +5765,61 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         function esc(v) { return (v===undefined||v===null) ? '' : String(v); }
 
-        // ── Tabella giocatori ──────────────────────────────────────────
+        // ── Tabella giocatori — sempre 25 righe fisse, come il modulo cartaceo ──
+        var RIGHE_TOTALI = 25;
         var righeGiocatori = '';
-        d.giocatori.forEach(function(g) {
-            var a = atletiMap[String(g.athleteId)];
-            var nome = a ? a.name : '(atleta rimosso)';
-            var dn = fmtDataParti(a ? a.dataNascita : '');
-            var matricola = a ? (a.numeroMatricola || '') : '';
-            righeGiocatori += '<tr>'
-                + '<td class="tc">'+esc(g.ruolo)+'</td>'
-                + '<td class="tc">'+dn.g+'</td>'
-                + '<td class="tc">'+dn.m+'</td>'
-                + '<td class="tc">'+dn.a+'</td>'
-                + '<td class="tl">'+esc(nome)+'</td>'
-                + '<td class="tc">'+esc(g.riserva)+'</td>'
-                + '<td class="tc">'+esc(g.capitano)+'</td>'
-                + '<td class="tc">'+esc(matricola)+'</td>'
-                + '<td class="tc">'+esc(g.docTipo)+'</td>'
-                + '<td class="tc">'+esc(g.docNumero)+'</td>'
-                + '<td class="tc">'+esc(g.docRilasciato)+'</td>'
-                + '<td class="tc"></td>'
-                + '<td class="tc"></td>'
-                + '</tr>';
-        });
+        for (var i = 0; i < RIGHE_TOTALI; i++) {
+            var g = d.giocatori[i];
+            if (g) {
+                var a = atletiMap[String(g.athleteId)];
+                var nome = a ? a.name : '(atleta rimosso)';
+                var dn = fmtDataParti(a ? a.dataNascita : '');
+                var matricola = a ? (a.numeroMatricola || '') : '';
+                righeGiocatori += '<tr>'
+                    + '<td class="tc">'+(i+1)+'</td>'
+                    + '<td class="tc">'+esc(g.ruolo)+'</td>'
+                    + '<td class="tc">'+dn.g+'</td>'
+                    + '<td class="tc">'+dn.m+'</td>'
+                    + '<td class="tc">'+dn.a+'</td>'
+                    + '<td class="tl">'+esc(nome)+'</td>'
+                    + '<td class="tc">'+esc(g.riserva)+'</td>'
+                    + '<td class="tc">'+esc(g.capitano)+'</td>'
+                    + '<td class="tc">'+esc(matricola)+'</td>'
+                    + '<td class="tc">'+esc(g.docTipo)+'</td>'
+                    + '<td class="tc">'+esc(g.docNumero)+'</td>'
+                    + '<td class="tc">'+esc(g.docRilasciato)+'</td>'
+                    + '<td class="tc"></td>'
+                    + '<td class="tc"></td>'
+                    + '</tr>';
+            } else {
+                // Riga vuota, precompilata come nel modulo cartaceo ufficiale
+                righeGiocatori += '<tr>'
+                    + '<td class="tc">'+(i+1)+'</td>'
+                    + '<td class="tc"></td><td class="tc"></td><td class="tc"></td>'
+                    + '<td class="tl"></td><td class="tc"></td><td class="tc"></td><td class="tc"></td>'
+                    + '<td class="tc">Tess.</td><td class="tc"></td><td class="tc">FIGC</td>'
+                    + '<td class="tc"></td><td class="tc"></td>'
+                    + '</tr>';
+            }
+        }
 
-        // ── Sezione firme ────────────────────────────────────────────
+        // ── Sezione staff — sempre tutte le righe, come il modulo cartaceo ──
         var labelRuolo = {
-            dirigenteAccompagnatore: 'Dirigente Accompagnatore Ufficiale',
-            dirigenteUfficialiGara:  'Dirigente add. Ufficiali di Gara',
-            medicoSociale:           'Medico Sociale',
-            allenatoreSeconda:       'Allenatore / 2° Allenatore',
-            dirigenteMassaggiatore:  'Massaggiatore',
-            preparatoreAtletico:     'Preparatore Atletico',
-            preparatorePortieri:     'Preparatore Portieri'
+            dirigenteAccompagnatore: 'Dirigente accomp. uff. della squadra: Sig.',
+            dirigenteUfficialiGara:  'Dirigente addetto ufficiali di gara: Sig.',
+            medicoSociale:           'Medico sociale: Sig.',
+            allenatoreSeconda:       'Allenatore in seconda:',
+            dirigenteMassaggiatore:  'Dirigente/Massaggiatore: Sig.',
+            preparatoreAtletico:     'Preparatore atletico:',
+            preparatorePortieri:     'Preparatore dei portieri:'
         };
         var righeFirme = '';
         Object.keys(labelRuolo).forEach(function(key) {
-            var r = d.staffRuoli[key];
-            if (!r || !r.athleteId) return;
-            righeFirme += '<div class="firma-row"><span class="firma-label">'+labelRuolo[key]+':</span> '
-                + '<span class="firma-nome">'+esc(r.nome)+'</span>'
-                + (r.matricola ? ' <span class="firma-matricola">(matr. '+esc(r.matricola)+')</span>' : '')
+            var r = d.staffRuoli[key] || {};
+            righeFirme += '<div class="staff-row">'
+                + '<span class="staff-label">'+labelRuolo[key]+'</span>'
+                + '<span class="staff-nome">'+esc(r.nome)+'</span>'
+                + '<span class="staff-matricola">'+(r.matricola ? 'Matr./Tessera LND N° '+esc(r.matricola) : '')+'</span>'
                 + '</div>';
         });
 
@@ -5815,54 +5829,83 @@ document.addEventListener('DOMContentLoaded', function() {
 
         var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Distinta F.I.G.C.</title>'
             + '<style>'
-            + '@page{size:A4 portrait;margin:10mm;}'
+            + '@page{size:A4 landscape;margin:8mm;}'
+            + '*{box-sizing:border-box;}'
             + 'body{font-family:Arial,Helvetica,sans-serif;color:#000;background:#fff;margin:0;padding:0;}'
-            + '.page{width:100%;max-width:190mm;margin:0 auto;}'
-            + '.loghi-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}'
-            + '.loghi-row img{max-height:60px;max-width:110px;object-fit:contain;}'
-            + '.loghi-row .spacer{flex:1;}'
-            + '.testata{text-align:center;margin-bottom:6px;}'
-            + '.testata h1{font-size:1.1rem;margin:2px 0;}'
-            + '.testata h2{font-size:0.95rem;margin:2px 0;font-weight:700;}'
-            + '.testata .riga{font-size:0.85rem;margin:2px 0;}'
-            + 'table.distinta{width:100%;border-collapse:collapse;margin-top:8px;font-size:0.72rem;}'
-            + 'table.distinta th,table.distinta td{border:1px solid #000;padding:3px 4px;}'
-            + 'table.distinta th{background:#f0f0f0;font-size:0.68rem;text-align:center;}'
-            + '.tc{text-align:center;}.tl{text-align:left;}'
-            + '.firme-box{margin-top:14px;font-size:0.8rem;}'
-            + '.firma-row{margin-bottom:4px;}'
-            + '.firma-label{font-weight:700;}'
-            + '.firme-finali{display:flex;justify-content:space-between;margin-top:24px;}'
-            + '.firme-finali div{width:45%;border-top:1px solid #000;text-align:center;padding-top:4px;font-size:0.78rem;}'
+            + '.page{width:100%;height:100%;}'
+            + '.intestazione{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;}'
+            + '.intestazione img{max-height:52px;max-width:100px;object-fit:contain;}'
+            + '.intestazione .logo-slot{flex:0 0 100px;height:52px;display:flex;align-items:center;justify-content:center;}'
+            + '.intestazione .testata{flex:1;text-align:center;}'
+            + '.testata h1{font-size:1.15rem;margin:0 0 1px;letter-spacing:0.5px;}'
+            + '.testata h2{font-size:0.85rem;margin:0 0 3px;font-weight:700;}'
+            + '.testata .distinta-n{font-size:0.72rem;text-align:right;margin-bottom:2px;}'
+            + '.testata .riga{font-size:0.78rem;margin:1px 0;}'
+            + '.testata .riga.forte{font-weight:700;}'
+            + 'table.distinta{width:100%;border-collapse:collapse;margin-top:6px;font-size:0.68rem;table-layout:fixed;}'
+            + 'table.distinta th,table.distinta td{border:1px solid #000;padding:1.5px 3px;overflow:hidden;}'
+            + 'table.distinta th{background:#f0f0f0;font-size:0.62rem;text-align:center;}'
+            + '.tc{text-align:center;}.tl{text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
+            + '.col-n{width:2.2%;}.col-ruolo{width:3%;}.col-gma{width:2.6%;}.col-nome{width:22%;}'
+            + '.col-riserve{width:5%;}.col-cap{width:4%;}.col-matricola{width:7%;}'
+            + '.col-doctipo{width:5%;}.col-docnum{width:8%;}.col-docril{width:6%;}.col-esp-amm{width:3%;}'
+            + '.staff-box{margin-top:6px;font-size:0.7rem;border:1px solid #000;border-top:none;}'
+            + '.staff-row{display:flex;align-items:center;border-top:1px solid #000;padding:2px 6px;gap:8px;}'
+            + '.staff-label{font-weight:700;flex:0 0 230px;}'
+            + '.staff-nome{flex:1;border-bottom:1px solid #999;min-height:1.1em;}'
+            + '.staff-matricola{flex:0 0 220px;text-align:right;}'
+            + '.note-box{margin-top:6px;font-size:0.7rem;border:1px solid #000;padding:3px 6px;min-height:2.2em;}'
+            + '.note-box .note-label{font-weight:700;}'
+            + '.legale{margin-top:5px;font-size:0.62rem;line-height:1.3;}'
+            + '.legale .obbligo{font-style:italic;}'
+            + '.legale .dichiarazione{font-style:italic;margin-top:2px;}'
+            + '.firme-finali{display:flex;border:1px solid #000;border-top:none;font-size:0.72rem;}'
+            + '.firme-finali > div{flex:1;padding:4px 6px;}'
+            + '.firme-finali > div:first-child{border-right:1px solid #000;}'
+            + '.firme-finali .presentata{display:flex;justify-content:space-between;align-items:center;}'
             + '@media print{.conv-toolbar{display:none!important;}}'
             + '</style></head><body>'
             + '<div class="page">'
-            + '<div class="loghi-row">'
-            +   (logoLnd  ? '<img src="'+logoLnd+'">'  : '<div class="spacer"></div>')
-            +   (logoSoc  ? '<img src="'+logoSoc+'">'  : '<div class="spacer"></div>')
-            +   (logoFigc ? '<img src="'+logoFigc+'">' : '<div class="spacer"></div>')
+            + '<div class="intestazione">'
+            +   '<div class="logo-slot">'+(logoLnd  ? '<img src="'+logoLnd+'">'  : '')+'</div>'
+            +   '<div class="testata">'
+            +     '<div class="distinta-n">Distinta n° _______________</div>'
+            +     '<h1>DISTINTA</h1>'
+            +     '<h2>F.I.G.C. — LEGA NAZIONALE DILETTANTI</h2>'
+            +     '<div class="riga forte">'+(d.affiliazione ? esc(d.affiliazione)+' ' : '')+esc(d.societa)+'</div>'
+            +     '<div class="riga">Distinta dei/delle giuocatori/trici partecipanti alla gara: '+esc(d.societa)+(d.avversario ? ' — '+esc(d.avversario) : '')+'</div>'
+            +     '<div class="riga">'+(d.campionato ? 'Del campionato: '+esc(d.campionato)+' — ' : '')+(d.data ? 'il '+new Date(d.data+'T00:00:00').toLocaleDateString('it-IT') : '')+(d.luogo ? ' — Presso: '+esc(d.luogo) : '')+'</div>'
+            +   '</div>'
+            +   '<div class="logo-slot">'+(logoFigc ? '<img src="'+logoFigc+'">' : '')+'</div>'
+            +   '<div class="logo-slot">'+(logoSoc  ? '<img src="'+logoSoc+'">'  : '')+'</div>'
             + '</div>'
-            + '<div class="testata">'
-            +   '<h1>DISTINTA</h1>'
-            +   '<h2>F.I.G.C. — LEGA NAZIONALE DILETTANTI</h2>'
-            +   '<div class="riga">'+(d.affiliazione ? 'N° Affiliazione: '+esc(d.affiliazione)+' — ' : '')+esc(d.societa)+'</div>'
-            +   '<div class="riga">Distinta dei giocatori partecipanti alla gara: '+esc(d.societa)+(d.avversario ? ' — '+esc(d.avversario) : '')+'</div>'
-            +   '<div class="riga">'+(d.campionato ? esc(d.campionato)+' · ' : '')+(d.data ? new Date(d.data+'T00:00:00').toLocaleDateString('it-IT') : '')+(d.luogo ? ' · '+esc(d.luogo) : '')+'</div>'
-            + '</div>'
-            + '<table class="distinta"><thead><tr>'
-            +   '<th rowspan="2">N.</th><th colspan="3">Data Nascita</th><th rowspan="2">Cognome e Nome</th>'
-            +   '<th rowspan="2">Riserve</th><th rowspan="2">Cap/<br>V.Cap.</th><th rowspan="2">N. Matricola<br>F.I.G.C.</th>'
+            + '<table class="distinta"><colgroup>'
+            +   '<col class="col-n"><col class="col-ruolo"><col class="col-gma"><col class="col-gma"><col class="col-gma">'
+            +   '<col class="col-nome"><col class="col-riserve"><col class="col-cap"><col class="col-matricola">'
+            +   '<col class="col-doctipo"><col class="col-docnum"><col class="col-docril">'
+            +   '<col class="col-esp-amm"><col class="col-esp-amm">'
+            + '</colgroup><thead><tr>'
+            +   '<th rowspan="2">N.</th><th rowspan="2">N. del<br>ruolo</th><th colspan="3">Data Nascita</th><th rowspan="2">Cognome e Nome</th>'
+            +   '<th rowspan="2">Riserve</th><th rowspan="2">Capitano<br>V.Capit.</th><th rowspan="2">N. Matricola<br>F.I.G.C.</th>'
             +   '<th colspan="3">Documento di identificazione</th><th rowspan="2">Espulsi</th><th rowspan="2">Ammoniti</th>'
             + '</tr><tr>'
             +   '<th>G</th><th>M</th><th>A</th><th>Tipo</th><th>Numero</th><th>Rilasciato</th>'
             + '</tr></thead><tbody>'
             + righeGiocatori
             + '</tbody></table>'
-            + '<div class="firme-box">'
+            + '<div class="staff-box">'
+            +   '<div class="staff-row"><span class="staff-label">Assistente dell\'Arbitro</span><span class="staff-nome"></span><span class="staff-matricola"></span></div>'
             + righeFirme
             + '</div>'
-            + '<div class="firme-finali"><div>L\'ARBITRO</div><div>IL DIRIGENTE ACCOMPAGNATORE UFFICIALE</div></div>'
-            + (d.note ? '<div style="margin-top:10px;font-size:0.78rem;"><strong>Note:</strong> '+esc(d.note)+'</div>' : '')
+            + '<div class="note-box"><span class="note-label">NOTE:</span> '+esc(d.note)+'</div>'
+            + '<div class="legale">'
+            +   '<div class="obbligo">* obbligatorio per le gare organizzate in ambito nazionale, facoltativo per le gare organizzate in ambito regionale e dal Settore per l\'Attività Giovanile e Scolastica.<br>Le persone qui sopra elencate possono essere ammesse solo se munite delle prescritte tessere valide per l\'annata in corso.</div>'
+            +   '<div class="dichiarazione">Il sottoscritto Dirigente accompagnatore ufficiale dichiara che i giuocatori/trici sopraindicati sono regolarmente tesserati e partecipano alla gara sotto la responsabilità della Società di appartenenza, giusto le norme vigenti.</div>'
+            + '</div>'
+            + '<div class="firme-finali">'
+            +   '<div>L\'ARBITRO</div>'
+            +   '<div class="presentata"><span>Distinta presentata alle ore: ______</span><span>IL DIRIGENTE ACCOMPAGNATORE UFFICIALE</span></div>'
+            + '</div>'
             + '</div>'
             + '<div class="conv-toolbar" style="position:fixed;top:10px;right:10px;z-index:9999;display:flex;gap:8px;">'
             + '<button onclick="window.print()" style="padding:8px 18px;background:#16a34a;color:white;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:700;">🖨️ Stampa / Salva PDF</button>'
@@ -5870,7 +5913,7 @@ document.addEventListener('DOMContentLoaded', function() {
             + '</div>'
             + '</body></html>';
 
-        var w = window.open('', '_blank', 'width=900,height=1200');
+        var w = window.open('', '_blank', 'width=1400,height=950');
         w.document.write(html);
         w.document.close();
     };
