@@ -5600,6 +5600,73 @@ document.addEventListener('DOMContentLoaded', function() {
         sel.innerHTML = html;
     }
 
+    function _convDistintaRenderGiocatori() {
+        var body = document.getElementById('distinta-giocatori-body');
+        var d = window._distintaState;
+        var atletiMap = {};
+        (window.athletes || []).forEach(function(a){ atletiMap[String(a.id)] = a; });
+
+        var html = '';
+        d.giocatori.forEach(function(g, i) {
+            var a = atletiMap[String(g.athleteId)];
+            var nome = a ? a.name : '(atleta rimosso)';
+            var dataNascita = a && a.dataNascita ? new Date(a.dataNascita + 'T00:00:00').toLocaleDateString('it-IT') : '';
+            html += '<tr>'
+                + '<td style="white-space:nowrap;">'
+                +   '<button type="button" class="btn btn-sm btn-outline-secondary no-print" style="padding:0 6px;" onclick="window.convDistintaMuovi('+i+',-1)" '+(i===0?'disabled':'')+'>↑</button> '
+                +   g.ruolo
+                +   ' <button type="button" class="btn btn-sm btn-outline-secondary no-print" style="padding:0 6px;" onclick="window.convDistintaMuovi('+i+',1)" '+(i===d.giocatori.length-1?'disabled':'')+'>↓</button>'
+                + '</td>'
+                + '<td>'+dataNascita+'</td>'
+                + '<td>'+nome+'</td>'
+                + '<td><input type="text" class="form-control form-control-sm" style="width:60px;" value="'+(g.riserva||'')+'" onchange="window.convDistintaCampo('+i+',\'riserva\',this.value)"></td>'
+                + '<td><input type="text" class="form-control form-control-sm" style="width:60px;" value="'+(g.capitano||'')+'" onchange="window.convDistintaCampo('+i+',\'capitano\',this.value)"></td>'
+                + '<td>'+(a ? (a.numeroMatricola||'') : '')+'</td>'
+                + '<td><input type="text" class="form-control form-control-sm" style="width:70px;" value="'+(g.docTipo||'')+'" onchange="window.convDistintaCampo('+i+',\'docTipo\',this.value)"></td>'
+                + '<td><input type="text" class="form-control form-control-sm" style="width:90px;" value="'+(g.docNumero||'')+'" onchange="window.convDistintaCampo('+i+',\'docNumero\',this.value)"></td>'
+                + '<td><input type="text" class="form-control form-control-sm" style="width:70px;" value="'+(g.docRilasciato||'')+'" onchange="window.convDistintaCampo('+i+',\'docRilasciato\',this.value)"></td>'
+                + '<td><button type="button" class="btn btn-sm btn-outline-danger no-print" onclick="window.convDistintaRimuoviGiocatore('+i+')" title="Rimuovi"><i class="bi bi-trash-fill"></i></button></td>'
+                + '</tr>';
+        });
+        body.innerHTML = html || '<tr><td colspan="10" class="text-muted small">Nessun giocatore. Usa "+ Aggiungi" qui sopra.</td></tr>';
+    }
+
+    window.convDistintaCampo = function(idx, campo, val) {
+        window._distintaState.giocatori[idx][campo] = val;
+    };
+
+    window.convDistintaAggiungiGiocatore = function() {
+        var sel = document.getElementById('distinta-add-giocatore-sel');
+        var athleteId = sel.value;
+        if (!athleteId) return;
+        var a = (window.athletes || []).find(function(x){ return String(x.id) === String(athleteId); });
+        if (!a) return;
+        var d = window._distintaState;
+        d.giocatori.push(_convDistintaRigaDaAtleta(a));
+        _convDistintaRinumera(d.giocatori);
+        _convDistintaPopolaSelectAggiungi();
+        _convDistintaRenderGiocatori();
+    };
+
+    window.convDistintaRimuoviGiocatore = function(idx) {
+        var d = window._distintaState;
+        d.giocatori.splice(idx, 1);
+        _convDistintaRinumera(d.giocatori);
+        _convDistintaPopolaSelectAggiungi();
+        _convDistintaRenderGiocatori();
+    };
+
+    window.convDistintaMuovi = function(idx, dir) {
+        var d = window._distintaState;
+        var target = idx + dir;
+        if (target < 0 || target >= d.giocatori.length) return;
+        var tmp = d.giocatori[idx];
+        d.giocatori[idx] = d.giocatori[target];
+        d.giocatori[target] = tmp;
+        _convDistintaRinumera(d.giocatori);
+        _convDistintaRenderGiocatori();
+    };
+
     // Ponte dal form: richiede che la convocazione sia già salvata (serve un id)
     window.convDistintaDaForm = function() {
         var id = document.getElementById('conv-edit-id').value;
