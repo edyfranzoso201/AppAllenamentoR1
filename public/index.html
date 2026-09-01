@@ -5667,6 +5667,59 @@ document.addEventListener('DOMContentLoaded', function() {
         _convDistintaRenderGiocatori();
     };
 
+    var _DISTINTA_RUOLI = [
+        { key: 'dirigenteAccompagnatore', label: 'Dirigente Accompagnatore Ufficiale' },
+        { key: 'dirigenteUfficialiGara',  label: 'Dirigente add. Ufficiali di Gara' },
+        { key: 'medicoSociale',           label: 'Medico Sociale' },
+        { key: 'allenatoreSeconda',       label: 'Allenatore / 2° Allenatore' },
+        { key: 'dirigenteMassaggiatore',  label: 'Massaggiatore' },
+        { key: 'preparatoreAtletico',     label: 'Preparatore Atletico' },
+        { key: 'preparatorePortieri',     label: 'Preparatore Portieri' }
+    ];
+
+    function _convDistintaRenderStaff() {
+        var box = document.getElementById('distinta-staff-body');
+        var d = window._distintaState;
+        var staff = (window.athletes || []).filter(function(a){ return a.isStaff && !a.isGuest; });
+
+        var html = '';
+        _DISTINTA_RUOLI.forEach(function(r) {
+            var cur = d.staffRuoli[r.key] || { athleteId:'', nome:'', matricola:'' };
+            var options = '<option value="">— nessuno —</option>';
+            staff.forEach(function(s) {
+                var sel = String(s.id) === String(cur.athleteId) ? 'selected' : '';
+                options += '<option value="'+s.id+'" '+sel+'>'+s.name+'</option>';
+            });
+            html += '<div class="col-md-6 mb-2">'
+                + '<label class="form-label small">'+r.label+'</label>'
+                + '<div class="d-flex gap-1">'
+                + '<select class="form-select form-select-sm" onchange="window.convDistintaSelStaff(\''+r.key+'\',this.value)">'+options+'</select>'
+                + '<input type="text" class="form-control form-control-sm" style="max-width:120px;" placeholder="Matricola" value="'+(cur.matricola||'')+'" onchange="window.convDistintaCampoStaff(\''+r.key+'\',\'matricola\',this.value)">'
+                + '</div>'
+                + '</div>';
+        });
+        box.innerHTML = html;
+    }
+
+    window.convDistintaSelStaff = function(ruoloKey, athleteId) {
+        var d = window._distintaState;
+        if (!athleteId) {
+            d.staffRuoli[ruoloKey] = { athleteId:'', nome:'', matricola:'' };
+        } else {
+            var s = (window.athletes || []).find(function(x){ return String(x.id) === String(athleteId); });
+            d.staffRuoli[ruoloKey] = {
+                athleteId: athleteId,
+                nome: s ? s.name : '',
+                matricola: s ? (s.matricolaLnd || '') : ''
+            };
+        }
+        _convDistintaRenderStaff();
+    };
+
+    window.convDistintaCampoStaff = function(ruoloKey, campo, val) {
+        window._distintaState.staffRuoli[ruoloKey][campo] = val;
+    };
+
     // Ponte dal form: richiede che la convocazione sia già salvata (serve un id)
     window.convDistintaDaForm = function() {
         var id = document.getElementById('conv-edit-id').value;
