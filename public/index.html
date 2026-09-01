@@ -3069,6 +3069,7 @@
                             <button type="button" class="btn btn-primary-custom btn-sm" onclick="window.convSalva()"><i class="bi bi-save"></i> Salva</button>
                             <button type="button" class="btn btn-success btn-sm ms-auto" onclick="window.convStampa(null,false)"><i class="bi bi-printer-fill"></i> 🟥 Convocazione</button>
                             <button type="button" class="btn btn-outline-light btn-sm" onclick="window.convStampa(null,true)"><i class="bi bi-printer"></i> ⬜ Pre-Conv.</button>
+                            <button type="button" class="btn btn-outline-info btn-sm" onclick="window.convDistintaDaForm()"><i class="bi bi-clipboard-check-fill"></i> 📋 Distinta</button>
                             <button type="button" class="btn btn-sm" style="background:#3b82f6;color:#fff;border:none;" onclick="window.convInviaBacheca(null)" title="Pubblica in Bacheca"><i class="bi bi-megaphone-fill"></i> Bacheca</button>
                         </div>
                     </div>
@@ -5551,6 +5552,13 @@ document.addEventListener('DOMContentLoaded', function() {
         giocatori.forEach(function(g, i) { g.ruolo = i + 1; });
     }
 
+    // Ponte dal form: richiede che la convocazione sia già salvata (serve un id)
+    window.convDistintaDaForm = function() {
+        var id = document.getElementById('conv-edit-id').value;
+        if (!id) { alert('Salva prima la convocazione, poi apri la Distinta.'); return; }
+        window.convDistintaApri(id);
+    };
+
     // ── Salva convocazione ─────────────────────────────────────────
     window.convSalva = function() {
         var id = document.getElementById('conv-edit-id').value || ('conv_'+Date.now());
@@ -5602,6 +5610,7 @@ document.addEventListener('DOMContentLoaded', function() {
             h += '<button onclick="window.convNuova(\''+c.id+'\')" class="btn btn-sm btn-outline-light" title="Modifica"><i class="bi bi-pencil-fill"></i></button>';
             h += '<button onclick="window.convStampa(\''+c.id+'\',false)" class="btn btn-sm btn-success" title="🟥 Convocazione"><i class="bi bi-printer-fill"></i></button>';
             h += '<button onclick="window.convStampa(\''+c.id+'\',true)" class="btn btn-sm btn-outline-light" title="⬜ Pre-Convocazione"><i class="bi bi-printer"></i></button>';
+            h += '<button onclick="window.convDistintaApri(\''+c.id+'\')" class="btn btn-sm btn-outline-info" title="📋 Distinta F.I.G.C."><i class="bi bi-clipboard-check-fill"></i></button>';
             h += '<button onclick="window.convInviaBacheca(\''+c.id+'\')" class="btn btn-sm" style="background:#3b82f6;color:#fff;border:none;" title="Pubblica in Bacheca"><i class="bi bi-megaphone-fill"></i></button>';
             h += '<button onclick="window.convElimina(\''+c.id+'\')" class="btn btn-sm btn-outline-danger" title="Elimina"><i class="bi bi-trash-fill"></i></button>';
             h += '</div>';
