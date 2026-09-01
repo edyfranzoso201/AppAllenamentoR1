@@ -5468,6 +5468,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ── Apri form nuova/modifica ───────────────────────────────────
     window.convNuova = function(id) {
+        var distintaPanel = document.getElementById('conv-distinta-panel');
+        if (distintaPanel) distintaPanel.style.display = 'none';
         document.getElementById('conv-form-panel').style.display = '';
         document.getElementById('conv-form-title').textContent = id ? '✏️ Modifica Convocazione' : '📋 Nuova Convocazione';
         var conv = id ? _convData.find(function(x){return x.id===id;}) : null;
@@ -5766,7 +5768,7 @@ document.addEventListener('DOMContentLoaded', function() {
             createdAt:  Date.now()
         };
         var idx = _convData.findIndex(function(x){return x.id===id;});
-        if (idx >= 0) _convData[idx] = conv; else _convData.unshift(conv);
+        if (idx >= 0) { if (_convData[idx].distinta) conv.distinta = _convData[idx].distinta; _convData[idx] = conv; } else _convData.unshift(conv);
         _convSaveData();
         _convRender();
         document.getElementById('conv-form-panel').style.display = 'none';
