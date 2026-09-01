@@ -2925,6 +2925,32 @@
                                 </label>
                             </div>
                             <div>
+                                <label class="form-label small mb-1">Logo LND (distinta, sx)</label><br>
+                                <div style="display:inline-flex;align-items:center;gap:4px;">
+                                    <img id="conv-lnd-preview" src="" style="height:48px;border-radius:4px;border:1px solid var(--bg-blue);display:none;">
+                                    <button id="conv-lnd-preview-del" onclick="window.convDeleteImg('lnd')" title="Elimina immagine"
+                                        style="display:none;background:#450a0a;color:#d90429;border:none;border-radius:4px;
+                                               padding:2px 6px;font-size:0.75rem;cursor:pointer;line-height:1.4;">✕</button>
+                                </div>
+                                <label class="btn btn-sm btn-outline-secondary mt-1 no-print">
+                                    <i class="bi bi-upload"></i> Carica Logo LND
+                                    <input type="file" accept="image/*" id="conv-lnd-upload" style="display:none;" onchange="window.convUploadImg(this,'lnd')">
+                                </label>
+                            </div>
+                            <div>
+                                <label class="form-label small mb-1">Logo FIGC (distinta, dx)</label><br>
+                                <div style="display:inline-flex;align-items:center;gap:4px;">
+                                    <img id="conv-figc-preview" src="" style="height:48px;border-radius:4px;border:1px solid var(--bg-blue);display:none;">
+                                    <button id="conv-figc-preview-del" onclick="window.convDeleteImg('figc')" title="Elimina immagine"
+                                        style="display:none;background:#450a0a;color:#d90429;border:none;border-radius:4px;
+                                               padding:2px 6px;font-size:0.75rem;cursor:pointer;line-height:1.4;">✕</button>
+                                </div>
+                                <label class="btn btn-sm btn-outline-secondary mt-1 no-print">
+                                    <i class="bi bi-upload"></i> Carica Logo FIGC
+                                    <input type="file" accept="image/*" id="conv-figc-upload" style="display:none;" onchange="window.convUploadImg(this,'figc')">
+                                </label>
+                            </div>
+                            <div>
                                 <label class="form-label small mb-1">Logo Società (centro)</label><br>
                                 <div style="display:inline-flex;align-items:center;gap:4px;">
                                     <img id="conv-logo-preview" src="" style="height:48px;border-radius:4px;border:1px solid var(--bg-blue);display:none;">
@@ -5260,6 +5286,8 @@ document.addEventListener('DOMContentLoaded', function() {
         setImg('conv-logo-preview',    s.logo);
         setImg('conv-sponsor-preview', s.sponsor);
         setImg('conv-bg2-preview',     s._bg2 || s.bg2);
+        setImg('conv-lnd-preview',     s.lnd);
+        setImg('conv-figc-preview',    s.figc);
         var firma = document.getElementById('conv-firma');
         if (firma && s.firma) firma.value = s.firma;
         var tc = document.getElementById('conv-text-color');
@@ -5275,10 +5303,14 @@ document.addEventListener('DOMContentLoaded', function() {
         var previewId = type === 'bg' ? 'conv-bg-preview'
                       : type === 'bg2' ? 'conv-bg2-preview'
                       : type === 'logo' ? 'conv-logo-preview'
+                      : type === 'lnd' ? 'conv-lnd-preview'
+                      : type === 'figc' ? 'conv-figc-preview'
                       : 'conv-sponsor-preview';
         var uploadId = type === 'bg' ? 'conv-bg-upload'
                      : type === 'bg2' ? 'conv-bg2-upload'
                      : type === 'logo' ? 'conv-logo-upload'
+                     : type === 'lnd' ? 'conv-lnd-upload'
+                     : type === 'figc' ? 'conv-figc-upload'
                      : 'conv-sponsor-upload';
         if (!confirm('Eliminare questa immagine?')) return;
         // Rimuovi dalla cache locale
