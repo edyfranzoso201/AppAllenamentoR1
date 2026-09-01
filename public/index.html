@@ -2912,7 +2912,7 @@
                         <h6 style="color:#60a5fa;" class="mb-2"><i class="bi bi-image-fill"></i> Immagini Società <small class="text-muted">(salvate per tutte le convocazioni)</small></h6>
                         <div class="d-flex gap-3 flex-wrap align-items-center">
                             <div>
-                                <label class="form-label small mb-1">Sfondo PDF</label><br>
+                                <label class="form-label small mb-1" title="Immagine di sfondo usata su tutte le pagine del PDF di Convocazione (non nella Distinta F.I.G.C.)">Sfondo PDF</label><br>
                                 <div style="display:inline-flex;align-items:center;gap:4px;">
                                     <img id="conv-bg-preview" src="" style="height:48px;border-radius:4px;border:1px solid var(--bg-blue);display:none;">
                                     <button id="conv-bg-preview-del" onclick="window.convDeleteImg('bg')" title="Elimina immagine"
@@ -2925,7 +2925,7 @@
                                 </label>
                             </div>
                             <div>
-                                <label class="form-label small mb-1">Logo LND (distinta, sx)</label><br>
+                                <label class="form-label small mb-1" title="Logo Lega Nazionale Dilettanti: stampato in alto a sinistra nella Distinta F.I.G.C.">Logo LND (distinta, sx)</label><br>
                                 <div style="display:inline-flex;align-items:center;gap:4px;">
                                     <img id="conv-lnd-preview" src="" style="height:48px;border-radius:4px;border:1px solid var(--bg-blue);display:none;">
                                     <button id="conv-lnd-preview-del" onclick="window.convDeleteImg('lnd')" title="Elimina immagine"
@@ -2938,7 +2938,7 @@
                                 </label>
                             </div>
                             <div>
-                                <label class="form-label small mb-1">Logo FIGC (distinta, dx)</label><br>
+                                <label class="form-label small mb-1" title="Logo Federazione Italiana Giuoco Calcio: stampato in alto a destra nella Distinta F.I.G.C.">Logo FIGC (distinta, dx)</label><br>
                                 <div style="display:inline-flex;align-items:center;gap:4px;">
                                     <img id="conv-figc-preview" src="" style="height:48px;border-radius:4px;border:1px solid var(--bg-blue);display:none;">
                                     <button id="conv-figc-preview-del" onclick="window.convDeleteImg('figc')" title="Elimina immagine"
@@ -2951,7 +2951,7 @@
                                 </label>
                             </div>
                             <div>
-                                <label class="form-label small mb-1">Logo Società (centro)</label><br>
+                                <label class="form-label small mb-1" title="Logo della propria società: stampato al centro dell'intestazione, sia nel PDF di Convocazione che nella Distinta F.I.G.C.">Logo Società (centro)</label><br>
                                 <div style="display:inline-flex;align-items:center;gap:4px;">
                                     <img id="conv-logo-preview" src="" style="height:48px;border-radius:4px;border:1px solid var(--bg-blue);display:none;">
                                     <button id="conv-logo-preview-del" onclick="window.convDeleteImg('logo')" title="Elimina immagine"
@@ -2964,7 +2964,7 @@
                                 </label>
                             </div>
                             <div>
-                                <label class="form-label small mb-1">Logo Sponsor (sx/dx)</label><br>
+                                <label class="form-label small mb-1" title="Logo sponsor: stampato ai lati dell'intestazione nel PDF di Convocazione">Logo Sponsor (sx/dx)</label><br>
                                 <div style="display:inline-flex;align-items:center;gap:4px;">
                                     <img id="conv-sponsor-preview" src="" style="height:48px;border-radius:4px;border:1px solid var(--bg-blue);display:none;">
                                     <button id="conv-sponsor-preview-del" onclick="window.convDeleteImg('sponsor')" title="Elimina immagine"
@@ -2988,7 +2988,7 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="form-label small mb-1">Sfondo Pre-Conv.</label><br>
+                                <label class="form-label small mb-1" title="Immagine di sfondo usata nella schermata Pre-Convocazione mostrata agli atleti (non nel PDF stampabile)">Sfondo Pre-Conv.</label><br>
                                 <div style="display:inline-flex;align-items:center;gap:4px;">
                                     <img id="conv-bg2-preview" src="" style="height:48px;border-radius:4px;border:1px solid var(--bg-blue);display:none;">
                                     <button id="conv-bg2-preview-del" onclick="window.convDeleteImg('bg2')" title="Elimina immagine"
@@ -5829,37 +5829,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
         var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Distinta F.I.G.C.</title>'
             + '<style>'
-            + '@page{size:A4 landscape;margin:8mm;}'
+            + '@page{size:A4 portrait;margin:8mm;}'
             + '*{box-sizing:border-box;}'
             + 'body{font-family:Arial,Helvetica,sans-serif;color:#000;background:#fff;margin:0;padding:0;}'
             + '.page{width:100%;height:100%;}'
-            + '.intestazione{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;}'
-            + '.intestazione img{max-height:52px;max-width:100px;object-fit:contain;}'
-            + '.intestazione .logo-slot{flex:0 0 100px;height:52px;display:flex;align-items:center;justify-content:center;}'
+            + '.intestazione{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px;}'
+            + '.intestazione img{max-height:44px;max-width:70px;object-fit:contain;}'
+            + '.intestazione .logo-slot{flex:0 0 70px;height:44px;display:flex;align-items:center;justify-content:center;}'
             + '.intestazione .testata{flex:1;text-align:center;}'
-            + '.testata h1{font-size:1.15rem;margin:0 0 1px;letter-spacing:0.5px;}'
-            + '.testata h2{font-size:0.85rem;margin:0 0 3px;font-weight:700;}'
-            + '.testata .distinta-n{font-size:0.72rem;text-align:right;margin-bottom:2px;}'
-            + '.testata .riga{font-size:0.78rem;margin:1px 0;}'
+            + '.testata h1{font-size:1rem;margin:0 0 1px;letter-spacing:0.5px;}'
+            + '.testata h2{font-size:0.75rem;margin:0 0 3px;font-weight:700;}'
+            + '.testata .distinta-n{font-size:0.64rem;text-align:right;margin-bottom:2px;}'
+            + '.testata .riga{font-size:0.68rem;margin:1px 0;}'
             + '.testata .riga.forte{font-weight:700;}'
-            + 'table.distinta{width:100%;border-collapse:collapse;margin-top:6px;font-size:0.68rem;table-layout:fixed;}'
-            + 'table.distinta th,table.distinta td{border:1px solid #000;padding:1.5px 3px;overflow:hidden;}'
-            + 'table.distinta th{background:#f0f0f0;font-size:0.62rem;text-align:center;}'
+            + 'table.distinta{width:100%;border-collapse:collapse;margin-top:6px;font-size:0.56rem;table-layout:fixed;}'
+            + 'table.distinta th,table.distinta td{border:1px solid #000;padding:1px 2px;overflow:hidden;}'
+            + 'table.distinta th{background:#f0f0f0;font-size:0.5rem;text-align:center;}'
             + '.tc{text-align:center;}.tl{text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
-            + '.col-n{width:2.2%;}.col-ruolo{width:3%;}.col-gma{width:2.6%;}.col-nome{width:22%;}'
-            + '.col-riserve{width:5%;}.col-cap{width:4%;}.col-matricola{width:7%;}'
-            + '.col-doctipo{width:5%;}.col-docnum{width:8%;}.col-docril{width:6%;}.col-esp-amm{width:3%;}'
-            + '.staff-box{margin-top:6px;font-size:0.7rem;border:1px solid #000;border-top:none;}'
-            + '.staff-row{display:flex;align-items:center;border-top:1px solid #000;padding:2px 6px;gap:8px;}'
-            + '.staff-label{font-weight:700;flex:0 0 230px;}'
-            + '.staff-nome{flex:1;border-bottom:1px solid #999;min-height:1.1em;}'
-            + '.staff-matricola{flex:0 0 220px;text-align:right;}'
-            + '.note-box{margin-top:6px;font-size:0.7rem;border:1px solid #000;padding:3px 6px;min-height:2.2em;}'
+            + '.col-n{width:2.2%;}.col-ruolo{width:4%;}.col-gma{width:3.2%;}.col-nome{width:20%;}'
+            + '.col-riserve{width:6%;}.col-cap{width:5%;}.col-matricola{width:8%;}'
+            + '.col-doctipo{width:6%;}.col-docnum{width:9%;}.col-docril{width:7%;}.col-esp-amm{width:4%;}'
+            + '.staff-box{margin-top:6px;font-size:0.6rem;border:1px solid #000;border-top:none;}'
+            + '.staff-row{display:flex;align-items:center;border-top:1px solid #000;padding:2px 4px;gap:6px;flex-wrap:wrap;}'
+            + '.staff-label{font-weight:700;flex:0 0 190px;}'
+            + '.staff-nome{flex:1;border-bottom:1px solid #999;min-height:1.1em;min-width:80px;}'
+            + '.staff-matricola{flex:0 0 170px;text-align:right;}'
+            + '.note-box{margin-top:6px;font-size:0.6rem;border:1px solid #000;padding:3px 6px;min-height:2.2em;}'
             + '.note-box .note-label{font-weight:700;}'
-            + '.legale{margin-top:5px;font-size:0.62rem;line-height:1.3;}'
+            + '.legale{margin-top:5px;font-size:0.54rem;line-height:1.25;}'
             + '.legale .obbligo{font-style:italic;}'
             + '.legale .dichiarazione{font-style:italic;margin-top:2px;}'
-            + '.firme-finali{display:flex;border:1px solid #000;border-top:none;font-size:0.72rem;}'
+            + '.firme-finali{display:flex;border:1px solid #000;border-top:none;font-size:0.64rem;}'
             + '.firme-finali > div{flex:1;padding:4px 6px;}'
             + '.firme-finali > div:first-child{border-right:1px solid #000;}'
             + '.firme-finali .presentata{display:flex;justify-content:space-between;align-items:center;}'
@@ -5913,7 +5913,7 @@ document.addEventListener('DOMContentLoaded', function() {
             + '</div>'
             + '</body></html>';
 
-        var w = window.open('', '_blank', 'width=1400,height=950');
+        var w = window.open('', '_blank', 'width=900,height=1150');
         w.document.write(html);
         w.document.close();
     };
