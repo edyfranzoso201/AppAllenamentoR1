@@ -5857,7 +5857,12 @@ document.addEventListener('DOMContentLoaded', function() {
             + '@page{size:A4 portrait;margin:8mm;}'
             + '*{box-sizing:border-box;}'
             + 'body{font-family:Arial,Helvetica,sans-serif;color:#000;background:#fff;margin:0;padding:0;}'
-            + '.page{width:100%;max-width:194mm;margin:0 auto;}'
+            // max-width in mm dava una larghezza frazionaria: i bordi cadevano
+            // a meta' pixel fisico (1px CSS = 0.625px con devicePixelRatio 1.6)
+            // e il browser ne arrotondava alcuni per eccesso e altri per difetto,
+            // rendendo le linee di spessore disuguale. In px interi cadono tutti
+            // sullo stesso passo. In stampa vale comunque @page (A4, 8mm margini).
+            + '.page{width:100%;max-width:733px;margin:0 auto;}'
             + '.testata-box{border:1px solid #000;margin-bottom:6px;}'
             + '.distinta-n{text-align:center;font-size:1.08rem;font-weight:700;padding:3px 6px 0;}'
             + '.intestazione{display:flex;align-items:center;justify-content:center;gap:16px;padding:4px 6px;}'
@@ -5875,14 +5880,12 @@ document.addEventListener('DOMContentLoaded', function() {
             + '.info-grid .info-label{flex:0 0 170px;padding:2px 6px;border-right:1px solid #000;font-weight:400;white-space:nowrap;}'
             + '.info-grid .info-value{flex:1;padding:2px 6px;}'
             + '.info-grid .info-row:first-child .info-label{flex:0 0 auto;white-space:nowrap;}'
-            + 'table.distinta{width:100%;border-collapse:separate;border-spacing:0;margin-top:6px;font-size:0.56rem;table-layout:fixed;'
-            +   'border-top:1px solid #000;border-left:1px solid #000;}'
-            // Bordi solo su destra/basso di ogni cella (il lato opposto lo dà la
-            // cella vicina o il bordo della tabella): con border-collapse:collapse
-            // ogni linea condivisa cadeva a 0.625px fisici (devicePixelRatio 1.6)
-            // e il browser ne arrotondava alcune a 1px e altre a 0, facendo
-            // apparire piu' sottili le colonne strette (Riserve).
-            + 'table.distinta th,table.distinta td{border-right:1px solid #000;border-bottom:1px solid #000;padding:1px 2px;overflow:hidden;}'
+            // border-collapse:collapse e' necessario: con :separate le celle
+            // rowspan="2" della testata (Riserve, Capitano...) disegnavano il
+            // proprio bordo inferiore in fondo alla 2a riga mentre le celle
+            // vicine disegnavano il loro, creando linee doppie e mancanti.
+            + 'table.distinta{width:100%;border-collapse:collapse;margin-top:6px;font-size:0.56rem;table-layout:fixed;}'
+            + 'table.distinta th,table.distinta td{border:1px solid #000;padding:1px 2px;overflow:hidden;}'
             + 'table.distinta th{background:#f0f0f0;font-size:0.5rem;text-align:center;vertical-align:middle;}'
             + 'table.distinta tbody td{height:21px;font-size:0.58rem;}'
             + '.tc{text-align:center;}.tl{text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
