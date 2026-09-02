@@ -3122,6 +3122,9 @@
                             </table>
                         </div>
                         <hr class="my-2">
+                        <div class="mb-2"><label class="form-label small">Assistente dell'Arbitro <small class="text-muted">(nominativo, opz.)</small></label>
+                            <input type="text" class="form-control form-control-sm" id="distinta-assistente-arbitro">
+                        </div>
                         <label class="form-label small fw-bold mb-2" style="color:#f59e0b;">👔 Staff / Firme</label>
                         <div id="distinta-staff-body" class="row"></div>
                         <div class="mb-2 mt-2"><label class="form-label small">Note</label>
@@ -5533,6 +5536,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 preparatoreAtletico:     { athleteId:'', nome:'', matricola:'' },
                 preparatorePortieri:     { athleteId:'', nome:'', matricola:'' }
             },
+            assistenteArbitro: '',
             note: ''
         };
     }
@@ -5581,6 +5585,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('distinta-data').value          = d.data || '';
         document.getElementById('distinta-luogo').value          = d.luogo || '';
         document.getElementById('distinta-note').value           = d.note || '';
+        document.getElementById('distinta-assistente-arbitro').value = d.assistenteArbitro || '';
 
         _convDistintaPopolaSelectAggiungi();
         _convDistintaRenderGiocatori();
@@ -5735,6 +5740,7 @@ document.addEventListener('DOMContentLoaded', function() {
         d.data         = document.getElementById('distinta-data').value;
         d.luogo        = document.getElementById('distinta-luogo').value;
         d.note         = document.getElementById('distinta-note').value;
+        d.assistenteArbitro = document.getElementById('distinta-assistente-arbitro').value;
 
         conv.distinta = d;
         _convSaveData();
@@ -5834,8 +5840,8 @@ document.addEventListener('DOMContentLoaded', function() {
             + '*{box-sizing:border-box;}'
             + 'body{font-family:Arial,Helvetica,sans-serif;color:#000;background:#fff;margin:0;padding:0;}'
             + '.page{width:100%;max-width:194mm;margin:0 auto;}'
-            + '.distinta-n{text-align:right;font-size:0.7rem;margin-bottom:2px;}'
-            + '.testata-box{border:1px solid #000;margin-bottom:6px;}'
+            + '.testata-box{border:1px solid #000;margin-bottom:6px;position:relative;}'
+            + '.distinta-n{position:absolute;top:2px;right:6px;font-size:0.6rem;}'
             + '.intestazione{display:flex;align-items:center;justify-content:center;gap:16px;padding:4px 6px;}'
             + '.intestazione img{max-height:62px;max-width:80px;object-fit:contain;}'
             + '.intestazione .logo-slot{flex:0 0 auto;height:80px;display:flex;align-items:center;justify-content:center;}'
@@ -5848,36 +5854,42 @@ document.addEventListener('DOMContentLoaded', function() {
             + '.info-grid{border-top:1px solid #000;font-size:0.68rem;}'
             + '.info-grid .info-row{display:flex;border-bottom:1px solid #000;}'
             + '.info-grid .info-row:last-child{border-bottom:none;}'
-            + '.info-grid .info-label{flex:0 0 170px;padding:2px 6px;border-right:1px solid #000;font-weight:400;}'
+            + '.info-grid .info-label{flex:0 0 170px;padding:2px 6px;border-right:1px solid #000;font-weight:400;white-space:nowrap;}'
             + '.info-grid .info-value{flex:1;padding:2px 6px;}'
+            + '.info-grid .info-row:first-child .info-label{flex:0 0 auto;}'
+            + '.info-grid .info-row:first-child .info-value{text-align:right;}'
             + 'table.distinta{width:100%;border-collapse:collapse;margin-top:6px;font-size:0.56rem;table-layout:fixed;}'
             + 'table.distinta th,table.distinta td{border:1px solid #000;padding:1px 2px;overflow:hidden;}'
             + 'table.distinta th{background:#f0f0f0;font-size:0.5rem;text-align:center;vertical-align:middle;}'
+            + 'table.distinta tbody td{height:32px;font-size:0.62rem;}'
             + '.tc{text-align:center;}.tl{text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
             + '.col-n{width:3%;}.col-ruolo{width:6%;}.col-data{width:9%;}.col-nome{width:24.5%;}'
-            + '.col-riserve{width:4%;}.col-cap{width:4%;}.col-matricola{width:10.5%;}'
-            + '.col-doctipo{width:8.5%;}.col-docnum{width:12%;}.col-docril{width:7.5%;}.col-esp-amm{width:5.5%;}'
-            + 'th.th-vert{writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;padding:2px 1px;height:1px;font-size:0.36rem;letter-spacing:-0.3px;}'
-            + 'table.distinta thead tr:first-child{height:78px;}'
+            + '.col-riserve{width:4%;}.col-cap{width:6.5%;}.col-matricola{width:10.5%;}'
+            + '.col-doctipo{width:8.5%;}.col-docnum{width:10.5%;}.col-docril{width:7%;}.col-esp-amm{width:5.25%;}'
+            + 'th.th-vert{writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;padding:1px;height:1px;font-size:0.34rem;letter-spacing:-0.3px;}'
+            + 'table.distinta thead tr:first-child{height:39px;}'
+            + 'table.distinta thead th{font-size:0.42rem;line-height:1.05;padding:0 1px;}'
             + '.staff-box{margin-top:0;font-size:0.66rem;border:1px solid #000;border-top:none;}'
             + '.staff-row{display:flex;align-items:stretch;border-top:1px solid #000;}'
             + '.staff-label{font-weight:700;flex:0 0 230px;padding:2px 6px;border-right:1px solid #000;}'
             + '.staff-nome{flex:1;padding:2px 6px;border-right:1px solid #000;min-height:1.3em;}'
             + '.staff-matricola{flex:0 0 220px;padding:2px 6px;}'
-            + '.note-box{margin-top:6px;font-size:0.6rem;border:1px solid #000;padding:3px 6px;min-height:2.2em;}'
+            + '.note-box{margin-top:6px;font-size:0.6rem;border:1px solid #000;padding:4px 8px;text-align:center;}'
+            + '.note-box .note-riga{margin-bottom:3px;}'
             + '.note-box .note-label{font-weight:700;}'
-            + '.legale{margin-top:5px;font-size:0.54rem;line-height:1.25;}'
-            + '.legale .obbligo{font-style:italic;}'
-            + '.legale .dichiarazione{font-style:italic;margin-top:2px;}'
+            + '.note-box .obbligo{font-style:italic;font-size:0.54rem;line-height:1.25;}'
+            + '.note-box .dichiarazione{font-style:italic;font-size:0.54rem;line-height:1.25;margin-top:2px;}'
             + '.firme-finali{display:flex;border:1px solid #000;border-top:none;font-size:0.64rem;}'
-            + '.firme-finali > div{flex:1;padding:4px 6px;}'
-            + '.firme-finali > div:first-child{border-right:1px solid #000;}'
+            + '.firme-finali > .riga-doppia{flex:1;}'
+            + '.firme-finali > .riga-doppia:first-child{border-right:1px solid #000;}'
+            + '.firme-finali > .riga-doppia > div{padding:4px 6px;}'
+            + '.firme-finali > .riga-doppia > div:first-child{border-bottom:1px solid #000;}'
             + '.firme-finali .presentata{display:flex;justify-content:space-between;align-items:center;}'
             + '@media print{.conv-toolbar{display:none!important;}}'
             + '</style></head><body>'
             + '<div class="page">'
-            + '<div class="distinta-n">Distinta n° _______________</div>'
             + '<div class="testata-box">'
+            + '<div class="distinta-n">Distinta n° _______________</div>'
             + '<div class="intestazione">'
             +   '<div class="logo-slot doppio">'
             +     (logoLnd  ? '<img src="'+logoLnd+'">'  : '')
@@ -5904,7 +5916,7 @@ document.addEventListener('DOMContentLoaded', function() {
             +   '<col class="col-esp-amm"><col class="col-esp-amm">'
             + '</colgroup><thead><tr>'
             +   '<th rowspan="2">N.</th><th rowspan="2">N. del<br>ruolo</th><th rowspan="2">Data<br>Nascita</th><th rowspan="2">Cognome e Nome</th>'
-            +   '<th rowspan="2" class="th-vert">Riserve</th><th rowspan="2" class="th-vert">Capitano V.Capit.</th><th rowspan="2">N. Matricola<br>F.I.G.C.</th>'
+            +   '<th rowspan="2" class="th-vert">Riserve</th><th rowspan="2">Capitano<br>V. Capitano</th><th rowspan="2">N. Matricola<br>F.I.G.C.</th>'
             +   '<th colspan="3">Documento di identificazione</th><th rowspan="2">Espulsi</th><th rowspan="2">Ammoniti</th>'
             + '</tr><tr>'
             +   '<th>Tipo</th><th>Numero</th><th>Rilasciato</th>'
@@ -5912,17 +5924,17 @@ document.addEventListener('DOMContentLoaded', function() {
             + righeGiocatori
             + '</tbody></table>'
             + '<div class="staff-box">'
-            +   '<div class="staff-row"><span class="staff-label">Assistente dell\'Arbitro</span><span class="staff-nome"></span><span class="staff-matricola">Tess. — LND (Dirigente)</span></div>'
+            +   '<div class="staff-row"><span class="staff-label">Assistente dell\'Arbitro</span><span class="staff-nome">'+esc(d.assistenteArbitro)+'</span><span class="staff-matricola"></span></div>'
             + righeFirme
             + '</div>'
-            + '<div class="note-box"><span class="note-label">NOTE:</span> '+esc(d.note)+'</div>'
-            + '<div class="legale">'
+            + '<div class="note-box">'
+            +   '<div class="note-riga"><span class="note-label">NOTE:</span> '+esc(d.note)+'</div>'
             +   '<div class="obbligo">* obbligatorio per le gare organizzate in ambito nazionale, facoltativo per le gare organizzate in ambito regionale e dal Settore per l\'Attività Giovanile e Scolastica.<br>Le persone qui sopra elencate possono essere ammesse solo se munite delle prescritte tessere valide per l\'annata in corso.</div>'
             +   '<div class="dichiarazione">Il sottoscritto Dirigente accompagnatore ufficiale dichiara che i giuocatori/trici sopraindicati sono regolarmente tesserati e partecipano alla gara sotto la responsabilità della Società di appartenenza, giusto le norme vigenti.</div>'
             + '</div>'
             + '<div class="firme-finali">'
-            +   '<div>L\'ARBITRO</div>'
-            +   '<div class="presentata"><span>Distinta presentata alle ore: ______</span><span>IL DIRIGENTE ACCOMPAGNATORE UFFICIALE</span></div>'
+            +   '<div class="riga-doppia"><div>L\'ARBITRO</div><div>&nbsp;</div></div>'
+            +   '<div class="riga-doppia"><div class="presentata"><span>Distinta presentata alle ore: ______</span><span>IL DIRIGENTE ACCOMPAGNATORE UFFICIALE</span></div><div>&nbsp;</div></div>'
             + '</div>'
             + '</div>'
             + '<div class="conv-toolbar" style="position:fixed;top:10px;right:10px;z-index:9999;display:flex;gap:8px;">'
