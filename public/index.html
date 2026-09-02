@@ -3122,9 +3122,6 @@
                             </table>
                         </div>
                         <hr class="my-2">
-                        <div class="mb-2"><label class="form-label small">Assistente dell'Arbitro <small class="text-muted">(nominativo, opz.)</small></label>
-                            <input type="text" class="form-control form-control-sm" id="distinta-assistente-arbitro">
-                        </div>
                         <label class="form-label small fw-bold mb-2" style="color:#f59e0b;">👔 Staff / Firme</label>
                         <div id="distinta-staff-body" class="row"></div>
                         <div class="mb-2 mt-2"><label class="form-label small">Note</label>
@@ -5528,15 +5525,15 @@ document.addEventListener('DOMContentLoaded', function() {
             luogo: conv.luogo || '',
             giocatori: [],
             staffRuoli: {
-                dirigenteAccompagnatore: { athleteId:'', nome:'', matricola:'' },
-                dirigenteUfficialiGara:  { athleteId:'', nome:'', matricola:'' },
-                medicoSociale:           { athleteId:'', nome:'', matricola:'' },
-                allenatoreSeconda:       { athleteId:'', nome:'', matricola:'' },
-                dirigenteMassaggiatore:  { athleteId:'', nome:'', matricola:'' },
-                preparatoreAtletico:     { athleteId:'', nome:'', matricola:'' },
-                preparatorePortieri:     { athleteId:'', nome:'', matricola:'' }
+                dirigenteAccompagnatore: { athleteId:'', nome:'', matricola:'', tessera:'' },
+                dirigenteUfficialiGara:  { athleteId:'', nome:'', matricola:'', tessera:'' },
+                medicoSociale:           { athleteId:'', nome:'', matricola:'', tessera:'' },
+                allenatoreSeconda:       { athleteId:'', nome:'', matricola:'', tessera:'' },
+                dirigenteMassaggiatore:  { athleteId:'', nome:'', matricola:'', tessera:'' },
+                preparatoreAtletico:     { athleteId:'', nome:'', matricola:'', tessera:'' },
+                preparatorePortieri:     { athleteId:'', nome:'', matricola:'', tessera:'' }
             },
-            assistenteArbitro: '',
+            assistenteArbitro: { athleteId:'', nome:'', matricola:'', tessera:'' },
             note: ''
         };
     }
@@ -5585,7 +5582,10 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('distinta-data').value          = d.data || '';
         document.getElementById('distinta-luogo').value          = d.luogo || '';
         document.getElementById('distinta-note').value           = d.note || '';
-        document.getElementById('distinta-assistente-arbitro').value = d.assistenteArbitro || '';
+        if (typeof d.assistenteArbitro === 'string') {
+            d.assistenteArbitro = { athleteId:'', nome: d.assistenteArbitro, matricola:'', tessera:'' };
+        }
+        if (!d.assistenteArbitro) { d.assistenteArbitro = { athleteId:'', nome:'', matricola:'', tessera:'' }; }
 
         _convDistintaPopolaSelectAggiungi();
         _convDistintaRenderGiocatori();
@@ -5681,7 +5681,8 @@ document.addEventListener('DOMContentLoaded', function() {
         { key: 'allenatoreSeconda',       label: 'Allenatore / 2° Allenatore' },
         { key: 'dirigenteMassaggiatore',  label: 'Massaggiatore' },
         { key: 'preparatoreAtletico',     label: 'Preparatore Atletico' },
-        { key: 'preparatorePortieri',     label: 'Preparatore Portieri' }
+        { key: 'preparatorePortieri',     label: 'Preparatore Portieri' },
+        { key: 'assistenteArbitro',       label: 'Assistente dell\'Arbitro' }
     ];
 
     function _convDistintaRenderStaff() {
@@ -5691,7 +5692,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         var html = '';
         _DISTINTA_RUOLI.forEach(function(r) {
-            var cur = d.staffRuoli[r.key] || { athleteId:'', nome:'', matricola:'' };
+            var isArbitro = r.key === 'assistenteArbitro';
+            var cur = (isArbitro ? d.assistenteArbitro : d.staffRuoli[r.key]) || { athleteId:'', nome:'', matricola:'', tessera:'' };
             var options = '<option value="">— nessuno —</option>';
             staff.forEach(function(s) {
                 var sel = String(s.id) === String(cur.athleteId) ? 'selected' : '';
@@ -5701,7 +5703,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 + '<label class="form-label small">'+r.label+'</label>'
                 + '<div class="d-flex gap-1">'
                 + '<select class="form-select form-select-sm" onchange="window.convDistintaSelStaff(\''+r.key+'\',this.value)">'+options+'</select>'
-                + '<input type="text" class="form-control form-control-sm" style="max-width:120px;" placeholder="Matricola" value="'+(cur.matricola||'')+'" onchange="window.convDistintaCampoStaff(\''+r.key+'\',\'matricola\',this.value)">'
+                + '<input type="text" class="form-control form-control-sm" style="max-width:100px;" placeholder="Matricola" value="'+(cur.matricola||'')+'" onchange="window.convDistintaCampoStaff(\''+r.key+'\',\'matricola\',this.value)">'
+                + '<input type="text" class="form-control form-control-sm" style="max-width:100px;" placeholder="Tessera LND" value="'+(cur.tessera||'')+'" onchange="window.convDistintaCampoStaff(\''+r.key+'\',\'tessera\',this.value)">'
                 + '</div>'
                 + '</div>';
         });
@@ -5710,21 +5713,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.convDistintaSelStaff = function(ruoloKey, athleteId) {
         var d = window._distintaState;
+        var nuovo;
         if (!athleteId) {
-            d.staffRuoli[ruoloKey] = { athleteId:'', nome:'', matricola:'' };
+            nuovo = { athleteId:'', nome:'', matricola:'', tessera:'' };
         } else {
             var s = (window.athletes || []).find(function(x){ return String(x.id) === String(athleteId); });
-            d.staffRuoli[ruoloKey] = {
+            nuovo = {
                 athleteId: athleteId,
                 nome: s ? s.name : '',
-                matricola: s ? (s.matricolaLnd || '') : ''
+                matricola: s ? (s.matricolaLnd || '') : '',
+                tessera: s ? (s.numeroTessera || '') : ''
             };
         }
+        if (ruoloKey === 'assistenteArbitro') { d.assistenteArbitro = nuovo; }
+        else { d.staffRuoli[ruoloKey] = nuovo; }
         _convDistintaRenderStaff();
     };
 
     window.convDistintaCampoStaff = function(ruoloKey, campo, val) {
-        window._distintaState.staffRuoli[ruoloKey][campo] = val;
+        var d = window._distintaState;
+        if (ruoloKey === 'assistenteArbitro') { d.assistenteArbitro[campo] = val; }
+        else { d.staffRuoli[ruoloKey][campo] = val; }
     };
 
     window.convDistintaSalva = function(silenzioso) {
@@ -5740,7 +5749,6 @@ document.addEventListener('DOMContentLoaded', function() {
         d.data         = document.getElementById('distinta-data').value;
         d.luogo        = document.getElementById('distinta-luogo').value;
         d.note         = document.getElementById('distinta-note').value;
-        d.assistenteArbitro = document.getElementById('distinta-assistente-arbitro').value;
 
         conv.distinta = d;
         _convSaveData();
@@ -5759,6 +5767,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!conv) { alert('Convocazione non trovata.'); return; }
         var d = conv.distinta;
         if (!d) { alert('Compila e salva prima la Distinta.'); return; }
+        if (typeof d.assistenteArbitro === 'string') {
+            d.assistenteArbitro = { athleteId:'', nome: d.assistenteArbitro, matricola:'', tessera:'' };
+        }
+        if (!d.assistenteArbitro) { d.assistenteArbitro = { athleteId:'', nome:'', matricola:'', tessera:'' }; }
 
         var s = _convSettings || {};
         var atletiMap = {};
@@ -5820,13 +5832,19 @@ document.addEventListener('DOMContentLoaded', function() {
             preparatoreAtletico:     'Preparatore atletico:',
             preparatorePortieri:     'Preparatore dei portieri:'
         };
+        function fmtMatrTessera(r) {
+            var parti = [];
+            if (r && r.matricola) parti.push('Matr. N° '+esc(r.matricola));
+            if (r && r.tessera)   parti.push('Tessera LND N° '+esc(r.tessera));
+            return parti.join(' ');
+        }
         var righeFirme = '';
         Object.keys(labelRuolo).forEach(function(key) {
             var r = d.staffRuoli[key] || {};
             righeFirme += '<div class="staff-row">'
                 + '<span class="staff-label">'+labelRuolo[key]+'</span>'
                 + '<span class="staff-nome">'+esc(r.nome)+'</span>'
-                + '<span class="staff-matricola">'+(r.matricola ? 'Matr./Tessera LND N° '+esc(r.matricola) : '')+'</span>'
+                + '<span class="staff-matricola">'+fmtMatrTessera(r)+'</span>'
                 + '</div>';
         });
 
@@ -5840,8 +5858,8 @@ document.addEventListener('DOMContentLoaded', function() {
             + '*{box-sizing:border-box;}'
             + 'body{font-family:Arial,Helvetica,sans-serif;color:#000;background:#fff;margin:0;padding:0;}'
             + '.page{width:100%;max-width:194mm;margin:0 auto;}'
-            + '.testata-box{border:1px solid #000;margin-bottom:6px;position:relative;}'
-            + '.distinta-n{position:absolute;top:2px;right:6px;font-size:0.6rem;}'
+            + '.testata-box{border:1px solid #000;margin-bottom:6px;}'
+            + '.distinta-n{text-align:center;font-size:0.7rem;font-weight:700;margin-bottom:3px;}'
             + '.intestazione{display:flex;align-items:center;justify-content:center;gap:16px;padding:4px 6px;}'
             + '.intestazione img{max-height:62px;max-width:80px;object-fit:contain;}'
             + '.intestazione .logo-slot{flex:0 0 auto;height:80px;display:flex;align-items:center;justify-content:center;}'
@@ -5856,12 +5874,11 @@ document.addEventListener('DOMContentLoaded', function() {
             + '.info-grid .info-row:last-child{border-bottom:none;}'
             + '.info-grid .info-label{flex:0 0 170px;padding:2px 6px;border-right:1px solid #000;font-weight:400;white-space:nowrap;}'
             + '.info-grid .info-value{flex:1;padding:2px 6px;}'
-            + '.info-grid .info-row:first-child .info-label{flex:0 0 auto;}'
-            + '.info-grid .info-row:first-child .info-value{text-align:right;}'
+            + '.info-grid .info-row:first-child .info-label{flex:0 0 auto;white-space:nowrap;}'
             + 'table.distinta{width:100%;border-collapse:collapse;margin-top:6px;font-size:0.56rem;table-layout:fixed;}'
             + 'table.distinta th,table.distinta td{border:1px solid #000;padding:1px 2px;overflow:hidden;}'
             + 'table.distinta th{background:#f0f0f0;font-size:0.5rem;text-align:center;vertical-align:middle;}'
-            + 'table.distinta tbody td{height:32px;font-size:0.62rem;}'
+            + 'table.distinta tbody td{height:21px;font-size:0.58rem;}'
             + '.tc{text-align:center;}.tl{text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
             + '.col-n{width:3%;}.col-ruolo{width:6%;}.col-data{width:9%;}.col-nome{width:24.5%;}'
             + '.col-riserve{width:4%;}.col-cap{width:6.5%;}.col-matricola{width:10.5%;}'
@@ -5870,16 +5887,17 @@ document.addEventListener('DOMContentLoaded', function() {
             + 'table.distinta thead tr:first-child{height:39px;}'
             + 'table.distinta thead th{font-size:0.42rem;line-height:1.05;padding:0 1px;}'
             + '.staff-box{margin-top:0;font-size:0.66rem;border:1px solid #000;border-top:none;}'
-            + '.staff-row{display:flex;align-items:stretch;border-top:1px solid #000;}'
-            + '.staff-label{font-weight:700;flex:0 0 230px;padding:2px 6px;border-right:1px solid #000;}'
-            + '.staff-nome{flex:1;padding:2px 6px;border-right:1px solid #000;min-height:1.3em;}'
-            + '.staff-matricola{flex:0 0 220px;padding:2px 6px;}'
-            + '.note-box{margin-top:6px;font-size:0.6rem;border:1px solid #000;padding:4px 8px;text-align:center;}'
+            + '.staff-row{display:flex;align-items:center;border-top:1px solid #000;min-height:21px;}'
+            + '.staff-label{font-weight:700;flex:0 0 230px;padding:2px 6px;border-right:1px solid #000;align-self:stretch;display:flex;align-items:center;}'
+            + '.staff-nome{flex:1;padding:2px 6px;border-right:1px solid #000;align-self:stretch;display:flex;align-items:center;}'
+            + '.staff-matricola{flex:0 0 220px;padding:2px 6px;align-self:stretch;display:flex;align-items:center;}'
+            + '.note-firme-box{margin-top:6px;border:1px solid #000;text-align:center;}'
+            + '.note-box{font-size:0.6rem;padding:4px 8px;border-bottom:1px solid #000;}'
             + '.note-box .note-riga{margin-bottom:3px;}'
             + '.note-box .note-label{font-weight:700;}'
             + '.note-box .obbligo{font-style:italic;font-size:0.54rem;line-height:1.25;}'
             + '.note-box .dichiarazione{font-style:italic;font-size:0.54rem;line-height:1.25;margin-top:2px;}'
-            + '.firme-finali{display:flex;border:1px solid #000;border-top:none;font-size:0.64rem;}'
+            + '.firme-finali{display:flex;font-size:0.64rem;}'
             + '.firme-finali > .riga-doppia{flex:1;}'
             + '.firme-finali > .riga-doppia:first-child{border-right:1px solid #000;}'
             + '.firme-finali > .riga-doppia > div{padding:4px 6px;}'
@@ -5888,8 +5906,8 @@ document.addEventListener('DOMContentLoaded', function() {
             + '@media print{.conv-toolbar{display:none!important;}}'
             + '</style></head><body>'
             + '<div class="page">'
-            + '<div class="testata-box">'
             + '<div class="distinta-n">Distinta n° _______________</div>'
+            + '<div class="testata-box">'
             + '<div class="intestazione">'
             +   '<div class="logo-slot doppio">'
             +     (logoLnd  ? '<img src="'+logoLnd+'">'  : '')
@@ -5924,17 +5942,19 @@ document.addEventListener('DOMContentLoaded', function() {
             + righeGiocatori
             + '</tbody></table>'
             + '<div class="staff-box">'
-            +   '<div class="staff-row"><span class="staff-label">Assistente dell\'Arbitro</span><span class="staff-nome">'+esc(d.assistenteArbitro)+'</span><span class="staff-matricola"></span></div>'
+            +   '<div class="staff-row"><span class="staff-label">Assistente dell\'Arbitro</span><span class="staff-nome">'+esc(d.assistenteArbitro.nome)+'</span><span class="staff-matricola">'+fmtMatrTessera(d.assistenteArbitro)+'</span></div>'
             + righeFirme
             + '</div>'
-            + '<div class="note-box">'
-            +   '<div class="note-riga"><span class="note-label">NOTE:</span> '+esc(d.note)+'</div>'
-            +   '<div class="obbligo">* obbligatorio per le gare organizzate in ambito nazionale, facoltativo per le gare organizzate in ambito regionale e dal Settore per l\'Attività Giovanile e Scolastica.<br>Le persone qui sopra elencate possono essere ammesse solo se munite delle prescritte tessere valide per l\'annata in corso.</div>'
-            +   '<div class="dichiarazione">Il sottoscritto Dirigente accompagnatore ufficiale dichiara che i giuocatori/trici sopraindicati sono regolarmente tesserati e partecipano alla gara sotto la responsabilità della Società di appartenenza, giusto le norme vigenti.</div>'
-            + '</div>'
-            + '<div class="firme-finali">'
-            +   '<div class="riga-doppia"><div>L\'ARBITRO</div><div>&nbsp;</div></div>'
-            +   '<div class="riga-doppia"><div class="presentata"><span>Distinta presentata alle ore: ______</span><span>IL DIRIGENTE ACCOMPAGNATORE UFFICIALE</span></div><div>&nbsp;</div></div>'
+            + '<div class="note-firme-box">'
+            +   '<div class="note-box">'
+            +     '<div class="note-riga"><span class="note-label">NOTE:</span> '+esc(d.note)+'</div>'
+            +     '<div class="obbligo">* obbligatorio per le gare organizzate in ambito nazionale, facoltativo per le gare organizzate in ambito regionale e dal Settore per l\'Attività Giovanile e Scolastica.<br>Le persone qui sopra elencate possono essere ammesse solo se munite delle prescritte tessere valide per l\'annata in corso.</div>'
+            +     '<div class="dichiarazione">Il sottoscritto Dirigente accompagnatore ufficiale dichiara che i giuocatori/trici sopraindicati sono regolarmente tesserati e partecipano alla gara sotto la responsabilità della Società di appartenenza, giusto le norme vigenti.</div>'
+            +   '</div>'
+            +   '<div class="firme-finali">'
+            +     '<div class="riga-doppia"><div>L\'ARBITRO</div><div>&nbsp;</div></div>'
+            +     '<div class="riga-doppia"><div class="presentata"><span>Distinta presentata alle ore: ______</span><span>IL DIRIGENTE ACCOMPAGNATORE UFFICIALE</span></div><div>&nbsp;</div></div>'
+            +   '</div>'
             + '</div>'
             + '</div>'
             + '<div class="conv-toolbar" style="position:fixed;top:10px;right:10px;z-index:9999;display:flex;gap:8px;">'
