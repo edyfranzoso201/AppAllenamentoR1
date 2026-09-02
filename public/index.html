@@ -5859,7 +5859,7 @@ document.addEventListener('DOMContentLoaded', function() {
             + 'body{font-family:Arial,Helvetica,sans-serif;color:#000;background:#fff;margin:0;padding:0;}'
             + '.page{width:100%;max-width:194mm;margin:0 auto;}'
             + '.testata-box{border:1px solid #000;margin-bottom:6px;}'
-            + '.distinta-n{text-align:center;font-size:0.7rem;font-weight:700;padding:3px 6px 0;}'
+            + '.distinta-n{text-align:center;font-size:1.08rem;font-weight:700;padding:3px 6px 0;}'
             + '.intestazione{display:flex;align-items:center;justify-content:center;gap:16px;padding:4px 6px;}'
             + '.intestazione img{max-height:62px;max-width:80px;object-fit:contain;}'
             + '.intestazione .logo-slot{flex:0 0 auto;height:80px;display:flex;align-items:center;justify-content:center;}'
@@ -5867,16 +5867,22 @@ document.addEventListener('DOMContentLoaded', function() {
             + '.intestazione .logo-slot:not(.doppio) img{max-height:80px;max-width:100px;}'
             + '.intestazione .testata{flex:1;text-align:center;}'
             + '.testata h1{font-size:1.3rem;margin:0 0 2px;font-weight:800;}'
-            + '.testata h2{font-size:0.9rem;margin:0 0 6px;font-weight:800;letter-spacing:0.3px;}'
-            + '.testata .societa{font-size:0.95rem;font-weight:800;margin:0;}'
+            + '.testata h2{font-size:1.08rem;margin:0 0 6px;font-weight:800;letter-spacing:0.3px;}'
+            + '.testata .societa{font-size:1.14rem;font-weight:800;margin:0;}'
             + '.info-grid{border-top:1px solid #000;font-size:0.68rem;}'
             + '.info-grid .info-row{display:flex;border-bottom:1px solid #000;}'
             + '.info-grid .info-row:last-child{border-bottom:none;}'
             + '.info-grid .info-label{flex:0 0 170px;padding:2px 6px;border-right:1px solid #000;font-weight:400;white-space:nowrap;}'
             + '.info-grid .info-value{flex:1;padding:2px 6px;}'
             + '.info-grid .info-row:first-child .info-label{flex:0 0 auto;white-space:nowrap;}'
-            + 'table.distinta{width:100%;border-collapse:collapse;margin-top:6px;font-size:0.56rem;table-layout:fixed;}'
-            + 'table.distinta th,table.distinta td{border:1px solid #000;padding:1px 2px;overflow:hidden;}'
+            + 'table.distinta{width:100%;border-collapse:separate;border-spacing:0;margin-top:6px;font-size:0.56rem;table-layout:fixed;'
+            +   'border-top:1px solid #000;border-left:1px solid #000;}'
+            // Bordi solo su destra/basso di ogni cella (il lato opposto lo dà la
+            // cella vicina o il bordo della tabella): con border-collapse:collapse
+            // ogni linea condivisa cadeva a 0.625px fisici (devicePixelRatio 1.6)
+            // e il browser ne arrotondava alcune a 1px e altre a 0, facendo
+            // apparire piu' sottili le colonne strette (Riserve).
+            + 'table.distinta th,table.distinta td{border-right:1px solid #000;border-bottom:1px solid #000;padding:1px 2px;overflow:hidden;}'
             + 'table.distinta th{background:#f0f0f0;font-size:0.5rem;text-align:center;vertical-align:middle;}'
             + 'table.distinta tbody td{height:21px;font-size:0.58rem;}'
             + '.tc{text-align:center;}.tl{text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
