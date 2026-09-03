@@ -5886,7 +5886,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // vicine disegnavano il loro, creando linee doppie e mancanti.
             + 'table.distinta{width:100%;border-collapse:collapse;margin-top:6px;font-size:0.56rem;table-layout:fixed;}'
             + 'table.distinta th,table.distinta td{border:1px solid #000;padding:1px 2px;overflow:hidden;}'
-            + 'table.distinta th{background:#f0f0f0;font-size:0.5rem;text-align:center;vertical-align:middle;}'
+            // background-clip:padding-box indispensabile: con border-collapse le
+            // linee della griglia stanno nel border-box delle celle, e lo sfondo
+            // grigio del th (clip di default = border-box) le copriva. Si vedeva
+            // sul bordo sinistro della colonna Riserve, che nell'intestazione
+            // spariva del tutto mentre nel corpo (celle senza sfondo) c'era.
+            + 'table.distinta th{background:#f0f0f0;background-clip:padding-box;font-size:0.5rem;text-align:center;vertical-align:middle;}'
             + 'table.distinta tbody td{height:21px;font-size:0.58rem;}'
             + '.tc{text-align:center;}.tl{text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
             // Larghezze in px interi (somma esatta = 733 = .page): con le
