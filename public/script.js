@@ -1394,7 +1394,19 @@ document.addEventListener('DOMContentLoaded', () => {
         // box numerici impilati. Stesso pattern di homeMulteChart (Chart.js già
         // caricato globalmente in pagina).
         const rosterCanvas = document.getElementById('home-roster-chart');
-        if (rosterCanvas && typeof Chart !== 'undefined') {
+        // Se la Home e' nascosta (.tab-section senza .tab-active => display:none)
+        // il contenitore misura 0x0 e Chart.js creerebbe un canvas 0x0: il grafico
+        // resterebbe vuoto fino al reload della pagina. Succede quando
+        // updateHomePage() viene chiamata da un'altra tab, es. salvando o
+        // cancellando una sessione dal Calendario (le chiamate dopo saveData()).
+        // switchTab() manda un 'resize' dopo 100ms che recupererebbe il canvas, ma
+        // saveData() e' async: se si risolve dopo quella finestra il grafico viene
+        // ricostruito a 0x0 e nessun resize lo segue -> sparisce a intermittenza.
+        // Qui il disegno viene rimandato a quando la Home torna visibile (vedi
+        // _homeRosterChartPending in switchTab), senza distruggere l'istanza buona.
+        const rosterHidden = rosterCanvas ? rosterCanvas.offsetParent === null : false;
+        window._homeRosterChartPending = rosterHidden;
+        if (rosterCanvas && typeof Chart !== 'undefined' && !rosterHidden) {
             if (window._homeRosterChartInst) { window._homeRosterChartInst.destroy(); window._homeRosterChartInst = null; }
             const rosterCounts = [officialAthletes.length, staffMembers.length];
             const rosterHasData = rosterCounts[0] + rosterCounts[1] > 0;
@@ -1476,6 +1488,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button class="btn btn-sm btn-outline-light btn-qa no-print" onclick="switchTab('squadra-section')"><i class="bi bi-card-checklist"></i> Valuta gli atleti</button>
                 </div>`; }
     };
+    // Esposta perché switchTab() (in index.html, fuori da questa closure) possa
+    // ridisegnare il grafico Composizione Rosa quando si torna in Home dopo che
+    // era stato saltato con la Home nascosta (_homeRosterChartPending).
+    window.updateHomePage = updateHomePage;
     // Pulsante "Password Individual" — solo admin, in Azioni Rapide Home
     (function() {
         var btn = document.getElementById('change-individual-pwd-btn');

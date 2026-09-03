@@ -3949,6 +3949,13 @@ function switchTab(sectionId) {
     // I chart GPS sono responsive:false e non ascoltano 'resize': vanno ridisegnati
     // chiamando direttamente le loro funzioni di update dopo che il layout si è assestato).
     setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 100);
+    // Grafico "Composizione Rosa": se era stato saltato perché la Home era
+    // nascosta (updateHomePage() chiamata da un'altra tab dopo saveData()),
+    // ora che la Home è visibile il canvas ha dimensioni vere e si può disegnare.
+    if (sectionId === 'home-section' && window._homeRosterChartPending &&
+        typeof window.updateHomePage === 'function') {
+        window.updateHomePage();
+    }
     if (sectionId === 'monitoraggio-gps-section') {
         setTimeout(function() {
             window.dispatchEvent(new Event('resize'));
