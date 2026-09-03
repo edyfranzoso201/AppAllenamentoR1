@@ -119,6 +119,25 @@
     }
     .home-empty-icon { font-size:2rem; opacity:0.55; margin-bottom:6px; }
 
+    /* Home: elenco compatto degli appuntamenti successivi al primo, nella card
+       "Prossimi appuntamenti". La card e' stretta (20% di larghezza, min 220px)
+       quindi le voci vanno su piu' righe invece che in colonne affiancate. */
+    .home-next-list {
+        list-style:none; margin:8px 0 0; padding:8px 0 0;
+        border-top:1px solid var(--sm-border);
+        text-align:left;
+    }
+    .home-next-list li { padding:5px 0; font-size:.85rem; line-height:1.3; }
+    .home-next-list li + li { border-top:1px solid var(--sm-border-soft); }
+    .home-next-list .hnl-data {
+        display:block; font-weight:600; color:var(--sm-brand);
+        text-transform:capitalize;
+    }
+    .home-next-list .hnl-titolo { display:block; color:var(--sm-text); }
+    .home-next-list .hnl-meta {
+        display:block; font-size:.78rem; color:var(--sm-text-muted);
+    }
+
     /* Home: card della dashboard con stacco dallo sfondo (token restyle 2026-07).
        Un unico set di token gestisce bordo/ombra/superficie/testo per entrambi i temi;
        niente più regole .theme-light duplicate per ogni testo interno. */
@@ -1478,7 +1497,7 @@
                 <div class="col-md-4 mb-4" style="flex:0 0 auto;width:20%;min-width:220px;">
                     <div class="card summary-card h-100">
                         <div class="card-body" id="home-next-session">
-                            <h5 class="card-title text-muted">PROSSIMA SESSIONE</h5>
+                            <h5 class="card-title text-muted">PROSSIMI APPUNTAMENTI</h5>
                             <p class="text-muted">Nessuna sessione pianificata</p>
                         </div>
                     </div>

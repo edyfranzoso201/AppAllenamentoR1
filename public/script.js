@@ -1434,12 +1434,34 @@ document.addEventListener('DOMContentLoaded', () => {
         const today = toLocalDateISO(new Date());
         const futureSessions = Object.entries(trainingSessions).filter(([date]) => date >= today).sort(([dateA], [dateB]) => new Date(dateA) - new Date(dateB)).flatMap(([date, sessions]) => sessions.map(s => ({...s, date})));
         if (futureSessions.length > 0) {
-            const nextSession = futureSessions[0];
-            const sessionDate = new Date(nextSession.date);
-            elements.homeNextSession.innerHTML = `<h5 class="card-title text-muted">PROSSIMA SESSIONE</h5><h6 class="mb-1">${escapeHtml(nextSession.title)}</h6><p class="mb-0">${sessionDate.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}</p><p class="mb-0 text-muted">${nextSession.time ? `Ore: ${escapeHtml(nextSession.time)}` : ''} ${nextSession.location ? `@ ${escapeHtml(nextSession.location)}` : ''}</p>`;
+            // I 5 appuntamenti piu' imminenti: il primo in evidenza (come prima),
+            // i successivi in elenco compatto sotto una linea di separazione.
+            const prossimi = futureSessions.slice(0, 5);
+            const fmtData = (iso, opts) => new Date(iso).toLocaleDateString('it-IT', opts);
+            const orarioLuogo = s => [
+                s.time ? `Ore: ${escapeHtml(s.time)}` : '',
+                s.location ? `@ ${escapeHtml(s.location)}` : ''
+            ].filter(Boolean).join(' ');
+
+            const primo = prossimi[0];
+            let html = `<h5 class="card-title text-muted">PROSSIMI APPUNTAMENTI</h5>`
+                + `<h6 class="mb-1">${escapeHtml(primo.title)}</h6>`
+                + `<p class="mb-0">${fmtData(primo.date, { weekday: 'long', day: 'numeric', month: 'long' })}</p>`
+                + `<p class="mb-0 text-muted">${orarioLuogo(primo)}</p>`;
+
+            if (prossimi.length > 1) {
+                html += `<ul class="home-next-list">` + prossimi.slice(1).map(s =>
+                    `<li>`
+                    + `<span class="hnl-data">${fmtData(s.date, { weekday: 'short', day: 'numeric', month: 'short' })}</span>`
+                    + `<span class="hnl-titolo">${escapeHtml(s.title)}</span>`
+                    + (orarioLuogo(s) ? `<span class="hnl-meta">${orarioLuogo(s)}</span>` : '')
+                    + `</li>`
+                ).join('') + `</ul>`;
+            }
+            elements.homeNextSession.innerHTML = html;
         } else {
             // Empty-state utile: invece di un grande vuoto, una CTA per pianificare.
-            elements.homeNextSession.innerHTML = `<h5 class="card-title text-muted">PROSSIMA SESSIONE</h5>
+            elements.homeNextSession.innerHTML = `<h5 class="card-title text-muted">PROSSIMI APPUNTAMENTI</h5>
                 <div class="home-empty-state">
                     <div class="home-empty-icon">📅</div>
                     <p class="text-muted mb-2">Nessuna sessione pianificata</p>
