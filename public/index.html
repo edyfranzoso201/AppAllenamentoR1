@@ -5889,9 +5889,17 @@ document.addEventListener('DOMContentLoaded', function() {
             + 'table.distinta th{background:#f0f0f0;font-size:0.5rem;text-align:center;vertical-align:middle;}'
             + 'table.distinta tbody td{height:21px;font-size:0.58rem;}'
             + '.tc{text-align:center;}.tl{text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
-            + '.col-n{width:3%;}.col-ruolo{width:6%;}.col-data{width:9%;}.col-nome{width:24.5%;}'
-            + '.col-riserve{width:4%;}.col-cap{width:6.5%;}.col-matricola{width:10.5%;}'
-            + '.col-doctipo{width:8.5%;}.col-docnum{width:10.5%;}.col-docril{width:7%;}.col-esp-amm{width:5.25%;}'
+            // Larghezze in px interi (somma esatta = 733 = .page): con le
+            // percentuali i confini di colonna cadevano a meta' pixel fisico
+            // e il browser arrotondava i bordi in modo diverso da colonna a
+            // colonna. La Riserve, la piu' stretta, ne risentiva di piu' e
+            // appariva con bordi di spessore diverso dal resto della griglia.
+            // 22+44+66+181+29+48+77+62+77+51+38+38 = 733
+            // Nota: matricola+doctipo+docnum+docril = 77+62+77+51 = 267, cioe'
+            // il flex-basis di .staff-matricola qui sotto (bordi allineati).
+            + '.col-n{width:22px;}.col-ruolo{width:44px;}.col-data{width:66px;}.col-nome{width:181px;}'
+            + '.col-riserve{width:29px;}.col-cap{width:48px;}.col-matricola{width:77px;}'
+            + '.col-doctipo{width:62px;}.col-docnum{width:77px;}.col-docril{width:51px;}.col-esp-amm{width:38px;}'
             + 'th.th-vert{writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;padding:1px;height:1px;font-size:0.34rem;letter-spacing:-0.3px;}'
             + 'table.distinta thead tr:first-child{height:39px;}'
             + 'table.distinta thead th{font-size:0.42rem;line-height:1.05;padding:0 1px;}'
@@ -5913,8 +5921,12 @@ document.addEventListener('DOMContentLoaded', function() {
             + '.note-box .obbligo{font-style:italic;font-size:0.54rem;line-height:1.25;}'
             + '.note-box .dichiarazione{font-style:italic;font-size:0.54rem;line-height:1.25;margin-top:2px;}'
             + '.firme-finali{display:flex;font-size:0.64rem;}'
+            // 3 colonne: L'ARBITRO | Distinta presentata alle ore | IL DIRIGENTE.
+            // Il divisorio lo disegna ogni colonna tranne l'ultima, cosi' la
+            // linea verticale scende continua anche nella riga delle firme.
             + '.firme-finali > .riga-doppia{flex:1;}'
-            + '.firme-finali > .riga-doppia:first-child{border-right:1px solid #000;}'
+            + '.firme-finali > .riga-doppia.col-ora{flex:0 0 190px;}'
+            + '.firme-finali > .riga-doppia:not(:last-child){border-right:1px solid #000;}'
             // Altezza fissa uguale nelle due colonne: la cella "Distinta presentata"
             // e' piu' alta di "L'ARBITRO" perche' contiene due span affiancati, e
             // senza questo il border-bottom cadeva a quote diverse (linea spezzata).
@@ -5922,9 +5934,6 @@ document.addEventListener('DOMContentLoaded', function() {
             + '.firme-finali > .riga-doppia > div:first-child{border-bottom:1px solid #000;height:34px;display:flex;align-items:center;justify-content:center;}'
             // riga firma piu' alta di 1/3 (20px -> 27px) per scriverci dentro
             + '.firme-finali > .riga-doppia > div:last-child{height:27px;}'
-            // piu' specifica di .riga-doppia > div:first-child, quindi ripristina
-            // space-between (li' serve center per "L'ARBITRO")
-            + '.firme-finali > .riga-doppia > div.presentata{display:flex;justify-content:space-between;align-items:center;}'
             + '@media print{.conv-toolbar{display:none!important;}}'
             + '</style></head><body>'
             + '<div class="page">'
@@ -5974,7 +5983,8 @@ document.addEventListener('DOMContentLoaded', function() {
             +   '</div>'
             +   '<div class="firme-finali">'
             +     '<div class="riga-doppia"><div>L\'ARBITRO</div><div>&nbsp;</div></div>'
-            +     '<div class="riga-doppia"><div class="presentata"><span>Distinta presentata alle ore: ______</span><span>IL DIRIGENTE ACCOMPAGNATORE UFFICIALE</span></div><div>&nbsp;</div></div>'
+            +     '<div class="riga-doppia col-ora"><div>Distinta presentata alle ore: ______</div><div>&nbsp;</div></div>'
+            +     '<div class="riga-doppia"><div>IL DIRIGENTE ACCOMPAGNATORE UFFICIALE</div><div>&nbsp;</div></div>'
             +   '</div>'
             + '</div>'
             + '</div>'
