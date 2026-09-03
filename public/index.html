@@ -5886,12 +5886,33 @@ document.addEventListener('DOMContentLoaded', function() {
             // vicine disegnavano il loro, creando linee doppie e mancanti.
             + 'table.distinta{width:100%;border-collapse:collapse;margin-top:6px;font-size:0.56rem;table-layout:fixed;}'
             + 'table.distinta th,table.distinta td{border:1px solid #000;padding:1px 2px;overflow:hidden;}'
-            // background-clip:padding-box indispensabile: con border-collapse le
-            // linee della griglia stanno nel border-box delle celle, e lo sfondo
-            // grigio del th (clip di default = border-box) le copriva. Si vedeva
-            // sul bordo sinistro della colonna Riserve, che nell'intestazione
-            // spariva del tutto mentre nel corpo (celle senza sfondo) c'era.
+            // background-clip:padding-box: con border-collapse le linee della
+            // griglia stanno nel border-box delle celle, e lo sfondo grigio del
+            // th (clip di default = border-box) le copriva.
             + 'table.distinta th{background:#f0f0f0;background-clip:padding-box;font-size:0.5rem;text-align:center;vertical-align:middle;}'
+            // Linea fra "Cognome e Nome" e "Riserve": il bordo condiviso da
+            // border-collapse spetta alla cella Riserve, che pero' ha
+            // transform:rotate(180deg) (vedi th.th-vert). Il transform la fa
+            // rasterizzare in un contesto separato e riscalare: il bordo, gia'
+            // sub-pixel (1px CSS = 0.625px fisici a devicePixelRatio 1.6), veniva
+            // reso in antialiasing a grigio 232 su fondo 240, cioe' invisibile.
+            // Misurato a zoom 1.1: gli altri divisori escono a nero 0, questo a 232.
+            // La linea la disegna quindi il vicino di SINISTRA, che non e' ruotato
+            // e quindi non subisce il resampling. I bordi collassati delle due
+            // celle su quello spigolo vengono tolti, altrimenti si sommano
+            // all'ombra e la linea viene piu' spessa delle altre.
+            // Verificato a zoom 0.9 / 1.0 / 1.1 (e a devicePixelRatio 1.6 e 2):
+            // nero pieno e continua su tutta l'altezza della testata. A zoom 1.0
+            // ha lo stesso spessore degli altri divisori; a zoom 0.9, dove i
+            // bordi 1px degli altri si assottigliano per arrotondamento mentre
+            // l'ombra resta piena, risulta un filo piu' marcata. Un bordo
+            // normale al posto dell'ombra qui non e' un'alternativa: sparisce
+            // del tutto (misurato), perche' border-collapse lo assegna comunque
+            // alla cella ruotata.
+            // (le classi col-* stanno sui <col>, non sui <th>: qui serve la
+            // 4a cella della prima riga di testata, cioe' "Cognome e Nome")
+            + 'table.distinta thead tr:first-child th:nth-child(4){box-shadow:inset -1px 0 0 0 #000;border-right:0;}'
+            + 'table.distinta thead tr:first-child th:nth-child(5){border-left:0;}'
             + 'table.distinta tbody td{height:21px;font-size:0.58rem;}'
             + '.tc{text-align:center;}.tl{text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
             // Larghezze in px interi (somma esatta = 733 = .page): con le
