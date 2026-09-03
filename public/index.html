@@ -5878,7 +5878,9 @@ document.addEventListener('DOMContentLoaded', function() {
             + '.info-grid .info-row{display:flex;border-bottom:1px solid #000;}'
             + '.info-grid .info-row:last-child{border-bottom:none;}'
             + '.info-grid .info-label{flex:0 0 170px;padding:2px 6px;border-right:1px solid #000;font-weight:400;white-space:nowrap;}'
-            + '.info-grid .info-value{flex:1;padding:2px 6px;}'
+            // i valori compilati (societa/avversario, campionato, data, luogo)
+            // in grassetto, le etichette restano normali
+            + '.info-grid .info-value{flex:1;padding:2px 6px;font-weight:700;}'
             + '.info-grid .info-row:first-child .info-label{flex:0 0 auto;white-space:nowrap;}'
             // border-collapse:collapse e' necessario: con :separate le celle
             // rowspan="2" della testata (Riserve, Capitano...) disegnavano il
@@ -6009,7 +6011,7 @@ document.addEventListener('DOMContentLoaded', function() {
             +   '</div>'
             +   '<div class="firme-finali">'
             +     '<div class="riga-doppia"><div>L\'ARBITRO</div><div>&nbsp;</div></div>'
-            +     '<div class="riga-doppia col-ora"><div>Distinta presentata alle ore: ______</div><div>&nbsp;</div></div>'
+            +     '<div class="riga-doppia col-ora"><div>Distinta presentata alle ore:</div><div>&nbsp;</div></div>'
             +     '<div class="riga-doppia"><div>IL DIRIGENTE ACCOMPAGNATORE UFFICIALE</div><div>&nbsp;</div></div>'
             +   '</div>'
             + '</div>'
