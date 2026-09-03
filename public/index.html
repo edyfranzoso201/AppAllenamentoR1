@@ -5898,8 +5898,14 @@ document.addEventListener('DOMContentLoaded', function() {
             + '.staff-box{margin-top:0;font-size:0.66rem;border:1px solid #000;border-top:none;}'
             + '.staff-row{display:flex;align-items:center;border-top:1px solid #000;min-height:21px;}'
             + '.staff-label{font-weight:700;flex:0 0 230px;padding:2px 6px;border-right:1px solid #000;align-self:stretch;display:flex;align-items:center;}'
-            + '.staff-nome{flex:1;padding:2px 6px;border-right:1px solid #000;align-self:stretch;display:flex;align-items:center;}'
-            + '.staff-matricola{flex:0 0 220px;padding:2px 6px;align-self:stretch;display:flex;align-items:center;}'
+            // niente border-right qui: il bordo di separazione lo disegna
+            // .staff-matricola con border-left (altrimenti linea doppia)
+            + '.staff-nome{flex:1;padding:2px 6px;align-self:stretch;display:flex;align-items:center;}'
+            // 267px = larghezza delle colonne N.Matricola+Documento+Espulsi+Ammoniti
+            // della tabella sopra: cosi' il bordo sinistro di questa cella prosegue
+            // esattamente la linea verticale della tabella invece di essere spostato
+            // a destra.
+            + '.staff-matricola{flex:0 0 267px;padding:2px 6px;border-left:1px solid #000;align-self:stretch;display:flex;align-items:center;}'
             + '.note-firme-box{margin-top:6px;border:1px solid #000;text-align:center;}'
             + '.note-box{font-size:0.6rem;padding:4px 8px;border-bottom:1px solid #000;}'
             + '.note-box .note-riga{margin-bottom:3px;}'
@@ -5909,9 +5915,16 @@ document.addEventListener('DOMContentLoaded', function() {
             + '.firme-finali{display:flex;font-size:0.64rem;}'
             + '.firme-finali > .riga-doppia{flex:1;}'
             + '.firme-finali > .riga-doppia:first-child{border-right:1px solid #000;}'
-            + '.firme-finali > .riga-doppia > div{padding:4px 6px;}'
-            + '.firme-finali > .riga-doppia > div:first-child{border-bottom:1px solid #000;}'
-            + '.firme-finali .presentata{display:flex;justify-content:space-between;align-items:center;}'
+            // Altezza fissa uguale nelle due colonne: la cella "Distinta presentata"
+            // e' piu' alta di "L'ARBITRO" perche' contiene due span affiancati, e
+            // senza questo il border-bottom cadeva a quote diverse (linea spezzata).
+            + '.firme-finali > .riga-doppia > div{padding:4px 6px;box-sizing:border-box;}'
+            + '.firme-finali > .riga-doppia > div:first-child{border-bottom:1px solid #000;height:34px;display:flex;align-items:center;justify-content:center;}'
+            // riga firma piu' alta di 1/3 (20px -> 27px) per scriverci dentro
+            + '.firme-finali > .riga-doppia > div:last-child{height:27px;}'
+            // piu' specifica di .riga-doppia > div:first-child, quindi ripristina
+            // space-between (li' serve center per "L'ARBITRO")
+            + '.firme-finali > .riga-doppia > div.presentata{display:flex;justify-content:space-between;align-items:center;}'
             + '@media print{.conv-toolbar{display:none!important;}}'
             + '</style></head><body>'
             + '<div class="page">'
