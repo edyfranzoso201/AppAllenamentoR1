@@ -3125,6 +3125,7 @@
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <label class="form-label small fw-bold mb-0" style="color:#16a34a;">⚽ Elenco Giocatori</label>
                             <div class="d-flex gap-1 align-items-center no-print">
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="window.convDistintaOrdina()" title="Ordina per numero di maglia: prima i titolari, poi le riserve (colonna R)"><i class="bi bi-sort-numeric-down"></i> Ordina</button>
                                 <select class="form-select form-select-sm" id="distinta-add-giocatore-sel" style="max-width:220px;"></select>
                                 <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.convDistintaAggiungiGiocatore()">+ Aggiungi</button>
                             </div>
@@ -5711,6 +5712,38 @@ document.addEventListener('DOMContentLoaded', function() {
         var d = window._distintaState;
         d.giocatori.splice(idx, 1);
         _convDistintaPopolaSelectAggiungi();
+        _convDistintaRenderGiocatori();
+    };
+
+    // Ordina l'elenco: prima i titolari (colonna Riserve vuota), poi le riserve
+    // (colonna Riserve compilata, tipicamente "R"), ciascun gruppo per numero di
+    // maglia crescente. Chi non ha numero di maglia finisce in fondo al proprio
+    // gruppo (in ordine alfabetico), altrimenti sarebbe messo davanti al n.1.
+    window.convDistintaOrdina = function() {
+        var d = window._distintaState;
+        if (!d || !d.giocatori.length) return;
+        var atletiMap = {};
+        (window.athletes || []).forEach(function(a){ atletiMap[String(a.id)] = a; });
+
+        function chiave(g) {
+            // "R", "r", " R " => riserva. Qualsiasi contenuto conta come riserva:
+            // il modulo F.I.G.C. usa solo la R ma l'utente puo' scriverci altro.
+            var riserva = String(g.riserva || '').trim() !== '' ? 1 : 0;
+            var num = parseInt(_convDistintaNumeroMaglia(g.athleteId), 10);
+            var a = atletiMap[String(g.athleteId)];
+            return {
+                riserva: riserva,
+                // Numerico, non testuale: "10" non deve venire prima di "7".
+                num: isNaN(num) ? Infinity : num,
+                nome: (a && a.name ? a.name : '').toLowerCase()
+            };
+        }
+        d.giocatori.sort(function(x, y) {
+            var kx = chiave(x), ky = chiave(y);
+            if (kx.riserva !== ky.riserva) return kx.riserva - ky.riserva;
+            if (kx.num !== ky.num) return kx.num - ky.num;
+            return kx.nome.localeCompare(ky.nome, 'it');
+        });
         _convDistintaRenderGiocatori();
     };
 
