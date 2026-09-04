@@ -6035,9 +6035,14 @@ document.addEventListener('DOMContentLoaded', function() {
             // a destra.
             + '.staff-matricola{flex:0 0 267px;padding:2px 6px;border-left:1px solid #000;align-self:stretch;display:flex;align-items:center;}'
             + '.note-firme-box{margin-top:6px;border:1px solid #000;text-align:center;}'
-            + '.note-box{font-size:0.6rem;padding:4px 8px;border-bottom:1px solid #000;}'
+            // text-align:left esplicito: .note-firme-box centra (serve alle celle firme
+            // sotto), ma il blocco NOTE va allineato a sinistra come nel modulo cartaceo.
+            + '.note-box{font-size:0.6rem;padding:4px 8px;border-bottom:1px solid #000;text-align:left;}'
             + '.note-box .note-riga{margin-bottom:3px;}'
             + '.note-box .note-label{font-weight:700;}'
+            // Riga vuota a piena larghezza su cui l'arbitro puo' scrivere a mano: il
+            // filetto e' il bordo inferiore, l'altezza lo spazio per scriverci dentro.
+            + '.note-box .note-rigo{border-bottom:1px solid #000;height:15px;margin:2px 0 4px;}'
             + '.note-box .obbligo{font-style:italic;font-size:0.54rem;line-height:1.25;}'
             + '.note-box .dichiarazione{font-style:italic;font-size:0.54rem;line-height:1.25;margin-top:2px;}'
             + '.firme-finali{display:flex;font-size:0.64rem;}'
@@ -6098,6 +6103,7 @@ document.addEventListener('DOMContentLoaded', function() {
             + '<div class="note-firme-box">'
             +   '<div class="note-box">'
             +     '<div class="note-riga"><span class="note-label">NOTE:</span> '+esc(d.note)+'</div>'
+            +     '<div class="note-rigo"></div>'
             +     '<div class="obbligo">* obbligatorio per le gare organizzate in ambito nazionale, facoltativo per le gare organizzate in ambito regionale e dal Settore per l\'Attività Giovanile e Scolastica.<br>Le persone qui sopra elencate possono essere ammesse solo se munite delle prescritte tessere valide per l\'annata in corso.</div>'
             +     '<div class="dichiarazione">Il sottoscritto Dirigente accompagnatore ufficiale dichiara che i giuocatori/trici sopraindicati sono regolarmente tesserati e partecipano alla gara sotto la responsabilità della Società di appartenenza, giusto le norme vigenti.</div>'
             +   '</div>'
