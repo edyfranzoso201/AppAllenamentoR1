@@ -5568,7 +5568,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function _convDistintaRigaDaAtleta(athlete) {
         return {
             athleteId: String(athlete.id),
-            ruolo: 0, // rinumerato da _convDistintaRinumera()
             riserva: '',
             capitano: athlete.isCaptain ? 'C' : (athlete.isViceCaptain ? 'VC' : ''),
             docTipo: 'Tess.',
@@ -5577,8 +5576,36 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 
-    function _convDistintaRinumera(giocatori) {
-        giocatori.forEach(function(g, i) { g.ruolo = i + 1; });
+    // "N. del ruolo" nella Distinta = numero di maglia dell'atleta, NON la
+    // posizione in elenco. Il numero e' salvato in Materiale
+    // (materialeData[pid]._numero, esposto come window._materialeData), non
+    // sull'oggetto atleta. Viene letto qui a ogni render invece di essere
+    // salvato dentro conv.distinta: cosi' anche le distinte gia' salvate con la
+    // vecchia numerazione sequenziale mostrano subito il numero giusto, e un
+    // cambio maglia in Materiale si riflette senza reinserire i giocatori.
+    function _convDistintaNumeroMaglia(athleteId) {
+        var mat = window._materialeData || {};
+        var rec = mat[String(athleteId)];
+        return (rec && rec._numero) ? String(rec._numero) : '';
+    }
+
+    // Materiale carica i suoi dati in modo pigro (solo aprendo quel tab): senza
+    // questo, aprendo la Distinta "a freddo" i numeri maglia sarebbero tutti vuoti.
+    // Imposta SEMPRE window._materialeData (anche a {} se il caricamento fallisce) e
+    // richiama sempre onReady: convStampaDistinta si richiama da qui, e se il flag
+    // restasse undefined su errore di rete la stampa non partirebbe mai.
+    function _convDistintaAssicuraNumeri(onReady) {
+        if (window._materialeData) { if (onReady) onReady(); return; }
+        fetch('/api/data', { headers: { 'x-annata-id': sessionStorage.getItem('gosport_current_annata') || '' } })
+            .then(function(r){ return r.ok ? r.json() : null; })
+            .then(function(d){
+                window._materialeData = (d && d.materiale && d.materiale.assignments) || {};
+            })
+            .catch(function(e){
+                console.warn('Distinta numeri maglia:', e);
+                window._materialeData = {};
+            })
+            .then(function(){ if (onReady) onReady(); });
     }
 
     // ── Apri pannello Distinta per una convocazione esistente ───────
@@ -5597,9 +5624,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 var a = all.find(function(x){ return String(x.id) === String(aid); });
                 if (a) d.giocatori.push(_convDistintaRigaDaAtleta(a));
             });
-            _convDistintaRinumera(d.giocatori);
         }
         window._distintaState = d;
+        _convDistintaAssicuraNumeri(_convDistintaRenderGiocatori);
 
         document.getElementById('distinta-affiliazione').value = d.affiliazione || '';
         document.getElementById('distinta-societa').value      = d.societa || '';
@@ -5647,7 +5674,7 @@ document.addEventListener('DOMContentLoaded', function() {
             html += '<tr>'
                 + '<td style="white-space:nowrap;">'
                 +   '<button type="button" class="btn btn-sm btn-outline-secondary no-print" style="padding:0 6px;" onclick="window.convDistintaMuovi('+i+',-1)" '+(i===0?'disabled':'')+'>↑</button> '
-                +   g.ruolo
+                +   (_convDistintaNumeroMaglia(g.athleteId) || '<span class="text-muted" title="Numero di maglia non impostato in Materiale">—</span>')
                 +   ' <button type="button" class="btn btn-sm btn-outline-secondary no-print" style="padding:0 6px;" onclick="window.convDistintaMuovi('+i+',1)" '+(i===d.giocatori.length-1?'disabled':'')+'>↓</button>'
                 + '</td>'
                 + '<td>'+dataNascita+'</td>'
@@ -5676,7 +5703,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!a) return;
         var d = window._distintaState;
         d.giocatori.push(_convDistintaRigaDaAtleta(a));
-        _convDistintaRinumera(d.giocatori);
         _convDistintaPopolaSelectAggiungi();
         _convDistintaRenderGiocatori();
     };
@@ -5684,7 +5710,6 @@ document.addEventListener('DOMContentLoaded', function() {
     window.convDistintaRimuoviGiocatore = function(idx) {
         var d = window._distintaState;
         d.giocatori.splice(idx, 1);
-        _convDistintaRinumera(d.giocatori);
         _convDistintaPopolaSelectAggiungi();
         _convDistintaRenderGiocatori();
     };
@@ -5696,7 +5721,6 @@ document.addEventListener('DOMContentLoaded', function() {
         var tmp = d.giocatori[idx];
         d.giocatori[idx] = d.giocatori[target];
         d.giocatori[target] = tmp;
-        _convDistintaRinumera(d.giocatori);
         _convDistintaRenderGiocatori();
     };
 
@@ -5789,6 +5813,15 @@ document.addEventListener('DOMContentLoaded', function() {
             window.convDistintaSalva(true);
         }
 
+        // I numeri di maglia arrivano da Materiale, che carica in modo pigro. Qui si
+        // puo' arrivare anche senza aver mai aperto il pannello Distinta (stampa
+        // diretta dall'elenco convocazioni): in quel caso carica prima i dati, poi
+        // rilancia la stampa, altrimenti la colonna "N. del ruolo" uscirebbe vuota.
+        if (!window._materialeData) {
+            _convDistintaAssicuraNumeri(function(){ window.convStampaDistinta(id); });
+            return;
+        }
+
         var conv = _convData.find(function(x){ return x.id === id; });
         if (!conv) { alert('Convocazione non trovata.'); return; }
         var d = conv.distinta;
@@ -5822,7 +5855,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 var matricola = a ? (a.numeroMatricola || '') : '';
                 righeGiocatori += '<tr>'
                     + '<td class="tc">'+(i+1)+'</td>'
-                    + '<td class="tc">'+esc(g.ruolo)+'</td>'
+                    + '<td class="tc">'+esc(_convDistintaNumeroMaglia(g.athleteId))+'</td>'
                     + '<td class="tc">'+dataNascita+'</td>'
                     + '<td class="tl">'+esc(nome)+'</td>'
                     + '<td class="tc">'+esc(g.riserva)+'</td>'
