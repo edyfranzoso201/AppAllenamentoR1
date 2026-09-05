@@ -1357,6 +1357,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Gli archiviati non fanno piu' parte della societa': non vanno proposti
             // fra gli atleti schierabili (stessa semantica del filtro in Gestione Squadra).
             if (athlete.archived) return;
+            // Lo staff (allenatori/dirigenti) non si convoca e non si schiera: fuori
+            // dall'elenco dei convocabili. Chi fosse gia' stato posizionato in campo
+            // resta dov'e': il posizionamento manuale non va cancellato.
+            if (athlete.isStaff) return;
             if (!placedAthleteIds.has(String(athlete.id))) {
                 const today = new Date(); today.setHours(0, 0, 0, 0); const isExpired = athlete.scadenzaVisita && new Date(athlete.scadenzaVisita) < today;
                 const availablePlayer = document.createElement('div'); availablePlayer.className = 'list-group-item d-flex justify-content-between align-items-center available-player p-2'; availablePlayer.dataset.athleteId = athlete.id;
