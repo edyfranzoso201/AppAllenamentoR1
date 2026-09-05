@@ -192,6 +192,74 @@ body { background-color: var(--sm-bg); color: var(--text-light); padding-top: 56
 .jersey-body::before { left: -1.8em; transform: rotate(-40deg); border-radius: 0.5em 0.2em 0 0; }
 .jersey-body::after { right: -1.8em; transform: rotate(40deg); border-radius: 0.2em 0.5em 0 0; }
 .jersey-number { font-size: 2.2em; font-weight: bold; color: white; text-shadow: 1px 1px 2px black; }
+/* In panchina le maglie stanno in un flusso che va a capo: senza margine in alto
+   la nuvoletta della riga sotto finirebbe sopra la maglia della riga sopra. */
+#field-bench-area .player-jersey {
+    margin-top: 1.4em;
+}
+
+/* ── NUVOLETTA SOSTITUZIONI ──────────────────────────────────────────────────
+   Fumetto sopra la maglietta dove si scrive il numero di chi puo' sostituire
+   il giocatore. width:auto + min-width: si allarga da sola quando i numeri sono
+   piu' di uno ("7, 11"), mentre il testo resta piccolo rispetto al numero di
+   maglia (0.85em contro 2.2em). bottom: calc(100% + ...) la tiene sopra le
+   maniche (::before/::after, alte 1em a top:0) senza sovrapporsi. */
+.jersey-sub-cloud {
+    position: absolute;
+    bottom: calc(100% + 0.9em);
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 1.9em;
+    max-width: 7em;
+    width: auto;
+    padding: 0.15em 0.45em;
+    background-color: #ffffff;
+    color: #111;
+    border: 1px solid #444;
+    border-radius: 0.9em;
+    font-size: 0.85em;
+    font-weight: bold;
+    line-height: 1.25;
+    text-align: center;
+    white-space: nowrap;
+    cursor: text;
+    z-index: 6;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+}
+/* Codina del fumetto verso la maglietta. Due triangoli sovrapposti: ::before fa
+   il bordo scuro, ::after il riempimento bianco 1px piu' su, cosi' la codina ha
+   lo stesso filetto del fumetto senza ricorrere a drop-shadow. */
+.jersey-sub-cloud::before,
+.jersey-sub-cloud::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border: 0.34em solid transparent;
+    border-bottom: 0;
+    pointer-events: none;
+}
+.jersey-sub-cloud::before {
+    top: 100%;
+    transform: translateX(-50%);
+    border-top: 0.34em solid #444;
+}
+.jersey-sub-cloud::after {
+    top: calc(100% - 1px);
+    transform: translateX(-50%);
+    border-top: 0.34em solid #ffffff;
+}
+/* Vuota: nuvoletta piccola e semitrasparente, cosi' si capisce che si puo'
+   scrivere ma non disturba la lettura del campo. */
+.jersey-sub-cloud:empty {
+    opacity: 0.5;
+}
+.jersey-sub-cloud:focus {
+    opacity: 1;
+    outline: 2px solid var(--accent-green, #198754);
+    outline-offset: 1px;
+}
 .player-name { margin-top: 0.5em; font-size: 1.33em; font-weight: bold; color: white; background-color: rgba(0,0,0,0.6); padding: 0.1em 0.4em; border-radius: 4px; white-space: nowrap; }
 #available-list .list-group-item, .tool-item { cursor: grab; background-color: var(--secondary-blue); }
 .available-slot { border: 1px dashed var(--border-color); border-radius: 8px; min-height: 50px; }
@@ -827,6 +895,22 @@ body { background-color: var(--sm-bg); color: var(--text-light); padding-top: 56
         flex-direction: column !important;
         align-items: center !important;
         width: auto !important;
+    }
+
+    /* Nuvoletta sostituzioni in stampa: quelle vuote sono solo un invito a
+       scrivere, su carta sarebbero rumore. Restano le compilate, in nero su bianco. */
+    .printing-now .jersey-sub-cloud:empty {
+        display: none !important;
+    }
+
+    .printing-now .jersey-sub-cloud {
+        background-color: #fff !important;
+        color: #000 !important;
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+        opacity: 1 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 
     .printing-now .token {

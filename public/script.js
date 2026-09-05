@@ -650,7 +650,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let athletes = [], evaluations = {}, gpsData = {}, awards = {}, trainingSessions = {}, matchResults = {};
     // Rendi athletes disponibile globalmente per il calendario
     window.athletes = athletes;
-    let formationData = { starters: [], bench: [], tokens: [] };
+    let formationData = { starters: [], bench: [], tokens: [], sostituzioni: {} };
     window.tacticalBoards = window.tacticalBoards || [];
     let chartInstances = {};
     window.chartInstances = chartInstances; // esposto per applyChartTheme
@@ -1164,7 +1164,11 @@ document.addEventListener('DOMContentLoaded', () => {
             migrateGpsData();
             awards = allData.awards || {};
             trainingSessions = allData.trainingSessions || {};
-            formationData = allData.formationData || { starters: [], bench: [], tokens: [] };
+            formationData = allData.formationData || { starters: [], bench: [], tokens: [], sostituzioni: {} };
+            // Le formazioni salvate prima di questa feature non hanno il campo:
+            // senza questa normalizzazione resterebbe undefined e la nuvola
+            // sostituzioni non potrebbe essere compilata.
+            if (!formationData.sostituzioni) formationData.sostituzioni = {};
             window.tacticalBoards = allData.tacticalBoards || [];
             matchResults = allData.matchResults || {};
             window.calendarEvents = allData.calendarEvents || {};
@@ -1218,7 +1222,7 @@ document.addEventListener('DOMContentLoaded', () => {
             gpsData = {}; 
             awards = {}; 
             trainingSessions = {}; 
-            formationData = { starters: [], bench: [], tokens: [] };
+            formationData = { starters: [], bench: [], tokens: [], sostituzioni: {} };
             window.tacticalBoards = [];
             matchResults = {};
             window.calendarEvents = {};
@@ -1315,6 +1319,19 @@ document.addEventListener('DOMContentLoaded', () => {
             inj.style.cssText = 'position:absolute;top:-6px;right:-6px;background:#fff;border:2px solid #d90429;border-radius:50%;width:1.6em;height:1.6em;display:flex;align-items:center;justify-content:center;font-size:0.95em;z-index:5;box-shadow:0 1px 4px rgba(0,0,0,0.4);';
             jersey.appendChild(inj);
         }
+        // Nuvoletta sostituzioni: sopra la maglietta, ci si scrive il numero (o piu'
+        // numeri) di chi puo' sostituire questo giocatore. Il valore NON puo' stare
+        // dentro formationData.starters/bench: il drop handler distrugge e ricrea
+        // quelle voci ad ogni trascinamento, quindi si perderebbe. Vive in
+        // formationData.sostituzioni, mappa athleteId -> testo, salvata con il resto.
+        const cloud = document.createElement('div');
+        cloud.className = 'jersey-sub-cloud';
+        cloud.contentEditable = 'true';
+        cloud.spellcheck = false;
+        cloud.dataset.athleteId = athlete.id;
+        cloud.title = 'Chi lo sostituisce: scrivi qui il numero di maglia';
+        cloud.textContent = (formationData.sostituzioni && formationData.sostituzioni[athlete.id]) || '';
+        jersey.appendChild(cloud);
         return jersey;
     };
     const createTokenElement = (type, id) => {
@@ -6172,7 +6189,8 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
                         gpsData = importedData.gpsData || {};
                         awards = importedData.awards || {};
                         trainingSessions = importedData.trainingSessions || {};
-                        formationData = importedData.formationData || { starters: [], bench: [], tokens: [] };
+                        formationData = importedData.formationData || { starters: [], bench: [], tokens: [], sostituzioni: {} };
+                        if (!formationData.sostituzioni) formationData.sostituzioni = {};
                         matchResults = importedData.matchResults || {};
                         // ── BANNER SPONSOR (aggiunto v1.5.16) ───────────────────────────
             // bachecaConfig non è nel GET con annataId → fetch separata globale
@@ -6360,6 +6378,9 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
     }
 
     function onPointerDown(e) {
+        // La nuvoletta sostituzioni e' figlia della maglietta: senza questo controllo
+        // il click per scriverci dentro farebbe partire il trascinamento del giocatore.
+        if (e.target.closest('.jersey-sub-cloud')) return;
         const target = e.target.closest('.player-jersey, .available-player, .tool-item, .token');
         if (!target || target.classList.contains('disabled')) return;
         
@@ -6502,6 +6523,65 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
     if (formSection) {
         formSection.addEventListener('mousedown', onPointerDown);
         formSection.addEventListener('touchstart', onPointerDown, { passive: false });
+
+        // ── NUVOLETTA SOSTITUZIONI ────────────────────────────────────────────
+        // Listener delegati sul contenitore (non sulle singole maglie): renderFormation
+        // ricrea gli elementi ad ogni render, agganciarli li' li moltiplicherebbe.
+
+        const MAX_SOSTITUZIONI = 12; // spazio ragionevole nella nuvoletta: ~3 numeri
+
+        // Ammette cifre, separatori e spazio: "9", "7, 11", "7-11" sono tutti validi.
+        const normalizzaSostituzione = (txt) => (txt || '')
+            .replace(/[^0-9,\-\/ ]/g, '')   // via lettere e simboli: restano solo numeri e separatori
+            .replace(/\s*([,\/-])\s*/g, '$1') // "7 , 11" -> "7,11": niente spazi attaccati ai separatori
+            .replace(/,/g, ', ')             // ...e poi uno spazio solo dopo la virgola
+            .replace(/\s+/g, ' ')
+            .replace(/^[,\/\- ]+|[,\/\- ]+$/g, ''); // separatori spaiati a inizio/fine
+
+        const pulisciSostituzione = (txt) => {
+            const norm = normalizzaSostituzione(txt);
+            if (norm.length <= MAX_SOSTITUZIONI) return norm;
+            // Tagliando si puo' spezzare un numero a meta' ("11, 1"): quel "1"
+            // sarebbe un numero di maglia sbagliato, quindi si torna indietro
+            // all'ultimo numero completo.
+            return norm.slice(0, MAX_SOSTITUZIONI).replace(/[,\/\- ]+\d*$/, '').trim();
+        };
+
+        formSection.addEventListener('blur', (e) => {
+            const cloud = e.target.closest && e.target.closest('.jersey-sub-cloud');
+            if (!cloud) return;
+            const athleteId = cloud.dataset.athleteId;
+            const valore = pulisciSostituzione(cloud.textContent);
+            cloud.textContent = valore;
+            if (!formationData.sostituzioni) formationData.sostituzioni = {};
+            const precedente = formationData.sostituzioni[athleteId] || '';
+            if (precedente === valore) return; // niente da salvare: evita scritture inutili
+            if (valore) formationData.sostituzioni[athleteId] = valore;
+            else delete formationData.sostituzioni[athleteId];
+            saveData();
+        }, true); // capture: 'blur' non fa bubbling
+
+        formSection.addEventListener('keydown', (e) => {
+            const cloud = e.target.closest && e.target.closest('.jersey-sub-cloud');
+            if (!cloud) return;
+            // Invio conferma (niente a capo dentro la nuvola), Esc annulla la modifica.
+            if (e.key === 'Enter') { e.preventDefault(); cloud.blur(); }
+            else if (e.key === 'Escape') {
+                e.preventDefault();
+                const athleteId = cloud.dataset.athleteId;
+                cloud.textContent = (formationData.sostituzioni && formationData.sostituzioni[athleteId]) || '';
+                cloud.blur();
+            }
+        });
+
+        // Incolla come testo semplice: senza questo si incollerebbe HTML nella nuvola.
+        formSection.addEventListener('paste', (e) => {
+            const cloud = e.target.closest && e.target.closest('.jersey-sub-cloud');
+            if (!cloud) return;
+            e.preventDefault();
+            const testo = pulisciSostituzione((e.clipboardData || window.clipboardData).getData('text'));
+            document.execCommand('insertText', false, testo);
+        });
     }
     // ==========================================
     // SISTEMA DI STAMPA OTTIMIZZATO (DEFINITIVO)
