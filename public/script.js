@@ -1347,13 +1347,16 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         formationData.starters.forEach(playerData => {
             const athlete = athletes.find(a => String(a.id) === String(playerData.athleteId));
-            if (athlete) { const jersey = createJerseyElement(athlete); addExpiredIconIfNeeded(athlete, jersey); jersey.style.left = `${playerData.left}%`; jersey.style.top = `${playerData.top}%`; field.appendChild(jersey); }
+            if (athlete && !athlete.archived) { const jersey = createJerseyElement(athlete); addExpiredIconIfNeeded(athlete, jersey); jersey.style.left = `${playerData.left}%`; jersey.style.top = `${playerData.top}%`; field.appendChild(jersey); }
         });
         formationData.bench.forEach(playerData => {
             const athlete = athletes.find(a => String(a.id) === String(playerData.athleteId));
-            if (athlete) { const jersey = createJerseyElement(athlete); addExpiredIconIfNeeded(athlete, jersey); jersey.style.left = `${playerData.left}%`; jersey.style.top = `${playerData.top}%`; bench.appendChild(jersey); }
+            if (athlete && !athlete.archived) { const jersey = createJerseyElement(athlete); addExpiredIconIfNeeded(athlete, jersey); jersey.style.left = `${playerData.left}%`; jersey.style.top = `${playerData.top}%`; bench.appendChild(jersey); }
         });
         athletes.forEach(athlete => {
+            // Gli archiviati non fanno piu' parte della societa': non vanno proposti
+            // fra gli atleti schierabili (stessa semantica del filtro in Gestione Squadra).
+            if (athlete.archived) return;
             if (!placedAthleteIds.has(String(athlete.id))) {
                 const today = new Date(); today.setHours(0, 0, 0, 0); const isExpired = athlete.scadenzaVisita && new Date(athlete.scadenzaVisita) < today;
                 const availablePlayer = document.createElement('div'); availablePlayer.className = 'list-group-item d-flex justify-content-between align-items-center available-player p-2'; availablePlayer.dataset.athleteId = athlete.id;
@@ -4365,6 +4368,9 @@ document.addEventListener('DOMContentLoaded', () => {
         twoWeeks.setDate(today.getDate() + 14);
 
         athletes.forEach(athlete => {
+            // Chi e' in archivio non fa piu' parte della societa': le sue scadenze
+            // (visita, tessera, pagamenti) non devono generare alert.
+            if (athlete.archived) return;
             // Check visite mediche
             if (athlete.scadenzaVisita) {
                 const deadline = new Date(athlete.scadenzaVisita);
