@@ -2580,9 +2580,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return true;
         });
         const sortBy = document.getElementById('squad-sort')?.value || 'none';
+        // Tre blocchi fissi, in quest'ordine: prima gli atleti della rosa, poi lo
+        // staff (allenatori e dirigenti), infine gli ospiti. L'ordinamento scelto
+        // dall'utente (nome/numero/ruolo) si applica dentro ciascun blocco.
+        const bloccoDi = (a) => a.isGuest ? 2 : (a.isStaff ? 1 : 0);
         filteredAthletes.sort((a, b) => {
-            // Ospiti sempre in fondo
-            if (!!a.isGuest !== !!b.isGuest) return a.isGuest ? 1 : -1;
+            const blocco = bloccoDi(a) - bloccoDi(b);
+            if (blocco !== 0) return blocco;
             if (sortBy === 'name')   return (a.name || '').localeCompare(b.name || '', 'it');
             if (sortBy === 'number') return (parseInt(a.number) || 999) - (parseInt(b.number) || 999);
             if (sortBy === 'role')   return (a.role || '').localeCompare(b.role || '', 'it');
