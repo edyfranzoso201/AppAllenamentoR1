@@ -737,12 +737,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // scope. Esposta su window per il pulsante in Home. Vedi memoria modalita-campo.
     (function setupModalitaCampo() {
       // Mappa valore presenza → {label, colore} (logica utente: 3=presente,
-      // 2/1=ritardi, 0=assente; il giustificato si salva come 3).
+      // 2/1=ritardi, 0=assente, -1=assenza giustificata).
+      // Il -1 è il valore canonico del giustificato in tutta l'app: lo scrive il
+      // pannello valutazione mobile ("Ass. Giust.") e lo contano i riepiloghi e
+      // la dashboard in una serie separata. Deve stare qui, altrimenti il
+      // controllo PRES_MAP[v] in renderAppello lo scarta e lo riporta a '3'.
       const PRES_MAP = {
-        '3': { label: 'Presente',      bg: '#16a34a', fg: '#fff' },
-        '2': { label: 'Ritardo lieve', bg: '#ca8a04', fg: '#fff' },
-        '1': { label: 'Ritardo forte', bg: '#ea580c', fg: '#fff' },
-        '0': { label: 'Assente',       bg: '#dc2626', fg: '#fff' },
+        '3':  { label: 'Presente',      bg: '#16a34a', fg: '#fff' },
+        '2':  { label: 'Ritardo lieve', bg: '#ca8a04', fg: '#fff' },
+        '1':  { label: 'Ritardo forte', bg: '#ea580c', fg: '#fff' },
+        '0':  { label: 'Assente',       bg: '#dc2626', fg: '#fff' },
+        '-1': { label: 'Giustificato',  bg: '#2563eb', fg: '#fff' },
       };
       // Data di OGGI in formato locale (come tutto il resto dell'app, via
       // toLocalDateISO). NON usare toISOString() che dà la data UTC: di sera/notte
@@ -762,8 +767,13 @@ document.addEventListener('DOMContentLoaded', () => {
           .sort((a, b) => (parseInt(a.number) || 999) - (parseInt(b.number) || 999));
       }
 
-      // Cicla i valori al TAP: 3 → 0 → 3 (presente ⇄ assente)
-      function cicloTap(val) { return val === '3' ? '0' : '3'; }
+      // Cicla i valori al TAP: 3 → 0 → 3 (presente ⇄ assente).
+      // Il giustificato (-1) si imposta solo dal menu lungo: un tap accidentale
+      // non deve trasformarlo in presente, quindi lo lascia com'è.
+      function cicloTap(val) {
+        if (val === '-1') return '-1';
+        return val === '3' ? '0' : '3';
+      }
 
       function markDirty() {
         appelloDirty = true;
@@ -892,11 +902,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // scelte colorate + giustificato. Un tap sceglie e chiude.
             const nome = (row.querySelector('span:nth-child(2)')||{}).textContent || '';
             const scelte = [
-              ['3','🟢 Presente',        '#16a34a'],
-              ['3','🔵 Giustificato',    '#2563eb'],
-              ['2','🟡 Ritardo lieve',   '#ca8a04'],
-              ['1','🟠 Ritardo forte',   '#ea580c'],
-              ['0','🔴 Assente',         '#dc2626'],
+              ['3', '🟢 Presente',        '#16a34a'],
+              ['-1','🔵 Giustificato',    '#2563eb'],
+              ['2', '🟡 Ritardo lieve',   '#ca8a04'],
+              ['1', '🟠 Ritardo forte',   '#ea580c'],
+              ['0', '🔴 Assente',         '#dc2626'],
             ];
             const back = document.createElement('div');
             back.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:21000;display:flex;align-items:center;justify-content:center;padding:20px;';
