@@ -648,6 +648,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const evaluationCategories = ['presenza-allenamento', 'serieta-allenamento', 'abbigliamento-allenamento', 'abbigliamento-partita', 'comunicazioni', 'doccia'];
     const defaultAvatar = "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3e%3cpath fill='%231e5095' d='M128 128H0V0h128v128z'/%3e%3cpath fill='%23ffffff' d='M64 100c-19.88 0-36-16.12-36-36s16.12-36 36-36 36 16.12 36 36-16.12 36-36 36zm0-64c-15.46 0-28 12.54-28 28s12.54 28 28 28 28-12.54 28-28-12.54-28-28-28z'/%3e%3cpath fill='%23ffffff' d='M64 24a40.01 40.01 0 00-28.28 11.72C35.8 35.8 28 45.45 28 56h8c0-8.27 5.61-15.64 13.53-18.89A31.93 31.93 0 0164 32a32.09 32.09 0 0124.47 11.11C96.39 40.36 102 47.73 102 56h8c0-10.55-7.8-20.2-17.72-24.28A39.99 39.99 0 0064 24z'/%3e%3c/svg%3e";
     let athletes = [], evaluations = {}, gpsData = {}, awards = {}, trainingSessions = {}, matchResults = {};
+    // Diventa true SOLO dopo un caricamento riuscito dal server. Finché è false
+    // le variabili qui sopra sono vuote perché non abbiamo i dati, NON perché
+    // l'archivio sia vuoto: salvare in quello stato sovrascriverebbe il server
+    // con il nulla (saveData invia sempre tutto e il server fa kv.set senza
+    // merge). È la protezione contro la perdita delle presenze già salvate.
+    let datiCaricati = false;
     // Rendi athletes disponibile globalmente per il calendario
     window.athletes = athletes;
     let formationData = { starters: [], bench: [], tokens: [], sostituzioni: {} };
@@ -668,6 +674,15 @@ document.addEventListener('DOMContentLoaded', () => {
                          localStorage.getItem('currentAnnata');
         if (!annataId) {
             console.error('❌ saveData: nessuna annata selezionata!');
+            return false;
+        }
+        // Blocco anti-perdita: se il caricamento iniziale è fallito, le strutture
+        // in memoria sono vuote e mandarle al server cancellerebbe tutto lo
+        // storico (il server sostituisce, non unisce). Meglio rifiutare il
+        // salvataggio che distruggere i dati già presenti.
+        if (!datiCaricati) {
+            console.error('❌ saveData: dati non caricati, salvataggio annullato per non sovrascrivere il server.');
+            saveData.lastError = 'Dati non caricati dal server: ricarica la pagina prima di salvare.';
             return false;
         }
         const allData = {
@@ -795,6 +810,21 @@ document.addEventListener('DOMContentLoaded', () => {
           if (!silent) chiudiModalitaCampo();
           return;
         }
+        // Conferma quando risulta assente TUTTA la rosa. E' il caso in cui si
+        // e' toccata ogni riga pensando di confermare la presenza: il tap
+        // inverte, quindi il preset "tutti presenti" diventa "tutti assenti".
+        // Un allenamento con zero presenti e' talmente raro che vale la pena
+        // chiedere, invece di salvare in silenzio un dato sbagliato.
+        const valori = Object.values(appelloStato);
+        const nessunPresente = valori.length > 0 && !valori.some(v => parseInt(v, 10) > 0);
+        if (nessunPresente && !silent) {
+          const proseguo = confirm(
+            '⚠️ Stai salvando ' + valori.length + ' atleti TUTTI ASSENTI.\n\n' +
+            'Ricorda: all\'apertura sono già tutti Presenti, e ogni tocco toglie la presenza.\n' +
+            'Se volevi segnare i presenti, annulla e tocca solo gli assenti.\n\n' +
+            'Salvare comunque tutti assenti?');
+          if (!proseguo) return;
+        }
         const date = todayStr();
         if (!evaluations[date]) evaluations[date] = {};
         // Scrive SOLO presenza-allenamento, preservando gli altri campi esistenti.
@@ -864,9 +894,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         let h = `<div style="padding:10px 0;">
-          <div style="text-align:center;color:#475569;font-size:0.9rem;margin-bottom:10px;">
-            Tutti <b>Presenti</b> di default. Tocca per <b>Assente</b>, tieni premuto per ritardi/giustificato.
-          </div>`;
+          <div style="text-align:center;color:#92400e;background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:10px 12px;font-size:0.92rem;margin-bottom:8px;">
+            Sono <b>già tutti Presenti</b>: tocca <b>solo gli assenti</b>.<br>
+            <span style="font-size:0.85rem;">Ogni tocco inverte Presente ⇄ Assente. Tieni premuto per ritardi/giustificato.</span>
+          </div>
+          <!-- Contatore sempre visibile: e' la rete di sicurezza contro il tap
+               a raffica su tutta la rosa. Se uno tocca ogni riga credendo di
+               "confermare" la presenza, qui legge subito "Presenti 0" e se ne
+               accorge prima di salvare, invece di scoprirlo il giorno dopo. -->
+          <div id="appello-contatore" style="text-align:center;font-size:0.95rem;font-weight:700;margin-bottom:10px;padding:8px;border-radius:8px;background:#f1f5f9;color:#0f172a;"></div>`;
         rosa.forEach(a => {
           const v = appelloStato[String(a.id)];
           const m = PRES_MAP[v];
@@ -880,6 +916,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         h += `</div>`;
         container.innerHTML = h;
+        aggiornaContatore();
         attachAppelloHandlers(container);
       }
 
@@ -889,6 +926,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const m = PRES_MAP[v];
         const badge = row.querySelector('.appello-badge');
         if (badge) { badge.textContent = m.label; badge.style.background = m.bg; badge.style.color = m.fg; }
+        aggiornaContatore();
+      }
+
+      // Riepilogo in cima alla lista. Diventa rosso quando NESSUNO risulta
+      // presente: quasi sempre significa che si e' toccata ogni riga credendo
+      // di segnare la presenza, mentre il tap la toglie (il preset e' gia'
+      // "tutti presenti").
+      function aggiornaContatore() {
+        const el = document.getElementById('appello-contatore');
+        if (!el) return;
+        const vals = Object.values(appelloStato);
+        const tot = vals.length;
+        const presenti = vals.filter(v => parseInt(v, 10) > 0).length;
+        const giust    = vals.filter(v => v === '-1').length;
+        const assenti  = vals.filter(v => v === '0').length;
+        el.innerHTML = `Presenti <b>${presenti}</b> · Assenti <b>${assenti}</b>` +
+                       (giust ? ` · Giustificati <b>${giust}</b>` : '') +
+                       ` · Totale ${tot}`;
+        const allarme = tot > 0 && presenti === 0;
+        el.style.background = allarme ? '#fee2e2' : '#f1f5f9';
+        el.style.color      = allarme ? '#991b1b' : '#0f172a';
       }
 
       function attachAppelloHandlers(container) {
@@ -1224,11 +1282,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     matchResults[matchId].assists = [];
                 }
             }
+            // Da qui in poi i dati in memoria rispecchiano il server: salvare è sicuro.
+            datiCaricati = true;
         } catch (error) {
             console.error('Errore nel caricamento dei dati dal server:', error);
-            athletes = []; 
+            // Le strutture restano vuote, ma il flag resta/torna false: senza
+            // questo il salvataggio successivo azzererebbe l'archivio sul server.
+            datiCaricati = false;
+            athletes = [];
             window.athletes = [];
-            evaluations = {}; 
+            evaluations = {};
             gpsData = {}; 
             awards = {}; 
             trainingSessions = {}; 
