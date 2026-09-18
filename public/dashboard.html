@@ -1534,7 +1534,7 @@
       sessionStorage.setItem(LICENSE_PLAN,            p.get('p') || 'platinum');
       sessionStorage.setItem('gosport_society_name',  p.get('n') || '');
       sessionStorage.setItem(SESSION_KEY,             'true');
-      sessionStorage.setItem(SESSION_KEY + '_expiry', p.get('ex') || (Date.now() + 8 * 60 * 60 * 1000).toString());
+      sessionStorage.setItem(SESSION_KEY + '_expiry', p.get('ex') || (Date.now() + 30 * 24 * 60 * 60 * 1000).toString()); // 30 giorni: allineato a SESSION_DURATION_MS in auth-multi-annata.js
       if (p.get('hd') === 'true') {
         sessionStorage.setItem('gosport_has_dashboard',   'true');
         sessionStorage.setItem('gosport_dashboard_role',  p.get('dr') || '');

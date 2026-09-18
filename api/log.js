@@ -6,6 +6,14 @@ const kv = createClient({
   token: process.env.UPSTASH_KV_REST_API_TOKEN || process.env.KV_REST_API_TOKEN,
 });
 
+// Durata della sessione, condivisa da tutti gli endpoint che la rinnovano.
+// TTL scorrevole: ogni chiamata autenticata la riporta a questo valore, quindi
+// conta l'INATTIVITA, non il tempo dal login. Deve restare allineata a
+// SESSION_DURATION_MS in public/auth-multi-annata.js: se il client scade prima
+// del server l'utente si ritrova la password richiesta mentre la sessione e
+// ancora valida lato server (era il difetto delle 8 ore fisse).
+const SESSION_TTL_SEC = 30 * 24 * 60 * 60; // 30 giorni
+
 // Valida il token di sessione (creato dal login). Ritorna i dati sessione o null.
 async function getLogSession(req) {
   const token = String(req.headers['x-auth-session'] || '').trim();
@@ -13,7 +21,7 @@ async function getLogSession(req) {
   try {
     const sess = await kv.get(`session:${token}`);
     // TTL scorrevole: rinnova la scadenza della sessione a 8h da ora (soft)
-    if (sess) { try { await kv.expire(`session:${token}`, 8 * 60 * 60); } catch (e) { /* non bloccante */ } }
+    if (sess) { try { await kv.expire(`session:${token}`, SESSION_TTL_SEC); } catch (e) { /* non bloccante */ } }
     return sess;
   } catch { return null; }
 }

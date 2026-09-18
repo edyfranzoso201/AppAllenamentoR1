@@ -10,6 +10,14 @@ url: process.env.UPSTASH_KV_REST_API_URL || process.env.KV_REST_API_URL,
 token: process.env.UPSTASH_KV_REST_API_TOKEN || process.env.KV_REST_API_TOKEN,
 });
 
+// Durata della sessione, condivisa da tutti gli endpoint che la rinnovano.
+// TTL scorrevole: ogni chiamata autenticata la riporta a questo valore, quindi
+// conta l'INATTIVITA, non il tempo dal login. Deve restare allineata a
+// SESSION_DURATION_MS in public/auth-multi-annata.js: se il client scade prima
+// del server l'utente si ritrova la password richiesta mentre la sessione e
+// ancora valida lato server (era il difetto delle 8 ore fisse).
+const SESSION_TTL_SEC = 30 * 24 * 60 * 60; // 30 giorni
+
 // Purge completo dati società demo: cancella prima i dati figli
 // (annate/atleti/utenti), marca 'purged' sulla licenza SOLO alla fine.
 // Se il processo si interrompe a metà resta in uno stato "parzialmente
@@ -119,7 +127,7 @@ if (!sessionData) return empty;
 // TTL scorrevole: ogni chiamata API con sessione valida rinnova la scadenza a
 // 8h da ora, così l'utente attivo non viene disconnesso mentre lavora. Le
 // sessioni inattive >8h scadono comunque. Soft: un errore qui non blocca la richiesta.
-try { await kv.expire(`session:${rawAuth}`, 8 * 60 * 60); } catch (e) { /* non bloccante */ }
+try { await kv.expire(`session:${rawAuth}`, SESSION_TTL_SEC); } catch (e) { /* non bloccante */ }
 // Ruolo/utente/società vengono dalla sessione salvata server-side, NON dagli header
 // del client (che sarebbero falsificabili). Questo impedisce l'escalation di privilegi.
 return {

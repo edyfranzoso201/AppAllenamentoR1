@@ -4740,7 +4740,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 n:  sessionStorage.getItem('gosport_society_name')    || '',
                 hd: hasDashboard ? 'true' : '',
                 dr: sessionStorage.getItem('gosport_dashboard_role')  || '',
-                ex: (Date.now() + 8 * 60 * 60 * 1000).toString(),
+                ex: (Date.now() + 30 * 24 * 60 * 60 * 1000).toString(), // 30 giorni: allineato a SESSION_DURATION_MS in auth-multi-annata.js
                 ai: sessionStorage.getItem('gosport_ai_enabled')      || 'false'
             });
             return '/dashboard.html#' + p.toString();

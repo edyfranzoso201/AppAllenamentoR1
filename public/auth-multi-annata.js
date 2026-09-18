@@ -46,6 +46,26 @@
         'gosport_society_name', 'gosport_has_dashboard', 'gosport_dashboard_role', 'gosport_permissions'
     ];
 
+    // Durata della sessione: TTL SCORREVOLE, cioe conta l'inattivita e non il
+    // tempo passato dal login. Deve restare allineata a SESSION_TTL_SEC negli
+    // endpoint api/ (30 giorni). Prima erano 8 ore FISSE dal login: il server
+    // rinnovava la sua scadenza a ogni chiamata, il client no, e cosi l'app
+    // chiedeva la password mentre la sessione lato server era ancora valida.
+    // Sullo smartphone (icona PWA) era piu evidente, perche ogni avvio parte
+    // con sessionStorage vuoto e ripesca da localStorage la scadenza vecchia.
+    const SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 giorni
+
+    // Sposta in avanti la scadenza locale. Va chiamata SOLO dopo che il server
+    // ha confermato che la sessione e ancora valida: rinnovare alla cieca
+    // terrebbe l'utente dentro anche dopo una revoca lato server.
+    function rinnovaScadenzaSessione() {
+        try {
+            if (sessionStorage.getItem(SESSION_KEY) !== 'true') return;
+            sessionStorage.setItem(SESSION_KEY + '_expiry', (Date.now() + SESSION_DURATION_MS).toString());
+            saveSessionToLocal();
+        } catch (e) { /* storage non disponibile: non bloccare l'app */ }
+    }
+
     function saveSessionToLocal() {
         _PERSIST_KEYS.forEach(function(key) {
             var val = sessionStorage.getItem(key);
@@ -737,7 +757,7 @@
                             sessionStorage.setItem('gosport_ai_enabled', result.licenseStatus.aiEnabled ? 'true' : 'false');
                         }
 
-                        const expiry = Date.now() + (8 * 60 * 60 * 1000);
+                        const expiry = Date.now() + SESSION_DURATION_MS;
                         sessionStorage.setItem(SESSION_KEY + '_expiry', expiry.toString());
                         saveSessionToLocal();
 
@@ -2778,6 +2798,9 @@ window.deleteUser = async function(username) {
                     serverOk = true;
                 }
                 if (!serverOk) { logout(); showLoginScreen(); return; }
+                // Sessione confermata dal server: sposta in avanti anche la
+                // scadenza locale, altrimenti resterebbe quella del login.
+                rinnovaScadenzaSessione();
                 proceedAfterLogin();
             })();
         } else {
@@ -2823,7 +2846,9 @@ window.deleteUser = async function(username) {
                 if (!token) { logout(); window.location.reload(); return; }
                 try {
                     const result = await verifySessionToken(token);
-                    if (!result.valid) { logout(); window.location.reload(); }
+                    if (!result.valid) { logout(); window.location.reload(); return; }
+                    // Valida: rinnova la scadenza locale come fa il server.
+                    rinnovaScadenzaSessione();
                 } catch(e) {
                     console.warn('⚠️ Verifica sessione non disponibile, uso sessione cache:', e.message);
                 }
