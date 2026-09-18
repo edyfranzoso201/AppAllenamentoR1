@@ -2738,12 +2738,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     <!-- Nome + ruolo -->
                     <div style="flex:1;min-width:0;" class="athlete-card-clickable" data-athlete-id="${athlete.id}">
                         <div style="font-weight:600;color:var(--text-primary);font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                            ${athlete.name}
+                            ${escapeHtml(athlete.name)}
                             ${athlete.isCaptain ? '<i class="bi bi-star-fill" style="color:#f59e0b;font-size:0.75rem;margin-left:4px;"></i>' : ''}
                             ${athlete.isViceCaptain ? '<i class="bi bi-star-half" style="color:#f59e0b;font-size:0.75rem;margin-left:2px;"></i>' : ''}
                             ${athlete.isStaff ? '<span style="font-size:0.7rem;background:#f59e0b;color:#000;border-radius:3px;padding:1px 5px;margin-left:4px;">Staff</span>' : ''}
                         </div>
-                        <div style="font-size:0.75rem;color:#94a3b8;">${athlete.role || ''}</div>
+                        <div style="font-size:0.75rem;color:#94a3b8;">${escapeHtml(athlete.role || '')}</div>
                         ${athlete.uscitaAutonoma ? '<div style="font-size:0.65rem;background:#fed7aa;color:#92400e;border-radius:3px;padding:1px 5px;margin-top:2px;display:inline-block;">🚶 uscita autonoma ✅</div>' : ''}
                         ${athlete.infortunato ? `<div style="font-size:0.65rem;background:#fee2e2;color:#991b1b;border-radius:3px;padding:1px 5px;margin-top:2px;display:inline-block;">🤕 Infortunato${athlete.dataRientro ? ' • ' + new Date(athlete.dataRientro + 'T00:00:00').toLocaleDateString('it-IT', {day:'2-digit',month:'2-digit'}) : ''}</div>` : ''}
                     </div>
@@ -3240,14 +3240,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         let ol = '<ol class="list-group list-group-numbered">';
         sortedScorers.forEach(scorer => {
-            ol += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; border-color: var(--border-color);">${scorer.name}<span class="badge bg-danger rounded-pill" style="color:#ffffff !important;">${scorer.goals}</span></li>`;
+            ol += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; border-color: var(--border-color);">${escapeHtml(scorer.name)}<span class="badge bg-danger rounded-pill" style="color:#ffffff !important;">${scorer.goals}</span></li>`;
         });
         ol += '</ol>';
         elements.topScorersContainer.innerHTML = ol;
         if (homeEl) {
             let olHome = '<ol class="list-group list-group-numbered">';
             sortedScorers.slice(0, 5).forEach(scorer => {
-                olHome += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; border-color: var(--border-color);">${scorer.name}<span class="badge bg-danger rounded-pill" style="color:#ffffff !important;">${scorer.goals}</span></li>`;
+                olHome += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; border-color: var(--border-color);">${escapeHtml(scorer.name)}<span class="badge bg-danger rounded-pill" style="color:#ffffff !important;">${scorer.goals}</span></li>`;
             });
             olHome += '</ol>';
             homeEl.innerHTML = olHome;
@@ -3274,14 +3274,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         let ol = '<ol class="list-group list-group-numbered">';
         sortedAssists.forEach(assist => {
-            ol += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; border-color: var(--border-color);">${assist.name}<span class="badge bg-primary rounded-pill" style="color:#ffffff !important;">${assist.assists}</span></li>`;
+            ol += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; border-color: var(--border-color);">${escapeHtml(assist.name)}<span class="badge bg-primary rounded-pill" style="color:#ffffff !important;">${assist.assists}</span></li>`;
         });
         ol += '</ol>';
         elements.topAssistsContainer.innerHTML = ol;
         if (homeEl) {
             let olHome = '<ol class="list-group list-group-numbered">';
             sortedAssists.slice(0, 5).forEach(assist => {
-                olHome += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; border-color: var(--border-color);">${assist.name}<span class="badge bg-primary rounded-pill" style="color:#ffffff !important;">${assist.assists}</span></li>`;
+                olHome += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background: transparent; border-color: var(--border-color);">${escapeHtml(assist.name)}<span class="badge bg-primary rounded-pill" style="color:#ffffff !important;">${assist.assists}</span></li>`;
             });
             olHome += '</ol>';
             homeEl.innerHTML = olHome;

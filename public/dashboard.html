@@ -1080,7 +1080,10 @@
             <label style="font-size:0.85rem;color:var(--text-muted);">Numero spogliatoi disponibili:</label>
             <input type="number" id="imp-spogliatoi" min="0" max="20" value="0"
               style="width:70px;padding:6px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.9rem;text-align:center;">
-            <button onclick="impSaveConfig()" class="imp-btn">💾 Salva</button>
+            <!-- Etichetta esplicita: in questa scheda c'è un secondo "Salva" (quello
+                 della Configurazione Annate) e due pulsanti identici a pochi centimetri
+                 facevano salvare la cosa sbagliata, con un messaggio verde rassicurante. -->
+            <button onclick="impSaveConfig()" class="imp-btn" title="Salva solo il numero di spogliatoi">💾 Salva spogliatoi</button>
           </div>
         </div>
 
@@ -1100,7 +1103,7 @@
             <div style="font-weight:600;font-size:0.95rem;">📋 Configurazione Allenamenti per Annata</div>
             <div style="display:flex;gap:8px;">
               <button onclick="impAddAnnataRow()" class="imp-btn-ghost">+ Aggiungi</button>
-              <button onclick="impSaveAnnateConfig()" class="imp-btn">💾 Salva</button>
+              <button onclick="impSaveAnnateConfig()" class="imp-btn" title="Salva giorni, campi, durate e fasce di tutte le righe qui sotto">💾 Salva configurazione</button>
             </div>
           </div>
           <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:12px;">Usato per la proposta automatica. Puoi inserire anche annate non ancora create nel sistema.</div>
@@ -3282,6 +3285,13 @@
     setTimeout(() => { el.style.display = 'none'; }, 3000);
   }
 
+  // Ricarica dal server alla prossima apertura della sezione. Da chiamare dopo
+  // un salvataggio andato a buon fine: senza, impInit salta il fetch (impLoaded)
+  // e ridisegna la copia in memoria, così una modifica NON salvata sembra esserci
+  // finché non si ricarica la pagina — e una salvata da un altro dispositivo non
+  // si vede mai.
+  function impInvalidaCache() { impLoaded = false; }
+
   window.impInit = async function() {
     if (impLoaded) { impRenderAll(); return; }
     try {
@@ -3486,7 +3496,7 @@
         body: JSON.stringify(impState.config)
       });
       const d = await r.json();
-      if (d.success) impAlert('Spogliatoi salvati ✓', true);
+      if (d.success) { impInvalidaCache(); impAlert('Spogliatoi salvati ✓', true); }
       else impAlert(d.message || 'Errore salvataggio');
     } catch(e) { impAlert('Errore: ' + e.message); }
   };
@@ -3534,7 +3544,7 @@
         body: JSON.stringify(impState.config)
       });
       const d = await r.json();
-      if (d.success) { impAlert('Campo salvato ✓', true); impHideCampoForm(); impRenderStruttura(); impRefreshCampiSelects(); }
+      if (d.success) { impInvalidaCache(); impAlert('Campo salvato ✓', true); impHideCampoForm(); impRenderStruttura(); impRefreshCampiSelects(); }
       else impAlert(d.message || 'Errore salvataggio');
     } catch(e) { impAlert('Errore: ' + e.message); }
   };
@@ -4001,7 +4011,7 @@
       const d = await r.json();
       if (d.success) {
         impState.slots = d.slots;
-        impAlert('Slot salvato ✓', true);
+        impInvalidaCache(); impAlert('Slot salvato ✓', true);
         impHideSlotForm();
         impRenderSlots();
       } else impAlert(d.message || 'Errore salvataggio');
@@ -4262,7 +4272,7 @@
       const d = await r.json();
       if (d.success) {
         impState.eventi = d.eventi;
-        impAlert('Evento salvato ✓', true);
+        impInvalidaCache(); impAlert('Evento salvato ✓', true);
         impHideEventoForm();
         impRenderEventi();
       } else impAlert(d.message || 'Errore salvataggio');
@@ -4485,7 +4495,7 @@
         trnState = d.tornei;
         trnRenderList();
         if (openAfter) { trnCurrentId = torneo.id; trnRenderView(); }
-        impAlert('Torneo salvato ✓', true);
+        impInvalidaCache(); impAlert('Torneo salvato ✓', true);
       } else impAlert(d.message || 'Errore');
     } catch(e) { impAlert('Errore: ' + e.message); }
   }
@@ -5170,14 +5180,33 @@
     }).filter(r => r.nome);
   }
 
+  // Quante righe hanno il nome vuoto. impReadAnnateConfigFromDom() le scarta —
+  // e deve continuare a farlo, perché i suoi altri tre chiamanti passano il
+  // risultato all'algoritmo di scheduling, che su una riga senza nome non sa
+  // che farsene. Il salvataggio però non può scartarle in silenzio: si compila
+  // tutto, si salva, arriva il messaggio verde e la riga non c'è più.
+  function impAnnateRigheSenzaNome() {
+    return [...document.querySelectorAll('#imp-annate-cfg-rows [data-row-id]')]
+      .filter(row => !(row.querySelector('[data-f="nome"]')?.value || '').trim())
+      .length;
+  }
+
   window.impSaveAnnateConfig = async function() {
+    const senzaNome = impAnnateRigheSenzaNome();
+    if (senzaNome) {
+      impAlert(senzaNome === 1
+        ? 'Una riga non ha il nome dell\'annata: compilalo o elimina la riga.'
+        : `${senzaNome} righe non hanno il nome dell'annata: compilalo o elimina le righe.`);
+      return;
+    }
+
     impAnnateConfig = impReadAnnateConfigFromDom();
     try {
       const r = await fetch('/api/data?action=impianti-annate-config', {
         method: 'POST', headers: impHeaders(), body: JSON.stringify({ config: impAnnateConfig })
       });
       const d = await r.json();
-      if (d.success) impAlert('Configurazione annate salvata ✓', true);
+      if (d.success) { impInvalidaCache(); impAlert('Configurazione annate salvata ✓', true); }
       else impAlert(d.message || 'Errore salvataggio');
     } catch(e) { impAlert('Errore: ' + e.message); }
   };
@@ -5611,7 +5640,7 @@
         method: 'POST', headers: impHeaders(), body: JSON.stringify({ replaceAll: newSlots })
       });
       const d = await r.json();
-      if (d.success) { impState.slots = d.slots; impRenderSlots(); impResetPreview(); impAlert('Slot salvati ✓', true); }
+      if (d.success) { impState.slots = d.slots; impRenderSlots(); impResetPreview(); impInvalidaCache(); impAlert('Slot salvati ✓', true); }
       else impAlert(d.message||'Errore salvataggio');
     } catch(e) { impAlert('Errore: '+e.message); }
   }

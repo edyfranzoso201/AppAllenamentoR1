@@ -59,6 +59,22 @@ export default async function handler(req, res) {
         return res.status(400).json({ success: false, message: 'Consenso privacy obbligatorio' });
       }
 
+      // Tetto di lunghezza sui campi liberi. L'endpoint e pubblico: senza un
+      // limite chiunque conosca un societyId puo salvare stringhe arbitrariamente
+      // lunghe, che poi vengono rese nelle schermate dello staff. L'escape lato
+      // client impedisce l'esecuzione di codice; questo impedisce che il dato
+      // sporco entri in database, e vale anche per i client che non passano
+      // dal nostro modulo. 80 caratteri bastano per nome e cognome reali.
+      const MAX_TESTO = 80;
+      const troppoLungo = Object.entries({
+        nome, cognome, sesso, luogoNascita, email, cellulare,
+        codiceFiscale, codiceFiscaleAtleta, indirizzo,
+      }).find(([, v]) => typeof v === 'string' && v.trim().length > MAX_TESTO);
+      if (troppoLungo) {
+        return res.status(400).json({ success: false,
+          message: `Campo troppo lungo: ${troppoLungo[0]} (massimo ${MAX_TESTO} caratteri)` });
+      }
+
       // Verifica che societyId esista (licenza attiva)
       const licenseKey = await kv.get(`licenze_society:${societyId}`);
       if (!licenseKey) {
