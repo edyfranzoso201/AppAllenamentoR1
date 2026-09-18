@@ -141,7 +141,12 @@ export default async function handler(req, res) {
 
     // La società è SEMPRE quella della sessione (server-side), non l'header
     // falsificabile. Impedisce di leggere/gestire le iscrizioni di un'altra società.
-    const societyId = String(session.societyId || req.headers['x-society-id'] || '').trim();
+    // Nessun fallback su X-Society-Id: le sessioni legacy senza societyId
+    // (api/auth/login.js:217) prendevano la società dall'header e potevano così
+    // leggere/accettare/CANCELLARE le iscrizioni di qualsiasi società — che qui
+    // sono anagrafiche di minori e prove di consenso GDPR. Meglio il 400 qui
+    // sotto: al server non spetta indovinare la società dell'utente.
+    const societyId = String(session.societyId || '').trim();
     if (!societyId) {
       return res.status(400).json({ success: false, message: 'Società non determinata' });
     }

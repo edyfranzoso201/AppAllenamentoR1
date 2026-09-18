@@ -815,6 +815,36 @@ if (annataId && !isValidId(annataId)) {
 return res.status(400).json({ success: false, message: 'Formato annataId non valido' });
 }
 
+// ── Isolamento multi-società (gate anticipato) ─────────────────────────────
+// X-Annata-Id lo manda il client, quindi è falsificabile: un utente staff di
+// una società può indicare l'annata di un'altra. Il gate che lo impediva stava
+// in fondo al file, ma ~32 handler di azione rispondono ed escono prima di
+// arrivarci — quattro senza alcun controllo di società: purge-athlete (cancella
+// un atleta da 12 strutture, irreversibile), infortuni (dati sanitari, art. 9
+// GDPR), area-tecnica e season-archive. L'annataId, inoltre, non è un segreto:
+// viaggia in chiaro nel link genitori (public/calendario-standalone.js:1565).
+// Il controllo va quindi fatto UNA volta qui, appena annataId è noto, così
+// protegge tutte le azioni presenti e quelle che verranno aggiunte in futuro.
+//
+// Si applica solo agli utenti autenticati, per non rompere i percorsi che non
+// hanno una sessione e non devono averla: link genitori, cron, backup via
+// token, superadmin via x-sa-key. Se l'annata non è in elenco non si blocca
+// nulla (potrebbe essere in creazione): stessa logica del gate originale e di
+// parent-sign. Le sessioni legacy con societyId null (api/auth/login.js:217)
+// restano abbinate alle annate legacy, anch'esse con societyId null.
+let _annataDiAltraSocieta = false;
+if (annataId && session.isAuthenticated) {
+  const _al = (await kv.get('annate:list')) || [];
+  const _am = _al.find(a => String(a.id) === annataId);
+  if (_am && (_am.societyId || null) !== (session.societyId || null)) {
+    _annataDiAltraSocieta = true;
+  }
+}
+if (_annataDiAltraSocieta) {
+  console.warn(`⛔ Accesso annata negato: user=${session.username} soc=${session.societyId || null} → annata=${annataId}`);
+  return res.status(403).json({ success: false, message: 'Accesso negato: annata di un\'altra società' });
+}
+
 // ── PARENT-SIGN: firma per il link genitore ────────────────────────────────
 // Il coach autenticato chiede la firma HMAC dell'annata corrente, che poi
 // inserisce nel link condiviso con i genitori (&psig=...). Solo autenticati:
@@ -2798,8 +2828,16 @@ function canImpianti(role) {
 // Isolamento società: per un utente autenticato la società è SEMPRE quella della
 // sessione (server-side), mai l'header X-Society-Id che il client può falsificare.
 // Impedisce che un utente di una società legga/scriva config impianti/alert di un'altra.
+//
+// Il `&& session.societyId` che stava nella prima riga apriva un varco: l'utente
+// autenticato SENZA società ricadeva sul ramo header e sceglieva da sé su quale
+// società operare. Ora il ramo header vale solo per chi non ha proprio sessione,
+// e resta perché serve a una lettura legittima: il GET di alert-settings
+// (public/script.js:2109) manda solo X-Society-Id e leggerebbe 400. Espone due
+// numeri di configurazione (giorni di preavviso), non dati personali; la
+// scrittura richiede già la sessione ed è quindi vincolata alla propria società.
 function resolveSocietyId(req, session) {
-  if (session.isAuthenticated && session.societyId) return session.societyId;
+  if (session.isAuthenticated) return String(session.societyId || '').trim();
   return String(req.headers['x-society-id'] || '').trim();
 }
 
@@ -3538,7 +3576,14 @@ if (body.matchResults !== undefined) await kv.set(`${prefix}:matchResults`, body
 if (body.calendarEvents !== undefined) await kv.set(`${prefix}:calendarEvents`, body.calendarEvents);
 if (body.calendarResponses !== undefined) await kv.set(`${prefix}:calendarResponses`, body.calendarResponses);
 if (body.materiale !== undefined) await kv.set(`${prefix}:materiale`, body.materiale);
-if (body.individualPassword !== undefined) await kv.set(`${prefix}:individualPassword`, body.individualPassword);
+// Password Individual: solo admin. Il POST generico chiede solo canWrite, quindi
+// senza questo vincolo un Coach L1 la cambiava mandando {individualPassword:'0000'},
+// scavalcando l'endpoint dedicato change-individual-pwd che invece pretende admin
+// + password attuale verificata lato server. Non si può però eliminare la riga: il
+// ripristino da backup (public/index.html:3690) rimanda il payload intero del GET,
+// che include individualPassword (riga 3347), e l'admin deve poterlo ripristinare.
+const _isAdmin = String(session.role || '').toLowerCase() === 'admin';
+if (_isAdmin && body.individualPassword !== undefined) await kv.set(`${prefix}:individualPassword`, body.individualPassword);
 if (body.pagamenti !== undefined) await kv.set(`${prefix}:pagamenti`, body.pagamenti);
 if (body.pagVoci !== undefined) await kv.set(`${prefix}:pagVoci`, body.pagVoci);
 if (body.pagLabels !== undefined) await kv.set(`${prefix}:pagLabels`, body.pagLabels);
