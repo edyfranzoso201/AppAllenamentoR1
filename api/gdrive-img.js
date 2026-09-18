@@ -74,7 +74,15 @@ export default async function handler(req, res) {
             if (buffer.byteLength > MAX_BYTES) continue;
 
             res.setHeader('Content-Type', contentType);
-            res.setHeader('Cache-Control', 'public, max-age=86400'); // cache 24h
+            // 'private' e deliberato: con 'public' la CDN di Vercel serviva la
+            // foto dalla propria cache SENZA eseguire la funzione, quindi il
+            // controllo dell'origine veniva scavalcato e chiunque la otteneva
+            // (verificato in produzione: X-Vercel-Cache HIT su richiesta senza
+            // referer). Cosi la cache resta nel browser di chi ha gia superato
+            // il controllo, e ogni nuovo richiedente ripassa dalla funzione.
+            // Vary dichiara comunque che la risposta dipende dall'origine.
+            res.setHeader('Cache-Control', 'private, max-age=86400'); // 24h, solo nel browser
+            res.setHeader('Vary', 'Origin, Referer');
             res.setHeader('X-Content-Type-Options', 'nosniff');
             return res.send(Buffer.from(buffer));
         } catch (e) {
