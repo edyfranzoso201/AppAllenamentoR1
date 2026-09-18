@@ -4560,8 +4560,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         // Tab "Stagioni" (cambio stagione): SOLO admin, dirigente (D-L1), coach_l1 (C-L1).
         // Difesa lato UI; l'endpoint season-reset verifica comunque il ruolo lato server.
-        var _r = String(getUserRole() || '').toLowerCase().replace(/_/g, '');
-        if (['admin', 'dirigente', 'coachl1'].includes(_r)) {
+        // La lista DEVE restare allineata a canSeasonReset() in api/data.js: qui
+        // conteneva 'dirigente' soltanto, ma il ruolo salvato e 'dirigente_l1'
+        // che normalizzato diventa 'dirigentel1' e NON matchava. Risultato: i 9
+        // dirigenti D-L1 non vedevano il tab e il server li rifiutava con 403, pur
+        // essendo elencati fra gli autorizzati nel messaggio d'errore dell'endpoint.
+        // Si normalizza anche spazi e trattini, come normalizzaRuolo() lato server.
+        var _r = String(getUserRole() || '').toLowerCase().replace(/[_\s-]/g, '');
+        if (['admin', 'dirigente', 'dirigentel1', 'coachl1'].includes(_r)) {
             document.querySelectorAll('.season-only').forEach(function(el){ el.style.display = ''; });
         }
         refreshAdminMenuTrigger();

@@ -259,6 +259,18 @@ function isValidSurveyResponse(surveys, surveyId, choices) {
   return true;
 }
 
+// Normalizzazione UNICA del ruolo, usata da tutti i controlli di permesso.
+// Il ruolo arriva scritto in modi diversi a seconda di dove e stato creato
+// ('coach_l1', 'coachl1', 'Coach_L1', a volte con spazi di troppo): senza una
+// normalizzazione condivisa ogni funzione ne accettava un sottoinsieme diverso.
+// Era un difetto reale, non teorico: canSeasonReset toglieva solo gli underscore
+// e confrontava con 'dirigente', cosi 'dirigente_l1' diventava 'dirigentel1' e
+// NON matchava. In produzione sono 9 utenti su 19 che ricevevano 403 sul cambio
+// stagione pur essendo elencati fra gli autorizzati nel commento della funzione.
+function normalizzaRuolo(role) {
+  return String(role || '').toLowerCase().replace(/[_\s-]/g, '');
+}
+
 // Chi può scrivere i dati generali (creare/editare atleti, calendario, ecc.).
 // DEVE combaciare con i ruoli che hanno canEditGeneral:true in:
 //   - api/auth/login.js getPermissions()  → admin, coach_l0/l1/l2
@@ -268,7 +280,7 @@ function isValidSurveyResponse(surveys, surveyId, choices) {
 // e ometteva del tutto dirigente_l1/societa_l1 → il salvataggio veniva rifiutato
 // (403) pur mostrando l'atleta lato client, che spariva al refresh.
 function canWrite(role) {
-  const r = String(role || '').toLowerCase().replace(/[_\s]/g, '');
+  const r = normalizzaRuolo(role);
   return ['admin', 'coachl0', 'coachl1', 'coachl2', 'societal1', 'dirigentel1', 'dirigentel2'].includes(r);
 }
 
@@ -293,11 +305,16 @@ function playlistSigOk(annataId, playlistId, providedSig) {
 }
 
 // Il cambio stagione è un'operazione delicata (archivia + azzera): consentita
-// SOLO ad admin, dirigente (D-L1) e coach_l1 (C-L1). Normalizza il ruolo
-// rimuovendo underscore così matcha sia 'coach_l1' sia 'coachl1'.
+// SOLO ad admin, dirigente (D-L1) e coach_l1 (C-L1). Usa normalizzaRuolo()
+// così matcha sia 'coach_l1' sia 'coachl1'. La lista DEVE restare allineata
+// a quella del tab .season-only in public/index.html: se divergono, l'utente
+// vede un tab che il server gli rifiuta, o viceversa.
 function canSeasonReset(role) {
-const r = String(role || '').toLowerCase().replace(/_/g, '');
-return ['admin', 'dirigente', 'coachl1'].includes(r);
+  const r = normalizzaRuolo(role);
+  // 'dirigentel1' era ASSENTE da questa lista: la normalizzazione produce
+  // 'dirigentel1' ma si confrontava con 'dirigente', che non combacia mai.
+  // 'dirigente' resta per eventuali utenti storici senza livello.
+  return ['admin', 'dirigente', 'dirigentel1', 'coachl1'].includes(r);
 }
 
 // ── R2: cancellazione atleta che propaga (GDPR art. 17) ───────────────────────
@@ -2830,7 +2847,10 @@ if (req.query?.action === 'alert-settings') {
 
 // ── Impianti: campi e spogliatoi (solo Platinum — ruoli direttivo/dirigente/staff/admin + ruoli interni dashboard) ──
 function canImpianti(role) {
-  return ['admin','direttivo','dirigente','staff','societa_l1','societa_l3','dirigente_l1'].includes(String(role||'').toLowerCase());
+  // Prima non normalizzava affatto: accettava solo la forma con underscore,
+  // quindi 'societal1' o 'DIRIGENTE_L1' venivano rifiutati. La lista e scritta
+  // normalizzata perche il confronto ora avviene su valori normalizzati.
+  return ['admin','direttivo','dirigente','staff','societal1','societal3','dirigentel1'].includes(normalizzaRuolo(role));
 }
 
 // Isolamento società: per un utente autenticato la società è SEMPRE quella della
