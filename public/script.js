@@ -817,7 +817,18 @@ document.addEventListener('DOMContentLoaded', () => {
         // chiedere, invece di salvare in silenzio un dato sbagliato.
         const valori = Object.values(appelloStato);
         const nessunPresente = valori.length > 0 && !valori.some(v => parseInt(v, 10) > 0);
-        if (nessunPresente && !silent) {
+        if (nessunPresente) {
+          // In modalità silenziosa (backup a 45s, uscita con ✕, apertura di
+          // un'altra tab) non si può mostrare un dialogo — ma non si deve
+          // nemmeno scrivere un dato così sospetto senza che nessuno l'abbia
+          // confermato: era esattamente la strada del bug del 15/09, dove
+          // bastava toccare tutte le righe e uscire senza premere Salva.
+          // Non salvo e lascio appelloDirty a true: il dato resta in memoria e
+          // verrà salvato dal Salva esplicito, dove la conferma può comparire.
+          if (silent) {
+            console.warn('⏸️ Appello: backup automatico sospeso, risultano tutti assenti. Serve il Salva esplicito.');
+            return;
+          }
           const proseguo = confirm(
             '⚠️ Stai salvando ' + valori.length + ' atleti TUTTI ASSENTI.\n\n' +
             'Ricorda: all\'apertura sono già tutti Presenti, e ogni tocco toglie la presenza.\n' +
@@ -1286,8 +1297,17 @@ document.addEventListener('DOMContentLoaded', () => {
             datiCaricati = true;
         } catch (error) {
             console.error('Errore nel caricamento dei dati dal server:', error);
-            // Le strutture restano vuote, ma il flag resta/torna false: senza
-            // questo il salvataggio successivo azzererebbe l'archivio sul server.
+            // Distinzione necessaria: caricamento INIZIALE fallito vs REFRESH
+            // fallito. loadData viene richiamata dal polling ogni 5 minuti e
+            // dopo varie operazioni: se un errore di rete momentaneo azzerasse
+            // tutto, i dati buoni già in memoria sparirebbero dalla UI e la
+            // guardia qui sotto bloccherebbe ogni salvataggio fino al poll
+            // successivo (fino a 5 minuti) anche a rete già tornata.
+            // Se avevamo già dati validi li teniamo: sono gli ultimi noti.
+            if (datiCaricati) return;
+            // Primo caricamento fallito: le strutture restano vuote e il flag
+            // resta false, altrimenti il salvataggio successivo azzererebbe
+            // l'archivio sul server (saveData invia tutto, il server non unisce).
             datiCaricati = false;
             athletes = [];
             window.athletes = [];
