@@ -5585,7 +5585,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function _convPulisciNomeFile(v) {
         return String(v == null ? '' : v)
             .replace(/[\\/:*?"<>|]/g, '-')   // vietati su Windows
-            .replace(/[ -]/g, '') // caratteri di controllo
+            .replace(/[\x00-\x1f]/g, '') // caratteri di controllo
             .replace(/\s+/g, ' ')
             .replace(/[-\s.]+$/, '')         // niente punto/spazio finale (Windows li scarta)
             .trim()
