@@ -5517,7 +5517,33 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('conv-note').value        = conv ? (conv.note || '') : '';
 
         // Popola staff
-        var all = (window.athletes || []).filter(function(a){return !a.isGuest;});
+        // !a.archived: chi e in archivio NON deve comparire fra i convocabili.
+        // Qui si SCEGLIE chi convocare, quindi il filtro va messo: un atleta
+        // archiviato non fa piu parte della rosa di quest'anno e selezionarlo
+        // produrrebbe una convocazione (e una Distinta F.I.G.C.) con un nome
+        // non piu tesserato. Nelle funzioni che invece RISOLVONO i nomi di una
+        // convocazione gia salvata il filtro NON va messo, altrimenti le
+        // convocazioni storiche perderebbero i nomi di chi e stato archiviato
+        // dopo: li si filtra il futuro, mai lo storico.
+        var all = (window.athletes || []).filter(function(a){return !a.isGuest && !a.archived;});
+
+        // convSalva() ricostruisce staffIds/atletiIds SOLO dalle checkbox presenti
+        // nel pannello: una persona gia convocata ma archiviata dopo non avrebbe
+        // piu la sua casella e, al primo risalvataggio della convocazione,
+        // sparirebbe dall'elenco senza alcun avviso. Chi e gia selezionato viene
+        // quindi rimesso in lista, marcato "(archiviato)" e con la spunta attiva,
+        // cosi resta visibile e si puo togliere solo di proposito.
+        var _giaSel = (conv ? (conv.staffIds || []).concat(conv.atletiIds || []) : []).map(String);
+        if (_giaSel.length) {
+            var _presenti = all.map(function(a){ return String(a.id); });
+            (window.athletes || []).forEach(function(a) {
+                if (_giaSel.indexOf(String(a.id)) !== -1 && _presenti.indexOf(String(a.id)) === -1) {
+                    var copia = Object.assign({}, a, { name: a.name + ' (archiviato)' });
+                    all.push(copia);
+                }
+            });
+        }
+
         var staff = all.filter(function(a){return a.isStaff;});
         var selStaff = conv ? (conv.staffIds || []) : [];
         var staffHtml = '';
@@ -5546,6 +5572,46 @@ document.addEventListener('DOMContentLoaded', function() {
     window.convSelectAll = function(val) {
         document.querySelectorAll('.conv-atleta-chk').forEach(function(c){c.checked=val;});
     };
+
+    // ── Nome del file PDF ───────────────────────────────────────────
+    // Il browser propone come nome del PDF il contenuto di <title>, quindi il
+    // titolo della pagina di stampa E il nome del file. Prima era solo
+    // "Convocazione UNDER 15" / "Distinta F.I.G.C.": salvando piu partite si
+    // ottenevano file con lo stesso nome, che il sistema rinominava in (1), (2)...
+    // rendendoli indistinguibili. Ora il nome porta avversario e data.
+    // I caratteri \ / : * ? " < > | sono vietati nei nomi file su Windows e
+    // vengono sostituiti con un trattino: se restassero, il browser li
+    // sostituirebbe comunque a modo suo o rifiuterebbe il salvataggio.
+    function _convPulisciNomeFile(v) {
+        return String(v == null ? '' : v)
+            .replace(/[\\/:*?"<>|]/g, '-')   // vietati su Windows
+            .replace(/[ -]/g, '') // caratteri di controllo
+            .replace(/\s+/g, ' ')
+            .replace(/[-\s.]+$/, '')         // niente punto/spazio finale (Windows li scarta)
+            .trim()
+            .slice(0, 80);                   // nomi troppo lunghi vengono troncati dal sistema
+    }
+
+    // Costruisce "Prefisso - CATEGORIA - vs Avversario - 05-09-2026" saltando
+    // i pezzi vuoti, cosi una convocazione senza avversario non produce
+    // "Convocazione -  - 05-09-2026".
+    function _convNomeStampa(prefisso, categoria, avversario, dataIso) {
+        var dataLbl = '';
+        if (dataIso) {
+            var p = String(dataIso).split('-'); // YYYY-MM-DD
+            if (p.length >= 3) dataLbl = p[2] + '-' + p[1] + '-' + p[0];
+        }
+        var pezzi = [prefisso, categoria, avversario ? 'vs ' + avversario : '', dataLbl];
+        var nome = _convPulisciNomeFile(pezzi.filter(function(x){ return x && String(x).trim(); }).join(' - '))
+                   || prefisso;
+        // Il risultato finisce dentro <title>...</title> di una pagina costruita
+        // per concatenazione di stringhe: l'avversario e testo libero digitato
+        // dall'utente, quindi va escapato qui dentro. Dentro convStampaDistinta
+        // esiste una esc() locale che NON escapa l'HTML (converte solo null in
+        // stringa vuota): affidarsi a quella lascerebbe passare i tag.
+        return nome.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                   .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
 
     // ── Distinta F.I.G.C. — factory oggetto vuoto/precompilato ──────
     function _convDistintaVuota(conv) {
@@ -5652,13 +5718,16 @@ document.addEventListener('DOMContentLoaded', function() {
         _convDistintaRenderStaff();
     };
 
-    // Menu a tendina "+ Aggiungi giocatore": tutti gli atleti non staff/non ospiti,
-    // esclusi quelli già in tabella
+    // Menu a tendina "+ Aggiungi giocatore": tutti gli atleti non staff/non ospiti
+    // e NON archiviati, esclusi quelli già in tabella.
+    // !a.archived: e un menu di scelta, non una lettura di dati storici, quindi
+    // deve offrire solo la rosa attuale. Chi e gia stato inserito in tabella
+    // resta li anche se archiviato in seguito (lo storico non si tocca).
     function _convDistintaPopolaSelectAggiungi() {
         var sel = document.getElementById('distinta-add-giocatore-sel');
         var d = window._distintaState;
         var giaPresenti = d.giocatori.map(function(g){ return String(g.athleteId); });
-        var all = (window.athletes || []).filter(function(a){ return !a.isGuest && !a.isStaff; });
+        var all = (window.athletes || []).filter(function(a){ return !a.isGuest && !a.isStaff && !a.archived; });
         var html = '<option value="">— seleziona atleta —</option>';
         all.forEach(function(a) {
             if (giaPresenti.indexOf(String(a.id)) !== -1) return;
@@ -5777,14 +5846,29 @@ document.addEventListener('DOMContentLoaded', function() {
     function _convDistintaRenderStaff() {
         var box = document.getElementById('distinta-staff-body');
         var d = window._distintaState;
-        var staff = (window.athletes || []).filter(function(a){ return a.isStaff && !a.isGuest; });
+        // !a.archived: lo staff archiviato non va offerto fra i selezionabili.
+        var staff = (window.athletes || []).filter(function(a){ return a.isStaff && !a.isGuest && !a.archived; });
 
         var html = '';
         _DISTINTA_RUOLI.forEach(function(r) {
             var isArbitro = r.key === 'assistenteArbitro';
             var cur = (isArbitro ? d.assistenteArbitro : d.staffRuoli[r.key]) || { athleteId:'', nome:'', matricola:'', tessera:'' };
             var options = '<option value="">— nessuno —</option>';
-            staff.forEach(function(s) {
+            // Questa select e insieme menu di scelta E modo di mostrare la scelta
+            // gia salvata. Se il dirigente salvato nella Distinta e stato
+            // archiviato DOPO, il filtro qui sopra lo toglierebbe dalle opzioni,
+            // nessuna opzione risulterebbe 'selected' e al primo render il
+            // browser mostrerebbe "— nessuno —": al salvataggio successivo il
+            // nome verrebbe perso senza alcun avviso. Quindi chi e gia
+            // selezionato viene riaggiunto in coda, marcato come archiviato.
+            var listaRuolo = staff.slice();
+            if (cur.athleteId && !staff.some(function(s){ return String(s.id) === String(cur.athleteId); })) {
+                var salvato = (window.athletes || []).find(function(x){ return String(x.id) === String(cur.athleteId); });
+                listaRuolo.push(salvato
+                    ? { id: salvato.id, name: salvato.name + ' (archiviato)' }
+                    : { id: cur.athleteId, name: (cur.nome || 'Persona non piu in rosa') + ' (archiviato)' });
+            }
+            listaRuolo.forEach(function(s) {
                 var sel = String(s.id) === String(cur.athleteId) ? 'selected' : '';
                 options += '<option value="'+s.id+'" '+sel+'>'+s.name+'</option>';
             });
@@ -5950,7 +6034,10 @@ document.addEventListener('DOMContentLoaded', function() {
         var logoSoc  = s.logo || '';
         var logoFigc = s.figc || '';
 
-        var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Distinta F.I.G.C.</title>'
+        // Avversario e data si prendono dalla Distinta, che l'utente puo aver
+        // modificato a mano, con fallback sulla convocazione se lasciati vuoti.
+        var html = '<!DOCTYPE html><html><head><meta charset="utf-8">'
+            +'<title>'+_convNomeStampa('Distinta', conv.categoria, d.avversario || conv.avversario, d.data || conv.data)+'</title>'
             + '<style>'
             + '@page{size:A4 portrait;margin:8mm;}'
             + '*{box-sizing:border-box;}'
@@ -6391,7 +6478,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var logoSponsor = s.sponsor ? '<img src="'+s.sponsor+'" style="height:100px;object-fit:contain;">' : '';
 
         var html = '<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8">'
-            +'<title>Convocazione '+conv.categoria+'</title>'
+            +'<title>'+_convNomeStampa(isPre ? 'Pre-Convocazione' : 'Convocazione', conv.categoria, conv.avversario, conv.data)+'</title>'
             +'<style>'
             +'*{margin:0;padding:0;box-sizing:border-box;}'
             +'@page{size:A4 portrait;margin:0;height:297mm;}'
