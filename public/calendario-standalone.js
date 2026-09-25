@@ -1615,14 +1615,14 @@ async function genTraining() { window.pianificaRicorrente(); }
 
 window.pianificaRicorrente = function() {
   const modal = document.createElement('div');
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;overflow-y:auto;';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:flex-start;justify-content:center;z-index:9999;padding:20px;overflow-y:auto;';
   const oggi = new Date();
   const inizio = oggi.toISOString().split('T')[0];
   const fineDef = new Date(oggi.getFullYear(), oggi.getMonth() + 3, oggi.getDate()).toISOString().split('T')[0];
   const giorni = [['1','Lun'],['2','Mar'],['3','Mer'],['4','Gio'],['5','Ven'],['6','Sab'],['0','Dom']];
 
   modal.innerHTML = `
-    <div style="background:#0f172a;padding:26px;border-radius:15px;max-width:460px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.7);border:1px solid #1a3a5f;">
+    <div style="background:#0f172a;padding:26px;border-radius:15px;max-width:460px;width:100%;margin:auto 0;box-shadow:0 10px 40px rgba(0,0,0,0.7);border:1px solid #1a3a5f;">
       <h3 style="margin:0 0 18px 0;color:#e2e8f0;">🔁 Pianifica ricorrente</h3>
       <div style="margin-bottom:14px;">
         <label style="display:block;font-weight:600;color:#60a5fa;margin-bottom:6px;">Giorni della settimana:</label>

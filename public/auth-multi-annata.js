@@ -1532,7 +1532,7 @@ async function showUserModal(userData = null) {
     } catch (e) {}
     
     const modal = document.createElement('div');
-    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:9999;overflow-y:auto;padding:20px;';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);display:flex;align-items:flex-start;justify-content:center;z-index:9999;overflow-y:auto;padding:20px;';
     
     const annateCheckboxes = annateDisponibili.map(annata => {
         const checked = userData?.annate?.includes(annata.id) ? 'checked' : '';
@@ -1545,7 +1545,7 @@ async function showUserModal(userData = null) {
     }).join('');
     
     modal.innerHTML = `
-        <div style="background:#1e293b;padding:30px;border-radius:15px;max-width:500px;width:100%;border:1px solid rgba(96,165,250,0.2);">
+        <div style="background:#1e293b;padding:30px;border-radius:15px;max-width:500px;width:100%;margin:auto 0;border:1px solid rgba(96,165,250,0.2);">
             <h2 style="color:#60a5fa;margin:0 0 20px 0;">${isEdit ? '✏️ Modifica Utente' : '➕ Crea Nuovo Utente'}</h2>
             <form id="user-form" style="display:flex;flex-direction:column;gap:15px;">
                 <div>
@@ -2231,7 +2231,7 @@ async function showUserModal(userData = null) {
     } catch (e) {}
     
     const modal = document.createElement('div');
-    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:9999;overflow-y:auto;padding:20px;';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);display:flex;align-items:flex-start;justify-content:center;z-index:9999;overflow-y:auto;padding:20px;';
     
     const annateCheckboxes = annateDisponibili.map(annata => {
         const checked = userData?.annate?.includes(annata.id) ? 'checked' : '';
@@ -2244,7 +2244,7 @@ async function showUserModal(userData = null) {
     }).join('');
     
     modal.innerHTML = `
-        <div style="background:#1e293b;padding:30px;border-radius:15px;max-width:500px;width:100%;border:1px solid rgba(96,165,250,0.2);">
+        <div style="background:#1e293b;padding:30px;border-radius:15px;max-width:500px;width:100%;margin:auto 0;border:1px solid rgba(96,165,250,0.2);">
             <h2 style="color:#60a5fa;margin:0 0 20px 0;">${isEdit ? '✏️ Modifica Utente' : '➕ Crea Nuovo Utente'}</h2>
             <form id="user-form" style="display:flex;flex-direction:column;gap:15px;">
                 <div>
