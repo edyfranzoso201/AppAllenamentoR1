@@ -122,7 +122,11 @@
              border-radius:9px;padding:8px 10px;}
     .gg-prow.out{opacity:0.42;}
     .gg-pnum{font-weight:700;min-width:26px;text-align:center;font-variant-numeric:tabular-nums;color:var(--accent);}
-    .gg-pname{flex:1;min-width:0;font-size:0.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    /* Anche qui il nome va a capo invece di finire nei puntini: accanto al
+       numero e ai badge lo spazio e' poco, e su telefono un cognome lungo
+       diventava illeggibile. La riga si alza, il nome si legge. */
+    .gg-pname{flex:1;min-width:0;font-size:0.88rem;
+              overflow-wrap:break-word;word-break:break-word;line-height:1.3;}
     .gg-pbadges{display:flex;gap:4px;flex-wrap:wrap;}
     .gg-badge{font-size:0.64rem;border-radius:4px;padding:1px 5px;font-weight:700;}
     .gg-badge.c{background:var(--giallo);color:#1a1a1a;}
@@ -147,14 +151,18 @@
     .gg-cambio h3{font-size:0.78rem;margin:0 0 6px;color:var(--muted);font-weight:700;
                   text-transform:uppercase;letter-spacing:0.04em;}
     .gg-cambio .gg-cblist{display:flex;flex-direction:column;gap:5px;max-height:232px;overflow-y:auto;}
-    /* flex-shrink:0 e' obbligatorio: la lista e' un flex column con max-height,
-       e senza questo i bottoni si COMPRIMONO quando i convocati sono tanti --
-       il nome finisce tagliato sopra e sotto e diventa illeggibile proprio
-       quando serve, cioe' a rosa piena. */
+    /* Due regole, per due modi diversi di perdere il nome.
+       flex:0 0 auto -- la lista e' un flex column con max-height, e senza
+       questo i bottoni si COMPRIMONO quando i convocati sono tanti: il nome
+       finisce tagliato sopra e sotto proprio a rosa piena, quando serve.
+       Il nome va a capo invece di essere troncato: queste colonne sono meta'
+       schermo, e con nowrap+ellipsis un "MISSIMI ANGELO" diventava
+       "24. MISSIMI ANG...". Un nome a meta' non serve a nessuno a bordo
+       campo: meglio due righe. */
     .gg-cbtn{background:var(--panel);border:1px solid var(--border);border-radius:8px;
              color:var(--txt);padding:8px 9px;font-size:0.82rem;text-align:left;cursor:pointer;
-             overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-             flex:0 0 auto;min-height:34px;line-height:1.35;}
+             white-space:normal;overflow-wrap:break-word;word-break:break-word;hyphens:auto;
+             flex:0 0 auto;min-height:34px;line-height:1.3;}
     .gg-cbtn.sel{border-color:var(--accent);background:rgba(25,135,84,0.18);font-weight:700;}
     .gg-ptoggle{background:none;border:1px solid var(--border2);border-radius:7px;color:var(--muted);
                 padding:4px 9px;font-size:0.72rem;cursor:pointer;white-space:nowrap;}
@@ -1459,6 +1467,13 @@ async function caricaRosa(idsInDistinta, idsTitolari, idsInCampo) {
     return;
   }
 
+  // Il numero di maglia e' quello di GESTIONE SQUADRA (a.number). Prima si
+  // leggeva solo da Materiale (assignments[id]._numero), che e' un'ALTRA cosa:
+  // la distinta del materiale consegnato, dove il campo e' testo libero e puo'
+  // contenere valori come "24 - 12". Risultato visto davvero: in distinta
+  // usciva "24 - 12" dove in Gestione Squadra c'e' 12.
+  // Materiale resta solo come ripiego per chi non ha ancora il numero in
+  // Gestione Squadra, e solo se e' un numero pulito.
   const numeri = (data.materiale && data.materiale.assignments) || {};
   // Chi va in distinta: la rosa operativa. Gli archiviati e lo staff sono
   // esclusi perche' questa e' una lista di scelta per la partita di oggi,
@@ -1475,10 +1490,15 @@ async function caricaRosa(idsInDistinta, idsTitolari, idsInCampo) {
   const setCampo = idsInCampo ? new Set(idsInCampo.map(String)) : null;
   players = rosa.map(a => {
     const rec = numeri[String(a.id)];
+    // Il ripiego da Materiale vale solo se e' un numero e nient'altro: quel
+    // campo e' testo libero, e stampare "24 - 12" nella colonna N. della
+    // distinta la rende sbagliata davanti all'arbitro.
+    const dalMateriale = (rec && /^\d{1,3}$/.test(String(rec._numero || '').trim()))
+                         ? String(rec._numero).trim() : '';
     return {
       id: String(a.id),
       name: a.name || '',
-      num: (rec && rec._numero) ? String(rec._numero) : '',
+      num: String(a.number || '').trim() || dalMateriale,
       dataNascita: a.dataNascita || '',
       matricola: a.numeroMatricola || '',
       tessera: a.numeroTessera || '',
