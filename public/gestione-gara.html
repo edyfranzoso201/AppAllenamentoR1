@@ -1289,13 +1289,34 @@ function cambioRapido(idEsce, idEntra) {
   toast('🔄 ' + minuto + ': esce ' + esce.name + ', entra ' + entra.name);
 }
 
-function popolaSelectGiocatori() {
-  const opts = '<option value="">— seleziona —</option>' +
-    convocati().map(p =>
+// Le tendine degli eventi mostravano TUTTI i convocati: in "Esce" comparivano
+// anche i panchinari, in "Entra" anche chi era gia' in campo, e fra i marcatori
+// chi stava seduto. A bordo campo si sceglie di fretta e si sbaglia. Ora ogni
+// tendina offre solo chi puo' davvero essere protagonista di quell'evento.
+//
+// Attenzione: la lista dipende dallo STATO del momento (chi e' in campo cambia
+// a ogni sostituzione), quindi non basta popolarla entrando nella pagina --
+// va rifatta a ogni cambio di tipo evento e dopo ogni sostituzione, o mostra
+// la situazione di dieci minuti prima.
+function opzioniGiocatori(elenco) {
+  return '<option value="">— seleziona —</option>' +
+    elenco.map(p =>
       '<option value="' + esc(p.id) + '">' +
       (p.num ? p.num + '. ' : '') + esc(p.name) + '</option>').join('');
-  document.getElementById('evGiocatore').innerHTML = opts;
-  document.getElementById('evEntra').innerHTML = opts;
+}
+
+function popolaSelectGiocatori() {
+  const tipo = (document.getElementById('evTipo') || {}).value || 'gol';
+  // Chi esce e' per forza in campo; chi entra e' per forza in panchina.
+  // Gol, ammonizione, espulsione: le fa chi sta giocando.
+  const inCampo = inCampoOra();
+  // Ripiego: prima del calcio d'inizio nessuno e' ancora "in campo" perche'
+  // i titolari entrano allo start. Con la lista vuota la tendina sarebbe
+  // inservibile, quindi si ricade sui titolari e poi sui convocati.
+  const chiGioca = inCampo.length ? inCampo : (titolari().length ? titolari() : convocati());
+  document.getElementById('evGiocatore').innerHTML = opzioniGiocatori(chiGioca);
+  document.getElementById('evEntra').innerHTML =
+    opzioniGiocatori(tipo === 'cambio' ? inPanchina() : convocati());
 }
 
 // ── Eventi ─────────────────────────────────────────────────────────────
@@ -1353,6 +1374,10 @@ function aggiungiEvento() {
     alert('Scegli il giocatore.'); return;
   }
   if (tipo === 'nota' && !nota) { alert('Scrivi il testo della nota.'); return; }
+  if (tipo === 'cambio') {
+    if (!playerInId) { alert('Scegli chi entra.'); return; }
+    if (playerInId === playerId) { alert('Chi entra e chi esce non possono essere lo stesso atleta.'); return; }
+  }
 
   let minuto;
   if (minManuale) {
@@ -1365,12 +1390,28 @@ function aggiungiEvento() {
   events.push(ev);
   if (tipo === 'gol')     scoreHome++;
   if (tipo === 'gol-avv') scoreAway++;
+  // Una sostituzione registrata qui deve MUOVERE i giocatori, non solo scrivere
+  // la riga: prima l'evento finiva negli eventi ma in campo restavano gli
+  // stessi, quindi il cambio successivo offriva ancora chi era uscito.
+  // cambioRapido() dalla rosa lo faceva gia'; questa strada no.
+  if (tipo === 'cambio') {
+    const esce = trovaGiocatore(playerId);
+    const entra = trovaGiocatore(playerInId);
+    if (esce)  esce.inCampo = false;
+    if (entra) entra.inCampo = true;
+    renderRosa();
+    renderCambio();
+  }
 
   document.getElementById('evNota').value = '';
   document.getElementById('evMinuto').value = '';
   salvaStato();
   renderEventi();
   renderTimer();
+  // Una sostituzione registrata da questa pagina cambia chi e' in campo: senza
+  // ripopolare, chi e' appena entrato non comparirebbe fra i marcatori e chi e'
+  // uscito resterebbe selezionabile.
+  popolaSelectGiocatori();
   toast('Evento aggiunto al ' + minuto);
 }
 
@@ -1768,6 +1809,9 @@ function aggiornaCampiEvento() {
   document.getElementById('evGiocatoreLabel').textContent = tipo === 'cambio' ? 'Esce' : 'Giocatore';
   document.getElementById('evEntraWrap').style.display = tipo === 'cambio' ? '' : 'none';
   document.getElementById('evNotaWrap').style.display = tipo === 'nota' ? '' : 'none';
+  // Le liste dipendono dal tipo (Esce = in campo, Entra = panchina), quindi
+  // vanno rifatte qui e non solo all'ingresso nella pagina.
+  if (conGiocatore) popolaSelectGiocatori();
 }
 
 // ── Avvio ──────────────────────────────────────────────────────────────
@@ -1819,12 +1863,40 @@ async function init() {
     supplAttivi = false; salvaStato(); renderTimer();
   });
 
+  // I + e - del tabellone toccavano SOLO il punteggio: un gol segnato con il +
+  // non compariva fra gli eventi e quindi nemmeno nel PDF per la stampa. Il
+  // tabellone diceva 1-1 e il resoconto elencava un gol solo.
+  //
+  // Ora il + scrive l'evento come lo scriverebbe "Registra evento", col minuto
+  // del cronometro. Il gol nostro col + resta SENZA marcatore (il + non sa chi
+  // ha segnato): il marcatore si aggiunge dalla pagina Eventi, dove c'e' la
+  // tendina. Per l'avversario non serve: non abbiamo la sua rosa.
+  //
+  // Il - non scrive niente: annulla. Toglie l'ultimo gol di quella squadra
+  // dagli eventi, altrimenti correggere un tocco sbagliato lascerebbe un gol
+  // fantasma nel resoconto.
   document.querySelectorAll('[data-score]').forEach(b => {
     b.addEventListener('click', () => {
       const d = Number(b.dataset.delta);
-      if (b.dataset.score === 'home') scoreHome = Math.max(0, scoreHome + d);
-      else scoreAway = Math.max(0, scoreAway + d);
-      salvaStato(); renderTimer();
+      const casa = b.dataset.score === 'home';
+      const tipo = casa ? 'gol' : 'gol-avv';
+      if (d > 0) {
+        const minuto = minutoCorrente().label;
+        events.push({ tipo, minuto, playerId:'', playerInId:'', nota:'' });
+        if (casa) scoreHome++; else scoreAway++;
+        vibra(40);
+        toast('⚽ ' + (casa ? 'Gol nostro' : 'Gol avversario') + ' al ' + minuto);
+      } else {
+        // Annullo: si cancella l'ULTIMO gol di quella squadra, non uno a caso.
+        let i = -1;
+        for (let k = events.length - 1; k >= 0; k--) {
+          if (events[k].tipo === tipo) { i = k; break; }
+        }
+        if (i >= 0) events.splice(i, 1);
+        if (casa) scoreHome = Math.max(0, scoreHome - 1);
+        else scoreAway = Math.max(0, scoreAway - 1);
+      }
+      salvaStato(); renderTimer(); renderEventi();
     });
   });
 
