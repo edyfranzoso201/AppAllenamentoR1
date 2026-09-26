@@ -139,11 +139,10 @@
     /* Chi e' in campo adesso: la riga si stacca dalle altre con un filetto,
        cosi' durante la partita si legge di sguardo chi puo' uscire. */
     .gg-prow.campo{border-left:3px solid var(--accent);}
-    .gg-ptit,.gg-pgol{background:none;border:1px solid var(--border2);border-radius:7px;
+    .gg-ptit{background:none;border:1px solid var(--border2);border-radius:7px;
                       color:var(--muted);padding:6px 9px;font-size:0.74rem;font-weight:700;
                       cursor:pointer;flex:none;-webkit-user-select:none;user-select:none;}
     .gg-ptit.on{background:var(--accent);border-color:var(--accent);color:#fff;}
-    .gg-pgol{font-size:0.95rem;padding:5px 8px;}
     .gg-conta{font-size:0.78rem;color:var(--muted);text-align:center;margin:9px 0 2px;}
     /* Sostituzione: due colonne, chi esce e chi entra, cosi' il gesto e' una
        scelta sola e non una sequenza di tendine. */
@@ -1169,8 +1168,6 @@ function renderRosa() {
       '<span class="gg-pbadges">' + badges.join('') + '</span>' +
       '<button type="button" class="gg-ptit' + (p.titolare ? ' on' : '') +
         '" data-tit-id="' + esc(p.id) + '" title="Schiera dal primo minuto">XI</button>' +
-      '<button type="button" class="gg-pgol" data-gol-id="' + esc(p.id) +
-        '" title="Ha segnato adesso">&#9917;</button>' +
       '<button type="button" class="gg-ptoggle' + (p.inDistinta ? ' on' : '') +
         '" data-toggle-id="' + esc(p.id) + '">' +
         (p.inDistinta ? 'In distinta' : 'Fuori') + '</button>' +
@@ -1249,10 +1246,11 @@ function toggleTitolare(id) {
   renderCambio();
 }
 
-// ── Gol: chi l'ha fatto, in un tocco ──────────────────────────────────
-// Era gia' registrabile da "Registra evento", ma sepolto sotto una tendina
-// "Tipo": tre tocchi e una scelta, mentre la squadra esulta. Qui il marcatore
-// si tocca nella lista dei convocati e il minuto lo mette il cronometro.
+// ── Gol: marcatore, minuto dal cronometro, punteggio ──────────────────
+// Il pallone che stava su ogni riga della rosa e' stato tolto: rubava la
+// larghezza ai nomi, che su telefono e' quello che serve davvero. Il gol si
+// registra da "Registra evento" e passa da qui, cosi' il minuto lo mette
+// sempre il cronometro e il punteggio sale da se, senza digitare nulla.
 function golRapido(id) {
   const p = trovaGiocatore(id);
   if (!p) return;
@@ -1850,11 +1848,11 @@ async function init() {
 
   document.getElementById('rosaSearch').addEventListener('input', renderRosa);
   document.getElementById('rosaList').addEventListener('click', e => {
-    // Tre bottoni sulla stessa riga: distinta, XI (schierato), gol.
+    // Due bottoni sulla stessa riga: XI (schierato) e distinta. Il pallone del
+    // gol stava qui, ed e' stato tolto per dare spazio ai nomi: il marcatore si
+    // registra da "Registra evento", che scrive lo stesso evento.
     const tit = e.target.closest('[data-tit-id]');
     if (tit) { toggleTitolare(tit.dataset.titId); return; }
-    const gol = e.target.closest('[data-gol-id]');
-    if (gol) { golRapido(gol.dataset.golId); return; }
     const btn = e.target.closest('[data-toggle-id]');
     if (!btn) return;
     const p = players.find(x => x.id === btn.dataset.toggleId);
