@@ -294,8 +294,8 @@
       <div class="gg-card">
         <h2>&#128203; Dati gara</h2>
         <div class="gg-row2">
-          <div class="gg-field"><label>Squadra di casa</label><input type="text" id="infoCasa"></div>
-          <div class="gg-field"><label>Squadra ospite</label><input type="text" id="infoOspite"></div>
+          <div class="gg-field"><label>La nostra squadra</label><input type="text" id="infoCasa" placeholder="Nome della societa'"></div>
+          <div class="gg-field"><label>Squadra avversaria</label><input type="text" id="infoOspite" placeholder="Chi affrontiamo"></div>
         </div>
         <div class="gg-row2">
           <div class="gg-field"><label>Campionato / Torneo</label><input type="text" id="infoCampionato"></div>
@@ -405,7 +405,7 @@
           <label>Tipo</label>
           <select id="evTipo">
             <option value="gol">&#9917; Gol nostro</option>
-            <option value="gol-avv">&#9917; Gol avversario</option>
+            <option value="gol-avv">&#9917; Gol avversari</option>
             <option value="ammonizione">&#128993; Ammonizione</option>
             <option value="espulsione">&#128308; Espulsione</option>
             <option value="cambio">&#128260; Sostituzione</option>
@@ -1336,6 +1336,11 @@ const EV_META = {
   'nota':         { cls:'',    ic:'📝' }
 };
 
+// La nostra squadra e l'avversaria stanno in info.casa / info.ospite. Dove si
+// gioca lo dice info.noiCasa, e cambia solo l'ordine di stampa, non chi e' chi.
+function nomeSquadraNostra()  { return (info.casa   || '').trim(); }
+function nomeAvversaria()     { return (info.ospite || '').trim(); }
+
 function nomeGiocatore(id) {
   const p = players.find(x => String(x.id) === String(id));
   if (!p) return '';
@@ -1345,7 +1350,9 @@ function nomeGiocatore(id) {
 function testoEvento(ev) {
   switch (ev.tipo) {
     case 'gol':         return '⚽ Gol — ' + nomeGiocatore(ev.playerId);
-    case 'gol-avv':     return '⚽ Gol avversario';
+    // Il nome dell'avversaria sta in Dati gara: scriverlo qui rende l'evento
+    // leggibile nel PDF senza dover risalire all'intestazione.
+    case 'gol-avv':     return '⚽ Gol ' + (nomeAvversaria() || 'avversari');
     case 'ammonizione': return '🟨 Ammonizione — ' + nomeGiocatore(ev.playerId);
     case 'espulsione':  return '🟥 Espulsione — ' + nomeGiocatore(ev.playerId);
     case 'cambio':      return '🔄 Esce ' + nomeGiocatore(ev.playerId) +
@@ -1572,7 +1579,9 @@ async function caricaRosa(idsInDistinta, idsTitolari, idsInCampo) {
     return a.name.localeCompare(b.name, 'it');
   });
 
-  if (!info.casa && !info.ospite) {
+  // info.casa e' la NOSTRA squadra: il nome societa' lo riempie sempre, anche
+  // se l'avversaria e' gia' stata scritta a mano.
+  if (!info.casa) {
     const nomeSocieta = (data.societa && data.societa.nome) || ss('gosport_society_name') || '';
     if (nomeSocieta) info.casa = nomeSocieta;
   }
@@ -1616,8 +1625,13 @@ function generaPdf() {
   doc.setFont('helvetica', 'bold'); doc.setFontSize(16);
   doc.text('RESOCONTO DI GARA', W / 2, y, { align:'center' }); y += 7;
 
-  const casa = info.casa || 'Squadra di casa';
-  const osp  = info.ospite || 'Squadra ospite';
+  // In trasferta l'avversaria va scritta per prima: sulla carta l'ordine vale
+  // come "in casa - ospite", e stamparlo al contrario direbbe il falso.
+  const noi  = info.noiCasa === '1' || info.noiCasa === 1;
+  const noiN = nomeSquadraNostra() || 'La nostra squadra';
+  const avvN = nomeAvversaria()    || 'Squadra avversaria';
+  const casa = noi ? noiN : avvN;
+  const osp  = noi ? avvN : noiN;
   doc.setFontSize(12);
   doc.text(casa + '  –  ' + osp, W / 2, y, { align:'center' }); y += 8;
 
@@ -1633,7 +1647,10 @@ function generaPdf() {
 
   if (document.getElementById('pdfRisultato').checked) {
     doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
-    doc.text('Risultato finale: ' + scoreHome + ' – ' + scoreAway, M, y); y += 8;
+    // scoreHome e' sempre il NOSTRO punteggio: in trasferta va a destra.
+    const gCasa = noi ? scoreHome : scoreAway;
+    const gOsp  = noi ? scoreAway : scoreHome;
+    doc.text('Risultato finale: ' + gCasa + ' – ' + gOsp, M, y); y += 8;
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
   }
 
@@ -1793,8 +1810,10 @@ function leggiInfoDaiCampi() {
 // sbaglia mai; l'etichetta dice quale squadra e'.
 function aggiornaNomiPunteggio() {
   const noi = info.noiCasa === '1' || info.noiCasa === 1;
-  document.getElementById('scoreNameHome').textContent = (noi ? info.casa : info.ospite) || 'Noi';
-  document.getElementById('scoreNameAway').textContent = (noi ? info.ospite : info.casa) || 'Avversario';
+  // Il tabellone tiene NOI sempre a sinistra: scoreHome e' il nostro punteggio
+  // e invertire i nomi senza invertire i numeri darebbe un risultato falso.
+  document.getElementById('scoreNameHome').textContent = nomeSquadraNostra() || 'Noi';
+  document.getElementById('scoreNameAway').textContent = nomeAvversaria() || 'Avversari';
 }
 
 // ── Navigazione ────────────────────────────────────────────────────────
@@ -1892,7 +1911,9 @@ async function init() {
         events.push({ tipo, minuto, playerId:'', playerInId:'', nota:'' });
         if (casa) scoreHome++; else scoreAway++;
         vibra(40);
-        toast('⚽ ' + (casa ? 'Gol nostro' : 'Gol avversario') + ' al ' + minuto);
+        const chi = casa ? (nomeSquadraNostra() || 'Gol nostro')
+                         : (nomeAvversaria()    || 'Gol avversari');
+        toast('⚽ ' + chi + ' al ' + minuto);
       } else {
         // Annullo: si cancella l'ULTIMO gol di quella squadra, non uno a caso.
         let i = -1;
