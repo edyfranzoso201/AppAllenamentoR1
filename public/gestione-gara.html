@@ -197,6 +197,7 @@
     <a href="/area-tecnica.html" class="gg-back">&larr; Area Tecnica</a>
     <h1>&#9201;&#65039; Andamento Gara</h1>
     <span class="gg-annata" id="gg-annata-label"></span>
+    <button type="button" class="gg-back" id="ggAggiorna" style="display:none;margin-left:auto;border-color:#b45309;color:#fbbf24;" title="E disponibile una versione aggiornata di questa app">&#8635; Aggiorna app</button>
     <button type="button" class="gg-back" id="btnInstalla" style="display:none;margin-left:auto;border-color:var(--accent);color:#4ade80;">&#11015;&#65039; Installa app</button>
   </div>
 
@@ -1504,6 +1505,14 @@ async function caricaRosa(idsInDistinta, idsTitolari, idsInCampo) {
     const nomeSocieta = (data.societa && data.societa.nome) || ss('gosport_society_name') || '';
     if (nomeSocieta) info.casa = nomeSocieta;
   }
+
+  // Il nome squadra puo' arrivare solo ora (dal server): l'etichetta in alto
+  // era partita col ripiego sull'id, quindi va rifatta.
+  const nomeSrv = (data.societa && data.societa.nome) || data.teamName || '';
+  if (nomeSrv) {
+    const el = document.getElementById('gg-annata-label');
+    if (el) el.textContent = nomeSrv;
+  }
 }
 
 // Perche' l'elenco e' vuoto. Va scritto NELL'elenco: un toast sparisce dopo
@@ -1703,7 +1712,7 @@ function aggiornaCampiEvento() {
 
 // ── Avvio ──────────────────────────────────────────────────────────────
 async function init() {
-  document.getElementById('gg-annata-label').textContent = annataId() ? 'Annata ' + annataId() : '';
+  aggiornaEtichettaAnnata();
 
   const st = caricaStato();
   if (!info.data) info.data = new Date().toISOString().slice(0, 10);
@@ -1845,6 +1854,28 @@ async function init() {
   preparaInstallazione();
 }
 
+// In alto va il nome della squadra, non l'id interno dell'annata: uno come
+// "mko5iuzhw2xrxxiuoi" non dice niente a chi e' a bordo campo, e sembra un
+// errore. L'id resta come ripiego finche' il nome non e' arrivato dal server,
+// ma accorciato: serve solo a distinguere due annate, non a leggerlo tutto.
+function aggiornaEtichettaAnnata() {
+  const el = document.getElementById('gg-annata-label');
+  if (!el) return;
+  const nome = ss('gosport_society_name') || '';
+  const id = annataId();
+  if (nome) el.textContent = nome;
+  else if (id) el.textContent = 'Annata ' + (id.length > 8 ? id.slice(0, 6) + '…' : id);
+  else el.textContent = '';
+}
+
+// Versione nuova pronta in cache. Non si ricarica da soli: se sei a bordo
+// campo col cronometro che gira, una ricarica a sorpresa azzererebbe la
+// partita in corso. Si offre, e basta.
+function mostraAggiornamento() {
+  const b = document.getElementById('ggAggiorna');
+  if (b) b.style.display = '';
+}
+
 // ── PWA: installazione e funzionamento offline ────────────────────────
 // Il service worker ha scope /gestione-gara.html: non intercetta nulla del
 // resto dell'app, quindi convive con /sw.js (le push) senza sovrapporsi.
@@ -1853,7 +1884,40 @@ let promptInstalla = null;
 function preparaInstallazione() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw-gara.js', { scope: '/gestione-gara.html' })
+      .then(reg => {
+        // Senza questo, una correzione pubblicata NON arriva sul telefono: la
+        // PWA continua a servire la pagina dalla cache e la rete la rimpiazza
+        // solo al giro dopo. E' successo davvero (fix di ieri: desktop a
+        // posto, telefono ancora col bug). Qui si cerca la versione nuova a
+        // ogni avvio, e quando e' pronta lo si DICE, invece di aggiornare di
+        // nascosto: a meta' partita una ricarica non richiesta perderebbe il
+        // cronometro in corso, quindi la decisione resta all'utente.
+        reg.addEventListener('updatefound', () => {
+          const nuovo = reg.installing;
+          if (!nuovo) return;
+          nuovo.addEventListener('statechange', () => {
+            if (nuovo.state === 'installed' && navigator.serviceWorker.controller) {
+              mostraAggiornamento();
+            }
+          });
+        });
+        reg.update().catch(() => {});
+      })
       .catch(e => console.warn('Service worker Andamento Gara non registrato:', e));
+  }
+
+  const btnAgg = document.getElementById('ggAggiorna');
+  if (btnAgg) {
+    btnAgg.addEventListener('click', () => {
+      // Ricarica esplicita: il worker nuovo ha gia' fatto skipWaiting, quindi
+      // basta ricaricare per prendere la pagina aggiornata. Lo stato della
+      // partita e' su localStorage e viene riletto all'avvio, ma il
+      // cronometro in corso non va interrotto senza chiedere.
+      const inMarcia = timerStartEpoch !== null || supplStartEpoch !== null;
+      if (inMarcia && !confirm('Il cronometro sta andando. Aggiornare adesso?')) return;
+      salvaStato();
+      location.reload();
+    });
   }
 
   const bottoni = [document.getElementById('btnInstalla'), document.getElementById('btnInstalla2')];

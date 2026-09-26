@@ -7,7 +7,12 @@
 //  worker non intercetta nulla del resto dell'app.
 // ═══════════════════════════════════════════════════════════════════════
 
-const CACHE = 'gara-v1';
+// La versione va ALZATA a ogni modifica di gestione-gara.html. Senza questo,
+// sullo smartphone la PWA continua a servire la pagina vecchia dalla cache: il
+// worker si aggiorna (skipWaiting) ma la copia di /gestione-gara.html resta
+// quella di prima, e la rete la sostituisce solo al giro successivo. Risultato
+// gia' visto: fix deployato, desktop a posto, telefono ancora col bug.
+const CACHE = 'gara-v2';
 
 // Il PDF si genera con jsPDF preso dal CDN. Senza queste due voci in cache,
 // "Genera PDF" fallirebbe proprio nel caso piu' probabile: campo senza rete,
