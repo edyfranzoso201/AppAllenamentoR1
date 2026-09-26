@@ -1,0 +1,1608 @@
+<!DOCTYPE html>
+<html lang="it" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Andamento Gara — Sport Monitoring</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon-gara.svg">
+  <link rel="apple-touch-icon" href="/favicon-gara.svg">
+  <meta name="theme-color" content="#060f1e">
+  <!-- PWA autonoma: manifest e service worker propri, scope limitato a
+       questa pagina, cosi' si installa come app a se' stante senza toccare
+       la PWA principale (/manifest.json + /sw.js). -->
+  <link rel="manifest" href="/manifest-gara.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Andamento Gara">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    /* Palette: token dell'app (verde #1aa05e su fondo #060f1e), non il blu/oro
+       FIGC del prototipo: il PDF stampato resta in bianco e nero, quindi la
+       pagina puo' seguire l'identita' dell'app senza perdere nulla. */
+    :root{
+      --bg:#060f1e; --card:#0d1b2a; --panel:#1e293b; --border:#2d4a8a; --border2:#3b5a9d;
+      --txt:#e2e8f0; --muted:#94a3b8; --accent:#1aa05e; --accent-hover:#15864e;
+      --rosso:#dc2626; --giallo:#f5c518; --arancio:#f59e0b;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+    body{margin:0;font-family:system-ui,-apple-system,Arial,sans-serif;background:var(--bg);color:var(--txt);
+         min-height:100vh;padding-bottom:74px;overscroll-behavior-y:contain;}
+    .gg-header{background:var(--card);border-bottom:2px solid var(--accent);padding:10px 14px;
+               display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:0;z-index:20;}
+    .gg-header h1{font-size:1.05rem;margin:0;font-weight:700;display:flex;align-items:center;gap:7px;}
+    .gg-back{background:var(--panel);color:var(--txt);border:1px solid var(--border);border-radius:8px;
+             padding:7px 11px;cursor:pointer;text-decoration:none;font-size:0.85rem;}
+    .gg-annata{color:var(--muted);font-size:0.8rem;}
+    .gg-main{max-width:820px;margin:0 auto;padding:14px;}
+    .gg-page{display:none;}
+    .gg-page.active{display:block;}
+    .gg-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px;}
+    .gg-card h2{font-size:0.95rem;margin:0 0 12px;font-weight:700;}
+    .gg-field{margin-bottom:10px;}
+    .gg-field label{display:block;font-size:0.78rem;color:var(--muted);margin-bottom:4px;}
+    .gg-field input,.gg-field select,.gg-field textarea{width:100%;background:var(--panel);color:var(--txt);
+      border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:0.9rem;font-family:inherit;}
+    .gg-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .gg-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 15px;
+            cursor:pointer;font-weight:600;font-size:0.88rem;}
+    .gg-btn:active{background:var(--accent-hover);}
+    .gg-btn-ghost{background:var(--panel);color:var(--txt);border:1px solid var(--border);border-radius:8px;
+                  padding:10px 14px;cursor:pointer;font-size:0.88rem;}
+    .gg-btn-danger{background:var(--rosso);color:#fff;border:none;border-radius:8px;padding:10px 14px;
+                   cursor:pointer;font-weight:600;font-size:0.88rem;}
+    .gg-btn:disabled,.gg-btn-ghost:disabled{opacity:0.45;cursor:not-allowed;}
+
+    /* ── TIMER: dimensioni identiche al prototipo dell'utente ──────────── */
+    .timer-display{font-size:56px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;
+                   text-align:center;letter-spacing:1px;}
+    #supplDisplay{font-size:50px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;text-align:center;}
+    .team-score{font-size:52px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;}
+    .side-time-val{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;}
+
+    .gg-timer-wrap{background:var(--card);border:1px solid var(--border2);border-radius:14px;
+                   padding:16px 14px;margin-bottom:14px;}
+    .gg-periodo{text-align:center;color:var(--muted);font-size:0.82rem;text-transform:uppercase;
+                letter-spacing:1.5px;margin-bottom:6px;font-weight:600;}
+    .gg-minuto{text-align:center;color:var(--accent);font-size:0.9rem;font-weight:700;margin-top:4px;min-height:1.2em;}
+    .gg-timer-btns{display:flex;gap:9px;justify-content:center;margin-top:14px;flex-wrap:wrap;}
+    .gg-timer-btns button{flex:1;min-width:104px;padding:13px 10px;font-size:0.9rem;font-weight:700;
+                          border-radius:10px;border:none;cursor:pointer;}
+    .gg-b-start{background:var(--accent);color:#fff;}
+    .gg-b-pause{background:var(--arancio);color:#1a1a1a;}
+    .gg-b-stop{background:var(--rosso);color:#fff;}
+    .gg-b-reset{background:var(--panel);color:var(--txt);border:1px solid var(--border)!important;}
+
+    /* ── Protezione dal tocco accidentale ───────────────────────────────
+       I comandi distruttivi (Fine tempo, Azzera) sono separati dagli altri
+       da uno stacco e richiedono la pressione prolungata: il riempimento
+       mostra quanto manca, cosi' il gesto e' consapevole senza un popup. */
+    .gg-b-stop,.gg-b-reset,.gg-btn-danger{position:relative;overflow:hidden;
+                           -webkit-user-select:none;user-select:none;
+                           -webkit-touch-callout:none;}
+    .gg-b-stop::after,.gg-b-reset::after,.gg-btn-danger::after{
+                           content:'';position:absolute;left:0;top:0;bottom:0;width:0;
+                           background:rgba(255,255,255,0.38);pointer-events:none;}
+    .gg-b-stop.gg-premendo::after,.gg-b-reset.gg-premendo::after,
+    .gg-btn-danger.gg-premendo::after{
+                           width:100%;transition:width var(--gg-hold,900ms) linear;}
+    /* Stacco fra i comandi sicuri e quelli distruttivi. Su schermo stretto
+       i due gruppi vanno su righe diverse, non affiancati per sbaglio. */
+    .gg-timer-btns{row-gap:12px;}
+    .gg-sep-comandi{flex-basis:100%;height:0;margin:0;}
+    @media (min-width:520px){ .gg-sep-comandi{flex-basis:18px;height:auto;} }
+    .gg-hint-hold{font-size:0.74rem;color:var(--muted);text-align:center;margin-top:7px;}
+    .gg-annulla-stop{margin-top:10px;padding:9px 11px;border-radius:9px;text-align:center;
+                     background:rgba(255,193,7,0.14);border:1px solid var(--arancio);
+                     font-size:0.82rem;}
+    .gg-annulla-stop button{margin-left:9px;padding:7px 13px;border-radius:8px;border:none;
+                            background:var(--arancio);color:#1a1a1a;font-weight:700;cursor:pointer;}
+
+    .gg-score{display:flex;align-items:center;justify-content:space-around;gap:10px;margin:14px 0 4px;}
+    .gg-score-col{text-align:center;flex:1;min-width:0;}
+    .gg-score-col .nm{font-size:0.76rem;color:var(--muted);margin-bottom:4px;overflow:hidden;
+                      text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
+    .gg-score-sep{font-size:26px;color:var(--muted);font-weight:700;}
+    .gg-score-btns{display:flex;gap:6px;justify-content:center;margin-top:6px;}
+    .gg-score-btns button{width:38px;height:34px;border-radius:8px;border:1px solid var(--border);
+                          background:var(--panel);color:var(--txt);font-size:1rem;font-weight:700;cursor:pointer;}
+
+    .gg-sidetimes{display:flex;justify-content:space-around;gap:8px;margin-top:12px;
+                  border-top:1px solid var(--border);padding-top:11px;flex-wrap:wrap;}
+    .gg-sidetime{text-align:center;min-width:66px;}
+    .gg-sidetime .lb{font-size:0.66rem;color:var(--muted);text-transform:uppercase;
+                     letter-spacing:0.5px;margin-bottom:2px;}
+
+    #supplSection{display:none;}
+
+    /* ── Rosa ─────────────────────────────────────────────────────────── */
+    .gg-plist{display:flex;flex-direction:column;gap:7px;}
+    .gg-prow{display:flex;align-items:center;gap:9px;background:var(--panel);border:1px solid var(--border);
+             border-radius:9px;padding:8px 10px;}
+    .gg-prow.out{opacity:0.42;}
+    .gg-pnum{font-weight:700;min-width:26px;text-align:center;font-variant-numeric:tabular-nums;color:var(--accent);}
+    .gg-pname{flex:1;min-width:0;font-size:0.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .gg-pbadges{display:flex;gap:4px;flex-wrap:wrap;}
+    .gg-badge{font-size:0.64rem;border-radius:4px;padding:1px 5px;font-weight:700;}
+    .gg-badge.c{background:var(--giallo);color:#1a1a1a;}
+    .gg-badge.vc{background:#64748b;color:#fff;}
+    .gg-badge.p{background:#0ea5e9;color:#fff;}
+    .gg-ptoggle{background:none;border:1px solid var(--border2);border-radius:7px;color:var(--muted);
+                padding:4px 9px;font-size:0.72rem;cursor:pointer;white-space:nowrap;}
+    .gg-ptoggle.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+    /* ── Eventi ───────────────────────────────────────────────────────── */
+    .gg-evrow{display:flex;align-items:center;gap:9px;background:var(--panel);border-left:3px solid var(--border2);
+              border-radius:7px;padding:8px 10px;margin-bottom:6px;font-size:0.85rem;}
+    .gg-evrow.gol{border-left-color:var(--accent);}
+    .gg-evrow.amm{border-left-color:var(--giallo);}
+    .gg-evrow.esp{border-left-color:var(--rosso);}
+    .gg-evrow.cam{border-left-color:#0ea5e9;}
+    .gg-evmin{font-weight:700;min-width:48px;font-variant-numeric:tabular-nums;color:var(--accent);}
+    .gg-evtxt{flex:1;min-width:0;}
+    .gg-evdel{background:none;border:none;color:var(--rosso);cursor:pointer;font-size:0.95rem;padding:2px 4px;}
+    .gg-empty{text-align:center;color:var(--muted);padding:26px 12px;font-size:0.85rem;}
+
+    /* ── Bottom nav ───────────────────────────────────────────────────── */
+    .gg-nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border2);
+            display:flex;z-index:30;padding-bottom:env(safe-area-inset-bottom);}
+    .gg-nav button{flex:1;background:none;border:none;color:var(--muted);padding:9px 3px 10px;cursor:pointer;
+                   font-size:0.68rem;display:flex;flex-direction:column;align-items:center;gap:3px;font-weight:600;}
+    .gg-nav button .ic{font-size:1.12rem;line-height:1;}
+    .gg-nav button.active{color:var(--accent);}
+
+    .gg-toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;
+              padding:10px 18px;border-radius:9px;display:none;z-index:100;font-size:0.85rem;
+              max-width:88vw;text-align:center;}
+    .gg-hint{font-size:0.76rem;color:var(--muted);line-height:1.5;}
+    .gg-alert{background:rgba(245,158,11,0.13);border:1px solid var(--arancio);border-radius:9px;
+              padding:10px 12px;font-size:0.8rem;color:#fcd34d;margin-bottom:12px;display:none;}
+    .gg-chk{width:auto!important;margin-right:7px;vertical-align:-1px;}
+    @media (max-width:420px){
+      .timer-display{font-size:52px;}
+      .team-score{font-size:44px;}
+    }
+  </style>
+</head>
+<body>
+  <div class="gg-header">
+    <a href="/area-tecnica.html" class="gg-back">&larr; Area Tecnica</a>
+    <h1>&#9201;&#65039; Andamento Gara</h1>
+    <span class="gg-annata" id="gg-annata-label"></span>
+    <button type="button" class="gg-back" id="btnInstalla" style="display:none;margin-left:auto;border-color:var(--accent);color:#4ade80;">&#11015;&#65039; Installa app</button>
+  </div>
+
+  <div class="gg-main">
+
+    <!-- ══════════ PAGINA GARA ══════════ -->
+    <div class="gg-page active" id="page-gara">
+
+      <!-- Avviso "cronometro dimenticato": vedi verificaTimerDimenticato() -->
+      <div class="gg-alert" id="ggAlertDimenticato"></div>
+      <!-- Stato del blocco schermo: vedi aggiornaStatoSchermo() -->
+      <div class="gg-alert" id="ggAlertSchermo" style="display:none"></div>
+
+      <div class="gg-timer-wrap">
+        <div class="gg-periodo" id="periodoLabel">1&deg; Tempo</div>
+        <div class="timer-display" id="timerDisplay">00:00</div>
+        <div class="gg-minuto" id="minutoLabel"></div>
+
+        <div class="gg-score">
+          <div class="gg-score-col">
+            <div class="nm" id="scoreNameHome">Noi</div>
+            <div class="team-score" id="scoreHome">0</div>
+            <div class="gg-score-btns">
+              <button type="button" data-score="home" data-delta="-1">&minus;</button>
+              <button type="button" data-score="home" data-delta="1">+</button>
+            </div>
+          </div>
+          <div class="gg-score-sep">&ndash;</div>
+          <div class="gg-score-col">
+            <div class="nm" id="scoreNameAway">Avversario</div>
+            <div class="team-score" id="scoreAway">0</div>
+            <div class="gg-score-btns">
+              <button type="button" data-score="away" data-delta="-1">&minus;</button>
+              <button type="button" data-score="away" data-delta="1">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="gg-timer-btns">
+          <button type="button" class="gg-b-start" id="btnStart">&#9654; Avvia</button>
+          <button type="button" class="gg-b-pause" id="btnPause">&#9208; Pausa</button>
+          <span class="gg-sep-comandi"></span>
+          <button type="button" class="gg-b-stop" id="btnStop">&#9209; Fine tempo</button>
+          <button type="button" class="gg-b-reset" id="btnReset">&#8634; Azzera</button>
+        </div>
+        <div class="gg-hint-hold" id="ggHintHold">
+          &#9209; Fine tempo e &#8634; Azzera: <strong>tieni premuto</strong> per confermare.
+        </div>
+        <!-- Via d'uscita se il tempo e' stato chiuso per sbaglio: vedi
+             annullaFineTempo(). Sparisce da se' dopo ANNULLA_MS. -->
+        <div class="gg-annulla-stop" id="ggAnnullaStop" style="display:none">
+          Tempo chiuso per sbaglio?
+          <button type="button" id="btnAnnullaStop">&#8630; Annulla</button>
+        </div>
+
+        <div class="gg-sidetimes">
+          <div class="gg-sidetime"><div class="lb">Inizio 1&deg;T</div><div class="side-time-val" id="tsT1Start">--:--</div></div>
+          <div class="gg-sidetime"><div class="lb">Fine 1&deg;T</div><div class="side-time-val" id="tsT1End">--:--</div></div>
+          <div class="gg-sidetime"><div class="lb">Inizio 2&deg;T</div><div class="side-time-val" id="tsT2Start">--:--</div></div>
+          <div class="gg-sidetime"><div class="lb">Fine 2&deg;T</div><div class="side-time-val" id="tsT2End">--:--</div></div>
+        </div>
+        <div style="text-align:center;margin-top:9px;">
+          <button type="button" class="gg-btn-ghost" id="btnCorreggiOrari" style="font-size:0.78rem;padding:6px 11px;">&#9999;&#65039; Correggi orari</button>
+        </div>
+      </div>
+
+      <!-- Tempi supplementari -->
+      <div class="gg-timer-wrap" id="supplSection">
+        <div class="gg-periodo" id="supplLabel">1&deg; Tempo Supplementare</div>
+        <div id="supplDisplay">00:00</div>
+        <div class="gg-timer-btns">
+          <button type="button" class="gg-b-start" id="btnSupplStart">&#9654; Avvia</button>
+          <button type="button" class="gg-b-pause" id="btnSupplPause">&#9208; Pausa</button>
+          <span class="gg-sep-comandi"></span>
+          <button type="button" class="gg-b-stop" id="btnSupplStop">&#9209; Fine</button>
+        </div>
+        <div style="text-align:center;margin-top:10px;">
+          <button type="button" class="gg-btn-ghost" id="btnSupplHide" style="font-size:0.78rem;padding:6px 11px;">Nascondi supplementari</button>
+        </div>
+      </div>
+
+      <div class="gg-card">
+        <h2>&#128203; Dati gara</h2>
+        <div class="gg-row2">
+          <div class="gg-field"><label>Squadra di casa</label><input type="text" id="infoCasa"></div>
+          <div class="gg-field"><label>Squadra ospite</label><input type="text" id="infoOspite"></div>
+        </div>
+        <div class="gg-row2">
+          <div class="gg-field"><label>Campionato / Torneo</label><input type="text" id="infoCampionato"></div>
+          <div class="gg-field"><label>Giornata</label><input type="text" id="infoGiornata"></div>
+        </div>
+        <div class="gg-row2">
+          <div class="gg-field"><label>Data</label><input type="date" id="infoData"></div>
+          <div class="gg-field"><label>Ora inizio</label><input type="time" id="infoOra"></div>
+        </div>
+        <div class="gg-field"><label>Campo / Luogo</label><input type="text" id="infoLuogo"></div>
+        <div class="gg-row2">
+          <div class="gg-field"><label>Arbitro</label><input type="text" id="infoArbitro"></div>
+          <div class="gg-field"><label>Giochiamo in casa?</label>
+            <select id="infoNoiCasa">
+              <option value="1">S&igrave;, in casa</option>
+              <option value="0">No, in trasferta</option>
+            </select>
+          </div>
+        </div>
+        <div class="gg-row2">
+          <div class="gg-field"><label>Durata tempo (min)</label><input type="number" id="infoDurata" min="1" max="60" step="1"></div>
+          <div class="gg-field"><label>Durata suppl. (min)</label><input type="number" id="infoDurataSuppl" min="1" max="30" step="1"></div>
+        </div>
+        <div class="gg-field">
+          <label>Tempi supplementari</label>
+          <select id="infoSupplMode">
+            <option value="off">Non previsti (campionato)</option>
+            <option value="ask">Previsti: chiedi alla fine del 2&deg; tempo</option>
+          </select>
+        </div>
+        <div class="gg-hint">
+          Con &laquo;Non previsti&raquo; alla fine del 2&deg; tempo la gara si chiude e non compare nulla:
+          &egrave; il caso normale di campionato. Scegli &laquo;Previsti&raquo; solo per coppe o tornei a eliminazione,
+          e ti verr&agrave; chiesto prima di partire.
+        </div>
+
+        <div class="gg-field">
+          <label>Segnali acustici</label>
+          <select id="infoAudio">
+            <option value="1">Attivi (consigliato)</option>
+            <option value="0">Silenziosi</option>
+          </select>
+        </div>
+        <div class="gg-hint">
+          Un bip a <strong>2 minuti dalla fine</strong>, tre bip allo <strong>scadere
+          del tempo regolamentare</strong> e un allarme pi&ugrave; insistente se il cronometro
+          resta avviato troppo oltre. Il cronometro <strong>non si ferma</strong>: il
+          recupero prosegue e lo chiudi tu al fischio. Su Android vibra anche.
+          <button type="button" class="gg-btn-ghost" id="btnProvaAudio"
+                  style="margin-top:8px">&#128266; Prova il suono</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ PAGINA ROSA ══════════ -->
+    <div class="gg-page" id="page-rosa">
+      <div class="gg-card">
+        <h2>&#128101; Convocati</h2>
+        <div class="gg-hint" style="margin-bottom:11px;">
+          La rosa arriva da <strong>Gestione Squadra</strong> di questa annata: numero di maglia,
+          data di nascita e matricola F.I.G.C. sono quelli gi&agrave; inseriti l&igrave;.
+          Tocca &laquo;In distinta&raquo; per includere o escludere un atleta.
+        </div>
+        <div class="gg-row2" style="margin-bottom:11px;">
+          <button type="button" class="gg-btn-ghost" id="btnTuttiIn">Tutti in distinta</button>
+          <button type="button" class="gg-btn-ghost" id="btnTuttiOut">Nessuno</button>
+        </div>
+        <div class="gg-field"><input type="text" id="rosaSearch" placeholder="&#128269; Cerca per nome&hellip;"></div>
+        <div class="gg-plist" id="rosaList"></div>
+      </div>
+    </div>
+
+    <!-- ══════════ PAGINA EVENTI ══════════ -->
+    <div class="gg-page" id="page-eventi">
+      <div class="gg-card">
+        <h2>&#10133; Registra evento</h2>
+        <div class="gg-field">
+          <label>Tipo</label>
+          <select id="evTipo">
+            <option value="gol">&#9917; Gol nostro</option>
+            <option value="gol-avv">&#9917; Gol avversario</option>
+            <option value="ammonizione">&#128993; Ammonizione</option>
+            <option value="espulsione">&#128308; Espulsione</option>
+            <option value="cambio">&#128260; Sostituzione</option>
+            <option value="nota">&#128221; Nota</option>
+          </select>
+        </div>
+        <div class="gg-field" id="evGiocatoreWrap">
+          <label id="evGiocatoreLabel">Giocatore</label>
+          <select id="evGiocatore"></select>
+        </div>
+        <div class="gg-field" id="evEntraWrap" style="display:none;">
+          <label>Entra</label>
+          <select id="evEntra"></select>
+        </div>
+        <div class="gg-field" id="evNotaWrap" style="display:none;">
+          <label>Testo</label>
+          <input type="text" id="evNota" placeholder="es. Rigore parato">
+        </div>
+        <div class="gg-field">
+          <label>Minuto (vuoto = minuto corrente del cronometro)</label>
+          <input type="text" id="evMinuto" placeholder="automatico" inputmode="numeric">
+        </div>
+        <button type="button" class="gg-btn" id="btnAddEvento" style="width:100%;">Aggiungi evento</button>
+      </div>
+
+      <div class="gg-card">
+        <h2>&#128220; Cronologia</h2>
+        <div id="eventiList"></div>
+      </div>
+    </div>
+
+    <!-- ══════════ PAGINA REPORT ══════════ -->
+    <div class="gg-page" id="page-pdf">
+      <div class="gg-card">
+        <h2>&#128424;&#65039; Report per la stampa</h2>
+        <div class="gg-hint" style="margin-bottom:12px;">
+          Genera il resoconto della gara in PDF, pronto da inviare alla testata giornalistica.
+        </div>
+        <div class="gg-field"><label><input type="checkbox" class="gg-chk" id="pdfRisultato" checked>Includi il risultato</label></div>
+        <div class="gg-field"><label><input type="checkbox" class="gg-chk" id="pdfCrono" checked>Includi gli orari del cronometro</label></div>
+        <div class="gg-field"><label><input type="checkbox" class="gg-chk" id="pdfRosa" checked>Includi la rosa dei convocati</label></div>
+        <div class="gg-field"><label><input type="checkbox" class="gg-chk" id="pdfEventi" checked>Includi la cronologia eventi</label></div>
+        <div class="gg-field"><label>Firma / redazione (opzionale)</label><input type="text" id="pdfFirma" placeholder="es. A cura di Mario Rossi"></div>
+        <button type="button" class="gg-btn" id="btnGenPdf" style="width:100%;">&#128196; Genera PDF</button>
+      </div>
+
+      <div class="gg-card" id="cardInstalla" style="display:none;">
+        <h2>&#128241; Installa sullo smartphone</h2>
+        <div class="gg-hint" style="margin-bottom:11px;">
+          Andamento Gara pu&ograve; essere installata come app a s&eacute;, con la sua icona sulla
+          schermata home. Una volta installata funziona <strong>anche senza rete</strong>:
+          cronometro, eventi e generazione del PDF restano disponibili a bordo campo.
+        </div>
+        <button type="button" class="gg-btn" id="btnInstalla2" style="width:100%;">&#11015;&#65039; Installa Andamento Gara</button>
+        <div class="gg-hint" id="hintInstallaIos" style="margin-top:11px;display:none;">
+          Su iPhone: tocca <strong>Condividi</strong> nella barra di Safari, poi
+          <strong>Aggiungi alla schermata Home</strong>.
+        </div>
+      </div>
+
+      <div class="gg-card">
+        <h2>&#128465;&#65039; Nuova gara</h2>
+        <div class="gg-hint" style="margin-bottom:11px;">
+          Azzera cronometro, risultato ed eventi per iniziare una partita nuova.
+          I dati gara e la selezione dei convocati restano come sono.
+        </div>
+        <button type="button" class="gg-btn-danger" id="btnNuovaGara" style="width:100%;">Azzera la gara</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="gg-nav">
+    <button type="button" class="active" data-page="gara"><span class="ic">&#9201;&#65039;</span>Gara</button>
+    <button type="button" data-page="rosa"><span class="ic">&#128101;</span>Rosa</button>
+    <button type="button" data-page="eventi"><span class="ic">&#128220;</span>Eventi</button>
+    <button type="button" data-page="pdf"><span class="ic">&#128424;&#65039;</span>Report</button>
+  </div>
+
+  <div class="gg-toast" id="gg-toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+//  Gestione Gara — cronometro partita + report PDF per la stampa
+//  Pagina autonoma: legge la rosa da /api/data (Gestione Squadra) e NON
+//  scrive nulla sul server. Lo stato della gara vive in localStorage sul
+//  dispositivo che sta cronometrando, come Test Reattivita'.
+// ═══════════════════════════════════════════════════════════════════════
+
+// ── Autenticazione/annata (stesso pattern di cronografo.html) ──────────
+function ss(key) {
+  return sessionStorage.getItem(key) || localStorage.getItem('_p_' + key) || '';
+}
+// Aperta come PWA dall'icona sulla home, la pagina parte da start_url
+// (/gestione-gara.html, senza query) e in un contesto standalone il
+// sessionStorage dell'app non c'e': senza memoria propria l'annata sarebbe
+// vuota e la rosa non arriverebbe. La prima apertura dal link di Area
+// Tecnica porta ?annata=, che viene quindi ricordata qui in localStorage.
+const ANNATA_KEY = 'gestione_gara_annata';
+function annataId() {
+  const u = new URL(location.href);
+  const daUrl = u.searchParams.get('annata');
+  if (daUrl) {
+    try { localStorage.setItem(ANNATA_KEY, daUrl); } catch (e) {}
+    return daUrl;
+  }
+  return ss('gosport_current_annata')
+      || localStorage.getItem('currentAnnata')
+      || localStorage.getItem(ANNATA_KEY)
+      || '';
+}
+function authHeaders() {
+  const h = {};
+  h['X-Annata-Id'] = annataId();
+  h['X-Auth-Session'] = ss('gosport_session_token') || ss('gosport_auth_session') || '';
+  h['X-Auth-User'] = ss('gosport_auth_user');
+  h['X-User-Role'] = ss('gosport_user_role');
+  h['X-Society-Id'] = ss('gosport_society_id');
+  return h;
+}
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function toast(msg) {
+  const t = document.getElementById('gg-toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { t.style.display = 'none'; }, 2600);
+}
+
+// ── Stato ──────────────────────────────────────────────────────────────
+const SAVE_KEY = 'gestione_gara_stato';
+const SAVE_VERSION = 1;
+
+let players = [];        // rosa da Gestione Squadra + flag locali di distinta
+let events = [];
+let info = {
+  casa:'', ospite:'', campionato:'', giornata:'', data:'', ora:'', luogo:'', arbitro:'',
+  noiCasa:'1', durata:45, durataSuppl:15, supplMode:'off', audio:'1'
+};
+let scoreHome = 0, scoreAway = 0;
+let periodTimestamps = { t1Start:null, t1End:null, t2Start:null, t2End:null };
+
+// Cronometro principale. Il tempo NON si conta sommando tick: si ricava
+// sempre da (adesso - istante di avvio), cosi' se lo schermo del telefono si
+// spegne o il browser sospende i timer il conteggio resta esatto.
+let currentPeriod = 1;      // 1 o 2
+let timerSeconds = 0;
+let timerStartEpoch = null; // ms, null quando fermo
+let timerSecondsAtStart = 0;
+let timerInterval = null;
+let periodoChiuso = false;  // true quando il 2o tempo e' finito
+
+// Supplementari
+let supplPeriod = 1;
+let supplSeconds = 0;
+let supplStartEpoch = null;
+let supplSecondsAtStart = 0;
+let supplInterval = null;
+let supplAttivi = false;    // la sezione e' visibile
+
+let wakeLock = null;
+
+// ── Segnali acustici ───────────────────────────────────────────────────
+// L'avviso "cronometro dimenticato" e' visivo, quindi funziona solo se
+// guardi lo schermo: ma la distrazione e' proprio il caso in cui non lo
+// guardi. Qui il bip copre quel buco. Il suono e' generato dal browser
+// (niente file da scaricare): funziona anche al campo senza rete.
+let audioCtx = null;
+// I browser mobili bloccano l'audio finche' l'utente non ha toccato la
+// pagina. Non serve chiedere niente in piu': il tocco su Avvia basta.
+function sbloccaAudio() {
+  if (audioCtx) { if (audioCtx.state === 'suspended') audioCtx.resume(); return; }
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) audioCtx = new AC();
+  } catch (e) { /* niente audio: i segnali restano visivi */ }
+}
+// Un bip. freq in Hz, durata in ms, volume 0-1.
+function bip(freq, ms, volume) {
+  if (info.audio !== '1' || !audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'square';           // squadrata: si sente col telefono in tasca
+    osc.frequency.value = freq;
+    // Attacco e rilascio morbidi, altrimenti si sente un "clic" sgradevole.
+    const t = audioCtx.currentTime;
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(volume, t + 0.01);
+    gain.gain.linearRampToValueAtTime(0, t + ms / 1000);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t); osc.stop(t + ms / 1000 + 0.02);
+  } catch (e) {}
+}
+function vibra(pattern) {
+  // Solo Android: iOS non espone navigator.vibrate, la' resta il suono.
+  try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {}
+}
+// Preavviso: due minuti alla fine. Un bip solo, discreto.
+function segnalePreavviso() { bip(880, 180, 0.25); vibra(200); }
+// Fine del tempo regolamentare: tre bip, piu' insistenti.
+function segnaleFineTempo() {
+  bip(1320, 220, 0.4);
+  setTimeout(() => bip(1320, 220, 0.4), 300);
+  setTimeout(() => bip(1320, 380, 0.4), 600);
+  vibra([250, 120, 250, 120, 420]);
+}
+// Cronometro dimenticato: nota bassa ripetuta, diversa dalle altre due
+// perche' vuol dire "stai sbagliando", non "e' ora".
+function segnaleDimenticato() {
+  bip(440, 500, 0.4);
+  setTimeout(() => bip(330, 600, 0.4), 560);
+  vibra([500, 200, 600]);
+}
+
+// Ogni segnale scatta una volta per tempo. La chiave tiene dentro il
+// periodo, cosi' il 2o tempo ri-suona senza che serva azzerare nulla.
+let segnaliEmessi = {};
+function chiaveSegnale(nome) {
+  const dove = supplAttivi ? 'S' + supplPeriod : 'T' + currentPeriod;
+  return nome + ':' + dove;
+}
+function emettiUnaVolta(nome, fn) {
+  const k = chiaveSegnale(nome);
+  if (segnaliEmessi[k]) return;
+  segnaliEmessi[k] = true;
+  fn();
+}
+
+// ── Formattazione ──────────────────────────────────────────────────────
+function fmtMMSS(sec) {
+  const s = Math.max(0, Math.floor(sec));
+  return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+}
+function fmtOra(ms) {
+  if (!ms) return '--:--';
+  const d = new Date(ms);
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+function fmtDataIT(iso) {
+  if (!iso) return '';
+  const p = String(iso).split('-');
+  return p.length === 3 ? (p[2] + '/' + p[1] + '/' + p[0]) : String(iso);
+}
+
+// Minuto di gioco "da giornale": nel 2o tempo si riparte da 45, e oltre la
+// durata regolamentare si scrive 45+2 invece di 47.
+function minutoCorrente() {
+  const dur = Number(info.durata) || 45;
+  if (supplAttivi && supplStartEpoch !== null) {
+    const base = 2 * dur + (supplPeriod === 2 ? (Number(info.durataSuppl) || 15) : 0);
+    const m = Math.floor(supplSeconds / 60) + 1;
+    const tot = base + Math.min(m, Number(info.durataSuppl) || 15);
+    return { label: tot + "'", min: tot };
+  }
+  const offset = currentPeriod === 2 ? dur : 0;
+  const m = Math.floor(timerSeconds / 60) + 1;
+  if (m > dur) return { label: (offset + dur) + '+' + (m - dur) + "'", min: offset + dur };
+  return { label: (offset + m) + "'", min: offset + m };
+}
+
+// ── Rendering cronometro ───────────────────────────────────────────────
+function renderTimer() {
+  document.getElementById('timerDisplay').textContent = fmtMMSS(timerSeconds);
+  const dur = Number(info.durata) || 45;
+  let lbl = currentPeriod === 2 ? '2° Tempo' : '1° Tempo';
+  if (periodoChiuso) lbl += ' — gara conclusa';
+  document.getElementById('periodoLabel').textContent = lbl;
+
+  const mi = minutoCorrente();
+  const over = timerSeconds >= dur * 60;
+  document.getElementById('minutoLabel').textContent =
+    timerStartEpoch !== null || timerSeconds > 0
+      ? (over ? mi.label + '  · recupero' : mi.label)
+      : '';
+
+  document.getElementById('supplDisplay').textContent = fmtMMSS(supplSeconds);
+  document.getElementById('supplLabel').textContent =
+    (supplPeriod === 2 ? '2°' : '1°') + ' Tempo Supplementare';
+  document.getElementById('supplSection').style.display = supplAttivi ? '' : 'none';
+
+  document.getElementById('scoreHome').textContent = scoreHome;
+  document.getElementById('scoreAway').textContent = scoreAway;
+  document.getElementById('tsT1Start').textContent = fmtOra(periodTimestamps.t1Start);
+  document.getElementById('tsT1End').textContent   = fmtOra(periodTimestamps.t1End);
+  document.getElementById('tsT2Start').textContent = fmtOra(periodTimestamps.t2Start);
+  document.getElementById('tsT2End').textContent   = fmtOra(periodTimestamps.t2End);
+
+  document.getElementById('btnStart').disabled = (timerStartEpoch !== null) || periodoChiuso;
+  document.getElementById('btnPause').disabled = (timerStartEpoch === null);
+  document.getElementById('btnStop').disabled  = (timerSeconds === 0 && timerStartEpoch === null) || periodoChiuso;
+  document.getElementById('btnSupplStart').disabled = (supplStartEpoch !== null);
+  document.getElementById('btnSupplPause').disabled = (supplStartEpoch === null);
+
+  verificaTimerDimenticato();
+  verificaSegnali();
+  aggiornaStatoSchermo();
+  aggiornaBarraAnnulla();
+}
+
+// ── Tocco accidentale ──────────────────────────────────────────────────
+// A bordo campo si tiene il telefono in una mano, spesso con i guanti o
+// sotto la pioggia, e i bottoni sono in fila: "Fine tempo" a fianco di
+// "Pausa" si tocca per sbaglio. Su "Fine tempo" nel 2o tempo il danno non
+// e' piccolo: chiude la gara (periodoChiuso) e si torna indietro solo con
+// Azzera, che cancella tutto.
+// Un confirm() NON risolve: resta un solo tocco, e' bloccante e a mani
+// occupate e' proprio il momento in cui si sbaglia. Qui il gesto diventa
+// deliberato: si tiene premuto, il bottone si riempie mentre premi, e si
+// molla prima se non era voluto.
+const HOLD_MS = 900;
+
+// Rende un bottone azionabile solo con la pressione prolungata.
+// etichetta = testo normale, attesa = testo mentre stai premendo.
+function tieniPremuto(id, etichetta, attesa, azione) {
+  const b = document.getElementById(id);
+  if (!b) return;
+  b.style.setProperty('--gg-hold', HOLD_MS + 'ms');
+  let t = null;
+
+  function mostra(testo) { b.innerHTML = testo; }
+  function annulla() {
+    if (t) { clearTimeout(t); t = null; }
+    b.classList.remove('gg-premendo');
+    mostra(etichetta);
+  }
+  function avvia(ev) {
+    // Un solo dito: con due dita sullo schermo il riempimento impazzisce.
+    if (ev.type === 'touchstart' && ev.touches && ev.touches.length > 1) return;
+    if (b.disabled || t) return;
+    // Il touch genera anche mousedown: senza questo il timer parte due volte.
+    if (ev.cancelable) ev.preventDefault();
+    b.classList.add('gg-premendo');
+    mostra(attesa);
+    t = setTimeout(() => {
+      t = null;
+      b.classList.remove('gg-premendo');
+      mostra(etichetta);
+      vibra(60);              // conferma tattile: il gesto e' andato a segno
+      azione();
+    }, HOLD_MS);
+  }
+
+  b.addEventListener('touchstart', avvia, { passive: false });
+  b.addEventListener('mousedown', avvia);
+  ['touchend', 'touchcancel', 'mouseup', 'mouseleave', 'blur'].forEach(
+    ev => b.addEventListener(ev, annulla));
+  // Il click secco non fa niente: l'unica via e' tenere premuto.
+  b.addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); });
+  // Chi usa la tastiera (o un lettore di schermo) non puo' "tenere premuto":
+  // per lui la conferma e' Invio/Spazio due volte entro 3 secondi.
+  let armato = 0;
+  b.addEventListener('keydown', ev => {
+    if (ev.key !== 'Enter' && ev.key !== ' ') return;
+    ev.preventDefault();
+    const ora = Date.now();
+    if (armato && ora - armato < 3000) { armato = 0; mostra(etichetta); azione(); return; }
+    armato = ora;
+    mostra(attesa);
+    toast('Premi di nuovo per confermare.');
+    setTimeout(() => { if (armato) { armato = 0; mostra(etichetta); } }, 3000);
+  });
+}
+
+// ── Annullare un "Fine tempo" dato per sbaglio ─────────────────────────
+// Anche con la pressione prolungata puo' capitare (o si puo' premere al
+// momento sbagliato). Questo rimette il cronometro come stava: e' l'unica
+// via d'uscita che non passi da Azzera, che invece cancella la gara.
+let ultimoStop = null;   // {periodo, secondi, epochRipresa, tsChiuso, eraChiuso}
+
+function annullaFineTempo() {
+  if (!ultimoStop) { toast('Niente da annullare.'); return; }
+  const u = ultimoStop;
+  ultimoStop = null;
+  currentPeriod = u.periodo;
+  periodoChiuso = u.eraChiuso;
+  timerSecondsAtStart = u.secondi;
+  timerSeconds = u.secondi;
+  // Riparte da adesso: i secondi passati da quando hai premuto per sbaglio
+  // non sono gioco, quindi non vanno contati.
+  timerStartEpoch = Date.now();
+  if (u.periodo === 1) periodTimestamps.t1End = u.tsChiuso;
+  else periodTimestamps.t2End = u.tsChiuso;
+  supplAttivi = false;
+  if (!timerInterval) timerInterval = setInterval(renderTimer, 250);
+  acquisisciWakeLock();
+  aggiornaBarraAnnulla();
+  salvaStato();
+  renderTimer();
+  toast('Fine tempo annullato: il cronometro riparte da ' + fmtMMSS(u.secondi) + '.');
+}
+
+// La barra compare solo nella finestra utile: passata quella, l'orario va
+// corretto con "Correggi orari", che e' il posto giusto per rimettere a
+// mano l'ora vera del fischio.
+const ANNULLA_MS = 90 * 1000;
+function aggiornaBarraAnnulla() {
+  const box = document.getElementById('ggAnnullaStop');
+  if (!box) return;
+  if (ultimoStop && Date.now() - ultimoStop.premutoIl < ANNULLA_MS) {
+    box.style.display = '';
+  } else {
+    box.style.display = 'none';
+    if (ultimoStop && Date.now() - ultimoStop.premutoIl >= ANNULLA_MS) ultimoStop = null;
+  }
+}
+
+// ── Quando suonare ─────────────────────────────────────────────────────
+// Girata a ogni tick (250 ms) da renderTimer. Non ferma e non cambia
+// nulla del cronometro: il recupero deve continuare, la durata la decide
+// l'arbitro e non l'orologio. Qui si avvisa soltanto.
+const PREAVVISO_MIN = 2;
+function verificaSegnali() {
+  const inCorsa = supplAttivi && supplStartEpoch !== null
+    ? true : (timerStartEpoch !== null);
+  if (!inCorsa) return;
+
+  const suppl = supplAttivi && supplStartEpoch !== null;
+  const sec = suppl ? supplSeconds : timerSeconds;
+  const dur = (suppl ? (Number(info.durataSuppl) || 15)
+                     : (Number(info.durata) || 45)) * 60;
+
+  // Preavviso a 2 minuti dalla fine. La finestra di 5 secondi evita che
+  // un ricalcolo dall'orologio (schermo riacceso) lo salti del tutto.
+  const soglia = dur - PREAVVISO_MIN * 60;
+  if (soglia > 0 && sec >= soglia && sec < soglia + 5) {
+    emettiUnaVolta('preavviso', segnalePreavviso);
+  }
+  // Fine del tempo regolamentare: il cronometro prosegue nel recupero.
+  if (sec >= dur) emettiUnaVolta('fine', segnaleFineTempo);
+  // Oltre la tolleranza: probabilmente e' rimasto avviato per distrazione.
+  const limite = dur + (suppl ? 3 : TOLLERANZA_RECUPERO_MIN) * 60;
+  if (sec >= limite) emettiUnaVolta('dimenticato', segnaleDimenticato);
+}
+
+// Ricalcola i secondi dall'orologio di sistema: unica fonte di verita'.
+function ricalcolaDaEpoch() {
+  if (timerStartEpoch !== null) {
+    timerSeconds = timerSecondsAtStart + Math.floor((Date.now() - timerStartEpoch) / 1000);
+  }
+  if (supplStartEpoch !== null) {
+    supplSeconds = supplSecondsAtStart + Math.floor((Date.now() - supplStartEpoch) / 1000);
+  }
+}
+
+// ── L'avviso "cronometro dimenticato" ──────────────────────────────────
+// Il problema che l'utente ha segnalato: per una distrazione il cronometro
+// resta avviato dopo il fischio, e il minuto degli eventi successivi e'
+// sbagliato. Non si puo' correggere da soli (l'app non sa quando e' finito
+// il tempo davvero), ma si puo' smettere di far finta che vada tutto bene:
+// superata la durata + 6 minuti di tolleranza compare un avviso fisso che
+// propone di chiudere il tempo o di correggere gli orari a mano.
+const TOLLERANZA_RECUPERO_MIN = 6;
+function verificaTimerDimenticato() {
+  const box = document.getElementById('ggAlertDimenticato');
+  const dur = Number(info.durata) || 45;
+  const limite = (dur + TOLLERANZA_RECUPERO_MIN) * 60;
+  const attivo = timerStartEpoch !== null || supplStartEpoch !== null;
+  const sec = supplAttivi && supplStartEpoch !== null ? supplSeconds : timerSeconds;
+  const durRif = supplAttivi && supplStartEpoch !== null
+    ? ((Number(info.durataSuppl) || 15) + 3) * 60
+    : limite;
+
+  if (attivo && sec > durRif) {
+    const extra = Math.floor((sec - (supplAttivi && supplStartEpoch !== null
+      ? (Number(info.durataSuppl) || 15) * 60 : dur * 60)) / 60);
+    box.innerHTML = '⚠️ Il cronometro corre da <strong>' + extra +
+      ' minuti oltre</strong> la durata regolamentare. Se il tempo è già finito, ' +
+      'premi <strong>Fine tempo</strong>; se te ne sei accorto in ritardo usa ' +
+      '<strong>Correggi orari</strong> per scrivere l’ora reale del fischio.' +
+      (info.audio === '1' ? '' :
+        '<br><span style="opacity:.75">I segnali acustici sono spenti: ' +
+        'puoi riaccenderli in Dati gara.</span>');
+    box.style.display = '';
+  } else {
+    box.style.display = 'none';
+  }
+}
+
+// ── Schermo sempre acceso ──────────────────────────────────────────────
+// Una pagina web NON puo' scrivere sullo schermo di blocco: il timer sul
+// lock screen e' una notifica persistente, riservata alle app native. Il
+// massimo possibile qui e' tenere lo schermo accesso mentre il cronometro
+// corre. Se non ci riusciamo l'utente deve saperlo, perche' cambia il modo
+// in cui deve tenere il telefono.
+// Nota: il tempo resta comunque esatto anche a schermo spento, perche'
+// ricalcolaDaEpoch() legge l'orologio di sistema e non conta i tick.
+let schermoStato = 'ignoto';   // 'attivo' | 'negato' | 'revocato' | 'assente'
+
+async function acquisisciWakeLock() {
+  if (!('wakeLock' in navigator)) {
+    schermoStato = 'assente';
+    aggiornaStatoSchermo();
+    return;
+  }
+  if (wakeLock) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    schermoStato = 'attivo';
+    wakeLock.addEventListener('release', () => {
+      wakeLock = null;
+      // Rilasciato dal sistema mentre il cronometro corre: e' una revoca
+      // (tipicamente risparmio energetico), non una nostra scelta.
+      if (timerStartEpoch !== null || supplStartEpoch !== null) {
+        schermoStato = 'revocato';
+        aggiornaStatoSchermo();
+      }
+    });
+  } catch (e) {
+    schermoStato = 'negato';
+  }
+  aggiornaStatoSchermo();
+}
+function rilasciaWakeLock() {
+  if (wakeLock) { try { wakeLock.release(); } catch (e) {} wakeLock = null; }
+  schermoStato = 'ignoto';
+  aggiornaStatoSchermo();
+}
+
+function aggiornaStatoSchermo() {
+  const box = document.getElementById('ggAlertSchermo');
+  if (!box) return;
+  const inCorsa = timerStartEpoch !== null || supplStartEpoch !== null;
+  // Si avvisa solo mentre il cronometro corre, e solo se c'e' un problema:
+  // a cronometro fermo la cosa non interessa.
+  if (!inCorsa || schermoStato === 'attivo' || schermoStato === 'ignoto') {
+    box.style.display = 'none';
+    return;
+  }
+  const coda = ' Il <strong>tempo resta esatto</strong> anche a schermo spento: ' +
+               'riaccendendolo trovi il minuto giusto, e i segnali acustici suonano comunque.';
+  if (schermoStato === 'revocato') {
+    box.innerHTML = '🔅 Lo schermo <strong>non resta più acceso</strong> ' +
+      '(probabile risparmio energetico). Tieni il telefono in mano o disattiva ' +
+      'il risparmio batteria.' + coda;
+  } else {
+    box.innerHTML = '🔅 Questo telefono <strong>non consente di tenere lo schermo ' +
+      'acceso</strong> da solo: si spegnerà come sempre.' + coda;
+  }
+  box.style.display = '';
+}
+
+function startTimer() {
+  if (timerStartEpoch !== null || periodoChiuso) return;
+  sbloccaAudio();  // il tocco su Avvia e' cio' che autorizza l'audio
+  // Passaggio automatico al 2o tempo: se il 1o e' chiuso e il 2o non e'
+  // ancora iniziato, premere Avvia apre il secondo tempo da 00:00.
+  if (periodTimestamps.t1End && !periodTimestamps.t2Start && currentPeriod === 1) {
+    currentPeriod = 2;
+    timerSeconds = 0;
+    timerSecondsAtStart = 0;
+    periodTimestamps.t2Start = Date.now();
+  } else if (currentPeriod === 1 && !periodTimestamps.t1Start) {
+    periodTimestamps.t1Start = Date.now();
+  } else if (currentPeriod === 2 && !periodTimestamps.t2Start) {
+    periodTimestamps.t2Start = Date.now();
+  }
+  timerSecondsAtStart = timerSeconds;
+  timerStartEpoch = Date.now();
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => { ricalcolaDaEpoch(); renderTimer(); }, 250);
+  acquisisciWakeLock();
+  salvaStato();
+  renderTimer();
+}
+
+function pauseTimer() {
+  if (timerStartEpoch === null) return;
+  ricalcolaDaEpoch();
+  timerStartEpoch = null;
+  clearInterval(timerInterval);
+  timerInterval = null;
+  rilasciaWakeLock();
+  salvaStato();
+  renderTimer();
+}
+
+// Fine tempo. Nessun confirm() bloccante: il gesto e' reversibile
+// (Correggi orari rimette a posto l'orario) e un popup a bordo campo, con
+// le mani occupate, e' proprio il momento in cui si sbaglia.
+function stopTimer() {
+  if (periodoChiuso) return;
+  ricalcolaDaEpoch();
+  // Fotografia di com'era: serve ad annullaFineTempo() se il tocco era
+  // involontario o dato al momento sbagliato.
+  ultimoStop = {
+    periodo: currentPeriod,
+    secondi: timerSeconds,
+    tsChiuso: currentPeriod === 1 ? periodTimestamps.t1End : periodTimestamps.t2End,
+    eraChiuso: periodoChiuso,
+    premutoIl: Date.now()
+  };
+  timerStartEpoch = null;
+  clearInterval(timerInterval);
+  timerInterval = null;
+  rilasciaWakeLock();
+
+  const ora = Date.now();
+  if (currentPeriod === 1) {
+    periodTimestamps.t1End = ora;
+    timerSeconds = 0;
+    timerSecondsAtStart = 0;
+    toast('1° tempo chiuso alle ' + fmtOra(ora) + '. Premi Avvia per il 2°.');
+  } else {
+    periodTimestamps.t2End = ora;
+    periodoChiuso = true;
+    toast('Gara conclusa alle ' + fmtOra(ora) + '.');
+    proponiSupplementari();
+  }
+  aggiornaBarraAnnulla();
+  salvaStato();
+  renderTimer();
+}
+
+// Supplementari: si aprono SOLO se l'utente ha dichiarato che la gara li
+// prevede (menu Dati gara) e solo dopo una conferma. Il prototipo li
+// apriva da solo 5 secondi dopo il 90o per ogni partita: in campionato,
+// dove non esistono, era un pannello che compariva a gara finita.
+function proponiSupplementari() {
+  if (info.supplMode !== 'ask') return;
+  const ok = confirm('Il 2° tempo è finito.\n\nLa gara prosegue con i tempi supplementari?');
+  if (!ok) return;
+  supplAttivi = true;
+  supplPeriod = 1;
+  supplSeconds = 0;
+  supplSecondsAtStart = 0;
+  supplStartEpoch = null;
+  salvaStato();
+  renderTimer();
+  toast('Supplementari pronti: premi Avvia quando l’arbitro fischia.');
+}
+
+function startSuppl() {
+  if (supplStartEpoch !== null) return;
+  sbloccaAudio();
+  supplSecondsAtStart = supplSeconds;
+  supplStartEpoch = Date.now();
+  clearInterval(supplInterval);
+  supplInterval = setInterval(() => { ricalcolaDaEpoch(); renderTimer(); }, 250);
+  acquisisciWakeLock();
+  salvaStato();
+  renderTimer();
+}
+function pauseSuppl() {
+  if (supplStartEpoch === null) return;
+  ricalcolaDaEpoch();
+  supplStartEpoch = null;
+  clearInterval(supplInterval);
+  supplInterval = null;
+  rilasciaWakeLock();
+  salvaStato();
+  renderTimer();
+}
+function stopSuppl() {
+  ricalcolaDaEpoch();
+  supplStartEpoch = null;
+  clearInterval(supplInterval);
+  supplInterval = null;
+  rilasciaWakeLock();
+  if (supplPeriod === 1) {
+    supplPeriod = 2;
+    supplSeconds = 0;
+    supplSecondsAtStart = 0;
+    toast('1° supplementare chiuso. Premi Avvia per il 2°.');
+  } else {
+    toast('Supplementari conclusi.');
+  }
+  salvaStato();
+  renderTimer();
+}
+
+function resetGara() {
+  clearInterval(timerInterval); timerInterval = null;
+  clearInterval(supplInterval); supplInterval = null;
+  rilasciaWakeLock();
+  currentPeriod = 1; timerSeconds = 0; timerStartEpoch = null; timerSecondsAtStart = 0;
+  periodoChiuso = false;
+  supplPeriod = 1; supplSeconds = 0; supplStartEpoch = null; supplSecondsAtStart = 0; supplAttivi = false;
+  periodTimestamps = { t1Start:null, t1End:null, t2Start:null, t2End:null };
+  scoreHome = 0; scoreAway = 0;
+  events = [];
+  segnaliEmessi = {};   // altrimenti la gara nuova resterebbe muta
+  ultimoStop = null;    // non si annulla il "fine tempo" di una gara che non c'e' piu'
+  aggiornaBarraAnnulla();
+  salvaStato();
+  renderTimer();
+  renderEventi();
+  toast('Gara azzerata.');
+}
+
+// ── Correzione manuale degli orari ─────────────────────────────────────
+// L'altra meta' del problema "distrazione": poter scrivere l'ora vera del
+// fischio, non solo cancellarla.
+function correggiOrari() {
+  const campi = [
+    ['t1Start', 'Inizio 1° tempo'],
+    ['t1End',   'Fine 1° tempo'],
+    ['t2Start', 'Inizio 2° tempo'],
+    ['t2End',   'Fine 2° tempo']
+  ];
+  let cambiati = 0;
+  for (const [key, label] of campi) {
+    const attuale = periodTimestamps[key] ? fmtOra(periodTimestamps[key]) : '';
+    const risp = prompt(label + '\n\nScrivi l’ora in formato HH:MM (vuoto = lascia; "-" = cancella):', attuale);
+    if (risp === null) break;              // Annulla: interrompe la sequenza
+    const v = risp.trim();
+    if (v === '') continue;                // lascia com'e'
+    if (v === '-') { periodTimestamps[key] = null; cambiati++; continue; }
+    const m = v.match(/^(\d{1,2})[:.](\d{2})$/);
+    if (!m) { alert('Formato non valido: ' + v + '\nUsa HH:MM, per esempio 16:05.'); continue; }
+    const hh = Number(m[1]), mm = Number(m[2]);
+    if (hh > 23 || mm > 59) { alert('Ora non valida: ' + v); continue; }
+    // La data di riferimento e' quella della gara se indicata, altrimenti oggi.
+    const base = info.data ? new Date(info.data + 'T00:00:00') : new Date();
+    base.setHours(hh, mm, 0, 0);
+    periodTimestamps[key] = base.getTime();
+    cambiati++;
+  }
+  if (cambiati) { salvaStato(); renderTimer(); toast('Orari aggiornati.'); }
+}
+
+// ── Rosa ───────────────────────────────────────────────────────────────
+function renderRosa() {
+  const box = document.getElementById('rosaList');
+  const q = (document.getElementById('rosaSearch').value || '').trim().toLowerCase();
+  const lista = players.filter(p => p.name.toLowerCase().includes(q));
+  if (!lista.length) {
+    box.innerHTML = '<div class="gg-empty">' +
+      (players.length ? 'Nessun atleta trovato.' : 'Nessun atleta in Gestione Squadra per questa annata.') +
+      '</div>';
+    return;
+  }
+  box.innerHTML = lista.map(p => {
+    const badges = [];
+    if (p.capitano) badges.push('<span class="gg-badge c">C</span>');
+    if (p.vicecap)  badges.push('<span class="gg-badge vc">VC</span>');
+    if (p.portiere) badges.push('<span class="gg-badge p">P</span>');
+    return '<div class="gg-prow' + (p.inDistinta ? '' : ' out') + '">' +
+      '<span class="gg-pnum">' + esc(p.num || '–') + '</span>' +
+      '<span class="gg-pname">' + esc(p.name) + '</span>' +
+      '<span class="gg-pbadges">' + badges.join('') + '</span>' +
+      '<button type="button" class="gg-ptoggle' + (p.inDistinta ? ' on' : '') +
+        '" data-toggle-id="' + esc(p.id) + '">' +
+        (p.inDistinta ? 'In distinta' : 'Fuori') + '</button>' +
+      '</div>';
+  }).join('');
+}
+
+function convocati() {
+  return players.filter(p => p.inDistinta);
+}
+
+function popolaSelectGiocatori() {
+  const opts = '<option value="">— seleziona —</option>' +
+    convocati().map(p =>
+      '<option value="' + esc(p.id) + '">' +
+      (p.num ? p.num + '. ' : '') + esc(p.name) + '</option>').join('');
+  document.getElementById('evGiocatore').innerHTML = opts;
+  document.getElementById('evEntra').innerHTML = opts;
+}
+
+// ── Eventi ─────────────────────────────────────────────────────────────
+const EV_META = {
+  'gol':          { cls:'gol', ic:'⚽' },
+  'gol-avv':      { cls:'gol', ic:'⚽' },
+  'ammonizione':  { cls:'amm', ic:'🟨' },
+  'espulsione':   { cls:'esp', ic:'🟥' },
+  'cambio':       { cls:'cam', ic:'🔄' },
+  'nota':         { cls:'',    ic:'📝' }
+};
+
+function nomeGiocatore(id) {
+  const p = players.find(x => String(x.id) === String(id));
+  if (!p) return '';
+  return (p.num ? p.num + '. ' : '') + p.name;
+}
+
+function testoEvento(ev) {
+  switch (ev.tipo) {
+    case 'gol':         return '⚽ Gol — ' + nomeGiocatore(ev.playerId);
+    case 'gol-avv':     return '⚽ Gol avversario';
+    case 'ammonizione': return '🟨 Ammonizione — ' + nomeGiocatore(ev.playerId);
+    case 'espulsione':  return '🟥 Espulsione — ' + nomeGiocatore(ev.playerId);
+    case 'cambio':      return '🔄 Esce ' + nomeGiocatore(ev.playerId) +
+                               (ev.playerInId ? ', entra ' + nomeGiocatore(ev.playerInId) : '');
+    default:            return '📝 ' + (ev.nota || '');
+  }
+}
+
+function renderEventi() {
+  const box = document.getElementById('eventiList');
+  if (!events.length) {
+    box.innerHTML = '<div class="gg-empty">Nessun evento registrato.</div>';
+    return;
+  }
+  box.innerHTML = events.map((ev, i) => {
+    const meta = EV_META[ev.tipo] || EV_META.nota;
+    return '<div class="gg-evrow ' + meta.cls + '">' +
+      '<span class="gg-evmin">' + esc(ev.minuto) + '</span>' +
+      '<span class="gg-evtxt">' + esc(testoEvento(ev)) + '</span>' +
+      '<button type="button" class="gg-evdel" data-del-ev="' + i + '" title="Elimina">✕</button>' +
+      '</div>';
+  }).join('');
+}
+
+function aggiungiEvento() {
+  const tipo = document.getElementById('evTipo').value;
+  const playerId = document.getElementById('evGiocatore').value;
+  const playerInId = document.getElementById('evEntra').value;
+  const nota = document.getElementById('evNota').value.trim();
+  const minManuale = document.getElementById('evMinuto').value.trim();
+
+  if (['gol','ammonizione','espulsione','cambio'].includes(tipo) && !playerId) {
+    alert('Scegli il giocatore.'); return;
+  }
+  if (tipo === 'nota' && !nota) { alert('Scrivi il testo della nota.'); return; }
+
+  let minuto;
+  if (minManuale) {
+    minuto = /'$/.test(minManuale) ? minManuale : minManuale + "'";
+  } else {
+    minuto = minutoCorrente().label;
+  }
+
+  const ev = { tipo, minuto, playerId: playerId || '', playerInId: (tipo === 'cambio' ? playerInId : '') || '', nota };
+  events.push(ev);
+  if (tipo === 'gol')     scoreHome++;
+  if (tipo === 'gol-avv') scoreAway++;
+
+  document.getElementById('evNota').value = '';
+  document.getElementById('evMinuto').value = '';
+  salvaStato();
+  renderEventi();
+  renderTimer();
+  toast('Evento aggiunto al ' + minuto);
+}
+
+function eliminaEvento(i) {
+  const ev = events[i];
+  if (!ev) return;
+  if (!confirm('Eliminare l’evento del ' + ev.minuto + '?')) return;
+  if (ev.tipo === 'gol' && scoreHome > 0) scoreHome--;
+  if (ev.tipo === 'gol-avv' && scoreAway > 0) scoreAway--;
+  events.splice(i, 1);
+  salvaStato();
+  renderEventi();
+  renderTimer();
+}
+
+// ── Persistenza locale ────────────────────────────────────────────────
+function salvaStato() {
+  try {
+    ricalcolaDaEpoch();
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      v: SAVE_VERSION, annata: annataId(), info, events, scoreHome, scoreAway,
+      periodTimestamps, currentPeriod, timerSeconds, timerStartEpoch, timerSecondsAtStart,
+      periodoChiuso, supplAttivi, supplPeriod, supplSeconds, supplStartEpoch, supplSecondsAtStart,
+      distinta: players.filter(p => p.inDistinta).map(p => String(p.id))
+    }));
+  } catch (e) { /* quota piena o storage negato: la gara continua a schermo */ }
+}
+
+function caricaStato() {
+  let st = null;
+  try { st = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (e) { return null; }
+  if (!st || st.v !== SAVE_VERSION) return null;
+  // Lo stato e' di UNA annata: riaprendo la pagina su un'altra annata non si
+  // eredita la gara della precedente (stessa regola del resto dell'app).
+  if (String(st.annata || '') !== String(annataId())) return null;
+  info = Object.assign(info, st.info || {});
+  events = Array.isArray(st.events) ? st.events : [];
+  scoreHome = Number(st.scoreHome) || 0;
+  scoreAway = Number(st.scoreAway) || 0;
+  periodTimestamps = Object.assign(periodTimestamps, st.periodTimestamps || {});
+  currentPeriod = st.currentPeriod === 2 ? 2 : 1;
+  timerSeconds = Number(st.timerSeconds) || 0;
+  timerStartEpoch = st.timerStartEpoch || null;
+  timerSecondsAtStart = Number(st.timerSecondsAtStart) || 0;
+  periodoChiuso = !!st.periodoChiuso;
+  supplAttivi = !!st.supplAttivi;
+  supplPeriod = st.supplPeriod === 2 ? 2 : 1;
+  supplSeconds = Number(st.supplSeconds) || 0;
+  supplStartEpoch = st.supplStartEpoch || null;
+  supplSecondsAtStart = Number(st.supplSecondsAtStart) || 0;
+  return st;
+}
+
+// ── Caricamento rosa da Gestione Squadra ───────────────────────────────
+async function caricaRosa(idsInDistinta) {
+  let data = null;
+  try {
+    const res = await fetch('/api/data', { headers: authHeaders() });
+    if (!res.ok) { toast('Rosa non caricata (errore ' + res.status + ')'); return; }
+    data = await res.json();
+  } catch (e) { toast('Rosa non caricata: connessione assente.'); return; }
+
+  const numeri = (data.materiale && data.materiale.assignments) || {};
+  // Chi va in distinta: la rosa operativa. Gli archiviati e lo staff sono
+  // esclusi perche' questa e' una lista di scelta per la partita di oggi,
+  // non uno storico.
+  const rosa = (data.athletes || []).filter(a => !a.isStaff && !a.isGuest && !a.archived);
+
+  const set = idsInDistinta ? new Set(idsInDistinta.map(String)) : null;
+  players = rosa.map(a => {
+    const rec = numeri[String(a.id)];
+    return {
+      id: String(a.id),
+      name: a.name || '',
+      num: (rec && rec._numero) ? String(rec._numero) : '',
+      dataNascita: a.dataNascita || '',
+      matricola: a.numeroMatricola || '',
+      tessera: a.numeroTessera || '',
+      capitano: !!a.isCaptain,
+      vicecap: !!a.isViceCaptain,
+      portiere: /portiere/i.test(String(a.ruolo || a.position || '')),
+      // Prima apertura: tutti dentro, si togliono i non convocati.
+      inDistinta: set ? set.has(String(a.id)) : true
+    };
+  }).sort((a, b) => {
+    const na = Number(a.num), nb = Number(b.num);
+    if (a.num && b.num && na !== nb) return na - nb;
+    if (a.num && !b.num) return -1;
+    if (!a.num && b.num) return 1;
+    return a.name.localeCompare(b.name, 'it');
+  });
+
+  if (!info.casa && !info.ospite) {
+    const nomeSocieta = (data.societa && data.societa.nome) || ss('gosport_society_name') || '';
+    if (nomeSocieta) info.casa = nomeSocieta;
+  }
+}
+
+// ── PDF per la testata giornalistica ──────────────────────────────────
+function generaPdf() {
+  if (!window.jspdf || !window.jspdf.jsPDF) { alert('Libreria PDF non caricata. Verifica la connessione e riprova.'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'mm', format:'a4' });
+  const W = doc.internal.pageSize.getWidth();
+  const M = 14;
+  let y = M;
+
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(16);
+  doc.text('RESOCONTO DI GARA', W / 2, y, { align:'center' }); y += 7;
+
+  const casa = info.casa || 'Squadra di casa';
+  const osp  = info.ospite || 'Squadra ospite';
+  doc.setFontSize(12);
+  doc.text(casa + '  –  ' + osp, W / 2, y, { align:'center' }); y += 8;
+
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
+  const righeInfo = [];
+  if (info.campionato) righeInfo.push('Campionato/Torneo: ' + info.campionato);
+  if (info.giornata)   righeInfo.push('Giornata: ' + info.giornata);
+  if (info.data)       righeInfo.push('Data: ' + fmtDataIT(info.data) + (info.ora ? '  ore ' + info.ora : ''));
+  if (info.luogo)      righeInfo.push('Campo: ' + info.luogo);
+  if (info.arbitro)    righeInfo.push('Arbitro: ' + info.arbitro);
+  righeInfo.forEach(r => { doc.text(r, M, y); y += 5; });
+  y += 2;
+
+  if (document.getElementById('pdfRisultato').checked) {
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
+    doc.text('Risultato finale: ' + scoreHome + ' – ' + scoreAway, M, y); y += 8;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
+  }
+
+  if (document.getElementById('pdfCrono').checked) {
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5);
+    doc.text('Orari di gioco', M, y); y += 5;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
+    doc.text('1° tempo: ' + fmtOra(periodTimestamps.t1Start) + ' – ' + fmtOra(periodTimestamps.t1End) +
+             '      2° tempo: ' + fmtOra(periodTimestamps.t2Start) + ' – ' + fmtOra(periodTimestamps.t2End), M, y);
+    y += 8;
+  }
+
+  // Marcatori, ammoniti, espulsi: quello che una redazione usa davvero.
+  const marcatori = events.filter(e => e.tipo === 'gol').map(e => nomeGiocatore(e.playerId) + ' ' + e.minuto);
+  const ammoniti  = events.filter(e => e.tipo === 'ammonizione').map(e => nomeGiocatore(e.playerId) + ' ' + e.minuto);
+  const espulsi   = events.filter(e => e.tipo === 'espulsione').map(e => nomeGiocatore(e.playerId) + ' ' + e.minuto);
+  const blocchi = [['Marcatori', marcatori], ['Ammoniti', ammoniti], ['Espulsi', espulsi]];
+  blocchi.forEach(([tit, arr]) => {
+    if (!arr.length) return;
+    doc.setFont('helvetica', 'bold');  doc.text(tit + ':', M, y);
+    doc.setFont('helvetica', 'normal');
+    const testo = doc.splitTextToSize(arr.join(' · '), W - M - M - 24);
+    doc.text(testo, M + 24, y);
+    y += Math.max(5, testo.length * 4.6) + 1.5;
+  });
+  y += 3;
+
+  if (document.getElementById('pdfRosa').checked && convocati().length) {
+    doc.autoTable({
+      startY: y,
+      head: [['N.', 'Cognome e Nome', 'Nato il', 'Matricola F.I.G.C.', 'Gol', 'Amm.', 'Esp.']],
+      body: convocati().map(p => {
+        const gol = events.filter(e => e.tipo === 'gol' && String(e.playerId) === p.id).length;
+        const amm = events.filter(e => e.tipo === 'ammonizione' && String(e.playerId) === p.id).length;
+        const esp = events.filter(e => e.tipo === 'espulsione' && String(e.playerId) === p.id).length;
+        return [p.num || '', p.name + (p.capitano ? ' (C)' : p.vicecap ? ' (VC)' : ''),
+                fmtDataIT(p.dataNascita), p.matricola || '',
+                gol || '', amm || '', esp || ''];
+      }),
+      styles: { fontSize: 8.5, cellPadding: 1.6 },
+      headStyles: { fillColor: [26, 160, 94], textColor: 255, fontStyle: 'bold' },
+      columnStyles: { 0:{cellWidth:9, halign:'center'}, 4:{cellWidth:11, halign:'center'},
+                      5:{cellWidth:13, halign:'center'}, 6:{cellWidth:12, halign:'center'} },
+      margin: { left: M, right: M }
+    });
+    y = doc.lastAutoTable.finalY + 7;
+  }
+
+  if (document.getElementById('pdfEventi').checked && events.length) {
+    doc.autoTable({
+      startY: y,
+      head: [['Min.', 'Evento']],
+      body: events.map(e => [e.minuto, testoEvento(e).replace(/^[^\sA-Za-z0-9]+\s*/, '')]),
+      styles: { fontSize: 8.5, cellPadding: 1.6 },
+      headStyles: { fillColor: [26, 160, 94], textColor: 255, fontStyle: 'bold' },
+      columnStyles: { 0:{cellWidth:16, halign:'center'} },
+      margin: { left: M, right: M }
+    });
+    y = doc.lastAutoTable.finalY + 7;
+  }
+
+  const firma = document.getElementById('pdfFirma').value.trim();
+  const pagine = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pagine; i++) {
+    doc.setPage(i);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
+    doc.setTextColor(120);
+    const H = doc.internal.pageSize.getHeight();
+    doc.text((firma ? firma + '  ·  ' : '') + 'Sport Monitoring', M, H - 8);
+    doc.text('Pag. ' + i + '/' + pagine, W - M, H - 8, { align:'right' });
+    doc.setTextColor(0);
+  }
+
+  const slug = (casa + '-' + osp).replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '_');
+  doc.save('Resoconto_' + slug + '_' + (info.data || new Date().toISOString().slice(0, 10)) + '.pdf');
+  toast('PDF generato.');
+}
+
+// ── Rientro dallo standby ──────────────────────────────────────────────
+// Schermo riacceso: il display puo' essere rimasto indietro (i tick non
+// girano a schermo spento) ma il tempo vero si ricava dall'orologio di
+// sistema. Qui si riallinea e si ri-chiede il blocco schermo, che il
+// sistema puo' aver rilasciato durante lo standby.
+function alRientroDaStandby() {
+  if (document.visibilityState === 'visible') {
+    ricalcolaDaEpoch();
+    renderTimer();
+    if (timerStartEpoch !== null || supplStartEpoch !== null) acquisisciWakeLock();
+  } else {
+    salvaStato();
+  }
+}
+
+// ── Dati gara: lettura/scrittura dei campi ────────────────────────────
+const CAMPI_INFO = [
+  ['infoCasa','casa'], ['infoOspite','ospite'], ['infoCampionato','campionato'],
+  ['infoGiornata','giornata'], ['infoData','data'], ['infoOra','ora'],
+  ['infoLuogo','luogo'], ['infoArbitro','arbitro'], ['infoNoiCasa','noiCasa'],
+  ['infoDurata','durata'], ['infoDurataSuppl','durataSuppl'], ['infoSupplMode','supplMode'],
+  ['infoAudio','audio']
+];
+function scriviInfoNeiCampi() {
+  CAMPI_INFO.forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = info[key] == null ? '' : info[key];
+  });
+  aggiornaNomiPunteggio();
+}
+function leggiInfoDaiCampi() {
+  CAMPI_INFO.forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    info[key] = (key === 'durata' || key === 'durataSuppl') ? (Number(el.value) || (key === 'durata' ? 45 : 15)) : el.value;
+  });
+  aggiornaNomiPunteggio();
+  salvaStato();
+  renderTimer();
+}
+// Il punteggio di sinistra e' sempre il NOSTRO, cosi' il pulsante + non si
+// sbaglia mai; l'etichetta dice quale squadra e'.
+function aggiornaNomiPunteggio() {
+  const noi = info.noiCasa === '1' || info.noiCasa === 1;
+  document.getElementById('scoreNameHome').textContent = (noi ? info.casa : info.ospite) || 'Noi';
+  document.getElementById('scoreNameAway').textContent = (noi ? info.ospite : info.casa) || 'Avversario';
+}
+
+// ── Navigazione ────────────────────────────────────────────────────────
+function vaiA(pagina) {
+  document.querySelectorAll('.gg-page').forEach(p => p.classList.remove('active'));
+  const el = document.getElementById('page-' + pagina);
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.gg-nav button').forEach(b =>
+    b.classList.toggle('active', b.dataset.page === pagina));
+  if (pagina === 'rosa') renderRosa();
+  if (pagina === 'eventi') { popolaSelectGiocatori(); renderEventi(); }
+  window.scrollTo(0, 0);
+}
+
+function aggiornaCampiEvento() {
+  const tipo = document.getElementById('evTipo').value;
+  const conGiocatore = ['gol','ammonizione','espulsione','cambio'].includes(tipo);
+  document.getElementById('evGiocatoreWrap').style.display = conGiocatore ? '' : 'none';
+  document.getElementById('evGiocatoreLabel').textContent = tipo === 'cambio' ? 'Esce' : 'Giocatore';
+  document.getElementById('evEntraWrap').style.display = tipo === 'cambio' ? '' : 'none';
+  document.getElementById('evNotaWrap').style.display = tipo === 'nota' ? '' : 'none';
+}
+
+// ── Avvio ──────────────────────────────────────────────────────────────
+async function init() {
+  document.getElementById('gg-annata-label').textContent = annataId() ? 'Annata ' + annataId() : '';
+
+  const st = caricaStato();
+  if (!info.data) info.data = new Date().toISOString().slice(0, 10);
+  await caricaRosa(st ? st.distinta : null);
+  scriviInfoNeiCampi();
+
+  // Se la pagina era stata chiusa con il cronometro in moto, riprende:
+  // l'epoch salvato dice quanto tempo e' passato davvero.
+  if (timerStartEpoch !== null) {
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => { ricalcolaDaEpoch(); renderTimer(); }, 250);
+    acquisisciWakeLock();
+  }
+  if (supplStartEpoch !== null) {
+    clearInterval(supplInterval);
+    supplInterval = setInterval(() => { ricalcolaDaEpoch(); renderTimer(); }, 250);
+    acquisisciWakeLock();
+  }
+  ricalcolaDaEpoch();
+  renderTimer();
+  renderEventi();
+  aggiornaCampiEvento();
+
+  // ── Listener ──
+  document.getElementById('btnStart').addEventListener('click', startTimer);
+  document.getElementById('btnPause').addEventListener('click', pauseTimer);
+  // Comandi distruttivi: si tiene premuto, non si tocca. Vedi tieniPremuto().
+  tieniPremuto('btnStop', '&#9209; Fine tempo', '&#9209; Tieni premuto&hellip;', stopTimer);
+  tieniPremuto('btnReset', '&#8634; Azzera', '&#8634; Tieni premuto&hellip;', resetGara);
+  document.getElementById('btnAnnullaStop').addEventListener('click', annullaFineTempo);
+  document.getElementById('btnCorreggiOrari').addEventListener('click', correggiOrari);
+  const prova = document.getElementById('btnProvaAudio');
+  if (prova) prova.addEventListener('click', () => {
+    sbloccaAudio();
+    if (info.audio !== '1') { toast('I segnali sono su «Silenziosi».'); return; }
+    if (!audioCtx) { toast('Questo browser non riproduce i segnali acustici.'); return; }
+    segnaleFineTempo();
+    toast('Questo è il segnale di fine tempo.');
+  });
+  document.getElementById('btnSupplStart').addEventListener('click', startSuppl);
+  document.getElementById('btnSupplPause').addEventListener('click', pauseSuppl);
+  tieniPremuto('btnSupplStop', '&#9209; Fine', '&#9209; Tieni premuto&hellip;', stopSuppl);
+  document.getElementById('btnSupplHide').addEventListener('click', () => {
+    supplAttivi = false; salvaStato(); renderTimer();
+  });
+
+  document.querySelectorAll('[data-score]').forEach(b => {
+    b.addEventListener('click', () => {
+      const d = Number(b.dataset.delta);
+      if (b.dataset.score === 'home') scoreHome = Math.max(0, scoreHome + d);
+      else scoreAway = Math.max(0, scoreAway + d);
+      salvaStato(); renderTimer();
+    });
+  });
+
+  CAMPI_INFO.forEach(([id]) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', leggiInfoDaiCampi);
+  });
+
+  document.querySelectorAll('.gg-nav button').forEach(b =>
+    b.addEventListener('click', () => vaiA(b.dataset.page)));
+
+  document.getElementById('rosaSearch').addEventListener('input', renderRosa);
+  document.getElementById('rosaList').addEventListener('click', e => {
+    const btn = e.target.closest('[data-toggle-id]');
+    if (!btn) return;
+    const p = players.find(x => x.id === btn.dataset.toggleId);
+    if (!p) return;
+    p.inDistinta = !p.inDistinta;
+    salvaStato();
+    renderRosa();
+  });
+  document.getElementById('btnTuttiIn').addEventListener('click', () => {
+    players.forEach(p => { p.inDistinta = true; }); salvaStato(); renderRosa();
+  });
+  document.getElementById('btnTuttiOut').addEventListener('click', () => {
+    players.forEach(p => { p.inDistinta = false; }); salvaStato(); renderRosa();
+  });
+
+  document.getElementById('evTipo').addEventListener('change', aggiornaCampiEvento);
+  document.getElementById('btnAddEvento').addEventListener('click', aggiungiEvento);
+  document.getElementById('eventiList').addEventListener('click', e => {
+    const btn = e.target.closest('[data-del-ev]');
+    if (btn) eliminaEvento(Number(btn.dataset.delEv));
+  });
+
+  document.getElementById('btnGenPdf').addEventListener('click', generaPdf);
+  tieniPremuto('btnNuovaGara', 'Azzera la gara', 'Tieni premuto per azzerare&hellip;', resetGara);
+
+  // Schermo spento / app in background: al ritorno si ricalcola dall'orologio
+  // di sistema, e si riprende il wake lock che il sistema ha rilasciato.
+  document.addEventListener('visibilitychange', alRientroDaStandby);
+  window.addEventListener('beforeunload', salvaStato);
+
+  preparaInstallazione();
+}
+
+// ── PWA: installazione e funzionamento offline ────────────────────────
+// Il service worker ha scope /gestione-gara.html: non intercetta nulla del
+// resto dell'app, quindi convive con /sw.js (le push) senza sovrapporsi.
+let promptInstalla = null;
+
+function preparaInstallazione() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw-gara.js', { scope: '/gestione-gara.html' })
+      .catch(e => console.warn('Service worker Andamento Gara non registrato:', e));
+  }
+
+  const bottoni = [document.getElementById('btnInstalla'), document.getElementById('btnInstalla2')];
+  const card = document.getElementById('cardInstalla');
+
+  // Chrome/Edge/Android: l'evento arriva solo se l'app NON e' gia' installata.
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    promptInstalla = e;
+    bottoni.forEach(b => { if (b) b.style.display = ''; });
+    if (card) card.style.display = '';
+  });
+
+  bottoni.forEach(b => {
+    if (!b) return;
+    b.addEventListener('click', async () => {
+      if (!promptInstalla) { toast('Installazione non disponibile su questo browser.'); return; }
+      promptInstalla.prompt();
+      const scelta = await promptInstalla.userChoice;
+      promptInstalla = null;
+      bottoni.forEach(x => { if (x) x.style.display = 'none'; });
+      if (scelta && scelta.outcome === 'accepted') toast('App installata.');
+    });
+  });
+
+  window.addEventListener('appinstalled', () => {
+    promptInstalla = null;
+    bottoni.forEach(b => { if (b) b.style.display = 'none'; });
+    if (card) card.style.display = 'none';
+  });
+
+  // iOS non espone beforeinstallprompt: si installa solo dal menu Condividi,
+  // quindi qui si mostrano le istruzioni invece di un bottone che non farebbe nulla.
+  const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const giaInstallata = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  if (iOS && !giaInstallata) {
+    if (card) card.style.display = '';
+    const b2 = document.getElementById('btnInstalla2');
+    if (b2) b2.style.display = 'none';
+    const hint = document.getElementById('hintInstallaIos');
+    if (hint) hint.style.display = '';
+  }
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "Andamento Gara — Sport Monitoring",
+  "short_name": "Andamento Gara",
+  "description": "Cronometro di gara, tempi supplementari, eventi e resoconto PDF per la stampa.",
+  "id": "/gestione-gara.html",
+  "start_url": "/gestione-gara.html",
+  "scope": "/gestione-gara.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#060f1e",
+  "theme_color": "#060f1e",
+  "lang": "it",
+  "categories": ["sports", "utilities"],
+  "icons": [
+    {
+      "src": "/favicon-gara.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
