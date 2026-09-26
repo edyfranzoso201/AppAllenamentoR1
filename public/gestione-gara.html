@@ -1308,13 +1308,20 @@ function opzioniGiocatori(elenco) {
 function popolaSelectGiocatori() {
   const tipo = (document.getElementById('evTipo') || {}).value || 'gol';
   // Chi esce e' per forza in campo; chi entra e' per forza in panchina.
-  // Gol, ammonizione, espulsione: le fa chi sta giocando.
+  //
+  // Il GOL lo fa chi sta giocando. AMMONIZIONE ed ESPULSIONE no: un cartellino
+  // lo prende anche chi e' in panchina (protesta, comportamento antisportivo),
+  // ed e' proprio il caso in cui serve registrarlo. Quelle due liste restano
+  // aperte a tutti i convocati.
   const inCampo = inCampoOra();
-  // Ripiego: prima del calcio d'inizio nessuno e' ancora "in campo" perche'
-  // i titolari entrano allo start. Con la lista vuota la tendina sarebbe
-  // inservibile, quindi si ricade sui titolari e poi sui convocati.
+  // Ripiego per il gol: prima del calcio d'inizio nessuno e' ancora "in campo"
+  // perche' i titolari entrano allo start. Con la lista vuota la tendina
+  // sarebbe inservibile, quindi si ricade sui titolari e poi sui convocati.
   const chiGioca = inCampo.length ? inCampo : (titolari().length ? titolari() : convocati());
-  document.getElementById('evGiocatore').innerHTML = opzioniGiocatori(chiGioca);
+  const primaTendina = (tipo === 'cambio') ? chiGioca
+                     : (tipo === 'gol')    ? chiGioca
+                     : convocati();
+  document.getElementById('evGiocatore').innerHTML = opzioniGiocatori(primaTendina);
   document.getElementById('evEntra').innerHTML =
     opzioniGiocatori(tipo === 'cambio' ? inPanchina() : convocati());
 }
