@@ -147,9 +147,14 @@
     .gg-cambio h3{font-size:0.78rem;margin:0 0 6px;color:var(--muted);font-weight:700;
                   text-transform:uppercase;letter-spacing:0.04em;}
     .gg-cambio .gg-cblist{display:flex;flex-direction:column;gap:5px;max-height:232px;overflow-y:auto;}
+    /* flex-shrink:0 e' obbligatorio: la lista e' un flex column con max-height,
+       e senza questo i bottoni si COMPRIMONO quando i convocati sono tanti --
+       il nome finisce tagliato sopra e sotto e diventa illeggibile proprio
+       quando serve, cioe' a rosa piena. */
     .gg-cbtn{background:var(--panel);border:1px solid var(--border);border-radius:8px;
              color:var(--txt);padding:8px 9px;font-size:0.82rem;text-align:left;cursor:pointer;
-             overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+             overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+             flex:0 0 auto;min-height:34px;line-height:1.35;}
     .gg-cbtn.sel{border-color:var(--accent);background:rgba(25,135,84,0.18);font-weight:700;}
     .gg-ptoggle{background:none;border:1px solid var(--border2);border-radius:7px;color:var(--muted);
                 padding:4px 9px;font-size:0.72rem;cursor:pointer;white-space:nowrap;}
@@ -1579,7 +1584,13 @@ function generaPdf() {
   const marcatori = events.filter(e => e.tipo === 'gol').map(e => nomeGiocatore(e.playerId) + ' ' + e.minuto);
   const ammoniti  = events.filter(e => e.tipo === 'ammonizione').map(e => nomeGiocatore(e.playerId) + ' ' + e.minuto);
   const espulsi   = events.filter(e => e.tipo === 'espulsione').map(e => nomeGiocatore(e.playerId) + ' ' + e.minuto);
-  const blocchi = [['Marcatori', marcatori], ['Ammoniti', ammoniti], ['Espulsi', espulsi]];
+  // Le sostituzioni fra i riepiloghi in alto: sono la prima cosa che si
+  // cerca dopo i marcatori, e cercarle nella tabella eventi minuto per
+  // minuto e' lavoro inutile.
+  const cambi = events.filter(e => e.tipo === 'cambio').map(e =>
+    nomeGiocatore(e.playerId) + (e.playerInId ? ' > ' + nomeGiocatore(e.playerInId) : '') + ' ' + e.minuto);
+  const blocchi = [['Marcatori', marcatori], ['Ammoniti', ammoniti], ['Espulsi', espulsi],
+                   ['Sostituzioni', cambi]];
   blocchi.forEach(([tit, arr]) => {
     if (!arr.length) return;
     doc.setFont('helvetica', 'bold');  doc.text(tit + ':', M, y);
@@ -1590,25 +1601,56 @@ function generaPdf() {
   });
   y += 3;
 
+  // Due distinte separate, titolari e panchina, non un elenco unico: e' il
+  // modo in cui la distinta si legge e si consegna. Chi non e' schierato
+  // finisce comunque in elenco, sotto "Panchina": nessun convocato sparisce.
   if (document.getElementById('pdfRosa').checked && convocati().length) {
-    doc.autoTable({
-      startY: y,
-      head: [['N.', 'Cognome e Nome', 'Nato il', 'Matricola F.I.G.C.', 'Gol', 'Amm.', 'Esp.']],
-      body: convocati().map(p => {
-        const gol = events.filter(e => e.tipo === 'gol' && String(e.playerId) === p.id).length;
-        const amm = events.filter(e => e.tipo === 'ammonizione' && String(e.playerId) === p.id).length;
-        const esp = events.filter(e => e.tipo === 'espulsione' && String(e.playerId) === p.id).length;
-        return [p.num || '', p.name + (p.capitano ? ' (C)' : p.vicecap ? ' (VC)' : ''),
-                fmtDataIT(p.dataNascita), p.matricola || '',
-                gol || '', amm || '', esp || ''];
-      }),
-      styles: { fontSize: 8.5, cellPadding: 1.6 },
-      headStyles: { fillColor: [26, 160, 94], textColor: 255, fontStyle: 'bold' },
-      columnStyles: { 0:{cellWidth:9, halign:'center'}, 4:{cellWidth:11, halign:'center'},
-                      5:{cellWidth:13, halign:'center'}, 6:{cellWidth:12, halign:'center'} },
-      margin: { left: M, right: M }
-    });
-    y = doc.lastAutoTable.finalY + 7;
+    const rigaDi = (p, i) => {
+      const gol = events.filter(e => e.tipo === 'gol' && String(e.playerId) === p.id).length;
+      const amm = events.filter(e => e.tipo === 'ammonizione' && String(e.playerId) === p.id).length;
+      const esp = events.filter(e => e.tipo === 'espulsione' && String(e.playerId) === p.id).length;
+      return [p.num || '', p.name + (p.capitano ? ' (C)' : p.vicecap ? ' (VC)' : ''),
+              fmtDataIT(p.dataNascita), p.matricola || '',
+              gol || '', amm || '', esp || ''];
+    };
+    const tabella = (titolo, elenco) => {
+      if (!elenco.length) return;
+      // Il titolo resta attaccato alla sua tabella: se non ci sta, si va a
+      // pagina nuova insieme, altrimenti si stampa un'intestazione orfana in
+      // fondo al foglio e la distinta diventa ambigua.
+      if (y > doc.internal.pageSize.getHeight() - 38) { doc.addPage(); y = M; }
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
+      doc.text(titolo + ' (' + elenco.length + ')', M, y);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
+      y += 4;
+      doc.autoTable({
+        startY: y,
+        head: [['N.', 'Cognome e Nome', 'Nato il', 'Matricola F.I.G.C.', 'Gol', 'Amm.', 'Esp.']],
+        body: elenco.map(rigaDi),
+        styles: { fontSize: 8.5, cellPadding: 1.6 },
+        headStyles: { fillColor: [26, 160, 94], textColor: 255, fontStyle: 'bold' },
+        columnStyles: { 0:{cellWidth:9, halign:'center'}, 4:{cellWidth:11, halign:'center'},
+                        5:{cellWidth:13, halign:'center'}, 6:{cellWidth:12, halign:'center'} },
+        margin: { left: M, right: M }
+      });
+      y = doc.lastAutoTable.finalY + 7;
+    };
+
+    const schierati = titolari();
+    // "In panchina" qui vuol dire NON titolare: chi e' uscito per una
+    // sostituzione ha comunque iniziato, quindi resta fra i titolari. La
+    // distinta fotografa la formazione iniziale, non chi e' in campo adesso.
+    const panchina = convocati().filter(p => !p.titolare);
+
+    if (schierati.length) {
+      tabella('TITOLARI', schierati);
+      tabella('PANCHINA', panchina);
+    } else {
+      // Nessun titolare scelto: dividere in due darebbe una distinta
+      // "TITOLARI (0)" e tutti in panchina, che e' falso. Meglio l'elenco
+      // unico di prima, che almeno non afferma nulla di sbagliato.
+      tabella('CONVOCATI', convocati());
+    }
   }
 
   if (document.getElementById('pdfEventi').checked && events.length) {
