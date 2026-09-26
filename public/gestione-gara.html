@@ -128,6 +128,29 @@
     .gg-badge.c{background:var(--giallo);color:#1a1a1a;}
     .gg-badge.vc{background:#64748b;color:#fff;}
     .gg-badge.p{background:#0ea5e9;color:#fff;}
+    /* Ospite: non tesserato per la societa'. Colore diverso da tutti gli
+       altri badge, perche' e' l'unico che dice "attenzione, non e' dei nostri". */
+    .gg-badge.osp{background:#a855f7;color:#fff;}
+    .gg-badge.tit{background:var(--accent);color:#fff;}
+    /* Chi e' in campo adesso: la riga si stacca dalle altre con un filetto,
+       cosi' durante la partita si legge di sguardo chi puo' uscire. */
+    .gg-prow.campo{border-left:3px solid var(--accent);}
+    .gg-ptit,.gg-pgol{background:none;border:1px solid var(--border2);border-radius:7px;
+                      color:var(--muted);padding:6px 9px;font-size:0.74rem;font-weight:700;
+                      cursor:pointer;flex:none;-webkit-user-select:none;user-select:none;}
+    .gg-ptit.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+    .gg-pgol{font-size:0.95rem;padding:5px 8px;}
+    .gg-conta{font-size:0.78rem;color:var(--muted);text-align:center;margin:9px 0 2px;}
+    /* Sostituzione: due colonne, chi esce e chi entra, cosi' il gesto e' una
+       scelta sola e non una sequenza di tendine. */
+    .gg-cambio{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+    .gg-cambio h3{font-size:0.78rem;margin:0 0 6px;color:var(--muted);font-weight:700;
+                  text-transform:uppercase;letter-spacing:0.04em;}
+    .gg-cambio .gg-cblist{display:flex;flex-direction:column;gap:5px;max-height:232px;overflow-y:auto;}
+    .gg-cbtn{background:var(--panel);border:1px solid var(--border);border-radius:8px;
+             color:var(--txt);padding:8px 9px;font-size:0.82rem;text-align:left;cursor:pointer;
+             overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .gg-cbtn.sel{border-color:var(--accent);background:rgba(25,135,84,0.18);font-weight:700;}
     .gg-ptoggle{background:none;border:1px solid var(--border2);border-radius:7px;color:var(--muted);
                 padding:4px 9px;font-size:0.72rem;cursor:pointer;white-space:nowrap;}
     .gg-ptoggle.on{background:var(--accent);border-color:var(--accent);color:#fff;}
@@ -143,6 +166,10 @@
     .gg-evtxt{flex:1;min-width:0;}
     .gg-evdel{background:none;border:none;color:var(--rosso);cursor:pointer;font-size:0.95rem;padding:2px 4px;}
     .gg-empty{text-align:center;color:var(--muted);padding:26px 12px;font-size:0.85rem;}
+    /* Il motivo per cui l'elenco e' vuoto: va letto, non intravisto. Un riquadro
+       ambrato lo distingue dal semplice "Nessuno." di una lista legittima. */
+    .gg-vuoto{border:1px solid #b45309;background:rgba(180,83,9,0.13);border-radius:9px;
+              color:var(--txt);line-height:1.5;text-align:left;padding:13px 14px;}
 
     /* ── Bottom nav ───────────────────────────────────────────────────── */
     .gg-nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border2);
@@ -317,14 +344,43 @@
         <div class="gg-hint" style="margin-bottom:11px;">
           La rosa arriva da <strong>Gestione Squadra</strong> di questa annata: numero di maglia,
           data di nascita e matricola F.I.G.C. sono quelli gi&agrave; inseriti l&igrave;.
-          Tocca &laquo;In distinta&raquo; per includere o escludere un atleta.
+          Ci sono anche gli <strong>ospiti</strong> (badge <span class="gg-badge osp">OSP</span>):
+          si convocano come gli altri.<br>
+          Su ogni riga: <strong>&laquo;In distinta&raquo;</strong> lo convoca,
+          <strong>XI</strong> lo schiera dal primo minuto,
+          <strong>&#9917;</strong> gli segna un gol al minuto del cronometro.
         </div>
         <div class="gg-row2" style="margin-bottom:11px;">
           <button type="button" class="gg-btn-ghost" id="btnTuttiIn">Tutti in distinta</button>
           <button type="button" class="gg-btn-ghost" id="btnTuttiOut">Nessuno</button>
         </div>
         <div class="gg-field"><input type="text" id="rosaSearch" placeholder="&#128269; Cerca per nome&hellip;"></div>
+        <div class="gg-conta" id="ggContaRosa"></div>
         <div class="gg-plist" id="rosaList"></div>
+      </div>
+
+      <!-- Sostituzione: la si fa mentre il gioco corre, quindi due liste
+           affiancate e un solo tocco per parte. Il minuto lo mette il
+           cronometro: vedi cambioRapido(). -->
+      <div class="gg-card">
+        <h2>&#128260; Sostituzione</h2>
+        <div class="gg-hint" style="margin-bottom:11px;">
+          Tocca chi <strong>esce</strong> e chi <strong>entra</strong>: il minuto lo prende
+          dal cronometro. Finisce in cronologia e nel PDF.
+        </div>
+        <div class="gg-cambio">
+          <div>
+            <h3>Esce (in campo)</h3>
+            <div class="gg-cblist" id="cambioEsce"></div>
+          </div>
+          <div>
+            <h3>Entra (panchina)</h3>
+            <div class="gg-cblist" id="cambioEntra"></div>
+          </div>
+        </div>
+        <button type="button" class="gg-btn" id="btnCambio" style="width:100%;margin-top:11px;">
+          &#128260; Registra la sostituzione
+        </button>
       </div>
     </div>
 
@@ -428,7 +484,16 @@
 
 // ── Autenticazione/annata (stesso pattern di cronografo.html) ──────────
 function ss(key) {
-  return sessionStorage.getItem(key) || localStorage.getItem('_p_' + key) || '';
+  // Tre livelli, non due. Avviata dall'icona sulla home la pagina gira in un
+  // contesto standalone col sessionStorage VUOTO, e non carica
+  // auth-multi-annata.js: quindi restoreSessionFromLocal() non gira mai e la
+  // sessione va ripescata dal localStorage da qui. Il prefisso "_p_" e' il
+  // mirror scritto dall'app al login; il terzo fallback legge la chiave nuda,
+  // come fa reattivita.html.
+  return sessionStorage.getItem(key)
+      || localStorage.getItem('_p_' + key)
+      || localStorage.getItem(key)
+      || '';
 }
 // Aperta come PWA dall'icona sulla home, la pagina parte da start_url
 // (/gestione-gara.html, senza query) e in un contesto standalone il
@@ -1076,19 +1141,140 @@ function renderRosa() {
     if (p.capitano) badges.push('<span class="gg-badge c">C</span>');
     if (p.vicecap)  badges.push('<span class="gg-badge vc">VC</span>');
     if (p.portiere) badges.push('<span class="gg-badge p">P</span>');
-    return '<div class="gg-prow' + (p.inDistinta ? '' : ' out') + '">' +
+    // L'ospite non e' tesserato per la societa': va riconosciuto a colpo
+    // d'occhio, o lo si mette in distinta credendolo dei nostri.
+    if (p.ospite)   badges.push('<span class="gg-badge osp">OSP</span>');
+    // In campo / in panchina: a gara in corso e' l'informazione che serve
+    // per decidere il cambio.
+    if (p.inDistinta && p.titolare) badges.push('<span class="gg-badge tit">TIT</span>');
+    if (p.inDistinta && p.inCampo && !p.titolare) badges.push('<span class="gg-badge tit">IN</span>');
+    return '<div class="gg-prow' + (p.inDistinta ? '' : ' out') +
+             (p.inDistinta && p.inCampo ? ' campo' : '') + '">' +
       '<span class="gg-pnum">' + esc(p.num || '–') + '</span>' +
       '<span class="gg-pname">' + esc(p.name) + '</span>' +
       '<span class="gg-pbadges">' + badges.join('') + '</span>' +
+      '<button type="button" class="gg-ptit' + (p.titolare ? ' on' : '') +
+        '" data-tit-id="' + esc(p.id) + '" title="Schiera dal primo minuto">XI</button>' +
+      '<button type="button" class="gg-pgol" data-gol-id="' + esc(p.id) +
+        '" title="Ha segnato adesso">&#9917;</button>' +
       '<button type="button" class="gg-ptoggle' + (p.inDistinta ? ' on' : '') +
         '" data-toggle-id="' + esc(p.id) + '">' +
         (p.inDistinta ? 'In distinta' : 'Fuori') + '</button>' +
       '</div>';
   }).join('');
+  aggiornaContatori();
+}
+
+// ── Le due liste della sostituzione ────────────────────────────────────
+// Selezione tenuta qui e non nel DOM: renderRosa() e renderCambio() si
+// ridisegnano a ogni evento e la selezione andrebbe persa a meta' gesto.
+let cambioEsceId = '';
+let cambioEntraId = '';
+
+function renderCambio() {
+  const boxE = document.getElementById('cambioEsce');
+  const boxI = document.getElementById('cambioEntra');
+  if (!boxE || !boxI) return;
+  const lista = (arr, selId, attr) => arr.length
+    ? arr.map(p => '<button type="button" class="gg-cbtn' +
+        (String(p.id) === String(selId) ? ' sel' : '') + '" ' + attr + '="' + esc(p.id) + '">' +
+        (p.num ? esc(p.num) + '. ' : '') + esc(p.name) + '</button>').join('')
+    : '<div class="gg-empty">Nessuno.</div>';
+  boxE.innerHTML = lista(inCampoOra(), cambioEsceId, 'data-esce');
+  boxI.innerHTML = lista(inPanchina(), cambioEntraId, 'data-entra');
+}
+
+// Il conteggio dei convocati e degli schierati: a bordo campo e' la verifica
+// che si fa a voce ("siamo in undici?"), quindi va letta senza contare a mano.
+function aggiornaContatori() {
+  const el = document.getElementById('ggContaRosa');
+  if (!el) return;
+  const nOsp = convocati().filter(p => p.ospite).length;
+  el.innerHTML = '<strong>' + convocati().length + '</strong> in distinta &middot; ' +
+    '<strong>' + titolari().length + '</strong> schierati &middot; ' +
+    '<strong>' + inPanchina().length + '</strong> in panchina' +
+    (nOsp ? ' &middot; ' + nOsp + ' ospite' + (nOsp > 1 ? ' i' : '') : '');
 }
 
 function convocati() {
   return players.filter(p => p.inDistinta);
+}
+
+// ── Titolari, in campo, panchina ───────────────────────────────────────
+// Un titolare e' per forza un convocato: se lo togli dalla distinta dopo
+// averlo schierato, non e' piu' schierato (in campo non ci puo' andare).
+// Il filtro sta qui e non nel dato, cosi' riportandolo in distinta ritrova
+// la maglia da titolare senza doverla ridare.
+function titolari() {
+  return players.filter(p => p.inDistinta && p.titolare);
+}
+function inCampoOra() {
+  return players.filter(p => p.inDistinta && p.inCampo);
+}
+function inPanchina() {
+  return players.filter(p => p.inDistinta && !p.inCampo);
+}
+
+// Quanti se ne schierano: nel calcio 11, ma questa pagina serve anche alle
+// categorie giovanili (7 e 9) e ad altri sport, quindi il numero non e'
+// scolpito: si prende dai titolari scelti e si segnala solo il conteggio.
+function trovaGiocatore(id) {
+  return players.find(p => String(p.id) === String(id));
+}
+
+function toggleTitolare(id) {
+  const p = trovaGiocatore(id);
+  if (!p) return;
+  if (!p.inDistinta) { toast('Prima mettilo in distinta.'); return; }
+  p.titolare = !p.titolare;
+  // Schierato = in campo dal fischio d'inizio. Se lo togli prima del via
+  // esce anche dal campo; a gara iniziata i cambi li gestisce cambioRapido.
+  p.inCampo = p.titolare;
+  salvaStato();
+  renderRosa();
+  renderCambio();
+}
+
+// ── Gol: chi l'ha fatto, in un tocco ──────────────────────────────────
+// Era gia' registrabile da "Registra evento", ma sepolto sotto una tendina
+// "Tipo": tre tocchi e una scelta, mentre la squadra esulta. Qui il marcatore
+// si tocca nella lista dei convocati e il minuto lo mette il cronometro.
+function golRapido(id) {
+  const p = trovaGiocatore(id);
+  if (!p) return;
+  if (!p.inDistinta) { toast('Non e in distinta: non puo segnare.'); return; }
+  const minuto = minutoCorrente().label;
+  events.push({ tipo:'gol', minuto, playerId: String(p.id), playerInId:'', nota:'' });
+  scoreHome++;
+  vibra(60);
+  salvaStato();
+  renderEventi();
+  renderRosa();
+  renderTimer();
+  toast('⚽ Gol di ' + p.name + ' al ' + minuto);
+}
+
+// ── Sostituzione: chi esce, chi entra, a che minuto ───────────────────
+function cambioRapido(idEsce, idEntra) {
+  const esce = trovaGiocatore(idEsce);
+  const entra = trovaGiocatore(idEntra);
+  if (!esce || !entra) return;
+  if (String(idEsce) === String(idEntra)) {
+    toast('Chi esce e chi entra non possono essere lo stesso atleta.'); return;
+  }
+  if (!esce.inDistinta || !entra.inDistinta) { toast('Entrambi devono essere in distinta.'); return; }
+  const minuto = minutoCorrente().label;
+  events.push({ tipo:'cambio', minuto, playerId: String(esce.id), playerInId: String(entra.id), nota:'' });
+  // Chi e' in campo cambia: serve al cambio successivo, per sapere chi puo'
+  // uscire e chi e' ancora in panchina.
+  esce.inCampo = false;
+  entra.inCampo = true;
+  vibra(60);
+  salvaStato();
+  renderEventi();
+  renderRosa();
+  renderCambio();
+  toast('🔄 ' + minuto + ': esce ' + esce.name + ', entra ' + entra.name);
 }
 
 function popolaSelectGiocatori() {
@@ -1196,7 +1382,11 @@ function salvaStato() {
       v: SAVE_VERSION, annata: annataId(), info, events, scoreHome, scoreAway,
       periodTimestamps, currentPeriod, timerSeconds, timerStartEpoch, timerSecondsAtStart,
       periodoChiuso, supplAttivi, supplPeriod, supplSeconds, supplStartEpoch, supplSecondsAtStart,
-      distinta: players.filter(p => p.inDistinta).map(p => String(p.id))
+      distinta: players.filter(p => p.inDistinta).map(p => String(p.id)),
+      // Distinta e titolari sono la scelta piu' lunga da rifare a bordo campo:
+      // riaprendo l'app si devono ritrovare come li avevi lasciati.
+      titolari: players.filter(p => p.titolare).map(p => String(p.id)),
+      inCampo: players.filter(p => p.inCampo).map(p => String(p.id))
     }));
   } catch (e) { /* quota piena o storage negato: la gara continua a schermo */ }
 }
@@ -1227,21 +1417,56 @@ function caricaStato() {
 }
 
 // ── Caricamento rosa da Gestione Squadra ───────────────────────────────
-async function caricaRosa(idsInDistinta) {
+async function caricaRosa(idsInDistinta, idsTitolari, idsInCampo) {
   let data = null;
   try {
     const res = await fetch('/api/data', { headers: authHeaders() });
-    if (!res.ok) { toast('Rosa non caricata (errore ' + res.status + ')'); return; }
+    if (!res.ok) {
+      // 401/403 aperta dall'icona: la sessione non e' arrivata fin qui. Un
+      // numero non dice cosa fare, quindi si dice cosa fare.
+      if (res.status === 401 || res.status === 403) {
+        mostraRosaVuota('Sessione scaduta o assente. Apri Sport Monitoring, entra, ' +
+          'e torna qui da Area Tecnica &rarr; &#9917; Andamento Gara.');
+      } else {
+        mostraRosaVuota('Rosa non caricata (errore ' + res.status + '). Riprova.');
+      }
+      return;
+    }
     data = await res.json();
-  } catch (e) { toast('Rosa non caricata: connessione assente.'); return; }
+  } catch (e) {
+    mostraRosaVuota('Rosa non caricata: connessione assente. Il cronometro funziona comunque.');
+    return;
+  }
+
+  // Senza X-Annata-Id il server risponde 200 con la bacheca globale, cioe' un
+  // JSON SENZA 'athletes' (api/data.js). Era il caso peggiore perche' muto:
+  // nessun errore, lista vuota, e nessun modo di capire il perche'.
+  if (!data || !Array.isArray(data.athletes)) {
+    // Qui il server ha risposto bene: non c'e' una rosa da preservare, la
+    // risposta E' la verita' (annata vuota, o annata non impostata).
+    players = [];
+    mostraRosaVuota(annataId()
+      ? 'Nessun atleta in questa annata (' + esc(annataId()) + '). Controlla Gestione Squadra.'
+      : 'Annata non impostata: da sola questa app non sa di quale squadra sei. ' +
+        'Apri Sport Monitoring &rarr; Area Tecnica &rarr; &#9917; Andamento Gara ' +
+        'una volta, e da allora l&apos;icona la ricordera&agrave;.');
+    return;
+  }
 
   const numeri = (data.materiale && data.materiale.assignments) || {};
   // Chi va in distinta: la rosa operativa. Gli archiviati e lo staff sono
   // esclusi perche' questa e' una lista di scelta per la partita di oggi,
   // non uno storico.
-  const rosa = (data.athletes || []).filter(a => !a.isStaff && !a.isGuest && !a.archived);
+  // Gli OSPITI restano: si convocano come gli altri (ed e' la prima cosa che
+  // l'utente ha notato mancare). Si controllano due proprieta' perche' l'app
+  // principale ha migrato `guest` -> `isGuest` e i record vecchi hanno ancora
+  // la prima (vedi script.js e calendario-standalone.js).
+  const isOspite = (a) => !!(a.isGuest || a.guest);
+  const rosa = (data.athletes || []).filter(a => !a.isStaff && !a.archived);
 
   const set = idsInDistinta ? new Set(idsInDistinta.map(String)) : null;
+  const setTit = idsTitolari ? new Set(idsTitolari.map(String)) : null;
+  const setCampo = idsInCampo ? new Set(idsInCampo.map(String)) : null;
   players = rosa.map(a => {
     const rec = numeri[String(a.id)];
     return {
@@ -1254,10 +1479,20 @@ async function caricaRosa(idsInDistinta) {
       capitano: !!a.isCaptain,
       vicecap: !!a.isViceCaptain,
       portiere: /portiere/i.test(String(a.ruolo || a.position || '')),
+      ospite: isOspite(a),
       // Prima apertura: tutti dentro, si togliono i non convocati.
-      inDistinta: set ? set.has(String(a.id)) : true
+      inDistinta: set ? set.has(String(a.id)) : true,
+      // Titolari: nessuno alla prima apertura, li schiera l'allenatore.
+      titolare: setTit ? setTit.has(String(a.id)) : false,
+      // Chi sta in campo adesso: parte dai titolari ma dopo le sostituzioni
+      // non coincide piu' con loro, quindi si ripristina dalla sua lista.
+      inCampo: setCampo ? setCampo.has(String(a.id))
+                        : (setTit ? setTit.has(String(a.id)) : false)
     };
   }).sort((a, b) => {
+    // Gli ospiti in fondo, mai mescolati ai tesserati: stessa scelta
+    // dell'app principale (bloccoDi in script.js).
+    if (a.ospite !== b.ospite) return a.ospite ? 1 : -1;
     const na = Number(a.num), nb = Number(b.num);
     if (a.num && b.num && na !== nb) return na - nb;
     if (a.num && !b.num) return -1;
@@ -1269,6 +1504,24 @@ async function caricaRosa(idsInDistinta) {
     const nomeSocieta = (data.societa && data.societa.nome) || ss('gosport_society_name') || '';
     if (nomeSocieta) info.casa = nomeSocieta;
   }
+}
+
+// Perche' l'elenco e' vuoto. Va scritto NELL'elenco: un toast sparisce dopo
+// 2,6 secondi e lascia l'utente davanti a una lista vuota senza spiegazione
+// (e' esattamente quello che e' successo aprendo la PWA dall'icona).
+function mostraRosaVuota(messaggio) {
+  // Se una rosa era GIA' caricata la si tiene: un 403 o una caduta di rete a
+  // meta' partita non deve cancellare la distinta, che andrebbe rifatta a mano
+  // mentre si gioca. In quel caso basta il toast.
+  const testo = String(messaggio).replace(/<[^>]+>/g, '').replace(/&rarr;/g, '>')
+                                 .replace(/&[a-z]+;/gi, ' ');
+  if (players.length) { toast(testo); return; }
+  const box = document.getElementById('rosaList');
+  if (box) box.innerHTML = '<div class="gg-empty gg-vuoto">' + messaggio + '</div>';
+  const conta = document.getElementById('ggContaRosa');
+  if (conta) conta.innerHTML = '';
+  renderCambio();
+  toast(testo);
 }
 
 // ── PDF per la testata giornalistica ──────────────────────────────────
@@ -1434,7 +1687,7 @@ function vaiA(pagina) {
   if (el) el.classList.add('active');
   document.querySelectorAll('.gg-nav button').forEach(b =>
     b.classList.toggle('active', b.dataset.page === pagina));
-  if (pagina === 'rosa') renderRosa();
+  if (pagina === 'rosa') { renderRosa(); renderCambio(); }
   if (pagina === 'eventi') { popolaSelectGiocatori(); renderEventi(); }
   window.scrollTo(0, 0);
 }
@@ -1454,7 +1707,7 @@ async function init() {
 
   const st = caricaStato();
   if (!info.data) info.data = new Date().toISOString().slice(0, 10);
-  await caricaRosa(st ? st.distinta : null);
+  await caricaRosa(st ? st.distinta : null, st ? st.titolari : null, st ? st.inCampo : null);
   scriviInfoNeiCampi();
 
   // Se la pagina era stata chiusa con il cronometro in moto, riprende:
@@ -1506,29 +1759,72 @@ async function init() {
     });
   });
 
+  // Su un campo di testo 'change' scatta solo quando il campo PERDE il fuoco:
+  // scrivi il nome dell'avversario, esci dall'app senza toccare altro e quel
+  // dato non e' mai stato salvato. 'input' lo registra mentre lo digiti.
   CAMPI_INFO.forEach(([id]) => {
     const el = document.getElementById(id);
-    if (el) el.addEventListener('change', leggiInfoDaiCampi);
+    if (!el) return;
+    el.addEventListener('change', leggiInfoDaiCampi);
+    el.addEventListener('input', leggiInfoDaiCampi);
   });
+
+  // Ultima occasione per salvare: l'app sta per sparire (chiusa, sostituita,
+  // o il sistema la scarica dalla memoria). visibilitychange non basta: su
+  // iOS la pagina puo' essere scartata senza passare da 'hidden'.
+  window.addEventListener('pagehide', salvaStato);
 
   document.querySelectorAll('.gg-nav button').forEach(b =>
     b.addEventListener('click', () => vaiA(b.dataset.page)));
 
   document.getElementById('rosaSearch').addEventListener('input', renderRosa);
   document.getElementById('rosaList').addEventListener('click', e => {
+    // Tre bottoni sulla stessa riga: distinta, XI (schierato), gol.
+    const tit = e.target.closest('[data-tit-id]');
+    if (tit) { toggleTitolare(tit.dataset.titId); return; }
+    const gol = e.target.closest('[data-gol-id]');
+    if (gol) { golRapido(gol.dataset.golId); return; }
     const btn = e.target.closest('[data-toggle-id]');
     if (!btn) return;
     const p = players.find(x => x.id === btn.dataset.toggleId);
     if (!p) return;
     p.inDistinta = !p.inDistinta;
+    // Escluso dalla distinta non puo' restare in campo: sparirebbe dalla lista
+    // "Esce" ma resterebbe contato fra gli schierati.
+    if (!p.inDistinta) p.inCampo = false;
+    else if (p.titolare) p.inCampo = true;
     salvaStato();
     renderRosa();
+    renderCambio();
   });
   document.getElementById('btnTuttiIn').addEventListener('click', () => {
-    players.forEach(p => { p.inDistinta = true; }); salvaStato(); renderRosa();
+    players.forEach(p => { p.inDistinta = true; }); salvaStato(); renderRosa(); renderCambio();
   });
   document.getElementById('btnTuttiOut').addEventListener('click', () => {
-    players.forEach(p => { p.inDistinta = false; }); salvaStato(); renderRosa();
+    // Fuori tutti: nessuno convocato, quindi nessuno schierato ne' in campo.
+    players.forEach(p => { p.inDistinta = false; p.titolare = false; p.inCampo = false; });
+    cambioEsceId = ''; cambioEntraId = '';
+    salvaStato(); renderRosa(); renderCambio();
+  });
+
+  // ── Sostituzione: si tocca chi esce, chi entra, poi si registra ───────
+  document.getElementById('cambioEsce').addEventListener('click', e => {
+    const b = e.target.closest('[data-esce]');
+    if (!b) return;
+    cambioEsceId = (cambioEsceId === b.dataset.esce) ? '' : b.dataset.esce;
+    renderCambio();
+  });
+  document.getElementById('cambioEntra').addEventListener('click', e => {
+    const b = e.target.closest('[data-entra]');
+    if (!b) return;
+    cambioEntraId = (cambioEntraId === b.dataset.entra) ? '' : b.dataset.entra;
+    renderCambio();
+  });
+  document.getElementById('btnCambio').addEventListener('click', () => {
+    if (!cambioEsceId || !cambioEntraId) { toast('Scegli chi esce e chi entra.'); return; }
+    cambioRapido(cambioEsceId, cambioEntraId);
+    cambioEsceId = ''; cambioEntraId = '';
+    renderCambio();
   });
 
   document.getElementById('evTipo').addEventListener('change', aggiornaCampiEvento);
