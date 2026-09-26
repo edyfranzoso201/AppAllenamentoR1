@@ -41,6 +41,7 @@ async function purgeDemoSociety(lic, licKey, releaseAntiAbuse = false) {
       `annate:${annata.id}:athletes`, `annate:${annata.id}:evaluations`, `annate:${annata.id}:gpsData`,
       `annate:${annata.id}:awards`, `annate:${annata.id}:trainingSessions`, `annate:${annata.id}:formationData`,
       `annate:${annata.id}:matchResults`, `annate:${annata.id}:calendarEvents`, `annate:${annata.id}:calendarResponses`,
+      `annate:${annata.id}:formazioniSalvate`, `annate:${annata.id}:tacticalBoards`,
       `society:${societyId}:inventoryCatPhotos:${annata.id}`,
     ];
     for (const k of keysToDelete) { try { await kv.del(k); } catch (e) { /* già assente: ok, idempotente */ } }
@@ -406,6 +407,34 @@ async function purgeAthlete(prefix, athleteId) {
     if (dirty) writes.push(kv.set(`${prefix}:formationData`, formationData));
   }
 
+  // 6-bis. formazioniSalvate: array di slot, ognuno con la stessa forma di
+  // formationData ({starters,bench,tokens,sostituzioni}). Senza questo blocco
+  // un atleta cancellato sparirebbe dal campo ma sopravviverebbe dentro le
+  // formazioni salvate, e tornerebbe a vista ricaricando uno slot: art.17
+  // aggirato in silenzio, senza nessun errore.
+  const formazioniSalvate = await kv.get(`${prefix}:formazioniSalvate`);
+  if (Array.isArray(formazioniSalvate)) {
+    let dirty = false;
+    for (const slot of formazioniSalvate) {
+      if (!slot || typeof slot !== 'object') continue;
+      for (const list of ['starters', 'bench', 'tokens']) {
+        if (Array.isArray(slot[list])) {
+          const before = slot[list].length;
+          slot[list] = slot[list].filter(p => String(p.athleteId) !== aid);
+          if (slot[list].length !== before) dirty = true;
+        }
+      }
+      // sostituzioni e' una mappa athleteId -> "7, 11": la voce dell'atleta
+      // cancellato va via con la sua chiave.
+      if (slot.sostituzioni && typeof slot.sostituzioni === 'object'
+          && Object.prototype.hasOwnProperty.call(slot.sostituzioni, aid)) {
+        delete slot.sostituzioni[aid];
+        dirty = true;
+      }
+    }
+    if (dirty) writes.push(kv.set(`${prefix}:formazioniSalvate`, formazioniSalvate));
+  }
+
   // 7. materiale.assignments {id:{...}} → cancella la chiave dell'atleta
   const materiale = await kv.get(`${prefix}:materiale`);
   if (materiale && typeof materiale === 'object' && materiale.assignments && aid in materiale.assignments) {
@@ -710,6 +739,7 @@ if (req.query?.action === 'demo-signup' && req.method === 'POST') {
     kv.set(`annate:${annataId}:awards`, {}),
     kv.set(`annate:${annataId}:trainingSessions`, {}),
     kv.set(`annate:${annataId}:formationData`, { starters: [], bench: [], tokens: [] }),
+    kv.set(`annate:${annataId}:formazioniSalvate`, []),
     kv.set(`annate:${annataId}:matchResults`, {}),
     kv.set(`annate:${annataId}:calendarEvents`, {}),
     kv.set(`annate:${annataId}:calendarResponses`, {}),
@@ -3353,7 +3383,7 @@ formationData, matchResults, calendarEvents, calendarResponses,
 materiale, pagamenti, pagVoci, pagLabels, convocazioni, convSettings,
 convBg, convBg2, posts, globalPosts, individualPassword,
 ratingSheets, documents, athleteDocs, bachecaConfig, superadminBanners,
-tacticalBoards, multe, surveys, surveyResponses, circuitTimes
+tacticalBoards, multe, surveys, surveyResponses, circuitTimes, formazioniSalvate
 ] = await Promise.all([
 kv.get(`${prefix}:athletes`),
 kv.get(`${prefix}:evaluations`),
@@ -3384,7 +3414,8 @@ kv.get(`${prefix}:tacticalBoards`),
 kv.get(`${prefix}:multe`),
 kv.get(`${prefix}:surveys`),
 kv.get(`${prefix}:surveyResponses`),
-kv.get(`${prefix}:circuitTimes`)
+kv.get(`${prefix}:circuitTimes`),
+kv.get(`${prefix}:formazioniSalvate`)
 ]);
 
 const data = {
@@ -3394,6 +3425,9 @@ gpsData: gpsData || {},
 awards: awards || {},
 trainingSessions: trainingSessions || {},
 formationData: formationData || { starters: [], bench: [], tokens: [] },
+// Formazioni salvate (fino a 3 per sport). Vive sotto `${prefix}`, quindi e'
+// isolata per annata come tutto il resto: il 2013 non vede quelle del 2012.
+formazioniSalvate: Array.isArray(formazioniSalvate) ? formazioniSalvate : [],
 tacticalBoards: tacticalBoards || [],
 matchResults: matchResults || {},
 calendarEvents: calendarEvents || {},
@@ -3599,6 +3633,7 @@ if (body.gpsData !== undefined) await kv.set(`${prefix}:gpsData`, body.gpsData);
 if (body.awards !== undefined) await kv.set(`${prefix}:awards`, body.awards);
 if (body.trainingSessions !== undefined) await kv.set(`${prefix}:trainingSessions`, body.trainingSessions);
 if (body.formationData !== undefined) await kv.set(`${prefix}:formationData`, body.formationData);
+if (body.formazioniSalvate !== undefined) await kv.set(`${prefix}:formazioniSalvate`, body.formazioniSalvate);
 if (body.tacticalBoards !== undefined) await kv.set(`${prefix}:tacticalBoards`, body.tacticalBoards);
 if (body.matchResults !== undefined) await kv.set(`${prefix}:matchResults`, body.matchResults);
 if (body.calendarEvents !== undefined) await kv.set(`${prefix}:calendarEvents`, body.calendarEvents);

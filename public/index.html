@@ -1617,6 +1617,22 @@
                      </div>
                 </div>
             </div>
+            <!-- Formazioni salvate: 3 slot per sport, sulla riga sotto i bottoni
+                 Calcio/Basket/Volley. La tendina mostra solo gli slot dello sport
+                 attivo; il contatore dice quanti slot sono occupati. -->
+            <div class="row mb-3 no-print">
+                <div class="col-12 d-flex align-items-center gap-2 flex-wrap">
+                    <label for="formazione-select" class="mb-0 fw-bold" style="white-space:nowrap;">Formazioni salvate</label>
+                    <select id="formazione-select" class="form-select form-select-sm" style="max-width:280px;">
+                        <option value="">-- formazione in campo (non salvata) --</option>
+                    </select>
+                    <span id="formazione-contatore" class="badge bg-secondary" title="Formazioni salvate per questo sport">0/3</span>
+                    <span id="formazione-avviso-modifiche" class="badge bg-warning text-dark" style="display:none;" title="Il campo e' stato modificato dopo il caricamento: premi Salva per aggiornare la formazione selezionata">&#9888; Modifiche non salvate</span>
+                    <button type="button" id="formazione-btn-salva" class="btn btn-sm btn-success" title="Salva la formazione attuale in uno slot"><i class="bi bi-save"></i> Salva</button>
+                    <button type="button" id="formazione-btn-rinomina" class="btn btn-sm btn-outline-secondary" disabled title="Rinomina la formazione selezionata"><i class="bi bi-pencil"></i> Rinomina</button>
+                    <button type="button" id="formazione-btn-elimina" class="btn btn-sm btn-outline-danger" disabled title="Elimina la formazione selezionata"><i class="bi bi-trash"></i> Elimina</button>
+                </div>
+            </div>
             <div class="row">
                 <div class="col-lg-9 mb-4">
                     <div id="pitch-wrapper">
@@ -4837,6 +4853,10 @@ function switchField(type) {
     if (active) { active.classList.remove('btn-outline-'+colors[type]); active.classList.add('btn-'+colors[type],'active'); }
     var ball = document.querySelector('[data-item-type="ball"]');
     if (ball) ball.textContent = type==='basket'?'🏀':type==='volley'?'🏐':'⚽';
+    // Ogni sport ha i suoi 3 slot: cambiando sport la tendina va ricostruita,
+    // altrimenti mostrerebbe le formazioni dello sport precedente. localStorage
+    // e' gia' aggiornato qui sopra, quindi la funzione legge lo sport giusto.
+    if (window.refreshSelectFormazioni) window.refreshSelectFormazioni();
 }
 document.addEventListener('DOMContentLoaded', function() {
     var saved = localStorage.getItem('fieldType') || 'calcio';

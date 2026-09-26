@@ -657,6 +657,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Rendi athletes disponibile globalmente per il calendario
     window.athletes = athletes;
     let formationData = { starters: [], bench: [], tokens: [], sostituzioni: {} };
+    // Formazioni salvate: fino a MAX_FORMAZIONI_PER_SPORT slot per ciascuno dei tre
+    // sport. formationData resta la formazione "in campo" (quella che si sta
+    // manipolando): tutti i punti che la leggono - drop handler, renderFormation,
+    // stampa, purge lato server - continuano a funzionare senza modifiche.
+    // Uno slot ha la stessa forma di formationData piu' {id, nome, sport}.
+    window.formazioniSalvate = window.formazioniSalvate || [];
     window.tacticalBoards = window.tacticalBoards || [];
     let chartInstances = {};
     window.chartInstances = chartInstances; // esposto per applyChartTheme
@@ -695,6 +701,7 @@ document.addEventListener('DOMContentLoaded', () => {
             matchResults,
             calendarEvents: window.calendarEvents || {},
             calendarResponses: window.calendarResponses || {},
+            formazioniSalvate: window.formazioniSalvate || [],
             tacticalBoards: window.tacticalBoards || []
         };
         try {
@@ -1248,6 +1255,31 @@ document.addEventListener('DOMContentLoaded', () => {
             // senza questa normalizzazione resterebbe undefined e la nuvola
             // sostituzioni non potrebbe essere compilata.
             if (!formationData.sostituzioni) formationData.sostituzioni = {};
+            window.formazioniSalvate = Array.isArray(allData.formazioniSalvate) ? allData.formazioniSalvate : [];
+            // Migrazione una-volta-sola: chi usava l'app prima di questa feature ha
+            // una formazione in campo e nessuno slot. Quella formazione diventa
+            // "Formazione 1" del Calcio, cosi' non si perde niente. Si fa solo se
+            // c'e' davvero qualcosa in campo e nessuno slot: se gli slot esistono
+            // (anche vuoti perche' l'utente li ha eliminati tutti) non si ricrea
+            // nulla, altrimenti tornerebbe a ogni ricarica.
+            if (window.formazioniSalvate.length === 0) {
+                const inCampo = (formationData.starters || []).length + (formationData.bench || []).length;
+                if (inCampo > 0) {
+                    window.formazioniSalvate.push({
+                        id: 'f' + Date.now().toString(36),
+                        nome: 'Formazione 1',
+                        sport: 'calcio',
+                        starters: (formationData.starters || []).map(p => ({ ...p })),
+                        bench: (formationData.bench || []).map(p => ({ ...p })),
+                        tokens: (formationData.tokens || []).map(t => ({ ...t })),
+                        sostituzioni: { ...(formationData.sostituzioni || {}) }
+                    });
+                    // Non si chiama saveData() qui: siamo dentro il caricamento e
+                    // datiCaricati e' ancora false, quindi il salvataggio verrebbe
+                    // rifiutato dal blocco anti-perdita. Lo slot viene persistito al
+                    // primo salvataggio utile (qualsiasi modifica, o il tasto Salva).
+                }
+            }
             window.tacticalBoards = allData.tacticalBoards || [];
             matchResults = allData.matchResults || {};
             window.calendarEvents = allData.calendarEvents || {};
@@ -1316,6 +1348,10 @@ document.addEventListener('DOMContentLoaded', () => {
             awards = {}; 
             trainingSessions = {}; 
             formationData = { starters: [], bench: [], tokens: [], sostituzioni: {} };
+            // Va svuotata anche qui: se il caricamento di un'altra annata falliva,
+            // in memoria restavano gli slot dell'annata precedente e la tendina
+            // avrebbe mostrato formazioni che non appartengono a questa annata.
+            window.formazioniSalvate = [];
             window.tacticalBoards = [];
             matchResults = {};
             window.calendarEvents = {};
@@ -1378,6 +1414,10 @@ document.addEventListener('DOMContentLoaded', () => {
         renderAthletes();
         renderCalendar();
         renderFormation();
+        // Dopo ogni caricamento dati: aggancia i controlli (una volta sola) e
+        // riallinea la tendina, che dipende da window.formazioniSalvate appena
+        // arrivata dal server.
+        initFormazioniSalvateUI();
         renderMatchResults();
         renderCardsSummary();
         renderTopScorers();
@@ -1482,6 +1522,173 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         formationData.tokens.forEach(tokenData => { const tokenEl = createTokenElement(tokenData.type, tokenData.id); tokenEl.style.left = `${tokenData.left}%`; tokenEl.style.top = `${tokenData.top}%`; field.appendChild(tokenEl); });
     };
+
+    // === FORMAZIONI SALVATE ===============================================
+    // Tre slot per sport (Calcio/Basket/Volley), come gli schemi della Lavagna
+    // Tattica. formationData resta la formazione in campo; uno slot e' una sua
+    // copia con {id, nome, sport}. Gli slot vivono in window.formazioniSalvate,
+    // che viaggia nel payload di saveData e finisce in
+    // annate:<id>:formazioniSalvate: e' quindi isolata per annata, il 2013 non
+    // vede quelle del 2012.
+    const MAX_FORMAZIONI_PER_SPORT = 3;
+    const SPORT_VALIDI = ['calcio', 'basket', 'volley'];
+    // Lo sport corrente e' quello scelto dai bottoni dei tre sport (switchField
+    // in index.html, che lo scrive in localStorage). Si legge da la' invece di
+    // duplicare lo stato, cosi' non possono divergere.
+    const sportCorrente = () => {
+        const s = localStorage.getItem('fieldType');
+        return SPORT_VALIDI.includes(s) ? s : 'calcio';
+    };
+    // Lo slot selezionato e' per sport: passando da Calcio a Basket non resta
+    // selezionata una formazione di calcio.
+    let formazioneCorrenteId = { calcio: null, basket: null, volley: null };
+    // true quando il campo e' stato modificato dopo aver caricato/salvato uno
+    // slot. Serve a dirlo a schermo: come nella Lavagna Tattica, il salvataggio
+    // nello slot e' esplicito, quindi spostare una maglia NON aggiorna lo slot
+    // caricato. Senza avviso l'allenatore crederebbe di aver salvato, e
+    // ricaricando lo slot ritroverebbe le posizioni vecchie.
+    let formazioneModificata = false;
+    // Chiamata dai punti che modificano il campo (drop handler, nuvoletta
+    // sostituzioni): aggiorna solo l'avviso, non salva niente.
+    const segnalaFormazioneModificata = () => {
+        formazioneModificata = true;
+        // refreshSelectFormazioni e' una const dichiarata piu' sotto: qui non
+        // c'e' TDZ perche' questa funzione viene invocata solo su interazione
+        // dell'utente, molto dopo che il modulo e' stato valutato.
+        refreshSelectFormazioni();
+    };
+    window.segnalaFormazioneModificata = segnalaFormazioneModificata;
+
+    const formazioniDelloSport = (sport) =>
+        (window.formazioniSalvate || []).filter(f => f && f.sport === sport);
+
+    // Copia profonda dello stato in campo: senza la copia, salvare e poi
+    // spostare una maglia modificherebbe anche lo slot salvato (stesso array).
+    const serializzaFormazioneCorrente = () => ({
+        starters: (formationData.starters || []).map(p => ({ ...p })),
+        bench: (formationData.bench || []).map(p => ({ ...p })),
+        tokens: (formationData.tokens || []).map(t => ({ ...t })),
+        sostituzioni: { ...(formationData.sostituzioni || {}) }
+    });
+
+    const caricaFormazioneInCampo = (slot) => {
+        const dati = slot || { starters: [], bench: [], tokens: [], sostituzioni: {} };
+        formationData = {
+            starters: (dati.starters || []).map(p => ({ ...p })),
+            bench: (dati.bench || []).map(p => ({ ...p })),
+            tokens: (dati.tokens || []).map(t => ({ ...t })),
+            sostituzioni: { ...(dati.sostituzioni || {}) }
+        };
+    };
+
+    const refreshSelectFormazioni = () => {
+        const select = document.getElementById('formazione-select');
+        if (!select) return;
+        const sport = sportCorrente();
+        const lista = formazioniDelloSport(sport);
+        select.innerHTML = '<option value="">-- formazione in campo (non salvata) --</option>' +
+            lista.map(f => `<option value="${escapeHtml(String(f.id))}">${escapeHtml(f.nome)}</option>`).join('');
+        select.value = formazioneCorrenteId[sport] || '';
+        const contatore = document.getElementById('formazione-contatore');
+        if (contatore) contatore.textContent = `${lista.length}/${MAX_FORMAZIONI_PER_SPORT}`;
+        const btnRinomina = document.getElementById('formazione-btn-rinomina');
+        const btnElimina = document.getElementById('formazione-btn-elimina');
+        const selezionata = !!formazioneCorrenteId[sport];
+        if (btnRinomina) btnRinomina.disabled = !selezionata;
+        if (btnElimina) btnElimina.disabled = !selezionata;
+        // Avviso "modifiche non salvate": compare solo se c'e' uno slot caricato
+        // e il campo e' stato toccato dopo. Senza slot caricato non c'e' niente
+        // da aggiornare e l'avviso sarebbe solo rumore.
+        const avviso = document.getElementById('formazione-avviso-modifiche');
+        if (avviso) avviso.style.display = (selezionata && formazioneModificata) ? '' : 'none';
+    };
+    // switchField (index.html) la richiama quando si cambia sport: la tendina
+    // deve mostrare gli slot del nuovo sport, non quelli del precedente.
+    window.refreshSelectFormazioni = refreshSelectFormazioni;
+
+    const salvaFormazione = async () => {
+        const sport = sportCorrente();
+        const lista = window.formazioniSalvate = window.formazioniSalvate || [];
+        const idCorrente = formazioneCorrenteId[sport];
+        const esistente = lista.find(f => String(f.id) === String(idCorrente));
+        // Slot pieni e nessuno selezionato: non si puo' creare il quarto.
+        if (!esistente && formazioniDelloSport(sport).length >= MAX_FORMAZIONI_PER_SPORT) {
+            alert('Hai gia\' ' + MAX_FORMAZIONI_PER_SPORT + ' formazioni salvate per questo sport.\n\nSeleziona una formazione dalla tendina per sovrascriverla, oppure eliminane una.');
+            return;
+        }
+        const nome = (window.prompt('Nome formazione:', esistente ? esistente.nome : '') || '').trim();
+        if (!nome) return;
+        const dati = serializzaFormazioneCorrente();
+        if (esistente) {
+            Object.assign(esistente, dati, { nome });
+        } else {
+            const nuovo = { id: 'f' + Date.now().toString(36), nome, sport, ...dati };
+            lista.push(nuovo);
+            formazioneCorrenteId[sport] = nuovo.id;
+        }
+        formazioneModificata = false;
+        refreshSelectFormazioni();
+        const ok = await saveData();
+        if (ok === false) alert('Salvataggio sul server non riuscito: ' + (saveData.lastError || 'riprova.'));
+    };
+
+    const rinominaFormazione = async () => {
+        const sport = sportCorrente();
+        const id = formazioneCorrenteId[sport];
+        if (!id) return;
+        const slot = (window.formazioniSalvate || []).find(f => String(f.id) === String(id));
+        if (!slot) return;
+        const nome = (window.prompt('Nuovo nome:', slot.nome) || '').trim();
+        if (!nome) return;
+        slot.nome = nome;
+        refreshSelectFormazioni();
+        const ok = await saveData();
+        if (ok === false) alert('Salvataggio sul server non riuscito: ' + (saveData.lastError || 'riprova.'));
+    };
+
+    const eliminaFormazione = async () => {
+        const sport = sportCorrente();
+        const id = formazioneCorrenteId[sport];
+        if (!id) return;
+        const lista = window.formazioniSalvate || [];
+        const slot = lista.find(f => String(f.id) === String(id));
+        if (!slot) return;
+        if (!window.confirm('Eliminare la formazione "' + slot.nome + '"?')) return;
+        window.formazioniSalvate = lista.filter(f => String(f.id) !== String(id));
+        formazioneCorrenteId[sport] = null;
+        // La formazione in campo NON si svuota: eliminare uno slot salvato non
+        // deve smontare quello che l'allenatore ha davanti.
+        refreshSelectFormazioni();
+        const ok = await saveData();
+        if (ok === false) alert('Salvataggio sul server non riuscito: ' + (saveData.lastError || 'riprova.'));
+    };
+
+    const cambiaFormazioneSelezionata = (id) => {
+        const sport = sportCorrente();
+        if (!id) { formazioneCorrenteId[sport] = null; refreshSelectFormazioni(); return; }
+        const slot = (window.formazioniSalvate || []).find(f => String(f.id) === String(id));
+        if (!slot) { refreshSelectFormazioni(); return; }
+        caricaFormazioneInCampo(slot);
+        formazioneCorrenteId[sport] = slot.id;
+        formazioneModificata = false;
+        renderFormation();
+        refreshSelectFormazioni();
+        // Caricare in campo NON salva: la formazione salvata resta com'e' e il
+        // campo e' solo una vista su di essa. Si salva con il bottone Salva.
+    };
+
+    const initFormazioniSalvateUI = () => {
+        const select = document.getElementById('formazione-select');
+        if (!select || select.dataset.formInitDone === 'true') { refreshSelectFormazioni(); return; }
+        select.dataset.formInitDone = 'true';
+        select.addEventListener('change', () => cambiaFormazioneSelezionata(select.value));
+        const btn = (id, fn) => { const b = document.getElementById(id); if (b) b.addEventListener('click', fn); };
+        btn('formazione-btn-salva', salvaFormazione);
+        btn('formazione-btn-rinomina', rinominaFormazione);
+        btn('formazione-btn-elimina', eliminaFormazione);
+        refreshSelectFormazioni();
+    };
+    window.initFormazioniSalvateUI = initFormazioniSalvateUI;
     const updateHomePage = () => {
         // ✅ Conta solo atleti NON ospiti nel conteggio principale
         const officialAthletes = athletes.filter(a => !a.isGuest && !a.isStaff && !a.archived);
@@ -6599,6 +6806,10 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
                 }
             }
             saveData();
+            // Lo slot caricato non si aggiorna da solo (salvataggio esplicito,
+            // come nella Lavagna Tattica): segnala che il campo si e' scostato
+            // dalla formazione salvata, cosi' l'avviso appare a schermo.
+            segnalaFormazioneModificata();
             renderFormation();
         }
         cleanUpDrag();
@@ -6656,6 +6867,7 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
             if (valore) formationData.sostituzioni[athleteId] = valore;
             else delete formationData.sostituzioni[athleteId];
             saveData();
+            segnalaFormazioneModificata();
         }, true); // capture: 'blur' non fa bubbling
 
         formSection.addEventListener('keydown', (e) => {
