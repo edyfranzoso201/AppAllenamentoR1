@@ -355,8 +355,8 @@
       <div class="gg-card">
         <h2>&#128101; Convocati</h2>
         <div class="gg-hint" style="margin-bottom:11px;">
-          La rosa arriva da <strong>Gestione Squadra</strong> di questa annata: numero di maglia,
-          data di nascita e matricola F.I.G.C. sono quelli gi&agrave; inseriti l&igrave;.
+          La rosa arriva da <strong>Gestione Squadra</strong> di questa annata: numero di maglia
+          e data di nascita sono quelli gi&agrave; inseriti l&igrave;.
           Ci sono anche gli <strong>ospiti</strong> (badge <span class="gg-badge osp">OSP</span>):
           si convocano come gli altri.<br>
           Su ogni riga: <strong>&laquo;In distinta&raquo;</strong> lo convoca,
@@ -1692,8 +1692,10 @@ function generaPdf() {
       const gol = events.filter(e => e.tipo === 'gol' && String(e.playerId) === p.id).length;
       const amm = events.filter(e => e.tipo === 'ammonizione' && String(e.playerId) === p.id).length;
       const esp = events.filter(e => e.tipo === 'espulsione' && String(e.playerId) === p.id).length;
+      // Niente matricola F.I.G.C. ne' numero di tessera: sono dati personali e
+      // questo foglio gira di mano in mano. Restano in Gestione Squadra.
       return [p.num || '', p.name + (p.capitano ? ' (C)' : p.vicecap ? ' (VC)' : ''),
-              fmtDataIT(p.dataNascita), p.matricola || '',
+              fmtDataIT(p.dataNascita),
               gol || '', amm || '', esp || ''];
     };
     const tabella = (titolo, elenco) => {
@@ -1708,12 +1710,12 @@ function generaPdf() {
       y += 4;
       doc.autoTable({
         startY: y,
-        head: [['N.', 'Cognome e Nome', 'Nato il', 'Matricola F.I.G.C.', 'Gol', 'Amm.', 'Esp.']],
+        head: [['N.', 'Cognome e Nome', 'Nato il', 'Gol', 'Amm.', 'Esp.']],
         body: elenco.map(rigaDi),
         styles: { fontSize: 8.5, cellPadding: 1.6 },
         headStyles: { fillColor: [26, 160, 94], textColor: 255, fontStyle: 'bold' },
-        columnStyles: { 0:{cellWidth:9, halign:'center'}, 4:{cellWidth:11, halign:'center'},
-                        5:{cellWidth:13, halign:'center'}, 6:{cellWidth:12, halign:'center'} },
+        columnStyles: { 0:{cellWidth:9, halign:'center'}, 3:{cellWidth:11, halign:'center'},
+                        4:{cellWidth:13, halign:'center'}, 5:{cellWidth:12, halign:'center'} },
         margin: { left: M, right: M }
       });
       y = doc.lastAutoTable.finalY + 7;
