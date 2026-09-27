@@ -464,13 +464,18 @@
           </select>
         </div>
         <div class="gg-hint">
-          Il regolamento del calcio conta le <strong>interruzioni</strong>, non i
-          giocatori: cambi entro <strong>2 minuti</strong> valgono un solo step, e
-          quelli fatti all&rsquo;<strong>intervallo</strong> non contano. I due minuti
-          partono dal primo cambio del gruppo e non si azzerano a ogni cambio: il
-          primo cambio dopo la scadenza apre lo step successivo e riparte da l&igrave;.
-          Massimo <strong>3 step</strong>. Dove i cambi sono liberi o contati in altro
-          modo, spegnilo: sparisce il contatore e non compare nessun avviso.
+          <strong>Regolamento:</strong> si contano le <strong>interruzioni</strong>,
+          non i giocatori. Dentro un&rsquo;interruzione puoi cambiare quanti giocatori
+          vuoi e resta <strong>un solo step</strong>; i cambi all&rsquo;<strong>intervallo</strong>
+          non contano. Massimo <strong>3 step</strong>.<br>
+          <strong>Come li conta l&rsquo;app:</strong> i <strong>2 minuti</strong> non
+          sono una regola federale, sono solo il modo automatico di capire quali
+          cambi stanno nella stessa interruzione. Partono dal primo cambio del
+          gruppo e non si azzerano a ogni cambio: il primo cambio dopo la scadenza
+          apre lo step successivo. Se in una gara il conteggio non torna, fa fede
+          l&rsquo;arbitro, non il contatore.<br>
+          Dove i cambi sono liberi o contati in altro modo, spegnilo: sparisce il
+          contatore e non compare nessun avviso.
         </div>
 
         <div class="gg-field">
@@ -1431,15 +1436,23 @@ function apriSceltaEntra(esce) {
 }
 
 // ── Step delle sostituzioni (regolamento: massimo 3) ──────────────────
-// Il regolamento conta gli STEP, non le sostituzioni: cambiare tre giocatori
-// tutti insieme e' un solo step. Qui si raggruppa cosi':
-//   - cambi ravvicinati (entro FINESTRA_STEP minuti di gioco) = un solo step,
-//     perche' a bordo campo tre sostituzioni contemporanee si registrano una
-//     dopo l'altra e non sono tre interruzioni;
-//   - cambi fatti all'INTERVALLO non consumano step: si passa dal 1o al 2o
-//     tempo, il gioco e' gia' fermo. Sono riconosciuti dal cambio di periodo,
-//     non da un minuto preciso, perche' l'intervallo non ha un minuto proprio.
-const FINESTRA_STEP = 2;   // minuti di gioco
+// Quello che dice il REGOLAMENTO: si contano le interruzioni, non i giocatori.
+// Dentro una stessa interruzione un allenatore puo' cambiare quanti giocatori
+// vuole e resta un solo step; i cambi all'INTERVALLO non consumano step, perche'
+// il gioco e' gia' fermo. Massimo 3 step. Questo e' il vincolo vero.
+//
+// Quello che e' una SCELTA di questa app: il regolamento non dice quanto duri
+// un'interruzione, quindi da fuori non si sa quali cambi registrati a bordo
+// campo appartengano alla stessa. FINESTRA_STEP e' l'euristica che lo indovina:
+// due minuti di gioco dal primo cambio del gruppo. E' comoda perche' non chiede
+// nulla all'allenatore, ma resta una stima: in caso di dubbio fa fede l'arbitro,
+// non il contatore. Se servisse una certezza, la strada e' un comando "chiudi
+// step" che sposti la decisione dall'orologio a chi sta in panchina.
+//
+// L'intervallo invece e' riconosciuto dal cambio di periodo, non da un minuto
+// preciso, perche' l'intervallo non ha un minuto proprio: quello non e' una
+// stima, e' esatto.
+const FINESTRA_STEP = 2;   // minuti di gioco: euristica, non regolamento
 const MAX_STEP = 3;
 
 // Restituisce { step, gruppi } dove gruppi[] descrive ogni raggruppamento.
@@ -1486,9 +1499,9 @@ function contaIntervallo(g) {
   return g.min <= dur + 1;
 }
 
-// Il conteggio degli step e' una regola del calcio: negli altri sport i cambi
-// sono liberi o contati in altro modo, quindi si disattiva da Dati gara. Un
-// solo posto lo decide, cosi' badge e avviso non possono divergere.
+// Il limite di 3 step e' una regola del calcio: negli altri sport i cambi sono
+// liberi o contati in altro modo, quindi il conteggio si disattiva da Dati gara.
+// Un solo posto lo decide, cosi' badge e avviso non possono divergere.
 function stepAttivi() {
   return String(info.step == null ? '1' : info.step) !== '0';
 }
