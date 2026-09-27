@@ -4,13 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Andamento Gara — Sport Monitoring</title>
-  <link rel="icon" type="image/svg+xml" href="/favicon-gara.svg">
-  <link rel="apple-touch-icon" href="/favicon-gara.svg">
+  <link rel="icon" type="image/svg+xml" href="/gara/favicon.svg">
+  <link rel="apple-touch-icon" href="/gara/favicon.svg">
   <meta name="theme-color" content="#060f1e">
-  <!-- PWA autonoma: manifest e service worker propri, scope limitato a
-       questa pagina, cosi' si installa come app a se' stante senza toccare
-       la PWA principale (/manifest.json + /sw.js). -->
-  <link rel="manifest" href="/manifest-gara.json">
+  <!-- PWA autonoma in /gara/: manifest e service worker propri, scope
+       /gara/, cosi' si installa come app a se' stante senza toccare la PWA
+       principale (/manifest.json + /sw.js).
+       Lo scope DEVE essere una cartella: scritto "/gestione-gara.html" il
+       browser lo normalizza sulla DIRECTORY, cioe' "/", e Chrome Android
+       rifiuta l'installazione con "app gia' installata" perche' lo scope
+       coincide con quello dell'app principale. -->
+  <link rel="manifest" href="/gara/manifest.json">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -607,7 +611,7 @@ function ss(key) {
       || '';
 }
 // Aperta come PWA dall'icona sulla home, la pagina parte da start_url
-// (/gestione-gara.html, senza query) e in un contesto standalone il
+// (/gara/, senza query) e in un contesto standalone il
 // sessionStorage dell'app non c'e': senza memoria propria l'annata sarebbe
 // vuota e la rosa non arriverebbe. La prima apertura dal link di Area
 // Tecnica porta ?annata=, che viene quindi ricordata qui in localStorage.
@@ -2536,13 +2540,13 @@ function mostraAggiornamento() {
 }
 
 // ── PWA: installazione e funzionamento offline ────────────────────────
-// Il service worker ha scope /gestione-gara.html: non intercetta nulla del
-// resto dell'app, quindi convive con /sw.js (le push) senza sovrapporsi.
+// Il service worker ha scope /gara/: non intercetta nulla del resto
+// dell'app, quindi convive con /sw.js (le push) senza sovrapporsi.
 let promptInstalla = null;
 
 function preparaInstallazione() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw-gara.js', { scope: '/gestione-gara.html' })
+    navigator.serviceWorker.register('/gara/sw.js', { scope: '/gara/' })
       .then(reg => {
         // Senza questo, una correzione pubblicata NON arriva sul telefono: la
         // PWA continua a servire la pagina dalla cache e la rete la rimpiazza

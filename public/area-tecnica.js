@@ -124,7 +124,7 @@
     // non ha il sessionStorage dell'app, quindi l'annata va passata nel link
     // (annataId() la legge prima di tutto dalla query string).
     const gara = $('at-gara-link');
-    if (gara && annataId()) gara.href = '/gestione-gara.html?annata=' + encodeURIComponent(annataId());
+    if (gara && annataId()) gara.href = '/gara/?annata=' + encodeURIComponent(annataId());
     try {
       const r = await fetch('/api/data?action=area-tecnica', { headers: authHeaders(false) });
       if (r.status === 403) { document.querySelector('.at-main').innerHTML = '<div class="at-empty">⛔ Accesso riservato allo staff. Accedi dalla dashboard.</div>'; return; }

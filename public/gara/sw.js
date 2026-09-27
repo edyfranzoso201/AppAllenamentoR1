@@ -3,24 +3,29 @@
 //
 //  Separato da /sw.js (che gestisce SOLO le push dell'app principale e non
 //  ha nessuna cache): qui serve l'opposto, cioe' funzionare senza rete a
-//  bordo campo. Lo scope e' ristretto a /gestione-gara.html, quindi questo
-//  worker non intercetta nulla del resto dell'app.
+//  bordo campo. Vive in /gara/ e ha scope /gara/, quindi non intercetta
+//  nulla del resto dell'app.
+//
+//  Lo scope DEVE essere una cartella (terminare con '/'): uno scope come
+//  '/gestione-gara.html' viene normalizzato dal browser sulla sua DIRECTORY,
+//  cioe' '/', e collide con la PWA principale. Era il bug "app gia'
+//  installata" di Chrome Android.
 // ═══════════════════════════════════════════════════════════════════════
 
-// La versione va ALZATA a ogni modifica di gestione-gara.html. Senza questo,
+// La versione va ALZATA a ogni modifica di public/gara/index.html. Senza questo,
 // sullo smartphone la PWA continua a servire la pagina vecchia dalla cache: il
-// worker si aggiorna (skipWaiting) ma la copia di /gestione-gara.html resta
+// worker si aggiorna (skipWaiting) ma la copia di /gara/ resta
 // quella di prima, e la rete la sostituisce solo al giro successivo. Risultato
 // gia' visto: fix deployato, desktop a posto, telefono ancora col bug.
-const CACHE = 'gara-v15';
+const CACHE = 'gara-v16';
 
 // Il PDF si genera con jsPDF preso dal CDN. Senza queste due voci in cache,
 // "Genera PDF" fallirebbe proprio nel caso piu' probabile: campo senza rete,
 // partita finita, resoconto da mandare alla redazione.
 const PRECACHE = [
-  '/gestione-gara.html',
-  '/manifest-gara.json',
-  '/favicon-gara.svg',
+  '/gara/',
+  '/gara/manifest.json',
+  '/gara/favicon.svg',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js'
 ];
@@ -62,15 +67,15 @@ self.addEventListener('fetch', event => {
 
   // La pagina stessa: prima la rete (per prendere gli aggiornamenti), con
   // ricaduta sulla copia in cache quando non c'e' campo.
-  if (req.mode === 'navigate' || url.pathname === '/gestione-gara.html') {
+  if (req.mode === 'navigate' || url.pathname === '/gara/' || url.pathname === '/gara/index.html') {
     event.respondWith(
       fetch(req)
         .then(res => {
           const copia = res.clone();
-          caches.open(CACHE).then(c => c.put('/gestione-gara.html', copia)).catch(() => {});
+          caches.open(CACHE).then(c => c.put('/gara/', copia)).catch(() => {});
           return res;
         })
-        .catch(() => caches.match('/gestione-gara.html'))
+        .catch(() => caches.match('/gara/'))
     );
     return;
   }
