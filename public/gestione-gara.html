@@ -95,6 +95,16 @@
   font-size:.78rem;font-weight:600;letter-spacing:.02em;
   background:rgba(255,255,255,.08);color:var(--gg-dim,#9fb0c8);border:1px solid rgba(255,255,255,.12)}
 .gg-step-badge.full{background:rgba(220,53,69,.18);color:#ff8f9a;border-color:rgba(220,53,69,.45)}
+.gg-steprow{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:6px}
+.gg-steprow .gg-step-badge{margin:0}
+.gg-step-chiudi{background:rgba(255,255,255,.06);color:var(--sm-txt,#e8eef6);
+  border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:4px 12px;
+  font-size:.78rem;font-weight:600;cursor:pointer;min-height:32px}
+.gg-step-chiudi:active{transform:scale(.97)}
+/* In attesa: il prossimo cambio aprira' uno step nuovo. Deve essere evidente,
+   o si dimentica di averlo premuto e il conteggio sorprende. */
+.gg-step-chiudi.armato{background:rgba(255,193,7,.20);color:#ffd968;
+  border-color:rgba(255,193,7,.55)}
 .gg-minuto{text-align:center;color:var(--accent);font-size:0.9rem;font-weight:700;margin-top:4px;min-height:1.2em;}
     .gg-timer-btns{display:flex;gap:9px;justify-content:center;margin-top:14px;flex-wrap:wrap;}
     .gg-timer-btns button{flex:1;min-width:104px;padding:13px 10px;font-size:0.9rem;font-weight:700;
@@ -260,7 +270,13 @@
         <!-- Conto alla rovescia: vedi renderTimer() -->
         <div class="gg-countdown" id="ggCountdown"></div>
         <!-- Step delle sostituzioni: vedi calcolaStep() -->
-        <div class="gg-step-badge" id="ggStepBadge">Step sostituzioni: 0/3</div>
+        <!-- Il pulsante sta accanto al contatore perche' si usa guardando
+             quel numero: chiude lo step quando i 2 minuti non indovinano. -->
+        <div class="gg-steprow" id="ggStepRow">
+          <div class="gg-step-badge" id="ggStepBadge">Step sostituzioni: 0/3</div>
+          <button type="button" class="gg-step-chiudi" id="btnChiudiStep"
+                  title="Il prossimo cambio apre uno step nuovo">Chiudi step</button>
+        </div>
 
         <div class="gg-score">
           <div class="gg-score-col">
@@ -1181,6 +1197,8 @@ function resetGara() {
   events = [];
   segnaliEmessi = {};   // altrimenti la gara nuova resterebbe muta
   ultimoStop = null;    // non si annulla il "fine tempo" di una gara che non c'e' piu'
+  stepDaChiudere = false;   // un "chiudi step" premuto nella gara vecchia non
+                            // deve marcare il primo cambio di quella nuova
   aggiornaBarraAnnulla();
   salvaStato();
   renderTimer();
@@ -1471,7 +1489,12 @@ function calcolaStep(elenco) {
     // La finestra e' ancorata all'INIZIO del gruppo, non all'ultimo cambio:
     // altrimenti cambi al 60-62-64-66 scorrerebbero in un unico step da sei
     // minuti, che non e' una sostituzione contemporanea ma quattro interruzioni.
-    const stessoGruppo = ultimo && noto && ultimo.noto &&
+    // Il flag apreStep e' la parola dell'allenatore e batte l'orologio: se ha
+    // premuto "Chiudi step", questo cambio comincia un gruppo nuovo anche se
+    // cade entro i 2 minuti. Sta SULL'EVENTO e non in una variabile a parte
+    // perche' calcolaStep() ricalcola sempre tutto da zero, e perche' cosi'
+    // viene salvato con la partita invece di sparire alla riapertura.
+    const stessoGruppo = !ev.apreStep && ultimo && noto && ultimo.noto &&
       ultimo.periodo === per && (min - ultimo.min) <= FINESTRA_STEP;
     if (stessoGruppo) {
       ultimo.cambi.push(ev);
@@ -1506,6 +1529,32 @@ function stepAttivi() {
   return String(info.step == null ? '1' : info.step) !== '0';
 }
 
+// ── "Chiudi step": la decisione manuale ───────────────────────────────
+// I 2 minuti sono un'euristica (vedi FINESTRA_STEP). Quando non indovina - una
+// interruzione lunga, o due interruzioni ravvicinate - questo comando mette la
+// decisione in mano all'allenatore: il PROSSIMO cambio apre uno step nuovo,
+// qualunque cosa dica l'orologio.
+//
+// Non esiste uno stato "step chiuso" da nessuna parte: quando il cambio
+// arriva, il flag finisce sull'evento e qui torna a false. Cosi' il conteggio
+// resta una funzione dei soli eventi, ricalcolabile e salvabile.
+let stepDaChiudere = false;
+
+function chiudiStep() {
+  if (!stepAttivi()) return;
+  // Senza cambi registrati non c'e' niente da chiudere: l'annuncio
+  // "il prossimo cambio apre lo step 2" sarebbe falso.
+  if (!calcolaStep(events).gruppi.length) {
+    toast('Nessuna sostituzione ancora registrata');
+    return;
+  }
+  stepDaChiudere = !stepDaChiudere;   // ripremendolo si annulla
+  aggiornaContatoreStep();
+  toast(stepDaChiudere
+    ? 'Step chiuso: il prossimo cambio ne apre uno nuovo'
+    : 'Annullato: il prossimo cambio resta in questo step');
+}
+
 // Avvisa quando un cambio APRE un nuovo step, dicendo quanti ne restano.
 // Si confronta il conteggio prima e dopo: se non e' cresciuto, il cambio era
 // contemporaneo o all'intervallo e non c'e' nulla da segnalare.
@@ -1530,11 +1579,24 @@ function avvisaStep(stepPrima) {
 function aggiornaContatoreStep() {
   const el = document.getElementById('ggStepBadge');
   if (!el) return;
-  if (!stepAttivi()) { el.style.display = 'none'; return; }
+  // Si nasconde la RIGA, non solo il numero: a switch spento deve sparire
+  // anche il pulsante, o resterebbe un comando che non conta niente.
+  const riga = document.getElementById('ggStepRow');
+  if (!stepAttivi()) {
+    if (riga) riga.style.display = 'none';
+    el.style.display = 'none';
+    return;
+  }
+  if (riga) riga.style.display = '';
   el.style.display = '';
   const st = calcolaStep(events).step;
   el.textContent = 'Step sostituzioni: ' + st + '/' + MAX_STEP;
   el.className = 'gg-step-badge' + (st >= MAX_STEP ? ' full' : '');
+  const btn = document.getElementById('btnChiudiStep');
+  if (btn) {
+    btn.classList.toggle('armato', stepDaChiudere);
+    btn.textContent = stepDaChiudere ? 'Step chiuso ✓' : 'Chiudi step';
+  }
 }
 
 // Il minuto salvato era solo la scritta ("45+2'"): per contare gli step delle
@@ -1543,13 +1605,22 @@ function aggiornaContatoreStep() {
 // (rosa, menu azioni, pannello Registra evento) non possono divergere.
 function nuovoEvento(tipo, campi) {
   const mi = minutoCorrente();
-  return Object.assign({
+  const ev = Object.assign({
     tipo,
     minuto: mi.label,
     min: mi.min,
     periodo: supplAttivi ? (2 + supplPeriod) : currentPeriod,
     playerId: '', playerInId: '', nota: ''
   }, campi || {});
+  // "Chiudi step" vale per il primo cambio che arriva, da qualunque strada:
+  // rosa, menu azioni o pannello Registra evento passano tutte da qui, quindi
+  // il flag si consuma in un solo posto e nessun percorso puo' scordarselo.
+  // Solo i cambi: un gol o un'ammonizione non chiudono niente.
+  if (tipo === 'cambio' && stepDaChiudere) {
+    ev.apreStep = true;
+    stepDaChiudere = false;
+  }
+  return ev;
 }
 
 function cambioRapido(idEsce, idEntra) {
@@ -2194,6 +2265,8 @@ async function init() {
   tieniPremuto('btnReset', '&#8634; Azzera', '&#8634; Tieni premuto&hellip;', resetGara);
   document.getElementById('btnAnnullaStop').addEventListener('click', annullaFineTempo);
   document.getElementById('btnCorreggiOrari').addEventListener('click', correggiOrari);
+  const bChiudi = document.getElementById('btnChiudiStep');
+  if (bChiudi) bChiudi.addEventListener('click', chiudiStep);
   const prova = document.getElementById('btnProvaAudio');
   if (prova) prova.addEventListener('click', () => {
     sbloccaAudio();
