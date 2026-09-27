@@ -457,6 +457,23 @@
         </div>
 
         <div class="gg-field">
+          <label>Conteggio step sostituzioni</label>
+          <select id="infoStep">
+            <option value="1">Attivo (calcio)</option>
+            <option value="0">Non previsto in questo sport</option>
+          </select>
+        </div>
+        <div class="gg-hint">
+          Il regolamento del calcio conta le <strong>interruzioni</strong>, non i
+          giocatori: cambi entro <strong>2 minuti</strong> valgono un solo step, e
+          quelli fatti all&rsquo;<strong>intervallo</strong> non contano. I due minuti
+          partono dal primo cambio del gruppo e non si azzerano a ogni cambio: il
+          primo cambio dopo la scadenza apre lo step successivo e riparte da l&igrave;.
+          Massimo <strong>3 step</strong>. Dove i cambi sono liberi o contati in altro
+          modo, spegnilo: sparisce il contatore e non compare nessun avviso.
+        </div>
+
+        <div class="gg-field">
           <label>Segnali acustici</label>
           <select id="infoAudio">
             <option value="1">Attivi (consigliato)</option>
@@ -591,7 +608,7 @@ let players = [];        // rosa da Gestione Squadra + flag locali di distinta
 let events = [];
 let info = {
   casa:'', ospite:'', campionato:'', giornata:'', data:'', ora:'', luogo:'', arbitro:'',
-  noiCasa:'1', durata:45, durataSuppl:15, supplMode:'off', audio:'1'
+  noiCasa:'1', durata:45, durataSuppl:15, supplMode:'off', audio:'1', step:'1'
 };
 let scoreHome = 0, scoreAway = 0;
 let periodTimestamps = { t1Start:null, t1End:null, t2Start:null, t2End:null };
@@ -1469,10 +1486,18 @@ function contaIntervallo(g) {
   return g.min <= dur + 1;
 }
 
+// Il conteggio degli step e' una regola del calcio: negli altri sport i cambi
+// sono liberi o contati in altro modo, quindi si disattiva da Dati gara. Un
+// solo posto lo decide, cosi' badge e avviso non possono divergere.
+function stepAttivi() {
+  return String(info.step == null ? '1' : info.step) !== '0';
+}
+
 // Avvisa quando un cambio APRE un nuovo step, dicendo quanti ne restano.
 // Si confronta il conteggio prima e dopo: se non e' cresciuto, il cambio era
 // contemporaneo o all'intervallo e non c'e' nulla da segnalare.
 function avvisaStep(stepPrima) {
+  if (!stepAttivi()) { aggiornaContatoreStep(); return; }
   const dopo = calcolaStep(events).step;
   aggiornaContatoreStep();
   if (dopo === stepPrima) return;          // stesso step: nessun avviso
@@ -1492,6 +1517,8 @@ function avvisaStep(stepPrima) {
 function aggiornaContatoreStep() {
   const el = document.getElementById('ggStepBadge');
   if (!el) return;
+  if (!stepAttivi()) { el.style.display = 'none'; return; }
+  el.style.display = '';
   const st = calcolaStep(events).step;
   el.textContent = 'Step sostituzioni: ' + st + '/' + MAX_STEP;
   el.className = 'gg-step-badge' + (st >= MAX_STEP ? ' full' : '');
@@ -2057,12 +2084,20 @@ const CAMPI_INFO = [
   ['infoGiornata','giornata'], ['infoData','data'], ['infoOra','ora'],
   ['infoLuogo','luogo'], ['infoArbitro','arbitro'], ['infoNoiCasa','noiCasa'],
   ['infoDurata','durata'], ['infoDurataSuppl','durataSuppl'], ['infoSupplMode','supplMode'],
-  ['infoAudio','audio']
+  ['infoAudio','audio'], ['infoStep','step']
 ];
+// Le tendine non hanno un'opzione vuota: uno stato salvato da una versione
+// precedente non ha il campo, e scriverci '' lascerebbe la tendina in bianco
+// su un valore che non esiste fra le opzioni. Per quelle si ripiega sul
+// default, che e' anche il comportamento che l'app ha sempre avuto.
+const DEFAULT_INFO = { noiCasa:'1', durata:45, durataSuppl:15, supplMode:'off', audio:'1', step:'1' };
 function scriviInfoNeiCampi() {
   CAMPI_INFO.forEach(([id, key]) => {
     const el = document.getElementById(id);
-    if (el) el.value = info[key] == null ? '' : info[key];
+    if (!el) return;
+    let v = info[key];
+    if (v == null || v === '') v = DEFAULT_INFO[key] == null ? '' : DEFAULT_INFO[key];
+    el.value = v;
   });
   aggiornaNomiPunteggio();
 }
