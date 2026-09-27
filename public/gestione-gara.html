@@ -175,6 +175,11 @@
     /* Ospite: non tesserato per la societa'. Colore diverso da tutti gli
        altri badge, perche' e' l'unico che dice "attenzione, non e' dei nostri". */
     .gg-badge.osp{background:#a855f7;color:#fff;}
+    /* Uscito e non piu' rientrabile: la riga resta leggibile (serve per
+       ammonizioni ed espulsioni dalla panchina) ma si vede che e' spenta. */
+    .gg-badge.usc{background:rgba(220,53,69,.20);color:#ff9aa4;border:1px solid rgba(220,53,69,.45)}
+    .gg-prow.uscito{opacity:.55}
+    .gg-prow.uscito .gg-pname{text-decoration:line-through;text-decoration-thickness:1px}
     .gg-badge.tit{background:var(--accent);color:#fff;}
     /* Chi e' in campo adesso: la riga si stacca dalle altre con un filetto,
        cosi' durante la partita si legge di sguardo chi puo' uscire. */
@@ -495,6 +500,24 @@
         </div>
 
         <div class="gg-field">
+          <label>Rientro in campo dopo la sostituzione</label>
+          <select id="infoRientro">
+            <option value="0">Consentito (categorie di base)</option>
+            <option value="1">Vietato: chi esce non rientra</option>
+          </select>
+        </div>
+        <div class="gg-hint">
+          Dai <strong>Giovanissimi</strong> in su chi esce non pu&ograve; pi&ugrave;
+          rientrare; nelle <strong>categorie di base</strong> s&igrave;. Con
+          &laquo;Vietato&raquo; i giocatori gi&agrave; sostituiti restano in panchina
+          ma <strong>disabilitati</strong>: non compaiono pi&ugrave; fra chi pu&ograve;
+          entrare. Restano convocati e puoi comunque registrare su di loro
+          ammonizioni ed espulsioni.<br>
+          Se sbagli un cambio, <strong>cancellalo dalla cronologia</strong>: il
+          giocatore torna disponibile da solo.
+        </div>
+
+        <div class="gg-field">
           <label>Segnali acustici</label>
           <select id="infoAudio">
             <option value="1">Attivi (consigliato)</option>
@@ -629,7 +652,10 @@ let players = [];        // rosa da Gestione Squadra + flag locali di distinta
 let events = [];
 let info = {
   casa:'', ospite:'', campionato:'', giornata:'', data:'', ora:'', luogo:'', arbitro:'',
-  noiCasa:'1', durata:45, durataSuppl:15, supplMode:'off', audio:'1', step:'1'
+  noiCasa:'1', durata:45, durataSuppl:15, supplMode:'off', audio:'1', step:'1',
+  // Il divieto di rientro parte SPENTO: le categorie di base sono la meta' dei
+  // campionati e chi aggiorna l'app non deve trovarsi meta' panchina bloccata.
+  rientro:'0'
 };
 let scoreHome = 0, scoreAway = 0;
 let periodTimestamps = { t1Start:null, t1End:null, t2Start:null, t2End:null };
@@ -1260,8 +1286,14 @@ function renderRosa() {
     // per decidere il cambio.
     if (p.inDistinta && p.titolare) badges.push('<span class="gg-badge tit">TIT</span>');
     if (p.inDistinta && p.inCampo && !p.titolare) badges.push('<span class="gg-badge tit">IN</span>');
+    // Chi e' uscito e non puo' rientrare: la riga si spegne e lo dice a parole.
+    // Il badge serve perche' "assente dalla tendina dei cambi" non e' una
+    // spiegazione: senza scritta sembra un giocatore sparito per un bug.
+    const fuoriGioco = p.inDistinta && !p.inCampo && eUscito(p.id);
+    if (fuoriGioco) badges.push('<span class="gg-badge usc">USCITO</span>');
     return '<div class="gg-prow' + (p.inDistinta ? '' : ' out') +
-             (p.inDistinta && p.inCampo ? ' campo' : '') + '">' +
+             (p.inDistinta && p.inCampo ? ' campo' : '') +
+             (fuoriGioco ? ' uscito' : '') + '">' +
       '<span class="gg-pnum">' + esc(p.num || '–') + '</span>' +
       '<button type="button" class="gg-pname" data-az-id="' + esc(p.id) + '" ' +
         'title="Tocca per registrare un evento">' + esc(p.name) + '</button>' +
@@ -1292,7 +1324,8 @@ function renderCambio() {
         (p.num ? esc(p.num) + '. ' : '') + esc(p.name) + '</button>').join('')
     : '<div class="gg-empty">Nessuno.</div>';
   boxE.innerHTML = lista(inCampoOra(), cambioEsceId, 'data-esce');
-  boxI.innerHTML = lista(inPanchina(), cambioEntraId, 'data-entra');
+  // Chi entra: la panchina DISPONIBILE, non quella fisica (vedi usciti()).
+  boxI.innerHTML = lista(disponibiliEntrare(), cambioEntraId, 'data-entra');
 }
 
 // Il conteggio dei convocati e degli schierati: a bordo campo e' la verifica
@@ -1324,6 +1357,44 @@ function inCampoOra() {
 }
 function inPanchina() {
   return players.filter(p => p.inDistinta && !p.inCampo);
+}
+
+// ── Chi e' uscito e non puo' rientrare ─────────────────────────────────
+// Dai Giovanissimi in su chi esce non rientra; nelle categorie di base si',
+// quindi la regola e' uno switch in Dati gara (info.rientro).
+//
+// "E' uscito" si DEDUCE dagli eventi, non da un flag sul giocatore: la
+// cronologia si puo' correggere, e cancellando il cambio sbagliato il
+// giocatore deve tornare disponibile da solo. Un flag a parte divergerebbe.
+// Conta l'ULTIMO evento che lo riguarda, perche' nelle categorie di base uno
+// puo' uscire ed essere rimesso dentro piu' volte: se l'ultima cosa che gli e'
+// successa e' "entra", e' rientrato e non e' piu' un uscito.
+function rientroVietato() {
+  return String(info.rientro == null ? '0' : info.rientro) === '1';
+}
+
+function usciti() {
+  if (!rientroVietato()) return [];
+  const stato = new Map();   // id -> 'uscito' | 'entrato'
+  (events || []).forEach(ev => {
+    if (!ev || ev.tipo !== 'cambio') return;
+    if (ev.playerId)   stato.set(String(ev.playerId), 'uscito');
+    if (ev.playerInId) stato.set(String(ev.playerInId), 'entrato');
+  });
+  return players.filter(p => p.inDistinta && !p.inCampo &&
+                             stato.get(String(p.id)) === 'uscito');
+}
+
+function eUscito(id) {
+  return usciti().some(p => String(p.id) === String(id));
+}
+
+// La panchina da cui si PUO' pescare. Diversa da inPanchina(), che resta la
+// panchina fisica: quella serve ai conteggi ("quanti in panchina") e non deve
+// calare quando uno esce, o il numero direbbe il falso.
+function disponibiliEntrare() {
+  const fuori = new Set(usciti().map(p => String(p.id)));
+  return inPanchina().filter(p => !fuori.has(String(p.id)));
 }
 
 // Quanti se ne schierano: nel calcio 11, ma questa pagina serve anche alle
@@ -1389,13 +1460,17 @@ function apriMenuAzioni(id) {
   azioni.push(['espulsione', '🔴 Espulsione']);
   // "Esce" apre la scelta di chi entra: la sostituzione ha due protagonisti e
   // registrarne solo uno lascerebbe la squadra in dieci nello stato interno.
-  if (p.inCampo && inPanchina().length) azioni.push(['esce', '🔄 Esce']);
+  if (p.inCampo && disponibiliEntrare().length) azioni.push(['esce', '🔄 Esce']);
   azioni.push(['nota', '📝 Nota']);
 
   document.getElementById('ggAzNome').textContent =
     (p.num ? p.num + '. ' : '') + p.name;
+  // Lo stato deve dire perche' non ci sono azioni di campo: "in panchina" da
+  // solo farebbe cercare un "Entra" che non comparira' mai.
   document.getElementById('ggAzStato').textContent =
-    p.inCampo ? 'in campo · ' + minutoCorrente().label : 'in panchina';
+    p.inCampo ? 'in campo · ' + minutoCorrente().label
+              : (eUscito(p.id) ? 'gia’ sostituito · non puo’ rientrare'
+                               : 'in panchina');
   box.innerHTML = azioni.map(a =>
     '<button type="button" class="gg-azbtn" data-az-do="' + a[0] + '">' + a[1] + '</button>'
   ).join('');
@@ -1443,8 +1518,16 @@ function eseguiAzione(tipo) {
 
 // Secondo passo della sostituzione dal menu: chi entra.
 function apriSceltaEntra(esce) {
-  const panchina = inPanchina();
-  if (!panchina.length) { toast('Nessuno in panchina.'); return; }
+  const panchina = disponibiliEntrare();
+  if (!panchina.length) {
+    // Distinguere i due casi: "panchina vuota" e "restano solo giocatori
+    // che sono gia' usciti" sono problemi diversi e si risolvono in modi
+    // diversi (uno si accetta, l'altro si sistema spegnendo lo switch).
+    toast(inPanchina().length
+      ? 'In panchina restano solo giocatori gia’ usciti.'
+      : 'Nessuno in panchina.');
+    return;
+  }
   document.getElementById('ggAzNome').textContent = 'Esce ' + esce.name;
   document.getElementById('ggAzStato').textContent = 'Chi entra?';
   document.getElementById('ggAzBody').innerHTML = panchina.map(q =>
@@ -1684,7 +1767,7 @@ function popolaSelectGiocatori() {
                      : convocati();
   document.getElementById('evGiocatore').innerHTML = opzioniGiocatori(primaTendina);
   document.getElementById('evEntra').innerHTML =
-    opzioniGiocatori(tipo === 'cambio' ? inPanchina() : convocati());
+    opzioniGiocatori(tipo === 'cambio' ? disponibiliEntrare() : convocati());
 }
 
 // ── Eventi ─────────────────────────────────────────────────────────────
@@ -2168,13 +2251,13 @@ const CAMPI_INFO = [
   ['infoGiornata','giornata'], ['infoData','data'], ['infoOra','ora'],
   ['infoLuogo','luogo'], ['infoArbitro','arbitro'], ['infoNoiCasa','noiCasa'],
   ['infoDurata','durata'], ['infoDurataSuppl','durataSuppl'], ['infoSupplMode','supplMode'],
-  ['infoAudio','audio'], ['infoStep','step']
+  ['infoAudio','audio'], ['infoStep','step'], ['infoRientro','rientro']
 ];
 // Le tendine non hanno un'opzione vuota: uno stato salvato da una versione
 // precedente non ha il campo, e scriverci '' lascerebbe la tendina in bianco
 // su un valore che non esiste fra le opzioni. Per quelle si ripiega sul
 // default, che e' anche il comportamento che l'app ha sempre avuto.
-const DEFAULT_INFO = { noiCasa:'1', durata:45, durataSuppl:15, supplMode:'off', audio:'1', step:'1' };
+const DEFAULT_INFO = { noiCasa:'1', durata:45, durataSuppl:15, supplMode:'off', audio:'1', step:'1', rientro:'0' };
 function scriviInfoNeiCampi() {
   CAMPI_INFO.forEach(([id, key]) => {
     const el = document.getElementById(id);
