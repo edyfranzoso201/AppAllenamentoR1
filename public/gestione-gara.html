@@ -325,6 +325,96 @@
         </div>
       </div>
 
+      <!-- Cronografo sopra, eventi sotto: durante la partita si guarda il tempo
+           e si scrive l'evento nello stesso momento, quindi stanno nella stessa
+           pagina. I dati della gara si compilano prima e hanno una tab loro. -->
+      <div class="gg-card">
+        <h2>&#10133; Registra evento</h2>
+        <div class="gg-field">
+          <label>Tipo</label>
+          <select id="evTipo">
+            <option value="gol">&#9917; Gol nostro</option>
+            <option value="gol-avv">&#9917; Gol avversari</option>
+            <option value="ammonizione">&#128993; Ammonizione</option>
+            <option value="espulsione">&#128308; Espulsione</option>
+            <option value="cambio">&#128260; Sostituzione</option>
+            <option value="nota">&#128221; Nota</option>
+          </select>
+        </div>
+        <div class="gg-field" id="evGiocatoreWrap">
+          <label id="evGiocatoreLabel">Giocatore</label>
+          <select id="evGiocatore"></select>
+        </div>
+        <div class="gg-field" id="evEntraWrap" style="display:none;">
+          <label>Entra</label>
+          <select id="evEntra"></select>
+        </div>
+        <div class="gg-field" id="evNotaWrap" style="display:none;">
+          <label>Testo</label>
+          <input type="text" id="evNota" placeholder="es. Rigore parato">
+        </div>
+        <div class="gg-field">
+          <label>Minuto (vuoto = minuto corrente del cronometro)</label>
+          <input type="text" id="evMinuto" placeholder="automatico" inputmode="numeric">
+        </div>
+        <button type="button" class="gg-btn" id="btnAddEvento" style="width:100%;">Aggiungi evento</button>
+      </div>
+
+      <div class="gg-card">
+        <h2>&#128220; Cronologia</h2>
+        <div id="eventiList"></div>
+      </div>
+    </div>
+
+    <!-- ══════════ PAGINA ROSA ══════════ -->
+    <div class="gg-page" id="page-rosa">
+      <div class="gg-card">
+        <h2>&#128101; Convocati</h2>
+        <div class="gg-hint" style="margin-bottom:11px;">
+          La rosa arriva da <strong>Gestione Squadra</strong> di questa annata: numero di maglia
+          e data di nascita sono quelli gi&agrave; inseriti l&igrave;.
+          Ci sono anche gli <strong>ospiti</strong> (badge <span class="gg-badge osp">OSP</span>):
+          si convocano come gli altri.<br>
+          Su ogni riga: <strong>&laquo;In distinta&raquo;</strong> lo convoca,
+          <strong>XI</strong> lo schiera dal primo minuto,
+          <strong>&#9917;</strong> gli segna un gol al minuto del cronometro.
+        </div>
+        <div class="gg-row2" style="margin-bottom:11px;">
+          <button type="button" class="gg-btn-ghost" id="btnTuttiIn">Tutti in distinta</button>
+          <button type="button" class="gg-btn-ghost" id="btnTuttiOut">Nessuno</button>
+        </div>
+        <div class="gg-field"><input type="text" id="rosaSearch" placeholder="&#128269; Cerca per nome&hellip;"></div>
+        <div class="gg-conta" id="ggContaRosa"></div>
+        <div class="gg-plist" id="rosaList"></div>
+      </div>
+
+      <!-- Sostituzione: la si fa mentre il gioco corre, quindi due liste
+           affiancate e un solo tocco per parte. Il minuto lo mette il
+           cronometro: vedi cambioRapido(). -->
+      <div class="gg-card">
+        <h2>&#128260; Sostituzione</h2>
+        <div class="gg-hint" style="margin-bottom:11px;">
+          Tocca chi <strong>esce</strong> e chi <strong>entra</strong>: il minuto lo prende
+          dal cronometro. Finisce in cronologia e nel PDF.
+        </div>
+        <div class="gg-cambio">
+          <div>
+            <h3>Esce (in campo)</h3>
+            <div class="gg-cblist" id="cambioEsce"></div>
+          </div>
+          <div>
+            <h3>Entra (panchina)</h3>
+            <div class="gg-cblist" id="cambioEntra"></div>
+          </div>
+        </div>
+        <button type="button" class="gg-btn" id="btnCambio" style="width:100%;margin-top:11px;">
+          &#128260; Registra la sostituzione
+        </button>
+      </div>
+    </div>
+
+    <!-- ====== PAGINA DATI GARA ====== -->
+    <div class="gg-page" id="page-dati">
       <div class="gg-card">
         <h2>&#128203; Dati gara</h2>
         <div class="gg-row2">
@@ -384,93 +474,6 @@
       </div>
     </div>
 
-    <!-- ══════════ PAGINA ROSA ══════════ -->
-    <div class="gg-page" id="page-rosa">
-      <div class="gg-card">
-        <h2>&#128101; Convocati</h2>
-        <div class="gg-hint" style="margin-bottom:11px;">
-          La rosa arriva da <strong>Gestione Squadra</strong> di questa annata: numero di maglia
-          e data di nascita sono quelli gi&agrave; inseriti l&igrave;.
-          Ci sono anche gli <strong>ospiti</strong> (badge <span class="gg-badge osp">OSP</span>):
-          si convocano come gli altri.<br>
-          Su ogni riga: <strong>&laquo;In distinta&raquo;</strong> lo convoca,
-          <strong>XI</strong> lo schiera dal primo minuto,
-          <strong>&#9917;</strong> gli segna un gol al minuto del cronometro.
-        </div>
-        <div class="gg-row2" style="margin-bottom:11px;">
-          <button type="button" class="gg-btn-ghost" id="btnTuttiIn">Tutti in distinta</button>
-          <button type="button" class="gg-btn-ghost" id="btnTuttiOut">Nessuno</button>
-        </div>
-        <div class="gg-field"><input type="text" id="rosaSearch" placeholder="&#128269; Cerca per nome&hellip;"></div>
-        <div class="gg-conta" id="ggContaRosa"></div>
-        <div class="gg-plist" id="rosaList"></div>
-      </div>
-
-      <!-- Sostituzione: la si fa mentre il gioco corre, quindi due liste
-           affiancate e un solo tocco per parte. Il minuto lo mette il
-           cronometro: vedi cambioRapido(). -->
-      <div class="gg-card">
-        <h2>&#128260; Sostituzione</h2>
-        <div class="gg-hint" style="margin-bottom:11px;">
-          Tocca chi <strong>esce</strong> e chi <strong>entra</strong>: il minuto lo prende
-          dal cronometro. Finisce in cronologia e nel PDF.
-        </div>
-        <div class="gg-cambio">
-          <div>
-            <h3>Esce (in campo)</h3>
-            <div class="gg-cblist" id="cambioEsce"></div>
-          </div>
-          <div>
-            <h3>Entra (panchina)</h3>
-            <div class="gg-cblist" id="cambioEntra"></div>
-          </div>
-        </div>
-        <button type="button" class="gg-btn" id="btnCambio" style="width:100%;margin-top:11px;">
-          &#128260; Registra la sostituzione
-        </button>
-      </div>
-    </div>
-
-    <!-- ══════════ PAGINA EVENTI ══════════ -->
-    <div class="gg-page" id="page-eventi">
-      <div class="gg-card">
-        <h2>&#10133; Registra evento</h2>
-        <div class="gg-field">
-          <label>Tipo</label>
-          <select id="evTipo">
-            <option value="gol">&#9917; Gol nostro</option>
-            <option value="gol-avv">&#9917; Gol avversari</option>
-            <option value="ammonizione">&#128993; Ammonizione</option>
-            <option value="espulsione">&#128308; Espulsione</option>
-            <option value="cambio">&#128260; Sostituzione</option>
-            <option value="nota">&#128221; Nota</option>
-          </select>
-        </div>
-        <div class="gg-field" id="evGiocatoreWrap">
-          <label id="evGiocatoreLabel">Giocatore</label>
-          <select id="evGiocatore"></select>
-        </div>
-        <div class="gg-field" id="evEntraWrap" style="display:none;">
-          <label>Entra</label>
-          <select id="evEntra"></select>
-        </div>
-        <div class="gg-field" id="evNotaWrap" style="display:none;">
-          <label>Testo</label>
-          <input type="text" id="evNota" placeholder="es. Rigore parato">
-        </div>
-        <div class="gg-field">
-          <label>Minuto (vuoto = minuto corrente del cronometro)</label>
-          <input type="text" id="evMinuto" placeholder="automatico" inputmode="numeric">
-        </div>
-        <button type="button" class="gg-btn" id="btnAddEvento" style="width:100%;">Aggiungi evento</button>
-      </div>
-
-      <div class="gg-card">
-        <h2>&#128220; Cronologia</h2>
-        <div id="eventiList"></div>
-      </div>
-    </div>
-
     <!-- ══════════ PAGINA REPORT ══════════ -->
     <div class="gg-page" id="page-pdf">
       <div class="gg-card">
@@ -515,7 +518,7 @@
   <div class="gg-nav">
     <button type="button" class="active" data-page="gara"><span class="ic">&#9201;&#65039;</span>Gara</button>
     <button type="button" data-page="rosa"><span class="ic">&#128101;</span>Rosa</button>
-    <button type="button" data-page="eventi"><span class="ic">&#128220;</span>Eventi</button>
+    <button type="button" data-page="dati"><span class="ic">&#128203;</span>Dati gara</button>
     <button type="button" data-page="pdf"><span class="ic">&#128424;&#65039;</span>Report</button>
   </div>
 
@@ -2091,7 +2094,9 @@ function vaiA(pagina) {
   document.querySelectorAll('.gg-nav button').forEach(b =>
     b.classList.toggle('active', b.dataset.page === pagina));
   if (pagina === 'rosa') { renderRosa(); renderCambio(); }
-  if (pagina === 'eventi') { popolaSelectGiocatori(); renderEventi(); }
+  // Le card degli eventi stanno nella pagina Gara: se restassero agganciate
+  // alla vecchia tab 'eventi' la cronologia non si disegnerebbe mai piu'.
+  if (pagina === 'gara') { popolaSelectGiocatori(); renderEventi(); }
   window.scrollTo(0, 0);
 }
 
