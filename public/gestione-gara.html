@@ -65,7 +65,37 @@
                    padding:16px 14px;margin-bottom:14px;}
     .gg-periodo{text-align:center;color:var(--muted);font-size:0.82rem;text-transform:uppercase;
                 letter-spacing:1.5px;margin-bottom:6px;font-weight:600;}
-    .gg-minuto{text-align:center;color:var(--accent);font-size:0.9rem;font-weight:700;margin-top:4px;min-height:1.2em;}
+    .gg-azmodal{position:fixed;inset:0;z-index:70;background:rgba(3,10,22,.78);
+  display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:16px}
+.gg-azbox{margin:auto 0;width:100%;max-width:400px;background:var(--gg-card,#101c31);
+  border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:18px}
+.gg-aztitle{font-size:1.1rem;font-weight:700;text-align:center}
+.gg-azsub{font-size:.82rem;color:var(--gg-dim,#9fb0c8);text-align:center;margin:2px 0 14px}
+.gg-azgrid{display:flex;flex-direction:column;gap:8px}
+.gg-azbtn{width:100%;padding:13px 14px;font-size:1rem;font-weight:600;text-align:left;
+  border-radius:11px;border:1px solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.06);color:inherit;cursor:pointer}
+.gg-azbtn:active{background:rgba(255,255,255,.14)}
+.gg-azclose{width:100%;margin-top:12px;padding:11px;border-radius:11px;
+  border:1px solid rgba(255,255,255,.12);background:transparent;
+  color:var(--gg-dim,#9fb0c8);font-weight:600;cursor:pointer}
+/* Il nome e' diventato un <button>: gli stili di default del bottone vanno
+   azzerati, ma l'andata a capo della regola precedente NON va persa -- questa
+   sta piu' in basso nel foglio e vincerebbe, troncando i nomi lunghi. */
+.gg-pname{background:none;border:0;padding:0;font:inherit;color:inherit;text-align:left;
+  cursor:pointer;flex:1;min-width:0;white-space:normal;overflow-wrap:break-word;word-break:break-word;
+  text-decoration:underline;text-decoration-color:rgba(255,255,255,.22);
+  text-underline-offset:3px}
+.gg-pname:active{color:#7ee2a8}
+.gg-countdown{font-size:.95rem;font-weight:600;letter-spacing:.02em;color:var(--gg-dim,#9fb0c8);margin-top:2px;
+  font-variant-numeric:tabular-nums}
+.gg-countdown.urg{color:#ffc107}
+.gg-countdown.over{color:#7ee2a8}
+.gg-step-badge{display:inline-block;margin:6px auto 0;padding:3px 10px;border-radius:999px;
+  font-size:.78rem;font-weight:600;letter-spacing:.02em;
+  background:rgba(255,255,255,.08);color:var(--gg-dim,#9fb0c8);border:1px solid rgba(255,255,255,.12)}
+.gg-step-badge.full{background:rgba(220,53,69,.18);color:#ff8f9a;border-color:rgba(220,53,69,.45)}
+.gg-minuto{text-align:center;color:var(--accent);font-size:0.9rem;font-weight:700;margin-top:4px;min-height:1.2em;}
     .gg-timer-btns{display:flex;gap:9px;justify-content:center;margin-top:14px;flex-wrap:wrap;}
     .gg-timer-btns button{flex:1;min-width:104px;padding:13px 10px;font-size:0.9rem;font-weight:700;
                           border-radius:10px;border:none;cursor:pointer;}
@@ -227,6 +257,10 @@
         <div class="gg-periodo" id="periodoLabel">1&deg; Tempo</div>
         <div class="timer-display" id="timerDisplay">00:00</div>
         <div class="gg-minuto" id="minutoLabel"></div>
+        <!-- Conto alla rovescia: vedi renderTimer() -->
+        <div class="gg-countdown" id="ggCountdown"></div>
+        <!-- Step delle sostituzioni: vedi calcolaStep() -->
+        <div class="gg-step-badge" id="ggStepBadge">Step sostituzioni: 0/3</div>
 
         <div class="gg-score">
           <div class="gg-score-col">
@@ -692,6 +726,28 @@ function renderTimer() {
     timerStartEpoch !== null || timerSeconds > 0
       ? (over ? mi.label + '  · recupero' : mi.label)
       : '';
+
+  // Conto alla rovescia: il cronometro sale, ma in panchina serve sapere
+  // quanto MANCA -- per l'ultimo cambio, per gestire il finale. Oltre la
+  // durata non diventa negativo: si passa a contare il recupero in avanti,
+  // perche' quanto duri lo decide l'arbitro e un "-3:00" sarebbe una bugia.
+  const cd = document.getElementById('ggCountdown');
+  if (cd) {
+    const rif = (supplAttivi && supplStartEpoch !== null)
+      ? { sec: supplSeconds, dur: (Number(info.durataSuppl) || 15) * 60 }
+      : { sec: timerSeconds, dur: dur * 60 };
+    const manca = rif.dur - rif.sec;
+    if (periodoChiuso) {
+      cd.textContent = '';
+      cd.className = 'gg-countdown';
+    } else if (manca > 0) {
+      cd.textContent = '− ' + fmtMMSS(manca) + ' alla fine';
+      cd.className = 'gg-countdown' + (manca <= 120 ? ' urg' : '');
+    } else {
+      cd.textContent = '+ ' + fmtMMSS(-manca) + ' di recupero';
+      cd.className = 'gg-countdown over';
+    }
+  }
 
   document.getElementById('supplDisplay').textContent = fmtMMSS(supplSeconds);
   document.getElementById('supplLabel').textContent =
@@ -1164,7 +1220,8 @@ function renderRosa() {
     return '<div class="gg-prow' + (p.inDistinta ? '' : ' out') +
              (p.inDistinta && p.inCampo ? ' campo' : '') + '">' +
       '<span class="gg-pnum">' + esc(p.num || '–') + '</span>' +
-      '<span class="gg-pname">' + esc(p.name) + '</span>' +
+      '<button type="button" class="gg-pname" data-az-id="' + esc(p.id) + '" ' +
+        'title="Tocca per registrare un evento">' + esc(p.name) + '</button>' +
       '<span class="gg-pbadges">' + badges.join('') + '</span>' +
       '<button type="button" class="gg-ptit' + (p.titolare ? ' on' : '') +
         '" data-tit-id="' + esc(p.id) + '" title="Schiera dal primo minuto">XI</button>' +
@@ -1267,6 +1324,191 @@ function golRapido(id) {
 }
 
 // ── Sostituzione: chi esce, chi entra, a che minuto ───────────────────
+// ── Menu azioni sul giocatore ──────────────────────────────────────────
+// Tap sul nome nella rosa e si registra l'evento in un gesto. Le azioni
+// offerte seguono lo stato reale: il gol lo segna chi e' in campo, il
+// cartellino lo prende anche chi e' in panchina (e' proprio il caso in cui
+// serve registrarlo), chi e' fuori distinta non fa nulla.
+let azPlayerId = '';
+
+function apriMenuAzioni(id) {
+  const p = trovaGiocatore(id);
+  if (!p) return;
+  if (!p.inDistinta) {
+    toast('Metti prima ' + p.name + ' in distinta.');
+    return;
+  }
+  azPlayerId = String(p.id);
+  const box = document.getElementById('ggAzBody');
+  const azioni = [];
+  if (p.inCampo) azioni.push(['gol', '⚽ Gol']);
+  azioni.push(['ammonizione', '🟡 Ammonizione']);
+  azioni.push(['espulsione', '🔴 Espulsione']);
+  // "Esce" apre la scelta di chi entra: la sostituzione ha due protagonisti e
+  // registrarne solo uno lascerebbe la squadra in dieci nello stato interno.
+  if (p.inCampo && inPanchina().length) azioni.push(['esce', '🔄 Esce']);
+  azioni.push(['nota', '📝 Nota']);
+
+  document.getElementById('ggAzNome').textContent =
+    (p.num ? p.num + '. ' : '') + p.name;
+  document.getElementById('ggAzStato').textContent =
+    p.inCampo ? 'in campo · ' + minutoCorrente().label : 'in panchina';
+  box.innerHTML = azioni.map(a =>
+    '<button type="button" class="gg-azbtn" data-az-do="' + a[0] + '">' + a[1] + '</button>'
+  ).join('');
+  document.getElementById('ggAzModal').style.display = 'flex';
+}
+
+function chiudiMenuAzioni() {
+  document.getElementById('ggAzModal').style.display = 'none';
+  azPlayerId = '';
+}
+
+// Esegue l'azione scelta. Scrive l'evento con il minuto corrente, senza
+// passare dal pannello in fondo.
+function eseguiAzione(tipo) {
+  const p = trovaGiocatore(azPlayerId);
+  if (!p) { chiudiMenuAzioni(); return; }
+
+  if (tipo === 'esce') { apriSceltaEntra(p); return; }
+
+  if (tipo === 'nota') {
+    const txt = prompt('Nota su ' + p.name + ':', '');
+    if (txt === null) return;
+    if (!txt.trim()) { toast('Nota vuota: non registrata.'); return; }
+    events.push(nuovoEvento('nota', { playerId: String(p.id), nota: txt.trim() }));
+  } else {
+    events.push(nuovoEvento(tipo, { playerId: String(p.id) }));
+    if (tipo === 'gol') scoreHome++;
+    // Espulso: fuori dal campo, o resterebbe fra chi puo' segnare e uscire.
+    if (tipo === 'espulsione') p.inCampo = false;
+  }
+
+  const mi = minutoCorrente().label;
+  chiudiMenuAzioni();
+  vibra(60);
+  salvaStato();
+  renderEventi();
+  renderTimer();
+  renderRosa();
+  renderCambio();
+  popolaSelectGiocatori();
+  const nomi = { gol:'⚽ Gol', ammonizione:'🟡 Ammonizione',
+                 espulsione:'🔴 Espulsione', nota:'📝 Nota' };
+  toast((nomi[tipo] || 'Evento') + ' · ' + p.name + ' al ' + mi);
+}
+
+// Secondo passo della sostituzione dal menu: chi entra.
+function apriSceltaEntra(esce) {
+  const panchina = inPanchina();
+  if (!panchina.length) { toast('Nessuno in panchina.'); return; }
+  document.getElementById('ggAzNome').textContent = 'Esce ' + esce.name;
+  document.getElementById('ggAzStato').textContent = 'Chi entra?';
+  document.getElementById('ggAzBody').innerHTML = panchina.map(q =>
+    '<button type="button" class="gg-azbtn" data-az-entra="' + esc(q.id) + '">' +
+    (q.num ? esc(q.num) + '. ' : '') + esc(q.name) + '</button>'
+  ).join('');
+}
+
+// ── Step delle sostituzioni (regolamento: massimo 3) ──────────────────
+// Il regolamento conta gli STEP, non le sostituzioni: cambiare tre giocatori
+// tutti insieme e' un solo step. Qui si raggruppa cosi':
+//   - cambi ravvicinati (entro FINESTRA_STEP minuti di gioco) = un solo step,
+//     perche' a bordo campo tre sostituzioni contemporanee si registrano una
+//     dopo l'altra e non sono tre interruzioni;
+//   - cambi fatti all'INTERVALLO non consumano step: si passa dal 1o al 2o
+//     tempo, il gioco e' gia' fermo. Sono riconosciuti dal cambio di periodo,
+//     non da un minuto preciso, perche' l'intervallo non ha un minuto proprio.
+const FINESTRA_STEP = 2;   // minuti di gioco
+const MAX_STEP = 3;
+
+// Restituisce { step, gruppi } dove gruppi[] descrive ogni raggruppamento.
+// Funzione pura: dipende solo dagli eventi passati, cosi' si puo' verificare
+// senza far girare una partita.
+function calcolaStep(elenco) {
+  const cambi = (elenco || []).filter(e => e && e.tipo === 'cambio');
+  const gruppi = [];
+  cambi.forEach(ev => {
+    const per = Number(ev.periodo) || 1;
+    const min = Number(ev.min);
+    // Un cambio con il minuto perso (stato salvato da una versione vecchia)
+    // vale come step a se': meglio contarne uno in piu' che ignorarlo.
+    const noto = !isNaN(min);
+    const ultimo = gruppi.length ? gruppi[gruppi.length - 1] : null;
+    // La finestra e' ancorata all'INIZIO del gruppo, non all'ultimo cambio:
+    // altrimenti cambi al 60-62-64-66 scorrerebbero in un unico step da sei
+    // minuti, che non e' una sostituzione contemporanea ma quattro interruzioni.
+    const stessoGruppo = ultimo && noto && ultimo.noto &&
+      ultimo.periodo === per && (min - ultimo.min) <= FINESTRA_STEP;
+    if (stessoGruppo) {
+      ultimo.cambi.push(ev);
+      ultimo.minFine = min;
+    } else {
+      gruppi.push({ periodo: per, min: noto ? min : -1, minFine: noto ? min : -1,
+                    noto, cambi: [ev], intervallo: false });
+    }
+  });
+  // Un gruppo e' "all'intervallo" se il 2o tempo non e' ancora iniziato quando
+  // il cambio viene fatto: lo si riconosce dal fatto che sta nel 2o periodo al
+  // minuto di inizio. Vedi contaIntervallo().
+  gruppi.forEach(g => { g.intervallo = contaIntervallo(g); });
+  return { step: gruppi.filter(g => !g.intervallo).length, gruppi };
+}
+
+// L'intervallo: sostituzioni fatte a cavallo fra i due tempi. In pratica sono
+// i cambi registrati quando il 2o tempo e' al minuto d'inizio (il cronometro
+// e' a zero, il minuto di gioco vale ancora la durata del 1o tempo).
+function contaIntervallo(g) {
+  if (g.periodo !== 2 || !g.noto) return false;
+  const dur = Number(info.durata) || 45;
+  // minutoCorrente() nel 2o tempo parte da dur+1: un cambio all'intervallo
+  // cade quindi su dur+1 (o resta a dur se inserito a mano).
+  return g.min <= dur + 1;
+}
+
+// Avvisa quando un cambio APRE un nuovo step, dicendo quanti ne restano.
+// Si confronta il conteggio prima e dopo: se non e' cresciuto, il cambio era
+// contemporaneo o all'intervallo e non c'e' nulla da segnalare.
+function avvisaStep(stepPrima) {
+  const dopo = calcolaStep(events).step;
+  aggiornaContatoreStep();
+  if (dopo === stepPrima) return;          // stesso step: nessun avviso
+  const restano = MAX_STEP - dopo;
+  if (restano > 0) {
+    alert('Step ' + dopo + ' di ' + MAX_STEP + '.\n\n' +
+          (restano === 1 ? 'Resta 1 step.' : 'Restano ' + restano + ' step.'));
+  } else if (restano === 0) {
+    alert('Step ' + dopo + ' di ' + MAX_STEP + ': hai esaurito gli step.\n\n' +
+          'Le prossime sostituzioni saranno oltre il limite del regolamento, ' +
+          'a meno che siano contemporanee a questa o fatte all\u2019intervallo.');
+  } else {
+    alert('Attenzione: sei a ' + dopo + ' step, oltre il limite di ' + MAX_STEP + '.');
+  }
+}
+
+function aggiornaContatoreStep() {
+  const el = document.getElementById('ggStepBadge');
+  if (!el) return;
+  const st = calcolaStep(events).step;
+  el.textContent = 'Step sostituzioni: ' + st + '/' + MAX_STEP;
+  el.className = 'gg-step-badge' + (st >= MAX_STEP ? ' full' : '');
+}
+
+// Il minuto salvato era solo la scritta ("45+2'"): per contare gli step delle
+// sostituzioni serve un numero confrontabile, e il periodo per riconoscere
+// l'intervallo. Ogni evento nasce da qui, cosi' i tre punti che li creano
+// (rosa, menu azioni, pannello Registra evento) non possono divergere.
+function nuovoEvento(tipo, campi) {
+  const mi = minutoCorrente();
+  return Object.assign({
+    tipo,
+    minuto: mi.label,
+    min: mi.min,
+    periodo: supplAttivi ? (2 + supplPeriod) : currentPeriod,
+    playerId: '', playerInId: '', nota: ''
+  }, campi || {});
+}
+
 function cambioRapido(idEsce, idEntra) {
   const esce = trovaGiocatore(idEsce);
   const entra = trovaGiocatore(idEntra);
@@ -1275,8 +1517,12 @@ function cambioRapido(idEsce, idEntra) {
     toast('Chi esce e chi entra non possono essere lo stesso atleta.'); return;
   }
   if (!esce.inDistinta || !entra.inDistinta) { toast('Entrambi devono essere in distinta.'); return; }
-  const minuto = minutoCorrente().label;
-  events.push({ tipo:'cambio', minuto, playerId: String(esce.id), playerInId: String(entra.id), nota:'' });
+  // Il conteggio va letto PRIMA di inserire il cambio: avvisaStep() confronta
+  // il prima e il dopo per capire se questo cambio ha aperto un nuovo step.
+  const stepPrima = calcolaStep(events).step;
+  const ev = nuovoEvento('cambio', { playerId: String(esce.id), playerInId: String(entra.id) });
+  const minuto = ev.minuto;
+  events.push(ev);
   // Chi e' in campo cambia: serve al cambio successivo, per sapere chi puo'
   // uscire e chi e' ancora in panchina.
   esce.inCampo = false;
@@ -1287,6 +1533,7 @@ function cambioRapido(idEsce, idEntra) {
   renderRosa();
   renderCambio();
   toast('🔄 ' + minuto + ': esce ' + esce.name + ', entra ' + entra.name);
+  avvisaStep(stepPrima);
 }
 
 // Le tendine degli eventi mostravano TUTTI i convocati: in "Esce" comparivano
@@ -1363,6 +1610,9 @@ function testoEvento(ev) {
 
 function renderEventi() {
   const box = document.getElementById('eventiList');
+  // In cima e non in fondo: sotto c'e' un return per la lista vuota, e
+  // cancellando l'ultimo cambio il contatore resterebbe su un numero falso.
+  aggiornaContatoreStep();
   if (!events.length) {
     box.innerHTML = '<div class="gg-empty">Nessun evento registrato.</div>';
     return;
@@ -1393,14 +1643,28 @@ function aggiungiEvento() {
     if (playerInId === playerId) { alert('Chi entra e chi esce non possono essere lo stesso atleta.'); return; }
   }
 
-  let minuto;
+  const stepPrima = calcolaStep(events).step;
+  const ev = nuovoEvento(tipo, {
+    playerId: playerId || '',
+    playerInId: (tipo === 'cambio' ? playerInId : '') || '',
+    nota
+  });
+  // Minuto scritto a mano: il numero per il conteggio degli step va letto da
+  // quello che hai digitato, non dal cronometro, o due cambi inseriti dopo
+  // sembrerebbero contemporanei solo perche' registrati nello stesso istante.
   if (minManuale) {
-    minuto = /'$/.test(minManuale) ? minManuale : minManuale + "'";
-  } else {
-    minuto = minutoCorrente().label;
+    ev.minuto = /'$/.test(minManuale) ? minManuale : minManuale + "'";
+    const n = parseInt(String(minManuale).replace(/[^0-9+].*$/, ''), 10);
+    if (!isNaN(n)) {
+      ev.min = n;
+      // "45+2" appartiene ancora al 1o tempo: il periodo si deduce dal minuto
+      // scritto, altrimenti un cambio del 40o inserito nel 2o tempo passerebbe
+      // per fatto all'intervallo.
+      const dur = Number(info.durata) || 45;
+      ev.periodo = n <= dur ? 1 : 2;
+    }
   }
-
-  const ev = { tipo, minuto, playerId: playerId || '', playerInId: (tipo === 'cambio' ? playerInId : '') || '', nota };
+  const minuto = ev.minuto;
   events.push(ev);
   if (tipo === 'gol')     scoreHome++;
   if (tipo === 'gol-avv') scoreAway++;
@@ -1427,6 +1691,7 @@ function aggiungiEvento() {
   // uscito resterebbe selezionabile.
   popolaSelectGiocatori();
   toast('Evento aggiunto al ' + minuto);
+  if (tipo === 'cambio') avvisaStep(stepPrima);
 }
 
 function eliminaEvento(i) {
@@ -1948,11 +2213,34 @@ async function init() {
   document.querySelectorAll('.gg-nav button').forEach(b =>
     b.addEventListener('click', () => vaiA(b.dataset.page)));
 
+  // Menu azioni: un solo listener sul contenitore, perche' i bottoni sono
+  // ridisegnati a ogni apertura e agganciarli uno a uno li perderebbe.
+  document.getElementById('ggAzClose').addEventListener('click', chiudiMenuAzioni);
+  document.getElementById('ggAzModal').addEventListener('click', e => {
+    if (e.target.id === 'ggAzModal') { chiudiMenuAzioni(); return; }
+    const doBtn = e.target.closest('[data-az-do]');
+    if (doBtn) { eseguiAzione(doBtn.dataset.azDo); return; }
+    const entra = e.target.closest('[data-az-entra]');
+    if (entra) {
+      const esce = azPlayerId;
+      chiudiMenuAzioni();
+      // cambioRapido() muove i giocatori, scrive l'evento e avvisa sugli step:
+      // la sostituzione dal menu deve passare per la stessa strada, o le due
+      // vie si comporterebbero in modo diverso.
+      cambioRapido(esce, entra.dataset.azEntra);
+    }
+  });
+
   document.getElementById('rosaSearch').addEventListener('input', renderRosa);
   document.getElementById('rosaList').addEventListener('click', e => {
     // Due bottoni sulla stessa riga: XI (schierato) e distinta. Il pallone del
     // gol stava qui, ed e' stato tolto per dare spazio ai nomi: il marcatore si
     // registra da "Registra evento", che scrive lo stesso evento.
+    // Tap sul nome: menu azioni di QUEL giocatore. Registrare un gol passava
+    // dal pannello in fondo, con due tendine da scegliere; a bordo campo e'
+    // troppo lento ed e' il motivo per cui si finiva per non registrare nulla.
+    const az = e.target.closest('[data-az-id]');
+    if (az) { apriMenuAzioni(az.dataset.azId); return; }
     const tit = e.target.closest('[data-tit-id]');
     if (tit) { toggleTitolare(tit.dataset.titId); return; }
     const btn = e.target.closest('[data-toggle-id]');
@@ -2126,5 +2414,14 @@ function preparaInstallazione() {
 
 init();
 </script>
+<!-- Menu azioni sul giocatore: vedi apriMenuAzioni() -->
+<div class="gg-azmodal" id="ggAzModal" style="display:none">
+  <div class="gg-azbox">
+    <div class="gg-aztitle" id="ggAzNome"></div>
+    <div class="gg-azsub" id="ggAzStato"></div>
+    <div class="gg-azgrid" id="ggAzBody"></div>
+    <button type="button" class="gg-azclose" id="ggAzClose">Annulla</button>
+  </div>
+</div>
 </body>
 </html>
