@@ -17,7 +17,7 @@
 // worker si aggiorna (skipWaiting) ma la copia di /gara/ resta
 // quella di prima, e la rete la sostituisce solo al giro successivo. Risultato
 // gia' visto: fix deployato, desktop a posto, telefono ancora col bug.
-const CACHE = 'gara-v17';
+const CACHE = 'gara-v18';
 
 // Il PDF si genera con jsPDF preso dal CDN. Senza queste due voci in cache,
 // "Genera PDF" fallirebbe proprio nel caso piu' probabile: campo senza rete,
@@ -26,6 +26,11 @@ const PRECACHE = [
   '/gara/',
   '/gara/manifest.json',
   '/gara/favicon.svg',
+  // Le icone raster: Android non sa rasterizzare un SVG per la WebAPK, quindi
+  // senza questi PNG Chrome ripiega sulla favicon del sito e sul telefono
+  // compare l'icona "SM" dell'app principale invece del cronometro.
+  '/gara/icon-192.png',
+  '/gara/icon-512.png',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js'
 ];

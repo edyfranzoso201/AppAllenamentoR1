@@ -5,7 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Andamento Gara — Sport Monitoring</title>
   <link rel="icon" type="image/svg+xml" href="/gara/favicon.svg">
-  <link rel="apple-touch-icon" href="/gara/favicon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="/gara/icon-192.png">
+  <!-- iOS ignora il manifest per l'icona della schermata Home e guarda solo
+       questo link, e non sa usare un SVG: con l'SVG mostrava l'iniziale del
+       sito al posto del cronometro. Stesso motivo per cui Android non
+       riusciva a costruire l'icona della WebAPK. -->
+  <link rel="apple-touch-icon" href="/gara/icon-192.png">
   <meta name="theme-color" content="#060f1e">
   <!-- PWA autonoma in /gara/: manifest e service worker propri, scope
        /gara/, cosi' si installa come app a se' stante senza toccare la PWA
