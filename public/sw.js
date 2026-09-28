@@ -4,8 +4,12 @@ self.addEventListener('push', event => {
     const title = data.title || 'Sport Monitoring';
     const options = {
         body: data.body || '',
-        icon: '/favicon.svg',
-        badge: '/favicon.svg',
+        // PNG e non SVG: Android non sa rasterizzare un vettoriale nemmeno
+        // per le notifiche, e ripiegava su un'icona generica di sistema.
+        // E' lo stesso motivo per cui la WebAPK non riusciva a usare la
+        // favicon come icona dell'app.
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
         vibrate: [200, 100, 200],
         data: { url: data.url || '/' }
     };
