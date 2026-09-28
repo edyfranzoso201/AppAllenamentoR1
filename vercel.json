@@ -73,19 +73,15 @@
   ],
   "redirects": [
     {
-      "source": "/gestione-gara.html",
-      "destination": "/gara/",
-      "permanent": false
-    },
-    {
-      "source": "/sw-gara.js",
-      "destination": "/gara/sw.js",
-      "permanent": false
-    },
-    {
       "source": "/favicon-gara.svg",
       "destination": "/gara/favicon.svg",
       "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/gestione-gara.html",
+      "destination": "/gara-spostata.html"
     }
   ]
 }

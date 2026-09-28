@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Andamento Gara è stata spostata</title>
+
+  <!-- ATTENZIONE, NON AGGIUNGERE UN MANIFEST A QUESTA PAGINA.
+       Questa pagina esiste per far MORIRE la vecchia installazione di
+       Andamento Gara, che era installata con start_url /gestione-gara.html.
+
+       Prima qui c'era un redirect verso /gara/. Sembrava innocuo: serviva a
+       non rompere i vecchi link. In realta' la vecchia WebAPK sul telefono
+       apriva /gestione-gara.html, il redirect la portava su /gara/, e lei
+       leggeva /gara/manifest.json con id "/gara/": si riappropriava
+       dell'identita' della PWA nuova. Chrome la vedeva occupata e rispondeva
+       "questa app e' gia' installata", mentre nel task switcher restava
+       l'icona catturata alla prima installazione (la "SM" dell'app calcio).
+
+       La regola imparata due volte: il MANIFEST e' identita', ma anche una
+       PAGINA che dichiara un manifest lo e'. Quando si sposta una PWA si
+       reindirizzano le RISORSE (sw, favicon: non portano identita') e si
+       lascia morire tutto cio' che porta a un manifest.
+
+       Serviamo questa pagina con un rewrite, non con un redirect, perche' la
+       URL deve restare /gestione-gara.html: cosi' resta nello scope della
+       vecchia WebAPK e la pagina si apre DENTRO di essa. Il link qui sotto
+       punta fuori da quello scope, quindi apre il browser: e' esattamente
+       cio' che serve perche' l'utente reinstalli l'app al posto giusto. -->
+
+  <link rel="icon" type="image/svg+xml" href="/gara/favicon.svg">
+  <style>
+    :root {
+      --sfondo: #060f1e;
+      --carta: #0f1c33;
+      --testo: #e8eef7;
+      --tenue: #93a4bd;
+      --accento: #198754;
+      --bordo: #1f3557;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: var(--sfondo);
+      color: var(--testo);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.55;
+    }
+    .scheda {
+      width: 100%;
+      max-width: 30rem;
+      background: var(--carta);
+      border: 1px solid var(--bordo);
+      border-radius: 16px;
+      padding: 28px 24px;
+      text-align: center;
+    }
+    h1 {
+      margin: 0 0 4px;
+      font-size: 1.4rem;
+      text-wrap: balance;
+    }
+    .sotto {
+      margin: 0 0 20px;
+      color: var(--tenue);
+      font-size: 0.95rem;
+    }
+    .bottone {
+      display: block;
+      background: var(--accento);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1.05rem;
+      padding: 14px 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    .bottone:active { filter: brightness(0.9); }
+    ol {
+      margin: 0;
+      padding-left: 1.3em;
+      text-align: left;
+      color: var(--tenue);
+      font-size: 0.9rem;
+    }
+    ol li { margin-bottom: 6px; }
+    ol strong { color: var(--testo); }
+    .nota {
+      margin: 18px 0 0;
+      padding-top: 16px;
+      border-top: 1px solid var(--bordo);
+      color: var(--tenue);
+      font-size: 0.82rem;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <main class="scheda">
+    <h1>Andamento Gara si è spostata</h1>
+    <p class="sotto">Questa scorciatoia è quella vecchia e non funziona più.</p>
+
+    <a class="bottone" href="/gara/">Apri Andamento Gara</a>
+
+    <ol>
+      <li><strong>Disinstalla questa icona</strong> dalla schermata Home: tienila premuta e scegli Disinstalla (o trascinala su “Disinstalla”).</li>
+      <li>Apri il pulsante verde qui sopra: si aprirà nel browser.</li>
+      <li>Dal menu di Chrome (⋮) scegli <strong>Installa app</strong> o <strong>Aggiungi a schermata Home</strong>.</li>
+    </ol>
+
+    <p class="nota">Se il menu di Chrome dice ancora “app già installata”, l’icona vecchia è ancora sul telefono: torna al punto 1.</p>
+  </main>
+</body>
+</html>
