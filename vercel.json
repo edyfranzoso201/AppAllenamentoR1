@@ -83,11 +83,6 @@
       "permanent": false
     },
     {
-      "source": "/manifest-gara.json",
-      "destination": "/gara/manifest.json",
-      "permanent": false
-    },
-    {
       "source": "/favicon-gara.svg",
       "destination": "/gara/favicon.svg",
       "permanent": false
