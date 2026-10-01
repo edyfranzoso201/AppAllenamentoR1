@@ -1683,8 +1683,13 @@
     const savedTheme = localStorage.getItem('gosport_theme') || 'dark';
     applyTheme(savedTheme);
 
-    // Iscrizioni: visibile a direttivo, dirigente, admin
-    const canSeeIscrizioni = ['direttivo', 'dirigente', 'admin'].includes(role);
+    // Iscrizioni: chi puo' accettarle, rifiutarle e cancellarle. Deve
+    // rispecchiare RUOLI_GESTIONE_ISCRIZIONI in api/registrations.js, che e' il
+    // controllo vero: qui si decide solo se mostrare la voce. Coach L0 mancava,
+    // e aveva quindi il permesso sul server senza modo di usarlo.
+    // Lo Staff (A3) e' escluso: legge il numero di richieste in attesa dal
+    // banner dell'app principale, ma non decide chi entra in societa'.
+    const canSeeIscrizioni = ['direttivo', 'dirigente', 'coach_l0', 'admin'].includes(role);
     const navIscr = document.getElementById('nav-iscrizioni');
     if (navIscr && canSeeIscrizioni) navIscr.style.display = '';
 

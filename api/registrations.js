@@ -15,6 +15,41 @@ const kv = createClient({
 // ancora valida lato server (era il difetto delle 8 ore fisse).
 const SESSION_TTL_SEC = 30 * 24 * 60 * 60; // 30 giorni
 
+// ── Chi puo' fare cosa sulle iscrizioni ──────────────────────────────────
+// Questo file validava la sessione e la societa, ma NON il ruolo: qualunque
+// utente connesso della societa poteva leggere le iscrizioni, accettarle
+// (creando l'atleta in rosa) e CANCELLARLE. Sono anagrafiche di minori e prove
+// di consenso GDPR, quindi la cancellazione non e' un dispetto: e' la perdita
+// della prova del consenso. Il limite esisteva solo nel browser (la voce
+// Iscrizioni della Dashboard nascosta ai ruoli non ammessi), dove nasconde un
+// bottone e non autorizza nulla: bastava chiamare l'endpoint col proprio token.
+//
+// Il ruolo va letto dalla SESSIONE (server-side), mai dagli header, che il
+// client puo' scrivere come vuole.
+//
+// ATTENZIONE: qui i ruoli sono quelli ORIGINALI salvati da api/auth/login.js
+// (`direttivo`, `dirigente`, `staff`). La rimappatura su societa_l1 /
+// dirigente_l1 / societa_l3 che si vede in public/auth-multi-annata.js e' solo
+// un travestimento lato client per far funzionare l'app principale: nella
+// sessione KV non arriva mai. Elencarli sarebbe innocuo ma falso, e farebbe
+// credere che questa lista li copra.
+const RUOLI_LETTURA_ISCRIZIONI = [
+  'admin', 'coachl0', 'direttivo', 'dirigente', 'staff'
+];
+// Accettare crea un atleta in rosa, cancellare distrugge un consenso GDPR:
+// perimetro piu' stretto. Lo Staff (A3) legge e basta -- riceve le richieste,
+// non decide chi entra in societa.
+const RUOLI_GESTIONE_ISCRIZIONI = [
+  'admin', 'coachl0', 'direttivo', 'dirigente'
+];
+
+// Stessa normalizzazione usata in api/data.js: i ruoli girano scritti in modi
+// diversi (`Societa_L1`, `societa l1`, `societa-l1`) e un confronto letterale
+// negherebbe il permesso a chi ce l'ha.
+function normalizzaRuolo(role) {
+  return String(role || '').toLowerCase().replace(/[_\s-]/g, '');
+}
+
 function setCors(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Vary', 'Origin');
@@ -173,6 +208,19 @@ export default async function handler(req, res) {
     const societyId = String(session.societyId || '').trim();
     if (!societyId) {
       return res.status(400).json({ success: false, message: 'Società non determinata' });
+    }
+
+    // ── Controllo di ruolo ───────────────────────────────────────────────
+    // Sta qui, prima di ogni azione, e non dentro i singoli handler: cosi' una
+    // azione aggiunta domani e' negata per difetto invece di nascere aperta.
+    const ruolo = normalizzaRuolo(session.role);
+    if (!RUOLI_LETTURA_ISCRIZIONI.includes(ruolo)) {
+      return res.status(403).json({ success: false, message: 'Permesso negato' });
+    }
+    // Tutto cio' che non e' la sola lettura dell'elenco modifica le iscrizioni.
+    const soloLettura = action === 'list' && req.method === 'GET';
+    if (!soloLettura && !RUOLI_GESTIONE_ISCRIZIONI.includes(ruolo)) {
+      return res.status(403).json({ success: false, message: 'Permesso negato: sola lettura' });
     }
 
     // ── LIST (accessibile anche con auth semplice, sola lettura) ─────────
