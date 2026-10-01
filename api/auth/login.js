@@ -57,6 +57,10 @@ function getPermissions(role) {
     case 'direttivo':
       return { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true };
     case 'dirigente':
+      // A2 Dirigente (ruolo Dashboard): sola visualizzazione nell'app principale.
+      // canWrite() in api/data.js non lo ammette, quindi canEditGeneral:true gli
+      // mostrava pulsanti di modifica che il server rifiutava con 403.
+      return { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true };
     case 'dirigente_l1':
     case 'dirigente_l2':
       // Dirigente L1 ("Edit + Materiale Completo") e L2 ("Edit + Materiale"):

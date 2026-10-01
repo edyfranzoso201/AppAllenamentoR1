@@ -4595,7 +4595,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // essendo elencati fra gli autorizzati nel messaggio d'errore dell'endpoint.
         // Si normalizza anche spazi e trattini, come normalizzaRuolo() lato server.
         var _r = String(getUserRole() || '').toLowerCase().replace(/[_\s-]/g, '');
-        if (['admin', 'dirigente', 'dirigentel1', 'coachl1'].includes(_r)) {
+        // A2 Dirigente arriva qui come dirigente_l3 (sola visualizzazione): il
+        // ruolo originale 'dirigente' resta ammesso da canSeasonReset() lato server.
+        var _dashR = sessionStorage.getItem('gosport_dashboard_role') || '';
+        if (['admin', 'dirigente', 'dirigentel1', 'coachl1'].includes(_r) || _dashR === 'dirigente') {
             document.querySelectorAll('.season-only').forEach(function(el){ el.style.display = ''; });
         }
         refreshAdminMenuTrigger();

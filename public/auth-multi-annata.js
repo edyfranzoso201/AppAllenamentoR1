@@ -704,10 +704,15 @@
                             sessionStorage.setItem(SESSION_TOKEN, result.sessionToken);
                         }
                         sessionStorage.setItem(SESSION_USER, username);
-                        const DASHBOARD_ROLE_MAP = { direttivo: 'societa_l1', dirigente: 'dirigente_l1', staff: 'societa_l3' };
+                        // A2 Dirigente -> dirigente_l3 (sola visualizzazione nell'app principale).
+                        // Era mappato su dirigente_l1: vedeva i pulsanti di modifica (pagamenti,
+                        // materiale, inventario, sondaggi...) ma canWrite() lato server non
+                        // ammette 'dirigente' e ogni salvataggio finiva in 403. In Dashboard
+                        // (Iscrizioni, Impianti) vale il ruolo ORIGINALE e non cambia nulla.
+                        const DASHBOARD_ROLE_MAP = { direttivo: 'societa_l1', dirigente: 'dirigente_l3', staff: 'societa_l3' };
                         const DASHBOARD_APP_PERMS = {
                             societa_l1:   { canEditGeneral: true,  canViewGPS: true,  canEditGPS: false, isAdmin: false, isDashboard: true },
-                            dirigente_l1: { canEditGeneral: true,  canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true },
+                            dirigente_l3: { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true },
                             societa_l3:   { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true }
                         };
                         const _origRole = result.role;
