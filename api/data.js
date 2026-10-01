@@ -2866,6 +2866,14 @@ if (req.query?.action === 'alert-settings') {
   }
   if (req.method === 'POST') {
     if (!session.isAuthenticated) return res.status(401).json({ success: false });
+    // Le soglie di alert sono il pannello "Alert", marcato .admin-only nel menu.
+    // Prima bastava essere autenticati: qualunque utente poteva riscrivere le
+    // soglie di preavviso di tutta la societa (e, portandole a 1 giorno, far
+    // sparire di fatto i promemoria su certificati e tessere). Il bottone
+    // nascosto lato client non impediva la chiamata all'endpoint.
+    if (normalizzaRuolo(session.role) !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Riservato agli amministratori' });
+    }
     const { visitaDays, tesseraDays } = req.body;
     await kv.set(`society:${sid}:alertSettings`, {
       visitaDays: Math.max(1, Math.min(365, parseInt(visitaDays) || 60)),

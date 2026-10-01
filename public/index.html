@@ -1440,13 +1440,21 @@
             <button class="tab-nav-btn" data-tab="pagamenti-section" onclick="switchTab('pagamenti-section')"><i class="bi bi-credit-card-fill"></i><span class="tab-label"> Pagamenti</span></button>
             <button class="tab-nav-btn" data-tab="multe-section" onclick="switchTab('multe-section')"><i class="bi bi-exclamation-triangle-fill"></i><span class="tab-label"> Multe</span></button>
             <button class="tab-nav-btn" data-tab="convocazioni-section" onclick="switchTab('convocazioni-section')"><i class="bi bi-megaphone-fill"></i><span class="tab-label"> Convocazioni</span></button>
-            <!-- Su PC (>=992px) questi 3 bottoni admin/stagioni vengono raccolti in un
-                 menu a tendina (bottone "Admin" + pannello), per non farli uscire dalla
-                 barra. Su smartphone il wrapper è display:contents: i bottoni restano
-                 nella riga esattamente come prima, comportamento mobile invariato. -->
+            <!-- Su PC (>=992px) questi 3 bottoni vengono raccolti in un menu a tendina
+                 (bottone "Gestione" + pannello), per non farli uscire dalla barra.
+                 Su smartphone il wrapper è display:contents: i bottoni restano nella
+                 riga esattamente come prima, comportamento mobile invariato.
+
+                 L'etichetta NON è "Admin": il pannello raccoglie Accessi e Alert
+                 (admin-only) ma anche Stagioni (season-only), che spetta di diritto
+                 anche a coach_l1 e dirigente_l1 — lo conferma canSeasonReset() in
+                 api/data.js. Chiamandolo "Admin" quei due ruoli vedevano comparire un
+                 bottone "Admin" con dentro la sola voce Stagioni, e sembrava che il
+                 pannello riservato fosse esposto a tutti. Nessuna voce admin filtrava
+                 davvero: era l'etichetta del contenitore a essere sbagliata. -->
             <div id="admin-menu-dropdown" class="admin-menu-dropdown">
-                <button type="button" class="tab-nav-btn admin-menu-trigger" id="admin-menu-trigger" style="display:none;" title="Altre voci amministrative">
-                    <i class="bi bi-three-dots"></i><span class="tab-label"> Admin</span>
+                <button type="button" class="tab-nav-btn admin-menu-trigger" id="admin-menu-trigger" style="display:none;" title="Altre voci di gestione">
+                    <i class="bi bi-three-dots"></i><span class="tab-label"> Gestione</span>
                 </button>
                 <div class="admin-menu-panel" id="admin-menu-panel">
                     <button class="tab-nav-btn admin-only" data-tab="accessi-section" onclick="switchTab('accessi-section')" style="display:none;"><i class="bi bi-clock-history"></i><span class="tab-label"> Accessi</span></button>
@@ -4593,10 +4601,15 @@ document.addEventListener('DOMContentLoaded', function() {
         refreshAdminMenuTrigger();
     }
 
-    // Dropdown "Admin" (solo desktop, >=992px): mostra il bottone trigger
+    // Dropdown "Gestione" (solo desktop, >=992px): mostra il bottone trigger
     // solo se almeno una delle voci Accessi/Alert/Stagioni è visibile per
     // questo utente. Su mobile il wrapper è display:contents e questo
     // bottone resta nascosto: comportamento smartphone invariato.
+    //
+    // Si legge la visibilità da style.display (inline) e non da
+    // getComputedStyle: il pannello è display:none da CSS finché non lo si
+    // apre, quindi le voci al suo interno risultano tutte invisibili al
+    // calcolo e il trigger non comparirebbe mai a nessuno.
     function refreshAdminMenuTrigger() {
         var trigger = document.getElementById('admin-menu-trigger');
         var panel = document.getElementById('admin-menu-panel');

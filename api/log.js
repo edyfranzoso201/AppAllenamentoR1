@@ -26,6 +26,23 @@ async function getLogSession(req) {
   } catch { return null; }
 }
 
+// Normalizzazione del ruolo IDENTICA a normalizzaRuolo() in api/data.js: il
+// ruolo arriva scritto in modi diversi ('coach_l1', 'Coach_L1', 'coachl1') e
+// un confronto diretto con 'admin' funzionerebbe comunque, ma allineare la
+// forma evita che un domani 'Admin' con la maiuscola scavalchi il controllo.
+function normalizzaRuolo(role) {
+  return String(role || '').toLowerCase().replace(/[_\s-]/g, '');
+}
+
+// Il log accessi e un pannello riservato all'admin (voce "Accessi", marcata
+// .admin-only nel menu di index.html). Prima qui si verificava SOLO che la
+// sessione fosse valida: qualunque utente autenticato - un coach, uno staff -
+// poteva leggere l'elenco degli accessi della societa chiamando l'endpoint, e
+// con DELETE azzerarlo. Nascondere il bottone lato client non proteggeva nulla.
+function isAdminSession(sess) {
+  return !!sess && normalizzaRuolo(sess.role) === 'admin';
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
@@ -37,6 +54,7 @@ export default async function handler(req, res) {
       // Cancella i log della PROPRIA società (societyId dalla sessione, non dall'header)
       const sess = await getLogSession(req);
       if (!sess) return res.status(401).json({ ok: false, error: 'Non autorizzato' });
+      if (!isAdminSession(sess)) return res.status(403).json({ ok: false, error: 'Riservato agli amministratori' });
       const societyId = sess.societyId || '';
       const existing = await kv.get('access_log');
       const arr = Array.isArray(existing) ? existing : [];
@@ -82,9 +100,10 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, total: updated.length });
 
     } else {
-      // Leggi log — richiede sessione valida; un admin vede solo la PROPRIA società
+      // Leggi log — riservato all'admin, che vede solo la PROPRIA società.
       const sess = await getLogSession(req);
       if (!sess) return res.status(401).json({ ok: false, error: 'Non autorizzato' });
+      if (!isAdminSession(sess)) return res.status(403).json({ ok: false, error: 'Riservato agli amministratori' });
       const logs = await kv.get('access_log');
       let arr = Array.isArray(logs) ? logs : [];
       if (sess.societyId) arr = arr.filter(l => l.societyId === sess.societyId);
