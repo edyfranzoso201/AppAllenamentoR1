@@ -1698,6 +1698,11 @@
       const navVis = document.getElementById('nav-visite');
       if (navVis) navVis.style.display = '';
     }
+    // Modifica della data: chi riceve materialmente il certificato lo registra
+    // qui. Deve rispecchiare CAN_SET_SCADENZA_VISITA in api/data.js, che e'
+    // il controllo vero; se le due liste divergono, qui comparirebbe un campo
+    // che il server rifiuta (o mancherebbe a chi ne ha diritto).
+    _visitePuoModificare = ['admin', 'direttivo', 'societa_l1', 'societa_l3'].includes(role);
 
     // Impianti: visibile a direttivo, dirigente, staff, admin + ruoli interni dashboard
     const canSeeImpianti = ['direttivo', 'dirigente', 'staff', 'admin', 'societa_l1', 'societa_l3', 'dirigente_l1'].includes(role);
@@ -2083,6 +2088,10 @@
   // nessun endpoint nuovo, i dati sono gli stessi gia' caricati dal dashboard.
   let _visiteAnnate   = [];
   let _visiteAthletes = [];
+  // Se l'utente puo' modificare la data (deciso in base al ruolo, vedi sotto).
+  // E' solo per decidere se disegnare un campo o una pastiglia: il permesso che
+  // conta e' quello del server, in api/data.js (CAN_SET_SCADENZA_VISITA).
+  let _visitePuoModificare = false;
 
   async function initVisite() {
     if (_visiteAnnate.length) return; // gia' inizializzato
@@ -2115,12 +2124,21 @@
     if (annataId) {
       const list = await fetchAthletes(annataId);
       const ann  = _visiteAnnate.find(a => a.id === annataId);
-      list.forEach(a => { a._annataLabel = (ann && (ann.nome || ann.id)) || annataId; });
+      // _annataId serve al salvataggio: la stessa persona puo' esistere in piu'
+      // annate con id diversi, e il server scrive dentro annate:<id>:athletes.
+      // Senza questo, la modifica finirebbe nell'annata sbagliata.
+      list.forEach(a => {
+        a._annataId    = annataId;
+        a._annataLabel = (ann && (ann.nome || ann.id)) || annataId;
+      });
       all.push(...list);
     } else {
       for (const ann of _visiteAnnate) {
         const list = await fetchAthletes(ann.id);
-        list.forEach(a => { a._annataLabel = ann.nome || ann.id; });
+        list.forEach(a => {
+          a._annataId    = ann.id;
+          a._annataLabel = ann.nome || ann.id;
+        });
         all.push(...list);
       }
     }
@@ -2229,13 +2247,90 @@
           stato = '<span style="color:' + (g <= 30 ? '#f59e0b' : 'var(--text-primary)') + ';">Fra ' + g + (g === 1 ? ' giorno' : ' giorni') + '</span>';
         }
       }
+      // La colonna Scadenza e' un campo modificabile solo per chi ne ha il
+      // permesso; per gli altri resta la pastiglia colorata di sola lettura.
+      // Il permesso vero sta comunque sul server: qui si decide solo cosa
+      // mostrare, non cosa e' consentito.
+      var cellaData;
+      if (_visitePuoModificare) {
+        cellaData =
+          '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+          + '<input type="date" class="visite-date-input"'
+          +   ' data-athlete-id="' + esc(a.id || '') + '"'
+          +   ' data-annata-id="' + esc(a._annataId || '') + '"'
+          +   ' data-precedente="' + esc(a.scadenzaVisita || '') + '"'
+          +   ' value="' + esc(a.scadenzaVisita || '') + '"'
+          +   ' onchange="salvaScadenzaVisita(this)"'
+          +   ' style="padding:6px 8px;border-radius:6px;border:1px solid var(--border);'
+          +          'background:var(--bg-input,transparent);color:var(--text-primary);font-size:0.85rem;">'
+          + '<span class="visite-save-msg" style="font-size:0.75rem;"></span>'
+          + '</div>';
+      } else {
+        cellaData = dateBadge(a.scadenzaVisita);
+      }
       return '<tr>'
         + '<td style="font-weight:600;">' + esc(a.name || '—') + '</td>'
         + '<td style="color:var(--text-muted);font-size:0.82rem;">' + esc(a._annataLabel || '—') + '</td>'
-        + '<td>' + dateBadge(a.scadenzaVisita) + '</td>'
+        + '<td>' + cellaData + '</td>'
         + '<td>' + stato + '</td>'
         + '</tr>';
     }).join('');
+  };
+
+  // Salvataggio della singola data di scadenza.
+  //
+  // Manda SOLO athleteId + la data nuova: mai la rosa. Il server rilegge
+  // l'elenco aggiornato e tocca quel solo campo, percio' le modifiche fatte in
+  // contemporanea da un allenatore in Gestione Squadra non vengono sovrascritte,
+  // e ospiti/staff/archiviati (che questo foglio non mostra) non rischiano di
+  // essere cancellati. Il campo e' lo stesso che si vede in Gestione Squadra
+  // (scadenzaVisita): aggiornarlo qui aggiorna la scheda atleta, non esistono
+  // due date da tenere allineate.
+  window.salvaScadenzaVisita = async function(input) {
+    const athleteId  = input.getAttribute('data-athlete-id');
+    const annataId   = input.getAttribute('data-annata-id');
+    const precedente = input.getAttribute('data-precedente') || '';
+    const nuova      = input.value || '';
+    const msg = input.parentElement ? input.parentElement.querySelector('.visite-save-msg') : null;
+    const mostra = (testo, colore) => { if (msg) { msg.textContent = testo; msg.style.color = colore; } };
+
+    if (nuova === precedente) { mostra('', ''); return; }
+    if (!athleteId || !annataId) {
+      mostra('Dati incompleti', '#ef4444');
+      return;
+    }
+
+    input.disabled = true;
+    mostra('Salvataggio…', 'var(--text-muted)');
+    try {
+      const r = await fetch('/api/data?action=set-scadenza-visita', {
+        method: 'POST',
+        headers: authHeaders(annataId),
+        body: JSON.stringify({ athleteId: athleteId, scadenzaVisita: nuova })
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.success) {
+        // Ripristina il valore precedente: lasciare a schermo una data che il
+        // server ha rifiutato farebbe credere che sia stata salvata.
+        input.value = precedente;
+        mostra(d.message || 'Errore salvataggio', '#ef4444');
+        return;
+      }
+      input.setAttribute('data-precedente', nuova);
+      // Aggiorna la copia in memoria, cosi' il riepilogo e l'ordinamento
+      // tengono conto della modifica senza ricaricare tutte le annate.
+      const att = _visiteAthletes.find(a => String(a.id) === String(athleteId) && String(a._annataId) === String(annataId));
+      if (att) att.scadenzaVisita = nuova;
+      mostra('✓ Salvato', '#22c55e');
+      // Ridisegna dopo un attimo: la riga puo' cambiare posizione o uscire dal
+      // filtro, e farlo subito cancellerebbe il messaggio prima di leggerlo.
+      setTimeout(function() { renderVisiteTable(); }, 1200);
+    } catch (e) {
+      input.value = precedente;
+      mostra('Rete non disponibile', '#ef4444');
+    } finally {
+      input.disabled = false;
+    }
   };
 
   // ══ PRESENZE ══════════════════════════════════════════════════

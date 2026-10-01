@@ -956,6 +956,75 @@ if (req.query?.action === 'push-subscribe' && req.method === 'POST') {
   return res.status(200).json({ success: true });
 }
 
+// ── Scadenza visita medica: scrittura di UN SOLO campo di UN SOLO atleta ─────
+// Nasce dal foglio "Visite Mediche" della Dashboard, dove l'amministrazione
+// aggiorna la data appena riceve il certificato nuovo.
+//
+// PERCHE' UN ENDPOINT DEDICATO E NON IL POST GENERICO.
+// Il POST generico salva gli atleti con `kv.set(athletes, body.athletes)`: una
+// sovrascrittura dell'INTERO elenco, senza merge, in cui vince l'ultimo che
+// scrive. Due conseguenze, entrambe perdita di dati silenziosa:
+//   1. la Dashboard mostra una lista GIA' FILTRATA (senza ospiti, staff e
+//      archiviati): rimandandola indietro avrebbe CANCELLATO quelle persone;
+//   2. un allenatore che salva la rosa in Gestione Squadra nello stesso minuto
+//      avrebbe perso le sue modifiche, o fatto perdere questa.
+// Qui il client NON manda nessuna rosa: manda l'id dell'atleta e la data. La
+// lista viene riletta da KV adesso e si tocca solo quel campo, quindi qualunque
+// modifica concorrente sugli altri atleti (e sugli altri campi di questo)
+// sopravvive. E' lo stesso principio del merge a tre vie usato su AppOrdini.
+//
+// PERMESSI: canWrite() non comprende societa_l3 (Segreteria) ne direttivo, ma
+// sono proprio i profili che in societa ricevono materialmente i certificati e
+// che vedono questo foglio. Li si abilita qui, e SOLO qui: possono scrivere
+// questa data, non l'anagrafica ne il resto della scheda. Nascondere o mostrare
+// il campo lato client non autorizza nulla: il perimetro e' questa lista.
+const CAN_SET_SCADENZA_VISITA = [
+  'admin', 'coachl0', 'coachl1', 'coachl2', 'societal1', 'societal3',
+  'dirigentel1', 'dirigentel2', 'direttivo'
+];
+if (req.query?.action === 'set-scadenza-visita' && req.method === 'POST') {
+  if (!session.isAuthenticated ||
+      !CAN_SET_SCADENZA_VISITA.includes(normalizzaRuolo(session.role))) {
+    return res.status(403).json({ success: false, message: 'Permesso negato' });
+  }
+  if (!annataId || !isValidId(annataId)) {
+    return res.status(400).json({ success: false, message: 'annataId non valido' });
+  }
+  const athleteId = String((req.body && req.body.athleteId) || '').trim();
+  if (!athleteId) {
+    return res.status(400).json({ success: false, message: 'athleteId mancante' });
+  }
+  // La data arriva dal <input type="date">, quindi in formato ISO. Si valida
+  // comunque: una stringa arbitraria qui finirebbe in archivio e poi in un
+  // `new Date(...)` che produce "Invalid Date", cioe' una scadenza che non
+  // scade mai piu' e un alert che non parte. Stringa vuota = cancellazione
+  // della data, caso legittimo (certificato revocato o inserito per errore).
+  const raw = req.body && req.body.scadenzaVisita;
+  let scadenza = '';
+  if (raw !== null && raw !== undefined && String(raw).trim() !== '') {
+    scadenza = String(raw).trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(scadenza) || isNaN(new Date(scadenza).getTime())) {
+      return res.status(400).json({ success: false, message: 'Data non valida (atteso AAAA-MM-GG)' });
+    }
+  }
+  try {
+    const key = `annate:${annataId}:athletes`;
+    const lista = (await kv.get(key)) || [];
+    const idx = lista.findIndex(a => String(a.id) === athleteId);
+    if (idx === -1) {
+      return res.status(404).json({ success: false, message: 'Atleta non trovato' });
+    }
+    const precedente = lista[idx].scadenzaVisita || '';
+    lista[idx] = { ...lista[idx], scadenzaVisita: scadenza };
+    await kv.set(key, lista);
+    console.log(`[set-scadenza-visita] ${session.username} (${session.role}) atleta=${athleteId} ${precedente || '(vuota)'} -> ${scadenza || '(vuota)'}`);
+    return res.status(200).json({ success: true, scadenzaVisita: scadenza, precedente });
+  } catch (e) {
+    console.error('[set-scadenza-visita]', e?.message || e);
+    return res.status(500).json({ success: false, message: 'Errore salvataggio' });
+  }
+}
+
 // ── R2: cancellazione atleta che propaga (GDPR art. 17) ──────────────────────
 // Cancella un atleta da TUTTE le chiavi del prefix lato server (no orfani).
 // Solo ruoli con permesso di scrittura. annataId dall'header (X-Annata-Id).
