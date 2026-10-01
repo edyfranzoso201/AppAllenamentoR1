@@ -978,9 +978,12 @@ if (req.query?.action === 'push-subscribe' && req.method === 'POST') {
 // che vedono questo foglio. Li si abilita qui, e SOLO qui: possono scrivere
 // questa data, non l'anagrafica ne il resto della scheda. Nascondere o mostrare
 // il campo lato client non autorizza nulla: il perimetro e' questa lista.
+// 'staff' e' la Segreteria (A3): in Dashboard la sessione porta il ruolo
+// ORIGINALE (staff/direttivo/dirigente), non societa_l3, che qui da sola
+// lasciava fuori la Segreteria.
 const CAN_SET_SCADENZA_VISITA = [
   'admin', 'coachl0', 'coachl1', 'coachl2', 'societal1', 'societal3',
-  'dirigentel1', 'dirigentel2', 'direttivo'
+  'dirigentel1', 'dirigentel2', 'direttivo', 'staff'
 ];
 if (req.query?.action === 'set-scadenza-visita' && req.method === 'POST') {
   if (!session.isAuthenticated ||

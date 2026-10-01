@@ -1696,9 +1696,11 @@
     // Visite Mediche: la data di un certificato medico e' un dato sanitario, per
     // questo la voce NON e' aperta a tutti come Squadra o Presenze. La vede chi
     // in societa' rincorre davvero i certificati: direzione e amministrazione.
-    // In questa app "amministrazione/segreteria" non e' un ruolo a se': sono
-    // Societa' L1 (Dirigenti Societa') e Societa' L3 (Segreteria).
-    const CAN_SEE_VISITE = ['admin', 'direttivo', 'societa_l1', 'societa_l3'];
+    // La Segreteria e' lo Staff A3: qui il ruolo e' quello ORIGINALE della
+    // sessione (direttivo/dirigente/staff), la rimappatura su societa_l1/l3
+    // vale solo nell'app principale. Con la sola 'societa_l3' la Segreteria
+    // restava fuori senza che nessuno se ne accorgesse.
+    const CAN_SEE_VISITE = ['admin', 'direttivo', 'staff', 'societa_l1', 'societa_l3'];
     if (CAN_SEE_VISITE.includes(role)) {
       const navVis = document.getElementById('nav-visite');
       if (navVis) navVis.style.display = '';
@@ -1707,7 +1709,7 @@
     // qui. Deve rispecchiare CAN_SET_SCADENZA_VISITA in api/data.js, che e'
     // il controllo vero; se le due liste divergono, qui comparirebbe un campo
     // che il server rifiuta (o mancherebbe a chi ne ha diritto).
-    _visitePuoModificare = ['admin', 'direttivo', 'societa_l1', 'societa_l3'].includes(role);
+    _visitePuoModificare = ['admin', 'direttivo', 'staff', 'societa_l1', 'societa_l3'].includes(role);
 
     // Impianti: visibile a direttivo, dirigente, staff, admin + ruoli interni dashboard
     const canSeeImpianti = ['direttivo', 'dirigente', 'staff', 'admin', 'societa_l1', 'societa_l3', 'dirigente_l1'].includes(role);
