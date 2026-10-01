@@ -634,6 +634,12 @@
     <div class="nav-item" data-section="materiale" onclick="showSection('materiale', this)">
       <span class="nav-icon">🎽</span> Materiale
     </div>
+    <!-- Visite Mediche: dato sanitario, quindi NON visibile a tutti come le altre
+         voci. Parte display:none e viene mostrata solo ai ruoli di direzione e
+         amministrazione (vedi CAN_SEE_VISITE piu' sotto). -->
+    <div class="nav-item" id="nav-visite" data-section="visite" onclick="showSection('visite', this)" style="display:none;">
+      <span class="nav-icon">🩺</span> Visite Mediche
+    </div>
     <div class="nav-item" data-section="pagamenti" onclick="showSection('pagamenti', this)">
       <span class="nav-icon">💰</span> Pagamenti
     </div>
@@ -786,6 +792,68 @@
             </thead>
             <tbody id="squadra-tbody"></tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- VISITE MEDICHE -->
+    <div class="section-panel" id="section-visite">
+      <div class="section-title">🩺 Visite Mediche</div>
+      <div class="section-subtitle">Certificati scaduti e in scadenza, per sapere chi va richiamato</div>
+
+      <!-- Filtri -->
+      <div class="card" style="margin-bottom:16px;padding:14px 16px;">
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <label style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap;">Annata:</label>
+            <select id="visite-annata-filter" onchange="loadVisiteData()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;">
+              <option value="">Tutte</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <label style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap;">Scadenza entro:</label>
+            <select id="visite-mesi-filter" onchange="renderVisiteTable()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;">
+              <option value="1">1 mese</option>
+              <option value="2">2 mesi</option>
+              <option value="3" selected>3 mesi</option>
+              <option value="4">4 mesi</option>
+              <option value="6">6 mesi</option>
+              <option value="12">12 mesi</option>
+              <option value="all">Tutte le scadenze</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:180px;">
+            <label style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap;">Cerca:</label>
+            <input type="text" id="visite-search" placeholder="Nome atleta..." oninput="renderVisiteTable()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border-soft);background:var(--bg-panel);color:var(--text-primary);font-size:0.85rem;flex:1;">
+          </div>
+        </div>
+        <div style="margin-top:10px;display:flex;align-items:center;gap:8px;">
+          <label style="font-size:0.8rem;color:var(--text-muted);display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="checkbox" id="visite-senza-data" onchange="renderVisiteTable()" style="cursor:pointer;">
+            Mostra anche chi non ha una data di visita registrata
+          </label>
+        </div>
+      </div>
+
+      <!-- Riepilogo -->
+      <div class="stats-grid" id="visite-stats" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:16px;"></div>
+
+      <!-- Tabella -->
+      <div class="card" id="visite-table-card">
+        <div id="visite-loading" class="loading-spinner"><div class="spinner"></div> Caricamento...</div>
+        <div style="overflow-x:auto;display:none" id="visite-table-wrap">
+          <table class="data-table" id="visite-table">
+            <thead>
+              <tr>
+                <th>Atleta</th>
+                <th>Annata</th>
+                <th>Scadenza Visita</th>
+                <th>Stato</th>
+              </tr>
+            </thead>
+            <tbody id="visite-tbody"></tbody>
+          </table>
+          <div id="visite-empty" style="display:none;padding:24px;text-align:center;color:var(--text-muted);font-size:0.9rem;"></div>
         </div>
       </div>
     </div>
@@ -1620,6 +1688,17 @@
     const navIscr = document.getElementById('nav-iscrizioni');
     if (navIscr && canSeeIscrizioni) navIscr.style.display = '';
 
+    // Visite Mediche: la data di un certificato medico e' un dato sanitario, per
+    // questo la voce NON e' aperta a tutti come Squadra o Presenze. La vede chi
+    // in societa' rincorre davvero i certificati: direzione e amministrazione.
+    // In questa app "amministrazione/segreteria" non e' un ruolo a se': sono
+    // Societa' L1 (Dirigenti Societa') e Societa' L3 (Segreteria).
+    const CAN_SEE_VISITE = ['admin', 'direttivo', 'societa_l1', 'societa_l3'];
+    if (CAN_SEE_VISITE.includes(role)) {
+      const navVis = document.getElementById('nav-visite');
+      if (navVis) navVis.style.display = '';
+    }
+
     // Impianti: visibile a direttivo, dirigente, staff, admin + ruoli interni dashboard
     const canSeeImpianti = ['direttivo', 'dirigente', 'staff', 'admin', 'societa_l1', 'societa_l3', 'dirigente_l1'].includes(role);
     if (canSeeImpianti) {
@@ -1995,6 +2074,168 @@
       return overall === status;
     });
     renderSquadraTable(filtered);
+  };
+
+  // ══ VISITE MEDICHE ════════════════════════════════════════════
+  // Foglio per direzione/amministrazione: chi ha il certificato gia' scaduto e
+  // chi lo ha in scadenza entro N mesi (filtro), con il nome dell'atleta.
+  // Riusa dateStatus()/dateBadge() e fetchAthletes() della sezione Squadra:
+  // nessun endpoint nuovo, i dati sono gli stessi gia' caricati dal dashboard.
+  let _visiteAnnate   = [];
+  let _visiteAthletes = [];
+
+  async function initVisite() {
+    if (_visiteAnnate.length) return; // gia' inizializzato
+    const annate = await fetchAnnate();
+    _visiteAnnate = annate;
+    const sel = document.getElementById('visite-annata-filter');
+    if (!sel) return;
+    annate.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a.id;
+      opt.textContent = a.nome || a.id;
+      sel.appendChild(opt);
+    });
+    // Di default TUTTE le annate: l'amministrazione deve vedere l'intera
+    // societa' in un colpo solo, non una squadra per volta.
+    sel.value = '';
+    await loadVisiteData();
+  }
+
+  window.loadVisiteData = async function() {
+    const annataId = document.getElementById('visite-annata-filter')?.value;
+    const loading  = document.getElementById('visite-loading');
+    const wrap     = document.getElementById('visite-table-wrap');
+    if (!loading) return;
+
+    loading.style.display = 'flex';
+    if (wrap) wrap.style.display = 'none';
+
+    const all = [];
+    if (annataId) {
+      const list = await fetchAthletes(annataId);
+      const ann  = _visiteAnnate.find(a => a.id === annataId);
+      list.forEach(a => { a._annataLabel = (ann && (ann.nome || ann.id)) || annataId; });
+      all.push(...list);
+    } else {
+      for (const ann of _visiteAnnate) {
+        const list = await fetchAthletes(ann.id);
+        list.forEach(a => { a._annataLabel = ann.nome || ann.id; });
+        all.push(...list);
+      }
+    }
+
+    // Chi NON deve comparire:
+    // - ospiti e staff: la visita medica qui riguarda i tesserati della rosa;
+    // - archiviati: non fanno piu' parte della societa', richiamarli per un
+    //   certificato scaduto sarebbe un falso positivo. Stessa regola gia'
+    //   applicata agli alert in script.js (athlete.archived -> return).
+    _visiteAthletes = all.filter(a => !a.isGuest && !a.isStaff && !a.archived);
+
+    loading.style.display = 'none';
+    if (wrap) wrap.style.display = '';
+    renderVisiteTable();
+  };
+
+  // Giorni che mancano alla scadenza (negativi = gia' scaduta).
+  function giorniAllaScadenza(dateStr) {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const d = new Date(dateStr); d.setHours(0, 0, 0, 0);
+    return Math.round((d - today) / 86400000);
+  }
+
+  window.renderVisiteTable = function() {
+    const tbody = document.getElementById('visite-tbody');
+    const empty = document.getElementById('visite-empty');
+    const table = document.getElementById('visite-table');
+    const stats = document.getElementById('visite-stats');
+    if (!tbody) return;
+
+    const mesiRaw   = document.getElementById('visite-mesi-filter')?.value || '3';
+    const search    = (document.getElementById('visite-search')?.value || '').toLowerCase().trim();
+    const senzaData = !!document.getElementById('visite-senza-data')?.checked;
+
+    // Limite del filtro: oggi + N mesi. 'all' = nessun limite superiore
+    // (mostra anche le visite valide ancora a lungo).
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    let limite = null;
+    if (mesiRaw !== 'all') {
+      limite = new Date(today);
+      limite.setMonth(limite.getMonth() + parseInt(mesiRaw, 10));
+    }
+
+    let righe = _visiteAthletes.filter(a => {
+      if (search && !(a.name || '').toLowerCase().includes(search)) return false;
+      if (!a.scadenzaVisita) return senzaData;
+      if (!limite) return true;
+      // Le SCADUTE restano sempre visibili: sono il motivo per cui si apre
+      // questo foglio, e un filtro "entro 1 mese" non deve nasconderle.
+      const d = new Date(a.scadenzaVisita); d.setHours(0, 0, 0, 0);
+      return d <= limite;
+    });
+
+    // Prima le scadute (piu' vecchia in cima), poi le piu' imminenti.
+    // Chi non ha data va in fondo: non e' una scadenza, e' un dato mancante.
+    righe.sort((x, y) => {
+      if (!x.scadenzaVisita) return 1;
+      if (!y.scadenzaVisita) return -1;
+      return new Date(x.scadenzaVisita) - new Date(y.scadenzaVisita);
+    });
+
+    // Riepilogo: conteggi sull'INSIEME COMPLETO, non sulle righe filtrate,
+    // altrimenti il numero di scadute cambierebbe cambiando la ricerca.
+    let nScadute = 0, nInScadenza = 0, nSenzaData = 0;
+    _visiteAthletes.forEach(a => {
+      if (!a.scadenzaVisita) { nSenzaData++; return; }
+      const st = dateStatus(a.scadenzaVisita);
+      if (st === 'expired') nScadute++;
+      else if (st === 'warning') nInScadenza++;
+    });
+    if (stats) {
+      const card = (val, label, color) =>
+        '<div class="stat-card"><div class="stat-value" style="color:' + color + '">' + val + '</div><div class="stat-label">' + label + '</div></div>';
+      stats.innerHTML =
+        card(nScadute, 'SCADUTE', '#ef4444') +
+        card(nInScadenza, 'ENTRO 3 MESI', '#f59e0b') +
+        card(nSenzaData, 'SENZA DATA', '#94a3b8') +
+        card(_visiteAthletes.length, 'ATLETI TOTALI', '#3b82f6');
+    }
+
+    if (!righe.length) {
+      tbody.innerHTML = '';
+      if (table) table.style.display = 'none';
+      if (empty) {
+        empty.style.display = '';
+        empty.textContent = mesiRaw === 'all'
+          ? 'Nessun atleta corrisponde ai filtri.'
+          : 'Nessuna visita scaduta o in scadenza entro ' + mesiRaw + (mesiRaw === '1' ? ' mese.' : ' mesi.');
+      }
+      return;
+    }
+    if (table) table.style.display = '';
+    if (empty) empty.style.display = 'none';
+
+    tbody.innerHTML = righe.map(function(a) {
+      var stato;
+      if (!a.scadenzaVisita) {
+        stato = '<span style="color:var(--text-muted);font-size:0.82rem;">Nessuna data registrata</span>';
+      } else {
+        var g = giorniAllaScadenza(a.scadenzaVisita);
+        if (g < 0) {
+          stato = '<span style="color:#ef4444;font-weight:600;">Scaduta da ' + Math.abs(g) + (Math.abs(g) === 1 ? ' giorno' : ' giorni') + '</span>';
+        } else if (g === 0) {
+          stato = '<span style="color:#ef4444;font-weight:600;">Scade oggi</span>';
+        } else {
+          stato = '<span style="color:' + (g <= 30 ? '#f59e0b' : 'var(--text-primary)') + ';">Fra ' + g + (g === 1 ? ' giorno' : ' giorni') + '</span>';
+        }
+      }
+      return '<tr>'
+        + '<td style="font-weight:600;">' + esc(a.name || '—') + '</td>'
+        + '<td style="color:var(--text-muted);font-size:0.82rem;">' + esc(a._annataLabel || '—') + '</td>'
+        + '<td>' + dateBadge(a.scadenzaVisita) + '</td>'
+        + '<td>' + stato + '</td>'
+        + '</tr>';
+    }).join('');
   };
 
   // ══ PRESENZE ══════════════════════════════════════════════════
@@ -2783,6 +3024,7 @@
     if (el) el.classList.add('active');
     if      (name === 'squadra')   initSquadra();
     else if (name === 'presenze')  initPresenze();
+    else if (name === 'visite')    initVisite();
     else if (name === 'materiale') initMateriale();
     else if (name === 'pagamenti') initPagamenti();
     else if (name === 'multe')       initMulte();
