@@ -3066,6 +3066,13 @@
                     <div class="card-body p-3">
                         <h6 style="color:#60a5fa;" class="mb-3" id="conv-form-title">📋 Nuova Convocazione</h6>
                         <input type="hidden" id="conv-edit-id">
+                        <div class="mb-2" id="conv-impegno-box" style="display:none;">
+                            <label class="form-label small">📅 Prendi dal calendario <span class="text-muted">(facoltativo)</span></label>
+                            <select class="form-select form-select-sm" id="conv-impegno" onchange="convDaImpegno(this.value)"></select>
+                            <div id="conv-impegno-avviso" style="display:none;margin-top:6px;padding:6px 10px;border-radius:6px;font-size:0.8rem;background:rgba(251,191,36,0.15);border:1px solid #f59e0b;color:inherit;">
+                                ⚠️ Dati presi dal calendario, da verificare: controlla avversario, data, orari, ritrovo e luogo e correggili qui se serve.
+                            </div>
+                        </div>
                         <div class="row">
                             <div class="col-md-6 mb-2"><label class="form-label small">Categoria</label>
                                 <input type="text" class="form-control form-control-sm" id="conv-categoria" placeholder="es. Under 14">
@@ -3426,6 +3433,7 @@
 
     <!-- Script personalizzato -->
     <script src="import-partite.js?v=1"></script>
+    <script src="impegni-convocazione.js?v=1"></script>
     <script src="script.js?v=1781310008"></script>
     <script src="lavagna-tattica.js?v=1787670309"></script>
     <script>
@@ -5541,6 +5549,20 @@ document.addEventListener('DOMContentLoaded', function() {
         _convSaveSettings();
     };
 
+    var _convImpegni = [];   // gare proposte dalla tendina "Prendi dal calendario"
+    window.convDaImpegno = function(i) {
+        var x = _convImpegni[+i];
+        var avviso = document.getElementById('conv-impegno-avviso');
+        if (avviso) avviso.style.display = (i === '' || !x) ? 'none' : '';
+        if (i === '' || !x) return;
+        document.getElementById('conv-tipo').value       = x.tipo;
+        document.getElementById('conv-avversario').value = x.avversario;
+        document.getElementById('conv-data').value       = x.data;
+        document.getElementById('conv-inizio').value     = x.inizio;
+        document.getElementById('conv-ritrovo').value    = x.ritrovo;
+        document.getElementById('conv-luogo').value      = x.luogo;
+    };
+
     // ── Apri form nuova/modifica ───────────────────────────────────
     window.convNuova = function(id) {
         var distintaPanel = document.getElementById('conv-distinta-panel');
@@ -5557,6 +5579,30 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('conv-inizio').value      = conv ? conv.inizio     : '';
         document.getElementById('conv-luogo').value       = conv ? conv.luogo      : '';
         document.getElementById('conv-note').value        = conv ? (conv.note || '') : '';
+
+        // Tendina "Prendi dal calendario": solo per una convocazione nuova.
+        // Precompila i campi, che restano tutti modificabili a mano.
+        var _impBox = document.getElementById('conv-impegno-box');
+        var _impSel = document.getElementById('conv-impegno');
+        _convImpegni = [];
+        if (!id && window.ImpegniConvocazione) {
+            var _d = new Date();
+            var _oggi = _d.getFullYear() + '-' + String(_d.getMonth() + 1).padStart(2, '0') + '-' + String(_d.getDate()).padStart(2, '0');
+            _convImpegni = window.ImpegniConvocazione.prossimiImpegni(window.matchResults, window.calendarEvents, _convData, _oggi);
+        }
+        _impSel.innerHTML = '';
+        var _opt0 = document.createElement('option');
+        _opt0.value = '';
+        _opt0.textContent = _convImpegni.length ? '— compila a mano, oppure scegli una gara —' : 'Nessuna gara in calendario da convocare';
+        _impSel.appendChild(_opt0);
+        _convImpegni.forEach(function(x, i) {
+            var o = document.createElement('option');
+            o.value = String(i);
+            o.textContent = window.ImpegniConvocazione.etichetta(x);
+            _impSel.appendChild(o);
+        });
+        _impBox.style.display = id ? 'none' : '';
+        document.getElementById('conv-impegno-avviso').style.display = 'none';
 
         // Popola staff
         // !a.archived: chi e in archivio NON deve comparire fra i convocabili.
