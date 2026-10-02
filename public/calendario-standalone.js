@@ -2690,8 +2690,13 @@ window._submitSurveyResponse = async function(surveyId, athleteId, annataId) {
 // FIX v1.5.21: apre la convocazione con layout originale (sfondo, loghi, colori societari)
 // Recupera i settings dal backend e ricostruisce l'HTML identico a convStampa in index.html
 window._openConvPdf = async function(cdEncoded) {
+  var w = null;
   try {
     var cd = JSON.parse(decodeURIComponent(cdEncoded));
+    // Aperta qui, prima di ogni await: Safari blocca window.open dopo una fetch.
+    w = window.open('', '_blank', 'width=820,height=1100');
+    if (!w) { alert('Abilita i popup per aprire la convocazione.'); return; }
+    w.document.write('<p style="font-family:Arial,sans-serif;padding:24px;">Caricamento convocazione…</p>');
     var isPre = cd.isPre || false;
 
     // Recupera settings convocazione (sfondo, logo, sponsor) dal backend
@@ -2847,11 +2852,10 @@ window._openConvPdf = async function(cdEncoded) {
       +'<div class="footer">By '+s.firma+'</div>'
       +'</div></div></body></html>';
 
-    var w = window.open('', '_blank', 'width=820,height=1100');
-    if (!w) { alert('Abilita i popup per aprire la convocazione.'); return; }
+    w.document.open();
     w.document.write(html);
     w.document.close();
-  } catch(e) { alert('Errore: '+e.message); }
+  } catch(e) { if (w) w.close(); alert('Errore: '+e.message); }
 };
 
 // ═══ UPLOAD DOCUMENTI GENITORI (v1.5.21) ═════════════════════════════════

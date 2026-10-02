@@ -6016,7 +6016,17 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!silenzioso) alert('✅ Distinta salvata!');
     };
 
-    window.convStampaDistinta = function(id) {
+    // Safari blocca window.open se arriva dopo un'attesa (fetch): la finestra va
+    // aperta dentro il clic. Chi deve prima caricare dati la apre qui e la passa.
+    function _convApriFinestraStampa(w, html, features) {
+        w = w || window.open('', '_blank', features);
+        if (!w) { alert('Il browser ha bloccato la finestra di stampa. Consenti i popup per questo sito e riprova.'); return; }
+        w.document.open();
+        w.document.write(html);
+        w.document.close();
+    }
+
+    window.convStampaDistinta = function(id, _w) {
         // Se il pannello Distinta di questa stessa convocazione è aperto, salva prima
         // le modifiche in corso (senza alert): evita di stampare dati non ancora persistiti.
         var distintaConvIdEl = document.getElementById('distinta-conv-id');
@@ -6029,14 +6039,16 @@ document.addEventListener('DOMContentLoaded', function() {
         // diretta dall'elenco convocazioni): in quel caso carica prima i dati, poi
         // rilancia la stampa, altrimenti la colonna "N. del ruolo" uscirebbe vuota.
         if (!window._materialeData) {
-            _convDistintaAssicuraNumeri(function(){ window.convStampaDistinta(id); });
+            var wAttesa = window.open('', '_blank', 'width=800,height=1130');
+            if (wAttesa) wAttesa.document.write('<p style="font-family:Arial,sans-serif;padding:24px;">Preparazione della Distinta…</p>');
+            _convDistintaAssicuraNumeri(function(){ window.convStampaDistinta(id, wAttesa || null); });
             return;
         }
 
         var conv = _convData.find(function(x){ return x.id === id; });
-        if (!conv) { alert('Convocazione non trovata.'); return; }
+        if (!conv) { if (_w) _w.close(); alert('Convocazione non trovata.'); return; }
         var d = conv.distinta;
-        if (!d) { alert('Compila e salva prima la Distinta.'); return; }
+        if (!d) { if (_w) _w.close(); alert('Compila e salva prima la Distinta.'); return; }
         if (typeof d.assistenteArbitro === 'string') {
             d.assistenteArbitro = { athleteId:'', nome: d.assistenteArbitro, matricola:'', tessera:'' };
         }
@@ -6301,9 +6313,7 @@ document.addEventListener('DOMContentLoaded', function() {
             + '</div>'
             + '</body></html>';
 
-        var w = window.open('', '_blank', 'width=800,height=1130');
-        w.document.write(html);
-        w.document.close();
+        _convApriFinestraStampa(_w, html, 'width=800,height=1130');
     };
 
     // Ponte dal form: richiede che la convocazione sia già salvata (serve un id)
@@ -6718,9 +6728,7 @@ document.addEventListener('DOMContentLoaded', function() {
             +'window.onload=function(){}<\/script>'
             +'</body></html>';
 
-        var w = window.open('','_blank','width=820,height=1100');
-        w.document.write(html);
-        w.document.close();
+        _convApriFinestraStampa(null, html, 'width=820,height=1100');
     };
 
     window.renderConvocazioni = function() {
