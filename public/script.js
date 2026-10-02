@@ -232,6 +232,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Nascondi anche bottoni matita partite e aggiungi partita (statici)
             const addMatchBtn = document.getElementById('add-match-btn');
             if (addMatchBtn) addMatchBtn.style.display = 'none';
+            const importMatchesBtn = document.getElementById('import-matches-btn');
+            if (importMatchesBtn) importMatchesBtn.style.display = 'none';
             const deleteMatchBtn = document.getElementById('delete-match-btn');
             if (deleteMatchBtn) deleteMatchBtn.style.display = 'none';
 
@@ -7151,6 +7153,69 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
         container.appendChild(div);
     };
     elements.addMatchBtn.addEventListener('click', () => openMatchResultModal());
+    // Importa calendario: ogni partita va in Risultati (che la mostra nel
+    // Calendario) e nel Calendario Squadra (calendarEvents), senza duplicare
+    // partite gia' presenti e senza sovrascrivere eventi gia' in quella data.
+    const importMatchesBtn = document.getElementById('import-matches-btn');
+    if (importMatchesBtn) importMatchesBtn.addEventListener('click', () => {
+        const old = document.getElementById('import-matches-modal');
+        if (old) old.remove();
+        const box = document.createElement('div');
+        box.id = 'import-matches-modal';
+        box.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:flex-start;justify-content:center;z-index:9999;padding:20px;overflow-y:auto;';
+        box.innerHTML = '<div style="background:var(--bg-card,#0f172a);color:var(--text,#e2e8f0);border:1px solid var(--border,#1a3a5f);border-radius:12px;max-width:720px;width:100%;padding:20px;margin:auto 0;">'
+            + '<h5 style="margin:0 0 8px;"><i class="bi bi-upload"></i> Importa calendario partite</h5>'
+            + '<p style="font-size:0.85rem;opacity:0.85;margin:0 0 8px;">Una partita per riga: <b>data ; ora ; casa/trasferta ; avversario ; luogo</b><br>'
+            + 'es. <code>27/09/2026;17:00;casa;Trofarello;Corso M. L. King 8, Grugliasco</code><br>'
+            + 'Le partite finiscono in Risultati (e quindi nel Calendario) e nel Calendario Squadra. Quelle gi\u00e0 presenti non vengono duplicate.</p>'
+            + '<textarea id="import-matches-text" rows="12" class="form-control" style="font-family:monospace;font-size:0.8rem;"></textarea>'
+            + '<div id="import-matches-esito" style="font-size:0.85rem;margin-top:8px;white-space:pre-line;"></div>'
+            + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">'
+            + '<button type="button" class="btn btn-secondary" id="import-matches-annulla">Annulla</button>'
+            + '<button type="button" class="btn btn-success" id="import-matches-ok">Importa</button></div></div>';
+        document.body.appendChild(box);
+        const chiudi = () => box.remove();
+        box.addEventListener('click', e => { if (e.target === box) chiudi(); });
+        document.getElementById('import-matches-annulla').onclick = chiudi;
+        document.getElementById('import-matches-ok').onclick = async function () {
+            const esito = document.getElementById('import-matches-esito');
+            const r = window.ImportPartite.parseCalendarioPartite(document.getElementById('import-matches-text').value);
+            if (r.errori.length) { esito.style.color = '#f87171'; esito.textContent = 'Correggi prima queste righe:\n' + r.errori.join('\n'); return; }
+            if (!r.partite.length) { esito.style.color = '#f87171'; esito.textContent = 'Nessuna partita da importare.'; return; }
+            if (!window.calendarEvents) window.calendarEvents = {};
+            const piano = window.ImportPartite.pianificaImportPartite(r.partite, matchResults, window.calendarEvents);
+            const nEventi = Object.keys(piano.nuoviEventi).length;
+            if (!piano.nuovePartite.length && !nEventi) { esito.style.color = '#fbbf24'; esito.textContent = 'Tutte le partite sono gi\u00e0 presenti: niente da importare.'; return; }
+            // Copie per tornare indietro se il server rifiuta il salvataggio:
+            // altrimenti la pagina mostrerebbe partite che il server non ha.
+            const primaPartite = Object.assign({}, matchResults);
+            const primaEventi = Object.assign({}, window.calendarEvents);
+            const base = Date.now();
+            piano.nuovePartite.forEach((p, i) => {
+                const id = String(base + i);
+                matchResults[id] = { id, date: p.date, time: p.time, venue: p.venue, opponentName: p.opponentName,
+                    location: p.location, homeScore: null, awayScore: null, scorers: [], assists: [], cards: [] };
+            });
+            Object.assign(window.calendarEvents, piano.nuoviEventi);
+            this.disabled = true;
+            const ok = await saveData();
+            if (!ok) {
+                Object.keys(matchResults).forEach(k => { if (!(k in primaPartite)) delete matchResults[k]; });
+                window.calendarEvents = primaEventi;
+                this.disabled = false;
+                esito.style.color = '#f87171';
+                esito.textContent = 'Salvataggio non riuscito: ' + (saveData.lastError || 'errore') + '. Non \u00e8 stato importato niente.';
+                return;
+            }
+            updateAllUI();
+            let msg = 'Importate ' + piano.nuovePartite.length + ' partite in Risultati e ' + nEventi + ' eventi nel Calendario Squadra.';
+            if (piano.giaPresenti.length) msg += '\nGi\u00e0 presenti, saltate: ' + piano.giaPresenti.map(p => p.date + ' ' + p.opponentName).join(', ');
+            if (piano.eventiOccupati.length) msg += '\nNel Calendario Squadra c\u2019era gi\u00e0 un altro evento, lasciato com\u2019era: '
+                + piano.eventiOccupati.map(o => o.partita.date + ' (' + (o.evento.type || 'evento') + ')').join(', ');
+            alert(msg);
+            chiudi();
+        };
+    });
     document.getElementById('add-scorer-btn').addEventListener('click', () => addScorerInput());
     document.getElementById('add-assist-btn').addEventListener('click', () => addAssistInput());
     document.getElementById('add-card-btn').addEventListener('click', () => addCardInput());
