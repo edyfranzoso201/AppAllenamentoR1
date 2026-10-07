@@ -677,6 +677,58 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentCalendarDate = new Date();
     let pollingInterval = null;
     let visuallyDeletedCards = [];
+    // Valutazioni (presenze incluse) come le ha il SERVER all'ultimo caricamento
+    // o salvataggio. saveData non manda più tutte le valutazioni ma solo la
+    // differenza con questa base: prima ogni salvataggio sostituiva l'intero
+    // archivio, e un dispositivo aperto da ore (PC in background, PWA tenuta
+    // in tasca) cancellava le presenze registrate nel frattempo da un altro.
+    let evalBase = {};
+    const cloneJson = (o) => JSON.parse(JSON.stringify(o || {}));
+    // Differenza campo per campo: { data: { atleta: { campo: valore | null } } },
+    // null = campo eliminato. Ritorna null se non è cambiato niente.
+    function diffEvaluations(base, cur) {
+        const patch = {};
+        let n = 0;
+        const obj = (x) => (x && typeof x === 'object') ? x : {};
+        const keys = (a, b) => new Set([...Object.keys(a), ...Object.keys(b)]);
+        const b0 = obj(base), c0 = obj(cur);
+        keys(b0, c0).forEach(d => {
+            const bd = obj(b0[d]), cd = obj(c0[d]);
+            keys(bd, cd).forEach(aid => {
+                const br = obj(bd[aid]), cr = obj(cd[aid]);
+                keys(br, cr).forEach(f => {
+                    if (JSON.stringify(br[f]) === JSON.stringify(cr[f])) return;
+                    patch[d] = patch[d] || {};
+                    patch[d][aid] = patch[d][aid] || {};
+                    patch[d][aid][f] = cr[f] === undefined ? null : cr[f];
+                    n++;
+                });
+            });
+        });
+        return n ? patch : null;
+    }
+    // Stessa logica del server (applyEvalPatch in api/data.js).
+    function applyEvalPatch(cur, patch) {
+        Object.keys(patch || {}).forEach(d => {
+            Object.keys(patch[d] || {}).forEach(aid => {
+                Object.keys(patch[d][aid] || {}).forEach(f => {
+                    const v = patch[d][aid][f];
+                    if (v === null) {
+                        if (cur[d] && cur[d][aid] && typeof cur[d][aid] === 'object') {
+                            delete cur[d][aid][f];
+                            if (!Object.keys(cur[d][aid]).length) delete cur[d][aid];
+                            if (!Object.keys(cur[d]).length) delete cur[d];
+                        }
+                    } else {
+                        if (!cur[d] || typeof cur[d] !== 'object') cur[d] = {};
+                        if (!cur[d][aid] || typeof cur[d][aid] !== 'object') cur[d][aid] = {};
+                        cur[d][aid][f] = v;
+                    }
+                });
+            });
+        });
+        return cur;
+    }
     const saveData = async () => {
         const annataId = sessionStorage.getItem('gosport_current_annata') ||
                          localStorage.getItem('currentAnnata');
@@ -693,9 +745,13 @@ document.addEventListener('DOMContentLoaded', () => {
             saveData.lastError = 'Dati non caricati dal server: ricarica la pagina prima di salvare.';
             return false;
         }
+        // Fotografia di ciò che si invia: se durante l'attesa si modifica ancora
+        // qualcosa (es. tap nell'appello), quelle modifiche vanno riapplicate
+        // sopra la risposta del server, non perse.
+        const evalInviate = cloneJson(evaluations);
+        const evaluationsPatch = diffEvaluations(evalBase, evalInviate);
         const allData = {
             athletes,
-            evaluations,
             gpsData,
             awards,
             trainingSessions,
@@ -706,6 +762,7 @@ document.addEventListener('DOMContentLoaded', () => {
             formazioniSalvate: window.formazioniSalvate || [],
             tacticalBoards: window.tacticalBoards || []
         };
+        if (evaluationsPatch) allData.evaluationsPatch = evaluationsPatch;
         try {
             const response = await fetch('/api/data', {
                 method: 'POST',
@@ -726,6 +783,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 } catch (_) { /* body non JSON, usa messaggio generico */ }
                 saveData.lastError = serverMessage;
                 return false;
+            }
+            // Il server risponde con le valutazioni unite (le nostre + quelle
+            // salvate da altri dispositivi): diventano la nuova base, e sopra
+            // si rimettono le modifiche fatte mentre la richiesta era in corso.
+            let risposta = null;
+            try { risposta = await response.json(); } catch (_) {}
+            if (risposta && risposta.evaluations && typeof risposta.evaluations === 'object') {
+                evalBase = cloneJson(risposta.evaluations);
+                evaluations = applyEvalPatch(cloneJson(risposta.evaluations), diffEvaluations(evalInviate, evaluations));
+            } else {
+                evalBase = evalInviate;
             }
             saveData.lastError = null;
             return true;
@@ -805,6 +873,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Backup pigro: salva da solo dopo ~45s di inattività SE ci sono modifiche
         appelloIdleTimer = setTimeout(() => { if (appelloDirty) salvaAppello(true); }, 45000);
       }
+      // Telefono bloccato o app chiusa prima dei 45s e senza Salva: si salva
+      // subito, finché la pagina è ancora viva.
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden' && appelloDirty) salvaAppello(true);
+      });
 
       async function salvaAppello(silent) {
         // silent=true → backup automatico (idle/uscita): salva solo se ci sono
@@ -1248,6 +1321,7 @@ document.addEventListener('DOMContentLoaded', () => {
             window.reloadRatingSheets();
         }
             evaluations = allData.evaluations || {};
+            evalBase = cloneJson(evaluations);
             gpsData = allData.gpsData || {};
             migrateGpsData();
             awards = allData.awards || {};

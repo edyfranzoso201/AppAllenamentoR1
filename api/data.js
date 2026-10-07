@@ -318,6 +318,36 @@ function canSeasonReset(role) {
   return ['admin', 'dirigente', 'dirigentel1', 'coachl1'].includes(r);
 }
 
+// Applica una differenza { data: { atleta: { campo: valore | null } } } alle
+// valutazioni salvate; null = campo eliminato, record e giorni rimasti vuoti
+// spariscono. Speculare a applyEvalPatch in public/script.js.
+function applyEvalPatch(cur, patch) {
+  const vietata = k => k === '__proto__' || k === 'constructor' || k === 'prototype';
+  const isObj = x => x && typeof x === 'object' && !Array.isArray(x);
+  for (const d of Object.keys(patch)) {
+    if (vietata(d) || !isObj(patch[d])) continue;
+    for (const aid of Object.keys(patch[d])) {
+      if (vietata(aid) || !isObj(patch[d][aid])) continue;
+      for (const f of Object.keys(patch[d][aid])) {
+        if (vietata(f)) continue;
+        const v = patch[d][aid][f];
+        if (v === null) {
+          if (isObj(cur[d]) && isObj(cur[d][aid])) {
+            delete cur[d][aid][f];
+            if (!Object.keys(cur[d][aid]).length) delete cur[d][aid];
+            if (!Object.keys(cur[d]).length) delete cur[d];
+          }
+        } else {
+          if (!isObj(cur[d])) cur[d] = {};
+          if (!isObj(cur[d][aid])) cur[d][aid] = {};
+          cur[d][aid][f] = v;
+        }
+      }
+    }
+  }
+  return cur;
+}
+
 // ── R2: cancellazione atleta che propaga (GDPR art. 17) ───────────────────────
 // Le strutture per-atleta sono chiavi Redis SEPARATE: una delete fatta solo
 // lato client (che carica/salva un sottoinsieme) lascerebbe dati orfani in
@@ -3709,6 +3739,17 @@ if (body.athletes !== undefined && session.societyId) {
 
 if (body.athletes !== undefined) await kv.set(`${prefix}:athletes`, body.athletes);
 if (body.evaluations !== undefined) await kv.set(`${prefix}:evaluations`, body.evaluations);
+// Il client salva le valutazioni come DIFFERENZA (evaluationsPatch) e non piu'
+// come archivio intero: un dispositivo con dati vecchi cancellava le presenze
+// salvate nel frattempo da un altro. body.evaluations resta per il reset annata,
+// il ripristino backup e i client non ancora aggiornati.
+let mergedEvaluations;
+if (body.evaluationsPatch && typeof body.evaluationsPatch === 'object' && body.evaluations === undefined) {
+  const cur = (await kv.get(`${prefix}:evaluations`)) || {};
+  applyEvalPatch(cur, body.evaluationsPatch);
+  await kv.set(`${prefix}:evaluations`, cur);
+  mergedEvaluations = cur;
+}
 if (body.gpsData !== undefined) await kv.set(`${prefix}:gpsData`, body.gpsData);
 if (body.awards !== undefined) await kv.set(`${prefix}:awards`, body.awards);
 if (body.trainingSessions !== undefined) await kv.set(`${prefix}:trainingSessions`, body.trainingSessions);
@@ -3773,7 +3814,7 @@ else await kv.set(`${prefix}:${key}`, body[key]);
 if (body.globalPosts !== undefined) await kv.set('global:posts', body.globalPosts);
 
 console.log(`POST /api/data - annata=${annataId} user=${session.username} role=${session.role}`);
-return res.status(200).json({ success: true });
+return res.status(200).json(mergedEvaluations ? { success: true, evaluations: mergedEvaluations } : { success: true });
 }
 
 return res.status(405).json({ success: false, message: 'Metodo non consentito' });
