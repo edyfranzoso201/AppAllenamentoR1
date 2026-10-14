@@ -3956,6 +3956,13 @@ document.addEventListener('DOMContentLoaded', () => {
             totale: attendanceData[id].count + justifiedAbsenceData[id].count
         }));
         
+        // Archiviati e staff solo se hanno presenze nel periodo: chi ha lasciato la
+        // squadra non deve occupare una colonna vuota, ma il suo storico resta visibile.
+        const _fuoriRosa = new Set(athletes.filter(a => a.archived || a.isStaff).map(a => String(a.id)));
+        for (let i = combinedData.length - 1; i >= 0; i--) {
+            if (_fuoriRosa.has(combinedData[i].id) && combinedData[i].totale === 0) combinedData.splice(i, 1);
+        }
+
         combinedData.sort((a, b) => b.totale - a.totale);
 
         // Calcola totalDays: giorni del periodo con almeno 1 presenza valida
