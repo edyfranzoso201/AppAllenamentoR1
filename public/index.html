@@ -5563,47 +5563,33 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('conv-luogo').value      = x.luogo;
     };
 
-    // ── Apri form nuova/modifica ───────────────────────────────────
-    window.convNuova = function(id) {
-        var distintaPanel = document.getElementById('conv-distinta-panel');
-        if (distintaPanel) distintaPanel.style.display = 'none';
-        document.getElementById('conv-form-panel').style.display = '';
-        document.getElementById('conv-form-title').textContent = id ? '✏️ Modifica Convocazione' : '📋 Nuova Convocazione';
-        var conv = id ? _convData.find(function(x){return x.id===id;}) : null;
-        document.getElementById('conv-edit-id').value = id || '';
-        document.getElementById('conv-categoria').value  = conv ? conv.categoria  : '';
-        document.getElementById('conv-tipo').value        = conv ? conv.tipo       : 'CONVOCAZIONE PARTITA';
-        document.getElementById('conv-avversario').value  = conv ? conv.avversario : '';
-        document.getElementById('conv-data').value        = conv ? conv.data       : '';
-        document.getElementById('conv-ritrovo').value     = conv ? conv.ritrovo    : '';
-        document.getElementById('conv-inizio').value      = conv ? conv.inizio     : '';
-        document.getElementById('conv-luogo').value       = conv ? conv.luogo      : '';
-        document.getElementById('conv-note').value        = conv ? (conv.note || '') : '';
-
-        // Tendina "Prendi dal calendario": solo per una convocazione nuova.
-        // Precompila i campi, che restano tutti modificabili a mano.
-        var _impBox = document.getElementById('conv-impegno-box');
-        var _impSel = document.getElementById('conv-impegno');
-        _convImpegni = [];
-        if (!id && window.ImpegniConvocazione) {
-            var _d = new Date();
-            var _oggi = _d.getFullYear() + '-' + String(_d.getMonth() + 1).padStart(2, '0') + '-' + String(_d.getDate()).padStart(2, '0');
-            _convImpegni = window.ImpegniConvocazione.prossimiImpegni(window.matchResults, window.calendarEvents, _convData, _oggi);
+    // Liste staff/atleti del modulo. Se la rosa non e ancora in memoria
+    // (pagina appena aperta, caricamento lento o fallito) le liste resterebbero
+    // vuote e convSalva(), che rilegge SOLO le caselle presenti, salverebbe la
+    // convocazione con 0 atleti: e successo con Don Bosco, e una convocazione
+    // gia piena risalvata cosi perderebbe tutti i convocati. Quindi si mostra
+    // l'attesa, si riprova ogni secondo finche il modulo e aperto, e convSalva
+    // rifiuta il salvataggio finche le liste non sono pronte.
+    var _convAttesa = 0;
+    function _convListe(conv) {
+        var giro = ++_convAttesa;
+        var boxAtl = document.getElementById('conv-atleti-list');
+        var rosa = (window.athletes || []).filter(function(a){ return !a.isGuest; });
+        if (!rosa.length) {
+            boxAtl.dataset.attesa = '1';
+            document.getElementById('conv-staff-list').innerHTML = '';
+            boxAtl.innerHTML = '<span class="small" style="color:#f59e0b;">⏳ Rosa in caricamento, attendi qualche secondo… Se resta così, ricarica la pagina.</span>';
+            var editId = (conv && conv.id) || '';
+            setTimeout(function() {
+                if (giro !== _convAttesa) return;
+                var panel = document.getElementById('conv-form-panel');
+                if (!panel || panel.style.display === 'none') return;
+                if ((document.getElementById('conv-edit-id').value || '') !== editId) return;
+                _convListe(conv);
+            }, 1000);
+            return;
         }
-        _impSel.innerHTML = '';
-        var _opt0 = document.createElement('option');
-        _opt0.value = '';
-        _opt0.textContent = _convImpegni.length ? '— compila a mano, oppure scegli una gara —' : 'Nessuna gara in calendario da convocare';
-        _impSel.appendChild(_opt0);
-        _convImpegni.forEach(function(x, i) {
-            var o = document.createElement('option');
-            o.value = String(i);
-            o.textContent = window.ImpegniConvocazione.etichetta(x);
-            _impSel.appendChild(o);
-        });
-        _impBox.style.display = id ? 'none' : '';
-        document.getElementById('conv-impegno-avviso').style.display = 'none';
-
+        delete boxAtl.dataset.attesa;
         // Popola staff
         // !a.archived: chi e in archivio NON deve comparire fra i convocabili.
         // Qui si SCEGLIE chi convocare, quindi il filtro va messo: un atleta
@@ -5655,6 +5641,50 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         document.getElementById('conv-atleti-list').innerHTML = atlHtml || '<span class="text-muted small">Nessun atleta</span>';
+    }
+
+    // ── Apri form nuova/modifica ───────────────────────────────────
+    window.convNuova = function(id) {
+        var distintaPanel = document.getElementById('conv-distinta-panel');
+        if (distintaPanel) distintaPanel.style.display = 'none';
+        document.getElementById('conv-form-panel').style.display = '';
+        document.getElementById('conv-form-title').textContent = id ? '✏️ Modifica Convocazione' : '📋 Nuova Convocazione';
+        var conv = id ? _convData.find(function(x){return x.id===id;}) : null;
+        document.getElementById('conv-edit-id').value = id || '';
+        document.getElementById('conv-categoria').value  = conv ? conv.categoria  : '';
+        document.getElementById('conv-tipo').value        = conv ? conv.tipo       : 'CONVOCAZIONE PARTITA';
+        document.getElementById('conv-avversario').value  = conv ? conv.avversario : '';
+        document.getElementById('conv-data').value        = conv ? conv.data       : '';
+        document.getElementById('conv-ritrovo').value     = conv ? conv.ritrovo    : '';
+        document.getElementById('conv-inizio').value      = conv ? conv.inizio     : '';
+        document.getElementById('conv-luogo').value       = conv ? conv.luogo      : '';
+        document.getElementById('conv-note').value        = conv ? (conv.note || '') : '';
+
+        // Tendina "Prendi dal calendario": solo per una convocazione nuova.
+        // Precompila i campi, che restano tutti modificabili a mano.
+        var _impBox = document.getElementById('conv-impegno-box');
+        var _impSel = document.getElementById('conv-impegno');
+        _convImpegni = [];
+        if (!id && window.ImpegniConvocazione) {
+            var _d = new Date();
+            var _oggi = _d.getFullYear() + '-' + String(_d.getMonth() + 1).padStart(2, '0') + '-' + String(_d.getDate()).padStart(2, '0');
+            _convImpegni = window.ImpegniConvocazione.prossimiImpegni(window.matchResults, window.calendarEvents, _convData, _oggi);
+        }
+        _impSel.innerHTML = '';
+        var _opt0 = document.createElement('option');
+        _opt0.value = '';
+        _opt0.textContent = _convImpegni.length ? '— compila a mano, oppure scegli una gara —' : 'Nessuna gara in calendario da convocare';
+        _impSel.appendChild(_opt0);
+        _convImpegni.forEach(function(x, i) {
+            var o = document.createElement('option');
+            o.value = String(i);
+            o.textContent = window.ImpegniConvocazione.etichetta(x);
+            _impSel.appendChild(o);
+        });
+        _impBox.style.display = id ? 'none' : '';
+        document.getElementById('conv-impegno-avviso').style.display = 'none';
+
+        _convListe(conv);
     };
 
     window.convSelectAll = function(val) {
@@ -6325,6 +6355,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ── Salva convocazione ─────────────────────────────────────────
     window.convSalva = function() {
+        if (document.getElementById('conv-atleti-list').dataset.attesa === '1') {
+            alert('⏳ La rosa non è ancora caricata: aspetta che compaiano gli atleti prima di salvare, altrimenti la convocazione resterebbe senza convocati.');
+            return;
+        }
         var id = document.getElementById('conv-edit-id').value || ('conv_'+Date.now());
         var staffIds = Array.from(document.querySelectorAll('.conv-staff-chk:checked')).map(function(x){return x.value;});
         var atletiIds = Array.from(document.querySelectorAll('.conv-atleta-chk:checked')).map(function(x){return x.value;});
