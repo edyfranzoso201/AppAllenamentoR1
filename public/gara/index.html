@@ -231,6 +231,8 @@
     .gg-evmin{font-weight:700;min-width:48px;font-variant-numeric:tabular-nums;color:var(--accent);}
     .gg-evtxt{flex:1;min-width:0;}
     .gg-evdel{background:none;border:none;color:var(--rosso);cursor:pointer;font-size:0.95rem;padding:2px 4px;}
+    .gg-evmod{background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.95rem;padding:2px 6px;}
+    .gg-evrow.inmod{outline:2px solid var(--accent);outline-offset:-2px;}
     .gg-empty{text-align:center;color:var(--muted);padding:26px 12px;font-size:0.85rem;}
     /* Il motivo per cui l'elenco e' vuoto: va letto, non intravisto. Un riquadro
        ambrato lo distingue dal semplice "Nessuno." di una lista legittima. */
@@ -358,8 +360,8 @@
       <!-- Cronografo sopra, eventi sotto: durante la partita si guarda il tempo
            e si scrive l'evento nello stesso momento, quindi stanno nella stessa
            pagina. I dati della gara si compilano prima e hanno una tab loro. -->
-      <div class="gg-card">
-        <h2>&#10133; Registra evento</h2>
+      <div class="gg-card" id="evPannello">
+        <h2 id="evTitolo">&#10133; Registra evento</h2>
         <div class="gg-field">
           <label>Tipo</label>
           <select id="evTipo">
@@ -384,10 +386,11 @@
           <input type="text" id="evNota" placeholder="es. Rigore parato">
         </div>
         <div class="gg-field">
-          <label>Minuto (vuoto = minuto corrente del cronometro)</label>
-          <input type="text" id="evMinuto" placeholder="automatico" inputmode="numeric">
+          <label id="evMinutoLabel">Minuto (vuoto = minuto corrente del cronometro; int = intervallo)</label>
+          <input type="text" id="evMinuto" placeholder="automatico">
         </div>
         <button type="button" class="gg-btn" id="btnAddEvento" style="width:100%;">Aggiungi evento</button>
+        <button type="button" class="gg-btn-ghost" id="btnAnnullaModifica" style="width:100%;margin-top:8px;display:none;">Annulla modifica</button>
       </div>
 
       <div class="gg-card">
@@ -659,6 +662,7 @@ const SAVE_VERSION = 1;
 
 let players = [];        // rosa da Gestione Squadra + flag locali di distinta
 let events = [];
+let evInModifica = null;   // evento della cronologia aperto in modifica (vedi iniziaModifica)
 let info = {
   casa:'', ospite:'', campionato:'', giornata:'', data:'', ora:'', luogo:'', arbitro:'',
   noiCasa:'1', durata:45, durataSuppl:15, supplMode:'off', audio:'1', step:'1',
@@ -782,10 +786,63 @@ function minutoCorrente() {
     const tot = base + Math.min(m, Number(info.durataSuppl) || 15);
     return { label: tot + "'", min: tot };
   }
+  // All'intervallo il cronometro e' azzerato ma il periodo resta 1 finche' non
+  // si preme Avvia: senza questo ramo un cambio fatto negli spogliatoi finiva
+  // in cronologia come "1'" del primo tempo e consumava uno step.
+  if (inIntervallo()) return { label: 'Int.', min: dur, intervallo: true };
   const offset = currentPeriod === 2 ? dur : 0;
   const m = Math.floor(timerSeconds / 60) + 1;
   if (m > dur) return { label: (offset + dur) + '+' + (m - dur) + "'", min: offset + dur };
   return { label: (offset + m) + "'", min: offset + m };
+}
+
+// Fra i due tempi: il 1o e' chiuso (Fine tempo) e il 2o non e' ancora partito.
+function inIntervallo() {
+  return !supplAttivi && currentPeriod === 1 &&
+         !!periodTimestamps.t1End && !periodTimestamps.t2Start;
+}
+
+// Minuto scritto a mano ("23", "45+2", "int"). Restituisce null se non si
+// capisce: senza un numero l'evento non si puo' mettere in ordine ne' contare
+// negli step. Il periodo si deduce dal minuto, cosi' un cambio del 40o
+// inserito durante il 2o tempo non passa per fatto all'intervallo.
+function leggiMinuto(testo) {
+  const t = String(testo || '').trim();
+  const dur = Number(info.durata) || 45;
+  if (/^int/i.test(t)) return { minuto: 'Int.', min: dur, periodo: 2, intervallo: true };
+  const m = t.replace(/'+$/, '').match(/^(\d{1,3})(?:\s*\+\s*(\d{1,2}))?$/);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  const ds = Number(info.durataSuppl) || 15;
+  const periodo = n <= dur ? 1 : n <= 2 * dur ? 2 : n <= 2 * dur + ds ? 3 : 4;
+  return { minuto: n + (m[2] ? '+' + parseInt(m[2], 10) : '') + "'", min: n,
+           periodo, intervallo: false };
+}
+
+// Ordine cronologico: periodo, minuto, recupero ("45+3" dopo "45+1"). A parita'
+// resta l'ordine di inserimento (sort stabile). Un evento senza minuto
+// leggibile (salvataggi vecchi) eredita la posizione di quello prima, cosi'
+// non salta in cima alla lista.
+function ordinaEventi() {
+  let prec = [0, 0, 0];
+  const chiavi = events.map((ev, idx) => {
+    let min = Number(ev.min);
+    let extra = 0;
+    const lbl = String(ev.minuto || '').match(/(\d+)(?:\+(\d+))?/);
+    if (isNaN(min) && lbl) min = parseInt(lbl[1], 10);
+    if (lbl && lbl[2]) extra = parseInt(lbl[2], 10);
+    let k;
+    if (isNaN(min)) k = prec;
+    else {
+      const per = Number(ev.periodo) || (leggiMinuto(String(min)) || {}).periodo || 1;
+      k = [per, min, extra];
+    }
+    prec = k;
+    return { ev, k, idx };
+  });
+  chiavi.sort((a, b) => (a.k[0] - b.k[0]) || (a.k[1] - b.k[1]) ||
+                        (a.k[2] - b.k[2]) || (a.idx - b.idx));
+  events = chiavi.map(c => c.ev);
 }
 
 // ── Rendering cronometro ───────────────────────────────────────────────
@@ -1234,6 +1291,7 @@ function resetGara() {
   ultimoStop = null;    // non si annulla il "fine tempo" di una gara che non c'e' piu'
   stepDaChiudere = false;   // un "chiudi step" premuto nella gara vecchia non
                             // deve marcare il primo cambio di quella nuova
+  if (evInModifica) annullaModifica();
   aggiornaBarraAnnulla();
   salvaStato();
   renderTimer();
@@ -1586,33 +1644,29 @@ function calcolaStep(elenco) {
     // cade entro i 2 minuti. Sta SULL'EVENTO e non in una variabile a parte
     // perche' calcolaStep() ricalcola sempre tutto da zero, e perche' cosi'
     // viene salvato con la partita invece di sparire alla riapertura.
+    // Intervallo e gioco non si mescolano mai: un cambio al 46' appena
+    // ripartiti e' una sostituzione vera anche se cade a un minuto da quelle
+    // fatte negli spogliatoi.
     const stessoGruppo = !ev.apreStep && ultimo && noto && ultimo.noto &&
-      ultimo.periodo === per && (min - ultimo.min) <= FINESTRA_STEP;
+      ultimo.periodo === per && !!ultimo.intervallo === !!ev.intervallo &&
+      (min - ultimo.min) <= FINESTRA_STEP;
     if (stessoGruppo) {
       ultimo.cambi.push(ev);
       ultimo.minFine = min;
     } else {
       gruppi.push({ periodo: per, min: noto ? min : -1, minFine: noto ? min : -1,
-                    noto, cambi: [ev], intervallo: false });
+                    noto, cambi: [ev], intervallo: !!ev.intervallo });
     }
   });
-  // Un gruppo e' "all'intervallo" se il 2o tempo non e' ancora iniziato quando
-  // il cambio viene fatto: lo si riconosce dal fatto che sta nel 2o periodo al
-  // minuto di inizio. Vedi contaIntervallo().
-  gruppi.forEach(g => { g.intervallo = contaIntervallo(g); });
   return { step: gruppi.filter(g => !g.intervallo).length, gruppi };
 }
 
-// L'intervallo: sostituzioni fatte a cavallo fra i due tempi. In pratica sono
-// i cambi registrati quando il 2o tempo e' al minuto d'inizio (il cronometro
-// e' a zero, il minuto di gioco vale ancora la durata del 1o tempo).
-function contaIntervallo(g) {
-  if (g.periodo !== 2 || !g.noto) return false;
-  const dur = Number(info.durata) || 45;
-  // minutoCorrente() nel 2o tempo parte da dur+1: un cambio all'intervallo
-  // cade quindi su dur+1 (o resta a dur se inserito a mano).
-  return g.min <= dur + 1;
-}
+// L'intervallo e' scritto SULL'EVENTO (ev.intervallo), non dedotto dal minuto:
+// lo mette nuovoEvento() quando il 1o tempo e' chiuso e il 2o non e' partito,
+// oppure chi scrive "int" come minuto. Prima lo si indovinava dal 46' del 2o
+// tempo, e ne uscivano due errori opposti: il cambio fatto davvero
+// all'intervallo (registrato come 1' del 1o tempo) contava come step, e quello
+// al 46' a gioco ripreso invece no.
 
 // Il limite di 3 step e' una regola del calcio: negli altri sport i cambi sono
 // liberi o contati in altro modo, quindi il conteggio si disattiva da Dati gara.
@@ -1701,9 +1755,10 @@ function nuovoEvento(tipo, campi) {
     tipo,
     minuto: mi.label,
     min: mi.min,
-    periodo: supplAttivi ? (2 + supplPeriod) : currentPeriod,
+    periodo: mi.intervallo ? 2 : supplAttivi ? (2 + supplPeriod) : currentPeriod,
     playerId: '', playerInId: '', nota: ''
   }, campi || {});
+  if (mi.intervallo) ev.intervallo = true;
   // "Chiudi step" vale per il primo cambio che arriva, da qualunque strada:
   // rosa, menu azioni o pannello Registra evento passano tutte da qui, quindi
   // il flag si consuma in un solo posto e nessun percorso puo' scordarselo.
@@ -1760,6 +1815,17 @@ function opzioniGiocatori(elenco) {
 
 function popolaSelectGiocatori() {
   const tipo = (document.getElementById('evTipo') || {}).value || 'gol';
+  // Correggendo un evento passato le liste "di adesso" sono sbagliate: chi e'
+  // uscito al 30' non e' piu' in campo, ma e' proprio lui l'uscente da
+  // correggere. In modifica si offrono tutti i convocati, piu' i giocatori
+  // dell'evento anche se nel frattempo tolti dalla distinta.
+  if (evInModifica) {
+    const ids = [evInModifica.playerId, evInModifica.playerInId].filter(Boolean).map(String);
+    const tutti = players.filter(p => p.inDistinta || ids.includes(String(p.id)));
+    document.getElementById('evGiocatore').innerHTML = opzioniGiocatori(tutti);
+    document.getElementById('evEntra').innerHTML = opzioniGiocatori(tutti);
+    return;
+  }
   // Chi esce e' per forza in campo; chi entra e' per forza in panchina.
   //
   // Il GOL lo fa chi sta giocando. AMMONIZIONE ed ESPULSIONE no: un cartellino
@@ -1825,53 +1891,72 @@ function renderEventi() {
   }
   box.innerHTML = events.map((ev, i) => {
     const meta = EV_META[ev.tipo] || EV_META.nota;
-    return '<div class="gg-evrow ' + meta.cls + '">' +
+    return '<div class="gg-evrow ' + meta.cls + (ev === evInModifica ? ' inmod' : '') + '">' +
       '<span class="gg-evmin">' + esc(ev.minuto) + '</span>' +
       '<span class="gg-evtxt">' + esc(testoEvento(ev)) + '</span>' +
+      '<button type="button" class="gg-evmod" data-mod-ev="' + i + '" title="Modifica">✎</button>' +
       '<button type="button" class="gg-evdel" data-del-ev="' + i + '" title="Elimina">✕</button>' +
       '</div>';
   }).join('');
 }
 
-function aggiungiEvento() {
+// Legge e controlla il pannello "Registra evento": lo usano sia l'aggiunta
+// sia la modifica, cosi' le regole (giocatore obbligatorio, chi entra diverso
+// da chi esce, minuto leggibile) non possono divergere. null = non valido,
+// l'avviso e' gia' stato dato.
+function leggiFormEvento() {
   const tipo = document.getElementById('evTipo').value;
   const playerId = document.getElementById('evGiocatore').value;
   const playerInId = document.getElementById('evEntra').value;
   const nota = document.getElementById('evNota').value.trim();
-  const minManuale = document.getElementById('evMinuto').value.trim();
+  const minTesto = document.getElementById('evMinuto').value.trim();
+  const conGiocatore = ['gol','ammonizione','espulsione','cambio'].includes(tipo);
 
-  if (['gol','ammonizione','espulsione','cambio'].includes(tipo) && !playerId) {
-    alert('Scegli il giocatore.'); return;
-  }
-  if (tipo === 'nota' && !nota) { alert('Scrivi il testo della nota.'); return; }
+  if (conGiocatore && !playerId) { alert('Scegli il giocatore.'); return null; }
+  if (tipo === 'nota' && !nota) { alert('Scrivi il testo della nota.'); return null; }
   if (tipo === 'cambio') {
-    if (!playerInId) { alert('Scegli chi entra.'); return; }
-    if (playerInId === playerId) { alert('Chi entra e chi esce non possono essere lo stesso atleta.'); return; }
+    if (!playerInId) { alert('Scegli chi entra.'); return null; }
+    if (playerInId === playerId) { alert('Chi entra e chi esce non possono essere lo stesso atleta.'); return null; }
   }
-
-  const stepPrima = calcolaStep(events).step;
-  const ev = nuovoEvento(tipo, {
-    playerId: playerId || '',
-    playerInId: (tipo === 'cambio' ? playerInId : '') || '',
-    nota
-  });
-  // Minuto scritto a mano: il numero per il conteggio degli step va letto da
-  // quello che hai digitato, non dal cronometro, o due cambi inseriti dopo
-  // sembrerebbero contemporanei solo perche' registrati nello stesso istante.
-  if (minManuale) {
-    ev.minuto = /'$/.test(minManuale) ? minManuale : minManuale + "'";
-    const n = parseInt(String(minManuale).replace(/[^0-9+].*$/, ''), 10);
-    if (!isNaN(n)) {
-      ev.min = n;
-      // "45+2" appartiene ancora al 1o tempo: il periodo si deduce dal minuto
-      // scritto, altrimenti un cambio del 40o inserito nel 2o tempo passerebbe
-      // per fatto all'intervallo.
-      const dur = Number(info.durata) || 45;
-      ev.periodo = n <= dur ? 1 : 2;
+  let min = null;
+  if (minTesto) {
+    min = leggiMinuto(minTesto);
+    if (!min) {
+      alert('Minuto non valido: scrivi ad esempio 23, 45+2, oppure "int" per l’intervallo.');
+      return null;
     }
   }
+  return {
+    tipo,
+    playerId: conGiocatore ? playerId : '',
+    playerInId: tipo === 'cambio' ? playerInId : '',
+    nota, min
+  };
+}
+
+// Il minuto scritto a mano vince sul cronometro: il numero per gli step va
+// letto da li', o due cambi inseriti dopo sembrerebbero contemporanei solo
+// perche' registrati nello stesso istante.
+function applicaMinuto(ev, min) {
+  ev.minuto = min.minuto;
+  ev.min = min.min;
+  ev.periodo = min.periodo;
+  if (min.intervallo) ev.intervallo = true; else delete ev.intervallo;
+}
+
+function aggiungiEvento() {
+  if (evInModifica) { salvaModifica(); return; }
+  const f = leggiFormEvento();
+  if (!f) return;
+  const tipo = f.tipo;
+
+  const stepPrima = calcolaStep(events).step;
+  const ev = nuovoEvento(tipo, { playerId: f.playerId, playerInId: f.playerInId, nota: f.nota });
+  if (f.min) applicaMinuto(ev, f.min);
   const minuto = ev.minuto;
   events.push(ev);
+  // Un evento inserito dopo, con il suo minuto, va al suo posto e non in fondo.
+  if (f.min) ordinaEventi();
   if (tipo === 'gol')     scoreHome++;
   if (tipo === 'gol-avv') scoreAway++;
   // Una sostituzione registrata qui deve MUOVERE i giocatori, non solo scrivere
@@ -1879,8 +1964,8 @@ function aggiungiEvento() {
   // stessi, quindi il cambio successivo offriva ancora chi era uscito.
   // cambioRapido() dalla rosa lo faceva gia'; questa strada no.
   if (tipo === 'cambio') {
-    const esce = trovaGiocatore(playerId);
-    const entra = trovaGiocatore(playerInId);
+    const esce = trovaGiocatore(f.playerId);
+    const entra = trovaGiocatore(f.playerInId);
     if (esce)  esce.inCampo = false;
     if (entra) entra.inCampo = true;
     renderRosa();
@@ -1900,10 +1985,122 @@ function aggiungiEvento() {
   if (tipo === 'cambio') avvisaStep(stepPrima);
 }
 
+// ── Modifica di un evento della cronologia ────────────────────────────
+// Si riusa il pannello "Registra evento" invece di un modale: stessi campi,
+// stesse regole, e a bordo campo non c'e' una finestra in piu' da chiudere.
+// Si tiene il RIFERIMENTO all'evento e non l'indice: nel frattempo il - del
+// tabellone o un'eliminazione possono spostare le posizioni. La variabile
+// (evInModifica) e' dichiarata in cima, accanto a events.
+
+function iniziaModifica(i) {
+  const ev = events[i];
+  if (!ev) return;
+  evInModifica = ev;
+  document.getElementById('evTipo').value = EV_META[ev.tipo] ? ev.tipo : 'nota';
+  aggiornaCampiEvento();
+  // Anche per gol-avv e nota, dove aggiornaCampiEvento() non ripopola: le
+  // tendine devono essere gia' quelle della modifica se si cambia tipo.
+  popolaSelectGiocatori();
+  document.getElementById('evGiocatore').value = ev.playerId || '';
+  document.getElementById('evEntra').value = ev.playerInId || '';
+  document.getElementById('evNota').value = ev.nota || '';
+  document.getElementById('evMinuto').value =
+    ev.intervallo ? 'int' : String(ev.minuto || '').replace(/'+$/, '');
+  aggiornaModoPannello();
+  renderEventi();
+  document.getElementById('evPannello').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function annullaModifica() {
+  evInModifica = null;
+  document.getElementById('evNota').value = '';
+  document.getElementById('evMinuto').value = '';
+  aggiornaModoPannello();
+  popolaSelectGiocatori();
+  renderEventi();
+}
+
+function aggiornaModoPannello() {
+  const mod = !!evInModifica;
+  document.getElementById('evTitolo').innerHTML = mod
+    ? '&#9998; Modifica evento del ' + esc(evInModifica.minuto)
+    : '&#10133; Registra evento';
+  document.getElementById('btnAddEvento').textContent = mod ? 'Salva modifiche' : 'Aggiungi evento';
+  document.getElementById('btnAnnullaModifica').style.display = mod ? '' : 'none';
+  document.getElementById('evMinutoLabel').textContent = mod
+    ? 'Minuto (es. 23, 45+2, int = intervallo; vuoto = invariato)'
+    : 'Minuto (vuoto = minuto corrente del cronometro; int = intervallo)';
+}
+
+// Chi e' in campo, rifatto dagli eventi: titolari al via, poi ogni cambio ed
+// espulsione nell'ordine della cronologia. Serve solo quando si corregge un
+// cambio o un'espulsione: spostarne uno, o cambiarne i giocatori, rende
+// sbagliato lo stato attuale, e "disfare" solo quell'evento non basta se
+// dopo ce ne sono altri che toccano gli stessi giocatori.
+function ricostruisciInCampo() {
+  players.forEach(p => { p.inCampo = !!(p.inDistinta && p.titolare); });
+  events.forEach(ev => {
+    if (ev.tipo === 'cambio') {
+      const esce = trovaGiocatore(ev.playerId);
+      const entra = trovaGiocatore(ev.playerInId);
+      if (esce)  esce.inCampo = false;
+      if (entra) entra.inCampo = true;
+    } else if (ev.tipo === 'espulsione') {
+      const p = trovaGiocatore(ev.playerId);
+      if (p) p.inCampo = false;
+    }
+  });
+}
+
+function salvaModifica() {
+  const ev = evInModifica;
+  if (!ev || !events.includes(ev)) {
+    toast('L’evento non c’è più: modifica annullata.');
+    annullaModifica();
+    return;
+  }
+  const f = leggiFormEvento();
+  if (!f) return;
+  const vecchioTipo = ev.tipo;
+  const toccaCampo = ['cambio', 'espulsione'].includes(vecchioTipo) ||
+                     ['cambio', 'espulsione'].includes(f.tipo);
+
+  ev.tipo = f.tipo;
+  ev.playerId = f.playerId;
+  ev.playerInId = f.playerInId;
+  ev.nota = f.nota;
+  if (f.min) applicaMinuto(ev, f.min);
+  // "Chiudi step" ha senso solo su un cambio.
+  if (ev.tipo !== 'cambio') delete ev.apreStep;
+
+  // Il punteggio segue il tipo: un gol corretto in gol avversario sposta il
+  // punto da una parte all'altra.
+  if (vecchioTipo === 'gol'     && scoreHome > 0) scoreHome--;
+  if (vecchioTipo === 'gol-avv' && scoreAway > 0) scoreAway--;
+  if (ev.tipo === 'gol')     scoreHome++;
+  if (ev.tipo === 'gol-avv') scoreAway++;
+
+  ordinaEventi();
+  if (toccaCampo) ricostruisciInCampo();
+
+  evInModifica = null;
+  document.getElementById('evNota').value = '';
+  document.getElementById('evMinuto').value = '';
+  aggiornaModoPannello();
+  salvaStato();
+  renderEventi();
+  renderTimer();
+  renderRosa();
+  renderCambio();
+  popolaSelectGiocatori();
+  toast('Evento aggiornato: ' + ev.minuto);
+}
+
 function eliminaEvento(i) {
   const ev = events[i];
   if (!ev) return;
   if (!confirm('Eliminare l’evento del ' + ev.minuto + '?')) return;
+  if (ev === evInModifica) annullaModifica();
   if (ev.tipo === 'gol' && scoreHome > 0) scoreHome--;
   if (ev.tipo === 'gol-avv' && scoreAway > 0) scoreAway--;
   events.splice(i, 1);
@@ -2392,8 +2589,11 @@ async function init() {
       const casa = b.dataset.score === 'home';
       const tipo = casa ? 'gol' : 'gol-avv';
       if (d > 0) {
-        const minuto = minutoCorrente().label;
-        events.push({ tipo, minuto, playerId:'', playerInId:'', nota:'' });
+        // Da nuovoEvento() come tutti gli altri: senza min e periodo il gol
+        // non si poteva rimettere in ordine dopo una correzione del minuto.
+        const ev = nuovoEvento(tipo);
+        const minuto = ev.minuto;
+        events.push(ev);
         if (casa) scoreHome++; else scoreAway++;
         vibra(40);
         const chi = casa ? (nomeSquadraNostra() || 'Gol nostro')
@@ -2507,9 +2707,12 @@ async function init() {
   document.getElementById('evTipo').addEventListener('change', aggiornaCampiEvento);
   document.getElementById('btnAddEvento').addEventListener('click', aggiungiEvento);
   document.getElementById('eventiList').addEventListener('click', e => {
+    const mod = e.target.closest('[data-mod-ev]');
+    if (mod) { iniziaModifica(Number(mod.dataset.modEv)); return; }
     const btn = e.target.closest('[data-del-ev]');
     if (btn) eliminaEvento(Number(btn.dataset.delEv));
   });
+  document.getElementById('btnAnnullaModifica').addEventListener('click', annullaModifica);
 
   document.getElementById('btnGenPdf').addEventListener('click', generaPdf);
   tieniPremuto('btnNuovaGara', 'Azzera la gara', 'Tieni premuto per azzerare&hellip;', resetGara);
