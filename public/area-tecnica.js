@@ -114,6 +114,13 @@
       const id = youtubeId(item.url);
       if (id) return `https://img.youtube.com/vi/${id}/mqdefault.jpg`;
     }
+    // Drive genera da se' un fotogramma anche per i video. Se il file non e'
+    // condiviso con "chiunque abbia il link" la richiesta fallisce e l'onerror
+    // della card torna al riquadro con il titolo.
+    if ((item.fonte || detectFonte(item.url)) === 'drive') {
+      const id = driveId(item.url);
+      if (id) return `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w480`;
+    }
     return null;
   }
 
@@ -156,7 +163,7 @@
       const codeTag = x._code ? `<span style="background:rgba(0,0,0,0.55);color:${titColor};font-size:0.7rem;font-weight:800;border-radius:4px;padding:1px 5px;position:absolute;top:6px;left:6px;z-index:2;">${esc(x._code)}</span>` : '';
       const overlayTitle = `<div class="at-tov-icon">${TIPO_ICON[x.tipo] || '🎬'}</div><div class="at-tov-text" style="color:${titColor};">${esc(x.titolo || '(senza titolo)')}</div>`;
       const thumbHtml = thumb
-        ? `<img src="${esc(thumb)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        ? `<img src="${esc(thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
            <div class="at-title-overlay" style="display:none;">${overlayTitle}</div>`
         : `<div class="at-title-overlay">${overlayTitle}</div>`;
       return `<div class="at-card" onclick="window.atOpen('${x.id}')">
