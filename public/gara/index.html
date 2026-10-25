@@ -124,7 +124,8 @@
     .gg-b-reset{background:var(--panel);color:var(--txt);border:1px solid var(--border)!important;}
 
     /* ── Protezione dal tocco accidentale ───────────────────────────────
-       I comandi distruttivi (Fine tempo, Azzera) sono separati dagli altri
+       I comandi che chiudono o riaprono un tempo (Fine tempo, Riprendi
+       gara) e Azzera la gara in Report sono separati dagli altri
        da uno stacco e richiedono la pressione prolungata: il riempimento
        mostra quanto manca, cosi' il gesto e' consapevole senza un popup. */
     .gg-b-stop,.gg-b-reset,.gg-btn-danger{position:relative;overflow:hidden;
@@ -142,11 +143,7 @@
     .gg-sep-comandi{flex-basis:100%;height:0;margin:0;}
     @media (min-width:520px){ .gg-sep-comandi{flex-basis:18px;height:auto;} }
     .gg-hint-hold{font-size:0.74rem;color:var(--muted);text-align:center;margin-top:7px;}
-    .gg-annulla-stop{margin-top:10px;padding:9px 11px;border-radius:9px;text-align:center;
-                     background:rgba(255,193,7,0.14);border:1px solid var(--arancio);
-                     font-size:0.82rem;}
-    .gg-annulla-stop button{margin-left:9px;padding:7px 13px;border-radius:8px;border:none;
-                            background:var(--arancio);color:#1a1a1a;font-weight:700;cursor:pointer;}
+    .gg-timer-btns button:disabled{opacity:.45;cursor:default;}
 
     .gg-score{display:flex;align-items:center;justify-content:space-around;gap:10px;margin:14px 0 4px;}
     .gg-score-col{text-align:center;flex:1;min-width:0;}
@@ -319,16 +316,12 @@
           <button type="button" class="gg-b-pause" id="btnPause">&#9208; Pausa</button>
           <span class="gg-sep-comandi"></span>
           <button type="button" class="gg-b-stop" id="btnStop">&#9209; Fine tempo</button>
-          <button type="button" class="gg-b-reset" id="btnReset">&#8634; Azzera</button>
+          <!-- Azzera la gara sta solo in Report: qui, a fianco di Fine tempo,
+               serve la via d'uscita da un Fine tempo dato per sbaglio. -->
+          <button type="button" class="gg-b-reset" id="btnRiprendi" disabled>&#8630; Riprendi gara</button>
         </div>
         <div class="gg-hint-hold" id="ggHintHold">
-          &#9209; Fine tempo e &#8634; Azzera: <strong>tieni premuto</strong> per confermare.
-        </div>
-        <!-- Via d'uscita se il tempo e' stato chiuso per sbaglio: vedi
-             annullaFineTempo(). Sparisce da se' dopo ANNULLA_MS. -->
-        <div class="gg-annulla-stop" id="ggAnnullaStop" style="display:none">
-          Tempo chiuso per sbaglio?
-          <button type="button" id="btnAnnullaStop">&#8630; Annulla</button>
+          &#9209; Fine tempo e &#8630; Riprendi gara: <strong>tieni premuto</strong> per confermare.
         </div>
 
         <div class="gg-sidetimes">
@@ -581,6 +574,7 @@
         <div class="gg-hint" style="margin-bottom:11px;">
           Azzera cronometro, risultato ed eventi per iniziare una partita nuova.
           I dati gara e la selezione dei convocati restano come sono.
+          Non si annulla: tieni premuto il pulsante per 3 secondi.
         </div>
         <button type="button" class="gg-btn-danger" id="btnNuovaGara" style="width:100%;">Azzera la gara</button>
       </div>
@@ -903,27 +897,30 @@ function renderTimer() {
   verificaTimerDimenticato();
   verificaSegnali();
   aggiornaStatoSchermo();
-  aggiornaBarraAnnulla();
+  aggiornaRiprendi();
 }
 
 // ── Tocco accidentale ──────────────────────────────────────────────────
 // A bordo campo si tiene il telefono in una mano, spesso con i guanti o
 // sotto la pioggia, e i bottoni sono in fila: "Fine tempo" a fianco di
 // "Pausa" si tocca per sbaglio. Su "Fine tempo" nel 2o tempo il danno non
-// e' piccolo: chiude la gara (periodoChiuso) e si torna indietro solo con
-// Azzera, che cancella tutto.
+// e' piccolo: chiude la gara (periodoChiuso). Si torna indietro con
+// Riprendi gara (vedi riprendiGara).
 // Un confirm() NON risolve: resta un solo tocco, e' bloccante e a mani
 // occupate e' proprio il momento in cui si sbaglia. Qui il gesto diventa
 // deliberato: si tiene premuto, il bottone si riempie mentre premi, e si
 // molla prima se non era voluto.
 const HOLD_MS = 900;
+// Azzera la gara cancella tutto e non si annulla: pressione molto piu' lunga.
+const HOLD_AZZERA_MS = 3000;
 
 // Rende un bottone azionabile solo con la pressione prolungata.
 // etichetta = testo normale, attesa = testo mentre stai premendo.
-function tieniPremuto(id, etichetta, attesa, azione) {
+function tieniPremuto(id, etichetta, attesa, azione, holdMs) {
   const b = document.getElementById(id);
   if (!b) return;
-  b.style.setProperty('--gg-hold', HOLD_MS + 'ms');
+  const ms = holdMs || HOLD_MS;
+  b.style.setProperty('--gg-hold', ms + 'ms');
   let t = null;
 
   function mostra(testo) { b.innerHTML = testo; }
@@ -946,7 +943,7 @@ function tieniPremuto(id, etichetta, attesa, azione) {
       mostra(etichetta);
       vibra(60);              // conferma tattile: il gesto e' andato a segno
       azione();
-    }, HOLD_MS);
+    }, ms);
   }
 
   b.addEventListener('touchstart', avvia, { passive: false });
@@ -970,47 +967,60 @@ function tieniPremuto(id, etichetta, attesa, azione) {
   });
 }
 
-// ── Annullare un "Fine tempo" dato per sbaglio ─────────────────────────
+// ── Riprendi gara: rimediare a un "Fine tempo" dato per sbaglio ───────
 // Anche con la pressione prolungata puo' capitare (o si puo' premere al
-// momento sbagliato). Questo rimette il cronometro come stava: e' l'unica
-// via d'uscita che non passi da Azzera, che invece cancella la gara.
-let ultimoStop = null;   // {periodo, secondi, epochRipresa, tsChiuso, eraChiuso}
+// momento sbagliato). Questo riapre il tempo chiuso. Niente scadenza: ci
+// si accorge dell'errore anche minuti dopo, e la fotografia sta nello stato
+// salvato, quindi sopravvive alla chiusura dell'app.
+let ultimoStop = null;   // {periodo, secondi, inCorsa, tsChiuso, eraChiuso, premutoIl}
 
-function annullaFineTempo() {
-  if (!ultimoStop) { toast('Niente da annullare.'); return; }
+// Si riapre solo il tempo appena chiuso e solo finche' non e' iniziato il
+// successivo: dopo Avvia del 2o tempo (o dei supplementari) tornare al 1o
+// mescolerebbe due tempi.
+function puoRiprendere() {
+  if (!ultimoStop) return false;
+  if (supplStartEpoch !== null || supplSeconds > 0 || supplPeriod === 2) return false;
+  if (ultimoStop.periodo === 1) return inIntervallo();
+  return currentPeriod === 2 && periodoChiuso;
+}
+
+function riprendiGara() {
+  if (!puoRiprendere()) { toast('Non c’è un tempo da riprendere.'); return; }
   const u = ultimoStop;
   ultimoStop = null;
   currentPeriod = u.periodo;
   periodoChiuso = u.eraChiuso;
-  timerSecondsAtStart = u.secondi;
-  timerSeconds = u.secondi;
-  // Riparte da adesso: i secondi passati da quando hai premuto per sbaglio
-  // non sono gioco, quindi non vanno contati.
-  timerStartEpoch = Date.now();
   if (u.periodo === 1) periodTimestamps.t1End = u.tsChiuso;
   else periodTimestamps.t2End = u.tsChiuso;
   supplAttivi = false;
-  if (!timerInterval) timerInterval = setInterval(renderTimer, 250);
-  acquisisciWakeLock();
-  aggiornaBarraAnnulla();
+  let sec = u.secondi;
+  if (u.inCorsa) {
+    // Il fischio non c'e' stato: in campo si e' continuato a giocare, quindi
+    // il tempo passato da quando hai premuto per sbaglio e' gioco e conta.
+    sec += Math.max(0, Math.floor((Date.now() - u.premutoIl) / 1000));
+    timerSeconds = sec;
+    timerSecondsAtStart = sec;
+    timerStartEpoch = Date.now();
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => { ricalcolaDaEpoch(); renderTimer(); }, 250);
+    acquisisciWakeLock();
+  } else {
+    // Era in pausa (gioco fermo): resta in pausa sul minuto di prima.
+    timerSeconds = sec;
+    timerSecondsAtStart = sec;
+    timerStartEpoch = null;
+  }
+  // I segnali di fine tempo/preavviso gia' emessi restano emessi: non serve
+  // che risuonino per un tempo che non e' mai finito davvero.
   salvaStato();
   renderTimer();
-  toast('Fine tempo annullato: il cronometro riparte da ' + fmtMMSS(u.secondi) + '.');
+  toast('Gara ripresa: ' + (u.periodo === 1 ? '1°' : '2°') + ' tempo da ' + fmtMMSS(sec) +
+        (u.inCorsa ? '.' : ' (in pausa: premi Avvia).'));
 }
 
-// La barra compare solo nella finestra utile: passata quella, l'orario va
-// corretto con "Correggi orari", che e' il posto giusto per rimettere a
-// mano l'ora vera del fischio.
-const ANNULLA_MS = 90 * 1000;
-function aggiornaBarraAnnulla() {
-  const box = document.getElementById('ggAnnullaStop');
-  if (!box) return;
-  if (ultimoStop && Date.now() - ultimoStop.premutoIl < ANNULLA_MS) {
-    box.style.display = '';
-  } else {
-    box.style.display = 'none';
-    if (ultimoStop && Date.now() - ultimoStop.premutoIl >= ANNULLA_MS) ultimoStop = null;
-  }
+function aggiornaRiprendi() {
+  const b = document.getElementById('btnRiprendi');
+  if (b) b.disabled = !puoRiprendere();
 }
 
 // ── Quando suonare ─────────────────────────────────────────────────────
@@ -1189,11 +1199,12 @@ function pauseTimer() {
 function stopTimer() {
   if (periodoChiuso) return;
   ricalcolaDaEpoch();
-  // Fotografia di com'era: serve ad annullaFineTempo() se il tocco era
+  // Fotografia di com'era: serve a riprendiGara() se il tocco era
   // involontario o dato al momento sbagliato.
   ultimoStop = {
     periodo: currentPeriod,
     secondi: timerSeconds,
+    inCorsa: timerStartEpoch !== null,
     tsChiuso: currentPeriod === 1 ? periodTimestamps.t1End : periodTimestamps.t2End,
     eraChiuso: periodoChiuso,
     premutoIl: Date.now()
@@ -1215,7 +1226,7 @@ function stopTimer() {
     toast('Gara conclusa alle ' + fmtOra(ora) + '.');
     proponiSupplementari();
   }
-  aggiornaBarraAnnulla();
+  aggiornaRiprendi();
   salvaStato();
   renderTimer();
 }
@@ -1292,7 +1303,7 @@ function resetGara() {
   stepDaChiudere = false;   // un "chiudi step" premuto nella gara vecchia non
                             // deve marcare il primo cambio di quella nuova
   if (evInModifica) annullaModifica();
-  aggiornaBarraAnnulla();
+  aggiornaRiprendi();
   salvaStato();
   renderTimer();
   renderEventi();
@@ -2121,7 +2132,8 @@ function salvaStato() {
       // Distinta e titolari sono la scelta piu' lunga da rifare a bordo campo:
       // riaprendo l'app si devono ritrovare come li avevi lasciati.
       titolari: players.filter(p => p.titolare).map(p => String(p.id)),
-      inCampo: players.filter(p => p.inCampo).map(p => String(p.id))
+      inCampo: players.filter(p => p.inCampo).map(p => String(p.id)),
+      ultimoStop
     }));
   } catch (e) { /* quota piena o storage negato: la gara continua a schermo */ }
 }
@@ -2148,6 +2160,7 @@ function caricaStato() {
   supplSeconds = Number(st.supplSeconds) || 0;
   supplStartEpoch = st.supplStartEpoch || null;
   supplSecondsAtStart = Number(st.supplSecondsAtStart) || 0;
+  ultimoStop = (st.ultimoStop && typeof st.ultimoStop === 'object') ? st.ultimoStop : null;
   return st;
 }
 
@@ -2551,8 +2564,7 @@ async function init() {
   document.getElementById('btnPause').addEventListener('click', pauseTimer);
   // Comandi distruttivi: si tiene premuto, non si tocca. Vedi tieniPremuto().
   tieniPremuto('btnStop', '&#9209; Fine tempo', '&#9209; Tieni premuto&hellip;', stopTimer);
-  tieniPremuto('btnReset', '&#8634; Azzera', '&#8634; Tieni premuto&hellip;', resetGara);
-  document.getElementById('btnAnnullaStop').addEventListener('click', annullaFineTempo);
+  tieniPremuto('btnRiprendi', '&#8630; Riprendi gara', '&#8630; Tieni premuto&hellip;', riprendiGara);
   document.getElementById('btnCorreggiOrari').addEventListener('click', correggiOrari);
   const bChiudi = document.getElementById('btnChiudiStep');
   if (bChiudi) bChiudi.addEventListener('click', chiudiStep);
@@ -2715,7 +2727,8 @@ async function init() {
   document.getElementById('btnAnnullaModifica').addEventListener('click', annullaModifica);
 
   document.getElementById('btnGenPdf').addEventListener('click', generaPdf);
-  tieniPremuto('btnNuovaGara', 'Azzera la gara', 'Tieni premuto per azzerare&hellip;', resetGara);
+  tieniPremuto('btnNuovaGara', 'Azzera la gara', 'Tieni premuto 3 secondi&hellip;', resetGara,
+               HOLD_AZZERA_MS);
 
   // Schermo spento / app in background: al ritorno si ricalcola dall'orologio
   // di sistema, e si riprende il wake lock che il sistema ha rilasciato.
