@@ -409,6 +409,12 @@ window.showHistory = function(athleteId, date) {
     const modal = document.createElement('div');
     modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;';
     
+    // status/note li scrive anche il genitore SENZA login: vanno escapati prima
+    // di finire in innerHTML, altrimenti chiunque abbia l'annataId può iniettare
+    // script che girano nel browser del coach che apre lo storico.
+    const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
     // Costruisci lista storico (dal più recente al più vecchio)
     const sortedHistory = [...history].reverse();
     let historyHTML = '';
@@ -433,12 +439,12 @@ window.showHistory = function(athleteId, date) {
         <div style="padding:12px;background:${bgColor};border-radius:8px;margin-bottom:10px;border-left:4px solid ${color}">
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
             <div style="flex:1;min-width:150px;">
-              <strong style="color:${color};font-size:1rem;">${icon} ${entry.status}</strong>
+              <strong style="color:${color};font-size:1rem;">${icon} ${esc(entry.status)}</strong>
               <span style="margin-left:10px;color:#94a3b8;font-size:0.85rem;">${byIcon} ${byText}</span>
             </div>
             <span style="color:#94a3b8;font-size:0.8rem;white-space:nowrap;">${dateStr}</span>
           </div>
-          ${entry.note ? `<div style="margin-top:8px;color:#94a3b8;font-size:0.85rem;font-style:italic;padding:8px;background:rgba(255,255,255,0.08);border-radius:4px;">${entry.note}</div>` : ''}
+          ${entry.note ? `<div style="margin-top:8px;color:#94a3b8;font-size:0.85rem;font-style:italic;padding:8px;background:rgba(255,255,255,0.08);border-radius:4px;">${esc(entry.note)}</div>` : ''}
         </div>
       `;
     });
@@ -463,7 +469,7 @@ window.showHistory = function(athleteId, date) {
         
         <div style="background:#1e293b;padding:15px;border-radius:10px;margin-bottom:20px;border:2px solid #3b82f6;">
           <div style="color:#60a5fa;font-weight:600;margin-bottom:5px;font-size:1rem;">
-            <i class="bi bi-person-circle"></i> ${athleteName}
+            <i class="bi bi-person-circle"></i> ${esc(athleteName)}
           </div>
           <div style="color:#e2e8f0;font-size:0.9rem;">
             <i class="bi bi-calendar-event"></i> ${new Date(date).toLocaleDateString('it-IT', { 
@@ -2989,7 +2995,9 @@ window._saveAthleteDoc = async function(athleteId, annataId) {
       alert('✅ Documenti salvati con successo!');
       document.getElementById('_doc_upload_overlay')?.remove();
     } else {
-      alert('❌ Errore nel salvataggio: HTTP ' + res.status);
+      var errMsg = '';
+      try { errMsg = (await res.json()).message || ''; } catch (e) {}
+      alert('❌ Errore nel salvataggio: ' + (errMsg || 'HTTP ' + res.status));
     }
   } catch(e) {
     alert('❌ Errore: ' + e.message);

@@ -66,6 +66,11 @@ export default async function handler(req, res) {
     // Trova l'utente
     const user = users.find(u => u.username === username);
 
+    // L'admin può guardare altri utenti, ma solo della PROPRIA società (stesso
+    // filtro di api/auth/manage.js): utenti legacy senza societyId restano visibili.
+    if (user && isAdmin && user.societyId && user.societyId !== (sess.societyId || null)) {
+      return res.status(403).json({ success: false, message: 'Non autorizzato' });
+    }
     if (!user) {
       return res.status(404).json({
         success: false,

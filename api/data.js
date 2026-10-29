@@ -3452,11 +3452,16 @@ surveyResponses: surveyResponses || {}
 }
 
 // ── Gare ─────────────────────────────────────────────────────────────────
-// GET pubblico per design: i genitori vedono il calendario gare dal link
-// calendario senza login. Il societyId è validato (isValidId) e non enumerabile;
-// dati a bassa sensibilità (calendario partite). La POST resta protetta (canWrite).
+// Solo staff con login: la tab Gare di calendario.html non si apre in modalità
+// genitore (showGareTab esce se c'è athleteId). La società viene SOLO dalla
+// sessione. Prima si prendeva ?societyId= / body.societyId con precedenza sulla
+// sessione: un utente con permesso di scrittura poteva sovrascrivere gare e
+// squadre di un'altra società, e con parentMode=1 chiunque poteva leggerle.
 if (req.query && req.query.action === 'gare') {
-const sid = req.query.societyId || (req.body && req.body.societyId) || session.societyId || null;
+if (!session.isAuthenticated) {
+return res.status(401).json({ success: false, message: 'Non autorizzato' });
+}
+const sid = session.societyId || null;
 
 if (!sid || !isValidId(sid)) {
 return res.status(400).json({ success: false, message: 'societyId non valido' });
@@ -3598,7 +3603,57 @@ return res.status(200).json({ success: true });
 // FIX v1.5.21: calendarResponses può essere salvato da genitori (anche non autenticati)
 // Il check isCalendarResponsePost è già stato fatto sopra
 if (body.calendarResponses !== undefined && Object.keys(body).length === 1) {
-await kv.set(`${prefix}:calendarResponses`, body.calendarResponses);
+if (session.isAuthenticated) {
+  await kv.set(`${prefix}:calendarResponses`, body.calendarResponses);
+  return res.status(200).json({ success: true });
+}
+// Genitore senza login: il client rimanda l'oggetto INTERO letto all'apertura.
+// Sostituirlo così com'è permetteva a chiunque conoscesse l'annataId di
+// cancellare tutte le risposte, e a due genitori in contemporanea di
+// cancellarsi a vicenda. Si fonde per data+atleta e un record vince solo se
+// più recente di quello salvato: una copia vecchia non riporta indietro le
+// risposte date nel frattempo da altri. "Più recente" = history più lunga
+// (ogni modifica del genitore aggiunge una voce), a parità lastModified:
+// così un telefono con l'orologio indietro non vede la risposta scartata.
+const incoming = body.calendarResponses;
+if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) {
+  return res.status(400).json({ success: false, message: 'calendarResponses non valido' });
+}
+const merged = (await kv.get(`${prefix}:calendarResponses`)) || {};
+const _ts = r => (r && typeof r === 'object') ? (Date.parse(r.lastModified) || 0) : 0;
+const _hl = r => (r && typeof r === 'object' && Array.isArray(r.history)) ? r.history.length : 0;
+const _stripMarkup = o => {
+  for (const k of Object.keys(o)) {
+    if (typeof o[k] === 'string') o[k] = o[k].replace(/[<>"'`]/g, '');
+    else if (o[k] && typeof o[k] === 'object') _stripMarkup(o[k]);
+  }
+};
+for (const date of Object.keys(incoming)) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+  const day = incoming[date];
+  if (!day || typeof day !== 'object' || Array.isArray(day)) continue;
+  for (const aid of Object.keys(day)) {
+    if (aid.length > 64) continue;
+    const rec = day[aid];
+    if (rec === null || rec === undefined) continue;
+    if (typeof rec !== 'string' && typeof rec !== 'object') continue;
+    if (JSON.stringify(rec).length > 20000) continue;
+    // Le pagine staff mostrano status/note/by in innerHTML: da un anonimo si
+    // accettano solo i due stati usati dall'app e testo senza markup.
+    const _st = typeof rec === 'string' ? rec : rec.status;
+    if (_st !== 'Presente' && _st !== 'Assente') continue;
+    if (typeof rec === 'object') _stripMarkup(rec);
+    const cur = merged[date] && merged[date][aid];
+    const newer = !cur
+      || (typeof cur === 'string' && typeof rec === 'object')
+      || _hl(rec) > _hl(cur)
+      || (_hl(rec) === _hl(cur) && _ts(rec) > _ts(cur));
+    if (!newer) continue;
+    if (!merged[date] || typeof merged[date] !== 'object') merged[date] = {};
+    merged[date][aid] = rec;
+  }
+}
+await kv.set(`${prefix}:calendarResponses`, merged);
 return res.status(200).json({ success: true });
 }
 
@@ -3650,6 +3705,23 @@ for (const athleteId of Object.keys(body.athleteDocs)) {
   for (const docKey of Object.keys(incoming)) {
     if (incoming[docKey] === null) {
       delete current[docKey]; // elimina documento
+    } else if (!session.isAuthenticated) {
+      // Genitore senza login: la pagina staff (calendario.html) mette url e nota
+      // in innerHTML/href. Solo link https senza virgolette né markup, campi
+      // testo senza < >: niente javascript: o attributi iniettati.
+      const d = incoming[docKey];
+      let url = (d && typeof d === 'object') ? String(d.url || '').trim() : '';
+      if (url && !/^[a-z][a-z0-9+.-]*:/i.test(url)) url = 'https://' + url; // "drive.google.com/..." incollato senza schema
+      if (Array.isArray(d) || docKey.length > 64 || url.length > 2000 || !/^https?:\/\/[^\s"'<>`]+$/i.test(url)) {
+        return res.status(400).json({ success: false, message: 'Link documento non valido: deve iniziare con https://' });
+      }
+      const clean = s => String(s == null ? '' : s).replace(/[<>"'`]/g, '').slice(0, 500);
+      current[docKey] = {
+        url,
+        nota: clean(d.nota),
+        uploadedAt: clean(d.uploadedAt).slice(0, 40),
+        uploadedBy: clean(d.uploadedBy).slice(0, 40),
+      };
     } else {
       current[docKey] = incoming[docKey]; // aggiorna/aggiungi
     }

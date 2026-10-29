@@ -1756,6 +1756,11 @@ window._loadAthleteDocsTab = async function() {
         var d = await res.json();
         var athletes = (d.athletes || []).filter(function(a){ return !a.isGuest && !a.isStaff; });
         var docs = d.athleteDocs || {};
+        // url e nota li scrive il genitore senza login: escape prima di innerHTML,
+        // e href solo se http(s) (un "javascript:..." eseguirebbe codice al click).
+        var esc = function(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); };
+        var safeUrl = function(u) { u = String(u || '').trim(); return /^https?:\/\//i.test(u) ? esc(u) : '#'; };
 
         if (!athletes.length) {
             container.innerHTML = '<p style="color:#94a3b8;">Nessun atleta trovato.</p>';
@@ -1775,20 +1780,20 @@ window._loadAthleteDocsTab = async function() {
             var aDocs = docs[String(a.id)] || {};
             var rowBg = idx % 2 === 0 ? 'background:rgba(255,255,255,0.02);' : '';
             html += '<tr style="' + rowBg + '">'
-                + '<td style="padding:9px 12px;color:#e2e8f0;border-bottom:1px solid rgba(59,90,157,0.3);font-weight:600;">' + a.name + '</td>';
+                + '<td style="padding:9px 12px;color:#e2e8f0;border-bottom:1px solid rgba(59,90,157,0.3);font-weight:600;">' + esc(a.name) + '</td>';
             _DOC_TYPES_COACH.forEach(function(dt) {
                 var doc = aDocs[dt.key];
                 if (doc && doc.url) {
                     var uploadDate = doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString('it-IT') : '';
                     var dlLog = doc.downloadLog;
                     var dlInfo = dlLog
-                        ? '<div style="font-size:0.68rem;color:#22c55e;margin-top:2px;">↓ ' + dlLog.user + ' ' + new Date(dlLog.at).toLocaleDateString('it-IT') + ' ' + new Date(dlLog.at).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}) + '</div>'
+                        ? '<div style="font-size:0.68rem;color:#22c55e;margin-top:2px;">↓ ' + esc(dlLog.user) + ' ' + new Date(dlLog.at).toLocaleDateString('it-IT') + ' ' + new Date(dlLog.at).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}) + '</div>'
                         : '<div style="font-size:0.68rem;color:#94a3b8;margin-top:2px;">Non scaricato</div>';
-                    var notaInfo = doc.nota ? '<div style="font-size:0.68rem;color:#94a3b8;margin-top:1px;">📝 ' + doc.nota + '</div>' : '';
+                    var notaInfo = doc.nota ? '<div style="font-size:0.68rem;color:#94a3b8;margin-top:1px;">📝 ' + esc(doc.nota) + '</div>' : '';
                     html += '<td style="padding:9px 12px;text-align:center;border-bottom:1px solid rgba(59,90,157,0.3);">'
                         + '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">'
                         + '<div style="display:flex;gap:4px;align-items:center;">'
-                        + '<a href="' + doc.url + '" target="_blank" '
+                        + '<a href="' + safeUrl(doc.url) + '" target="_blank" rel="noopener" '
                         + 'onclick="window._logDocDownload(\'' + String(a.id) + '\',\'' + dt.key + '\',\'' + aid + '\')" '
                         + 'style="color:#22c55e;font-size:0.82rem;text-decoration:none;padding:3px 8px;border:1px solid #22c55e;border-radius:4px;" title="Caricato il ' + uploadDate + '">⬇️ Scarica</a>'
                         + '<button onclick="window._coachDeleteDoc(\'' + String(a.id) + '\',\'' + dt.key + '\',\'' + aid + '\')" '
