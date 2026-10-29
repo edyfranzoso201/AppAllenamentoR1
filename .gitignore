@@ -7,3 +7,4 @@ CLAUDE.md
 .claude/
 node_modules/
 .playwright-mcp/
+dev.ps1
