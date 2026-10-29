@@ -154,6 +154,13 @@
     .gg-score-btns button{width:38px;height:34px;border-radius:8px;border:1px solid var(--border);
                           background:var(--panel);color:var(--txt);font-size:1rem;font-weight:700;cursor:pointer;}
 
+    .gg-tempi{display:grid;gap:4px 6px;margin-top:12px;padding-top:10px;
+      border-top:1px solid var(--border);align-items:center;text-align:center;}
+    .gg-tempi .lb{font-size:0.66rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
+    .gg-tempi .rl{text-align:left;}
+    .gg-tempi .v{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;border-radius:6px;}
+    .gg-tempi .att{color:var(--accent,#4ade80);}
+    .gg-tempi .lb.att{font-weight:700;}
     .gg-sidetimes{display:flex;justify-content:space-around;gap:8px;margin-top:12px;
                   border-top:1px solid var(--border);padding-top:11px;flex-wrap:wrap;}
     .gg-sidetime{text-align:center;min-width:66px;}
@@ -324,12 +331,8 @@
           &#9209; Fine tempo e &#8630; Riprendi gara: <strong>tieni premuto</strong> per confermare.
         </div>
 
-        <div class="gg-sidetimes">
-          <div class="gg-sidetime"><div class="lb">Inizio 1&deg;T</div><div class="side-time-val" id="tsT1Start">--:--</div></div>
-          <div class="gg-sidetime"><div class="lb">Fine 1&deg;T</div><div class="side-time-val" id="tsT1End">--:--</div></div>
-          <div class="gg-sidetime"><div class="lb">Inizio 2&deg;T</div><div class="side-time-val" id="tsT2Start">--:--</div></div>
-          <div class="gg-sidetime"><div class="lb">Fine 2&deg;T</div><div class="side-time-val" id="tsT2End">--:--</div></div>
-        </div>
+        <!-- Orari di inizio/fine di ogni tempo (da 1 a 4): vedi renderOrariTempi() -->
+        <div class="gg-tempi" id="ggOrariTempi"></div>
         <div style="text-align:center;margin-top:9px;">
           <button type="button" class="gg-btn-ghost" id="btnCorreggiOrari" style="font-size:0.78rem;padding:6px 11px;">&#9999;&#65039; Correggi orari</button>
         </div>
@@ -465,6 +468,17 @@
             </select>
           </div>
         </div>
+        <div class="gg-field">
+          <label>Numero di tempi</label>
+          <select id="infoTempi">
+            <option value="1">1 tempo</option>
+            <option value="2">2 tempi</option>
+            <option value="3">3 tempi</option>
+            <option value="4">4 tempi</option>
+          </select>
+        </div>
+        <div class="gg-hint">Le categorie di base possono giocare fino a 4 tempi. Dopo l&rsquo;ultimo
+          tempo la gara si chiude; fra un tempo e l&rsquo;altro c&rsquo;&egrave; l&rsquo;intervallo.</div>
         <div class="gg-row2">
           <div class="gg-field"><label>Durata tempo (min)</label><input type="number" id="infoDurata" min="1" max="60" step="1"></div>
           <div class="gg-field"><label>Durata suppl. (min)</label><input type="number" id="infoDurataSuppl" min="1" max="30" step="1"></div>
@@ -473,11 +487,11 @@
           <label>Tempi supplementari</label>
           <select id="infoSupplMode">
             <option value="off">Non previsti (campionato)</option>
-            <option value="ask">Previsti: chiedi alla fine del 2&deg; tempo</option>
+            <option value="ask">Previsti: chiedi alla fine dell&rsquo;ultimo tempo</option>
           </select>
         </div>
         <div class="gg-hint">
-          Con &laquo;Non previsti&raquo; alla fine del 2&deg; tempo la gara si chiude e non compare nulla:
+          Con &laquo;Non previsti&raquo; alla fine dell&rsquo;ultimo tempo la gara si chiude e non compare nulla:
           &egrave; il caso normale di campionato. Scegli &laquo;Previsti&raquo; solo per coppe o tornei a eliminazione,
           e ti verr&agrave; chiesto prima di partire.
         </div>
@@ -659,23 +673,37 @@ let events = [];
 let evInModifica = null;   // evento della cronologia aperto in modifica (vedi iniziaModifica)
 let info = {
   casa:'', ospite:'', campionato:'', giornata:'', data:'', ora:'', luogo:'', arbitro:'',
-  noiCasa:'1', durata:45, durataSuppl:15, supplMode:'off', audio:'1', step:'1',
+  noiCasa:'1', tempi:'2', durata:45, durataSuppl:15, supplMode:'off', audio:'1', step:'1',
   // Il divieto di rientro parte SPENTO: le categorie di base sono la meta' dei
   // campionati e chi aggiorna l'app non deve trovarsi meta' panchina bloccata.
   rientro:'0'
 };
 let scoreHome = 0, scoreAway = 0;
-let periodTimestamps = { t1Start:null, t1End:null, t2Start:null, t2End:null };
+// Le categorie di base giocano fino a 4 tempi: una coppia di orari per tempo.
+const MAX_TEMPI = 4;
+function orariVuoti() {
+  const o = {};
+  for (let i = 1; i <= MAX_TEMPI; i++) { o['t' + i + 'Start'] = null; o['t' + i + 'End'] = null; }
+  return o;
+}
+let periodTimestamps = orariVuoti();
+// Quanti tempi ha la gara (Dati gara). Default 2, come il calcio dei grandi.
+function numTempi() {
+  const n = parseInt(info.tempi, 10);
+  return n >= 1 && n <= MAX_TEMPI ? n : 2;
+}
+function inizioTempo(k) { return periodTimestamps['t' + k + 'Start']; }
+function fineTempo(k) { return periodTimestamps['t' + k + 'End']; }
 
 // Cronometro principale. Il tempo NON si conta sommando tick: si ricava
 // sempre da (adesso - istante di avvio), cosi' se lo schermo del telefono si
 // spegne o il browser sospende i timer il conteggio resta esatto.
-let currentPeriod = 1;      // 1 o 2
+let currentPeriod = 1;      // da 1 a numTempi()
 let timerSeconds = 0;
 let timerStartEpoch = null; // ms, null quando fermo
 let timerSecondsAtStart = 0;
 let timerInterval = null;
-let periodoChiuso = false;  // true quando il 2o tempo e' finito
+let periodoChiuso = false;  // true quando l'ultimo tempo e' finito
 
 // Supplementari
 let supplPeriod = 1;
@@ -775,7 +803,7 @@ function fmtDataIT(iso) {
 function minutoCorrente() {
   const dur = Number(info.durata) || 45;
   if (supplAttivi && supplStartEpoch !== null) {
-    const base = 2 * dur + (supplPeriod === 2 ? (Number(info.durataSuppl) || 15) : 0);
+    const base = numTempi() * dur + (supplPeriod === 2 ? (Number(info.durataSuppl) || 15) : 0);
     const m = Math.floor(supplSeconds / 60) + 1;
     const tot = base + Math.min(m, Number(info.durataSuppl) || 15);
     return { label: tot + "'", min: tot };
@@ -783,17 +811,24 @@ function minutoCorrente() {
   // All'intervallo il cronometro e' azzerato ma il periodo resta 1 finche' non
   // si preme Avvia: senza questo ramo un cambio fatto negli spogliatoi finiva
   // in cronologia come "1'" del primo tempo e consumava uno step.
-  if (inIntervallo()) return { label: 'Int.', min: dur, intervallo: true };
-  const offset = currentPeriod === 2 ? dur : 0;
+  if (inIntervallo()) return { label: etichettaIntervallo(currentPeriod), min: currentPeriod * dur,
+                               intervallo: true, periodo: currentPeriod + 1 };
+  const offset = (currentPeriod - 1) * dur;
   const m = Math.floor(timerSeconds / 60) + 1;
   if (m > dur) return { label: (offset + dur) + '+' + (m - dur) + "'", min: offset + dur };
   return { label: (offset + m) + "'", min: offset + m };
 }
 
-// Fra i due tempi: il 1o e' chiuso (Fine tempo) e il 2o non e' ancora partito.
+// Fra due tempi: quello corrente e' chiuso (Fine tempo) e il successivo non
+// e' ancora partito. Dopo l'ultimo tempo non c'e' intervallo: la gara e' finita.
 function inIntervallo() {
-  return !supplAttivi && currentPeriod === 1 &&
-         !!periodTimestamps.t1End && !periodTimestamps.t2Start;
+  return !supplAttivi && currentPeriod < numTempi() &&
+         !!fineTempo(currentPeriod) && !inizioTempo(currentPeriod + 1);
+}
+// "Int." con 2 tempi (com'era sempre stato); con 3-4 tempi gli intervalli sono
+// piu' d'uno e il numero dice quale: "Int. 2" = fra il 2o e il 3o tempo.
+function etichettaIntervallo(k) {
+  return numTempi() > 2 ? 'Int. ' + k : 'Int.';
 }
 
 // Minuto scritto a mano ("23", "45+2", "int"). Restituisce null se non si
@@ -803,12 +838,20 @@ function inIntervallo() {
 function leggiMinuto(testo) {
   const t = String(testo || '').trim();
   const dur = Number(info.durata) || 45;
-  if (/^int/i.test(t)) return { minuto: 'Int.', min: dur, periodo: 2, intervallo: true };
+  const N = numTempi();
+  const mi = t.match(/^int\.?\s*(\d)?/i);
+  if (mi) {
+    // Senza numero: l'intervallo in corso, altrimenti il primo.
+    const k = mi[1] ? parseInt(mi[1], 10) : (inIntervallo() ? currentPeriod : 1);
+    if (k < 1 || k >= N) return null;   // con un tempo solo non c'e' intervallo
+    return { minuto: etichettaIntervallo(k), min: k * dur, periodo: k + 1, intervallo: true };
+  }
   const m = t.replace(/'+$/, '').match(/^(\d{1,3})(?:\s*\+\s*(\d{1,2}))?$/);
   if (!m) return null;
   const n = parseInt(m[1], 10);
   const ds = Number(info.durataSuppl) || 15;
-  const periodo = n <= dur ? 1 : n <= 2 * dur ? 2 : n <= 2 * dur + ds ? 3 : 4;
+  const periodo = n <= N * dur ? Math.max(1, Math.ceil(n / dur))
+                : n <= N * dur + ds ? N + 1 : N + 2;
   return { minuto: n + (m[2] ? '+' + parseInt(m[2], 10) : '') + "'", min: n,
            periodo, intervallo: false };
 }
@@ -843,7 +886,8 @@ function ordinaEventi() {
 function renderTimer() {
   document.getElementById('timerDisplay').textContent = fmtMMSS(timerSeconds);
   const dur = Number(info.durata) || 45;
-  let lbl = currentPeriod === 2 ? '2° Tempo' : '1° Tempo';
+  const N = numTempi();
+  let lbl = N === 1 ? 'Tempo unico' : currentPeriod + '° Tempo' + (N > 2 ? ' di ' + N : '');
   if (periodoChiuso) lbl += ' — gara conclusa';
   document.getElementById('periodoLabel').textContent = lbl;
 
@@ -883,10 +927,7 @@ function renderTimer() {
 
   document.getElementById('scoreHome').textContent = scoreHome;
   document.getElementById('scoreAway').textContent = scoreAway;
-  document.getElementById('tsT1Start').textContent = fmtOra(periodTimestamps.t1Start);
-  document.getElementById('tsT1End').textContent   = fmtOra(periodTimestamps.t1End);
-  document.getElementById('tsT2Start').textContent = fmtOra(periodTimestamps.t2Start);
-  document.getElementById('tsT2End').textContent   = fmtOra(periodTimestamps.t2End);
+  renderOrariTempi();
 
   document.getElementById('btnStart').disabled = (timerStartEpoch !== null) || periodoChiuso;
   document.getElementById('btnPause').disabled = (timerStartEpoch === null);
@@ -900,10 +941,28 @@ function renderTimer() {
   aggiornaRiprendi();
 }
 
+// Tabella degli orari: una colonna per tempo, inizio sopra e fine sotto. Il
+// tempo in corso (o il prossimo, durante l'intervallo) e' evidenziato.
+function renderOrariTempi() {
+  const box = document.getElementById('ggOrariTempi');
+  if (!box) return;
+  const N = numTempi();
+  const att = inIntervallo() ? currentPeriod + 1 : (periodoChiuso || supplAttivi ? 0 : currentPeriod);
+  const cls = k => k === att ? ' att' : '';
+  let h = '<div></div>';
+  for (let k = 1; k <= N; k++) h += '<div class="lb' + cls(k) + '">' + (N === 1 ? 'Tempo' : k + '°T') + '</div>';
+  h += '<div class="lb rl">Inizio</div>';
+  for (let k = 1; k <= N; k++) h += '<div class="v' + cls(k) + '" id="tsT' + k + 'Start">' + fmtOra(inizioTempo(k)) + '</div>';
+  h += '<div class="lb rl">Fine</div>';
+  for (let k = 1; k <= N; k++) h += '<div class="v' + cls(k) + '" id="tsT' + k + 'End">' + fmtOra(fineTempo(k)) + '</div>';
+  box.style.gridTemplateColumns = 'auto repeat(' + N + ', 1fr)';
+  if (box.innerHTML !== h) box.innerHTML = h;
+}
+
 // ── Tocco accidentale ──────────────────────────────────────────────────
 // A bordo campo si tiene il telefono in una mano, spesso con i guanti o
 // sotto la pioggia, e i bottoni sono in fila: "Fine tempo" a fianco di
-// "Pausa" si tocca per sbaglio. Su "Fine tempo" nel 2o tempo il danno non
+// "Pausa" si tocca per sbaglio. Su "Fine tempo" nell'ultimo tempo il danno non
 // e' piccolo: chiude la gara (periodoChiuso). Si torna indietro con
 // Riprendi gara (vedi riprendiGara).
 // Un confirm() NON risolve: resta un solo tocco, e' bloccante e a mani
@@ -980,8 +1039,8 @@ let ultimoStop = null;   // {periodo, secondi, inCorsa, tsChiuso, eraChiuso, pre
 function puoRiprendere() {
   if (!ultimoStop) return false;
   if (supplStartEpoch !== null || supplSeconds > 0 || supplPeriod === 2) return false;
-  if (ultimoStop.periodo === 1) return inIntervallo();
-  return currentPeriod === 2 && periodoChiuso;
+  if (currentPeriod !== ultimoStop.periodo) return false;
+  return periodoChiuso || inIntervallo();
 }
 
 function riprendiGara() {
@@ -990,8 +1049,7 @@ function riprendiGara() {
   ultimoStop = null;
   currentPeriod = u.periodo;
   periodoChiuso = u.eraChiuso;
-  if (u.periodo === 1) periodTimestamps.t1End = u.tsChiuso;
-  else periodTimestamps.t2End = u.tsChiuso;
+  periodTimestamps['t' + u.periodo + 'End'] = u.tsChiuso;
   supplAttivi = false;
   let sec = u.secondi;
   if (u.inCorsa) {
@@ -1014,7 +1072,7 @@ function riprendiGara() {
   // che risuonino per un tempo che non e' mai finito davvero.
   salvaStato();
   renderTimer();
-  toast('Gara ripresa: ' + (u.periodo === 1 ? '1°' : '2°') + ' tempo da ' + fmtMMSS(sec) +
+  toast('Gara ripresa: ' + u.periodo + '° tempo da ' + fmtMMSS(sec) +
         (u.inCorsa ? '.' : ' (in pausa: premi Avvia).'));
 }
 
@@ -1161,17 +1219,15 @@ function aggiornaStatoSchermo() {
 function startTimer() {
   if (timerStartEpoch !== null || periodoChiuso) return;
   sbloccaAudio();  // il tocco su Avvia e' cio' che autorizza l'audio
-  // Passaggio automatico al 2o tempo: se il 1o e' chiuso e il 2o non e'
-  // ancora iniziato, premere Avvia apre il secondo tempo da 00:00.
-  if (periodTimestamps.t1End && !periodTimestamps.t2Start && currentPeriod === 1) {
-    currentPeriod = 2;
+  // Passaggio automatico al tempo successivo: se quello corrente e' chiuso e
+  // il successivo non e' ancora iniziato, Avvia lo apre da 00:00.
+  if (inIntervallo()) {
+    currentPeriod++;
     timerSeconds = 0;
     timerSecondsAtStart = 0;
-    periodTimestamps.t2Start = Date.now();
-  } else if (currentPeriod === 1 && !periodTimestamps.t1Start) {
-    periodTimestamps.t1Start = Date.now();
-  } else if (currentPeriod === 2 && !periodTimestamps.t2Start) {
-    periodTimestamps.t2Start = Date.now();
+    periodTimestamps['t' + currentPeriod + 'Start'] = Date.now();
+  } else if (!inizioTempo(currentPeriod)) {
+    periodTimestamps['t' + currentPeriod + 'Start'] = Date.now();
   }
   timerSecondsAtStart = timerSeconds;
   timerStartEpoch = Date.now();
@@ -1205,7 +1261,7 @@ function stopTimer() {
     periodo: currentPeriod,
     secondi: timerSeconds,
     inCorsa: timerStartEpoch !== null,
-    tsChiuso: currentPeriod === 1 ? periodTimestamps.t1End : periodTimestamps.t2End,
+    tsChiuso: fineTempo(currentPeriod),
     eraChiuso: periodoChiuso,
     premutoIl: Date.now()
   };
@@ -1215,13 +1271,13 @@ function stopTimer() {
   rilasciaWakeLock();
 
   const ora = Date.now();
-  if (currentPeriod === 1) {
-    periodTimestamps.t1End = ora;
+  periodTimestamps['t' + currentPeriod + 'End'] = ora;
+  if (currentPeriod < numTempi()) {
     timerSeconds = 0;
     timerSecondsAtStart = 0;
-    toast('1° tempo chiuso alle ' + fmtOra(ora) + '. Premi Avvia per il 2°.');
+    toast(currentPeriod + '° tempo chiuso alle ' + fmtOra(ora) + '. Premi Avvia per il ' +
+          (currentPeriod + 1) + '°.');
   } else {
-    periodTimestamps.t2End = ora;
     periodoChiuso = true;
     toast('Gara conclusa alle ' + fmtOra(ora) + '.');
     proponiSupplementari();
@@ -1237,7 +1293,7 @@ function stopTimer() {
 // dove non esistono, era un pannello che compariva a gara finita.
 function proponiSupplementari() {
   if (info.supplMode !== 'ask') return;
-  const ok = confirm('Il 2° tempo è finito.\n\nLa gara prosegue con i tempi supplementari?');
+  const ok = confirm('Il ' + numTempi() + '° tempo è finito.\n\nLa gara prosegue con i tempi supplementari?');
   if (!ok) return;
   supplAttivi = true;
   supplPeriod = 1;
@@ -1295,7 +1351,7 @@ function resetGara() {
   currentPeriod = 1; timerSeconds = 0; timerStartEpoch = null; timerSecondsAtStart = 0;
   periodoChiuso = false;
   supplPeriod = 1; supplSeconds = 0; supplStartEpoch = null; supplSecondsAtStart = 0; supplAttivi = false;
-  periodTimestamps = { t1Start:null, t1End:null, t2Start:null, t2End:null };
+  periodTimestamps = orariVuoti();
   scoreHome = 0; scoreAway = 0;
   events = [];
   segnaliEmessi = {};   // altrimenti la gara nuova resterebbe muta
@@ -1314,12 +1370,10 @@ function resetGara() {
 // L'altra meta' del problema "distrazione": poter scrivere l'ora vera del
 // fischio, non solo cancellarla.
 function correggiOrari() {
-  const campi = [
-    ['t1Start', 'Inizio 1° tempo'],
-    ['t1End',   'Fine 1° tempo'],
-    ['t2Start', 'Inizio 2° tempo'],
-    ['t2End',   'Fine 2° tempo']
-  ];
+  const campi = [];
+  for (let k = 1; k <= numTempi(); k++) {
+    campi.push(['t' + k + 'Start', 'Inizio ' + k + '° tempo'], ['t' + k + 'End', 'Fine ' + k + '° tempo']);
+  }
   let cambiati = 0;
   for (const [key, label] of campi) {
     const attuale = periodTimestamps[key] ? fmtOra(periodTimestamps[key]) : '';
@@ -1766,7 +1820,7 @@ function nuovoEvento(tipo, campi) {
     tipo,
     minuto: mi.label,
     min: mi.min,
-    periodo: mi.intervallo ? 2 : supplAttivi ? (2 + supplPeriod) : currentPeriod,
+    periodo: mi.intervallo ? mi.periodo : supplAttivi ? (numTempi() + supplPeriod) : currentPeriod,
     playerId: '', playerInId: '', nota: ''
   }, campi || {});
   if (mi.intervallo) ev.intervallo = true;
@@ -2016,7 +2070,7 @@ function iniziaModifica(i) {
   document.getElementById('evEntra').value = ev.playerInId || '';
   document.getElementById('evNota').value = ev.nota || '';
   document.getElementById('evMinuto').value =
-    ev.intervallo ? 'int' : String(ev.minuto || '').replace(/'+$/, '');
+    ev.intervallo ? (numTempi() > 2 ? 'int' + Math.max(1, (Number(ev.periodo) || 2) - 1) : 'int') : String(ev.minuto || '').replace(/'+$/, '');
   aggiornaModoPannello();
   renderEventi();
   document.getElementById('evPannello').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2150,7 +2204,8 @@ function caricaStato() {
   scoreHome = Number(st.scoreHome) || 0;
   scoreAway = Number(st.scoreAway) || 0;
   periodTimestamps = Object.assign(periodTimestamps, st.periodTimestamps || {});
-  currentPeriod = st.currentPeriod === 2 ? 2 : 1;
+  const cp = parseInt(st.currentPeriod, 10);
+  currentPeriod = cp >= 1 && cp <= MAX_TEMPI ? cp : 1;
   timerSeconds = Number(st.timerSeconds) || 0;
   timerStartEpoch = st.timerStartEpoch || null;
   timerSecondsAtStart = Number(st.timerSecondsAtStart) || 0;
@@ -2339,8 +2394,11 @@ function generaPdf() {
     doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5);
     doc.text('Orari di gioco', M, y); y += 5;
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
-    doc.text('1° tempo: ' + fmtOra(periodTimestamps.t1Start) + ' – ' + fmtOra(periodTimestamps.t1End) +
-             '      2° tempo: ' + fmtOra(periodTimestamps.t2Start) + ' – ' + fmtOra(periodTimestamps.t2End), M, y);
+    const orari = [];
+    for (let k = 1; k <= numTempi(); k++) {
+      orari.push(k + '° tempo: ' + fmtOra(inizioTempo(k)) + ' – ' + fmtOra(fineTempo(k)));
+    }
+    doc.text(orari.join('      '), M, y);
     y += 8;
   }
 
@@ -2469,14 +2527,14 @@ const CAMPI_INFO = [
   ['infoCasa','casa'], ['infoOspite','ospite'], ['infoCampionato','campionato'],
   ['infoGiornata','giornata'], ['infoData','data'], ['infoOra','ora'],
   ['infoLuogo','luogo'], ['infoArbitro','arbitro'], ['infoNoiCasa','noiCasa'],
-  ['infoDurata','durata'], ['infoDurataSuppl','durataSuppl'], ['infoSupplMode','supplMode'],
+  ['infoTempi','tempi'], ['infoDurata','durata'], ['infoDurataSuppl','durataSuppl'], ['infoSupplMode','supplMode'],
   ['infoAudio','audio'], ['infoStep','step'], ['infoRientro','rientro']
 ];
 // Le tendine non hanno un'opzione vuota: uno stato salvato da una versione
 // precedente non ha il campo, e scriverci '' lascerebbe la tendina in bianco
 // su un valore che non esiste fra le opzioni. Per quelle si ripiega sul
 // default, che e' anche il comportamento che l'app ha sempre avuto.
-const DEFAULT_INFO = { noiCasa:'1', durata:45, durataSuppl:15, supplMode:'off', audio:'1', step:'1', rientro:'0' };
+const DEFAULT_INFO = { noiCasa:'1', tempi:'2', durata:45, durataSuppl:15, supplMode:'off', audio:'1', step:'1', rientro:'0' };
 function scriviInfoNeiCampi() {
   CAMPI_INFO.forEach(([id, key]) => {
     const el = document.getElementById(id);
@@ -2493,9 +2551,23 @@ function leggiInfoDaiCampi() {
     if (!el) return;
     info[key] = (key === 'durata' || key === 'durataSuppl') ? (Number(el.value) || (key === 'durata' ? 45 : 15)) : el.value;
   });
+  adeguaNumeroTempi();
   aggiornaNomiPunteggio();
   salvaStato();
   renderTimer();
+}
+// Cambiare il numero di tempi a gara iniziata: non si scende sotto il tempo
+// gia' in corso, e la gara si chiude o si riapre secondo il nuovo ultimo tempo
+// (2 tempi giocati, poi ci si accorge che erano 4: Avvia apre il 3o).
+function adeguaNumeroTempi() {
+  if (numTempi() < currentPeriod) {
+    info.tempi = String(currentPeriod);
+    const el = document.getElementById('infoTempi');
+    if (el) el.value = info.tempi;
+    toast('La gara è già al ' + currentPeriod + '° tempo: non puoi impostarne meno.');
+  }
+  if (supplAttivi || !fineTempo(currentPeriod)) return;
+  periodoChiuso = currentPeriod >= numTempi();
 }
 // Il punteggio di sinistra e' sempre il NOSTRO, cosi' il pulsante + non si
 // sbaglia mai; l'etichetta dice quale squadra e'.
