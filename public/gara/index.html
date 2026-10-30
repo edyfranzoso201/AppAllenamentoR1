@@ -237,6 +237,15 @@
     .gg-evdel{background:none;border:none;color:var(--rosso);cursor:pointer;font-size:0.95rem;padding:2px 4px;}
     .gg-evmod{background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.95rem;padding:2px 6px;}
     .gg-evrow.inmod{outline:2px solid var(--accent);outline-offset:-2px;}
+    /* ── Minutaggio ────────────────────────────────────────────────────── */
+    .gg-mintab-wrap{overflow-x:auto;}
+    .gg-mintab{width:100%;border-collapse:collapse;font-size:0.84rem;font-variant-numeric:tabular-nums;}
+    .gg-mintab th{color:var(--muted);font-weight:600;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;
+                  text-align:center;padding:4px 6px;border-bottom:1px solid var(--border);}
+    .gg-mintab th.nome,.gg-mintab td.nome{text-align:left;}
+    .gg-mintab td{text-align:center;padding:6px;border-bottom:1px solid rgba(45,74,138,0.45);}
+    .gg-mintab td.tot{font-weight:700;color:var(--accent);}
+    .gg-mintab td.zero{color:var(--muted);}
     .gg-empty{text-align:center;color:var(--muted);padding:26px 12px;font-size:0.85rem;}
     /* Il motivo per cui l'elenco e' vuoto: va letto, non intravisto. Un riquadro
        ambrato lo distingue dal semplice "Nessuno." di una lista legittima. */
@@ -392,6 +401,15 @@
       <div class="gg-card">
         <h2>&#128220; Cronologia</h2>
         <div id="eventiList"></div>
+      </div>
+
+      <div class="gg-card">
+        <h2>&#9201;&#65039; Minutaggio</h2>
+        <div class="gg-hint" style="margin-bottom:10px;">
+          Minuti giocati da ogni atleta, dal fischio d'inizio di ogni tempo. Chi entra ed esce
+          più volte somma tutti i tratti giocati.
+        </div>
+        <div id="minutaggioList"></div>
       </div>
     </div>
 
@@ -565,6 +583,7 @@
         <div class="gg-field"><label><input type="checkbox" class="gg-chk" id="pdfCrono" checked>Includi gli orari del cronometro</label></div>
         <div class="gg-field"><label><input type="checkbox" class="gg-chk" id="pdfRosa" checked>Includi la rosa dei convocati</label></div>
         <div class="gg-field"><label><input type="checkbox" class="gg-chk" id="pdfEventi" checked>Includi la cronologia eventi</label></div>
+        <div class="gg-field"><label><input type="checkbox" class="gg-chk" id="pdfMinuti">Includi il minutaggio degli atleti</label></div>
         <div class="gg-field"><label>Firma / redazione (opzionale)</label><input type="text" id="pdfFirma" placeholder="es. A cura di Mario Rossi"></div>
         <button type="button" class="gg-btn" id="btnGenPdf" style="width:100%;">&#128196; Genera PDF</button>
       </div>
@@ -687,6 +706,9 @@ function orariVuoti() {
   return o;
 }
 let periodTimestamps = orariVuoti();
+// Secondi realmente giocati in ogni tempo chiuso ({1: 2730, 2: 2810}): il
+// minutaggio non puo' usare la durata nominale, il recupero e' gioco.
+let durateTempi = {};
 // Quanti tempi ha la gara (Dati gara). Default 2, come il calcio dei grandi.
 function numTempi() {
   const n = parseInt(info.tempi, 10);
@@ -939,6 +961,7 @@ function renderTimer() {
   verificaSegnali();
   aggiornaStatoSchermo();
   aggiornaRiprendi();
+  renderMinutaggio();
 }
 
 // Tabella degli orari: una colonna per tempo, inizio sopra e fine sotto. Il
@@ -1272,6 +1295,7 @@ function stopTimer() {
 
   const ora = Date.now();
   periodTimestamps['t' + currentPeriod + 'End'] = ora;
+  durateTempi[currentPeriod] = timerSeconds;
   if (currentPeriod < numTempi()) {
     timerSeconds = 0;
     timerSecondsAtStart = 0;
@@ -1352,6 +1376,7 @@ function resetGara() {
   periodoChiuso = false;
   supplPeriod = 1; supplSeconds = 0; supplStartEpoch = null; supplSecondsAtStart = 0; supplAttivi = false;
   periodTimestamps = orariVuoti();
+  durateTempi = {};
   scoreHome = 0; scoreAway = 0;
   events = [];
   segnaliEmessi = {};   // altrimenti la gara nuova resterebbe muta
@@ -1438,6 +1463,7 @@ function renderRosa() {
       '</div>';
   }).join('');
   aggiornaContatori();
+  renderMinutaggio();
 }
 
 // ── Le due liste della sostituzione ────────────────────────────────────
@@ -1824,6 +1850,10 @@ function nuovoEvento(tipo, campi) {
     playerId: '', playerInId: '', nota: ''
   }, campi || {});
   if (mi.intervallo) ev.intervallo = true;
+  // Il secondo esatto del tempo serve al minutaggio: il minuto "da giornale"
+  // arrotonda e due cambi nello stesso minuto sembrerebbero uguali. Nei
+  // supplementari non serve (il minutaggio conta i tempi regolamentari).
+  else if (!supplAttivi) ev.sec = timerSeconds;
   // "Chiudi step" vale per il primo cambio che arriva, da qualunque strada:
   // rosa, menu azioni o pannello Registra evento passano tutte da qui, quindi
   // il flag si consuma in un solo posto e nessun percorso puo' scordarselo.
@@ -1945,11 +1975,119 @@ function testoEvento(ev) {
   }
 }
 
+// ── Minutaggio ────────────────────────────────────────────────────────
+// Quanti secondi e' durato il tempo p. Quello in corso vale il cronometro
+// adesso; uno chiuso vale quanto si e' giocato davvero (recupero compreso).
+// Le gare salvate prima di questa funzione non hanno la durata: si usa
+// quella nominale, che e' la miglior stima possibile.
+function durataTempo(p) {
+  const dur = (Number(info.durata) || 45) * 60;
+  if (p > currentPeriod) return 0;
+  if (p < currentPeriod || fineTempo(p)) {
+    return durateTempi[p] != null ? Number(durateTempi[p]) || 0 : dur;
+  }
+  return inizioTempo(p) || timerSeconds > 0 ? timerSeconds : 0;
+}
+
+// Secondo dell'evento dentro il suo tempo. Senza ev.sec (minuto scritto a
+// mano, o evento vecchio) si ricava dal minuto: "23'" del 1o tempo = inizio
+// del 23o minuto, "45+2'" = 46 minuti e rotti. All'intervallo = 0 del tempo dopo.
+function secondoEvento(ev) {
+  if (ev.intervallo) return 0;
+  if (ev.sec != null && !isNaN(Number(ev.sec))) return Math.max(0, Number(ev.sec));
+  const dur = Number(info.durata) || 45;
+  const per = Number(ev.periodo) || 1;
+  const extra = parseInt((String(ev.minuto || '').match(/\+(\d+)/) || [])[1], 10) || 0;
+  const m = (Number(ev.min) || 0) - (per - 1) * dur + extra;
+  return Math.max(0, (m - 1) * 60);
+}
+
+// Rigioca la cronologia: i titolari partono in campo al secondo 0 del 1o
+// tempo, ogni cambio chiude il tratto di chi esce e apre quello di chi entra,
+// l'espulsione chiude e basta. I tratti si sommano, quindi nel settore di
+// base chi esce e rientra piu' volte ha il totale di tutte le volte.
+// Restituisce { id: { tempi:[sec1, sec2, ...], tot, ingressi } }.
+function calcolaMinutaggio() {
+  const N = numTempi();
+  const ris = {};
+  const voce = id => ris[id] || (ris[id] = { tempi: new Array(N).fill(0), tot: 0, ingressi: 0 });
+  const entrato = new Map();   // id -> secondo d'ingresso nel tempo corrente
+  titolari().forEach(p => { entrato.set(String(p.id), 0); voce(String(p.id)).ingressi = 1; });
+  for (let p = 1; p <= N; p++) {
+    const D = durataTempo(p);
+    // A inizio tempo chi e' in campo riparte da 0 (il tratto prima e' chiuso).
+    entrato.forEach((_, id) => entrato.set(id, 0));
+    const chiudi = (id, t) => {
+      if (!entrato.has(id)) return;
+      voce(id).tempi[p - 1] += Math.max(0, t - entrato.get(id));
+      entrato.delete(id);
+    };
+    events.filter(ev => (Number(ev.periodo) || 1) === p).forEach(ev => {
+      if (ev.tipo !== 'cambio' && ev.tipo !== 'espulsione') return;
+      const t = Math.min(secondoEvento(ev), D);
+      if (ev.playerId) chiudi(String(ev.playerId), t);
+      if (ev.tipo === 'cambio' && ev.playerInId) {
+        const id = String(ev.playerInId);
+        if (!entrato.has(id)) { entrato.set(id, t); voce(id).ingressi++; }
+      }
+    });
+    entrato.forEach((t0, id) => { voce(id).tempi[p - 1] += Math.max(0, D - t0); });
+  }
+  Object.values(ris).forEach(v => { v.tot = v.tempi.reduce((a, b) => a + b, 0); });
+  return ris;
+}
+
+// Secondi -> minuti interi; sotto il minuto (ma giocato) si scrive <1.
+function fmtMinGiocati(sec) {
+  if (!sec) return '–';
+  const m = Math.round(sec / 60);
+  return m < 1 ? '<1' : String(m);
+}
+
+// Righe ordinate per numero di maglia: [giocatore, voce minutaggio].
+function righeMinutaggio() {
+  const mm = calcolaMinutaggio();
+  const N = numTempi();
+  const vuota = { tempi: new Array(N).fill(0), tot: 0, ingressi: 0 };
+  return convocati()
+    .map(p => [p, mm[String(p.id)] || vuota])
+    .sort((a, b) => ((parseInt(a[0].num, 10) || 999) - (parseInt(b[0].num, 10) || 999)) ||
+                    a[0].name.localeCompare(b[0].name));
+}
+
+// Si ridisegna a ogni tick del cronometro, ma l'HTML cambia una volta al
+// minuto: si confronta prima di toccare il DOM.
+let minutaggioHtml = '';
+function renderMinutaggio() {
+  const box = document.getElementById('minutaggioList');
+  if (!box) return;
+  const N = numTempi();
+  let html;
+  if (!convocati().length) {
+    html = '<div class="gg-empty">Nessun convocato in distinta.</div>';
+  } else if (!titolari().length) {
+    html = '<div class="gg-empty">Scegli i titolari nella Rosa per contare i minuti.</div>';
+  } else {
+    const intest = '<tr><th>N.</th><th class="nome">Giocatore</th>' +
+      Array.from({ length: N }, (_, k) => '<th>' + (k + 1) + '°T</th>').join('') +
+      '<th>Tot.</th></tr>';
+    const corpo = righeMinutaggio().map(([p, v]) =>
+      '<tr><td>' + esc(p.num || '') + '</td><td class="nome">' + esc(p.name) +
+      (v.ingressi > 1 ? ' <span class="gg-hint">(' + v.ingressi + ' ingressi)</span>' : '') + '</td>' +
+      v.tempi.map(s => '<td' + (s ? '' : ' class="zero"') + '>' + fmtMinGiocati(s) + '</td>').join('') +
+      '<td class="tot' + (v.tot ? '' : ' zero') + '">' + fmtMinGiocati(v.tot) + '</td></tr>').join('');
+    html = '<div class="gg-mintab-wrap"><table class="gg-mintab"><thead>' + intest +
+           '</thead><tbody>' + corpo + '</tbody></table></div>';
+  }
+  if (html !== minutaggioHtml) { box.innerHTML = html; minutaggioHtml = html; }
+}
+
 function renderEventi() {
   const box = document.getElementById('eventiList');
   // In cima e non in fondo: sotto c'e' un return per la lista vuota, e
   // cancellando l'ultimo cambio il contatore resterebbe su un numero falso.
   aggiornaContatoreStep();
+  renderMinutaggio();
   if (!events.length) {
     box.innerHTML = '<div class="gg-empty">Nessun evento registrato.</div>';
     return;
@@ -2003,6 +2141,10 @@ function leggiFormEvento() {
 // letto da li', o due cambi inseriti dopo sembrerebbero contemporanei solo
 // perche' registrati nello stesso istante.
 function applicaMinuto(ev, min) {
+  // Minuto cambiato a mano: il secondo preso dal cronometro non vale piu'.
+  // Se invece la modifica ha lasciato il minuto com'era, si tiene.
+  if (Number(ev.min) !== Number(min.min) || Number(ev.periodo) !== Number(min.periodo) ||
+      !!ev.intervallo !== !!min.intervallo) delete ev.sec;
   ev.minuto = min.minuto;
   ev.min = min.min;
   ev.periodo = min.periodo;
@@ -2187,7 +2329,7 @@ function salvaStato() {
       // riaprendo l'app si devono ritrovare come li avevi lasciati.
       titolari: players.filter(p => p.titolare).map(p => String(p.id)),
       inCampo: players.filter(p => p.inCampo).map(p => String(p.id)),
-      ultimoStop
+      ultimoStop, durateTempi
     }));
   } catch (e) { /* quota piena o storage negato: la gara continua a schermo */ }
 }
@@ -2216,6 +2358,7 @@ function caricaStato() {
   supplStartEpoch = st.supplStartEpoch || null;
   supplSecondsAtStart = Number(st.supplSecondsAtStart) || 0;
   ultimoStop = (st.ultimoStop && typeof st.ultimoStop === 'object') ? st.ultimoStop : null;
+  durateTempi = (st.durateTempi && typeof st.durateTempi === 'object') ? st.durateTempi : {};
   return st;
 }
 
@@ -2485,6 +2628,32 @@ function generaPdf() {
       styles: { fontSize: 8.5, cellPadding: 1.6 },
       headStyles: { fillColor: [26, 160, 94], textColor: 255, fontStyle: 'bold' },
       columnStyles: { 0:{cellWidth:16, halign:'center'} },
+      margin: { left: M, right: M }
+    });
+    y = doc.lastAutoTable.finalY + 7;
+  }
+
+  if (document.getElementById('pdfMinuti').checked && titolari().length) {
+    const N = numTempi();
+    if (y > doc.internal.pageSize.getHeight() - 38) { doc.addPage(); y = M; }
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
+    doc.text('MINUTAGGIO', M, y);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
+    y += 4;
+    // jsPDF con i font base non ha il trattino lungo: nel PDF lo zero e' "-".
+    const fm = s => fmtMinGiocati(s).replace('–', '-');
+    const colonne = { 0: { cellWidth: 9, halign: 'center' } };
+    for (let k = 0; k <= N; k++) colonne[k + 2] = { cellWidth: 15, halign: 'center' };
+    colonne[N + 2].fontStyle = 'bold';
+    doc.autoTable({
+      startY: y,
+      head: [['N.', 'Cognome e Nome'].concat(Array.from({ length: N }, (_, k) => (k + 1) + '° T'), ['Totale'])],
+      body: righeMinutaggio().map(([p, v]) =>
+        [p.num || '', p.name + (v.ingressi > 1 ? ' (' + v.ingressi + ' ingressi)' : '')]
+          .concat(v.tempi.map(fm), [fm(v.tot)])),
+      styles: { fontSize: 8.5, cellPadding: 1.6 },
+      headStyles: { fillColor: [26, 160, 94], textColor: 255, fontStyle: 'bold' },
+      columnStyles: colonne,
       margin: { left: M, right: M }
     });
     y = doc.lastAutoTable.finalY + 7;
