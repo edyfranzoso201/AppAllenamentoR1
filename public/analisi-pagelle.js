@@ -59,11 +59,13 @@
 
   function buildRows(athletes, ratingSheets) {
     const mode = $('ap-mode').value;
+    const coach = $('ap-coach').value; // '' = tutti i valutatori
     // Solo la rosa attuale: archiviati e staff non sono atleti da valutare oggi
     return (athletes || [])
       .filter(a => a && !a.archived && !a.isStaff)
       .map(a => {
-        const sheets = ((ratingSheets || {})[a.id] || []).slice()
+        const sheets = ((ratingSheets || {})[a.id] || [])
+          .filter(s => !coach || coachKey(s.coachName) === coach)
           .sort((x, y) => String(y.date || '').localeCompare(String(x.date || '')));
         const val = {};
         VOCI.forEach(v => { val[v.id] = valoreVoce(sheets, v, mode); });
@@ -75,6 +77,25 @@
 
   let rawAthletes = [], rawSheets = {};
 
+  // Nome valutatore normalizzato: "Edy", "edy " e "EDY" sono la stessa persona
+  const coachKey = n => String(n || '').trim().toLowerCase();
+
+  // Riempie la tendina valutatori con i nomi presenti nelle pagelle,
+  // mantenendo la scelta corrente se quel nome esiste ancora
+  function fillCoachSelect() {
+    const sel = $('ap-coach');
+    const prev = sel.value;
+    const names = new Map();
+    Object.values(rawSheets).forEach(list => (list || []).forEach(s => {
+      const k = coachKey(s.coachName);
+      if (k && !names.has(k)) names.set(k, String(s.coachName).trim());
+    }));
+    const sorted = [...names.entries()].sort((a, b) => a[1].localeCompare(b[1], 'it'));
+    sel.innerHTML = '<option value="">👤 Tutti i valutatori</option>'
+      + sorted.map(([k, label]) => `<option value="${esc(k)}">${esc(label)}</option>`).join('');
+    sel.value = names.has(prev) ? prev : '';
+  }
+
   async function load() {
     const body = $('ap-body');
     body.innerHTML = '<div class="at-empty">Caricamento pagelle…</div>';
@@ -84,6 +105,7 @@
       const d = await r.json();
       rawAthletes = Array.isArray(d.athletes) ? d.athletes : [];
       rawSheets = d.ratingSheets || {};
+      fillCoachSelect();
       renderAll();
     } catch (e) {
       body.innerHTML = '<div class="at-empty">Errore di caricamento delle pagelle.</div>';
@@ -99,6 +121,7 @@
     charts.forEach(c => { try { c.destroy(); } catch (e) {} });
     charts = [];
     if (!rows.length) { body.innerHTML = '<div class="at-empty">Nessun atleta in rosa per questa annata.</div>'; return; }
+    if (!conPagelle.length && $('ap-coach').value) { body.innerHTML = '<div class="at-empty">Nessuna pagella di questo valutatore per gli atleti in rosa.</div>'; return; }
     if (!conPagelle.length) { body.innerHTML = '<div class="at-empty">Nessuna pagella ancora compilata. Le pagelle si creano in Gestione Squadra → box atleta → Pagella Valutazione.</div>'; return; }
 
     body.innerHTML = `
@@ -247,5 +270,6 @@
 
   $('ap-open-btn').addEventListener('click', () => { $('ap-overlay').style.display = 'flex'; load(); });
   $('ap-mode').addEventListener('change', () => { if (rawAthletes.length) renderAll(); });
+  $('ap-coach').addEventListener('change', () => { if (rawAthletes.length) renderAll(); });
   // Niente chiusura al clic fuori dal riquadro: si chiude solo con "✕ Chiudi"
 })();
