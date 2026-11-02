@@ -20,7 +20,9 @@
     { id: 'tecnica',         label: 'Tecnica',       get: s => (s.ratings || {}).tecnica },
     { id: 'tattica',         label: 'Tattica',       get: s => (s.ratings || {}).tattica },
     { id: 'fisico',          label: 'Fisico',        get: s => (s.ratings || {}).fisico },
-    { id: 'comportamentale', label: 'Comportamento', get: s => (s.ratings || {}).comportamentale }
+    { id: 'comportamentale', label: 'Comportamento', get: s => (s.ratings || {}).comportamentale },
+    { id: 'grinta', label: 'Grinta', get: s => (s.ratings || {}).grinta },
+    { id: 'qualitaCampo', label: 'Qualità in Campo', get: s => (s.ratings || {}).qualitaCampo }
   ].concat(FOND.map(f => ({ id: 'f_' + f.key, label: f.label, fond: true, get: s => (s.fondamentali || {})[f.key] })));
   const CATEGORIE = VOCI.filter(v => !v.fond);
 

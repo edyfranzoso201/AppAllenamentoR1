@@ -23,6 +23,21 @@
         { key: 'stopPalla',      label: 'Stop della Palla' }
     ];
     window.PAGELLE_FONDAMENTALI = FONDAMENTALI;
+
+    // Categorie principali della pagella (chiave in sheet.ratings)
+    const CATEGORIE = [
+        { key: 'tecnica',         label: 'Tecnica',          icon: '⚙️' },
+        { key: 'tattica',         label: 'Tattica',          icon: '🎯' },
+        { key: 'fisico',          label: 'Fisico',           icon: '💪' },
+        { key: 'comportamentale', label: 'Comportamento',    icon: '🤝' },
+        { key: 'grinta',          label: 'Grinta',           icon: '🔥' },
+        { key: 'qualitaCampo',    label: 'Qualità in Campo', icon: '🏅' }
+    ];
+    window.PAGELLE_CATEGORIE = CATEGORIE;
+    const readRatingsForm = () => CATEGORIE.reduce((acc, c) => {
+        acc[c.key] = parseInt(document.getElementById('rating-' + c.key).value) || 0;
+        return acc;
+    }, {});
     const fondCat = k => 'fond-' + k; // data-category / id hidden: rating-fond-<key>
 
     // Disegna le righe a stelle dei fondamentali dentro il modal (una volta sola)
@@ -267,22 +282,7 @@
                             <div class="rating-date">${formatDate(sheet.date)}</div>
                             <div class="rating-coach">Coach: ${sheet.coachName}</div>
                             <div class="rating-scores">
-                                <div class="rating-score-item">
-                                    <span>⚙️ Tecnica:</span>
-                                    <span class="score-stars">${generateStarsHtml(sheet.ratings.tecnica)}</span>
-                                </div>
-                                <div class="rating-score-item">
-                                    <span>🎯 Tattica:</span>
-                                    <span class="score-stars">${generateStarsHtml(sheet.ratings.tattica)}</span>
-                                </div>
-                                <div class="rating-score-item">
-                                    <span>💪 Fisico:</span>
-                                    <span class="score-stars">${generateStarsHtml(sheet.ratings.fisico)}</span>
-                                </div>
-                                <div class="rating-score-item">
-                                    <span>🤝 Comportamento:</span>
-                                    <span class="score-stars">${generateStarsHtml(sheet.ratings.comportamentale)}</span>
-                                </div>
+                                ${CATEGORIE.map(c => `<div class="rating-score-item"><span>${c.icon} ${c.label}:</span><span class="score-stars">${generateStarsHtml(sheet.ratings[c.key] || 0)}</span></div>`).join('')}
                             </div>
                             ${fondamentaliMiniHtml(sheet.fondamentali)}
                             <div class="rating-average-badge">
@@ -321,7 +321,7 @@
             document.getElementById('rating-date').valueAsDate = new Date();
             
             // Reset stelle
-            ['tecnica', 'tattica', 'fisico', 'comportamentale'].forEach(cat => {
+            CATEGORIE.map(c => c.key).forEach(cat => {
                 document.getElementById(`rating-${cat}`).value = '0';
                 highlightStars(cat, 0);
             });
@@ -354,7 +354,7 @@
             document.getElementById('rating-notes').value = sheet.notes || '';
             
             // Imposta stelle
-            ['tecnica', 'tattica', 'fisico', 'comportamentale'].forEach(cat => {
+            CATEGORIE.map(c => c.key).forEach(cat => {
                 const value = sheet.ratings[cat] || 0;
                 document.getElementById(`rating-${cat}`).value = value;
                 highlightStars(cat, value);
@@ -425,12 +425,7 @@
             return;
         }
         
-        const ratings = {
-            tecnica: parseInt(document.getElementById('rating-tecnica').value) || 0,
-            tattica: parseInt(document.getElementById('rating-tattica').value) || 0,
-            fisico: parseInt(document.getElementById('rating-fisico').value) || 0,
-            comportamentale: parseInt(document.getElementById('rating-comportamentale').value) || 0
-        };
+        const ratings = readRatingsForm();
         
         // Verifica che almeno una valutazione sia > 0
         const hasRating = Object.values(ratings).some(v => v > 0) || !!readFondamentaliForm();
@@ -520,12 +515,7 @@
         // lascerebbe il canvas "occupato" generando errori al secondo render.
         if (_radarChart) { try { _radarChart.destroy(); } catch (e) {} _radarChart = null; }
 
-        const CATS = [
-            { key: 'tecnica',         label: 'Tecnica' },
-            { key: 'tattica',         label: 'Tattica' },
-            { key: 'fisico',          label: 'Fisico' },
-            { key: 'comportamentale', label: 'Comportamento' }
-        ];
+        const CATS = CATEGORIE;
 
         // sheets è già ordinato per data desc: [0] = più recente
         const last = sheets[0].ratings || {};
@@ -659,12 +649,7 @@
             sheet = {
                 date: document.getElementById('rating-date').value || new Date().toISOString().slice(0,10),
                 coachName: document.getElementById('rating-coach-name').value || '',
-                ratings: {
-                    tecnica:        parseInt(document.getElementById('rating-tecnica').value)        || 0,
-                    tattica:        parseInt(document.getElementById('rating-tattica').value)        || 0,
-                    fisico:         parseInt(document.getElementById('rating-fisico').value)         || 0,
-                    comportamentale: parseInt(document.getElementById('rating-comportamentale').value) || 0
-                },
+                ratings: readRatingsForm(),
                 notes: document.getElementById('rating-notes').value || '',
                 fondamentali: readFondamentaliForm()
             };
@@ -738,11 +723,11 @@
             + '<table class="ratings-table">'
             + '<thead><tr><th>Categoria</th><th style="width:30%">Punteggio</th><th style="width:18%;text-align:center;">Voto</th></tr></thead>'
             + '<tbody>'
-            + '<tr><td>⚙️ Tecnica</td><td><span class="stars">' + starsText(sheet.ratings.tecnica) + '</span></td><td style="text-align:center;"><span class="value-num">' + (sheet.ratings.tecnica||0) + ' / 5</span></td></tr>'
-            + fondRows
-            + '<tr><td>🎯 Tattica</td><td><span class="stars">' + starsText(sheet.ratings.tattica) + '</span></td><td style="text-align:center;"><span class="value-num">' + (sheet.ratings.tattica||0) + ' / 5</span></td></tr>'
-            + '<tr><td>💪 Fisico</td><td><span class="stars">' + starsText(sheet.ratings.fisico) + '</span></td><td style="text-align:center;"><span class="value-num">' + (sheet.ratings.fisico||0) + ' / 5</span></td></tr>'
-            + '<tr><td>🤝 Comportamento</td><td><span class="stars">' + starsText(sheet.ratings.comportamentale) + '</span></td><td style="text-align:center;"><span class="value-num">' + (sheet.ratings.comportamentale||0) + ' / 5</span></td></tr>'
+            + CATEGORIE.map(function(c) {
+                var v = sheet.ratings[c.key] || 0;
+                return '<tr><td>' + c.icon + ' ' + c.label + '</td><td><span class="stars">' + starsText(v) + '</span></td><td style="text-align:center;"><span class="value-num">' + v + ' / 5</span></td></tr>'
+                    + (c.key === 'tecnica' ? fondRows : '');
+            }).join('')
             + '</tbody></table>'
             + '<div class="average-box">'
             + '<div class="label">⭐ Valutazione Media</div>'
