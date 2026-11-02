@@ -45,6 +45,36 @@
     .at-player{aspect-ratio:16/9;width:100%;background:#000;border-radius:8px;overflow:hidden;}
     .at-player iframe{width:100%;height:100%;border:0;}
     .at-locale{background:var(--panel);border:1px dashed var(--border2);border-radius:8px;padding:16px;text-align:center;}
+    /* Analisi Pagelle */
+    .ap-modal{max-width:1150px;}
+    #ap-mode,.ap-filter select{background:var(--panel);color:var(--txt);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:0.85rem;}
+    .ap-kpis{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+    .ap-kpi{flex:1;min-width:150px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:0.95rem;}
+    .ap-kpi b{font-size:1.5rem;font-variant-numeric:tabular-nums;}
+    .ap-kpi span{display:block;color:var(--muted);font-size:0.75rem;margin-top:2px;}
+    .ap-section{background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:14px;}
+    .ap-section h4{margin:0 0 10px;font-size:0.95rem;}
+    .ap-section h4 small{color:var(--muted);font-weight:400;}
+    .ap-charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;}
+    .ap-charts .ap-section{margin-bottom:14px;}
+    .ap-chart{position:relative;height:300px;}
+    .ap-filter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+    .ap-f-summary{font-size:0.88rem;margin-bottom:8px;}
+    .ap-f-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:6px;}
+    .ap-f-item{display:flex;align-items:center;gap:8px;background:var(--panel);border-radius:8px;padding:6px 10px;font-size:0.85rem;}
+    .ap-f-name{font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .ap-f-meta{color:var(--muted);font-size:0.72rem;white-space:nowrap;}
+    .ap-pill{display:inline-block;min-width:34px;text-align:center;border-radius:6px;padding:1px 6px;font-weight:700;font-size:0.8rem;font-variant-numeric:tabular-nums;}
+    .ap-table-wrap{overflow-x:auto;}
+    .ap-table{width:100%;border-collapse:collapse;font-size:0.82rem;}
+    .ap-table th{position:sticky;top:0;background:var(--panel);color:var(--muted);font-weight:600;padding:7px 6px;text-align:center;cursor:pointer;white-space:nowrap;user-select:none;font-size:0.74rem;}
+    .ap-table th.ap-th-name{text-align:left;}
+    .ap-table th.ap-th-fond{color:#fcd34d;}
+    .ap-table td{padding:5px 6px;border-bottom:1px solid rgba(255,255,255,0.05);}
+    .ap-table td.ap-name{font-weight:600;white-space:nowrap;}
+    .ap-table td.ap-c{text-align:center;}
+    .ap-table td.ap-date{color:var(--muted);white-space:nowrap;}
+    .ap-na{color:#475569;}
     .at-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:10px 18px;border-radius:8px;display:none;z-index:100;font-size:0.85rem;}
   </style>
 </head>
@@ -76,6 +106,7 @@
       <a href="/reattivita.html" class="at-btn-ghost" style="text-decoration:none;border-color:#f59e0b;color:#fbbf24;" title="Schermo con stimoli colorati per esercizi di reattività sul campo">⚡ Test Reattività</a>
       <a href="/cronografo.html" class="at-btn-ghost" style="text-decoration:none;border-color:#1aa05e;color:#4ade80;" title="Cronometro con frazionamenti per cronometrare circuiti e assegnare i tempi agli atleti">⏱️ Cronografo Circuiti</a>
       <a href="/gara/" class="at-btn-ghost" id="at-gara-link" style="text-decoration:none;border-color:#1aa05e;color:#4ade80;" title="Cronometro di gara con tempi supplementari, eventi e resoconto PDF per la stampa. Installabile come app sullo smartphone">⚽ Andamento Gara</a>
+      <button class="at-btn-ghost" id="ap-open-btn" style="border-color:#ffc107;color:#fcd34d;" title="Sunto delle Pagelle Valutazione di ogni atleta, grafici delle voci deboli e ricerca per numero di stelle">📊 Analisi Pagelle</button>
       <button class="at-btn-ghost" id="at-playlist-btn" style="border-color:#7c3aed;color:#c4b5fd;">🔗 Playlist pubbliche</button>
       <button class="at-btn" id="at-add-btn">+ Aggiungi</button>
     </div>
@@ -194,8 +225,30 @@
     </div>
   </div>
 
+  <!-- Overlay: Analisi Pagelle (sola lettura, dati da Gestione Squadra) -->
+  <div class="at-overlay" id="ap-overlay">
+    <div class="at-modal ap-modal">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+        <h3 style="margin:0;">📊 Analisi Pagelle</h3>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select id="ap-mode" title="Quale voto considerare per ogni atleta">
+            <option value="ultima">Ultima valutazione</option>
+            <option value="media">Media di tutte le pagelle</option>
+          </select>
+          <button class="at-btn-ghost" onclick="document.getElementById('ap-overlay').style.display='none'">✕ Chiudi</button>
+        </div>
+      </div>
+      <div id="ap-body"></div>
+    </div>
+  </div>
+
   <div class="at-toast" id="at-toast"></div>
 
-  <script src="/area-tecnica.js?v=20261022"></script>
+  <script src="/area-tecnica.js?v=20261102"></script>
+  <!-- pagelle.js qui serve solo per l'elenco dei fondamentali (window.PAGELLE_FONDAMENTALI):
+       senza il modal della dashboard il resto del file esce senza fare nulla -->
+  <script src="/pagelle.js?v=1779803000"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="/analisi-pagelle.js?v=20261102"></script>
 </body>
 </html>

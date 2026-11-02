@@ -987,6 +987,37 @@ body { background-color: var(--sm-bg); color: var(--text-light); padding-top: 56
     color: #ffc107;
 }
 
+/* Fondamentali: sotto-voci di Tecnica, rientrate e con stelle piu piccole */
+.rating-fondamentali {
+    margin-left: 1.5rem;
+    padding-left: 0.75rem;
+    border-left: 2px solid rgba(255, 193, 7, 0.35);
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.rating-fondamentali .rating-fond-title {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.rating-fondamentali .rating-row {
+    padding: 0.4rem 0.75rem;
+}
+
+.rating-fondamentali .rating-label {
+    flex: 0 0 170px;
+    font-size: 0.92rem;
+    font-weight: 500;
+}
+
+.rating-fondamentali .rating-star {
+    font-size: 1.35rem;
+}
+
 /* Badge con media voto */
 .rating-average-badge {
     display: inline-flex;

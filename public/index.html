@@ -641,7 +641,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <!-- Foglio di stile personalizzato -->
-    <link rel="stylesheet" href="style.css?v=1779800000">
+    <link rel="stylesheet" href="style.css?v=1779803000">
 
     <style>
     /* ===== TAB BAR - seconda riga dell'header fisso ===== */
@@ -3822,7 +3822,13 @@
                                 </div>
                                 <input type="hidden" id="rating-tecnica" value="0">
                             </div>
-                            
+
+                            <!-- Fondamentali (sotto-voci di Tecnica, facoltative).
+                                 Le righe sono generate da pagelle.js (FONDAMENTALI) per
+                                 tenere in un solo punto l'elenco usato anche da stampa
+                                 e Analisi Pagelle. -->
+                            <div class="rating-fondamentali mb-3" id="rating-fondamentali-box"></div>
+
                             <!-- Tattica -->
                             <div class="rating-row mb-3">
                                 <label class="rating-label">🎯 Tattica</label>
@@ -3905,7 +3911,7 @@
         </div>
     </div>
 </div>
-<script src="pagelle.js?v=1779802000"></script>
+<script src="pagelle.js?v=1779803000"></script>
 <script>
 (function() {
     function handleWeeklyVisibility() {

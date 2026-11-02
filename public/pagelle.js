@@ -10,7 +10,64 @@
     let ratingSheetModal;
     let ratingListModal;
     let _radarChart = null; // istanza Chart.js del radar (va distrutta a ogni re-render)
-    
+
+    // Fondamentali del calcio: sotto-voci FACOLTATIVE di Tecnica. Sono salvate in
+    // sheet.fondamentali e NON dentro sheet.ratings, cosi' la media della pagella
+    // (calcolata sui valori di ratings) e le pagelle vecchie restano identiche.
+    // 0 = non valutato. Esposto su window per area-tecnica.js (Analisi Pagelle).
+    const FONDAMENTALI = [
+        { key: 'colpiTesta',     label: 'Colpi di Testa' },
+        { key: 'tiro',           label: 'Tiro' },
+        { key: 'velocita',       label: 'Velocità corsa' },
+        { key: 'controlloPalla', label: 'Controllo palla' },
+        { key: 'stopPalla',      label: 'Stop della Palla' }
+    ];
+    window.PAGELLE_FONDAMENTALI = FONDAMENTALI;
+    const fondCat = k => 'fond-' + k; // data-category / id hidden: rating-fond-<key>
+
+    // Disegna le righe a stelle dei fondamentali dentro il modal (una volta sola)
+    function buildFondamentaliRows() {
+        const box = document.getElementById('rating-fondamentali-box');
+        if (!box || box.dataset.built) return;
+        box.dataset.built = '1';
+        box.innerHTML = '<div class="rating-fond-title">Fondamentali (facoltativi) — tocca di nuovo la stella per azzerare</div>'
+            + FONDAMENTALI.map(f => {
+                const cat = fondCat(f.key);
+                let stars = '';
+                for (let v = 1; v <= 5; v++) {
+                    stars += `<i class="bi bi-star rating-star" data-category="${cat}" data-value="${v}"></i>`;
+                }
+                return `<div class="rating-row">
+                    <label class="rating-label">${f.label}</label>
+                    <div class="rating-stars" data-category="${cat}">${stars}</div>
+                    <input type="hidden" id="rating-${cat}" value="0">
+                </div>`;
+            }).join('');
+    }
+
+    function setFondamentaliForm(values) {
+        FONDAMENTALI.forEach(f => {
+            const v = Number((values || {})[f.key]) || 0;
+            const inp = document.getElementById(`rating-${fondCat(f.key)}`);
+            if (inp) inp.value = v;
+            highlightStars(fondCat(f.key), v);
+        });
+    }
+
+    // Legge i fondamentali dal form; ritorna null se nessuno e' valutato
+    // (le pagelle senza fondamentali non si portano dietro un oggetto di zeri).
+    function readFondamentaliForm() {
+        const out = {};
+        let any = false;
+        FONDAMENTALI.forEach(f => {
+            const inp = document.getElementById(`rating-${fondCat(f.key)}`);
+            const v = inp ? (parseInt(inp.value) || 0) : 0;
+            out[f.key] = v;
+            if (v > 0) any = true;
+        });
+        return any ? out : null;
+    }
+
     // Inizializzazione quando il DOM è pronto
     document.addEventListener('DOMContentLoaded', function() {
         // Aspetta che Bootstrap sia caricato
@@ -27,7 +84,8 @@
         
         ratingSheetModal = new bootstrap.Modal(ratingSheetModalEl);
         ratingListModal = new bootstrap.Modal(ratingListModalEl);
-        
+        buildFondamentaliRows();
+
         // Carica i dati delle pagelle
         loadRatingSheets();
         
@@ -108,7 +166,13 @@
             const ratingStar = e.target.closest('.rating-star');
             if (ratingStar) {
                 const category = ratingStar.dataset.category;
-                const value = parseInt(ratingStar.dataset.value);
+                let value = parseInt(ratingStar.dataset.value);
+                // Fondamentali facoltativi: ritoccare la stella gia' scelta azzera
+                // il voto (altrimenti, una volta dato, non si potrebbe togliere).
+                if (category.indexOf('fond-') === 0) {
+                    const cur = parseInt(document.getElementById(`rating-${category}`).value) || 0;
+                    if (cur === value) value = 0;
+                }
                 setRating(category, value);
             }
         });
@@ -220,6 +284,7 @@
                                     <span class="score-stars">${generateStarsHtml(sheet.ratings.comportamentale)}</span>
                                 </div>
                             </div>
+                            ${fondamentaliMiniHtml(sheet.fondamentali)}
                             <div class="rating-average-badge">
                                 <i class="bi bi-star-fill"></i>
                                 Media: ${avg.toFixed(1)}
@@ -260,7 +325,8 @@
                 document.getElementById(`rating-${cat}`).value = '0';
                 highlightStars(cat, 0);
             });
-            
+            setFondamentaliForm(null);
+
             // Nascondi pulsante elimina
             document.getElementById('delete-rating-btn').style.display = 'none';
             
@@ -293,7 +359,8 @@
                 document.getElementById(`rating-${cat}`).value = value;
                 highlightStars(cat, value);
             });
-            
+            setFondamentaliForm(sheet.fondamentali);
+
             // Mostra pulsante elimina
             document.getElementById('delete-rating-btn').style.display = 'inline-block';
             
@@ -311,6 +378,10 @@
     function highlightStars(category, value) {
         const stars = document.querySelectorAll(`.rating-star[data-category="${category}"]`);
         stars.forEach((star, index) => {
+            // Toglie il colore inline lasciato dall'hover: altrimenti, uscendo
+            // dalla riga, restavano gialle le stelle passate col mouse anche se
+            // il voto salvato era piu' basso (o azzerato).
+            star.style.color = '';
             if (index < value) {
                 star.classList.remove('bi-star');
                 star.classList.add('bi-star-fill', 'active');
@@ -362,7 +433,7 @@
         };
         
         // Verifica che almeno una valutazione sia > 0
-        const hasRating = Object.values(ratings).some(v => v > 0);
+        const hasRating = Object.values(ratings).some(v => v > 0) || !!readFondamentaliForm();
         if (!hasRating) {
             alert('Inserisci almeno una valutazione!');
             return;
@@ -376,7 +447,9 @@
             ratings: ratings,
             notes: notes
         };
-        
+        const fondamentali = readFondamentaliForm();
+        if (fondamentali) sheet.fondamentali = fondamentali;
+
         // Salva
         if (!ratingSheets[athleteId]) {
             ratingSheets[athleteId] = [];
@@ -515,6 +588,17 @@
         });
     }
     
+    // Riga compatta dei fondamentali valutati nella card dello storico
+    // (es. "Tiro 4★ · Stop della Palla 2★"); vuota se la pagella non li ha.
+    function fondamentaliMiniHtml(fond) {
+        if (!fond) return '';
+        const parts = FONDAMENTALI
+            .filter(f => (Number(fond[f.key]) || 0) > 0)
+            .map(f => `${f.label} <b style="color:#ffc107;">${Number(fond[f.key])}★</b>`);
+        if (!parts.length) return '';
+        return `<div style="font-size:0.8rem;color:#cbd5e1;margin:-0.25rem 0 0.75rem;line-height:1.5;">⚽ ${parts.join(' · ')}</div>`;
+    }
+
     // Genera HTML stelle
     function generateStarsHtml(rating) {
         let html = '';
@@ -581,8 +665,19 @@
                     fisico:         parseInt(document.getElementById('rating-fisico').value)         || 0,
                     comportamentale: parseInt(document.getElementById('rating-comportamentale').value) || 0
                 },
-                notes: document.getElementById('rating-notes').value || ''
+                notes: document.getElementById('rating-notes').value || '',
+                fondamentali: readFondamentaliForm()
             };
+        }
+
+        // Righe dei fondamentali valutati, rientrate sotto Tecnica
+        var fondRows = '';
+        if (sheet.fondamentali) {
+            FONDAMENTALI.forEach(function(f) {
+                var v = Number(sheet.fondamentali[f.key]) || 0;
+                if (!v) return;
+                fondRows += '<tr class="fond"><td style="padding-left:28px;">↳ ' + f.label + '</td><td><span class="stars">' + starsText(v) + '</span></td><td style="text-align:center;"><span class="value-num">' + v + ' / 5</span></td></tr>';
+            });
         }
 
         var avg = calculateAverageRating(sheet.ratings);
@@ -611,6 +706,8 @@
             + '.ratings-table th { background:#1e3a5f; color:#fff; padding: 8px 10px; text-align:left; font-size: 11pt; }'
             + '.ratings-table td { padding: 10px; border-bottom: 1px solid #ddd; font-size: 12pt; }'
             + '.ratings-table tr:nth-child(even) td { background:#fafafa; }'
+            + '.ratings-table tr.fond td { font-size: 10.5pt; padding: 6px 10px; color:#333; }'
+            + '.ratings-table tr.fond .stars { font-size: 12pt; }'
             + '.stars { font-size: 16pt; color:#ffc107; letter-spacing: 2px; }'
             + '.value-num { font-weight: 700; color:#1e3a5f; }'
             + '.average-box { background: linear-gradient(135deg,#1e3a5f,#0f172a); color:#fff; padding: 8mm; border-radius: 6px; text-align:center; margin: 6mm 0; }'
@@ -642,6 +739,7 @@
             + '<thead><tr><th>Categoria</th><th style="width:30%">Punteggio</th><th style="width:18%;text-align:center;">Voto</th></tr></thead>'
             + '<tbody>'
             + '<tr><td>⚙️ Tecnica</td><td><span class="stars">' + starsText(sheet.ratings.tecnica) + '</span></td><td style="text-align:center;"><span class="value-num">' + (sheet.ratings.tecnica||0) + ' / 5</span></td></tr>'
+            + fondRows
             + '<tr><td>🎯 Tattica</td><td><span class="stars">' + starsText(sheet.ratings.tattica) + '</span></td><td style="text-align:center;"><span class="value-num">' + (sheet.ratings.tattica||0) + ' / 5</span></td></tr>'
             + '<tr><td>💪 Fisico</td><td><span class="stars">' + starsText(sheet.ratings.fisico) + '</span></td><td style="text-align:center;"><span class="value-num">' + (sheet.ratings.fisico||0) + ' / 5</span></td></tr>'
             + '<tr><td>🤝 Comportamento</td><td><span class="stars">' + starsText(sheet.ratings.comportamentale) + '</span></td><td style="text-align:center;"><span class="value-num">' + (sheet.ratings.comportamentale||0) + ' / 5</span></td></tr>'

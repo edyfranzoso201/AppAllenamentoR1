@@ -29,6 +29,7 @@
     if (json) h['Content-Type'] = 'application/json';
     return h;
   }
+  window.atAuthHeaders = authHeaders; // usato da analisi-pagelle.js
 
   function toast(msg) {
     const t = $('at-toast'); t.textContent = msg; t.style.display = 'block';
