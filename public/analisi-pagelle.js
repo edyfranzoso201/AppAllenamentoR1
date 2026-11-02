@@ -245,5 +245,5 @@
 
   $('ap-open-btn').addEventListener('click', () => { $('ap-overlay').style.display = 'flex'; load(); });
   $('ap-mode').addEventListener('change', () => { if (rawAthletes.length) renderAll(); });
-  $('ap-overlay').addEventListener('click', (e) => { if (e.target === $('ap-overlay')) $('ap-overlay').style.display = 'none'; });
+  // Niente chiusura al clic fuori dal riquadro: si chiude solo con "✕ Chiudi"
 })();
