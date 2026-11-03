@@ -1018,6 +1018,39 @@ body { background-color: var(--sm-bg); color: var(--text-light); padding-top: 56
     font-size: 1.35rem;
 }
 
+/* Importanza della voce per il ruolo: 0-3 pallini a destra delle stelle */
+.rating-peso {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    padding-left: 0.5rem;
+}
+
+.peso-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid #60a5fa;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.peso-dot.on {
+    background-color: #60a5fa;
+}
+
+.rating-peso.zero .peso-dot {
+    border-color: #64748b;
+}
+
+/* Etichetta con nota al passaggio del mouse */
+.rating-label.has-desc {
+    cursor: help;
+    text-decoration: underline dotted rgba(148, 163, 184, 0.6);
+    text-underline-offset: 4px;
+}
+
 /* Badge con media voto */
 .rating-average-badge {
     display: inline-flex;
@@ -1106,6 +1139,11 @@ body { background-color: var(--sm-bg); color: var(--text-light); padding-top: 56
         font-size: 1rem;
     }
     
+    .rating-peso {
+        margin-left: 0;
+        padding-left: 0;
+    }
+
     .rating-stars {
         width: 100%;
         justify-content: flex-start;

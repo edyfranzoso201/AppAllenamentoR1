@@ -16,22 +16,22 @@
     // (calcolata sui valori di ratings) e le pagelle vecchie restano identiche.
     // 0 = non valutato. Esposto su window per area-tecnica.js (Analisi Pagelle).
     const FONDAMENTALI = [
-        { key: 'colpiTesta',     label: 'Colpi di Testa' },
-        { key: 'tiro',           label: 'Tiro' },
-        { key: 'velocita',       label: 'Velocità corsa' },
-        { key: 'controlloPalla', label: 'Controllo palla' },
-        { key: 'stopPalla',      label: 'Stop della Palla' }
+        { key: 'colpiTesta',     label: 'Colpi di Testa',   desc: 'Tempismo e precisione nel colpire il pallone di testa, in difesa e in attacco.' },
+        { key: 'tiro',           label: 'Tiro',             desc: 'Potenza e precisione della conclusione verso la porta, con entrambi i piedi.' },
+        { key: 'velocita',       label: 'Velocità corsa',   desc: 'Rapidità nello scatto e nella corsa, con e senza palla.' },
+        { key: 'controlloPalla', label: 'Controllo palla',  desc: "Gestione del pallone nello stretto: guida, dribbling e protezione dall'avversario." },
+        { key: 'stopPalla',      label: 'Stop della Palla', desc: 'Pulizia del primo controllo: fermare e orientare il pallone ricevuto per giocarlo subito.' }
     ];
     window.PAGELLE_FONDAMENTALI = FONDAMENTALI;
 
     // Categorie principali della pagella (chiave in sheet.ratings)
     const CATEGORIE = [
-        { key: 'tecnica',         label: 'Tecnica',          icon: '⚙️' },
-        { key: 'tattica',         label: 'Tattica',          icon: '🎯' },
-        { key: 'fisico',          label: 'Fisico',           icon: '💪' },
-        { key: 'comportamentale', label: 'Comportamento',    icon: '🤝' },
-        { key: 'grinta',          label: 'Grinta',           icon: '🔥' },
-        { key: 'qualitaCampo',    label: 'Qualità in Campo', icon: '🏅' }
+        { key: 'tecnica',         label: 'Tecnica',          icon: '⚙️', desc: 'Abilità nei movimenti fondamentali di base.' },
+        { key: 'tattica',         label: 'Tattica',          icon: '🎯', desc: "L'insieme delle decisioni, dei comportamenti coordinati e dei movimenti messi in atto in campo per raggiungere un obiettivo preciso." },
+        { key: 'fisico',          label: 'Fisico',           icon: '💪', desc: 'Condizione atletica: resistenza, velocità, forza, agilità e coordinazione.' },
+        { key: 'comportamentale', label: 'Comportamento',    icon: '🤝', desc: "Serietà nell'allenamento e nell'esecuzione degli esercizi, rispetto del Mister e dei compagni di squadra." },
+        { key: 'grinta',          label: 'Grinta',           icon: '🔥', desc: 'Determinazione e intensità: voglia di non mollare, contrasti, reazione agli errori e allo svantaggio.' },
+        { key: 'qualitaCampo',    label: 'Qualità in Campo', icon: '🏅', desc: 'Rendimento effettivo in partita: incisività, lettura del gioco e contributo concreto alla squadra.' }
     ];
     window.PAGELLE_CATEGORIE = CATEGORIE;
     const readRatingsForm = () => CATEGORIE.reduce((acc, c) => {
@@ -39,6 +39,53 @@
         return acc;
     }, {});
     const fondCat = k => 'fond-' + k; // data-category / id hidden: rating-fond-<key>
+
+    // Importanza della voce per il ruolo dell'atleta: 0-3 pallini, default 3.
+    // Salvata in sheet.pesi[key] (key = chiave categoria o fondamentale);
+    // le pagelle vecchie senza pesi valgono 3 su tutto. Analisi Pagelle la usa
+    // come peso nelle medie (es. Colpi di Testa a 0 per un portiere).
+    const PESO_DEFAULT = 3;
+    const TUTTE_LE_VOCI = CATEGORIE.concat(FONDAMENTALI);
+    const pesoHtml = key => `<div class="rating-peso" data-peso-key="${key}" title="Importanza per il ruolo (tocca di nuovo il pallino scelto per azzerare)">`
+        + [1, 2, 3].map(v => `<span class="peso-dot" data-peso-key="${key}" data-value="${v}"></span>`).join('')
+        + `<input type="hidden" id="peso-${key}" value="${PESO_DEFAULT}"></div>`;
+
+    function setPeso(key, value) {
+        const inp = document.getElementById('peso-' + key);
+        if (inp) inp.value = value;
+        document.querySelectorAll(`.peso-dot[data-peso-key="${key}"]`).forEach(d => {
+            d.classList.toggle('on', Number(d.dataset.value) <= value);
+        });
+        const box = document.querySelector(`.rating-peso[data-peso-key="${key}"]`);
+        if (box) box.classList.toggle('zero', value === 0);
+    }
+    function setPesiForm(pesi) {
+        TUTTE_LE_VOCI.forEach(v => {
+            const p = pesi && pesi[v.key] != null ? Number(pesi[v.key]) : PESO_DEFAULT;
+            setPeso(v.key, isNaN(p) ? PESO_DEFAULT : p);
+        });
+    }
+    function readPesiForm() {
+        return TUTTE_LE_VOCI.reduce((acc, v) => {
+            const inp = document.getElementById('peso-' + v.key);
+            const p = inp ? parseInt(inp.value, 10) : PESO_DEFAULT;
+            acc[v.key] = isNaN(p) ? PESO_DEFAULT : p;
+            return acc;
+        }, {});
+    }
+
+    // Righe categoria (scritte a mano in index.html): aggiunge la nota al
+    // passaggio del mouse sull'etichetta e i pallini di importanza (una volta sola)
+    function decorateCategoryRows() {
+        CATEGORIE.forEach(c => {
+            const stars = document.querySelector(`#ratingSheetModal .rating-stars[data-category="${c.key}"]`);
+            const row = stars && stars.closest('.rating-row');
+            if (!row || row.querySelector('.rating-peso')) return;
+            const lbl = row.querySelector('.rating-label');
+            if (lbl) { lbl.title = c.desc; lbl.classList.add('has-desc'); }
+            row.insertAdjacentHTML('beforeend', pesoHtml(c.key));
+        });
+    }
 
     // Disegna le righe a stelle dei fondamentali dentro il modal (una volta sola)
     function buildFondamentaliRows() {
@@ -53,9 +100,10 @@
                     stars += `<i class="bi bi-star rating-star" data-category="${cat}" data-value="${v}"></i>`;
                 }
                 return `<div class="rating-row">
-                    <label class="rating-label">${f.label}</label>
+                    <label class="rating-label has-desc" title="${escHtml(f.desc || '')}">${f.label}</label>
                     <div class="rating-stars" data-category="${cat}">${stars}</div>
                     <input type="hidden" id="rating-${cat}" value="0">
+                    ${pesoHtml(f.key)}
                 </div>`;
             }).join('');
     }
@@ -100,6 +148,8 @@
         ratingSheetModal = new bootstrap.Modal(ratingSheetModalEl);
         ratingListModal = new bootstrap.Modal(ratingListModalEl);
         buildFondamentaliRows();
+        decorateCategoryRows();
+        setPesiForm(null);
 
         // Carica i dati delle pagelle
         loadRatingSheets();
@@ -177,6 +227,18 @@
                 showRatingListModal(athleteId);
             }
             
+            // Click sui pallini di importanza: ritoccare il pallino gia' scelto
+            // scende a 0 (voce non rilevante per il ruolo)
+            const pesoDot = e.target.closest('.peso-dot');
+            if (pesoDot) {
+                const key = pesoDot.dataset.pesoKey;
+                let value = parseInt(pesoDot.dataset.value, 10);
+                const cur = parseInt((document.getElementById('peso-' + key) || {}).value, 10);
+                if (cur === value) value = 0;
+                setPeso(key, value);
+                return;
+            }
+
             // Click sulle stelle
             const ratingStar = e.target.closest('.rating-star');
             if (ratingStar) {
@@ -326,6 +388,7 @@
                 highlightStars(cat, 0);
             });
             setFondamentaliForm(null);
+            setPesiForm(null);
 
             // Nascondi pulsante elimina
             document.getElementById('delete-rating-btn').style.display = 'none';
@@ -360,6 +423,7 @@
                 highlightStars(cat, value);
             });
             setFondamentaliForm(sheet.fondamentali);
+            setPesiForm(sheet.pesi);
 
             // Mostra pulsante elimina
             document.getElementById('delete-rating-btn').style.display = 'inline-block';
@@ -440,7 +504,8 @@
             coachName: coachName,
             date: date,
             ratings: ratings,
-            notes: notes
+            notes: notes,
+            pesi: readPesiForm()
         };
         const fondamentali = readFondamentaliForm();
         if (fondamentali) sheet.fondamentali = fondamentali;

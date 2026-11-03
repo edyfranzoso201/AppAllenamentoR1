@@ -16,6 +16,9 @@
     { key: 'velocita', label: 'Velocità corsa' }, { key: 'controlloPalla', label: 'Controllo palla' },
     { key: 'stopPalla', label: 'Stop della Palla' }
   ];
+  // Note esplicative delle voci (al passaggio del mouse), definite in pagelle.js
+  const DESC = {};
+  (window.PAGELLE_CATEGORIE || []).concat(FOND).forEach(x => { if (x.desc) DESC[x.key] = x.desc; });
   const VOCI = [
     { id: 'tecnica',         label: 'Tecnica',       get: s => (s.ratings || {}).tecnica },
     { id: 'tattica',         label: 'Tattica',       get: s => (s.ratings || {}).tattica },
@@ -23,8 +26,24 @@
     { id: 'comportamentale', label: 'Comportamento', get: s => (s.ratings || {}).comportamentale },
     { id: 'grinta', label: 'Grinta', get: s => (s.ratings || {}).grinta },
     { id: 'qualitaCampo', label: 'Qualità in Campo', get: s => (s.ratings || {}).qualitaCampo }
-  ].concat(FOND.map(f => ({ id: 'f_' + f.key, label: f.label, fond: true, get: s => (s.fondamentali || {})[f.key] })));
+  ].map(v => Object.assign(v, { key: v.id }))
+    .concat(FOND.map(f => ({ id: 'f_' + f.key, key: f.key, label: f.label, fond: true, get: s => (s.fondamentali || {})[f.key] })));
+  VOCI.forEach(v => { v.desc = DESC[v.key] || ''; });
   const CATEGORIE = VOCI.filter(v => !v.fond);
+
+  // Importanza della voce per il ruolo (0-3 pallini nella pagella, sheet.pesi).
+  // Le pagelle senza pesi valgono 3. Il peso moltiplica il voto nelle medie:
+  // una voce a 0 non conta (es. Colpi di Testa per un portiere).
+  const PESO_MAX = 3;
+  const pesoOf = (s, key) => {
+    const p = s.pesi && s.pesi[key] != null ? Number(s.pesi[key]) : PESO_MAX;
+    return isNaN(p) ? PESO_MAX : p;
+  };
+  // Media pesata di [{v, p}]; null se nessuna voce ha peso
+  const mediaPesata = (items) => {
+    const sp = items.reduce((a, x) => a + x.p, 0);
+    return sp > 0 ? Math.round(items.reduce((a, x) => a + x.v * x.p, 0) / sp * 10) / 10 : null;
+  };
 
   let rows = [];          // una riga per atleta: { athlete, sheets, val: {voceId: {v, date, coach}} }
   let charts = [];
@@ -46,15 +65,21 @@
 
   // Valore di una voce per un atleta. "ultima": voto della pagella piu' recente
   // che ha valutato quella voce (i fondamentali sono facoltativi, quindi la
-  // pagella piu' recente potrebbe non averli). "media": media di tutti i voti > 0.
+  // pagella piu' recente potrebbe non averli). "media": media dei voti > 0
+  // pesata per l'importanza data in ogni pagella.
+  // v = stelle (1-5), p = importanza per il ruolo (0-3).
   function valoreVoce(sheets, voce, mode) {
-    const rated = sheets.map(s => ({ v: Number(voce.get(s)) || 0, s })).filter(x => x.v > 0);
+    const rated = sheets.map(s => ({ v: Number(voce.get(s)) || 0, p: pesoOf(s, voce.key), s })).filter(x => x.v > 0);
     if (!rated.length) return null;
+    const base = { date: rated[0].s.date, coach: rated[0].s.coachName, n: rated.length };
     if (mode === 'media') {
-      const m = rated.reduce((a, x) => a + x.v, 0) / rated.length;
-      return { v: Math.round(m * 10) / 10, date: rated[0].s.date, coach: rated[0].s.coachName, n: rated.length };
+      const pesata = mediaPesata(rated);
+      // Tutte le pagelle a importanza 0: mostro comunque la media semplice
+      const v = pesata != null ? pesata : Math.round(rated.reduce((a, x) => a + x.v, 0) / rated.length * 10) / 10;
+      const p = Math.round(rated.reduce((a, x) => a + x.p, 0) / rated.length);
+      return Object.assign(base, { v, p });
     }
-    return { v: rated[0].v, date: rated[0].s.date, coach: rated[0].s.coachName, n: rated.length };
+    return Object.assign(base, { v: rated[0].v, p: rated[0].p });
   }
 
   function buildRows(athletes, ratingSheets) {
@@ -69,8 +94,8 @@
           .sort((x, y) => String(y.date || '').localeCompare(String(x.date || '')));
         const val = {};
         VOCI.forEach(v => { val[v.id] = valoreVoce(sheets, v, mode); });
-        const cat = CATEGORIE.map(c => val[c.id]).filter(Boolean);
-        const media = cat.length ? Math.round(cat.reduce((s, x) => s + x.v, 0) / cat.length * 10) / 10 : null;
+        // Media dell'atleta = media delle categorie pesata per importanza
+        const media = mediaPesata(CATEGORIE.map(c => val[c.id]).filter(Boolean));
         return { athlete: a, sheets, val, media };
       });
   }
@@ -128,13 +153,13 @@
       <div class="ap-kpis">
         <div class="ap-kpi"><b>${conPagelle.length}</b> / ${rows.length}<span>atleti con pagella</span></div>
         <div class="ap-kpi"><b>${conPagelle.reduce((s, r) => s + r.sheets.length, 0)}</b><span>pagelle totali</span></div>
-        <div class="ap-kpi"><b>${rows.filter(r => r.media != null && r.media < 2.5).length}</b><span>atleti con media &lt; 2,5</span></div>
+        <div class="ap-kpi" title="Media delle categorie pesata per l'importanza della voce nel ruolo"><b>${rows.filter(r => r.media != null && r.media < 2.5).length}</b><span>atleti con media pesata &lt; 2,5</span></div>
       </div>
 
       <div class="ap-section">
         <h4>🔎 Cerca atleti per voce e stelle</h4>
         <div class="ap-filter">
-          <select id="ap-f-voce">${VOCI.map(v => `<option value="${v.id}">${v.fond ? '⚽ ' : ''}${esc(v.label)}</option>`).join('')}</select>
+          <select id="ap-f-voce">${VOCI.map(v => `<option value="${v.id}" title="${esc(v.desc)}">${v.fond ? '⚽ ' : ''}${esc(v.label)}</option>`).join('')}</select>
           <select id="ap-f-op">
             <option value="eq">esattamente</option>
             <option value="le" selected>fino a (≤)</option>
@@ -146,7 +171,7 @@
       </div>
 
       <div class="ap-charts">
-        <div class="ap-section"><h4>📉 Media squadra per voce <small>(dalla più debole)</small></h4><div class="ap-chart"><canvas id="ap-ch-media"></canvas></div></div>
+        <div class="ap-section"><h4>📉 Media squadra per voce <small>(pesata per importanza, dalla più debole)</small></h4><div class="ap-chart"><canvas id="ap-ch-media"></canvas></div></div>
         <div class="ap-section"><h4>⚠️ Atleti in difficoltà per voce <small>(1–2 ★)</small></h4><div class="ap-chart"><canvas id="ap-ch-diff"></canvas></div></div>
       </div>
 
@@ -168,19 +193,23 @@
     const media = $('ap-mode').value === 'media';
     // In modalita' media il voto e' decimale: "esattamente 3" = arrotondato a 3
     const match = (v) => op === 'eq' ? Math.round(v) === n : op === 'le' ? v <= n : v >= n;
-    const valutati = rows.filter(r => r.val[voce.id]);
+    // Chi ha la voce a importanza 0 non e' cercato: per il suo ruolo non conta
+    const irrilevanti = rows.filter(r => r.val[voce.id] && r.val[voce.id].p === 0).length;
+    const valutati = rows.filter(r => r.val[voce.id] && r.val[voce.id].p > 0);
     const trovati = valutati.filter(r => match(r.val[voce.id].v))
       .sort((a, b) => a.val[voce.id].v - b.val[voce.id].v || String(a.athlete.name).localeCompare(String(b.athlete.name)));
-    const nonVal = rows.length - valutati.length;
+    const nonVal = rows.length - valutati.length - irrilevanti;
     const opTxt = { eq: 'esattamente', le: 'fino a', ge: 'almeno' }[op];
     let html = `<div class="ap-f-summary"><b>${trovati.length}</b> atlet${trovati.length === 1 ? 'a' : 'i'} con <b>${esc(voce.label)}</b> ${opTxt} ${n} ★${media ? ' (media)' : ''}`
-      + (nonVal ? ` · <span style="color:var(--muted);">${nonVal} non valutat${nonVal === 1 ? 'o' : 'i'} su questa voce</span>` : '') + '</div>';
+      + (nonVal ? ` · <span style="color:var(--muted);">${nonVal} non valutat${nonVal === 1 ? 'o' : 'i'} su questa voce</span>` : '')
+      + (irrilevanti ? ` · <span style="color:var(--muted);">${irrilevanti} con importanza 0 per il ruolo</span>` : '') + '</div>';
+    if (voce.desc) html += `<div class="ap-f-desc">ℹ️ ${esc(voce.desc)}</div>`;
     if (trovati.length) {
       html += '<div class="ap-f-list">' + trovati.map(r => {
         const x = r.val[voce.id], t = tone(x.v);
         return `<div class="ap-f-item">
           <span class="ap-pill" style="background:${t.bg};color:${t.fg};">${x.v}★</span>
-          <span class="ap-f-name">${esc(r.athlete.name)}</span>
+          <span class="ap-f-name">${esc(r.athlete.name)}</span>${x.p < PESO_MAX ? pallini(x.p) : ''}
           <span class="ap-f-meta">${media ? `media di ${x.n} pagell${x.n === 1 ? 'a' : 'e'}` : `${fmtDate(x.date)}${x.coach ? ' · ' + esc(x.coach) : ''}`}</span>
         </div>`;
       }).join('') + '</div>';
@@ -188,10 +217,14 @@
     $('ap-f-result').innerHTML = html;
   }
 
+  // Pallini di importanza (pieni = peso), mostrati solo quando non e' il massimo
+  const pallini = (p) => `<span class="ap-peso" title="Importanza per il ruolo: ${p}/${PESO_MAX}">`
+    + '●'.repeat(p) + '<span style="opacity:.3">' + '●'.repeat(PESO_MAX - p) + '</span></span>';
+
   function renderTable() {
     const cols = [{ id: 'nome', label: 'Atleta' }, { id: 'n', label: 'Pag.' }, { id: 'ultima', label: 'Ultima' }]
-      .concat(VOCI.map(v => ({ id: v.id, label: v.label, fond: v.fond })))
-      .concat([{ id: 'media', label: 'Media' }]);
+      .concat(VOCI.map(v => ({ id: v.id, label: v.label, fond: v.fond, desc: v.desc })))
+      .concat([{ id: 'media', label: 'Media', desc: "Media delle categorie pesata per l'importanza della voce nel ruolo (pallini 0-3 della pagella)" }]);
     const key = (r) => {
       if (sortCol === 'nome') return String(r.athlete.name || '').toLowerCase();
       if (sortCol === 'n') return r.sheets.length;
@@ -207,11 +240,13 @@
     });
     const cell = (x) => {
       if (!x) return '<td class="ap-c ap-na">—</td>';
+      // Voce a importanza 0: il voto resta visibile ma spento (non conta nelle medie)
+      if (x.p === 0) return `<td class="ap-c" title="Importanza 0: non conta nelle medie"><span class="ap-pill" style="color:#64748b;text-decoration:line-through;">${x.v}</span></td>`;
       const t = tone(x.v);
-      return `<td class="ap-c"><span class="ap-pill" style="background:${t.bg};color:${t.fg};">${x.v}</span></td>`;
+      return `<td class="ap-c"><span class="ap-pill" style="background:${t.bg};color:${t.fg};">${x.v}</span>${x.p != null && x.p < PESO_MAX ? '<br>' + pallini(x.p) : ''}</td>`;
     };
     $('ap-table').innerHTML = '<thead><tr>' + cols.map(c =>
-      `<th data-col="${c.id}" class="${c.fond ? 'ap-th-fond' : ''}${c.id === 'nome' ? ' ap-th-name' : ''}">${esc(c.label)}${sortCol === c.id ? (sortDir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('') + '</tr></thead><tbody>'
+      `<th data-col="${c.id}"${c.desc ? ` title="${esc(c.desc)}"` : ''} class="${c.fond ? 'ap-th-fond' : ''}${c.id === 'nome' ? ' ap-th-name' : ''}">${esc(c.label)}${sortCol === c.id ? (sortDir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('') + '</tr></thead><tbody>'
       + sorted.map(r => '<tr>'
         + `<td class="ap-name">${esc(r.athlete.name)}</td>`
         + `<td class="ap-c">${r.sheets.length || '<span class="ap-na">0</span>'}</td>`
@@ -228,13 +263,15 @@
 
   function renderCharts() {
     if (typeof Chart === 'undefined') return;
+    // Per squadra: media della voce pesata per importanza; chi ha la voce a 0
+    // non e' contato ne' nella media ne' tra gli atleti in difficolta'
     const stats = VOCI.map(v => {
-      const vals = rows.map(r => r.val[v.id]).filter(Boolean).map(x => x.v);
+      const items = rows.map(r => r.val[v.id]).filter(x => x && x.p > 0);
       return {
         label: (v.fond ? '⚽ ' : '') + v.label,
-        media: vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : 0,
-        diff: vals.filter(x => x <= 2).length,
-        n: vals.length
+        media: mediaPesata(items) || 0,
+        diff: items.filter(x => x.v <= 2).length,
+        n: items.length
       };
     }).filter(s => s.n > 0);
 
