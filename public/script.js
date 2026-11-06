@@ -4162,6 +4162,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
     window.updateAttendanceChart = updateAttendanceChart;
+    // Atleta fittizio di confronto in Analisi Presenze Settimanali
+    const BEST_CASE_ID = '__best_case__';
+    const BEST_CASE_LABEL = '⭐ Best case (tutti gli allenamenti)';
     const updateWeeklyAttendanceChart = () => {
         const athlete1Id = elements.weeklyAthlete1Selector.value;
         const athlete2Id = elements.weeklyAthlete2Selector.value;
@@ -4246,14 +4249,37 @@ document.addEventListener('DOMContentLoaded', () => {
             
             return count;
         };
-        
+
+        // Atleta test "Best case": presente a tutti gli allenamenti svolti nella
+        // settimana (giorni in cui l'appello e' stato fatto per almeno un atleta)
+        const countWeeklySessions = (weekStart) => {
+            const weekEnd = new Date(weekStart.getTime());
+            weekEnd.setDate(weekEnd.getDate() + 6);
+            const weekStartStr = weekStart.toISOString().split('T')[0];
+            const weekEndStr = weekEnd.toISOString().split('T')[0];
+            return Object.keys(evaluations).filter(dateStr =>
+                dateStr >= weekStartStr && dateStr <= weekEndStr &&
+                Object.values(evaluations[dateStr] || {}).some(ev => {
+                    const v = ev && ev['presenza-allenamento'];
+                    return v !== undefined && v !== null && v !== '';
+                })
+            ).length;
+        };
+        const seriesFor = (id) => id === BEST_CASE_ID
+            ? weeks.map(countWeeklySessions)
+            : weeks.map(week => countWeeklyPresences(id, week));
+        const nameFor = (id, fallback) => {
+            if (id === BEST_CASE_ID) return BEST_CASE_LABEL;
+            const a = athletes.find(x => String(x.id) === id);
+            return a ? a.name : fallback;
+        };
+
         // Calcola i dati per l'atleta 1
-        const athlete1 = athletes.find(a => String(a.id) === athlete1Id);
-        const athlete1Data = weeks.map(week => countWeeklyPresences(athlete1Id, week));
+        const athlete1Data = seriesFor(athlete1Id);
         
         // Prepara i dataset
         const datasets = [{
-            label: athlete1 ? athlete1.name : 'Atleta 1',
+            label: nameFor(athlete1Id, 'Atleta 1'),
             data: athlete1Data,
             backgroundColor: 'rgba(22, 163, 74, 0.8)',
             borderColor: 'rgba(22, 163, 74, 1)',
@@ -4262,10 +4288,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Se c'è un secondo atleta, aggiungi i suoi dati
         if (athlete2Id) {
-            const athlete2 = athletes.find(a => String(a.id) === athlete2Id);
-            const athlete2Data = weeks.map(week => countWeeklyPresences(athlete2Id, week));
+            const athlete2Data = seriesFor(athlete2Id);
             datasets.push({
-                label: athlete2 ? athlete2.name : 'Atleta 2',
+                label: nameFor(athlete2Id, 'Atleta 2'),
                 data: athlete2Data,
                 backgroundColor: 'rgba(30, 80, 149, 0.8)',
                 borderColor: 'rgba(30, 80, 149, 1)',
@@ -4288,6 +4313,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
+        // Il best case puo' superare 3 se in una settimana ci sono piu' allenamenti
+        const weeklyMax = Math.max(3, ...datasets.flatMap(d => d.data));
         if (chartInstances.weeklyAttendance) chartInstances.weeklyAttendance.destroy();
         const weeklyCanvas = document.getElementById('weeklyAttendanceChart');
         const weeklyWrapper = weeklyCanvas.parentElement;
@@ -4311,7 +4338,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 scales: {
                     y: { 
                         beginAtZero: true,
-                        max: 3,
+                        max: weeklyMax,
                         ticks: { 
                             color: _chartTickColor(),
                             stepSize: 1
@@ -4319,7 +4346,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         grid: { color: _chartGridColor() },
                         title: {
                             display: true,
-                            text: 'Presenze Settimanali (max 3)',
+                            text: `Presenze Settimanali (max ${weeklyMax})`,
                             color: _chartTickColor()
                         }
                     },
@@ -4344,7 +4371,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 if (label) {
                                     label += ': ';
                                 }
-                                label += value + '/3 presenze';
+                                label += value + '/' + weeklyMax + ' presenze';
                                 return label;
                             }
                         }
@@ -4529,8 +4556,9 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.trendAthleteSelector.innerHTML = `<option value="">Seleziona atleta...</option>${athleteOptions}`;
         elements.radarAthleteSelector1.innerHTML = `<option value="">Seleziona atleta...</option>${athleteOptions}`;
         elements.radarAthleteSelector2.innerHTML = `<option value="">Nessun confronto</option>${athleteOptions}`;
-        elements.weeklyAthlete1Selector.innerHTML = `<option value="">Seleziona atleta...</option>${athleteOptions}`;
-        elements.weeklyAthlete2Selector.innerHTML = `<option value="">-- Nessun confronto --</option>${athleteOptions}`;
+        const bestCaseOption = `<option value="${BEST_CASE_ID}">${BEST_CASE_LABEL}</option>`;
+        elements.weeklyAthlete1Selector.innerHTML = `<option value="">Seleziona atleta...</option>${bestCaseOption}${athleteOptions}`;
+        elements.weeklyAthlete2Selector.innerHTML = `<option value="">-- Nessun confronto --</option>${bestCaseOption}${athleteOptions}`;
         const keysToExclude = ['tipo_sessione', 'data_di_registrazione', 'ora_registrazione'];
         const optionsHtml = Object.entries(gpsFieldsForDisplay).filter(([key]) => !keysToExclude.includes(key)).map(([key, label]) => `<option value="${key}">${label}</option>`).join('');
         elements.trendMetricSelector.innerHTML = optionsHtml;
