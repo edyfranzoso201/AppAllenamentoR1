@@ -1066,7 +1066,9 @@ if (req.query?.action === 'set-scadenza-visita' && req.method === 'POST') {
 // il blocco `gara`. Non passa per il POST generico, che riscrive tutto
 // matchResults: la gara non ha in memoria i Risultati completi e aggiornati.
 // matchId assente = gara fuori calendario: si crea la partita da `nuova`.
-// L'isolamento società dell'annata e' gia' garantito dal gate anticipato sopra.
+// Società: il gate anticipato sopra rifiuta solo le annate di un'ALTRA
+// società; un'annata che non è in annate:list passa (potrebbe essere in
+// creazione), come nel POST generico. Regola esistente e accettata.
 if (req.query?.action === 'match-gara' && req.method === 'POST') {
   if (!session.isAuthenticated || !canWrite(session.role)) {
     return res.status(403).json({ success: false, message: 'Permesso negato: il tuo ruolo non può modificare i Risultati' });
@@ -1083,7 +1085,15 @@ if (req.query?.action === 'match-gara' && req.method === 'POST') {
   if (!dati) return res.status(400).json({ success: false, message: 'Dati gara non validi' });
   try {
     const key = `annate:${annataId}:matchResults`;
-    const all = (await kv.get(key)) || {};
+    const letto = await kv.get(key);
+    // Archivio non oggetto (array/stringa da un vecchio bug o da un ripristino
+    // sbagliato): NON lo si sovrascrive, e non si risponde 200, altrimenti la
+    // partita nuova sparirebbe dal JSON e il telefono crederebbe di averla salvata.
+    if (letto != null && (typeof letto !== 'object' || Array.isArray(letto))) {
+      console.error(`[match-gara] matchResults non oggetto annata=${annataId} tipo=${Array.isArray(letto) ? 'array' : typeof letto}`);
+      return res.status(500).json({ success: false, message: "Archivio Risultati in formato non valido: contatta l'amministratore." });
+    }
+    const all = letto || {};
     let id = body.matchId != null && body.matchId !== '' ? String(body.matchId) : '';
     if (id) {
       // hasOwnProperty: un id "toString" leggerebbe la funzione ereditata
@@ -3831,6 +3841,19 @@ if (body.matchResultsPatch !== undefined && body.matchResults === undefined
   const _msg = 'Modifiche ai Risultati troppo grandi per un solo salvataggio: ricarica la pagina e riprova.';
   return res.status(413).json({ success: false, error: _msg, message: _msg });
 }
+// L'archivio Risultati per la patch si legge QUI, prima di scrivere qualunque
+// chiave: se non è un oggetto (array/stringa) si rifiuta tutto senza toccarlo,
+// invece di applicare la patch a un valore che JSON perderebbe in silenzio.
+let _curMatchResults;
+if (body.matchResultsPatch && typeof body.matchResultsPatch === 'object' && body.matchResults === undefined) {
+  const _letto = await kv.get(`${prefix}:matchResults`);
+  if (_letto != null && (typeof _letto !== 'object' || Array.isArray(_letto))) {
+    console.error(`[POST] matchResults non oggetto annata=${annataId} tipo=${Array.isArray(_letto) ? 'array' : typeof _letto}`);
+    const _msg = "Archivio Risultati in formato non valido: contatta l'amministratore.";
+    return res.status(500).json({ success: false, error: _msg, message: _msg });
+  }
+  _curMatchResults = _letto || {};
+}
 
 // ── Limite demo: max atleti/dirigenti/allenatori (schede rosa) per società con plan 'demo' ──
 if (body.athletes !== undefined && session.societyId) {
@@ -3894,8 +3917,8 @@ if (body.matchResults !== undefined) await kv.set(`${prefix}:matchResults`, body
 // body.matchResults resta per ripristino backup, cambio stagione e client vecchi
 // (se arrivano entrambi vince l'archivio intero e la patch si ignora).
 let mergedMatchResults;
-if (body.matchResultsPatch && typeof body.matchResultsPatch === 'object' && body.matchResults === undefined) {
-  const cur = (await kv.get(`${prefix}:matchResults`)) || {};
+if (_curMatchResults) {
+  const cur = _curMatchResults; // letto e controllato prima delle scritture
   applyMatchPatch(cur, body.matchResultsPatch);
   await kv.set(`${prefix}:matchResults`, cur);
   mergedMatchResults = cur;
