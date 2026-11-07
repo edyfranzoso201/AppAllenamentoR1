@@ -7503,8 +7503,9 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
             });
         });
         // Formazione e sostituzioni modificate nel pannello (risultati-gara.js).
-        // undefined = sezione mai aperta: resta il blocco gara di prima.
-        const garaModificata = window.RisultatiGara ? window.RisultatiGara.leggi() : undefined;
+        // undefined = niente cambiato: resta il blocco gara di prima. I cartellini
+        // passano perche' i rossi sono la fonte di gara.espulsioni.
+        const garaModificata = window.RisultatiGara ? window.RisultatiGara.leggi(matchData.cards) : undefined;
         if (garaModificata) matchData.gara = garaModificata;
         else if (garaModificata === null) delete matchData.gara;
         matchResults[id] = matchData;

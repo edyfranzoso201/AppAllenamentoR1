@@ -7,18 +7,26 @@
 //   apri(match|null)  all'apertura del pannello: azzera lo stato e rilegge
 //                     la partita (mai tenere riferimenti fra un salvataggio
 //                     e l'altro: saveData sostituisce matchResults con copie).
-//   leggi()           al salvataggio:
-//                     undefined = niente toccato -> il blocco gara resta com'era
+//   leggi(cards?)     al salvataggio (cards = cartellini del modulo; senza,
+//                     si leggono dal DOM):
+//                     undefined = niente cambiato -> il blocco gara resta com'era
 //                     null      = blocco gara da togliere
 //                     oggetto   = blocco gara nuovo, intero
+//
+// Espulsioni: la fonte e' il cartellino rosso del modulo Cartellini (la gara
+// salva ogni espulsione anche come rosso). gara.espulsioni ne conserva solo
+// periodo, secondo e ordine finche' il minuto del rosso non cambia.
 (function () {
   'use strict';
   function GR() { return window.GaraRisultati; }
 
   var stato = null;         // copia di lavoro del blocco gara (null = partita senza gara)
-  var matchAperta = null;   // partita come salvata: gol e cartellini della cronologia
+  var matchAperta = null;   // partita come salvata
   var aperto = false;       // apri() chiamata per questo pannello
-  var toccato = false;      // l'utente ha cambiato qualcosa nelle sezioni gara
+  var iniziale = null;      // JSON del blocco all'apertura: uguale = niente da salvare
+  // Valori di un evento prima delle riletture automatiche (Tempi/Durata):
+  // tornando ai valori di prima l'evento torna identico, secondo compreso
+  var basi = new WeakMap();
   var sezAperte = { formazione: true, cambi: true, minutaggio: true, cronologia: false };
 
   var esc = typeof window.escapeHtml === 'function' ? window.escapeHtml : function (s) {
@@ -39,6 +47,16 @@
     return a ? (a.name || 'Atleta senza nome') : 'Atleta non più in rosa';
   }
   function clone(x) { return x == null ? x : JSON.parse(JSON.stringify(x)); }
+  // JSON con le chiavi in ordine: un campo tolto e rimesso (sec) finisce in
+  // fondo all'oggetto, ma il blocco e' lo stesso
+  function firma(x) {
+    return JSON.stringify(x, function (k, v) {
+      if (!v || typeof v !== 'object' || Array.isArray(v)) return v;
+      var o = {};
+      Object.keys(v).sort().forEach(function (kk) { o[kk] = v[kk]; });
+      return o;
+    });
+  }
   function vuoto() {
     return { convocati: [], titolari: [], cambi: [], espulsioni: [],
              tempi: { numero: 2, durata: 45, durateTempi: {} },
@@ -56,10 +74,11 @@
   // gara). cambi ed espulsioni sono due liste: eventiDaBlocco le riunisce
   // con `ord` solo se TUTTI gli eventi ce l'hanno, quindi dopo ogni modifica
   // si rinumerano tutti (interi >= 0, come vuole il server).
-  function riordina() {
+  function riordina(g) {
+    g = g || stato;
     var tutti = [];
-    stato.cambi.forEach(function (c, i) { tutti.push({ ev: c, cambio: true, i: i }); });
-    stato.espulsioni.forEach(function (e, i) { tutti.push({ ev: e, cambio: false, i: stato.cambi.length + i }); });
+    g.cambi.forEach(function (c, i) { tutti.push({ ev: c, cambio: true, i: i }); });
+    g.espulsioni.forEach(function (e, i) { tutti.push({ ev: e, cambio: false, i: g.cambi.length + i }); });
     var ordPrima = function (x) { return typeof x.ev.ord === 'number' && isFinite(x.ev.ord) ? x.ev.ord : Infinity; };
     tutti.sort(function (a, b) {
       return ((Number(a.ev.periodo) || 1) - (Number(b.ev.periodo) || 1)) ||
@@ -69,21 +88,99 @@
         (ordPrima(a) - ordPrima(b)) || (a.i - b.i);
     });
     tutti.forEach(function (x, k) { x.ev.ord = k; });
-    stato.cambi = tutti.filter(function (x) { return x.cambio; }).map(function (x) { return x.ev; });
-    stato.espulsioni = tutti.filter(function (x) { return !x.cambio; }).map(function (x) { return x.ev; });
+    g.cambi = tutti.filter(function (x) { return x.cambio; }).map(function (x) { return x.ev; });
+    g.espulsioni = tutti.filter(function (x) { return !x.cambio; }).map(function (x) { return x.ev; });
   }
 
   // Tempi o durata cambiati a mano: periodo e minuto assoluto degli eventi
   // si rileggono dall'etichetta (23', 45+2', Int.) con le regole nuove.
+  // Il secondo del cronometro (sec) vale solo nel tempo e al minuto in cui
+  // e' stato preso: se cambiano si toglie (il calcolo usa il minuto), se si
+  // torna ai valori di partenza si rimette. Cosi' 45 -> 46 -> 45 non cambia niente.
   function rileggiMinuti() {
     stato.cambi.concat(stato.espulsioni).forEach(function (ev) {
+      if (!basi.has(ev)) {
+        basi.set(ev, { periodo: Number(ev.periodo), min: Number(ev.min), sec: ev.sec, intervallo: !!ev.intervallo });
+      }
+      var b = basi.get(ev);
       var mi = GR().leggiMinutoTesto(ev.minuto || String(ev.min), opzMinuto());
       if (!mi) return;
       delete ev.intervallo;
       Object.assign(ev, mi);
       if (!mi.intervallo) delete ev.intervallo;
+      if (b.sec != null && mi.periodo === b.periodo && mi.min === b.min && !!mi.intervallo === b.intervallo) ev.sec = b.sec;
+      else delete ev.sec;
     });
     riordina();
+  }
+
+  // ── Gol e cartellini dal modulo (fonte delle espulsioni) ───────
+  function righeModulo(sel, campi) {
+    var out = [];
+    document.querySelectorAll(sel).forEach(function (row) {
+      var o = {};
+      Object.keys(campi).forEach(function (k) {
+        var el = row.querySelector(campi[k]);
+        o[k] = el ? el.value : '';
+      });
+      out.push(o);
+    });
+    return out;
+  }
+  function carteModulo() {
+    return righeModulo('#cards-container .d-flex', { athleteId: '.card-athlete', type: '.card-type', minute: '.card-minute' });
+  }
+  function marcatoriModulo() {
+    return righeModulo('#scorers-container .d-flex', { athleteId: '.scorer-athlete', minute: '.scorer-minute' });
+  }
+  // Minuto che la gara scrive nel cartellino (minuteRisultati): >= 1
+  function minutoCartellino(ev) {
+    var n = parseInt(ev.min, 10);
+    return n >= 1 ? n : 1;
+  }
+
+  // Espulsioni effettive = i rossi del modulo. Un rosso che ha la sua
+  // espulsione in gara.espulsioni (stesso atleta, stesso minuto) la tiene
+  // intera (periodo, sec, ord); un rosso nuovo o spostato prende periodo e
+  // minuto dal suo minuto. Un'espulsione senza rosso sparisce.
+  function espulsioniDa(cards) {
+    var pool = stato.espulsioni.slice();
+    var out = [];
+    (cards || []).forEach(function (c) {
+      if (!c || c.type !== 'red' || !c.athleteId) return;
+      var id = String(c.athleteId);
+      var k = -1;
+      for (var i = 0; i < pool.length; i++) { if (String(pool[i].athleteId) === id) { k = i; break; } }
+      var e = k >= 0 ? pool.splice(k, 1)[0] : null;
+      var n = parseInt(c.minute, 10);
+      if (e && n === minutoCartellino(e)) { out.push(clone(e)); return; }
+      var mi = GR().leggiMinutoTesto(String(c.minute == null ? '' : c.minute), opzMinuto());
+      if (!mi) { if (e) out.push(clone(e)); return; }   // minuto ancora da scrivere: resta quella di prima
+      var nuova = Object.assign({ athleteId: id }, mi);
+      if (!nuova.intervallo) delete nuova.intervallo;
+      out.push(nuova);
+    });
+    return out;
+  }
+
+  // Blocco come andrebbe salvato: titolari dentro i convocati, niente righe
+  // di cambio vuote, espulsioni dai rossi, durate solo dei tempi che ci sono
+  // (quelle oltre restano nello stato: rialzando i Tempi tornano).
+  function normalizza(g) {
+    g.titolari = g.titolari.filter(function (id) { return g.convocati.indexOf(id) >= 0; });
+    g.cambi = g.cambi.filter(function (c) { return c.esce || c.entra; });
+    var dt = {}, src = g.tempi.durateTempi || {};
+    Object.keys(src).forEach(function (p) { if (Number(p) >= 1 && Number(p) <= Number(g.tempi.numero)) dt[p] = src[p]; });
+    g.tempi.durateTempi = dt;
+    riordina(g);
+    // Senza XI il minutaggio resta incompleto; con l'XI torna completo
+    g.incompleta = !g.titolari.length;
+    return g;
+  }
+  function bloccoEffettivo(cards) {
+    var g = clone(stato);
+    g.espulsioni = espulsioniDa(cards);
+    return normalizza(g);
   }
 
   function box() {
@@ -109,6 +206,16 @@
       var s = e.target && e.target.dataset && e.target.dataset.sez;
       if (s) sezAperte[s] = e.target.open;
     }, true);
+    // Gol e cartellini del modulo cambiano minutaggio (rossi) e cronologia:
+    // si ridisegna a ogni modifica, riga aggiunta o tolta (il cestino la
+    // rimuove dal DOM, quindi serve l'observer)
+    ['cards-container', 'scorers-container'].forEach(function (cid) {
+      var c = document.getElementById(cid);
+      if (!c) return;
+      c.addEventListener('change', render);
+      c.addEventListener('input', render);
+      if (window.MutationObserver) new MutationObserver(render).observe(c, { childList: true });
+    });
     stile();
     return b;
   }
@@ -147,7 +254,9 @@
         '<div class="form-text">Le partite salvate da Andamento Gara hanno già formazione, sostituzioni e minutaggio.</div>';
       return;
     }
-    b.innerHTML = sezFormazione() + sezCambi() + sezMinutaggio() + sezCronologia();
+    var cards = carteModulo();
+    var eff = bloccoEffettivo(cards);
+    b.innerHTML = sezFormazione() + sezCambi() + sezMinutaggio(eff) + sezCronologia(cards);
   }
 
   function details(sez, titolo, corpo) {
@@ -222,16 +331,16 @@
       '<button type="button" class="btn btn-outline-secondary rg-big mt-2" data-rg="addCambio">➕ Aggiungi cambio</button>');
   }
 
-  function sezMinutaggio() {
-    var mm = GR().minutaggioPartita(stato);
-    var dt = stato.tempi.durateTempi || {};
+  function sezMinutaggio(g) {
+    var mm = GR().minutaggioPartita(g);
+    var dt = g.tempi.durateTempi || {};
     var max = 0;
-    for (var p = 1; p <= (Number(stato.tempi.numero) || 2); p++) {
-      max += dt[p] != null ? Number(dt[p]) || 0 : (Number(stato.tempi.durata) || 45) * 60;
+    for (var p = 1; p <= (Number(g.tempi.numero) || 2); p++) {
+      max += dt[p] != null ? Number(dt[p]) || 0 : (Number(g.tempi.durata) || 45) * 60;
     }
     // Convocati piu' chiunque compaia nel calcolo (es. un cambio con un
     // atleta tolto dai convocati): nessun tratto di partita sparisce
-    var ids = stato.convocati.slice();
+    var ids = g.convocati.slice();
     Object.keys(mm).forEach(function (id) { if (ids.indexOf(id) < 0) ids.push(id); });
     var righe = ids.map(function (id) { return [id, (mm[id] && mm[id].tot) || 0]; })
       .sort(function (a, b) { return b[1] - a[1]; })
@@ -245,18 +354,20 @@
         '</div>';
       }).join('');
     return details('minutaggio', 'Minutaggio',
-      '<div class="form-text mb-1">Calcolato da titolari, cambi ed espulsioni: si aggiorna da solo.</div>' +
+      '<div class="form-text mb-1">Calcolato da titolari, cambi ed espulsioni (i cartellini rossi qui sopra): si aggiorna da solo.</div>' +
       (righe || '<em class="small">Nessun convocato.</em>'));
   }
 
-  function sezCronologia() {
-    var m = matchAperta || {};
+  function sezCronologia(cards) {
     var voci = [];
     var k = function (min, extra) { return (Number(min) || 0) + (Number(extra) || 0) / 100; };
-    (Array.isArray(m.scorers) ? m.scorers : []).forEach(function (s) {
+    // Righe ancora senza atleta o minuto non sono eventi
+    marcatoriModulo().forEach(function (s) {
+      if (!s.athleteId || !s.minute) return;
       voci.push({ t: k(s.minute), ord: 0, txt: '⚽ ' + s.minute + "' " + nomeDi(s.athleteId) });
     });
-    (Array.isArray(m.cards) ? m.cards : []).forEach(function (c) {
+    (cards || []).forEach(function (c) {
+      if (!c.athleteId || !c.minute) return;
       voci.push({ t: k(c.minute), ord: 1, txt: (c.type === 'red' ? '🟥 ' : '🟨 ') + c.minute + "' " + nomeDi(c.athleteId) });
     });
     stato.cambi.forEach(function (c) {
@@ -265,7 +376,7 @@
     });
     voci.sort(function (a, b) { return (a.t - b.t) || (a.ord - b.ord); });
     return details('cronologia', 'Cronologia',
-      '<div class="form-text mb-1">Gol e cartellini come salvati (le modifiche sopra valgono dopo "Salva Partita").</div>' +
+      '<div class="form-text mb-1">Gol e cartellini come scritti nel modulo qui sopra.</div>' +
       (voci.map(function (v) { return '<div class="small py-1">' + esc(v.txt) + '</div>'; }).join('') || '<em class="small">Nessun evento.</em>'));
   }
 
@@ -293,8 +404,28 @@
     }
     else if (az === 'delCambio') { stato.cambi.splice(Number(el.dataset.i), 1); riordina(); }
     else return;
-    toccato = true;
     render();
+  }
+
+  // Minuto illeggibile: si rimette quello di prima (cosi' cio' che si vede e'
+  // cio' che si salva) e lo si dice per qualche secondo sotto la riga
+  function segnalaMinuto(el, prima) {
+    el.value = prima;
+    el.classList.add('is-invalid');
+    var riga = el.closest('.rg-cambio');
+    var av = document.createElement('div');
+    av.className = 'small text-danger w-100 rg-avviso';
+    av.setAttribute('role', 'status');
+    av.textContent = 'Minuto non valido (usa 23, 45+2 o Int.): rimesso ' + prima;
+    if (riga) {
+      var vecchio = riga.querySelector('.rg-avviso');
+      if (vecchio) vecchio.remove();
+      riga.appendChild(av);
+    }
+    setTimeout(function () {
+      el.classList.remove('is-invalid');
+      if (av.parentNode) av.parentNode.removeChild(av);
+    }, 3500);
   }
 
   function onChange(e) {
@@ -312,39 +443,42 @@
     }
     else if (az === 'esce' || az === 'entra') { stato.cambi[i][az] = el.value; }
     else if (az === 'minuto') {
-      var mi = GR().leggiMinutoTesto(el.value, opzMinuto());
-      if (!mi) { el.classList.add('is-invalid'); el.title = 'Minuto non valido: usa 23, 45+2 o Int.'; return; }
-      // Minuto scritto a mano: il secondo esatto del cronometro non vale piu'
       var c = stato.cambi[i];
+      var mi = GR().leggiMinutoTesto(el.value, opzMinuto());
+      if (!mi) { segnalaMinuto(el, c.minuto || (c.min + "'")); return; }
+      // Minuto scritto a mano: il secondo esatto del cronometro non vale piu'
       delete c.sec;
       delete c.intervallo;
       Object.assign(c, mi);
       if (!mi.intervallo) delete c.intervallo;
+      basi.delete(c);   // nuovo punto di partenza per le riletture
       riordina();
     }
     else if (az === 'numTempi') {
-      stato.tempi.numero = Math.max(1, Math.min(4, Number(el.value) || 2));
-      // Le durate registrate valgono solo per i tempi che esistono ancora
-      var dt = stato.tempi.durateTempi || {};
-      Object.keys(dt).forEach(function (p) { if (Number(p) > stato.tempi.numero) delete dt[p]; });
+      var n = Math.max(1, Math.min(4, Number(el.value) || 2));
+      if (n === Number(stato.tempi.numero)) return;
+      // durateTempi non si tocca: normalizza() salva solo i tempi <= numero,
+      // e tornando al numero di prima le durate misurate ci sono ancora
+      stato.tempi.numero = n;
       rileggiMinuti();
     }
     else if (az === 'durata') {
-      stato.tempi.durata = Math.max(1, Math.min(90, Math.round(Number(el.value)) || 45));
-      // Durata corretta a mano: i secondi del cronometro (per tempo) erano
-      // della durata vecchia; ogni tempo conta ora per intero
-      stato.tempi.durateTempi = {};
+      var d = Math.max(1, Math.min(90, Math.round(Number(el.value)) || 45));
+      if (d === Number(stato.tempi.durata)) { el.value = d; return; }
+      // Durata = lunghezza nominale, usata solo per i tempi senza durata
+      // misurata dal cronometro (durateTempi): quelle restano com'erano
+      stato.tempi.durata = d;
       rileggiMinuti();
     }
     else return;
-    toccato = true;
     render();
   }
 
   window.RisultatiGara = {
     apri: function (match) {
       aperto = true;
-      toccato = false;
+      iniziale = null;
+      basi = new WeakMap();
       matchAperta = match ? clone(match) : null;
       stato = matchAperta && matchAperta.gara && typeof matchAperta.gara === 'object' ? clone(matchAperta.gara) : null;
       if (stato) {
@@ -354,21 +488,25 @@
         stato.espulsioni = Array.isArray(stato.espulsioni) ? stato.espulsioni : [];
         stato.tempi = Object.assign({ numero: 2, durata: 45, durateTempi: {} }, stato.tempi || {});
         if (!stato.tempi.durateTempi || typeof stato.tempi.durateTempi !== 'object') stato.tempi.durateTempi = {};
+        // Punto di confronto: il blocco salvato, normalizzato come lo
+        // salverebbe leggi() ma con le sue espulsioni (non quelle dai rossi).
+        // Se i rossi non tornano con gara.espulsioni, leggi() lo riallinea.
+        iniziale = firma(normalizza(clone(stato)));
       }
       render();
     },
-    leggi: function () {
-      if (!aperto || !toccato) return undefined;
+    leggi: function (cards) {
+      if (!aperto) return undefined;
       if (!stato) return matchAperta && matchAperta.gara ? null : undefined;
-      var g = clone(stato);
-      // Titolari fuori dai convocati non hanno senso: si allineano
-      g.titolari = g.titolari.filter(function (id) { return g.convocati.indexOf(id) >= 0; });
-      // Righe di cambio lasciate vuote: il server le scarterebbe comunque
-      g.cambi = g.cambi.filter(function (c) { return c.esce || c.entra; });
-      // "Aggiungi formazione" senza scegliere niente: nessun blocco gara
-      if (!(matchAperta && matchAperta.gara) && !g.convocati.length && !g.cambi.length) return undefined;
-      // Senza XI il minutaggio resta incompleto; con l'XI torna completo
-      g.incompleta = !g.titolari.length;
+      var g = bloccoEffettivo(Array.isArray(cards) ? cards : carteModulo());
+      if (matchAperta && matchAperta.gara) {
+        // Niente di diverso (anche dopo andata e ritorno, es. 45 -> 46 -> 45):
+        // il blocco gara resta quello salvato, byte per byte
+        if (firma(g) === iniziale) return undefined;
+      } else if (!g.convocati.length && !g.cambi.length) {
+        // "Aggiungi formazione" senza scegliere niente: nessun blocco gara
+        return undefined;
+      }
       return g;
     }
   };
