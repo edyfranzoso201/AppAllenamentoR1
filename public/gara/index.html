@@ -629,6 +629,7 @@
 
   <div class="gg-toast" id="gg-toast"></div>
 
+<script src="/gara/gara-risultati.js?v=1"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════
 //  Gestione Gara — cronometro partita + report PDF per la stampa
@@ -855,7 +856,7 @@ function inIntervallo() {
 // "Int." con 2 tempi (com'era sempre stato); con 3-4 tempi gli intervalli sono
 // piu' d'uno e il numero dice quale: "Int. 2" = fra il 2o e il 3o tempo.
 function etichettaIntervallo(k) {
-  return numTempi() > 2 ? 'Int. ' + k : 'Int.';
+  return GaraRisultati.etichettaIntervallo(k, numTempi());
 }
 
 // Minuto scritto a mano ("23", "45+2", "int"). Restituisce null se non si
@@ -863,24 +864,13 @@ function etichettaIntervallo(k) {
 // negli step. Il periodo si deduce dal minuto, cosi' un cambio del 40o
 // inserito durante il 2o tempo non passa per fatto all'intervallo.
 function leggiMinuto(testo) {
-  const t = String(testo || '').trim();
-  const dur = Number(info.durata) || 45;
-  const N = numTempi();
-  const mi = t.match(/^int\.?\s*(\d)?/i);
-  if (mi) {
-    // Senza numero: l'intervallo in corso, altrimenti il primo.
-    const k = mi[1] ? parseInt(mi[1], 10) : (inIntervallo() ? currentPeriod : 1);
-    if (k < 1 || k >= N) return null;   // con un tempo solo non c'e' intervallo
-    return { minuto: etichettaIntervallo(k), min: k * dur, periodo: k + 1, intervallo: true };
-  }
-  const m = t.replace(/'+$/, '').match(/^(\d{1,3})(?:\s*\+\s*(\d{1,2}))?$/);
-  if (!m) return null;
-  const n = parseInt(m[1], 10);
-  const ds = Number(info.durataSuppl) || 15;
-  const periodo = n <= N * dur ? Math.max(1, Math.ceil(n / dur))
-                : n <= N * dur + ds ? N + 1 : N + 2;
-  return { minuto: n + (m[2] ? '+' + parseInt(m[2], 10) : '') + "'", min: n,
-           periodo, intervallo: false };
+  // Il parsing vive in gara-risultati.js: lo usa anche Risultati, e due copie
+  // finirebbero per capire "45+2" in due modi diversi.
+  // "int" senza numero: l'intervallo in corso, altrimenti il primo.
+  return GaraRisultati.leggiMinutoTesto(testo, {
+    durata: info.durata, numTempi: numTempi(), durataSuppl: info.durataSuppl,
+    intervalloDefault: inIntervallo() ? currentPeriod : 1
+  });
 }
 
 // Ordine cronologico: periodo, minuto, recupero ("45+3" dopo "45+1"). A parita'
@@ -2034,13 +2024,7 @@ function durataTempo(p) {
 // mano, o evento vecchio) si ricava dal minuto: "23'" del 1o tempo = inizio
 // del 23o minuto, "45+2'" = 46 minuti e rotti. All'intervallo = 0 del tempo dopo.
 function secondoEvento(ev) {
-  if (ev.intervallo) return 0;
-  if (ev.sec != null && !isNaN(Number(ev.sec))) return Math.max(0, Number(ev.sec));
-  const dur = Number(info.durata) || 45;
-  const per = Number(ev.periodo) || 1;
-  const extra = parseInt((String(ev.minuto || '').match(/\+(\d+)/) || [])[1], 10) || 0;
-  const m = (Number(ev.min) || 0) - (per - 1) * dur + extra;
-  return Math.max(0, (m - 1) * 60);
+  return GaraRisultati.secondoEvento(ev, info.durata);
 }
 
 // Rigioca la cronologia: i titolari partono in campo al secondo 0 del 1o
@@ -2049,33 +2033,12 @@ function secondoEvento(ev) {
 // base chi esce e rientra piu' volte ha il totale di tutte le volte.
 // Restituisce { id: { tempi:[sec1, sec2, ...], tot, ingressi } }.
 function calcolaMinutaggio() {
-  const N = numTempi();
-  const ris = {};
-  const voce = id => ris[id] || (ris[id] = { tempi: new Array(N).fill(0), tot: 0, ingressi: 0 });
-  const entrato = new Map();   // id -> secondo d'ingresso nel tempo corrente
-  titolari().forEach(p => { entrato.set(String(p.id), 0); voce(String(p.id)).ingressi = 1; });
-  for (let p = 1; p <= N; p++) {
-    const D = durataTempo(p);
-    // A inizio tempo chi e' in campo riparte da 0 (il tratto prima e' chiuso).
-    entrato.forEach((_, id) => entrato.set(id, 0));
-    const chiudi = (id, t) => {
-      if (!entrato.has(id)) return;
-      voce(id).tempi[p - 1] += Math.max(0, t - entrato.get(id));
-      entrato.delete(id);
-    };
-    events.filter(ev => (Number(ev.periodo) || 1) === p).forEach(ev => {
-      if (ev.tipo !== 'cambio' && ev.tipo !== 'espulsione') return;
-      const t = Math.min(secondoEvento(ev), D);
-      if (ev.playerId) chiudi(String(ev.playerId), t);
-      if (ev.tipo === 'cambio' && ev.playerInId) {
-        const id = String(ev.playerInId);
-        if (!entrato.has(id)) { entrato.set(id, t); voce(id).ingressi++; }
-      }
-    });
-    entrato.forEach((t0, id) => { voce(id).tempi[p - 1] += Math.max(0, D - t0); });
-  }
-  Object.values(ris).forEach(v => { v.tot = v.tempi.reduce((a, b) => a + b, 0); });
-  return ris;
+  // Stessa funzione della vista Risultati (gara-risultati.js): le due viste
+  // non devono mai dare minuti diversi per la stessa partita.
+  return GaraRisultati.calcolaMinutaggio({
+    titolari: titolari().map(p => String(p.id)),
+    eventi: events, numTempi: numTempi(), durata: info.durata, durataTempo
+  });
 }
 
 // Secondi -> minuti interi; sotto il minuto (ma giocato) si scrive <1.
