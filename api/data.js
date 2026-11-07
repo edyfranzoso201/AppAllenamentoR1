@@ -4,6 +4,7 @@ import { gzipSync } from 'zlib';
 import crypto from 'crypto';
 import { verifySuperAdmin, timingSafeStrEq } from './_sa-auth.js';
 import { hashPasswordScrypt } from './auth/_password.js';
+import { applyMatchPatch, sanificaDatiGara, sanificaNuova, applicaGara, purgeGaraAtleta, patchTroppoGrande, patchOltreLimiti } from './_match-gara.js';
 
 const kv = createClient({
 url: process.env.UPSTASH_KV_REST_API_URL || process.env.KV_REST_API_URL,
@@ -419,6 +420,8 @@ async function purgeAthlete(prefix, athleteId) {
           if (m[list].length !== before) dirty = true;
         }
       }
+      // Il blocco di Andamento Gara (convocati, titolari, cambi, espulsioni)
+      if (purgeGaraAtleta(m, aid)) dirty = true;
     }
     if (dirty) writes.push(kv.set(`${prefix}:matchResults`, matchResults));
   }
@@ -1055,6 +1058,53 @@ if (req.query?.action === 'set-scadenza-visita' && req.method === 'POST') {
   } catch (e) {
     console.error('[set-scadenza-visita]', e?.message || e);
     return res.status(500).json({ success: false, message: 'Errore salvataggio' });
+  }
+}
+
+// ── Andamento Gara -> Risultati ──────────────────────────────────────────────
+// La gara (PWA /gara/) salva UNA partita: punteggio, marcatori, cartellini e
+// il blocco `gara`. Non passa per il POST generico, che riscrive tutto
+// matchResults: la gara non ha in memoria i Risultati completi e aggiornati.
+// matchId assente = gara fuori calendario: si crea la partita da `nuova`.
+// L'isolamento società dell'annata e' gia' garantito dal gate anticipato sopra.
+if (req.query?.action === 'match-gara' && req.method === 'POST') {
+  if (!session.isAuthenticated || !canWrite(session.role)) {
+    return res.status(403).json({ success: false, message: 'Permesso negato: il tuo ruolo non può modificare i Risultati' });
+  }
+  if (!annataId || !isValidId(annataId)) {
+    return res.status(400).json({ success: false, message: 'Annata non impostata' });
+  }
+  const body = req.body || {};
+  // Stesso tetto della patch del POST generico: il corpo arriva da un telefono
+  if (patchTroppoGrande(body)) {
+    return res.status(413).json({ success: false, message: 'Dati gara troppo grandi' });
+  }
+  const dati = sanificaDatiGara(body.dati);
+  if (!dati) return res.status(400).json({ success: false, message: 'Dati gara non validi' });
+  try {
+    const key = `annate:${annataId}:matchResults`;
+    const all = (await kv.get(key)) || {};
+    let id = body.matchId != null && body.matchId !== '' ? String(body.matchId) : '';
+    if (id) {
+      // hasOwnProperty: un id "toString" leggerebbe la funzione ereditata
+      if (id === '__proto__' || id === 'constructor' || id === 'prototype'
+          || !Object.prototype.hasOwnProperty.call(all, id) || !all[id] || typeof all[id] !== 'object') {
+        return res.status(404).json({ success: false, message: 'La partita non è più in Risultati (forse è stata eliminata): scegline un\'altra in Dati gara.' });
+      }
+    } else {
+      const nuova = sanificaNuova(body.nuova);
+      if (!nuova) return res.status(400).json({ success: false, message: 'Per aggiungere la partita servono data e avversario (Dati gara).' });
+      id = String(Date.now());
+      while (Object.prototype.hasOwnProperty.call(all, id)) id = String(Number(id) + 1);
+      all[id] = Object.assign({ id, scorers: [], assists: [], cards: [] }, nuova);
+    }
+    all[id] = applicaGara(all[id], dati, session.username);
+    await kv.set(key, all);
+    console.log(`POST match-gara - annata=${annataId} match=${id} user=${session.username}`);
+    return res.status(200).json({ success: true, matchId: id, match: all[id] });
+  } catch (e) {
+    console.error('[match-gara]', e?.message || e);
+    return res.status(500).json({ success: false, message: 'Errore del server: la gara resta sul telefono, riprova.' });
   }
 }
 
@@ -3773,6 +3823,15 @@ if (!canWrite(session.role)) {
 return res.status(403).json({ success: false, message: 'Permesso negato' });
 }
 
+// Patch dei Risultati fuori misura: si rifiuta l'INTERA richiesta prima di
+// scrivere qualunque chiave, altrimenti atleti/valutazioni verrebbero salvati
+// e i Risultati no, lasciando l'annata a meta' fra due stati.
+if (body.matchResultsPatch !== undefined && body.matchResults === undefined
+    && (patchTroppoGrande(body.matchResultsPatch) || patchOltreLimiti(body.matchResultsPatch))) {
+  const _msg = 'Modifiche ai Risultati troppo grandi per un solo salvataggio: ricarica la pagina e riprova.';
+  return res.status(413).json({ success: false, error: _msg, message: _msg });
+}
+
 // ── Limite demo: max atleti/dirigenti/allenatori (schede rosa) per società con plan 'demo' ──
 if (body.athletes !== undefined && session.societyId) {
   const licKey = await kv.get(`licenze_society:${session.societyId}`);
@@ -3829,6 +3888,18 @@ if (body.formationData !== undefined) await kv.set(`${prefix}:formationData`, bo
 if (body.formazioniSalvate !== undefined) await kv.set(`${prefix}:formazioniSalvate`, body.formazioniSalvate);
 if (body.tacticalBoards !== undefined) await kv.set(`${prefix}:tacticalBoards`, body.tacticalBoards);
 if (body.matchResults !== undefined) await kv.set(`${prefix}:matchResults`, body.matchResults);
+// Come le valutazioni: il client manda i Risultati come DIFFERENZA per
+// partita e per campo. Un PC aperto da ore riscriveva tutto matchResults e
+// cancellava la gara salvata nel frattempo dal telefono (?action=match-gara).
+// body.matchResults resta per ripristino backup, cambio stagione e client vecchi
+// (se arrivano entrambi vince l'archivio intero e la patch si ignora).
+let mergedMatchResults;
+if (body.matchResultsPatch && typeof body.matchResultsPatch === 'object' && body.matchResults === undefined) {
+  const cur = (await kv.get(`${prefix}:matchResults`)) || {};
+  applyMatchPatch(cur, body.matchResultsPatch);
+  await kv.set(`${prefix}:matchResults`, cur);
+  mergedMatchResults = cur;
+}
 if (body.calendarEvents !== undefined) await kv.set(`${prefix}:calendarEvents`, body.calendarEvents);
 if (body.calendarResponses !== undefined) await kv.set(`${prefix}:calendarResponses`, body.calendarResponses);
 if (body.materiale !== undefined) await kv.set(`${prefix}:materiale`, body.materiale);
@@ -3886,7 +3957,11 @@ else await kv.set(`${prefix}:${key}`, body[key]);
 if (body.globalPosts !== undefined) await kv.set('global:posts', body.globalPosts);
 
 console.log(`POST /api/data - annata=${annataId} user=${session.username} role=${session.role}`);
-return res.status(200).json(mergedEvaluations ? { success: true, evaluations: mergedEvaluations } : { success: true });
+// Le versioni fuse tornano al client, che le adotta come nuova base delle patch
+const out = { success: true };
+if (mergedEvaluations) out.evaluations = mergedEvaluations;
+if (mergedMatchResults) out.matchResults = mergedMatchResults;
+return res.status(200).json(out);
 }
 
 return res.status(405).json({ success: false, message: 'Metodo non consentito' });
