@@ -73,6 +73,23 @@
     var voce = function (id) {
       return ris[id] || (ris[id] = { tempi: new Array(N).fill(0), tot: 0, ingressi: 0 });
     };
+    // Chiave d'ordine identica a ordinaEventi() della gara: minuto, recupero
+    // ("45+3" dopo "45+1"), poi posizione nell'elenco. NON si ordina per
+    // secondo: un cambio scritto a mano "23'" (senza sec, quindi 22:00) dopo
+    // un cambio dal vivo a 22:30 andrebbe prima di lui, e chi esce col
+    // secondo cambio non sarebbe ancora entrato -> 12 in campo. Un evento
+    // senza minuto leggibile eredita la chiave di quello prima, come in gara.
+    var prec = [0, 0];
+    var chiavi = eventi.map(function (ev) {
+      if (!ev) return prec;
+      var min = Number(ev.min);
+      var extra = 0;
+      var lbl = String(ev.minuto || '').match(/(\d+)(?:\+(\d+))?/);
+      if (isNaN(min) && lbl) min = parseInt(lbl[1], 10);
+      if (lbl && lbl[2]) extra = parseInt(lbl[2], 10);
+      prec = isNaN(min) ? prec : [min, extra];
+      return prec;
+    });
     var entrato = new Map();   // id -> secondo d'ingresso nel tempo corrente
     (opts.titolari || []).forEach(function (id) {
       id = String(id); entrato.set(id, 0); voce(id).ingressi = 1;
@@ -86,14 +103,16 @@
         voce(id).tempi[per - 1] += Math.max(0, t - entrato.get(id));
         entrato.delete(id);
       };
-      // Ordine per secondo dentro il tempo (sort stabile: a parita' resta
-      // l'ordine di inserimento, come nella cronologia della gara)
+      // Ordine della cronologia della gara; secondoEvento serve solo per
+      // sapere QUANDO, non in che ordine. A parita' decide l'indice originale.
       var delTempo = eventi
-        .filter(function (ev) {
+        .map(function (ev, i) { return { ev: ev, k: chiavi[i], i: i }; })
+        .filter(function (x) {
+          var ev = x.ev;
           return ev && (Number(ev.periodo) || 1) === p && (ev.tipo === 'cambio' || ev.tipo === 'espulsione');
         })
-        .map(function (ev, i) { return { ev: ev, t: Math.min(secondoEvento(ev, durata), D), i: i }; })
-        .sort(function (a, b) { return a.t - b.t || a.i - b.i; });
+        .map(function (x) { x.t = Math.min(secondoEvento(x.ev, durata), D); return x; })
+        .sort(function (a, b) { return (a.k[0] - b.k[0]) || (a.k[1] - b.k[1]) || (a.i - b.i); });
       for (var j = 0; j < delTempo.length; j++) {
         var ev = delTempo[j].ev, t = delTempo[j].t;
         if (ev.playerId) chiudi(String(ev.playerId), t, p);
@@ -111,7 +130,10 @@
     return ris;
   }
 
-  // Blocco `gara` salvato in Risultati -> eventi nel formato del minutaggio
+  // Blocco `gara` salvato in Risultati -> eventi nel formato del minutaggio.
+  // cambi ed espulsioni sono due liste separate: `ord` (posizione nella
+  // cronologia della gara) rimette insieme l'ordine originale. Blocchi senza
+  // `ord`: cambi poi espulsioni, come prima.
   function eventiDaBlocco(g) {
     var cambi = (g.cambi || []).map(function (c) {
       return Object.assign({ tipo: 'cambio', playerId: c.esce || '', playerInId: c.entra || '' }, c);
@@ -119,7 +141,12 @@
     var esp = (g.espulsioni || []).map(function (e) {
       return Object.assign({ tipo: 'espulsione', playerId: e.athleteId || '' }, e);
     });
-    return cambi.concat(esp);
+    var tutti = cambi.concat(esp).map(function (ev, i) { return { ev: ev, i: i }; });
+    var conOrd = function (x) { return typeof x.ev.ord === 'number' && isFinite(x.ev.ord); };
+    if (tutti.length && tutti.every(conOrd)) {
+      tutti.sort(function (a, b) { return (a.ev.ord - b.ev.ord) || (a.i - b.i); });
+    }
+    return tutti.map(function (x) { return x.ev; });
   }
 
   // Minutaggio della vista Risultati: stessa regola della gara, con le durate
@@ -200,10 +227,13 @@
     var n = parseInt(ev.min, 10);
     return String(n >= 1 ? n : 1);
   }
-  function tempoEvento(ev) {
+  // ord = posizione nella cronologia della gara (gia' ordinata da
+  // ordinaEventi): serve a eventiDaBlocco per riunire cambi ed espulsioni.
+  function tempoEvento(ev, ord) {
     var o = { min: Math.max(0, parseInt(ev.min, 10) || 0), minuto: String(ev.minuto || ''), periodo: Number(ev.periodo) || 1 };
     if (ev.intervallo) o.intervallo = true;
     if (ev.sec != null && ev.sec !== '' && !isNaN(Number(ev.sec))) o.sec = Number(ev.sec);
+    o.ord = ord;
     return o;
   }
 
@@ -229,10 +259,10 @@
         titolari: titolari,
         cambi: ev.filter(function (e) { return e.tipo === 'cambio' && (e.playerId || e.playerInId); })
           .map(function (e) {
-            return Object.assign({ esce: e.playerId ? String(e.playerId) : '', entra: e.playerInId ? String(e.playerInId) : '' }, tempoEvento(e));
+            return Object.assign({ esce: e.playerId ? String(e.playerId) : '', entra: e.playerInId ? String(e.playerInId) : '' }, tempoEvento(e, ev.indexOf(e)));
           }),
         espulsioni: ev.filter(function (e) { return e.tipo === 'espulsione' && e.playerId; })
-          .map(function (e) { return Object.assign({ athleteId: String(e.playerId) }, tempoEvento(e)); }),
+          .map(function (e) { return Object.assign({ athleteId: String(e.playerId) }, tempoEvento(e, ev.indexOf(e))); }),
         tempi: { numero: Number(s.numTempi) || 2, durata: Number(s.durata) || 45, durateTempi: dt },
         salvataIl: s.adesso || new Date().toISOString(),
         incompleta: titolari.length === 0
@@ -291,19 +321,27 @@
     return n ? patch : null;
   }
 
+  // Chiavi che, scritte su un oggetto, toccano il prototipo invece di un
+  // campo: una patch (dal JSON di un altro dispositivo) non deve poterle usare.
+  // (confronto fra stringhe: in un letterale `{ '__proto__': 1 }` non crea
+  // la chiave, imposta il prototipo, e la ricerca non funzionerebbe)
+  var vietata = function (k) { return k === '__proto__' || k === 'constructor' || k === 'prototype'; };
+
   function applyMatchPatch(cur, patch) {
     Object.keys(patch || {}).forEach(function (id) {
+      if (vietata(id)) return;
       var v = patch[id];
       if (v === null) { delete cur[id]; return; }
       if (!isObj(v)) return;
       // Una partita che qui non c'e' si crea solo se la patch e' una partita
       // intera (ha la data): altrimenti e' il resto di una partita eliminata
       // da un altro dispositivo, e resusciterla ne farebbe un rottame.
-      if (!isObj(cur[id])) {
+      if (!Object.prototype.hasOwnProperty.call(cur, id) || !isObj(cur[id])) {
         if (!v.date) return;
         cur[id] = {};
       }
       Object.keys(v).forEach(function (f) {
+        if (vietata(f)) return;
         if (v[f] === null) delete cur[id][f];
         else cur[id][f] = clone(v[f]);
       });

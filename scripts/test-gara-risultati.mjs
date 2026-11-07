@@ -83,9 +83,9 @@ t('marcatori formato Risultati', () => assert.deepEqual(d.scorers, [{ athleteId:
 t('cartellini con minuto minimo 1', () => assert.deepEqual(d.cards, [
   { athleteId: 'B', type: 'yellow', minute: '1' }, { athleteId: 'D', type: 'red', minute: '70' }]));
 t('cambi', () => assert.deepEqual(d.gara.cambi, [
-  { esce: 'B', entra: 'C', min: 45, minuto: 'Int.', periodo: 2, intervallo: true }]));
+  { esce: 'B', entra: 'C', min: 45, minuto: 'Int.', periodo: 2, intervallo: true, ord: 3 }]));
 t('espulsioni con sec', () => assert.deepEqual(d.gara.espulsioni, [
-  { athleteId: 'D', min: 70, minuto: "70'", periodo: 2, sec: 1500 }]));
+  { athleteId: 'D', min: 70, minuto: "70'", periodo: 2, sec: 1500, ord: 4 }]));
 t('tempi e metadati', () => {
   assert.deepEqual(d.gara.tempi, { numero: 2, durata: 45, durateTempi: { 1: 2820, 2: 2900 } });
   assert.equal(d.gara.incompleta, false);
@@ -100,6 +100,41 @@ t('minutaggio da blocco gara salvato', () => {
   assert.equal(m.C.tot, 2900);          // entrato all'intervallo: tutto il 2o
   assert.equal(m.D.tot, 2820 + 1500);
 });
+
+// ── ordine degli eventi = ordinaEventi della gara, non per secondo ──
+// Cambio dal vivo A->B a 22:30 (minuto 23', sec 1350), poi cambio scritto a
+// mano B->C "23'" senza sec (= 22:00). Per secondo il secondo cambio verrebbe
+// prima: "esce B" a vuoto, poi B entra e resta -> B e C entrambi in campo.
+const undici = ['A', 'P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10'];
+const stessoMinuto = [
+  { tipo: 'cambio', playerId: 'A', playerInId: 'B', periodo: 1, min: 23, minuto: "23'", sec: 1350 },
+  { tipo: 'cambio', playerId: 'B', playerInId: 'C', periodo: 1, min: 23, minuto: "23'" }
+];
+const inCampoFinale = mm => Object.keys(mm).filter(id => mm[id].tempi[1] > 0).length;
+const verificaStessoMinuto = mm => {
+  assert.equal(mm.B.tot, 0);                 // entrato e uscito nello stesso minuto
+  assert.equal(mm.C.tempi[1], 2700);         // C in campo fino alla fine
+  assert.equal(mm.C.tot, 2700 - 1320 + 2700);
+  assert.equal(inCampoFinale(mm), 11);       // mai 12 in campo
+};
+t('stesso minuto: ordine della cronologia, non del secondo', () => verificaStessoMinuto(
+  GR.calcolaMinutaggio({ titolari: undici, eventi: stessoMinuto, numTempi: 2, durata: 45 })));
+t('stesso minuto: anche da datiDaGara -> minutaggioPartita', () => {
+  // un'espulsione PRIMA dei cambi nella cronologia: cambi ed espulsioni sono
+  // liste separate nel blocco, `ord` deve rimettere l'ordine giusto
+  const g = GR.datiDaGara({ noiCasa: true, golNoi: 0, golLoro: 0,
+    eventi: [{ tipo: 'espulsione', playerId: 'P1', periodo: 1, min: 23, minuto: "23'" }].concat(stessoMinuto),
+    convocati: undici.concat(['B', 'C']), titolari: undici, numTempi: 2, durata: 45,
+    durateTempi: { 1: 2700, 2: 2700 } }).gara;
+  assert.deepEqual(GR.eventiDaBlocco(g).map(e => e.ord), [0, 1, 2]);
+  const mm = GR.minutaggioPartita(g);
+  assert.equal(mm.B.tot, 0);
+  assert.equal(mm.C.tempi[1], 2700);
+  assert.equal(inCampoFinale(mm), 10);       // 11 meno l'espulso, nessun doppione
+});
+t('blocco vecchio senza ord: cambi poi espulsioni', () => assert.deepEqual(
+  GR.eventiDaBlocco({ cambi: [{ esce: 'A', entra: 'B', min: 10, periodo: 1 }],
+    espulsioni: [{ athleteId: 'C', min: 5, periodo: 1 }] }).map(e => e.tipo), ['cambio', 'espulsione']));
 
 // ── differenze ───────────────────────────────────────────────────
 const nomi = { A: 'Bivol', B: 'Aiesi', C: 'Runza', D: 'Rossi' };
@@ -137,6 +172,20 @@ t('apply non resuscita una partita cancellata altrove', () => {
   const server = {};
   GR.applyMatchPatch(server, { '9': { homeScore: 2 } });
   assert.deepEqual(server, {});
+});
+
+t('apply ignora __proto__, constructor e prototype', () => {
+  const server = { '1': { id: 1, date: '2026-11-01' } };
+  const cattiva = JSON.parse('{"__proto__":{"date":"x","inquinato":true},' +
+    '"constructor":{"date":"x","prototype":{"inquinato":true}},"prototype":{"date":"x"},' +
+    '"1":{"__proto__":{"inquinato":true},"constructor":"x","prototype":"x","homeScore":2}}');
+  GR.applyMatchPatch(server, cattiva);
+  assert.equal({}.inquinato, undefined);
+  assert.equal(Object.prototype.inquinato, undefined);
+  assert.deepEqual(Object.keys(server), ['1']);
+  assert.deepEqual(Object.keys(server['1']), ['id', 'date', 'homeScore']);
+  assert.equal(server['1'].inquinato, undefined);
+  assert.equal(Object.getPrototypeOf(server['1']), Object.prototype);
 });
 
 console.log(`\n${n} test superati`);
