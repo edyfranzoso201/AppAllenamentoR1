@@ -700,7 +700,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // archivio, e un dispositivo aperto da ore (PC in background, PWA tenuta
     // in tasca) cancellava le presenze registrate nel frattempo da un altro.
     let evalBase = {};
+    // Stessa protezione per i Risultati: la gara (telefono) salva una partita
+    // con ?action=match-gara mentre il PC ha matchResults aperto da ore.
+    // Mandare tutto l'oggetto la cancellava; si manda la differenza.
+    let matchResultsBase = {};
     const cloneJson = (o) => JSON.parse(JSON.stringify(o || {}));
+    // Le partite salvate prima degli assist non hanno il campo, e il pannello
+    // partita fa match.assists.forEach: si aggiunge in memoria. Va fatto anche
+    // sulla base, altrimenti il diff manderebbe "assists: []" per ognuna.
+    function normalizzaRisultati(mr) {
+        for (const matchId in mr) {
+            if (mr[matchId] && typeof mr[matchId] === 'object' && !mr[matchId].assists) {
+                mr[matchId].assists = [];
+            }
+        }
+        return mr;
+    }
     // Differenza campo per campo: { data: { atleta: { campo: valore | null } } },
     // null = campo eliminato. Ritorna null se non è cambiato niente.
     function diffEvaluations(base, cur) {
@@ -767,19 +782,28 @@ document.addEventListener('DOMContentLoaded', () => {
         // sopra la risposta del server, non perse.
         const evalInviate = cloneJson(evaluations);
         const evaluationsPatch = diffEvaluations(evalBase, evalInviate);
+        // Risultati: stessa fotografia e differenza per partita e per campo.
+        // undefined = modulo condiviso non caricato; null = niente da mandare.
+        const mrInviati = cloneJson(matchResults);
+        const matchResultsPatch = window.GaraRisultati
+            ? window.GaraRisultati.diffMatchResults(matchResultsBase, mrInviati) : undefined;
         const allData = {
             athletes,
             gpsData,
             awards,
             trainingSessions,
             formationData,
-            matchResults,
             calendarEvents: window.calendarEvents || {},
             calendarResponses: window.calendarResponses || {},
             formazioniSalvate: window.formazioniSalvate || [],
             tacticalBoards: window.tacticalBoards || []
         };
         if (evaluationsPatch) allData.evaluationsPatch = evaluationsPatch;
+        // Senza il modulo (non dovrebbe succedere) si torna all'invio intero
+        if (matchResultsPatch === undefined) {
+            console.warn('[saveData] GaraRisultati non caricato: invio dei Risultati interi.');
+            allData.matchResults = matchResults;
+        } else if (matchResultsPatch) allData.matchResultsPatch = matchResultsPatch;
         try {
             const response = await fetch('/api/data', {
                 method: 'POST',
@@ -811,6 +835,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 evaluations = applyEvalPatch(cloneJson(risposta.evaluations), diffEvaluations(evalInviate, evaluations));
             } else {
                 evalBase = evalInviate;
+            }
+            // I Risultati uniti dal server (anche la gara salvata dal telefono)
+            // diventano la base; sopra si rimettono le modifiche fatte durante
+            // l'attesa. Si aggiorna l'oggetto SUL POSTO: window.matchResults e
+            // gli altri moduli ne tengono il riferimento.
+            // Con 413/500 si esce prima (response.ok falso): la base resta
+            // quella vecchia e il salvataggio successivo riprova la differenza.
+            if (risposta && risposta.matchResults && typeof risposta.matchResults === 'object' && window.GaraRisultati) {
+                const GR = window.GaraRisultati;
+                const locali = GR.diffMatchResults(mrInviati, matchResults);
+                matchResultsBase = normalizzaRisultati(cloneJson(risposta.matchResults));
+                const unito = normalizzaRisultati(GR.applyMatchPatch(cloneJson(matchResultsBase), locali));
+                Object.keys(matchResults).forEach(k => { delete matchResults[k]; });
+                Object.assign(matchResults, unito);
+            } else {
+                // Patch vuota (niente inviato) o invio intero riuscito senza
+                // modulo: in entrambi i casi il server ha ciò che si è fotografato.
+                matchResultsBase = mrInviati;
             }
             saveData.lastError = null;
             return true;
@@ -1413,11 +1455,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (athlete.isGuest === undefined) athlete.isGuest = false;
             });
-            for (const matchId in matchResults) {
-                if (!matchResults[matchId].assists) {
-                    matchResults[matchId].assists = [];
-                }
-            }
+            normalizzaRisultati(matchResults);
+            // Dopo la normalizzazione: altrimenti il primo salvataggio
+            // manderebbe come "modificate" tutte le partite senza assists.
+            matchResultsBase = cloneJson(matchResults);
             // Da qui in poi i dati in memoria rispecchiano il server: salvare è sicuro.
             datiCaricati = true;
         } catch (error) {
@@ -1447,10 +1488,11 @@ document.addEventListener('DOMContentLoaded', () => {
             window.formazioniSalvate = [];
             window.tacticalBoards = [];
             matchResults = {};
+            matchResultsBase = {};
             window.calendarEvents = {};
             window.calendarResponses = {};
             window.trainingSessions = {};
-            window.matchResults = {};
+            window.matchResults = matchResults;
         }
     };
     const getWeekRange = (date) => {
@@ -6692,6 +6734,11 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
                             body: JSON.stringify(fullPayload)
                         }).then(function(res) {
                             if (!res.ok) throw new Error('HTTP ' + res.status);
+                            // Il ripristino manda i Risultati interi (sostituzione voluta):
+                            // ora il server ha questi, e diventano la base del prossimo
+                            // diff. Senza, la patch successiva conterrebbe tutto il backup
+                            // e oltre 500 partite verrebbe rifiutata (413).
+                            matchResultsBase = cloneJson(fullPayload.matchResults);
                             updateAllUI();
                             alert('✅ Ripristino completato!\n\nAnnata: ' + restoreAnnataId + '\nAtleti: ' + athletes.length + '\nTutti i dati sono stati ripristinati.');
                         }).catch(function(err) {
@@ -7358,7 +7405,11 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
         const opponentScoreInput = document.getElementById('match-opponent-score').value;
         const myTeamScore = myTeamScoreInput === '' ? null : parseInt(myTeamScoreInput);
         const opponentScore = opponentScoreInput === '' ? null : parseInt(opponentScoreInput);
-        const matchData = {
+        // Si parte dalla partita salvata: il form non conosce tutti i campi
+        // (il blocco `gara` di Andamento Gara, campi futuri) e ricostruire
+        // l'oggetto da zero li cancellava.
+        const precedente = matchResults[id] || {};
+        const matchData = Object.assign({}, precedente, {
             id: id,
             date: document.getElementById('match-date').value,
             time: document.getElementById('match-time').value,
@@ -7370,7 +7421,7 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
             scorers: [],
             assists: [],
             cards: []
-        };
+        });
         document.querySelectorAll('#scorers-container .d-flex').forEach(row => {
             matchData.scorers.push({
                 athleteId: row.querySelector('.scorer-athlete').value,
@@ -7390,8 +7441,16 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
                 minute: row.querySelector('.card-minute').value
             });
         });
+        // Formazione e sostituzioni modificate nel pannello (risultati-gara.js).
+        // undefined = sezione mai aperta: resta il blocco gara di prima.
+        const garaModificata = window.RisultatiGara ? window.RisultatiGara.leggi() : undefined;
+        if (garaModificata) matchData.gara = garaModificata;
+        else if (garaModificata === null) delete matchData.gara;
         matchResults[id] = matchData;
-        saveData();
+        // Se il server rifiuta (es. 413 patch troppo grande, 500 archivio
+        // non valido) la modifica resta in memoria e la base non avanza:
+        // il prossimo salvataggio la riprova. Qui si avvisa soltanto.
+        saveData().then(ok => { if (!ok) alert('⚠️ Risultato non salvato sul server: ' + (saveData.lastError || 'errore')); });
         updateAllUI();
         matchResultModal.hide();
     });
@@ -7399,7 +7458,7 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
         const id = document.getElementById('match-id').value;
         if (id && confirm('Sei sicuro di voler eliminare questa partita?')) {
             delete matchResults[id];
-            saveData();
+            saveData().then(ok => { if (!ok) alert('⚠️ Eliminazione non salvata sul server: ' + (saveData.lastError || 'errore')); });
             updateAllUI();
             matchResultModal.hide();
         }
