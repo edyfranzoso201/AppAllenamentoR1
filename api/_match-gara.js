@@ -18,30 +18,69 @@ const num = v => { const n = Number(v); return Number.isFinite(n) ? n : null; };
 const lista = (a, max, fn) => (Array.isArray(a) ? a.slice(0, max).map(fn).filter(Boolean) : []);
 const clone = x => (x === undefined ? undefined : JSON.parse(JSON.stringify(x)));
 
+// Limiti di forma della patch dei Risultati (il POST generico la riceve da
+// qualunque client autenticato). Una squadra vera ha decine di partite con
+// una dozzina di campi: oltre questi numeri non e' un uso normale.
+const MAX_PATCH_BYTES = 300000;
+const MAX_PATCH_ID = 500;
+const MAX_PATCH_CAMPI = 60;
+
+// true se la patch serializzata supera 300000 caratteri: data.js risponde
+// 413 prima ancora di leggerla.
+export function patchTroppoGrande(patch) {
+  try { return JSON.stringify(patch === undefined ? null : patch).length > MAX_PATCH_BYTES; }
+  catch (e) { return true; } // non serializzabile (cicli): non e' JSON arrivato da un client
+}
+
+// true se la patch ha piu' di 500 partite o una partita con piu' di 60
+// campi. applyMatchPatch in quel caso la RIFIUTA INTERA (cur invariato):
+// applicarne solo un pezzo lascerebbe i Risultati a meta' fra due stati.
+export function patchOltreLimiti(patch) {
+  if (!isObj(patch)) return false;
+  const ids = Object.keys(patch);
+  if (ids.length > MAX_PATCH_ID) return true;
+  return ids.some(id => isObj(patch[id]) && Object.keys(patch[id]).length > MAX_PATCH_CAMPI);
+}
+
+// Data valida per creare una partita: stessa regola del client.
+const dataValida = d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d);
+
 // Differenza { id: null | { campo: valore | null } } dei Risultati.
 // Speculare a applyMatchPatch in public/gara/gara-risultati.js: stessa
-// semantica (il test lo verifica confrontando i due risultati).
-// Unica aggiunta lato server: id piu' lunghi di 100 caratteri ignorati
-// (gli id veri sono timestamp numerici; e' solo un limite sulla forma).
+// semantica (il test lo verifica confrontando i due risultati) per patch
+// nei limiti e senza campo `gara`. Solo qui sul server:
+//  - patch oltre i limiti (patchOltreLimiti) rifiutata intera;
+//  - il campo `gara` passa da sanificaDatiGara: il POST generico non deve
+//    essere una via per scrivere nel blocco gara dati non controllati.
 export function applyMatchPatch(cur, patch) {
-  if (!isObj(patch)) return cur;
+  if (!isObj(patch) || patchOltreLimiti(patch)) return cur;
   for (const id of Object.keys(patch)) {
     if (VIETATE.has(id) || id.length > 100) continue;
     const v = patch[id];
     if (v === null) { delete cur[id]; continue; }
     if (!isObj(v)) continue;
     // Una partita che qui non c'e' si crea solo se la patch e' una partita
-    // intera (ha la data): altrimenti e' il residuo di una partita eliminata
-    // da un altro dispositivo, e resusciterla ne farebbe un rottame.
+    // intera (ha una data AAAA-MM-GG): altrimenti e' il residuo di una
+    // partita eliminata da un altro dispositivo, e resusciterla ne farebbe
+    // un rottame.
     if (!isObj(get(cur, id))) {
-      if (!get(v, 'date')) continue;
+      if (!dataValida(get(v, 'date'))) continue;
       cur[id] = {};
     }
     const m = cur[id];
     for (const f of Object.keys(v)) {
       if (VIETATE.has(f)) continue;
-      if (v[f] === null) delete m[f];
-      else m[f] = clone(v[f]);
+      if (v[f] === null) { delete m[f]; continue; }
+      if (f === 'gara') {
+        const s = sanificaDatiGara({ gara: v[f] });
+        if (!s) continue; // gara non oggetto: il valore sul server resta
+        // salvataDa lo mette applicaGara; correggendo dal PC si conserva
+        const da = isObj(v[f]) ? str(get(v[f], 'salvataDa')) : '';
+        if (da) s.gara.salvataDa = da;
+        m.gara = s.gara;
+        continue;
+      }
+      m[f] = clone(v[f]);
     }
   }
   return cur;
@@ -85,7 +124,12 @@ export function sanificaDatiGara(d) {
       if (v != null && v >= 0) dt[k] = Math.min(v, 36000);
     }
   }
-  const gol = v => { const n = num(v); return n == null ? null : Math.max(0, Math.min(99, Math.round(n))); };
+  // null e '' = punteggio non scritto (Number li farebbe diventare 0)
+  const gol = v => {
+    if (v == null || v === '') return null;
+    const n = num(v);
+    return n == null ? null : Math.max(0, Math.min(99, Math.round(n)));
+  };
   const id = x => (x != null && typeof x !== 'object' && str(x) ? str(x) : null);
   return {
     homeScore: gol(get(d, 'homeScore')),

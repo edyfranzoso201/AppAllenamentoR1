@@ -333,17 +333,25 @@
   // la chiave, imposta il prototipo, e la ricerca non funzionerebbe)
   var vietata = function (k) { return k === '__proto__' || k === 'constructor' || k === 'prototype'; };
 
+  // Data valida per creare una partita: stessa regola del server.
+  var dataValida = function (d) { return typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d); };
+
+  // Stesse regole del server (patch non oggetto ignorata, id oltre 100
+  // caratteri ignorati, creazione solo con data AAAA-MM-GG). Il server in piu'
+  // sanifica il campo `gara` e ha limiti di dimensione: qui non servono, il
+  // client applica solo patch che ha calcolato lui o ricevuto dal server.
   function applyMatchPatch(cur, patch) {
-    Object.keys(patch || {}).forEach(function (id) {
-      if (vietata(id)) return;
+    if (!isObj(patch)) return cur;
+    Object.keys(patch).forEach(function (id) {
+      if (vietata(id) || id.length > 100) return;
       var v = patch[id];
       if (v === null) { delete cur[id]; return; }
       if (!isObj(v)) return;
       // Una partita che qui non c'e' si crea solo se la patch e' una partita
       // intera (ha la data): altrimenti e' il resto di una partita eliminata
       // da un altro dispositivo, e resusciterla ne farebbe un rottame.
-      if (!Object.prototype.hasOwnProperty.call(cur, id) || !isObj(cur[id])) {
-        if (!v.date) return;
+      if (!has(cur, id) || !isObj(cur[id])) {
+        if (!has(v, 'date') || !dataValida(v.date)) return;
         cur[id] = {};
       }
       Object.keys(v).forEach(function (f) {

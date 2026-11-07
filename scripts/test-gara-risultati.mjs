@@ -174,6 +174,18 @@ t('apply non resuscita una partita cancellata altrove', () => {
   assert.deepEqual(server, {});
 });
 
+t('apply crea una partita solo con data AAAA-MM-GG', () => {
+  const server = {};
+  GR.applyMatchPatch(server, { '7': { date: { a: 1 } }, '8': { date: '' }, '9': { date: '8/11/2026' }, '10': { date: '2026-11-10' } });
+  assert.deepEqual(Object.keys(server), ['10']);
+});
+t('apply: patch non oggetto e id oltre 100 caratteri ignorati', () => {
+  const server = { '1': { id: 1, date: '2026-11-01' } };
+  for (const p of [null, undefined, 'x', 3, [{ date: '2026-11-01' }]]) GR.applyMatchPatch(server, p);
+  GR.applyMatchPatch(server, { ['x'.repeat(101)]: { date: '2026-11-01' }, ['y'.repeat(100)]: { date: '2026-11-01' } });
+  assert.deepEqual(Object.keys(server), ['1', 'y'.repeat(100)]);
+});
+
 t('apply ignora __proto__, constructor e prototype', () => {
   const server = { '1': { id: 1, date: '2026-11-01' } };
   const cattiva = JSON.parse('{"__proto__":{"date":"x","inquinato":true},' +
