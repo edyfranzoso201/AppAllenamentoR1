@@ -188,4 +188,44 @@ t('apply ignora __proto__, constructor e prototype', () => {
   assert.equal(Object.getPrototypeOf(server['1']), Object.prototype);
 });
 
+// Andata e ritorno: patch calcolata sul client e applicata alla base = stato
+// corrente (aggiunta, eliminazione, campo cambiato, campo tolto, gara intatta)
+t('round trip diff -> apply', () => {
+  const b = {
+    '1': { id: 1, date: '2026-11-01', homeScore: 1, note: 'vecchia', gara: { titolari: ['A'], cambi: [] } },
+    '2': { id: 2, date: '2026-11-02', opponentName: 'Da cancellare' },
+    'toString': { id: 4, date: '2026-11-04' }
+  };
+  const c = JSON.parse(JSON.stringify(b));
+  c['1'].homeScore = 4; delete c['1'].note;
+  delete c['2'];
+  c['3'] = { id: 3, date: '2026-11-03', opponentName: 'Nuova', scorers: [{ athleteId: 'A', minute: '5' }] };
+  c['toString'].toString = 'campo con nome del prototipo';
+  const p = GR.diffMatchResults(b, c);
+  assert.ok(p['toString'], 'chiave toString non saltata');
+  assert.equal(p['1'].gara, undefined);     // gara non toccata: non entra nella patch
+  assert.deepEqual(GR.applyMatchPatch(JSON.parse(JSON.stringify(b)), p), c);
+  // e all'indietro: il campo "toString" tolto diventa null, non la funzione ereditata
+  assert.deepEqual(GR.diffMatchResults(c, b)['toString'], { toString: null });
+  assert.deepEqual(GR.applyMatchPatch(JSON.parse(JSON.stringify(c)), GR.diffMatchResults(c, b)), b);
+  assert.equal(typeof Object.prototype.toString.toString, 'function');   // nessun inquinamento
+});
+t('trovaPartita con __proto__ non risolve il prototipo', () => {
+  const r = GR.trovaPartita(MR, { matchId: '__proto__' });
+  assert.equal(r.modo, null); assert.equal(r.match, null);
+});
+t('id numerici in titolari ed eventi', () => {
+  const mm = GR.calcolaMinutaggio({ titolari: [7, 9], numTempi: 2, durata: 45,
+    eventi: [{ tipo: 'cambio', playerId: 9, playerInId: 11, periodo: 1, min: 30, minuto: "30'", sec: 1800 }] });
+  assert.equal(mm['7'].tot, 5400);
+  assert.equal(mm['9'].tot, 1800);
+  assert.equal(mm['11'].tot, 900 + 2700);
+  const g = GR.datiDaGara({ noiCasa: true, golNoi: 0, golLoro: 0, titolari: [7, 9], convocati: [7, 9, 11],
+    eventi: [{ tipo: 'cambio', playerId: 9, playerInId: 11, periodo: 1, min: 30, minuto: "30'", sec: 1800 }],
+    numTempi: 2, durata: 45, durateTempi: { 1: 2700, 2: 2700 } }).gara;
+  assert.deepEqual(g.titolari, ['7', '9']);
+  assert.equal(g.cambi[0].esce, '9'); assert.equal(g.cambi[0].entra, '11');
+  assert.equal(GR.minutaggioPartita(g)['11'].tot, 3600);
+});
+
 console.log(`\n${n} test superati`);

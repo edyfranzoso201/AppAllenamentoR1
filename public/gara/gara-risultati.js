@@ -12,6 +12,8 @@
 
   var GIORNI = ['dom', 'lun', 'mar', 'mer', 'gio', 'ven', 'sab'];
   var isObj = function (x) { return !!x && typeof x === 'object' && !Array.isArray(x); };
+  // Solo chiavi proprie: "k in o" vede anche toString, __proto__ &c. del prototipo
+  var has = function (o, k) { return Object.prototype.hasOwnProperty.call(o, k); };
   var clone = function (x) { return x === undefined ? undefined : JSON.parse(JSON.stringify(x)); };
 
   // ── Minuti ─────────────────────────────────────────────────────
@@ -204,7 +206,7 @@
   function trovaPartita(matchResults, q) {
     matchResults = matchResults || {};
     q = q || {};
-    if (q.matchId && isObj(matchResults[q.matchId])) {
+    if (q.matchId && has(matchResults, q.matchId) && isObj(matchResults[q.matchId])) {
       return { id: String(q.matchId), match: matchResults[q.matchId], modo: 'legata' };
     }
     var avv = normNome(q.avversario);
@@ -222,7 +224,8 @@
 
   // ── Gara -> Risultati ──────────────────────────────────────────
   // I minuti di Risultati sono stringhe di cifre >= 1 (input number min=1):
-  // un gol al minuto 0 o all'intervallo diventa il primo minuto valido.
+  // un evento senza minuto o al minuto 0 diventa il primo minuto valido;
+  // all'intervallo min = k*durata, quindi "Int." si salva come "45" (2 tempi).
   function minuteRisultati(ev) {
     var n = parseInt(ev.min, 10);
     return String(n >= 1 ? n : 1);
@@ -298,23 +301,26 @@
   // ── Patch dei Risultati (anti lost-update) ─────────────────────
   // { id: null } = partita eliminata; { id: { campo: valore | null } } =
   // campi cambiati (null = campo tolto). null se non e' cambiato niente.
-  // Speculare a applyMatchPatch in api/_match-gara.js.
+  // Speculare a applyMatchPatch del server (api/_match-gara.js, Task 3).
   function diffMatchResults(base, cur) {
     var b0 = isObj(base) ? base : {}, c0 = isObj(cur) ? cur : {};
     var patch = {}, n = 0;
-    var ids = Object.keys(b0).concat(Object.keys(c0).filter(function (k) { return !(k in b0); }));
+    var ids = Object.keys(b0).concat(Object.keys(c0).filter(function (k) { return !has(b0, k); }));
     ids.forEach(function (id) {
-      var bm = b0[id], cm = c0[id];
+      var bm = has(b0, id) ? b0[id] : undefined, cm = has(c0, id) ? c0[id] : undefined;
       if (!isObj(cm)) {
         if (isObj(bm)) { patch[id] = null; n++; }
         return;
       }
       var bo = isObj(bm) ? bm : {};
-      var campi = Object.keys(bo).concat(Object.keys(cm).filter(function (k) { return !(k in bo); }));
+      var campi = Object.keys(bo).concat(Object.keys(cm).filter(function (k) { return !has(bo, k); }));
       campi.forEach(function (f) {
-        if (JSON.stringify(bo[f]) === JSON.stringify(cm[f])) return;
-        patch[id] = patch[id] || {};
-        patch[id][f] = cm[f] === undefined ? null : clone(cm[f]);
+        // solo valori propri: un campo "toString" tolto non deve leggere la funzione ereditata
+        var vb = has(bo, f) ? bo[f] : undefined, vc = has(cm, f) ? cm[f] : undefined;
+        if (JSON.stringify(vb) === JSON.stringify(vc)) return;
+        // has(): con id "toString" patch[id] sarebbe la funzione ereditata
+        if (!has(patch, id)) patch[id] = {};
+        patch[id][f] = vc === undefined ? null : clone(vc);
         n++;
       });
     });
