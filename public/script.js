@@ -7360,6 +7360,9 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
             document.getElementById('match-venue').value = '';
             elements.deleteMatchBtn.style.display = 'none';
         }
+        // Formazione, sostituzioni e minutaggio di Andamento Gara (risultati-gara.js).
+        // Si rilegge la partita a ogni apertura: dopo saveData matchResults contiene copie nuove.
+        if (window.RisultatiGara) window.RisultatiGara.apri(matchId && matchResults[matchId] ? matchResults[matchId] : null);
         matchResultModal.show();
     };
     const addScorerInput = (scorer = {}) => {
