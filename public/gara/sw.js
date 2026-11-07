@@ -17,6 +17,9 @@
 // worker si aggiorna (skipWaiting) ma la copia di /gara/ resta
 // quella di prima, e la rete la sostituisce solo al giro successivo. Risultato
 // gia' visto: fix deployato, desktop a posto, telefono ancora col bug.
+// Ogni modifica di public/gara/gara-risultati.js vuole anche una ?v= nuova,
+// uguale in DUE posti: il tag script di index.html e la voce in PRECACHE.
+// Con la stessa ?v= la cache (cache-first) continuerebbe a servire il file vecchio.
 const CACHE = 'gara-v24';
 
 // Il PDF si genera con jsPDF preso dal CDN. Senza queste due voci in cache,
@@ -43,11 +46,15 @@ self.addEventListener('install', event => {
     caches.open(CACHE).then(async cache => {
       // addAll e' atomico: se un CDN e' irraggiungibile durante l'install
       // l'intera installazione fallisce e la PWA resta senza cache. Qui
-      // ogni risorsa va per conto suo, cosi' la pagina viene comunque
-      // salvata anche se una libreria non si scarica.
-      await Promise.all(PRECACHE.map(url =>
-        cache.add(new Request(url, { cache: 'reload', mode: 'no-cors' })).catch(() => {})
-      ));
+      // ogni risorsa va per conto suo: le librerie del CDN (solo per il PDF)
+      // possono mancare in silenzio, i file nostri invece sono obbligatori.
+      // Senza gara-risultati.js offline GaraRisultati non esiste e la pagina
+      // si rompe: meglio far fallire l'install, il browser la riprova e
+      // intanto resta attivo il worker precedente con la sua cache completa.
+      await Promise.all(PRECACHE.map(url => {
+        const p = cache.add(new Request(url, { cache: 'reload', mode: 'no-cors' }));
+        return url.startsWith('/') ? p : p.catch(() => {});
+      }));
       await self.skipWaiting();
     })
   );
