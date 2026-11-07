@@ -444,6 +444,11 @@
           Tocca chi <strong>esce</strong> e chi <strong>entra</strong>: il minuto lo prende
           dal cronometro. Finisce in cronologia e nel PDF.
         </div>
+        <div class="gg-hint" id="cambioAvvisoXI" style="display:none;margin-bottom:11px;color:#fbbf24;">
+          &#9888;&#65039; Titolari non schierati (pulsante <strong>XI</strong> in Distinta):
+          non so chi &egrave; in campo, quindi le liste mostrano tutti i convocati
+          tranne chi &egrave; gi&agrave; uscito o entrato.
+        </div>
         <div class="gg-cambio">
           <div>
             <h3>Esce (in campo)</h3>
@@ -1482,6 +1487,8 @@ function renderCambio() {
         (p.num ? esc(p.num) + '. ' : '') + esc(p.name) + '</button>').join('')
     : '<div class="gg-empty">Nessuno.</div>';
   boxE.innerHTML = lista(inCampoOra(), cambioEsceId, 'data-esce');
+  const avv = document.getElementById('cambioAvvisoXI');
+  if (avv) avv.style.display = schieramentoNoto() ? 'none' : '';
   // Chi entra: la panchina DISPONIBILE, non quella fisica (vedi usciti()).
   boxI.innerHTML = lista(disponibiliEntrare(), cambioEntraId, 'data-entra');
 }
@@ -1510,8 +1517,35 @@ function convocati() {
 function titolari() {
   return players.filter(p => p.inDistinta && p.titolare);
 }
+// Senza XI schierato non si sa chi ha iniziato: p.inCampo e' vero solo per
+// chi e' ENTRATO con un cambio. Era il bug visto in gara: nessun titolare,
+// primo cambio con Bivol che entra, e da li' "Esce" offriva solo Bivol.
+// In quel caso le liste si deducono dall'ultimo evento di ogni giocatore:
+// chi e' uscito o espulso non puo' uscire, chi e' entrato o espulso non puo'
+// entrare; tutti gli altri sono possibili in entrambe.
+function schieramentoNoto() {
+  return titolari().length > 0;
+}
+function statoDaEventi() {
+  const stato = new Map();   // id -> 'entrato' | 'uscito' | 'espulso'
+  (events || []).forEach(ev => {
+    if (!ev) return;
+    if (ev.tipo === 'cambio') {
+      if (ev.playerId)   stato.set(String(ev.playerId), 'uscito');
+      if (ev.playerInId) stato.set(String(ev.playerInId), 'entrato');
+    } else if (ev.tipo === 'espulsione' && ev.playerId) {
+      stato.set(String(ev.playerId), 'espulso');
+    }
+  });
+  return stato;
+}
 function inCampoOra() {
-  return players.filter(p => p.inDistinta && p.inCampo);
+  if (schieramentoNoto()) return players.filter(p => p.inDistinta && p.inCampo);
+  const stato = statoDaEventi();
+  return convocati().filter(p => !['uscito', 'espulso'].includes(stato.get(String(p.id))));
+}
+function eInCampo(p) {
+  return inCampoOra().some(q => String(q.id) === String(p.id));
 }
 function inPanchina() {
   return players.filter(p => p.inDistinta && !p.inCampo);
@@ -1552,6 +1586,12 @@ function eUscito(id) {
 // calare quando uno esce, o il numero direbbe il falso.
 function disponibiliEntrare() {
   const fuori = new Set(usciti().map(p => String(p.id)));
+  if (!schieramentoNoto()) {
+    // Senza XI: chiunque non sia gia' entrato (o espulso) puo' essere in panchina
+    const stato = statoDaEventi();
+    return convocati().filter(p => !fuori.has(String(p.id)) &&
+      !['entrato', 'espulso'].includes(stato.get(String(p.id))));
+  }
   return inPanchina().filter(p => !fuori.has(String(p.id)));
 }
 
@@ -1613,12 +1653,13 @@ function apriMenuAzioni(id) {
   azPlayerId = String(p.id);
   const box = document.getElementById('ggAzBody');
   const azioni = [];
-  if (p.inCampo) azioni.push(['gol', '⚽ Gol']);
+  const giocaOra = eInCampo(p);
+  if (giocaOra) azioni.push(['gol', '⚽ Gol']);
   azioni.push(['ammonizione', '🟡 Ammonizione']);
   azioni.push(['espulsione', '🔴 Espulsione']);
   // "Esce" apre la scelta di chi entra: la sostituzione ha due protagonisti e
   // registrarne solo uno lascerebbe la squadra in dieci nello stato interno.
-  if (p.inCampo && disponibiliEntrare().length) azioni.push(['esce', '🔄 Esce']);
+  if (giocaOra && disponibiliEntrare().some(q => String(q.id) !== String(p.id))) azioni.push(['esce', '🔄 Esce']);
   azioni.push(['nota', '📝 Nota']);
 
   document.getElementById('ggAzNome').textContent =
@@ -1626,7 +1667,7 @@ function apriMenuAzioni(id) {
   // Lo stato deve dire perche' non ci sono azioni di campo: "in panchina" da
   // solo farebbe cercare un "Entra" che non comparira' mai.
   document.getElementById('ggAzStato').textContent =
-    p.inCampo ? 'in campo · ' + minutoCorrente().label
+    giocaOra ? (schieramentoNoto() ? 'in campo · ' : 'titolari non schierati · ') + minutoCorrente().label
               : (eUscito(p.id) ? 'gia’ sostituito · non puo’ rientrare'
                                : 'in panchina');
   box.innerHTML = azioni.map(a =>
@@ -1676,7 +1717,7 @@ function eseguiAzione(tipo) {
 
 // Secondo passo della sostituzione dal menu: chi entra.
 function apriSceltaEntra(esce) {
-  const panchina = disponibiliEntrare();
+  const panchina = disponibiliEntrare().filter(q => String(q.id) !== String(esce.id));
   if (!panchina.length) {
     // Distinguere i due casi: "panchina vuota" e "restano solo giocatori
     // che sono gia' usciti" sono problemi diversi e si risolvono in modi
