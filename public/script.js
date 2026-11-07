@@ -761,7 +761,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         return cur;
     }
-    const saveData = async () => {
+    // Salvataggi in volo. Un loadData che legge mentre un salvataggio è in
+    // corso riceve lo stato di PRIMA: rimette in memoria e nella base i dati
+    // vecchi, poi al ritorno del salvataggio la differenza "fotografia →
+    // memoria" sembra una cancellazione (es. {M3: null}) e la partita appena
+    // salvata sparisce, anche dal server al salvataggio dopo. Vale uguale per
+    // evaluations/evalBase. Il contatore dice se c'è qualcosa in volo, la
+    // generazione se un salvataggio è partito mentre il GET era in corso.
+    let salvataggiInCorso = 0;
+    let generazioneSalvataggi = 0;
+    // Attende che non ci siano salvataggi in volo (massimo maxMs, poi procede).
+    async function attendiSalvataggi(maxMs = 10000) {
+        const fine = Date.now() + maxMs;
+        while (salvataggiInCorso > 0 && Date.now() < fine) {
+            await new Promise(r => setTimeout(r, 100));
+        }
+        return salvataggiInCorso === 0;
+    }
+    const saveDataInterno = async () => {
         const annataId = sessionStorage.getItem('gosport_current_annata') ||
                          localStorage.getItem('currentAnnata');
         if (!annataId) {
@@ -833,7 +850,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (risposta && risposta.evaluations && typeof risposta.evaluations === 'object') {
                 evalBase = cloneJson(risposta.evaluations);
                 evaluations = applyEvalPatch(cloneJson(risposta.evaluations), diffEvaluations(evalInviate, evaluations));
-            } else {
+            } else if (evaluationsPatch) {
+                // Patch inviata ma risposta senza valutazioni (server vecchio).
+                // Senza patch la base NON si tocca: un salvataggio precedente
+                // ancora in volo può averla già portata avanti, e rimettere la
+                // fotografia la farebbe tornare indietro.
                 evalBase = evalInviate;
             }
             // I Risultati uniti dal server (anche la gara salvata dal telefono)
@@ -849,17 +870,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 const unito = normalizzaRisultati(GR.applyMatchPatch(cloneJson(matchResultsBase), locali));
                 Object.keys(matchResults).forEach(k => { delete matchResults[k]; });
                 Object.assign(matchResults, unito);
-            } else {
-                // Patch vuota (niente inviato) o invio intero riuscito senza
-                // modulo: in entrambi i casi il server ha ciò che si è fotografato.
+            } else if (matchResultsPatch === undefined) {
+                // Invio intero riuscito senza modulo: il server ha la fotografia.
                 matchResultsBase = mrInviati;
             }
+            // Patch vuota (null): niente inviato, la base resta com'è. Rimettere
+            // mrInviati la riporterebbe indietro: crea M, salva A (in volo),
+            // elimina M, salva B senza patch; A torna e porta la base a "con M",
+            // B tornando la rimetterebbe "senza M" e la cancellazione di M non
+            // partirebbe mai più (M ricompare al caricamento successivo).
             saveData.lastError = null;
             return true;
         } catch (error) {
             console.error('Errore nel salvataggio dei dati sul server:', error);
             saveData.lastError = error.message || 'Errore di rete';
             return false;
+        }
+    };
+    const saveData = async () => {
+        salvataggiInCorso++;
+        generazioneSalvataggi++;
+        try {
+            return await saveDataInterno();
+        } finally {
+            salvataggiInCorso--;
         }
     };
     // Rendi saveData disponibile globalmente per calendario-admin.js e parent-view.js
@@ -1358,7 +1392,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     };
-    const loadData = async () => {
+    // annulla(): se vero dopo la risposta, i dati letti si scartano senza
+    // toccare la memoria (un salvataggio è partito mentre il GET era in volo).
+    const loadDataInterno = async (annulla) => {
         try {
             const annataId = sessionStorage.getItem('gosport_current_annata') ||
                              localStorage.getItem('currentAnnata');
@@ -1370,6 +1406,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
             const allData = await response.json();
+            if (annulla && annulla()) return false;
             athletes = allData.athletes || [];
             window.athletes = athletes;
         // Aggiorna _appData solo se ratingSheets sono cambiate
@@ -1494,6 +1531,24 @@ document.addEventListener('DOMContentLoaded', () => {
             window.trainingSessions = {};
             window.matchResults = matchResults;
         }
+    };
+    // opts.auto (polling): se c'è un salvataggio in volo salta il giro, il
+    // prossimo arriva fra 5 minuti. Chiamate esplicite (infortuni, ripristino
+    // stagione): aspettano la fine dei salvataggi (max 10 s) e, se un
+    // salvataggio parte durante la lettura, scartano i dati e riprovano.
+    const loadData = async (opts = {}) => {
+        const auto = !!(opts && opts.auto);
+        if (auto && salvataggiInCorso > 0) return false;
+        for (let tentativo = 0; tentativo < 3; tentativo++) {
+            if (!auto) await attendiSalvataggi();
+            const gen = generazioneSalvataggi;
+            // L'ultimo tentativo esplicito accetta comunque i dati letti.
+            const ultimo = !auto && tentativo === 2;
+            const esito = await loadDataInterno(ultimo ? null : () => generazioneSalvataggi !== gen);
+            if (esito !== false) return true;
+            if (auto) return false;
+        }
+        return false;
     };
     const getWeekRange = (date) => {
         const d = new Date(date);
@@ -6666,6 +6721,9 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
                         formationData = importedData.formationData || { starters: [], bench: [], tokens: [], sostituzioni: {} };
                         if (!formationData.sostituzioni) formationData.sostituzioni = {};
                         matchResults = importedData.matchResults || {};
+                        // Nuovo oggetto: va riallineato il riferimento globale, che
+                        // gli altri moduli (gara, import partite) leggono.
+                        window.matchResults = matchResults;
                         // ── BANNER SPONSOR (aggiunto v1.5.16) ───────────────────────────
             // bachecaConfig non è nel GET con annataId → fetch separata globale
             if (!window._bannerShown) {
@@ -7485,7 +7543,8 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
             // Non aggiornare se il tab è in background
             if (document.visibilityState !== 'visible') return;
             const currentDataSnapshot = JSON.stringify({ athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults });
-            await loadData();
+            // auto: con un salvataggio in volo il giro si salta (vedi loadData)
+            await loadData({ auto: true });
             const newDataSnapshot = JSON.stringify({ athletes, evaluations, gpsData, awards, trainingSessions, formationData, matchResults });
             if (currentDataSnapshot !== newDataSnapshot) {
                 console.log("Dati aggiornati dal server. Ricarico l'interfaccia.");
