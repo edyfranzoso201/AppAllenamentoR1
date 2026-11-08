@@ -1385,6 +1385,10 @@ function resetGara() {
   durateTempi = {};
   scoreHome = 0; scoreAway = 0;
   events = [];
+  // Chi era entrato con un cambio restava inCampo=true (badge "IN" in Rosa,
+  // e nella gara nuova risultava gia' in campo). Senza eventi lo stato torna
+  // quello della Distinta: in campo solo i titolari.
+  ricostruisciInCampo();
   segnaliEmessi = {};   // altrimenti la gara nuova resterebbe muta
   ultimoStop = null;    // non si annulla il "fine tempo" di una gara che non c'e' piu'
   stepDaChiudere = false;   // un "chiudi step" premuto nella gara vecchia non
@@ -1399,6 +1403,7 @@ function resetGara() {
   salvaStato();
   renderTimer();
   renderEventi();
+  renderRosa();
   renderTendinaPartite();
   renderSalvaRisultati();
   toast('Gara azzerata.');

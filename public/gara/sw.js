@@ -20,7 +20,7 @@
 // Ogni modifica di public/gara/gara-risultati.js vuole anche una ?v= nuova,
 // uguale in DUE posti: il tag script di index.html e la voce in PRECACHE.
 // Con la stessa ?v= la cache (cache-first) continuerebbe a servire il file vecchio.
-const CACHE = 'gara-v27';
+const CACHE = 'gara-v28';
 
 // Il PDF si genera con jsPDF preso dal CDN. Senza queste due voci in cache,
 // "Genera PDF" fallirebbe proprio nel caso piu' probabile: campo senza rete,
