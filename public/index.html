@@ -3436,7 +3436,7 @@
     <script src="risultati-gara.js?v=2"></script>
     <script src="import-partite.js?v=1"></script>
     <script src="impegni-convocazione.js?v=1"></script>
-    <script src="script.js?v=1781800004"></script>
+    <script src="script.js?v=1781800005"></script>
     <script src="lavagna-tattica.js?v=1787670309"></script>
     <script>
       document.addEventListener('DOMContentLoaded', function () {
@@ -5015,8 +5015,8 @@ document.addEventListener('DOMContentLoaded', function() {
             var totale = 0;
             h += '<tr style="background:' + rowBg + ';">';
             h += '<td style="font-weight:600;color:var(--text-primary);position:sticky;left:0;background:' + rowBg + ';border-color:var(--bg-blue);padding:8px 12px;vertical-align:middle;">';
-            h += '<div>' + person.name + '</div>';
-            if (person.isStaff) h += '<div style="font-size:0.72rem;color:#f59e0b;margin-top:2px;">' + (person.role||'Staff') + '</div>';
+            h += '<div>' + _multeEsc(person.name || '') + '</div>';
+            if (person.isStaff) h += '<div style="font-size:0.72rem;color:#f59e0b;margin-top:2px;">' + _multeEsc(person.role||'Staff') + '</div>';
             h += '</td>';
             PAG_VOCI.forEach(function(v) {
                 var voce = pag[v] || {};
@@ -5089,7 +5089,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 ? 'SCADUTA il '+new Date(a.dueDate+'T00:00:00').toLocaleDateString('it-IT')
                 : 'scade tra '+a.diff+' giorni';
             h += '<div style="background:'+ss.bg+';border:1px solid '+ss.border+';border-radius:8px;padding:8px 14px;margin-bottom:6px;color:'+ss.color+';font-size:0.85rem;">';
-            h += ss.icon+' <strong>'+a.name+'</strong> — '+a.voce+' Rata '+a.ri+': € '+(parseFloat(a.amount)||0).toFixed(2)+' · '+msg+'</div>';
+            h += ss.icon+' <strong>'+_multeEsc(a.name || '')+'</strong> — '+a.voce+' Rata '+a.ri+': € '+(parseFloat(a.amount)||0).toFixed(2)+' · '+msg+'</div>';
         });
         box.innerHTML = h;
     }
@@ -5657,7 +5657,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var staffHtml = '';
         staff.forEach(function(s) {
             var chk = selStaff.includes(String(s.id)) ? 'checked' : '';
-            staffHtml += '<div class="form-check"><input class="form-check-input conv-staff-chk" type="checkbox" value="'+s.id+'" id="cst'+s.id+'" '+chk+'><label class="form-check-label small" for="cst'+s.id+'">'+(s.role||'Staff')+': '+s.name+'</label></div>';
+            staffHtml += '<div class="form-check"><input class="form-check-input conv-staff-chk" type="checkbox" value="'+s.id+'" id="cst'+s.id+'" '+chk+'><label class="form-check-label small" for="cst'+s.id+'">'+_multeEsc(s.role||'Staff')+': '+_multeEsc(s.name || '')+'</label></div>';
         });
         document.getElementById('conv-staff-list').innerHTML = staffHtml || '<span class="text-muted small">Nessuno staff</span>';
 
@@ -5668,10 +5668,10 @@ document.addEventListener('DOMContentLoaded', function() {
         atleti.forEach(function(a) {
             if (a.infortunato) {
                 var rientroNote = a.dataRientro ? ' (rientro ' + new Date(a.dataRientro + 'T00:00:00').toLocaleDateString('it-IT', {day:'2-digit',month:'2-digit'}) + ')' : '';
-                atlHtml += '<div class="form-check" style="opacity:0.45;"><input class="form-check-input" type="checkbox" value="'+a.id+'" id="cat'+a.id+'" disabled><label class="form-check-label small" for="cat'+a.id+'">🤕 '+a.name+rientroNote+'</label></div>';
+                atlHtml += '<div class="form-check" style="opacity:0.45;"><input class="form-check-input" type="checkbox" value="'+a.id+'" id="cat'+a.id+'" disabled><label class="form-check-label small" for="cat'+a.id+'">🤕 '+_multeEsc(a.name || '')+rientroNote+'</label></div>';
             } else {
                 var chk = selAtl.includes(String(a.id)) ? 'checked' : '';
-                atlHtml += '<div class="form-check"><input class="form-check-input conv-atleta-chk" type="checkbox" value="'+a.id+'" id="cat'+a.id+'" '+chk+'><label class="form-check-label small" for="cat'+a.id+'">'+a.name+'</label></div>';
+                atlHtml += '<div class="form-check"><input class="form-check-input conv-atleta-chk" type="checkbox" value="'+a.id+'" id="cat'+a.id+'" '+chk+'><label class="form-check-label small" for="cat'+a.id+'">'+_multeEsc(a.name || '')+'</label></div>';
             }
         });
         document.getElementById('conv-atleti-list').innerHTML = atlHtml || '<span class="text-muted small">Nessun atleta</span>';
@@ -5883,7 +5883,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var html = '<option value="">— seleziona atleta —</option>';
         all.forEach(function(a) {
             if (giaPresenti.indexOf(String(a.id)) !== -1) return;
-            html += '<option value="'+a.id+'">'+a.name+'</option>';
+            html += '<option value="'+a.id+'">'+_multeEsc(a.name || '')+'</option>';
         });
         sel.innerHTML = html;
     }
@@ -6022,7 +6022,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             listaRuolo.forEach(function(s) {
                 var sel = String(s.id) === String(cur.athleteId) ? 'selected' : '';
-                options += '<option value="'+s.id+'" '+sel+'>'+s.name+'</option>';
+                options += '<option value="'+s.id+'" '+sel+'>'+_multeEsc(s.name || '')+'</option>';
             });
             html += '<div class="col-md-6 mb-2">'
                 + '<label class="form-label small">'+r.label+'</label>'
@@ -6860,8 +6860,8 @@ document.addEventListener('DOMContentLoaded', function() {
             var totale = list.reduce(function(s,m){ return s + (parseFloat(m.importo)||0); }, 0);
             h += '<tr style="background:' + rowBg + ';">';
             h += '<td style="font-weight:600;color:var(--text-primary);position:sticky;left:0;background:' + rowBg + ';border-color:var(--bg-blue);padding:8px 12px;vertical-align:top;">';
-            h += '<div>' + person.name + '</div>';
-            if (person.isStaff) h += '<div style="font-size:0.72rem;color:#f59e0b;margin-top:2px;">' + (person.role||'Staff') + '</div>';
+            h += '<div>' + _multeEsc(person.name || '') + '</div>';
+            if (person.isStaff) h += '<div style="font-size:0.72rem;color:#f59e0b;margin-top:2px;">' + _multeEsc(person.role||'Staff') + '</div>';
             h += '</td>';
             h += '<td style="border-color:var(--bg-blue);padding:6px;vertical-align:top;">';
             if (list.length) {

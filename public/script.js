@@ -3607,7 +3607,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 + `<td><strong>${agg.red}</strong></td>`
                 + `<td>${new Date(agg.lastDate).toLocaleDateString('it-IT', {day: '2-digit', month: 'short'})}</td>`
                 + `<td class="no-print"><button class="btn btn-sm btn-outline-danger py-0 px-1 remove-card-summary-row-btn" `
-                +   `data-athlete-id="${agg.athleteId}" title="Cancella tutti i cartellini di ${athlete ? athlete.name : 'questo atleta'}">`
+                +   `data-athlete-id="${agg.athleteId}" title="Cancella tutti i cartellini di ${athlete ? escapeHtml(athlete.name) : 'questo atleta'}">`
                 +   `<i class="bi bi-x-lg"></i></button></td>`;
             elements.cardsSummaryTbody.appendChild(row);
             renderedRows++;
@@ -4643,7 +4643,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const athlete = athletes.find(a => a.id.toString() === selection.athleteId.toString());
             const data = findSessionById(selection.sessionId) || {};
             const cells = Object.keys(gpsFieldsForDisplay).filter(key => !['data_di_registrazione', 'ora_registrazione', 'tipo_sessione'].includes(key)).map(key => `<td>${data[key] ?? 'N/A'}</td>`).join('');
-            return `<tr><td>${athlete?.name || 'N/A'}</td><td>${new Date(data.date).toLocaleDateString('it-IT')}</td><td>${data.ora_registrazione || 'N/A'}</td><td>${data.tipo_sessione || 'N/A'}</td>${cells}</tr>`;
+            return `<tr><td>${escapeHtml(athlete?.name || 'N/A')}</td><td>${new Date(data.date).toLocaleDateString('it-IT')}</td><td>${data.ora_registrazione || 'N/A'}</td><td>${data.tipo_sessione || 'N/A'}</td>${cells}</tr>`;
         }).join('');
         elements.tableContainer.innerHTML = `<table class="table table-dark table-striped table-hover"><thead><tr><th>Atleta</th><th>Data</th><th>Ora</th><th>Tipo</th>${Object.values(gpsFieldsForDisplay).filter(label => !['Data', 'Ora', 'Tipo'].includes(label)).map(label => `<th>${label}</th>`).join('')}</tr></thead><tbody>${tableBody}</tbody></table>`;
         elements.exportButtonsContainer.innerHTML = `<button class="btn btn-success btn-sm" id="export-excel" ${demoExportAttrs()}><i class="bi bi-file-excel"></i> Excel</button><button class="btn btn-danger btn-sm" id="export-pdf" ${demoExportAttrs()}><i class="bi bi-file-pdf"></i> PDF</button>`;
