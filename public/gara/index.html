@@ -2626,12 +2626,27 @@ async function salvaNeiRisultati() {
     // 3. Destinazione: partita legata, oppure stessa data + avversario,
     //    oppure nuova partita.
     const t = GaraRisultati.trovaPartita(partite, { matchId: info.matchId, data: info.data, avversario: nomeAvversaria() });
-    const noiCasa = info.noiCasa === '1' || info.noiCasa === 1;
+    let noiCasa = info.noiCasa === '1' || info.noiCasa === 1;
+    // Casa/trasferta: per una partita gia' in Risultati vale quella di
+    // Risultati. scoreHome della gara e' sempre "noi": con la tendina
+    // "Giochiamo" sbagliata il 2-0 finirebbe scritto come 0-2. Una partita
+    // nuova invece nasce dalla tendina, che resta l'unica fonte.
+    let avvisoCasa = '';
+    const locRis = t.match ? t.match.location : '';
+    if ((locRis === 'home' || locRis === 'away') && (locRis === 'home') !== noiCasa) {
+      noiCasa = locRis === 'home';
+      avvisoCasa = noiCasa
+        ? 'In Risultati la partita è in casa: salvo il punteggio come casa'
+        : 'In Risultati la partita è in trasferta: salvo il punteggio come trasferta';
+    }
+    const conAvviso = s => (avvisoCasa ? avvisoCasa + '.\n\n' : '') + s;
+    let avvisoMostrato = false;
     let matchId = null, nuova = null;
     if (t.modo === 'legata') {
       matchId = t.id;
     } else if (t.modo === 'trovata') {
-      if (!confirm('Salvo su ' + GaraRisultati.etichettaPartita(t.match) + '?')) return;
+      avvisoMostrato = !!avvisoCasa;
+      if (!confirm(conAvviso('Salvo su ' + GaraRisultati.etichettaPartita(t.match) + '?'))) return;
       matchId = t.id;
     } else {
       if (!info.data || !nomeAvversaria()) {
@@ -2655,8 +2670,21 @@ async function salvaNeiRisultati() {
     //    precedente poi corretto): niente sovrascritture in silenzio.
     if (t.match) {
       const diff = GaraRisultati.differenze(t.match, dati, nomeGiocatore);
-      if (diff.length && !confirm('La partita in Risultati ha già dei dati diversi:\n\n' + diff.join('\n') +
-                                  '\n\nOK = sostituisci con i dati della gara\nAnnulla = non salvare')) return;
+      if (diff.length) {
+        const testo = 'La partita in Risultati ha già dei dati diversi:\n\n' + diff.join('\n') +
+                      '\n\nOK = sostituisci con i dati della gara\nAnnulla = non salvare';
+        if (!confirm(avvisoMostrato ? testo : conAvviso(testo))) return;
+        avvisoMostrato = !!avvisoCasa;
+      }
+    }
+
+    // La tendina "Giochiamo" si allinea a Risultati solo ora che si salva
+    // davvero: con Annulla su "Salvo su ...?" la partita poteva essere
+    // quella sbagliata, e la tendina non andava toccata.
+    if (avvisoCasa) {
+      info.noiCasa = noiCasa ? '1' : '0';
+      scriviInfoNeiCampi();
+      salvaStato();
     }
 
     // 5. Scrittura di UNA partita (authHeaders porta X-Annata-Id, senza il
@@ -2693,7 +2721,9 @@ async function salvaNeiRisultati() {
     salvaStato();
     renderTendinaPartite();
     renderSalvaRisultati();
-    toast('Gara salvata nei Risultati ✓');
+    // Senza un confirm in mezzo l'avviso casa/trasferta arriva qui: la
+    // tendina e' cambiata e l'allenatore deve saperlo.
+    toast('Gara salvata nei Risultati ✓' + (avvisoCasa && !avvisoMostrato ? ' — ' + avvisoCasa : ''));
   } finally {
     btn.disabled = false;
   }
