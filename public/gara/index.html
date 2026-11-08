@@ -1605,7 +1605,14 @@ function disponibiliEntrare() {
     return convocati().filter(p => !fuori.has(String(p.id)) &&
       !['entrato', 'espulso'].includes(stato.get(String(p.id))));
   }
-  return inPanchina().filter(p => !fuori.has(String(p.id)));
+  // L'espulso ha inCampo=false e quindi sta in inPanchina(): senza questo
+  // filtro compariva fra chi puo' ENTRARE, sia in campo sia dalla panchina.
+  return inPanchina().filter(p => !fuori.has(String(p.id)) && !eEspulso(p.id));
+}
+
+function eEspulso(id) {
+  return (events || []).some(ev => ev && ev.tipo === 'espulsione' &&
+                                   String(ev.playerId) === String(id));
 }
 
 // Quanti se ne schierano: nel calcio 11, ma questa pagina serve anche alle
@@ -1620,9 +1627,10 @@ function toggleTitolare(id) {
   if (!p) return;
   if (!p.inDistinta) { toast('Prima mettilo in distinta.'); return; }
   p.titolare = !p.titolare;
-  // Schierato = in campo dal fischio d'inizio. Se lo togli prima del via
-  // esce anche dal campo; a gara iniziata i cambi li gestisce cambioRapido.
-  p.inCampo = p.titolare;
+  // Schierato = in campo dal fischio d'inizio, poi i cambi della cronologia.
+  // Prima era "inCampo = titolare": correggere l'XI a gara iniziata rimetteva
+  // in campo chi era gia' stato sostituito (o espulso).
+  ricostruisciInCampo();
   salvaStato();
   renderRosa();
   renderCambio();
@@ -1681,8 +1689,9 @@ function apriMenuAzioni(id) {
   // solo farebbe cercare un "Entra" che non comparira' mai.
   document.getElementById('ggAzStato').textContent =
     giocaOra ? (schieramentoNoto() ? 'in campo · ' : 'titolari non schierati · ') + minutoCorrente().label
-              : (eUscito(p.id) ? 'gia’ sostituito · non puo’ rientrare'
-                               : 'in panchina');
+              : (eEspulso(p.id) ? 'espulso'
+                 : eUscito(p.id) ? 'gia’ sostituito · non puo’ rientrare'
+                                 : 'in panchina');
   box.innerHTML = azioni.map(a =>
     '<button type="button" class="gg-azbtn" data-az-do="' + a[0] + '">' + a[1] + '</button>'
   ).join('');
@@ -2216,11 +2225,11 @@ function aggiungiEvento() {
   // la riga: prima l'evento finiva negli eventi ma in campo restavano gli
   // stessi, quindi il cambio successivo offriva ancora chi era uscito.
   // cambioRapido() dalla rosa lo faceva gia'; questa strada no.
-  if (tipo === 'cambio') {
-    const esce = trovaGiocatore(f.playerId);
-    const entra = trovaGiocatore(f.playerInId);
-    if (esce)  esce.inCampo = false;
-    if (entra) entra.inCampo = true;
+  // Anche l'espulsione: registrata da qui lasciava l'espulso in campo, fra
+  // chi puo' segnare e uscire. Si ricostruisce dalla cronologia perche' un
+  // evento con il minuto scritto a mano puo' finire PRIMA di altri cambi.
+  if (tipo === 'cambio' || tipo === 'espulsione') {
+    ricostruisciInCampo();
     renderRosa();
     renderCambio();
   }
@@ -2297,7 +2306,8 @@ function ricostruisciInCampo() {
       const esce = trovaGiocatore(ev.playerId);
       const entra = trovaGiocatore(ev.playerInId);
       if (esce)  esce.inCampo = false;
-      if (entra) entra.inCampo = true;
+      // Chi e' stato tolto dalla distinta non puo' tornare in campo.
+      if (entra && entra.inDistinta) entra.inCampo = true;
     } else if (ev.tipo === 'espulsione') {
       const p = trovaGiocatore(ev.playerId);
       if (p) p.inCampo = false;
@@ -2357,9 +2367,14 @@ function eliminaEvento(i) {
   if (ev.tipo === 'gol' && scoreHome > 0) scoreHome--;
   if (ev.tipo === 'gol-avv' && scoreAway > 0) scoreAway--;
   events.splice(i, 1);
+  // Cancellare il cambio sbagliato deve rimettere in campo chi era uscito:
+  // senza, i due giocatori restavano invertiti finche' non si ricaricava.
+  const toccaCampo = ev.tipo === 'cambio' || ev.tipo === 'espulsione';
+  if (toccaCampo) ricostruisciInCampo();
   salvaStato();
   renderEventi();
   renderTimer();
+  if (toccaCampo) { renderRosa(); renderCambio(); popolaSelectGiocatori(); }
 }
 
 // ── Persistenza locale ────────────────────────────────────────────────
@@ -3204,14 +3219,15 @@ async function init() {
     p.inDistinta = !p.inDistinta;
     // Escluso dalla distinta non puo' restare in campo: sparirebbe dalla lista
     // "Esce" ma resterebbe contato fra gli schierati.
-    if (!p.inDistinta) p.inCampo = false;
-    else if (p.titolare) p.inCampo = true;
+    // Rimesso in distinta: torna dove dice la cronologia, non per forza in
+    // campo (un titolare gia' sostituito resta fuori).
+    ricostruisciInCampo();
     salvaStato();
     renderRosa();
     renderCambio();
   });
   document.getElementById('btnTuttiIn').addEventListener('click', () => {
-    players.forEach(p => { p.inDistinta = true; }); salvaStato(); renderRosa(); renderCambio();
+    players.forEach(p => { p.inDistinta = true; }); ricostruisciInCampo(); salvaStato(); renderRosa(); renderCambio();
   });
   document.getElementById('btnTuttiOut').addEventListener('click', () => {
     // Fuori tutti: nessuno convocato, quindi nessuno schierato ne' in campo.
