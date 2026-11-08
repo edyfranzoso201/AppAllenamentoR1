@@ -618,7 +618,8 @@
         <h2>&#128465;&#65039; Nuova gara</h2>
         <div class="gg-hint" style="margin-bottom:11px;">
           Azzera cronometro, risultato ed eventi per iniziare una partita nuova.
-          I dati gara e la selezione dei convocati restano come sono.
+          I dati gara e la selezione dei convocati restano come sono; si toglie
+          solo il collegamento alla partita di Risultati.
           Non si annulla: tieni premuto il pulsante per 3 secondi.
         </div>
         <button type="button" class="gg-btn-danger" id="btnNuovaGara" style="width:100%;">Azzera la gara</button>
@@ -1389,10 +1390,17 @@ function resetGara() {
   stepDaChiudere = false;   // un "chiudi step" premuto nella gara vecchia non
                             // deve marcare il primo cambio di quella nuova
   if (evInModifica) annullaModifica();
+  // Il legame con la partita di Risultati appartiene alla gara azzerata:
+  // tenendolo, la gara nuova (domenica dopo, stessi Dati gara) verrebbe
+  // salvata sopra la partita vecchia senza nessuna domanda.
+  info.matchId = '';
+  info.salvataNeiRisultati = '';
   aggiornaRiprendi();
   salvaStato();
   renderTimer();
   renderEventi();
+  renderTendinaPartite();
+  renderSalvaRisultati();
   toast('Gara azzerata.');
 }
 
@@ -2643,6 +2651,18 @@ async function salvaNeiRisultati() {
     let avvisoMostrato = false;
     let matchId = null, nuova = null;
     if (t.modo === 'legata') {
+      // Dati gara cambiati a mano dopo aver scelto la partita (data o
+      // avversario diversi): forse e' un'altra gara, si chiede prima di
+      // scriverci sopra. Si confrontano solo i campi compilati.
+      const norm = s => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+      const dataDiversa = info.data && t.match.date && info.data !== t.match.date;
+      const avvDiversa = nomeAvversaria() && t.match.opponentName && norm(nomeAvversaria()) !== norm(t.match.opponentName);
+      if (dataDiversa || avvDiversa) {
+        const dataIt = /^\d{4}-\d{2}-\d{2}$/.test(info.data || '') ? info.data.split('-').reverse().join('/') : (info.data || '');
+        const inDati = [nomeAvversaria(), dataIt].filter(Boolean).join(', ');
+        avvisoMostrato = !!avvisoCasa;
+        if (!confirm(conAvviso('Salvo su ' + GaraRisultati.etichettaPartita(t.match) + '? (in Dati gara hai ' + inDati + ')'))) return;
+      }
       matchId = t.id;
     } else if (t.modo === 'trovata') {
       avvisoMostrato = !!avvisoCasa;
