@@ -469,6 +469,11 @@
     <div class="gg-page" id="page-dati">
       <div class="gg-card">
         <h2>&#128203; Dati gara</h2>
+        <div class="gg-field">
+          <label>Prendi dal calendario</label>
+          <select id="infoPartita"><option value="">Caricamento partite&hellip;</option></select>
+          <div class="gg-hint" id="infoPartitaHint"></div>
+        </div>
         <div class="gg-row2">
           <div class="gg-field"><label>La nostra squadra</label><input type="text" id="infoCasa" placeholder="Nome della societa'"></div>
           <div class="gg-field"><label>Squadra avversaria</label><input type="text" id="infoOspite" placeholder="Chi affrontiamo"></div>
@@ -698,6 +703,9 @@ let events = [];
 let evInModifica = null;   // evento della cronologia aperto in modifica (vedi iniziaModifica)
 let info = {
   casa:'', ospite:'', campionato:'', giornata:'', data:'', ora:'', luogo:'', arbitro:'',
+  // matchId = partita di Risultati scelta nella tendina (o creata dal Report);
+  // salvataNeiRisultati = ISO dell'ultimo "Salva nei Risultati" riuscito.
+  matchId:'', salvataNeiRisultati:'',
   noiCasa:'1', tempi:'2', durata:45, durataSuppl:15, supplMode:'off', audio:'1', step:'1',
   // Il divieto di rientro parte SPENTO: le categorie di base sono la meta' dei
   // campionati e chi aggiorna l'app non deve trovarsi meta' panchina bloccata.
@@ -2366,6 +2374,53 @@ function caricaStato() {
   return st;
 }
 
+// ── Partite di Risultati (tendina "Prendi dal calendario") ─────────────
+// null = non caricate (rete, sessione o annata mancante); {} = annata senza
+// partite. Si distinguono perche' il messaggio da dare e' diverso.
+let partiteRisultati = null;
+
+function renderTendinaPartite() {
+  const sel = document.getElementById('infoPartita');
+  const hint = document.getElementById('infoPartitaHint');
+  if (!sel || !hint) return;
+  if (partiteRisultati == null) {
+    sel.innerHTML = '<option value="">— Partite non disponibili —</option>';
+    sel.disabled = true;
+    hint.textContent = annataId()
+      ? 'Partite di Risultati non caricate: controlla la connessione e riapri la pagina.'
+      : 'Annata non impostata: apri Andamento Gara da Sport Monitoring → Area Tecnica.';
+    return;
+  }
+  const lista = GaraRisultati.elencoPartite(partiteRisultati);
+  sel.disabled = false;
+  sel.innerHTML = '<option value="">— Gara non collegata a Risultati —</option>' +
+    lista.map(x => '<option value="' + esc(x.id) + '">' + esc(GaraRisultati.etichettaPartita(x.match)) + '</option>').join('');
+  const legata = info.matchId && partiteRisultati[info.matchId];
+  sel.value = legata ? String(info.matchId) : '';
+  hint.textContent = !lista.length
+    ? 'Nessuna partita in Risultati per questa annata: dal Report potrai aggiungerla.'
+    : info.matchId && !legata
+      ? 'La partita collegata non è più in Risultati: scegline un\'altra.'
+      : legata ? 'Collegata a: ' + GaraRisultati.etichettaPartita(legata) : '';
+}
+
+// Scegliere una partita compila i Dati gara; restano modificabili a mano, e
+// cambiarli non scollega la partita (lo dice la riga sotto la tendina).
+function scegliPartita(id) {
+  if (!id) { info.matchId = ''; salvaStato(); renderTendinaPartite(); return; }
+  const m = partiteRisultati && partiteRisultati[id];
+  if (!m) return;
+  info.matchId = String(id);
+  if (m.opponentName) info.ospite = m.opponentName;
+  if (m.date) info.data = m.date;
+  if (m.time) info.ora = String(m.time).slice(0, 5);
+  if (m.venue) info.luogo = m.venue;
+  if (m.location === 'home' || m.location === 'away') info.noiCasa = m.location === 'home' ? '1' : '0';
+  scriviInfoNeiCampi();
+  salvaStato();
+  renderTendinaPartite();
+}
+
 // ── Caricamento rosa da Gestione Squadra ───────────────────────────────
 async function caricaRosa(idsInDistinta, idsTitolari, idsInCampo) {
   let data = null;
@@ -2380,13 +2435,22 @@ async function caricaRosa(idsInDistinta, idsTitolari, idsInCampo) {
       } else {
         mostraRosaVuota('Rosa non caricata (errore ' + res.status + '). Riprova.');
       }
+      partiteRisultati = null; renderTendinaPartite();
       return;
     }
     data = await res.json();
   } catch (e) {
     mostraRosaVuota('Rosa non caricata: connessione assente. Il cronometro funziona comunque.');
+    partiteRisultati = null; renderTendinaPartite();
     return;
   }
+
+  // Le partite arrivano con la rosa: senza annata la risposta non ha
+  // 'athletes' ne' 'matchResults' (bacheca globale) -> null, non lista vuota.
+  partiteRisultati = (data && Array.isArray(data.athletes))
+    ? ((data.matchResults && typeof data.matchResults === 'object') ? data.matchResults : {})
+    : null;
+  renderTendinaPartite();
 
   // Senza X-Annata-Id il server risponde 200 con la bacheca globale, cioe' un
   // JSON SENZA 'athletes' (api/data.js). Era il caso peggiore perche' muto:
@@ -2971,6 +3035,7 @@ async function init() {
   });
   document.getElementById('btnAnnullaModifica').addEventListener('click', annullaModifica);
 
+  document.getElementById('infoPartita').addEventListener('change', e => scegliPartita(e.target.value));
   document.getElementById('btnGenPdf').addEventListener('click', generaPdf);
   tieniPremuto('btnNuovaGara', 'Azzera la gara', 'Tieni premuto 3 secondi&hellip;', resetGara,
                HOLD_AZZERA_MS);
