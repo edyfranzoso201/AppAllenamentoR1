@@ -150,6 +150,42 @@ t('differenze su punteggio e marcatori', () => {
 t('dati uguali: nessuna differenza', () => assert.deepEqual(
   GR.differenze({ homeScore: 1, awayScore: 2, scorers: d.scorers, cards: d.cards }, d, nomeDi), []));
 
+// Blocco gara gia' in Risultati: partita = d come salvata dal server, con
+// metadati e ordine diversi (secondo salvataggio della stessa gara).
+const giaSalvata = (gara) => ({ homeScore: 1, awayScore: 2, scorers: d.scorers, cards: d.cards,
+  gara: Object.assign(JSON.parse(JSON.stringify(d.gara)), gara || {}) });
+t('blocco gara identico (ordine, sec, ord, salvataIl diversi): nessuna differenza', () => {
+  const m = giaSalvata({ salvataIl: '2020-01-01T00:00:00Z', salvataDa: 'altro' });
+  m.gara.titolari = m.gara.titolari.slice().reverse();
+  m.gara.convocati = m.gara.convocati.slice().reverse();
+  m.gara.cambi = m.gara.cambi.map(c => { const x = Object.assign({}, c); delete x.ord; x.sec = 12; return x; });
+  m.gara.espulsioni = m.gara.espulsioni.map(e => { const x = Object.assign({}, e); delete x.sec; x.ord = 99; return x; });
+  m.gara.tempi = Object.assign({}, m.gara.tempi, { durateTempi: { 1: 2800, 2: 2750 } });
+  assert.deepEqual(GR.differenze(m, d, nomeDi), []);
+});
+t('differenze solo nei cambi', () => {
+  const m = giaSalvata({ cambi: [{ esce: 'B', entra: 'C', min: 50, minuto: "50'", periodo: 2 }] });
+  const diff = GR.differenze(m, d, nomeDi);
+  assert.equal(diff.length, 1);
+  assert.equal(diff[0], "Cambi in Risultati: 50' Aiesi→Runza · dalla gara: Int. Aiesi→Runza");
+});
+t('differenze solo nei titolari', () => {
+  const m = giaSalvata();
+  m.gara.titolari = m.gara.titolari.filter(id => id !== 'A').concat(['C']);
+  const diff = GR.differenze(m, d, nomeDi);
+  assert.equal(diff.length, 1);
+  assert.match(diff[0], /^Titolari in Risultati: .*Runza.* · dalla gara: .*Bivol.* \(in più Bivol; in meno Runza\)$/);
+});
+t('differenze in convocati, espulsioni e tempi', () => {
+  const m = giaSalvata({ convocati: d.gara.convocati.concat(['Z']), espulsioni: [],
+    tempi: { numero: 4, durata: 20, durateTempi: {} } });
+  const diff = GR.differenze(m, d, id => (id === 'Z' ? 'Zeta' : nomeDi(id)));
+  assert.equal(diff.length, 3);
+  assert.match(diff[0], /^Convocati in Risultati: \d+ · dalla gara: \d+ \(in meno Zeta\)$/);
+  assert.equal(diff[1], "Espulsioni in Risultati: nessuna · dalla gara: 70' Rossi");
+  assert.equal(diff[2], "Tempi in Risultati: 4 tempi da 20' · dalla gara: 2 tempi da 45'");
+});
+
 // ── diffMatchResults / applyMatchPatch ───────────────────────────
 const base = { '1': { id: 1, date: '2026-11-01', homeScore: 1, gara: { x: 1 } }, '2': { id: 2, date: '2026-11-02' } };
 const cur = JSON.parse(JSON.stringify(base));

@@ -20,7 +20,7 @@
 // Ogni modifica di public/gara/gara-risultati.js vuole anche una ?v= nuova,
 // uguale in DUE posti: il tag script di index.html e la voce in PRECACHE.
 // Con la stessa ?v= la cache (cache-first) continuerebbe a servire il file vecchio.
-const CACHE = 'gara-v26';
+const CACHE = 'gara-v27';
 
 // Il PDF si genera con jsPDF preso dal CDN. Senza queste due voci in cache,
 // "Genera PDF" fallirebbe proprio nel caso piu' probabile: campo senza rete,
@@ -36,7 +36,7 @@ const PRECACHE = [
   '/gara/icon-512.png',
   // Minutaggio e lettura dei minuti: senza questo file offline la gara non
   // calcolerebbe piu' niente (stessa ?v= del tag script della pagina).
-  '/gara/gara-risultati.js?v=1',
+  '/gara/gara-risultati.js?v=2',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js'
 ];

@@ -295,7 +295,67 @@
       var dopo = elenco(dati[c[0]], c[2]);
       if (prima && prima !== dopo) righe.push(c[1] + ' in Risultati: ' + prima + ' · dalla gara: ' + (dopo || 'nessuno'));
     });
+    // Blocco gara gia' in Risultati: chi l'ha corretto a mano (formazione,
+    // cambi) va avvisato prima di sovrascriverlo, come per il punteggio.
+    if (isObj(match.gara) && isObj(dati.gara)) righe = righe.concat(differenzeBlocco(match.gara, dati.gara, nomeDi));
     return righe;
+  }
+
+  // Confronto del blocco gara. Ordine indifferente (si confrontano elenchi
+  // ordinati) e solo cio' che si vede: sec, ord, salvataIl, salvataDa e le
+  // durate misurate cambiano a ogni salvataggio o non sono correggibili a
+  // mano, e farebbero scattare l'avviso anche sulla stessa gara salvata due volte.
+  function differenzeBlocco(prima, dopo, nomeDi) {
+    var righe = [];
+    var ids = function (l) { return (Array.isArray(l) ? l : []).map(String); };
+    var nomi = function (l) { return l.map(nomeDi).sort(function (a, b) { return String(a).localeCompare(String(b), 'it'); }); };
+    var stessi = function (a, b) { return a.slice().sort().join('|') === b.slice().sort().join('|'); };
+    var etichetta = function (x) {
+      var m = String((x && x.minuto) || '').trim();
+      return m || ((parseInt(x && x.min, 10) || 0) + "'");
+    };
+    // Elenco di eventi in forma leggibile, ordinato per minuto poi per testo
+    var eventi = function (l, testo) {
+      return (Array.isArray(l) ? l : []).filter(isObj).map(function (x) {
+        return { min: parseInt(x.min, 10) || 0, txt: etichetta(x) + ' ' + testo(x) };
+      }).sort(function (a, b) { return (a.min - b.min) || (a.txt < b.txt ? -1 : a.txt > b.txt ? 1 : 0); })
+        .map(function (x) { return x.txt; }).join(', ');
+    };
+
+    // Titolari: si elencano tutti (sono al massimo 11), piu' chi entra o esce
+    var t0 = ids(prima.titolari), t1 = ids(dopo.titolari);
+    if (!stessi(t0, t1)) {
+      righe.push('Titolari in Risultati: ' + (nomi(t0).join(', ') || 'nessuno') +
+                 ' · dalla gara: ' + (nomi(t1).join(', ') || 'nessuno') + cambiElenco(t0, t1, nomi));
+    }
+    // Convocati: possono essere 20 e passa, quindi solo il numero e chi cambia
+    var c0 = ids(prima.convocati), c1 = ids(dopo.convocati);
+    if (!stessi(c0, c1)) {
+      righe.push('Convocati in Risultati: ' + c0.length + ' · dalla gara: ' + c1.length + cambiElenco(c0, c1, nomi));
+    }
+    var cambio = function (c) { return nomeDi(c.esce) + '→' + nomeDi(c.entra); };
+    var k0 = eventi(prima.cambi, cambio), k1 = eventi(dopo.cambi, cambio);
+    if (k0 !== k1) righe.push('Cambi in Risultati: ' + (k0 || 'nessuno') + ' · dalla gara: ' + (k1 || 'nessuno'));
+    var esp = function (e) { return nomeDi(e.athleteId); };
+    var e0 = eventi(prima.espulsioni, esp), e1 = eventi(dopo.espulsioni, esp);
+    if (e0 !== e1) righe.push('Espulsioni in Risultati: ' + (e0 || 'nessuna') + ' · dalla gara: ' + (e1 || 'nessuna'));
+    var tempi = function (g) {
+      var t = isObj(g.tempi) ? g.tempi : {};
+      return (Number(t.numero) || 2) + " tempi da " + (Number(t.durata) || 45) + "'";
+    };
+    if (tempi(prima) !== tempi(dopo)) righe.push('Tempi in Risultati: ' + tempi(prima) + ' · dalla gara: ' + tempi(dopo));
+    return righe;
+  }
+
+  // " (in più X; in meno Y)" fra due elenchi di id: in piu'/in meno nella
+  // gara rispetto a quanto c'e' in Risultati
+  function cambiElenco(a, b, nomi) {
+    var piu = b.filter(function (id) { return a.indexOf(id) < 0; });
+    var meno = a.filter(function (id) { return b.indexOf(id) < 0; });
+    var parti = [];
+    if (piu.length) parti.push('in più ' + nomi(piu).join(', '));
+    if (meno.length) parti.push('in meno ' + nomi(meno).join(', '));
+    return parti.length ? ' (' + parti.join('; ') + ')' : '';
   }
 
   // ── Patch dei Risultati (anti lost-update) ─────────────────────
