@@ -2010,6 +2010,25 @@ function nomeGiocatore(id) {
   return (p.num ? p.num + '. ' : '') + p.name;
 }
 
+// Nomi di TUTTI gli atleti dell'annata, archiviati e staff compresi. Servono
+// solo al confronto con Risultati: una partita vecchia puo' citare chi nel
+// frattempo e' stato archiviato, e nomeGiocatore (rosa operativa) darebbe ''
+// lasciando righe come "46' →Bianchi" che non si capiscono.
+let nomiRosaCompleta = {};
+function aggiornaNomiRosaCompleta(atleti) {
+  if (!Array.isArray(atleti)) return;
+  const m = {};
+  atleti.forEach(a => { if (a && a.id != null && a.name) m[String(a.id)] = String(a.name); });
+  nomiRosaCompleta = m;
+}
+function nomePerDifferenze(id) {
+  if (id == null || id === '') return '—';
+  const k = String(id);
+  return nomeGiocatore(k) ||
+         (Object.prototype.hasOwnProperty.call(nomiRosaCompleta, k) ? nomiRosaCompleta[k] : '') ||
+         'Atleta non in rosa';
+}
+
 function testoEvento(ev) {
   switch (ev.tipo) {
     case 'gol':         return '⚽ Gol — ' + nomeGiocatore(ev.playerId);
@@ -2494,6 +2513,7 @@ async function caricaRosa(idsInDistinta, idsTitolari, idsInCampo) {
   // la prima (vedi script.js e calendario-standalone.js).
   const isOspite = (a) => !!(a.isGuest || a.guest);
   const rosa = (data.athletes || []).filter(a => !a.isStaff && !a.archived);
+  aggiornaNomiRosaCompleta(data.athletes);
 
   const set = idsInDistinta ? new Set(idsInDistinta.map(String)) : null;
   const setTit = idsTitolari ? new Set(idsTitolari.map(String)) : null;
@@ -2617,6 +2637,7 @@ async function salvaNeiRisultati() {
       }
       partite = (d.matchResults && typeof d.matchResults === 'object') ? d.matchResults : {};
       partiteRisultati = partite;
+      aggiornaNomiRosaCompleta(d.athletes);
       renderTendinaPartite();
     } catch (e) {
       toast('Connessione assente: la gara resta sul telefono, riprova quando c\'è rete.');
@@ -2689,7 +2710,7 @@ async function salvaNeiRisultati() {
     // 4. Dati gia' presenti in Risultati (scritti a mano o da un salvataggio
     //    precedente poi corretto): niente sovrascritture in silenzio.
     if (t.match) {
-      const diff = GaraRisultati.differenze(t.match, dati, nomeGiocatore);
+      const diff = GaraRisultati.differenze(t.match, dati, nomePerDifferenze);
       if (diff.length) {
         const testo = 'La partita in Risultati ha già dei dati diversi:\n\n' + diff.join('\n') +
                       '\n\nOK = sostituisci con i dati della gara\nAnnulla = non salvare';
