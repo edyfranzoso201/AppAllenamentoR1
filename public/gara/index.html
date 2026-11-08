@@ -596,6 +596,8 @@
         <div class="gg-field"><label><input type="checkbox" class="gg-chk" id="pdfMinuti">Includi il minutaggio degli atleti</label></div>
         <div class="gg-field"><label>Firma / redazione (opzionale)</label><input type="text" id="pdfFirma" placeholder="es. A cura di Mario Rossi"></div>
         <button type="button" class="gg-btn" id="btnGenPdf" style="width:100%;">&#128196; Genera PDF</button>
+        <button type="button" class="gg-btn" id="btnSalvaRisultati" style="width:100%;margin-top:10px;">&#128190; Salva nei Risultati</button>
+        <div class="gg-hint" id="salvaRisultatiHint" style="margin-top:6px;"></div>
       </div>
 
       <div class="gg-card" id="cardInstalla" style="display:none;">
@@ -2560,6 +2562,143 @@ function mostraRosaVuota(messaggio) {
   toast(testo);
 }
 
+// ── Salva nei Risultati ────────────────────────────────────────────────
+// La gara vive solo nel localStorage del telefono e "Azzera la gara" la
+// cancella: questo pulsante la mette al sicuro nella partita di Risultati.
+function renderSalvaRisultati() {
+  const h = document.getElementById('salvaRisultatiHint');
+  if (!h) return;
+  if (info.salvataNeiRisultati) {
+    const d = new Date(info.salvataNeiRisultati);
+    h.textContent = 'Ultimo salvataggio in Risultati: ' + (isNaN(d) ? info.salvataNeiRisultati :
+      d.toLocaleDateString('it-IT') + ' ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })) +
+      '. Se correggi la gara, salva di nuovo.';
+  } else {
+    h.textContent = 'Non ancora salvata in Risultati: dopo "Azzera la gara" resterebbe solo il PDF.';
+  }
+}
+
+// Durata di OGNI tempo (0 = non giocato, il cronometro per quello in corso):
+// salvando a meta' partita Risultati non deve contare i tempi futuri.
+function durateDaSalvare() {
+  const out = {};
+  for (let p = 1; p <= numTempi(); p++) out[p] = durataTempo(p);
+  return out;
+}
+
+async function salvaNeiRisultati() {
+  const btn = document.getElementById('btnSalvaRisultati');
+  if (!btn || btn.disabled) return;
+  if (!annataId()) { toast('Annata non impostata: apri Andamento Gara da Sport Monitoring → Area Tecnica.'); return; }
+  btn.disabled = true;
+  try {
+    // 1. Partite fresche: un altro dispositivo puo' averle cambiate da quando
+    //    la pagina e' aperta, e il confronto va fatto su quelle vere.
+    let partite;
+    try {
+      const res = await fetch('/api/data', { headers: authHeaders() });
+      if (res.status === 401 || res.status === 403) {
+        toast('Sessione scaduta: entra in Sport Monitoring e riprova. La gara resta sul telefono.');
+        return;
+      }
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const d = await res.json();
+      if (!d || !Array.isArray(d.athletes)) {
+        toast('Annata non riconosciuta dal server: riapri Andamento Gara da Sport Monitoring.');
+        return;
+      }
+      partite = (d.matchResults && typeof d.matchResults === 'object') ? d.matchResults : {};
+      partiteRisultati = partite;
+      renderTendinaPartite();
+    } catch (e) {
+      toast('Connessione assente: la gara resta sul telefono, riprova quando c\'è rete.');
+      return;
+    }
+
+    // 2. Senza titolari il minutaggio e' incompleto: lo si dice prima.
+    if (!titolari().length &&
+        !confirm('Titolari non schierati: il minutaggio sarà incompleto.\n\n' +
+                 'OK = salva comunque\nAnnulla = torno alla Rosa per schierarli (pulsante XI)')) {
+      vaiA('rosa');
+      return;
+    }
+
+    // 3. Destinazione: partita legata, oppure stessa data + avversario,
+    //    oppure nuova partita.
+    const t = GaraRisultati.trovaPartita(partite, { matchId: info.matchId, data: info.data, avversario: nomeAvversaria() });
+    const noiCasa = info.noiCasa === '1' || info.noiCasa === 1;
+    let matchId = null, nuova = null;
+    if (t.modo === 'legata') {
+      matchId = t.id;
+    } else if (t.modo === 'trovata') {
+      if (!confirm('Salvo su ' + GaraRisultati.etichettaPartita(t.match) + '?')) return;
+      matchId = t.id;
+    } else {
+      if (!info.data || !nomeAvversaria()) {
+        toast('Per aggiungerla ai Risultati servono data e avversario: compilali in Dati gara.');
+        vaiA('dati');
+        return;
+      }
+      if (!confirm('Questa gara non è in Risultati: la aggiungo come nuova partita?')) return;
+      nuova = { date: info.data, time: info.ora || '', venue: info.luogo || '',
+                opponentName: nomeAvversaria(), location: noiCasa ? 'home' : 'away' };
+    }
+
+    const dati = GaraRisultati.datiDaGara({
+      noiCasa, golNoi: scoreHome, golLoro: scoreAway, eventi: events,
+      convocati: convocati().map(p => String(p.id)), titolari: titolari().map(p => String(p.id)),
+      numTempi: numTempi(), durata: Number(info.durata) || 45, durateTempi: durateDaSalvare(),
+      adesso: new Date().toISOString()
+    });
+
+    // 4. Dati gia' presenti in Risultati (scritti a mano o da un salvataggio
+    //    precedente poi corretto): niente sovrascritture in silenzio.
+    if (t.match) {
+      const diff = GaraRisultati.differenze(t.match, dati, nomeGiocatore);
+      if (diff.length && !confirm('La partita in Risultati ha già dei dati diversi:\n\n' + diff.join('\n') +
+                                  '\n\nOK = sostituisci con i dati della gara\nAnnulla = non salvare')) return;
+    }
+
+    // 5. Scrittura di UNA partita (authHeaders porta X-Annata-Id, senza il
+    //    quale il server risponde 400)
+    let res, out = null;
+    try {
+      res = await fetch('/api/data?action=match-gara', {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+        body: JSON.stringify({ matchId, nuova, dati })
+      });
+      try { out = await res.json(); } catch (_) {}
+    } catch (e) {
+      toast('Connessione assente: la gara resta sul telefono, riprova quando c\'è rete.');
+      return;
+    }
+    if (res.status === 404 && matchId) {
+      // La partita e' stata eliminata da Risultati fra la lettura e la
+      // scrittura. Si scollega, altrimenti ogni nuovo tentativo andrebbe
+      // contro la stessa partita sparita e fallirebbe per sempre: cosi' il
+      // prossimo "Salva" ripropone trovata/nuova.
+      delete partiteRisultati[matchId];
+      info.matchId = '';
+      salvaStato();
+      renderTendinaPartite();
+    }
+    if (!res.ok || !out || !out.success) {
+      toast((out && out.message) || ('Salvataggio non riuscito (errore ' + res.status + '). La gara resta sul telefono.'));
+      return;
+    }
+    partiteRisultati[out.matchId] = out.match;
+    info.matchId = String(out.matchId);
+    info.salvataNeiRisultati = new Date().toISOString();
+    salvaStato();
+    renderTendinaPartite();
+    renderSalvaRisultati();
+    toast('Gara salvata nei Risultati ✓');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 // ── PDF per la testata giornalistica ──────────────────────────────────
 function generaPdf() {
   if (!window.jspdf || !window.jspdf.jsPDF) { alert('Libreria PDF non caricata. Verifica la connessione e riprova.'); return; }
@@ -3037,6 +3176,8 @@ async function init() {
 
   document.getElementById('infoPartita').addEventListener('change', e => scegliPartita(e.target.value));
   document.getElementById('btnGenPdf').addEventListener('click', generaPdf);
+  document.getElementById('btnSalvaRisultati').addEventListener('click', salvaNeiRisultati);
+  renderSalvaRisultati();
   tieniPremuto('btnNuovaGara', 'Azzera la gara', 'Tieni premuto 3 secondi&hellip;', resetGara,
                HOLD_AZZERA_MS);
 
