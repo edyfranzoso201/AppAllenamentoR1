@@ -236,6 +236,17 @@ export default async function handler(req, res) {
       const { id, annataId } = req.body || {};
       if (!id) return res.status(400).json({ success: false, message: 'id obbligatorio' });
 
+      // L'annata arriva dal client: deve esistere ed essere della società della
+      // sessione, altrimenti l'atleta finirebbe nella rosa di un'altra società.
+      // Il controllo sta PRIMA di segnare la richiesta come accettata.
+      if (annataId) {
+        const annataOk = /^[a-z0-9_-]+$/i.test(String(annataId)) &&
+          ((await kv.get('annate:list')) || []).some(a => a && String(a.id) === String(annataId) && String(a.societyId || '') === societyId);
+        if (!annataOk) {
+          return res.status(403).json({ success: false, message: 'Annata non valida per questa società' });
+        }
+      }
+
       const all = (await kv.get(kvKey(societyId))) || [];
       const idx = all.findIndex(r => r.id === id);
       if (idx === -1) return res.status(404).json({ success: false, message: 'Richiesta non trovata' });

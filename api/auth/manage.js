@@ -2,6 +2,7 @@
 import { createClient } from '@vercel/kv';
 import { hashPasswordScrypt } from './_password.js';
 import { verifySuperAdmin } from '../_sa-auth.js';
+import { revocaSessioniUtente } from './_sessions.js';
 
 const kv = createClient({
   url: process.env.UPSTASH_KV_REST_API_URL || process.env.KV_REST_API_URL,
@@ -235,8 +236,9 @@ export default async function handler(req, res) {
 
         // Aggiorna solo i campi forniti, mantieni quelli esistenti
         const updated = { ...users[idx] };
+        const ruoloPrima = users[idx].role;
 
-        if (email     !== undefined) updated.email     = email.trim();
+        if (email    !== undefined) updated.email     = email.trim();
         if (nome      !== undefined) updated.nome      = nome.trim();
         if (cognome   !== undefined) updated.cognome   = cognome.trim();
         if (note      !== undefined) updated.note      = note.trim();
@@ -255,6 +257,20 @@ export default async function handler(req, res) {
           // chiave con casing diverso da quella esistente.
           kv.set(`auth:user:${String(updated.username || '').trim().toLowerCase()}`, updated),
         ]);
+
+        // La sessione tiene in copia il ruolo: senza revoca un utente declassato
+        // o a cui è stata cambiata la password resterebbe dentro come prima.
+        // Chi cambia la PROPRIA password dal pannello resta collegato sul suo
+        // dispositivo; se cambia il ruolo deve rientrare chiunque.
+        const ruoloCambiato = updated.role !== ruoloPrima;
+        const passwordCambiata = !!(password && password.trim() !== '');
+        if (ruoloCambiato || passwordCambiata) {
+          const mioToken = isSuperAdmin ? '' : String(req.headers['x-auth-session'] || '').trim();
+          try {
+            const n = await revocaSessioniUtente(kv, updated.username, { tranne: ruoloCambiato ? '' : mioToken });
+            if (n) console.log(`🔒 Revocate ${n} sessioni di ${updated.username}`);
+          } catch (e) { console.error('revoca sessioni (update):', e.message); }
+        }
 
         console.log(`✅ Utente aggiornato: ${username} (${updated.role})`);
         return res.status(200).json({ success: true, message: 'Utente aggiornato con successo' });
@@ -295,6 +311,12 @@ export default async function handler(req, res) {
           kv.del(`auth:user:${unameLower}`),
           kv.del(`auth:user:${String(username).toLowerCase()}`),
         ]);
+
+        // Un utente eliminato non deve restare dentro con la sessione già aperta.
+        try {
+          const n = await revocaSessioniUtente(kv, unameLower);
+          if (n) console.log(`🔒 Revocate ${n} sessioni di ${unameLower}`);
+        } catch (e) { console.error('revoca sessioni (delete):', e.message); }
 
         console.log(`✅ Utente eliminato: ${username} (rimosse ${users.length - updated.length} occorrenze)`);
         return res.status(200).json({ success: true, message: 'Utente eliminato con successo' });

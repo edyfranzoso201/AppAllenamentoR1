@@ -4,6 +4,9 @@ import { gzipSync } from 'zlib';
 import crypto from 'crypto';
 import { verifySuperAdmin, timingSafeStrEq } from './_sa-auth.js';
 import { hashPasswordScrypt } from './auth/_password.js';
+import { bachecaSocietyId, leggiBachecaConfig, salvaBachecaConfig, leggiPostSocieta, salvaPostSocieta, leggiImmaginiPost, salvaImmaginePost } from './_bacheca.js';
+import { applicaAthleteDocs } from './_athlete-docs.js';
+import { revocaSessioniSocieta } from './auth/_sessions.js';
 import { applyMatchPatch, sanificaDatiGara, sanificaNuova, applicaGara, purgeGaraAtleta, patchTroppoGrande, patchOltreLimiti } from './_match-gara.js';
 
 const kv = createClient({
@@ -54,6 +57,8 @@ async function purgeDemoSociety(lic, licKey, releaseAntiAbuse = false) {
   const removedUsers = allUsers.filter(u => u.societyId === societyId);
   await kv.set('auth:users', remainingUsers);
   for (const u of removedUsers) { try { await kv.del(`auth:user:${String(u.username).toLowerCase()}`); } catch (e) { /* idempotente */ } }
+  // Gli utenti non esistono più: chiude anche le loro sessioni ancora aperte.
+  try { await revocaSessioniSocieta(kv, societyId); } catch (e) { console.error('revoca sessioni demo:', e.message); }
 
   try { await kv.del(`licenze_society:${societyId}`); } catch (e) { /* idempotente */ }
 
@@ -3373,14 +3378,15 @@ Esempio: {"U2010":[1,3,5],"U2011":[2,4,6]}`;
 // ── Senza annataId: dati globali / bacheca pubblica ──────────────────────
 if (!annataId) {
 if (req.method === 'GET') {
-const globalPosts = (await kv.get('global:posts')) || [];
-const teamName = (await kv.get('global:teamName')) || 'La mia squadra';
-const bachecaConfig = (await kv.get('global:bachecaConfig')) || {};
+// Banner e comunicati sono per società (api/_bacheca.js): l'utente loggato
+// vede quelli della sua sessione, la bacheca pubblica quelli del ?sid= del link.
+// I banner del superadmin restano unici per tutte le società.
+const _bSid0 = bachecaSocietyId(req, session, null);
+const globalPosts = await leggiPostSocieta(kv, _bSid0);
+const teamName = await resolveTeamName(_bSid0);
+const bachecaConfig = await leggiBachecaConfig(kv, _bSid0);
 const superadminBanners = (await kv.get('global:superadminBanners')) || {};
-const postImages = {};
-await Promise.all(globalPosts.map(async p => {
-  if (p?.id) { const img = await kv.get(`global:postImg_${p.id}`); if (img) postImages[p.id] = img; }
-}));
+const postImages = await leggiImmaginiPost(kv, _bSid0, globalPosts);
 return res.status(200).json({
 success: true, globalPosts, postImages, posts: [], teamName, bachecaConfig, superadminBanners
 });
@@ -3390,7 +3396,8 @@ if (req.method === 'POST' && req.body && req.body.bachecaConfig !== undefined) {
 if (!session.isAuthenticated || !canWrite(session.role)) {
 return res.status(401).json({ success: false, message: 'Non autorizzato' });
 }
-await kv.set('global:bachecaConfig', req.body.bachecaConfig);
+// Società SOLO dalla sessione: ognuno salva i banner della propria.
+await salvaBachecaConfig(kv, bachecaSocietyId(req, session, null), req.body.bachecaConfig);
 return res.status(200).json({ success: true });
 }
 
@@ -3452,18 +3459,20 @@ if (!_tnSocietyId) {
   } catch (e) { /* niente */ }
 }
 const resolvedTeamName = await resolveTeamName(_tnSocietyId);
+// Società di cui servire banner e comunicati (api/_bacheca.js): quella della
+// sessione, oppure quella dell'annata per i genitori senza login.
+const _bSid = bachecaSocietyId(req, session, _tnSocietyId);
 
 // ── PostImages lazy ───────────────────────────────────────────────────────
 if (req.method === 'GET' && req.query && req.query.action === 'postImages') {
 const [ps, gps] = await Promise.all([
 kv.get(`${prefix}:posts`),
-kv.get('global:posts')
+leggiPostSocieta(kv, _bSid)
 ]);
-const postImages = {};
-await Promise.all([
-...(ps || []).map(async p => { if (p?.id) { const img = await kv.get(`${prefix}:postImg_${p.id}`); if (img) postImages[p.id] = img; } }),
-...(gps || []).map(async p => { if (p?.id) { const img = await kv.get(`global:postImg_${p.id}`); if (img) postImages[p.id] = img; } })
-]);
+const postImages = await leggiImmaginiPost(kv, _bSid, gps);
+await Promise.all(
+(ps || []).map(async p => { if (p?.id) { const img = await kv.get(`${prefix}:postImg_${p.id}`); if (img) postImages[p.id] = img; } })
+);
 return res.status(200).json({ success: true, postImages });
 }
 
@@ -3475,10 +3484,10 @@ kv.get(`${prefix}:calendarResponses`),
 kv.get(`${prefix}:convSettings`),
 kv.get(`${prefix}:athletes`),
 kv.get(`${prefix}:posts`),
-kv.get('global:posts'),
+leggiPostSocieta(kv, _bSid),
 kv.get(`${prefix}:documents`),
 kv.get(`${prefix}:materiale`),
-kv.get('global:bachecaConfig'),
+leggiBachecaConfig(kv, _bSid),
 kv.get('global:superadminBanners'),
 kv.get(`${prefix}:convBg`),
 kv.get(`${prefix}:convBg2`),
@@ -3578,12 +3587,12 @@ kv.get(`${prefix}:convSettings`),
 kv.get(`${prefix}:convBg`),
 kv.get(`${prefix}:convBg2`),
 kv.get(`${prefix}:posts`),
-kv.get('global:posts'),
+leggiPostSocieta(kv, _bSid),
 kv.get(`${prefix}:individualPassword`),
 kv.get(`${prefix}:ratingSheets`),
 kv.get(`${prefix}:documents`),
 kv.get(`${prefix}:athleteDocs`),
-kv.get('global:bachecaConfig'),
+leggiBachecaConfig(kv, _bSid),
 kv.get('global:superadminBanners'),
 kv.get(`${prefix}:tacticalBoards`),
 kv.get(`${prefix}:multe`),
@@ -3649,14 +3658,17 @@ return res.status(200).json(data);
 if (req.method === 'POST') {
 const body = req.body || {};
 
-// FIX v1.5.21: bachecaConfig è un salvataggio globale che richiede solo
-// autenticazione (non canWrite), gestito PRIMA del check canWrite.
-// Salviamo anche quando arriva con annataId (perché l'interceptor lo aggiunge sempre).
+// Banner sponsor della società. Arriva anche con annataId (l'interceptor lo
+// aggiunge sempre), per questo è gestito qui prima del resto.
+// Prima bastava essere loggati e si scriveva in una chiave unica per TUTTE le
+// società: qualunque utente cambiava i banner visti dai genitori delle altre.
+// Ora serve il permesso di scrittura e si salva solo nella propria società
+// (presa dalla sessione, mai dal client).
 if (body.bachecaConfig !== undefined) {
-if (!session.isAuthenticated) {
+if (!session.isAuthenticated || !canWrite(session.role)) {
 return res.status(401).json({ success: false, message: 'Non autorizzato' });
 }
-await kv.set('global:bachecaConfig', body.bachecaConfig);
+await salvaBachecaConfig(kv, _bSid, body.bachecaConfig);
 return res.status(200).json({ success: true });
 }
 
@@ -3755,42 +3767,27 @@ if (body.surveyResponses !== undefined && Object.keys(body).length === 1) {
 // athleteDocs: documenti caricati dai genitori (link Google Drive)
 // Accessibile senza canWrite — il genitore carica il proprio documento
 if (body.athleteDocs !== undefined && Object.keys(body).length === 1) {
-// Leggi i docs esistenti e fai merge (non sovrascrivere tutto)
+// Le regole (un solo atleta esistente per richiesta, tipi ammessi, pulizia di
+// url e testi per chi non ha login) stanno in ./_athlete-docs.js.
+const _docAnonimo = !session.isAuthenticated;
+let _docAthletes = [];
+if (_docAnonimo) {
+  // Il genitore non ha login: limite per IP, così il solo link dell'annata non
+  // basta a svuotare o riscrivere i documenti di tutta la squadra in un colpo.
+  const _docIp = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'noip';
+  const _docRlKey = `ratelimit:athletedocs:${_docIp}`;
+  const _docN = await kv.incr(_docRlKey);
+  if (_docN === 1) await kv.expire(_docRlKey, 3600);
+  if (_docN > 30) {
+    return res.status(429).json({ success: false, message: 'Troppe modifiche ai documenti. Riprova tra un\'ora.' });
+  }
+  _docAthletes = (await kv.get(`${prefix}:athletes`)) || [];
+}
+// Merge sui docs esistenti (non sovrascrive tutto); un valore null elimina.
 const existing = await kv.get(`${prefix}:athleteDocs`) || {};
-// Merge profondo: per ogni atleta, merge dei tipi documento
-// Se un valore è null → elimina quella chiave
-for (const athleteId of Object.keys(body.athleteDocs)) {
-  const incoming = body.athleteDocs[athleteId] || {};
-  const current = existing[athleteId] || {};
-  for (const docKey of Object.keys(incoming)) {
-    if (incoming[docKey] === null) {
-      delete current[docKey]; // elimina documento
-    } else if (!session.isAuthenticated) {
-      // Genitore senza login: la pagina staff (calendario.html) mette url e nota
-      // in innerHTML/href. Solo link https senza virgolette né markup, campi
-      // testo senza < >: niente javascript: o attributi iniettati.
-      const d = incoming[docKey];
-      let url = (d && typeof d === 'object') ? String(d.url || '').trim() : '';
-      if (url && !/^[a-z][a-z0-9+.-]*:/i.test(url)) url = 'https://' + url; // "drive.google.com/..." incollato senza schema
-      if (Array.isArray(d) || docKey.length > 64 || url.length > 2000 || !/^https?:\/\/[^\s"'<>`]+$/i.test(url)) {
-        return res.status(400).json({ success: false, message: 'Link documento non valido: deve iniziare con https://' });
-      }
-      const clean = s => String(s == null ? '' : s).replace(/[<>"'`]/g, '').slice(0, 500);
-      current[docKey] = {
-        url,
-        nota: clean(d.nota),
-        uploadedAt: clean(d.uploadedAt).slice(0, 40),
-        uploadedBy: clean(d.uploadedBy).slice(0, 40),
-      };
-    } else {
-      current[docKey] = incoming[docKey]; // aggiorna/aggiungi
-    }
-  }
-  if (Object.keys(current).length === 0) {
-    delete existing[athleteId]; // rimuovi atleta se non ha più documenti
-  } else {
-    existing[athleteId] = current;
-  }
+const _docEsito = applicaAthleteDocs(existing, body.athleteDocs, { anonimo: _docAnonimo, athletes: _docAthletes });
+if (!_docEsito.ok) {
+  return res.status(_docEsito.status).json({ success: false, message: _docEsito.message });
 }
 await kv.set(`${prefix}:athleteDocs`, existing);
 return res.status(200).json({ success: true });
@@ -3968,16 +3965,25 @@ if (body.surveys !== undefined) await kv.set(`${prefix}:surveys`, body.surveys);
 if (body.surveyResponses !== undefined) await kv.set(`${prefix}:surveyResponses`, body.surveyResponses);
 if (body.circuitTimes !== undefined) await kv.set(`${prefix}:circuitTimes`, body.circuitTimes);
 
-const globalPostIds = ((await kv.get('global:posts')) || []).map(p => p.id);
+// Comunicati "di società" (visibili a tutte le annate della società) e loro
+// immagini: salvati nella società della sessione, mai in una chiave comune.
+// Tra gli id si contano anche i comunicati che arrivano in questa stessa
+// richiesta, così l'immagine di un comunicato nuovo finisce al posto giusto.
+if (Object.keys(body).some(k => k.startsWith('postImg_'))) {
+const societyPostIds = new Set([
+...(await leggiPostSocieta(kv, _bSid)),
+...(Array.isArray(body.globalPosts) ? body.globalPosts : [])
+].filter(p => p && p.id).map(p => String(p.id)));
 for (const key of Object.keys(body)) {
 if (key.startsWith('postImg_')) {
 const postId = key.replace('postImg_', '');
-if (globalPostIds.includes(postId)) await kv.set(`global:${key}`, body[key]);
+if (societyPostIds.has(postId)) await salvaImmaginePost(kv, _bSid, postId, body[key]);
 else await kv.set(`${prefix}:${key}`, body[key]);
 }
 }
+}
 
-if (body.globalPosts !== undefined) await kv.set('global:posts', body.globalPosts);
+if (body.globalPosts !== undefined) await salvaPostSocieta(kv, _bSid, body.globalPosts);
 
 console.log(`POST /api/data - annata=${annataId} user=${session.username} role=${session.role}`);
 // Le versioni fuse tornano al client, che le adotta come nuova base delle patch

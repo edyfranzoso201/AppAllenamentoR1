@@ -420,7 +420,8 @@ function escapeHtml(s) {
 // ── Caricamento post ─────────────────────────────────────────────────────
 (async function() {
   try {
-    var res  = await fetch('/api/data', { cache: 'no-store' });
+    // Banner e comunicati sono per società: il sid del link dice quale bacheca leggere.
+    var res  = await fetch('/api/data' + (_urlSid ? '?sid=' + encodeURIComponent(_urlSid) : ''), { cache: 'no-store' });
     var data = await res.json();
 
     if (data.teamName) {

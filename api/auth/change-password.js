@@ -1,6 +1,7 @@
 // api/auth/change-password.js — cambio password self-service
 import { createClient } from '@vercel/kv';
 import { verifyPassword, hashPasswordScrypt } from './_password.js';
+import { revocaSessioniUtente } from './_sessions.js';
 
 const kv = createClient({
   url: process.env.UPSTASH_KV_REST_API_URL || process.env.KV_REST_API_URL,
@@ -102,6 +103,10 @@ export default async function handler(req, res) {
         kv.set('auth:users', allUsers),
         kv.set(`auth:user:${username.toLowerCase()}`, allUsers[idx]),
       ]);
+      // Chiude le altre sessioni dell'utente (un telefono perso, un PC condiviso):
+      // resta collegato solo il dispositivo da cui ha cambiato la password.
+      try { await revocaSessioniUtente(kv, username, { tranne: String(sessionToken) }); }
+      catch (e) { console.error('revoca sessioni (change-password):', e.message); }
     }
 
     console.log(`✅ Password cambiata per: ${username}`);

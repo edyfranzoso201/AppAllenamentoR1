@@ -1468,7 +1468,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!window._bannerShown) {
                 try {
                     var xhrBanner = new XMLHttpRequest();
-                    xhrBanner.open('GET', '/api/data', true); // senza X-Annata-Id = risposta globale
+                    xhrBanner.open('GET', '/api/data', true); // senza X-Annata-Id = banner della società
+                    // La XHR non passa dall'interceptor: senza questo header il server
+                    // non sa di quale società servire i banner.
+                    var _bSoc = sessionStorage.getItem('gosport_society_id') || '';
+                    if (_bSoc) xhrBanner.setRequestHeader('X-Society-Id', _bSoc);
                     xhrBanner.onload = function() {
                         try {
                             var bd = JSON.parse(xhrBanner.responseText);
@@ -6729,7 +6733,11 @@ ${!includeIndividual ? '⚠️ Sessioni Individual escluse.' : ''}`;
             if (!window._bannerShown) {
                 try {
                     var xhrBanner = new XMLHttpRequest();
-                    xhrBanner.open('GET', '/api/data', true); // senza X-Annata-Id = risposta globale
+                    xhrBanner.open('GET', '/api/data', true); // senza X-Annata-Id = banner della società
+                    // La XHR non passa dall'interceptor: senza questo header il server
+                    // non sa di quale società servire i banner.
+                    var _bSoc = sessionStorage.getItem('gosport_society_id') || '';
+                    if (_bSoc) xhrBanner.setRequestHeader('X-Society-Id', _bSoc);
                     xhrBanner.onload = function() {
                         try {
                             var bd = JSON.parse(xhrBanner.responseText);
