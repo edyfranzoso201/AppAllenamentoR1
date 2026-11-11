@@ -1,6 +1,7 @@
 // api/registrations.js — Gestione richieste iscrizione atleti
 import { createClient } from '@vercel/kv';
 import crypto from 'crypto';
+import { pulisciGenitore } from './_registrations-genitore.js';
 
 const kv = createClient({
   url: process.env.UPSTASH_KV_REST_API_URL || process.env.KV_REST_API_URL,
@@ -118,6 +119,18 @@ export default async function handler(req, res) {
           message: `Campo troppo lungo: ${troppoLungo[0]} (massimo ${MAX_TESTO} caratteri)` });
       }
 
+      // Blocco genitore (solo minorenni): stessi limiti, e passano soltanto i
+      // sei campi previsti dal modulo. Prima veniva salvato cosi' come arrivava.
+      let genitorePulito = null;
+      if (!isAdult) {
+        const esito = pulisciGenitore(genitore, MAX_TESTO);
+        if (!esito.ok) {
+          return res.status(400).json({ success: false,
+            message: `Campo troppo lungo: genitore.${esito.campo} (massimo ${MAX_TESTO} caratteri)` });
+        }
+        genitorePulito = esito.genitore;
+      }
+
       // Verifica che societyId esista (licenza attiva)
       const licenseKey = await kv.get(`licenze_society:${societyId}`);
       if (!licenseKey) {
@@ -174,7 +187,7 @@ export default async function handler(req, res) {
         codiceFiscale: isAdult ? (codiceFiscale || '').trim() : '',
         indirizzo: isAdult ? (indirizzo || '').trim() : '',
         codiceFiscaleAtleta: !isAdult ? (codiceFiscaleAtleta || '').trim() : '',
-        genitore: !isAdult ? (genitore || {}) : null,
+        genitore: genitorePulito,
         privacyAccepted: true,
         consensi: consensiRecord,
       };

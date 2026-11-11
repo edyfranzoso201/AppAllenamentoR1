@@ -8,6 +8,7 @@ import { revocaSessioniUtente, revocaSessioniSocieta } from '../api/auth/_sessio
 import { applicaAthleteDocs } from '../api/_athlete-docs.js';
 import { ruoloVedeTutteLeAnnate, annateUtente, puoUsareAnnata, filtraAnnatePerUtente } from '../api/_annate-access.js';
 import { RL_LOGIN, ipDi, chiaviLogin, statoBloccoLogin, registraLoginFallito, azzeraLoginRiuscito } from '../api/auth/_login-ratelimit.js';
+import { CAMPI_GENITORE, pulisciGenitore } from '../api/_registrations-genitore.js';
 
 let ok = 0, ko = 0;
 function check(nome, cond) {
@@ -250,6 +251,24 @@ const A = 'aaaaaaaaaaaaaaaaaaaa', B = 'bbbbbbbbbbbbbbbbbbbb';
   kv.m.set(k.utenteIp, { attempts: 5, resetAt: Date.now() - 1000 });
   check('blocco scaduto: libero e contatore cancellato', !(await statoBloccoLogin(kv, 'mario', IP1)).bloccato && !kv.m.has(k.utenteIp));
   check('dopo la scadenza si riparte da 4 rimasti', (await registraLoginFallito(kv, 'mario', IP1)) === 4);
+}
+
+// ── Blocco genitore nell'iscrizione pubblica ────────────────────────────
+{
+  const buono = { nome: ' Anna ', cognome: 'Rossi', cellulare: '3331234567', email: 'a@b.it', codiceFiscale: 'RSSNNA80A41H501X', indirizzo: 'Via Roma 1' };
+  let r = pulisciGenitore(buono);
+  check('genitore normale: accettato e ripulito dagli spazi', r.ok && r.genitore.nome === 'Anna' && r.genitore.indirizzo === 'Via Roma 1');
+  r = pulisciGenitore({ ...buono, ruolo: 'admin', __proto__x: 1, note: 'x'.repeat(5000) });
+  check('campi non previsti: scartati', r.ok && Object.keys(r.genitore).sort().join() === [...CAMPI_GENITORE].sort().join());
+  r = pulisciGenitore({ ...buono, indirizzo: 'x'.repeat(81) });
+  check('campo oltre 80 caratteri: rifiutato col nome del campo', !r.ok && r.campo === 'indirizzo');
+  check('80 caratteri esatti: accettato', pulisciGenitore({ ...buono, nome: 'x'.repeat(80) }).ok);
+  r = pulisciGenitore({ nome: { a: 1 }, cognome: ['x'], cellulare: 3331234567, email: true });
+  check('valori non testuali: vuoti, il numero diventa testo', r.ok && r.genitore.nome === '' && r.genitore.cognome === '' && r.genitore.cellulare === '3331234567' && r.genitore.email === '');
+  for (const strano of [null, undefined, 'testo', 42, ['a']]) {
+    r = pulisciGenitore(strano);
+    check(`genitore ${JSON.stringify(strano)}: sei campi vuoti`, r.ok && CAMPI_GENITORE.every(c => r.genitore[c] === ''));
+  }
 }
 
 console.log(`\n${ok} ok, ${ko} falliti`);
