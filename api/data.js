@@ -2095,6 +2095,21 @@ if (req.query?.action === 'push-send' && req.method === 'POST') {
   if (!aid) return res.status(400).json({ success: false, message: 'annataId mancante' });
   if (!isValidId(aid)) return res.status(400).json({ success: false, message: 'annataId non valido' });
 
+  // Una notifica con titolo e testo liberi arriva sui telefoni dei genitori:
+  // la può inviare solo chi può anche scrivere ciò che la genera (comunicati,
+  // sondaggi, eventi, convocazioni). Prima bastava essere loggati, anche con
+  // un profilo in sola lettura. Il direttivo resta abilitato: nell'app è
+  // trattato come societa_l1 (profilo con modifica) e il pulsante "Invia
+  // Notifica" gli è sempre stato mostrato.
+  if (!canWrite(session.role) && normalizzaRuolo(session.role) !== 'direttivo') {
+    return res.status(403).json({ success: false, message: 'Permesso negato: il tuo profilo non può inviare notifiche' });
+  }
+  // L'annata può arrivare dal corpo della richiesta, che il controllo generale
+  // (basato sull'header X-Annata-Id) non vede: va verificata anche qui.
+  if (!(await puoUsareAnnata(kv, session, aid))) {
+    return res.status(403).json({ success: false, message: 'Accesso negato: annata non assegnata a questo utente' });
+  }
+
   // ISOLAMENTO SOCIETÀ: si possono inviare push SOLO ai subscriber di un'annata
   // della PROPRIA società. Senza questo controllo un utente di una società poteva
   // inviare notifiche (con titolo/testo/URL liberi) ai genitori di un'altra società

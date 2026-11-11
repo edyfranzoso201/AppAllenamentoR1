@@ -1630,7 +1630,7 @@ window.toggleCalendario=function(){
 <script src="/auth-multi-annata.js?v=1779800000"></script>
 <script src="/data-adapter-multi-annata.js"></script>
 <script src="/presenza-calendar-mode.js"></script>
-<script src="/calendario-standalone.js?v=1781400000"></script>
+<script src="/calendario-standalone.js?v=1794500000"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════
 // ████  BACHECA  ████
@@ -4215,15 +4215,15 @@ function docRender() {
         h += '<div style="background:' + docBoxBg + ';border:1px solid ' + docBoxBord + ';border-radius:8px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;">';
         h += '<i class="bi bi-file-earmark-text-fill" style="font-size:1.6rem;color:' + docIconCol + ';flex-shrink:0;"></i>';
         h += '<div style="flex:1;min-width:0;">';
-        h += '<div style="font-weight:600;color:' + docNameCol + ';margin-bottom:2px;">' + doc.name + '</div>';
-        if (doc.desc) h += '<div style="color:' + docDescCol + ';font-size:0.8rem;margin-bottom:4px;">' + doc.desc + '</div>';
-        h += '<div>' + visLabels + '<span style="color:' + docDateCol + ';font-size:0.72rem;">' + (doc.date||'') + '</span></div>';
+        h += '<div style="font-weight:600;color:' + docNameCol + ';margin-bottom:2px;">' + window._escH(doc.name) + '</div>';
+        if (doc.desc) h += '<div style="color:' + docDescCol + ';font-size:0.8rem;margin-bottom:4px;">' + window._escH(doc.desc) + '</div>';
+        h += '<div>' + visLabels + '<span style="color:' + docDateCol + ';font-size:0.72rem;">' + window._escH(doc.date||'') + '</span></div>';
         h += '</div>';
         h += '<div style="display:flex;gap:6px;flex-shrink:0;">';
-        h += '<a href="' + doc.url + '" target="_blank" style="background:' + apriBg + ';color:' + apriIconCol + ';border:none;border-radius:5px;padding:5px 12px;font-size:0.8rem;cursor:pointer;text-decoration:none;"><i class="bi bi-box-arrow-up-right"></i> Apri</a>';
+        h += '<a href="' + window._urlSicuro(doc.url) + '" target="_blank" rel="noopener" style="background:' + apriBg + ';color:' + apriIconCol + ';border:none;border-radius:5px;padding:5px 12px;font-size:0.8rem;cursor:pointer;text-decoration:none;"><i class="bi bi-box-arrow-up-right"></i> Apri</a>';
         if (canEdit) {
-            h += '<button data-docid="' + doc.id + '" class="doc-edit-btn" style="background:#1a3a5f;color:#ffffff;border:none;border-radius:5px;padding:5px 10px;font-size:0.8rem;cursor:pointer;"><i class="bi bi-pencil-fill"></i></button>';
-            h += '<button data-docid="' + doc.id + '" class="doc-delete-btn" style="background:#d90429;color:#ffffff;border:none;border-radius:5px;padding:5px 10px;font-size:0.8rem;cursor:pointer;"><i class="bi bi-trash-fill"></i></button>';
+            h += '<button data-docid="' + window._escH(doc.id) + '" class="doc-edit-btn" style="background:#1a3a5f;color:#ffffff;border:none;border-radius:5px;padding:5px 10px;font-size:0.8rem;cursor:pointer;"><i class="bi bi-pencil-fill"></i></button>';
+            h += '<button data-docid="' + window._escH(doc.id) + '" class="doc-delete-btn" style="background:#d90429;color:#ffffff;border:none;border-radius:5px;padding:5px 10px;font-size:0.8rem;cursor:pointer;"><i class="bi bi-trash-fill"></i></button>';
         }
         h += '</div></div>';
     });

@@ -27,6 +27,25 @@
   };
 })();
 
+// ── Testi e link scritti dagli utenti dentro l'HTML ─────────────────────────
+// Nomi, descrizioni e note dei documenti finiscono in innerHTML e i link in
+// href: senza questi due passaggi un nome come <img onerror=...> o un link
+// javascript:... verrebbe eseguito nel browser di chi apre la pagina (genitori
+// compresi). Usate anche da calendario.html, che carica questo file.
+window._escH = function (s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+};
+// Solo link http/https; un link incollato senza schema ("drive.google.com/...")
+// diventa https. Qualsiasi altro schema (javascript:, data:, ...) → '#'.
+window._urlSicuro = function (u) {
+  var s = String(u == null ? '' : u).trim();
+  if (!s) return '#';
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(s)) s = 'https://' + s;
+  return /^https?:\/\//i.test(s) ? window._escH(s) : '#';
+};
+
 const TRAINING = [
   { day: 1, time: '18:00-19:30' },
   { day: 3, time: '18:30-20:00' },
@@ -2107,9 +2126,10 @@ function renderDocumentiGenitori(docs) {
   docs.forEach(function(doc) {
     h += '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#0f172a;border-radius:8px;margin-bottom:8px;">';
     h += '<i class="bi bi-file-earmark-text-fill" style="color:#60a5fa;font-size:1.2rem;flex-shrink:0;"></i>';
-    h += '<div style="flex:1;"><div style="color:#e2e8f0;font-weight:600;font-size:0.9rem;">' + doc.name + '</div>';
-    if (doc.desc) h += '<div style="color:#94a3b8;font-size:0.78rem;">' + doc.desc + '</div></div>';
-    h += '</div><a href="' + doc.url + '" target="_blank" style="background:#1a3a5f;color:#60a5fa;border-radius:5px;padding:5px 10px;font-size:0.78rem;text-decoration:none;flex-shrink:0;white-space:nowrap;"><i class="bi bi-box-arrow-up-right"></i> Apri</a>';
+    h += '<div style="flex:1;"><div style="color:#e2e8f0;font-weight:600;font-size:0.9rem;">' + window._escH(doc.name) + '</div>';
+    // (qui c'era un </div> in più: con la descrizione chiudeva la riga in anticipo)
+    if (doc.desc) h += '<div style="color:#94a3b8;font-size:0.78rem;">' + window._escH(doc.desc) + '</div>';
+    h += '</div><a href="' + window._urlSicuro(doc.url) + '" target="_blank" rel="noopener" style="background:#1a3a5f;color:#60a5fa;border-radius:5px;padding:5px 10px;font-size:0.78rem;text-decoration:none;flex-shrink:0;white-space:nowrap;"><i class="bi bi-box-arrow-up-right"></i> Apri</a>';
     h += '</div>';
   });
   h += '</div>';
@@ -2479,14 +2499,14 @@ window._renderParentDocsSection = function(athleteId, annataId, allDocs) {
     if (doc && doc.url) {
       hasAny = true;
       var date = doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString('it-IT') : '';
-      var html_nota = doc.nota ? '<div style="color:#94a3b8;font-size:0.73rem;margin-top:2px;">📝 ' + doc.nota + '</div>' : '';
+      var html_nota = doc.nota ? '<div style="color:#94a3b8;font-size:0.73rem;margin-top:2px;">📝 ' + window._escH(doc.nota) + '</div>' : '';
       html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(59,90,157,0.4);flex-wrap:wrap;">'
         + '<div style="flex:1;min-width:0;">'
         + '<div style="color:#e2e8f0;font-size:0.88rem;font-weight:600;">' + dt.label + '</div>'
         + '<div style="color:#94a3b8;font-size:0.75rem;">Caricato il ' + date + '</div>'
         + html_nota
         + '</div>'
-        + '<a href="' + doc.url + '" target="_blank" '
+        + '<a href="' + window._urlSicuro(doc.url) + '" target="_blank" rel="noopener" '
         + 'style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:0.8rem;text-decoration:none;white-space:nowrap;">🔗 Apri</a>'
         + '<button data-del-aid="' + athleteId + '" data-del-annata="' + annataId + '" data-del-key="' + dt.key + '" '
         + 'style="background:#450a0a;color:#d90429;border:1px solid #d90429;border-radius:6px;padding:6px 10px;font-size:0.8rem;cursor:pointer;white-space:nowrap;">🗑️</button>'
@@ -2920,7 +2940,7 @@ window._showDocUploadPanel = function(athleteId, annataId, existingDocs) {
         var date = doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString('it-IT') : '';
         html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">'
           + '<span style="color:#e2e8f0;font-size:0.82rem;flex:1;">' + dt.label + '</span>'
-          + '<a href="' + doc.url + '" target="_blank" style="color:#60a5fa;font-size:0.78rem;text-decoration:none;">🔗 Apri</a>'
+          + '<a href="' + window._urlSicuro(doc.url) + '" target="_blank" rel="noopener" style="color:#60a5fa;font-size:0.78rem;text-decoration:none;">🔗 Apri</a>'
           + '<span style="color:#94a3b8;font-size:0.72rem;">' + date + '</span>'
           + '<button onclick="window._deleteAthleteDoc(\'' + athleteId + '\',\'' + annataId + '\',\'' + dt.key + '\')" '
           + 'style="background:#450a0a;color:#d90429;border:1px solid #d90429;border-radius:4px;padding:2px 8px;font-size:0.72rem;cursor:pointer;">🗑️ Elimina</button>'
