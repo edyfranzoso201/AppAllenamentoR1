@@ -61,8 +61,8 @@ const A = 'aaaaaaaaaaaaaaaaaaaa', B = 'bbbbbbbbbbbbbbbbbbbb';
   check('B non vede quello di A', eq(await leggiBachecaConfig(kv, B), { banner: 'vecchio' }));
   await salvaBachecaConfig(kv, A, {});
   check('A svuota: resta vuoto, non torna al globale', eq(await leggiBachecaConfig(kv, A), {}));
-  await salvaBachecaConfig(kv, '', { banner: 'legacy' });
-  check('senza società si scrive il globale', eq(kv.m.get('global:bachecaConfig'), { banner: 'legacy' }));
+  const esito = await salvaBachecaConfig(kv, '', { banner: 'legacy' });
+  check('senza società NON si scrive il globale', esito === false && eq(kv.m.get('global:bachecaConfig'), { banner: 'vecchio' }));
   check('nessun globale e nessuna config: oggetto vuoto', eq(await leggiBachecaConfig(nuovoKv(), A), {}));
 }
 
@@ -87,6 +87,12 @@ const A = 'aaaaaaaaaaaaaaaaaaaa', B = 'bbbbbbbbbbbbbbbbbbbb';
   check('A cancella tutto: lista vuota, non torna ai globali', eq(await leggiPostSocieta(kv, A), []));
   await salvaPostSocieta(kv, B, 'non-una-lista');
   check('valore non valido salvato come lista vuota', eq(kv.m.get(`society:${B}:posts`), []));
+  const primaChiavi = [...kv.m.keys()].sort().join();
+  const e1 = await salvaPostSocieta(kv, '', [{ id: 'intruso' }]);
+  const e2 = await salvaImmaginePost(kv, null, 'p1', 'img-intrusa');
+  check('senza società: comunicati e immagini globali NON vengono scritti',
+    e1 === false && e2 === false && kv.m.get('global:posts').length === 3 &&
+    kv.m.get('global:postImg_p1') === 'img-globale' && [...kv.m.keys()].sort().join() === primaChiavi);
 }
 
 // ── revoca sessioni ───────────────────────────────────────────────────────

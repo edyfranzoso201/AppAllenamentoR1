@@ -10,11 +10,11 @@
 // comparire in tutte le società (si scrivono solo con la chiave superadmin).
 //
 // Le vecchie chiavi global:* restano:
-//   - come dato delle installazioni senza società (sessioni legacy, sid vuoto);
+//   - in sola lettura per chi arriva senza società (bacheca pubblica senza sid);
 //   - come RIPIEGO IN SOLA LETTURA per una società che non ha ancora salvato
 //     niente di suo, così i banner già configurati non spariscono col deploy.
 //     Al primo salvataggio la società passa alla sua chiave e non le legge più.
-// Una società non scrive MAI in global:*.
+// Nessuno scrive più in global:*: senza società il salvataggio non avviene.
 //
 // Il file ha prefisso "_" così Vercel NON lo espone come endpoint.
 
@@ -49,6 +49,7 @@ export async function leggiBachecaConfig(kv, sid) {
 }
 
 export async function salvaBachecaConfig(kv, sid, config) {
+  if (!sid) return false; // mai scrivere in global:* (vedi sopra)
   await kv.set(`${ns(sid)}:bachecaConfig`, config);
 }
 
@@ -66,6 +67,7 @@ export async function leggiPostSocieta(kv, sid) {
 }
 
 export async function salvaPostSocieta(kv, sid, posts) {
+  if (!sid) return false;
   await kv.set(`${ns(sid)}:posts`, Array.isArray(posts) ? posts : []);
 }
 
@@ -89,5 +91,6 @@ export async function leggiImmaginiPost(kv, sid, posts) {
 }
 
 export async function salvaImmaginePost(kv, sid, postId, img) {
+  if (!sid) return false;
   await kv.set(`${ns(sid)}:postImg_${postId}`, img);
 }

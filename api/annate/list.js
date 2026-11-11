@@ -33,7 +33,7 @@ export default async function handler(req, res) {
       return res.status(401).json({ success: false, message: 'Non autorizzato' });
     }
     const sess = await kv.get(`session:${token}`);
-    if (!sess) {
+    if (!sess || !sess.societyId) {
       return res.status(401).json({ success: false, message: 'Sessione non valida o scaduta' });
     }
     // TTL scorrevole: rinnova la scadenza della sessione a 8h da ora (soft)
@@ -44,14 +44,9 @@ export default async function handler(req, res) {
     // societyId dalla SESSIONE (non dall'header, falsificabile): ognuno vede solo le proprie annate.
     const societyId = sess.societyId || null;
 
-    let filtered;
-    if (societyId) {
-      // Ogni società vede SOLO le proprie annate
-      filtered = annate.filter(a => a.societyId === societyId);
-    } else {
-      // Retrocompatibilità: utenti legacy (senza societyId) vedono annate legacy
-      filtered = annate.filter(a => !a.societyId);
-    }
+    // Ogni società vede SOLO le proprie annate. Le sessioni senza società sono
+    // già state rifiutate sopra: non esiste più il gruppo "legacy".
+    let filtered = annate.filter(a => a.societyId === societyId);
 
     // Dentro la società: allenatori e dirigenti vedono solo le annate che
     // l'admin ha assegnato loro (admin e ruoli Dashboard le vedono tutte).
@@ -59,7 +54,7 @@ export default async function handler(req, res) {
 
     const sortedAnnate = filtered.sort((a, b) => new Date(b.dataInizio) - new Date(a.dataInizio));
 
-    console.log(`✅ Lista annate: ${sortedAnnate.length} per societyId=${societyId || 'legacy'}`);
+    console.log(`✅ Lista annate: ${sortedAnnate.length} per societyId=${societyId}`);
 
     return res.status(200).json({ success: true, annate: sortedAnnate });
 

@@ -131,7 +131,10 @@ sessionData = await kv.get(`session:${rawAuth}`);
 console.warn('Errore lookup sessione:', e?.message || e);
 return empty;
 }
-if (!sessionData) return empty;
+// Una sessione senza società non vale come accesso: prima formava un gruppo
+// a parte ("legacy") che vedeva tutte le annate senza società. Oggi ogni
+// utente ha la sua società; una sessione che ne è priva è trattata da anonimo.
+if (!sessionData || !String(sessionData.societyId || '').trim()) return empty;
 // TTL scorrevole: ogni chiamata API con sessione valida rinnova la scadenza a
 // 8h da ora, così l'utente attivo non viene disconnesso mentre lavora. Le
 // sessioni inattive >8h scadono comunque. Soft: un errore qui non blocca la richiesta.
@@ -924,8 +927,8 @@ return res.status(400).json({ success: false, message: 'Formato annataId non val
 // hanno una sessione e non devono averla: link genitori, cron, backup via
 // token, superadmin via x-sa-key. Se l'annata non è in elenco non si blocca
 // nulla (potrebbe essere in creazione): stessa logica del gate originale e di
-// parent-sign. Le sessioni legacy con societyId null (api/auth/login.js:217)
-// restano abbinate alle annate legacy, anch'esse con societyId null.
+// parent-sign. Una sessione ha sempre una società (getSessionInfo scarta
+// quelle che ne sono prive), quindi un'annata senza società è sempre negata.
 let _annataDiAltraSocieta = false;
 if (annataId && session.isAuthenticated) {
   const _al = (await kv.get('annate:list')) || [];
@@ -2216,7 +2219,7 @@ if (req.query?.action === 'cron-remind' && req.method === 'GET') {
       if (lic.expiry < todayStr) continue;
 
       const settings = (await kv.get(`society:${lic.societyId}:alertSettings`)) || { visitaDays: 60, tesseraDays: 15 };
-      const societyAnnate = allAnnate.filter(a => !a.societyId || a.societyId === lic.societyId);
+      const societyAnnate = allAnnate.filter(a => a.societyId === lic.societyId);
 
       const visitaAlert = new Date(today0); visitaAlert.setUTCDate(visitaAlert.getUTCDate() + Number(settings.visitaDays || 60));
       const tesseraAlert = new Date(today0); tesseraAlert.setUTCDate(tesseraAlert.getUTCDate() + Number(settings.tesseraDays || 15));
@@ -2380,7 +2383,7 @@ if (req.query?.action === 'cron-remind' && req.method === 'GET') {
     for (const licKey of (licKeysR3 || [])) {
       const lic = await kv.get(`licenze:${licKey}`);
       if (!lic || !lic.active) continue;
-      const socAnnate = annateR3.filter(a => !a.societyId || a.societyId === lic.societyId);
+      const socAnnate = annateR3.filter(a => a.societyId === lic.societyId);
       const inScadenza = []; // certificati il cui link sta per essere rimosso
 
       for (const annata of socAnnate) {
@@ -2824,7 +2827,7 @@ if (req.query?.action === 'backup') {
     scope = sid;
 
     const allAnnate = (await kv.get('annate:list')) || [];
-    const societyAnnate = allAnnate.filter(a => !a.societyId || a.societyId === sid);
+    const societyAnnate = allAnnate.filter(a => a.societyId === sid);
     exportData['annate:list'] = societyAnnate;
 
     for (const ann of societyAnnate) {
@@ -2844,10 +2847,9 @@ if (req.query?.action === 'backup') {
       if (licData) exportData[`licenze:${licKey}`] = licData;
     }
 
-    // Account della società. Includo anche quelli senza societyId (legacy/orfani),
-    // coerente col filtro delle annate sopra, per non perderli dal backup.
+    // Account della società: solo i suoi (un record senza società non è di nessuno).
     const allUsers = (await kv.get('auth:users')) || [];
-    const socUsers = allUsers.filter(u => !u.societyId || u.societyId === sid);
+    const socUsers = allUsers.filter(u => u.societyId === sid);
     exportData['auth:users'] = socUsers;
     const uKeys = socUsers.map(u => `auth:user:${(u.username||'').toLowerCase()}`).filter(Boolean);
     if (uKeys.length) Object.assign(exportData, await mgetBatched(uKeys));
@@ -3123,7 +3125,7 @@ if (req.query?.action === 'impianti-annate') {
   const sid = resolveSocietyId(req, session);
   if (!sid) return res.status(400).json({ success: false, message: 'societyId mancante' });
   const allAnnate = (await kv.get('annate:list')) || [];
-  const societyAnnate = allAnnate.filter(a => !a.societyId || a.societyId === sid);
+  const societyAnnate = allAnnate.filter(a => a.societyId === sid);
   const withCounts = await Promise.all(societyAnnate.map(async a => {
     const athletes = (await kv.get(`annate:${a.id}:athletes`)) || [];
     return { id: a.id, name: a.name || a.id, atletiCount: athletes.filter(x => !x.isGuest).length };
@@ -3830,7 +3832,7 @@ if (body._action === 'copy-athlete') {
   // Verifica che l'annata di destinazione appartenga alla STESSA società
   const al2 = (await kv.get('annate:list')) || [];
   const destMeta = al2.find(a => String(a.id) === destId);
-  if (destMeta && destMeta.societyId && destMeta.societyId !== (session.societyId || null))
+  if (destMeta && destMeta.societyId !== session.societyId)
     return res.status(403).json({ success: false, message: 'Annata di un\'altra società' });
   const athleteId = String(body.athleteId || '');
   if (!athleteId) return res.status(400).json({ success: false, message: 'athleteId mancante' });

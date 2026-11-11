@@ -42,7 +42,7 @@ export default async function handler(req, res) {
       return res.status(401).json({ success: false, message: 'Non autorizzato' });
     }
     const sess = await kv.get(`session:${token}`);
-    if (!sess) {
+    if (!sess || !sess.societyId) {
       return res.status(401).json({ success: false, message: 'Sessione non valida o scaduta' });
     }
     // TTL scorrevole: rinnova la scadenza della sessione a 8h da ora (soft)
@@ -147,9 +147,10 @@ export default async function handler(req, res) {
         return res.status(404).json({ success: false, message: 'Annata non trovata' });
       }
 
-      // Sicurezza: verifica che l'annata appartenga alla società che fa la richiesta
-      // MA permetti aggiornamento se l'annata è orfana (societyId null)
-      if (societyId && annate[annataIndex].societyId && annate[annataIndex].societyId !== societyId) {
+      // Sicurezza: l'annata deve appartenere alla società che fa la richiesta.
+      // Un'annata senza società non è di nessuno: prima qualunque admin poteva
+      // rinominarla e così agganciarla (coi suoi dati) alla propria società.
+      if (annate[annataIndex].societyId !== societyId) {
         return res.status(403).json({ success: false, message: 'Non autorizzato' });
       }
 
@@ -183,7 +184,7 @@ export default async function handler(req, res) {
         return res.status(404).json({ success: false, message: 'Annata non trovata' });
       }
 
-      if (societyId && annata.societyId && annata.societyId !== societyId) {
+      if (annata.societyId !== societyId) {
         return res.status(403).json({ success: false, message: 'Non autorizzato' });
       }
 

@@ -52,7 +52,8 @@ export default async function handler(req, res) {
     // ── verify: controlla se il token esiste in Redis ─────────────
     if (action === 'verify') {
       const data = await kv.get(`session:${token}`);
-      if (!data) {
+      // Senza società la sessione non vale (vedi api/auth/login.js).
+      if (!data || !data.societyId) {
         return res.status(200).json({ valid: false });
       }
 

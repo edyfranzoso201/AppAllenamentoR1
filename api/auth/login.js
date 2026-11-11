@@ -172,6 +172,15 @@ export default async function handler(req, res) {
       });
     }
 
+    // Un account senza società non entra. Prima otteneva una sessione "legacy"
+    // (societyId null) che vedeva tutte le annate senza società e scriveva i
+    // banner globali. Il controllo sta DOPO la password: chi non la conosce non
+    // deve poter capire quali account esistono.
+    if (!user.societyId) {
+      console.log(`   ❌ Account senza società: ${username}`);
+      return res.status(403).json({ success: false, message: "Account non associato a una società. Contatta l'assistenza." });
+    }
+
     // Migrazione automatica: risalva la password in scrypt (salt random).
     // Va aggiornata SIA la lista auth:users SIA la chiave individuale
     // auth:user:<lower> (il login fa lookup O(1) da quella chiave: se non la
@@ -203,14 +212,14 @@ export default async function handler(req, res) {
 
     // ── Login riuscito: azzera contatore tentativi ─────────────
     await azzeraLoginRiuscito(kv, username, ip);
-    console.log(`   ✅ Login OK: ${username} (${user.role}) societyId=${user.societyId || 'legacy'}`);
+    console.log(`   ✅ Login OK: ${username} (${user.role}) societyId=${user.societyId}`);
 
     // ── Genera token di sessione lato server (TTL 8 ore) ─────────
     const sessionToken = crypto.randomUUID();
     await kv.set(`session:${sessionToken}`, {
       username: user.username,
       role: user.role,
-      societyId: user.societyId || null
+      societyId: user.societyId
     });
     await kv.expire(`session:${sessionToken}`, SESSION_TTL_SEC);
 

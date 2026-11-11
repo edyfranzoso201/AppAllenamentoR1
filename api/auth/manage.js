@@ -85,7 +85,7 @@ export default async function handler(req, res) {
         return res.status(401).json({ success: false, message: 'Non autorizzato' });
       }
       const sess = await kv.get(`session:${token}`);
-      if (!sess) {
+      if (!sess || !sess.societyId) {
         return res.status(401).json({ success: false, message: 'Sessione non valida o scaduta' });
       }
       // TTL scorrevole: rinnova la scadenza della sessione a 8h da ora (soft)
@@ -105,7 +105,7 @@ export default async function handler(req, res) {
       // Superadmin vede tutti gli utenti; altrimenti filtra per societyId
       const filtered = isSuperAdmin
         ? users
-        : users.filter(u => !u.societyId || u.societyId === societyId);
+        : users.filter(u => u.societyId === societyId);
 
       // Restituisce i dati senza la password
       const safeUsers = filtered.map(u => ({

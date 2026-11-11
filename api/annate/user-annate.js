@@ -39,7 +39,7 @@ export default async function handler(req, res) {
       return res.status(401).json({ success: false, message: 'Non autorizzato' });
     }
     const sess = await kv.get(`session:${token}`);
-    if (!sess) {
+    if (!sess || !sess.societyId) {
       return res.status(401).json({ success: false, message: 'Sessione non valida o scaduta' });
     }
     // TTL scorrevole: rinnova la scadenza della sessione a 8h da ora (soft)
@@ -67,8 +67,8 @@ export default async function handler(req, res) {
     const user = users.find(u => u.username === username);
 
     // L'admin può guardare altri utenti, ma solo della PROPRIA società (stesso
-    // filtro di api/auth/manage.js): utenti legacy senza societyId restano visibili.
-    if (user && isAdmin && user.societyId && user.societyId !== (sess.societyId || null)) {
+    // filtro di api/auth/manage.js). Un utente senza società non è di nessuno.
+    if (user && isAdmin && user.societyId !== sess.societyId) {
       return res.status(403).json({ success: false, message: 'Non autorizzato' });
     }
     if (!user) {
