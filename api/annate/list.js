@@ -1,5 +1,6 @@
 // api/annate/list.js - Restituisce annate filtrate per società
 import { createClient } from '@vercel/kv';
+import { filtraAnnatePerUtente } from '../_annate-access.js';
 
 const kv = createClient({
   url: process.env.UPSTASH_KV_REST_API_URL || process.env.KV_REST_API_URL,
@@ -51,6 +52,10 @@ export default async function handler(req, res) {
       // Retrocompatibilità: utenti legacy (senza societyId) vedono annate legacy
       filtered = annate.filter(a => !a.societyId);
     }
+
+    // Dentro la società: allenatori e dirigenti vedono solo le annate che
+    // l'admin ha assegnato loro (admin e ruoli Dashboard le vedono tutte).
+    filtered = await filtraAnnatePerUtente(kv, { username: sess.username, role: sess.role }, filtered);
 
     const sortedAnnate = filtered.sort((a, b) => new Date(b.dataInizio) - new Date(a.dataInizio));
 

@@ -2,6 +2,7 @@
 import { createClient } from '@vercel/kv';
 import crypto from 'crypto';
 import { verifyPassword, hashPasswordScrypt } from './_password.js';
+import { RL_LOGIN, ipDi, statoBloccoLogin, registraLoginFallito, azzeraLoginRiuscito } from './_login-ratelimit.js';
 
 const kv = createClient({
   url: process.env.UPSTASH_KV_REST_API_URL || process.env.KV_REST_API_URL,
@@ -82,18 +83,8 @@ function getPermissions(role) {
   }
 }
 
-// Helper: incrementa contatore tentativi falliti
-async function incrementRateLimit(kv, key, maxAttempts, windowSec) {
-  const existing = await kv.get(key) || { attempts: 0, resetAt: 0 };
-  const attempts = existing.attempts + 1;
-  const resetAt = attempts >= maxAttempts
-    ? Date.now() + windowSec * 1000
-    : existing.resetAt;
-  await kv.set(key, { attempts, resetAt });
-  // TTL automatico per pulizia (windowSec + 60 secondi di margine)
-  await kv.expire(key, windowSec + 60);
-  return attempts;
-}
+// I limiti sui tentativi falliti (per utente+IP, per IP, per utente) stanno in
+// ./_login-ratelimit.js.
 
 export default async function handler(req, res) {
   setCors(req, res);
@@ -105,32 +96,26 @@ export default async function handler(req, res) {
     return res.status(405).json({ success: false, message: 'Method not allowed' });
   }
 
-  // ── Configurazione Rate Limiting ──────────────────────────────
-  const RL_MAX_ATTEMPTS = 5;     // tentativi falliti prima del blocco
-  const RL_WINDOW_SEC   = 15 * 60; // blocco di 15 minuti
-
   try {
-    const { username, password } = req.body;
+    const { username, password } = req.body || {};
 
-    if (!username || !password) {
+    if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
       return res.status(400).json({ success: false, message: 'Username e password obbligatori' });
     }
 
     // ── Controlla rate limit ────────────────────────────────────
-    const rlKey = `ratelimit:${username.toLowerCase()}`;
-    const rlData = await kv.get(rlKey);
-    if (rlData && rlData.attempts >= RL_MAX_ATTEMPTS) {
-      const remainingMs = (rlData.resetAt - Date.now());
-      if (remainingMs > 0) {
-        const mins = Math.ceil(remainingMs / 60000);
-        console.log(`   🚫 Rate limit attivo per ${username} — ancora ${mins} min`);
-        return res.status(429).json({
-          success: false,
-          message: `Troppi tentativi falliti. Riprova tra ${mins} minuti.`
-        });
-      }
-      // Blocco scaduto — pulisci
-      await kv.del(rlKey);
+    // Il blocco dopo 5 errori vale per utente + indirizzo: chi sbaglia apposta
+    // la password di un altro blocca se stesso, non il titolare dell'account.
+    const ip = ipDi(req);
+    const blocco = await statoBloccoLogin(kv, username, ip);
+    if (blocco.bloccato) {
+      console.log(`   🚫 Rate limit (${blocco.motivo}) per ${username} — ancora ${blocco.minuti} min`);
+      return res.status(429).json({
+        success: false,
+        message: blocco.motivo === 'ip'
+          ? `Troppi tentativi falliti da questa rete. Riprova tra ${blocco.minuti} minuti.`
+          : `Troppi tentativi falliti. Riprova tra ${blocco.minuti} minuti.`
+      });
     }
 
     console.log(`🔐 Tentativo login: ${username}`);
@@ -146,7 +131,7 @@ export default async function handler(req, res) {
     if (!user) {
       console.log(`   ❌ Utente "${username}" non trovato`);
       // Incrementa contatore anche per utenti inesistenti (evita user enumeration)
-      await incrementRateLimit(kv, rlKey, RL_MAX_ATTEMPTS, RL_WINDOW_SEC);
+      await registraLoginFallito(kv, username, ip);
       return res.status(401).json({ success: false, message: 'Credenziali non valide' });
     }
 
@@ -178,13 +163,12 @@ export default async function handler(req, res) {
 
     if (!passwordOk) {
       console.log(`   ❌ Password errata per ${username}`);
-      const attempts = await incrementRateLimit(kv, rlKey, RL_MAX_ATTEMPTS, RL_WINDOW_SEC);
-      const remaining = RL_MAX_ATTEMPTS - attempts;
+      const remaining = await registraLoginFallito(kv, username, ip);
       return res.status(401).json({
         success: false,
         message: remaining > 0
           ? `Credenziali non valide. Ancora ${remaining} tentativi prima del blocco.`
-          : `Troppi tentativi falliti. Account bloccato per ${RL_WINDOW_SEC / 60} minuti.`
+          : `Troppi tentativi falliti. Accesso bloccato per ${RL_LOGIN.WINDOW_SEC / 60} minuti.`
       });
     }
 
@@ -218,7 +202,7 @@ export default async function handler(req, res) {
     }
 
     // ── Login riuscito: azzera contatore tentativi ─────────────
-    await kv.del(`ratelimit:${username.toLowerCase()}`);
+    await azzeraLoginRiuscito(kv, username, ip);
     console.log(`   ✅ Login OK: ${username} (${user.role}) societyId=${user.societyId || 'legacy'}`);
 
     // ── Genera token di sessione lato server (TTL 8 ore) ─────────

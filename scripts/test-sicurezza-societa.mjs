@@ -6,6 +6,8 @@
 import { bachecaSocietyId, leggiBachecaConfig, salvaBachecaConfig, leggiPostSocieta, salvaPostSocieta, leggiImmaginiPost, salvaImmaginePost } from '../api/_bacheca.js';
 import { revocaSessioniUtente, revocaSessioniSocieta } from '../api/auth/_sessions.js';
 import { applicaAthleteDocs } from '../api/_athlete-docs.js';
+import { ruoloVedeTutteLeAnnate, annateUtente, puoUsareAnnata, filtraAnnatePerUtente } from '../api/_annate-access.js';
+import { RL_LOGIN, ipDi, chiaviLogin, statoBloccoLogin, registraLoginFallito, azzeraLoginRiuscito } from '../api/auth/_login-ratelimit.js';
 
 let ok = 0, ko = 0;
 function check(nome, cond) {
@@ -20,6 +22,7 @@ function nuovoKv(iniziale = {}) {
     async get(k) { return m.has(k) ? structuredClone(m.get(k)) : null; },
     async set(k, v) { m.set(k, structuredClone(v)); },
     async del(k) { m.delete(k); },
+    async expire() { return 1; },
     async mget(...ks) { return ks.map(k => (m.has(k) ? structuredClone(m.get(k)) : null)); },
     // Pagine da 3 chiavi, per esercitare il cursore.
     async scan(cursor, { match }) {
@@ -166,6 +169,87 @@ const A = 'aaaaaaaaaaaaaaaaaaaa', B = 'bbbbbbbbbbbbbbbbbbbb';
   e = base();
   r = applicaAthleteDocs(e, { '1': { certificato: null }, '99': { qualsiasi: { url: 'x' } } }, { anonimo: false, athletes: [] });
   check('staff: più atleti e chiavi libere consentiti', r.ok && !e['1'] && e['99'].qualsiasi.url === 'x');
+}
+
+// ── annate assegnate ──────────────────────────────────────────────────────
+{
+  const kv = nuovoKv({
+    'auth:user:luca': { username: 'Luca', role: 'coach_l1', annate: ['u15', 'u17'] },
+    'auth:user:vuoto': { username: 'vuoto', role: 'coach_l2', annate: [] },
+    'auth:user:senza': { username: 'senza', role: 'dirigente_l1' },
+    'auth:user:numeri': { username: 'numeri', role: 'coach_l3', annate: [2012] },
+    'auth:user:altro': { username: 'QualcunAltro', role: 'coach_l1', annate: ['u19'] },
+    'auth:users': [{ username: 'SoloLista', role: 'coach_l1', annate: ['u13'] }],
+  });
+  const s = (username, role) => ({ isAuthenticated: true, username, role, societyId: A });
+
+  check('ruoli su tutte le annate', ['admin', 'ADMIN', 'coach_l0', 'direttivo', 'dirigente', 'staff'].every(ruoloVedeTutteLeAnnate));
+  check('ruoli limitati alle assegnate', !['coach_l1', 'coach_l2', 'coach_l3', 'coach_readonly', 'dirigente_l1', 'dirigente_l4', 'societa_l1', 'societa_l3', '', null, 'adminx'].some(ruoloVedeTutteLeAnnate));
+
+  check('admin: qualsiasi annata, senza leggere l\'utente', await puoUsareAnnata(nuovoKv(), s('capo', 'admin'), 'u99'));
+  check('direttivo (Dashboard): qualsiasi annata', await puoUsareAnnata(nuovoKv(), s('dir', 'direttivo'), 'u99'));
+  check('coach: annata assegnata sì', await puoUsareAnnata(kv, s('Luca', 'coach_l1'), 'u17'));
+  check('coach: annata NON assegnata no', !(await puoUsareAnnata(kv, s('Luca', 'coach_l1'), 'u19')));
+  check('coach: maiuscole dello username ignorate', await puoUsareAnnata(kv, s('LUCA', 'coach_l1'), 'u15'));
+  check('coach con elenco vuoto: nessuna', !(await puoUsareAnnata(kv, s('vuoto', 'coach_l2'), 'u15')));
+  check('utente senza campo annate: nessuna', !(await puoUsareAnnata(kv, s('senza', 'dirigente_l1'), 'u15')));
+  check('id numerico salvato, id stringa richiesto', await puoUsareAnnata(kv, s('numeri', 'coach_l3'), '2012'));
+  check('utente solo in auth:users: trovato', await puoUsareAnnata(kv, s('sololista', 'coach_l1'), 'u13'));
+  check('chiave con un altro username dentro: non vale', !(await puoUsareAnnata(kv, s('altro', 'coach_l1'), 'u19')));
+  check('utente inesistente: nessuna', !(await puoUsareAnnata(kv, s('fantasma', 'coach_l1'), 'u15')));
+  check('sessione non autenticata: no', !(await puoUsareAnnata(kv, { isAuthenticated: false, username: 'Luca', role: 'admin' }, 'u15')));
+  check('sessione mancante: no', !(await puoUsareAnnata(kv, null, 'u15')));
+  check('annateUtente: null se non esiste, [] se vuoto', (await annateUtente(kv, 'fantasma')) === null && eq(await annateUtente(kv, 'vuoto'), []) && (await annateUtente(kv, '')) === null);
+
+  const tutte = [{ id: 'u13' }, { id: 'u15' }, { id: 'u17' }, { id: 'u19' }];
+  check('elenco annate: il coach vede solo le sue', eq((await filtraAnnatePerUtente(kv, s('Luca', 'coach_l1'), tutte)).map(a => a.id), ['u15', 'u17']));
+  check('elenco annate: admin le vede tutte', (await filtraAnnatePerUtente(kv, s('capo', 'admin'), tutte)).length === 4);
+  check('elenco annate: utente inesistente nessuna', eq(await filtraAnnatePerUtente(kv, s('fantasma', 'coach_l1'), tutte), []));
+  check('elenco annate: valore non valido → vuoto', eq(await filtraAnnatePerUtente(kv, s('capo', 'admin'), null), []));
+}
+
+// ── limiti sul login ──────────────────────────────────────────────────────
+{
+  const IP1 = '1.1.1.1', IP2 = '2.2.2.2';
+  check('ip: x-real-ip prima di x-forwarded-for', ipDi({ headers: { 'x-real-ip': '9.9.9.9', 'x-forwarded-for': '8.8.8.8, 7.7.7.7' } }) === '9.9.9.9');
+  check('ip: primo valore di x-forwarded-for', ipDi({ headers: { 'x-forwarded-for': '8.8.8.8, 7.7.7.7' } }) === '8.8.8.8');
+  check('ip: assente → noip', ipDi({ headers: {} }) === 'noip' && ipDi(null) === 'noip');
+  check('chiavi: username senza maiuscole né spazi', chiaviLogin('  Mario ', IP1).utenteIp === chiaviLogin('mario', IP1).utenteIp);
+
+  let kv = nuovoKv();
+  let rimasti = [];
+  for (let i = 0; i < RL_LOGIN.MAX_UTENTE_IP; i++) rimasti.push(await registraLoginFallito(kv, 'Mario', IP1));
+  check('tentativi rimasti: 4,3,2,1,0', eq(rimasti, [4, 3, 2, 1, 0]));
+  let st = await statoBloccoLogin(kv, 'mario', IP1);
+  check('5 errori: bloccato da quell\'indirizzo per 15 minuti', st.bloccato && st.motivo === 'utenteIp' && st.minuti === 15);
+  check('lo stesso utente da un ALTRO indirizzo non è bloccato', !(await statoBloccoLogin(kv, 'mario', IP2)).bloccato);
+  check('un altro utente dallo stesso indirizzo non è bloccato', !(await statoBloccoLogin(kv, 'anna', IP1)).bloccato);
+
+  await azzeraLoginRiuscito(kv, 'mario', IP2);
+  check('login riuscito altrove: non sblocca l\'indirizzo che sbagliava', (await statoBloccoLogin(kv, 'mario', IP1)).bloccato);
+  check('login riuscito: azzera il contatore generale dell\'utente', !kv.m.has(chiaviLogin('mario', IP1).utente));
+  await azzeraLoginRiuscito(kv, 'mario', IP1);
+  check('login riuscito dallo stesso indirizzo: sbloccato', !(await statoBloccoLogin(kv, 'mario', IP1)).bloccato);
+  check('il contatore dell\'indirizzo resta dopo un login riuscito', kv.m.get(chiaviLogin('mario', IP1).ip).attempts === 5);
+
+  kv = nuovoKv();
+  for (let i = 0; i < RL_LOGIN.MAX_IP; i++) await registraLoginFallito(kv, 'utente' + i, IP1);
+  st = await statoBloccoLogin(kv, 'mai-provato', IP1);
+  check('30 errori su username diversi: indirizzo bloccato', st.bloccato && st.motivo === 'ip');
+  check('indirizzo bloccato: gli altri indirizzi no', !(await statoBloccoLogin(kv, 'mai-provato', IP2)).bloccato);
+
+  kv = nuovoKv();
+  for (let i = 0; i < RL_LOGIN.MAX_UTENTE - 1; i++) await registraLoginFallito(kv, 'mario', '10.0.0.' + i);
+  check('49 errori da 49 indirizzi: utente ancora libero altrove', !(await statoBloccoLogin(kv, 'mario', IP2)).bloccato);
+  await registraLoginFallito(kv, 'mario', '10.0.1.1');
+  st = await statoBloccoLogin(kv, 'mario', IP2);
+  check('50 errori da tanti indirizzi: utente bloccato ovunque', st.bloccato && st.motivo === 'utente');
+
+  kv = nuovoKv();
+  const k = chiaviLogin('mario', IP1);
+  kv.m.set(k.utenteIp, { attempts: 5, resetAt: Date.now() - 1000 });
+  check('blocco scaduto: libero e contatore cancellato', !(await statoBloccoLogin(kv, 'mario', IP1)).bloccato && !kv.m.has(k.utenteIp));
+  check('dopo la scadenza si riparte da 4 rimasti', (await registraLoginFallito(kv, 'mario', IP1)) === 4);
 }
 
 console.log(`\n${ok} ok, ${ko} falliti`);

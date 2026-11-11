@@ -7,6 +7,7 @@ import { hashPasswordScrypt } from './auth/_password.js';
 import { bachecaSocietyId, leggiBachecaConfig, salvaBachecaConfig, leggiPostSocieta, salvaPostSocieta, leggiImmaginiPost, salvaImmaginePost } from './_bacheca.js';
 import { applicaAthleteDocs } from './_athlete-docs.js';
 import { revocaSessioniSocieta } from './auth/_sessions.js';
+import { puoUsareAnnata } from './_annate-access.js';
 import { applyMatchPatch, sanificaDatiGara, sanificaNuova, applicaGara, purgeGaraAtleta, patchTroppoGrande, patchOltreLimiti } from './_match-gara.js';
 
 const kv = createClient({
@@ -936,6 +937,17 @@ if (annataId && session.isAuthenticated) {
 if (_annataDiAltraSocieta) {
   console.warn(`⛔ Accesso annata negato: user=${session.username} soc=${session.societyId || null} → annata=${annataId}`);
   return res.status(403).json({ success: false, message: 'Accesso negato: annata di un\'altra società' });
+}
+
+// ── Annate assegnate (dentro la società) ───────────────────────────────────
+// L'admin assegna a ogni allenatore/dirigente le sue annate, ma finora il
+// filtro era solo nel client: con X-Annata-Id di un'altra annata della stessa
+// società si leggeva e scriveva tutto. Stesso punto e stessa logica del gate
+// sopra, così vale per tutte le azioni. Admin e ruoli Dashboard lavorano su
+// tutte le annate (vedi api/_annate-access.js); gli anonimi non sono toccati.
+if (annataId && session.isAuthenticated && !(await puoUsareAnnata(kv, session, annataId))) {
+  console.warn(`⛔ Annata non assegnata: user=${session.username} ruolo=${session.role} → annata=${annataId}`);
+  return res.status(403).json({ success: false, message: 'Accesso negato: annata non assegnata a questo utente' });
 }
 
 // ── PARENT-SIGN: firma per il link genitore ────────────────────────────────
