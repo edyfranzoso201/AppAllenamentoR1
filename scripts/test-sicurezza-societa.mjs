@@ -54,11 +54,12 @@ const A = 'aaaaaaaaaaaaaaaaaaaa', B = 'bbbbbbbbbbbbbbbbbbbb';
 // ── bachecaConfig ─────────────────────────────────────────────────────────
 {
   const kv = nuovoKv({ 'global:bachecaConfig': { banner: 'vecchio' } });
-  check('società senza config: ripiega sul globale', eq(await leggiBachecaConfig(kv, A), { banner: 'vecchio' }));
+  check('società senza config: vuoto, NON eredita il globale', eq(await leggiBachecaConfig(kv, A), {}));
+  check('senza società: si legge ancora il globale', eq(await leggiBachecaConfig(kv, ''), { banner: 'vecchio' }));
   await salvaBachecaConfig(kv, A, { banner: 'di A' });
   check('il salvataggio di A NON tocca il globale', eq(kv.m.get('global:bachecaConfig'), { banner: 'vecchio' }));
   check('A legge il suo', eq(await leggiBachecaConfig(kv, A), { banner: 'di A' }));
-  check('B non vede quello di A', eq(await leggiBachecaConfig(kv, B), { banner: 'vecchio' }));
+  check('B non vede quello di A né il globale', eq(await leggiBachecaConfig(kv, B), {}));
   await salvaBachecaConfig(kv, A, {});
   check('A svuota: resta vuoto, non torna al globale', eq(await leggiBachecaConfig(kv, A), {}));
   const esito = await salvaBachecaConfig(kv, '', { banner: 'legacy' });
@@ -72,8 +73,8 @@ const A = 'aaaaaaaaaaaaaaaaaaaa', B = 'bbbbbbbbbbbbbbbbbbbb';
     'global:posts': [{ id: 'p1' }, { id: 'p2', societyId: A }, { id: 'p3', societyId: B }],
     'global:postImg_p1': 'img-globale',
   });
-  check('A senza lista: vede i globali suoi o senza società', eq((await leggiPostSocieta(kv, A)).map(p => p.id), ['p1', 'p2']));
-  check('B non vede il comunicato di A', eq((await leggiPostSocieta(kv, B)).map(p => p.id), ['p1', 'p3']));
+  check('A senza lista: vuota, nessun ripiego sui globali', eq(await leggiPostSocieta(kv, A), []));
+  check('B senza lista: vuota', eq(await leggiPostSocieta(kv, B), []));
   check('senza società: globali non filtrati', (await leggiPostSocieta(kv, '')).length === 3);
   await salvaPostSocieta(kv, A, [{ id: 'p1' }, { id: 'n1' }]);
   await salvaImmaginePost(kv, A, 'n1', 'img-A');
@@ -81,7 +82,7 @@ const A = 'aaaaaaaaaaaaaaaaaaaa', B = 'bbbbbbbbbbbbbbbbbbbb';
   check('A legge la sua lista', eq((await leggiPostSocieta(kv, A)).map(p => p.id), ['p1', 'n1']));
   check('B non vede il nuovo comunicato di A', !(await leggiPostSocieta(kv, B)).some(p => p.id === 'n1'));
   const imgA = await leggiImmaginiPost(kv, A, [{ id: 'p1' }, { id: 'n1' }]);
-  check('immagini di A: propria + ripiego globale', imgA.p1 === 'img-globale' && imgA.n1 === 'img-A' && Object.keys(imgA).length === 2);
+  check('immagini di A: solo la propria, nessun ripiego globale', imgA.n1 === 'img-A' && Object.keys(imgA).length === 1);
   check('B non legge l\'immagine di A', eq(await leggiImmaginiPost(kv, B, [{ id: 'n1' }]), {}));
   await salvaPostSocieta(kv, A, []);
   check('A cancella tutto: lista vuota, non torna ai globali', eq(await leggiPostSocieta(kv, A), []));

@@ -2101,10 +2101,9 @@ if (req.query?.action === 'push-send' && req.method === 'POST') {
   // Una notifica con titolo e testo liberi arriva sui telefoni dei genitori:
   // la può inviare solo chi può anche scrivere ciò che la genera (comunicati,
   // sondaggi, eventi, convocazioni). Prima bastava essere loggati, anche con
-  // un profilo in sola lettura. Il direttivo resta abilitato: nell'app è
-  // trattato come societa_l1 (profilo con modifica) e il pulsante "Invia
-  // Notifica" gli è sempre stato mostrato.
-  if (!canWrite(session.role) && normalizzaRuolo(session.role) !== 'direttivo') {
+  // un profilo in sola lettura (direttivo compreso: nell'app principale è in
+  // sola visualizzazione dal 2026-11-11).
+  if (!canWrite(session.role)) {
     return res.status(403).json({ success: false, message: 'Permesso negato: il tuo profilo non può inviare notifiche' });
   }
   // L'annata può arrivare dal corpo della richiesta, che il controllo generale

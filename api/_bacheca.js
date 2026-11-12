@@ -9,11 +9,11 @@
 // NON riguarda global:superadminBanners: quelli sono del superadmin e devono
 // comparire in tutte le società (si scrivono solo con la chiave superadmin).
 //
-// Le vecchie chiavi global:* restano:
-//   - in sola lettura per chi arriva senza società (bacheca pubblica senza sid);
-//   - come RIPIEGO IN SOLA LETTURA per una società che non ha ancora salvato
-//     niente di suo, così i banner già configurati non spariscono col deploy.
-//     Al primo salvataggio la società passa alla sua chiave e non le legge più.
+// Le vecchie chiavi global:* restano SOLO in lettura per chi arriva senza
+// società (bacheca pubblica senza sid). Una società legge esclusivamente le
+// sue chiavi: il vecchio banner globale è stato copiato nelle società
+// esistenti l'11/11/2026, quindi non serve più alcun ripiego (e una società
+// nuova non eredita i banner di un'altra).
 // Nessuno scrive più in global:*: senza società il salvataggio non avviene.
 //
 // Il file ha prefisso "_" così Vercel NON lo espone come endpoint.
@@ -41,10 +41,7 @@ export function bachecaSocietyId(req, session, annataSocietyId) {
 function ns(sid) { return sid ? `society:${sid}` : 'global'; }
 
 export async function leggiBachecaConfig(kv, sid) {
-  if (sid) {
-    const propria = await kv.get(`society:${sid}:bachecaConfig`);
-    if (propria !== null && propria !== undefined) return propria;
-  }
+  if (sid) return (await kv.get(`society:${sid}:bachecaConfig`)) || {};
   return (await kv.get('global:bachecaConfig')) || {};
 }
 
@@ -53,15 +50,11 @@ export async function salvaBachecaConfig(kv, sid, config) {
   await kv.set(`${ns(sid)}:bachecaConfig`, config);
 }
 
-// Comunicati di società. Per una società che non ha ancora una lista sua si
-// ripiega sui vecchi comunicati globali, tenendo solo quelli suoi o senza
-// società (quelli marcati con un'altra società non si mostrano).
+// Comunicati di società: solo la lista della società, nessun ripiego.
 export async function leggiPostSocieta(kv, sid) {
   if (sid) {
     const propri = await kv.get(`society:${sid}:posts`);
-    if (Array.isArray(propri)) return propri;
-    const vecchi = (await kv.get('global:posts')) || [];
-    return vecchi.filter(p => p && (!p.societyId || String(p.societyId) === sid));
+    return Array.isArray(propri) ? propri : [];
   }
   return (await kv.get('global:posts')) || [];
 }
@@ -72,10 +65,7 @@ export async function salvaPostSocieta(kv, sid, posts) {
 }
 
 export async function leggiImmaginePost(kv, sid, postId) {
-  if (sid) {
-    const propria = await kv.get(`society:${sid}:postImg_${postId}`);
-    if (propria) return propria;
-  }
+  if (sid) return (await kv.get(`society:${sid}:postImg_${postId}`)) || null;
   return (await kv.get(`global:postImg_${postId}`)) || null;
 }
 

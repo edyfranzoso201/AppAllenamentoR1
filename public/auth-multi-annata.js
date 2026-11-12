@@ -74,6 +74,19 @@
         });
     }
 
+    // A1 Direttivo: sola visualizzazione nell'app principale (decisione del
+    // 2026-11-11). Chi ha fatto login PRIMA di questa modifica ha ancora in
+    // memoria il ruolo 'societa_l1' con modifica: qui lo si riallinea senza
+    // obbligarlo a rientrare. Il server rifiutava gia' i suoi salvataggi.
+    var PERMESSI_DIRETTIVO = { canEditGeneral: false, canViewGPS: true, canEditGPS: false, isAdmin: false, isDashboard: true };
+    function riallineaDirettivo() {
+        try {
+            if (sessionStorage.getItem('gosport_dashboard_role') !== 'direttivo') return;
+            sessionStorage.setItem(SESSION_USER_ROLE, 'societa_l3');
+            sessionStorage.setItem('gosport_permissions', JSON.stringify(PERMESSI_DIRETTIVO));
+        } catch (e) { /* storage non disponibile */ }
+    }
+
     function restoreSessionFromLocal() {
         if (sessionStorage.getItem(SESSION_KEY) === 'true') return; // già in sessione
         var ps = localStorage.getItem('_p_' + SESSION_KEY);
@@ -222,6 +235,7 @@
 
         // Ripristina sessione da localStorage se sessionStorage è vuoto (es. browser riaperto)
         restoreSessionFromLocal();
+        riallineaDirettivo();
 
         // Verifica immediata dello stato di autenticazione
         const session = sessionStorage.getItem(SESSION_KEY);
@@ -709,9 +723,10 @@
                         // materiale, inventario, sondaggi...) ma canWrite() lato server non
                         // ammette 'dirigente' e ogni salvataggio finiva in 403. In Dashboard
                         // (Iscrizioni, Impianti) vale il ruolo ORIGINALE e non cambia nulla.
-                        const DASHBOARD_ROLE_MAP = { direttivo: 'societa_l1', dirigente: 'dirigente_l3', staff: 'societa_l3' };
+                        // A1 Direttivo -> societa_l3: stessa storia, sola visualizzazione (i suoi
+                        // permessi, con la vista GPS, li fissa riallineaDirettivo() piu' sotto).
+                        const DASHBOARD_ROLE_MAP = { direttivo: 'societa_l3', dirigente: 'dirigente_l3', staff: 'societa_l3' };
                         const DASHBOARD_APP_PERMS = {
-                            societa_l1:   { canEditGeneral: true,  canViewGPS: true,  canEditGPS: false, isAdmin: false, isDashboard: true },
                             dirigente_l3: { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true },
                             societa_l3:   { canEditGeneral: false, canViewGPS: false, canEditGPS: false, isAdmin: false, isDashboard: true }
                         };
@@ -734,6 +749,7 @@
                         if (result.user && result.user.permissions) {
                             sessionStorage.setItem('gosport_permissions', JSON.stringify(result.user.permissions));
                         }
+                        riallineaDirettivo();
 
                         // Salva scadenza account (se impostata) per l'alert nella Home
                         if (result.user && result.user.expiryDate) {
